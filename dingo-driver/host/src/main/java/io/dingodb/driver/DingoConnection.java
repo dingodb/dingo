@@ -235,8 +235,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 throw new RuntimeException("Optimistic transaction only support" +
                     " read committed transaction isolation level");
             }
-            LogUtils.info(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
-                startTs, type, txIsolation, autoCommit);
+            if (!this.getContext().keyExists("sql_log")) {
+                LogUtils.info(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
+                    startTs, type, txIsolation, autoCommit);
+            }
             this.transaction = TransactionManager.createTransaction(type, startTs,
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);

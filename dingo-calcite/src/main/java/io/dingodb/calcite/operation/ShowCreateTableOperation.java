@@ -17,6 +17,8 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -131,9 +133,13 @@ public class ShowCreateTableOperation extends QueryOperation {
         int indexSize = table.getIndexes().size();
         if (indexSize > 0) {
             for (int i = 0; i < indexSize; i ++) {
+                IndexTable indexTable = table.getIndexes().get(i);
+                if (indexTable.getName().equalsIgnoreCase(DdlUtil.ddlTmpTableName)
+                    || indexTable.getSchemaState() == SchemaState.SCHEMA_NONE) {
+                    continue;
+                }
                 createTableSqlStr.append(",");
                 createTableSqlStr.append("\r\n");
-                IndexTable indexTable = table.getIndexes().get(i);
                 if (indexTable.getIndexType() == IndexType.SCALAR) {
                     createTableSqlStr.append("    ");
                     if (indexTable.isUnique()) {

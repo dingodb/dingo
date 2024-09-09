@@ -24,7 +24,6 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
@@ -66,7 +65,7 @@ public class LocalDdlService implements DdlService {
     @Override
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaInfo.getName());
-        ms.dropTable(tableName);
+        ms.dropTable(ms.id().seq, tableName);
     }
 
     @Override

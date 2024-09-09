@@ -229,6 +229,10 @@ public final class DingoParserContext implements Context {
         return options != null ? options.getOrDefault(field, "").toString() : "";
     }
 
+    public boolean keyExists(String field) {
+        return options != null && options.containsKey(field);
+    }
+
     public synchronized void setUsedSchema(CalciteSchema schema) {
         this.usedSchema = schema;
         this.defaultSchemaName = schema.getName();

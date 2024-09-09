@@ -40,6 +40,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.server.executor.ddl.DdlContext;
+import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.service.InfoSchemaService;
 import io.dingodb.store.service.MetaStoreKv;
@@ -316,7 +317,13 @@ public final class PrepareMeta {
             log.error(e.getMessage(), e);
             return;
         }
+        CommonId tableIdCommon = Mapper.MAPPER.idFrom(tableId);
+        initUserWithRetry(tableName, tableIdCommon);
+        exceptionRetries = 0;
+        log.info("init {}.{} success", schemaName, tableName);
+    }
 
+    public static void initUserWithRetry(String tableName, CommonId tableId) {
         try {
             List<Object[]> values;
             if ("user".equalsIgnoreCase(tableName)) {
@@ -326,35 +333,28 @@ public final class PrepareMeta {
                 return;
             }
 
-            CommonId tableIdCommon = new CommonId(CommonId.CommonType.TABLE,
-                tableId.getParentEntityId(), tableId.getEntityId());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
-                = subMetaService.getRangeDistribution(tableIdCommon);
+                = MetaService.ROOT.getRangeDistribution(tableId);
 
             if (rangeDistribution == null) {
                 return;
             }
-            io.dingodb.meta.entity.Table table = infoSchemaService.getTableDef(tableIdCommon.domain, tableIdCommon.seq);
+            io.dingodb.meta.entity.Table table = io.dingodb.meta.InfoSchemaService.root()
+                .getTableDef(tableId.domain, tableId.seq);
             KeyValueCodec codec = CodecService.getDefault()
                 .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
             KeyValue keyValue = codec.encode(values.get(0));
 
             CommonId regionId = rangeDistribution.firstEntry().getValue().getId();
-            StoreKvTxn storeKvTxn = new StoreKvTxn(tableIdCommon, regionId);
+            StoreKvTxn storeKvTxn = new StoreKvTxn(tableId, regionId);
             storeKvTxn.insert(keyValue.getKey(), keyValue.getValue());
         } catch (Exception e) {
-            if (e instanceof DingoClientException.InvalidRouteTableException) {
-                if (!continueRetry()) {
-                    return;
-                }
-                createUserTable(schemaName, tableName, tableType, engine, rowFormat);
-            } else {
-                log.error(e.getMessage(), e);
-                throw e;
+            LogUtils.error(log, e.getMessage(), e);
+            if (!continueRetry()) {
+                return;
             }
+            initUserWithRetry(tableName, tableId);
         }
-        exceptionRetries = 0;
-        log.info("init {}.{} success", schemaName, tableName);
     }
 
     private static Map<String, Object> getUserObjectMap(String tableName) {

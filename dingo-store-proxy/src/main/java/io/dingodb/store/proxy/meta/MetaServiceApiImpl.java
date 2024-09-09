@@ -33,15 +33,6 @@ import io.dingodb.net.service.ListenService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
-import io.dingodb.sdk.service.entity.meta.AddIndexOnTableRequest;
-import io.dingodb.sdk.service.entity.meta.CreateIndexRequest;
-import io.dingodb.sdk.service.entity.meta.CreateSchemaRequest;
-import io.dingodb.sdk.service.entity.meta.CreateTablesRequest;
-import io.dingodb.sdk.service.entity.meta.DropIndexOnTableRequest;
-import io.dingodb.sdk.service.entity.meta.DropIndexRequest;
-import io.dingodb.sdk.service.entity.meta.DropSchemaRequest;
-import io.dingodb.sdk.service.entity.meta.DropTablesRequest;
-import io.dingodb.sdk.service.entity.meta.UpdateIndexRequest;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
@@ -62,7 +53,6 @@ import java.util.function.Consumer;
 
 import static io.dingodb.common.CommonId.CommonType.CLUSTER;
 import static io.dingodb.common.CommonId.CommonType.SDK;
-import static io.dingodb.sdk.service.Services.metaService;
 import static io.dingodb.transaction.api.LockType.RANGE;
 import static io.dingodb.transaction.api.LockType.TABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -82,7 +72,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     public static final MetaServiceApiImpl INSTANCE = new MetaServiceApiImpl();
 
-    private final io.dingodb.sdk.service.MetaService proxyService = metaService(Configuration.coordinatorSet());
     private final io.dingodb.sdk.service.LockService lockService = new io.dingodb.sdk.service.LockService(
         "MetaNode#0#ExecutorCluster" + TenantConstant.TENANT_ID, Configuration.coordinators()
     );
@@ -102,11 +91,6 @@ public class MetaServiceApiImpl implements MetaServiceApi {
     private final LinkedRunner lockRunner = new LinkedRunner("lock-runner");
 
     private MetaServiceApiImpl() {
-        try {
-            throw new RuntimeException("xxxx");
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-        }
         LogUtils.info(log, "MetaServiceApiImpl init");
         lock = lockService.newLock(ID + "#" + DingoConfiguration.location().url());
         lock.watchDestroy().thenRunAsync(() -> {
@@ -363,137 +347,4 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         }
     }
 
-    @Override
-    @SneakyThrows
-    public void createTables(long requestId, String schema, String table, CreateTablesRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.createTables(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).createTables(requestId, schema, table, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void dropTables(long requestId, String schema, String table, DropTablesRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.dropTables(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).dropTables(requestId, schema, table, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void createSchema(long requestId, String schema, CreateSchemaRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.createSchema(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).createSchema(requestId, schema, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void dropSchema(long requestId, String schema, DropSchemaRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.dropSchema(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).dropSchema(requestId, schema, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void createIndex(long requestId, String schema, String table, String index, CreateIndexRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.createIndex(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).createIndex(requestId, schema, table, index, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void addIndexOnTable(long requestId, String schema, AddIndexOnTableRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.addIndexOnTable(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).addIndexOnTable(requestId, schema, request);
-            }
-        }
-    }
-
-    @Override
-    public void updateIndex(long requestId, String schema, UpdateIndexRequest request) throws Exception {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.updateIndex(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).updateIndex(requestId, schema, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void dropIndex(long requestId, String schema, DropIndexRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.dropIndex(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).dropIndex(requestId, schema, request);
-            }
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void dropIndexOnTable(long requestId, String schema, DropIndexOnTableRequest request) {
-        if (!isReady()) {
-            throw new RuntimeException("Offline, please wait and retry.");
-        }
-        if (isLeader()) {
-            proxyService.dropIndexOnTable(requestId, request);
-        } else {
-            try (Channel channel = leaderChannel()) {
-                proxy(channel).dropIndexOnTable(requestId, schema, request);
-            }
-        }
-    }
 }

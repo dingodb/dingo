@@ -86,12 +86,16 @@ public final class MetaLockCheckHandler {
             }
             Map<Long, String> jobsIdsMap = new HashMap<>(mdlCheckTableInfo.getJobsIdsMap());
             Map<Long, Long> jobsVerMap = new HashMap<>(mdlCheckTableInfo.getJobsVerMap());
-            long maxMdlInfoVer = jobsVerMap.keySet().stream().mapToLong(k -> k).max().orElse(0);
+            long maxMdlInfoVer = jobsVerMap.values().stream().mapToLong(k -> k).max().orElse(0);
             mdlCheckTableInfo.wUnlock();
             jobNeedToSync = true;
             SessionManager.checkOldRunningTxn(jobsVerMap, jobsIdsMap);
             if (jobsVerMap.size() == jobNeedToCheckCnt && (maxMdlInfoVer >= maxVer)) {
                 jobNeedToSync = false;
+            }
+            if (maxVer > maxMdlInfoVer) {
+                LogUtils.info(log, "maxVer > maxMdlVer, maxVer:{}, maxMdlVer:{}, jobNeedToSync:{}"
+                    , maxVer, maxMdlInfoVer, jobNeedToSync);
             }
             if (jobCache.size() > 1000) {
                 jobCache = new HashMap<>();
@@ -117,8 +121,8 @@ public final class MetaLockCheckHandler {
                     }
                     continue;
                 }
-                LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}, save ver:{}",
-                    entry.getKey(), entry.getValue(), saveMaxSchemaVersion);
+                LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}, save ver:{}, jobNeedSync:{}",
+                    entry.getKey(), entry.getValue(), saveMaxSchemaVersion, jobNeedToSync);
                 try {
                     DdlContext.INSTANCE.getSchemaSyncer().updateSelfVersion(System.identityHashCode(entry), entry.getKey(), entry.getValue());
                     jobCache.put(entry.getKey(), entry.getValue());

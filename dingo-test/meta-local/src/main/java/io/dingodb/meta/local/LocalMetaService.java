@@ -165,8 +165,8 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public boolean dropTable(String tableName) {
-        return dropTable(TenantConstant.TENANT_ID, -1, tableName);
+    public boolean dropTable(long schemaId, String tableName) {
+        return dropTable(TenantConstant.TENANT_ID, schemaId, tableName);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class LocalMetaService implements MetaService {
     public long truncateTable(@NonNull String tableName, long tableEntityId) {
         TableDefinition tableDefinition = tableDefinitions.get(getTableId(tableName));
         if (tableDefinition != null) {
-            dropTable(tableName);
+            dropTable(id.seq, tableName);
         }
         createTables(tableDefinition, Collections.emptyList());
         return 0;

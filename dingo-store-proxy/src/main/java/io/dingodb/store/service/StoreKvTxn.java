@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.dingodb.store.proxy.service.StoreService.RETRY;
+
 @Slf4j
 public class StoreKvTxn extends CommitBase implements io.dingodb.store.api.transaction.StoreKvTxn {
     private final CommonId tableId;
@@ -39,7 +41,7 @@ public class StoreKvTxn extends CommitBase implements io.dingodb.store.api.trans
     private final CommonId regionId;
     public StoreKvTxn(CommonId tableId, CommonId regionId) {
         super(
-            Services.storeRegionService(coordinators, regionId.seq, 60),
+            Services.storeRegionService(coordinators, regionId.seq, RETRY),
             new CommonId(CommonId.CommonType.PARTITION, tableId.seq, regionId.domain)
         );
         this.tableId = tableId;

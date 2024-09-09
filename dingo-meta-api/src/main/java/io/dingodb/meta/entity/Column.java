@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
+import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
@@ -40,6 +42,11 @@ import lombok.ToString;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -143,6 +150,45 @@ public class Column {
             return DateTimeUtils.parseTimestamp(defaultValueExpr);
         } else if (type instanceof TimeType) {
             return DateTimeUtils.parseTime(defaultValueExpr);
+        } else if (type instanceof ListType) {
+            if ("{}".equalsIgnoreCase(defaultValueExpr)) {
+                return new ArrayList<>();
+            }
+            List<String> list = Arrays.asList(defaultValueExpr.split(","));
+            return list.stream().map(item -> {
+                switch (elementTypeName) {
+                    case "FLOAT":
+                        return Float.parseFloat(item);
+                    case "DOUBLE":
+                        return Double.parseDouble(item);
+                    case "INTEGER":
+                        return Integer.parseInt(item);
+                    case "LONG":
+                        return Long.parseLong(item);
+                    case "BOOLEAN":
+                        return Boolean.parseBoolean(item);
+                    case "DATE":
+                        return DateTimeUtils.parseDate(item);
+                    case "DECIMAL":
+                        return new BigDecimal(item);
+                    case "TIMESTAMP":
+                        return DateTimeUtils.parseTimestamp(item);
+                    case "TIME":
+                        return DateTimeUtils.parseTime(item);
+                    default:
+                        return item;
+                }
+            }).collect(Collectors.toList());
+        } else if (type instanceof MapType) {
+            if ("{}".equalsIgnoreCase(defaultValueExpr)) {
+                return new LinkedHashMap<>();
+            }
+            List<String> list = Arrays.asList(defaultValueExpr.split(","));
+            LinkedHashMap<Object, Object> mapVal = new LinkedHashMap<>();
+            for (int j = 0; j < list.size(); j += 2) {
+                mapVal.put(list.get(j), list.get(j + 1));
+            }
+            return mapVal;
         }
         return defaultValueExpr;
     }

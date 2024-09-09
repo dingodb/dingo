@@ -65,6 +65,8 @@ import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
+import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -132,8 +134,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1598,6 +1598,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     newColumn.setDefaultValue("0000-00-00 00:00:00");
                 } else if (type instanceof TimeType) {
                     newColumn.setDefaultValue("00:00:00");
+                } else if (type instanceof ListType || type instanceof MapType) {
+                    newColumn.setDefaultValue("{}");
                 }
             }
         } else {
@@ -1632,6 +1634,56 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     DateTimeUtils.parseTimestamp(defaultVal);
                 } else if (type instanceof TimeType) {
                     DateTimeUtils.parseTime(defaultVal);
+                } else if (type instanceof ListType) {
+                    if (defaultVal.toUpperCase().startsWith("ARRAY[") && defaultVal.endsWith("]")) {
+                        defaultVal = defaultVal.substring(6, defaultVal.length() - 1);
+                        List<String> listVal = Arrays.asList(defaultVal.split(","));
+                        listVal.forEach(item -> {
+                            switch (newColumn.getElementType()) {
+                                case "FLOAT":
+                                    Float.parseFloat(item);
+                                    break;
+                                case "DOUBLE":
+                                    Double.parseDouble(item);
+                                    break;
+                                case "INTEGER":
+                                    Integer.parseInt(item);
+                                    break;
+                                case "LONG":
+                                    Long.parseLong(item);
+                                    break;
+                                case "BOOLEAN":
+                                    Boolean.parseBoolean(item);
+                                    break;
+                                case "DATE":
+                                    DateTimeUtils.parseDate(item);
+                                    break;
+                                case "DECIMAL":
+                                    new BigDecimal(item);
+                                    break;
+                                case "TIMESTAMP":
+                                    DateTimeUtils.parseTimestamp(item);
+                                    break;
+                                case "TIME":
+                                    DateTimeUtils.parseTime(item);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
+                        newColumn.setDefaultValue(defaultVal);
+                    } else {
+                        throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+                    }
+                } else if (type instanceof MapType) {
+                    if (defaultVal.toUpperCase().startsWith("MAP[") && defaultVal.endsWith("]")) {
+                        defaultVal = defaultVal.substring(4, defaultVal.length() - 1);
+                        int itemSize = defaultVal.split(",").length;
+                        if (itemSize % 2 != 0) {
+                            throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+                        }
+                        newColumn.setDefaultValue(defaultVal);
+                    }
                 }
             } catch (Exception e) {
                 throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();

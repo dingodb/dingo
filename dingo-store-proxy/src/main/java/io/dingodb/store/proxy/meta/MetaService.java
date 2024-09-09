@@ -426,7 +426,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 }
             }
         } catch (Exception e) {
-            dropTable(tableDefinition.getName());
+            LogUtils.error(log, e.getMessage(), e);
             throw e;
         }
         return tableEntityId;
@@ -738,7 +738,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .partId(partition.getId().getEntityId())
                 .tenantId(table.getTenantId())
                 .build();
-            coordinatorService.createRegion(tso(), request);
+            try {
+                coordinatorService.createRegion(tso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create region error,regionId:" + id.getEntityId() + partition.getRange(), e);
+                throw e;
+            }
         }
         long incrementColCount = tableDefinition.getColumns()
             .stream()
@@ -821,7 +826,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .indexId(withId.getTableId().getEntityId())
                         .indexParameter(indexParameter)
                         .build();
-                    coordinatorService.createRegion(tso(), request);
+                    try {
+                        coordinatorService.createRegion(tso(), request);
+                    } catch (Exception e) {
+                        LogUtils.error(log, "create region error,regionId:" + id.getEntityId() + partition.getRange(), e);
+                        throw e;
+                    }
                 }
             }
         }
@@ -854,8 +864,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public boolean dropTable(String tableName) {
-        return dropTable(TenantConstant.TENANT_ID, -1, tableName);
+    public boolean dropTable(long schemaId, String tableName) {
+        return dropTable(TenantConstant.TENANT_ID, schemaId, tableName);
     }
 
     @Override
