@@ -32,6 +32,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.common.vector.TxnVectorSearchResponse;
 import io.dingodb.common.vector.VectorSearchResponse;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -102,7 +103,6 @@ import static java.util.function.Function.identity;
 @Slf4j
 public final class StoreService implements io.dingodb.store.api.StoreService {
     public static final StoreService DEFAULT_INSTANCE = new StoreService();
-    public static final int RETRY = 60;
 
     @AutoService(io.dingodb.store.api.StoreServiceProvider.class)
     public static final class StoreServiceProvider implements io.dingodb.store.api.StoreServiceProvider {
@@ -170,29 +170,29 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
     }
 
     public io.dingodb.sdk.service.IndexService indexService(CommonId tableId, CommonId regionId) {
-        return Services.indexRegionService(coordinators, regionId.seq, RETRY);
+        return Services.indexRegionService(coordinators, regionId.seq, TransactionUtil.STORE_RETRY);
     }
 
     public io.dingodb.sdk.service.IndexService indexService(
         io.dingodb.sdk.service.entity.meta.DingoCommonId tableId,
         io.dingodb.sdk.service.entity.meta.DingoCommonId regionId
     ) {
-        return Services.indexRegionService(coordinators, regionId.getEntityId(), RETRY);
+        return Services.indexRegionService(coordinators, regionId.getEntityId(), TransactionUtil.STORE_RETRY);
     }
 
     public DocumentService documentService(CommonId tableId, CommonId regionId) {
-        return Services.documentRegionService(coordinators, regionId.seq, RETRY);
+        return Services.documentRegionService(coordinators, regionId.seq, TransactionUtil.STORE_RETRY);
     }
 
     public io.dingodb.sdk.service.StoreService storeService(CommonId tableId, CommonId regionId) {
-        return Services.storeRegionService(coordinators, regionId.seq, RETRY);
+        return Services.storeRegionService(coordinators, regionId.seq, TransactionUtil.STORE_RETRY);
     }
 
     public io.dingodb.sdk.service.StoreService storeService(
         io.dingodb.sdk.service.entity.meta.DingoCommonId tableId,
         io.dingodb.sdk.service.entity.meta.DingoCommonId regionId
     ) {
-        return Services.storeRegionService(coordinators, regionId.getEntityId(), RETRY);
+        return Services.storeRegionService(coordinators, regionId.getEntityId(), TransactionUtil.STORE_RETRY);
     }
 
     class StoreInstance implements io.dingodb.store.api.StoreInstance {
@@ -519,7 +519,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 channelProvider,
                 MAPPER.rangeTo(partitionId.seq, range),
                 null,
-                RETRY
+                TransactionUtil.STORE_RETRY
             ), MAPPER::kvFrom);
         }
 
@@ -533,7 +533,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 channelProvider,
                 MAPPER.rangeTo(partitionId.seq, range),
                 MAPPER.coprocessorTo(coprocessor),
-                RETRY
+                TransactionUtil.STORE_RETRY
             ), MAPPER::kvFrom);
         }
 
@@ -547,7 +547,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 channelProvider,
                 MAPPER.rangeTo(partitionId.seq, range),
                 MAPPER.coprocessorTo(coprocessor),
-                RETRY
+                TransactionUtil.STORE_RETRY
             ), MAPPER::kvFrom);
         }
 

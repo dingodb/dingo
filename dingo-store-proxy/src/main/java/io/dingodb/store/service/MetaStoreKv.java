@@ -18,6 +18,7 @@ package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -44,8 +45,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import static io.dingodb.store.proxy.service.StoreService.RETRY;
 
 @Slf4j
 public class MetaStoreKv {
@@ -87,13 +86,13 @@ public class MetaStoreKv {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
             long metaPartId = checkMetaRegion();
             metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, RETRY);
+            storeService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
             metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         } else {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 3);
             long metaPartId = checkMetaRegion();
             metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, RETRY);
+            storeService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
             metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         }
     }

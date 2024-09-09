@@ -123,31 +123,19 @@ public class TransactionStoreInstance {
     }
 
     public void heartbeat(TxnPreWrite txnPreWrite) {
-        try {
-            TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
-                .primaryLock(txnPreWrite.getPrimaryLock())
-                .startTs(txnPreWrite.getStartTs())
-                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(80))
-                .build();
-            if (indexService != null) {
-                indexService.txnHeartBeat(request.getStartTs(), request);
-            } else if (documentService != null) {
-                documentService.txnHeartBeat(request.getStartTs(), request);
-            } else {
-                storeService.txnHeartBeat(request.getStartTs(), request);
-            }
-        } catch (Exception e) {
-            LogUtils.error(log, "txn heartbeat, startTs:{}, error:{}", txnPreWrite.getStartTs(), e);
-            throw e;
-        }
+        heartBeat(txnPreWrite.getStartTs(), txnPreWrite.getPrimaryLock(), false);
     }
 
     public void heartbeat(TxnPessimisticLock txnPessimisticLock) {
+        heartBeat(txnPessimisticLock.getStartTs(), txnPessimisticLock.getPrimaryLock(), true);
+    }
+
+    public void heartBeat(long startTs, byte[] primaryLock, boolean pessimistic) {
         try {
             TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
-                .primaryLock(txnPessimisticLock.getPrimaryLock())
-                .startTs(txnPessimisticLock.getStartTs())
-                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(60))
+                .primaryLock(primaryLock)
+                .startTs(startTs)
+                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(TransactionUtil.heartBeatLockTtl))
                 .build();
             if (indexService != null) {
                 indexService.txnHeartBeat(request.getStartTs(), request);
@@ -157,7 +145,7 @@ public class TransactionStoreInstance {
                 storeService.txnHeartBeat(request.getStartTs(), request);
             }
         } catch (Exception e) {
-            LogUtils.error(log, "pessimistic txn heartbeat, startTs:{}, error:{}", txnPessimisticLock.getStartTs(), e);
+            LogUtils.error(log, "txn heartbeat, pessimistic:{}, startTs:{}, error:{}", pessimistic, startTs, e);
             throw e;
         }
     }
