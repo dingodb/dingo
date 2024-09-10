@@ -762,7 +762,7 @@ public class DingoMeta extends MetaImpl {
                                        RuntimeException exception) throws NoSuchStatementException {
         RuntimeException lockWaitException = exception;
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
-        LogUtils.info(log, "resolveLockWait retry:{}", retry);
+        LogUtils.info(log, "resolveLockWait retry:{}, startTs:{}", retry, transaction.getStartTs());
         while (retry-- > 0 && transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
             // rollback pessimistic lock

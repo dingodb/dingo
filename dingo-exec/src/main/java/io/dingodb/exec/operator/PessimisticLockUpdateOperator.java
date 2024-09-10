@@ -306,6 +306,20 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         kvKeyValue.getValue()
                     );
                     localStore.put(extraKeyValue);
+                } else {
+                    // extraKeyValue
+                    KeyValue extraKeyValue = new KeyValue(
+                        ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            key,
+                            Op.NONE.getCode(),
+                            len,
+                            jobIdByte,
+                            tableIdByte,
+                            partIdByte),
+                        null
+                    );
+                    localStore.put(extraKeyValue);
                 }
                 if (context.getIndexId() != null) {
                     LogUtils.info(log, "{}, txnPessimisticLock :{} , index is not null", txnId, Arrays.toString(key));

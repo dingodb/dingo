@@ -26,44 +26,38 @@ public final class LogUtils {
     private LogUtils() {}
 
     public static void info(Logger logger, String message, Object... args) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isInfoEnabled()) {
-            logger.info(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            logger.info(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message), args);
         }
     }
 
     public static void debug(Logger logger, String message, Object... args) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isDebugEnabled()) {
-            logger.debug(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            logger.debug(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message), args);
         }
     }
 
     public static void trace(Logger logger, String message, Object... args) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isTraceEnabled()) {
-            logger.trace(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            logger.trace(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message), args);
         }
     }
 
     public static void warn(Logger logger, String message, Object... args) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isWarnEnabled()) {
-            logger.warn(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            logger.warn(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message), args);
         }
     }
 
     public static void error(Logger logger, String message, Object... args) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isErrorEnabled()) {
-            logger.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            logger.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message), args);
         }
     }
 
     public static void error(Logger logger, String message, Throwable error) {
-        message = "Tenant id: " + TenantConstant.TENANT_ID + ", " + message;
         if (logger.isErrorEnabled()) {
-            logger.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — " + message, error);
+            logger.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — " + LogMessageProcess.process(message), error);
         }
     }
 }

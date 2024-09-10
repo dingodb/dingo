@@ -23,37 +23,37 @@ public class AuditLogUtils {
     private AuditLogUtils() {}
     public static void info(boolean ansible, String message, Object... args) {
         if (ansible && log.isInfoEnabled()) {
-            log.info(message, args);
+            log.info(LogMessageProcess.process(message), args);
         }
     }
 
     public static void debug(boolean ansible, String message, Object... args) {
         if (ansible && log.isDebugEnabled()) {
-            log.debug(message, args);
+            log.debug(LogMessageProcess.process(message), args);
         }
     }
 
     public static void trace(boolean ansible, String message, Object... args) {
         if (ansible && log.isTraceEnabled()) {
-            log.trace(message, args);
+            log.trace(LogMessageProcess.process(message), args);
         }
     }
 
     public static void warn(boolean ansible, String message, Object... args) {
         if (ansible && log.isWarnEnabled()) {
-            log.warn(message, args);
+            log.warn(LogMessageProcess.process(message), args);
         }
     }
 
     public static void error(boolean ansible, String message, Throwable error) {
         if (ansible && log.isErrorEnabled()) {
-            log.error(message, error);
+            log.error(LogMessageProcess.process(message), error);
         }
     }
 
     public static void error(boolean ansible, String message, Object... args) {
         if (ansible && log.isErrorEnabled()) {
-            log.error(message, args);
+            log.error(LogMessageProcess.process(message), args);
         }
     }
 
