@@ -73,8 +73,11 @@ public final class DdlServer {
                 }
                 try {
                     long ver = DdlJobEventSource.ddlJobEventSource.take(verDelQueue);
-                    io.dingodb.meta.InfoSchemaService.root().delSchemaDiff(ver);
-                    DingoMetrics.counter("delSchemaDiff").inc();
+                    if (ver > 220) {
+                        ver = ver - 110;
+                        io.dingodb.meta.InfoSchemaService.root().delSchemaDiff(ver);
+                        DingoMetrics.counter("delSchemaDiff").inc();
+                    }
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage());
                 }

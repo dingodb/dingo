@@ -83,7 +83,9 @@ public class FinWithProfiles implements Fin {
     }
 
     public synchronized void addProfileList(List<Profile> profileList) {
-        profile.getChildren().addAll(profileList);
+        if (profileList != null) {
+            profile.getChildren().addAll(profileList);
+        }
     }
 
     public synchronized void addProfile(Profile profile) {
