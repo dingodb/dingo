@@ -26,37 +26,67 @@ public final class SqlLogUtils {
     private SqlLogUtils() {}
     public static void info(String message, Object... args) {
         if (log.isInfoEnabled()) {
-            log.info(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            log.info(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                args
+            );
         }
     }
 
     public static void debug(String message, Object... args) {
         if (log.isDebugEnabled()) {
-            log.debug(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            log.debug(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                args
+            );
         }
     }
 
     public static void trace(String message, Object... args) {
         if (log.isTraceEnabled()) {
-            log.trace(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            log.trace(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                args
+            );
         }
     }
 
     public static void warn(String message, Object... args) {
         if (log.isWarnEnabled()) {
-            log.warn(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            log.warn(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                args
+            );
         }
     }
 
     public static void error(String message, Object... args) {
         if (log.isErrorEnabled()) {
-            log.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, args);
+            log.error(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                args
+            );
         }
     }
 
     public static void error(String message, Throwable error) {
         if (log.isErrorEnabled()) {
-            log.error(StackTraces.stack(CURRENT_STACK + 1, StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + message, error);
+            log.error(
+                StackTraces.stack(
+                    CURRENT_STACK + 1,
+                    StackTraces.MAX_PACKAGE_NAME_LEN) + " — "  + LogMessageProcess.process(message),
+                error
+            );
         }
     }
 }

@@ -246,6 +246,20 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                         kvKeyValue.getValue()
                     );
                     localStore.put(extraKeyValue);
+                } else {
+                    // extraKeyValue
+                    KeyValue extraKeyValue = new KeyValue(
+                        ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            key,
+                            Op.NONE.getCode(),
+                            len,
+                            jobIdByte,
+                            tableIdByte,
+                            partIdByte),
+                        null
+                    );
+                    localStore.put(extraKeyValue);
                 }
                 if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                     byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);

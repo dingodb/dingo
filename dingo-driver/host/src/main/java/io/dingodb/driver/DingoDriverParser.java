@@ -645,6 +645,7 @@ public final class DingoDriverParser extends DingoParser {
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().tso();
         if (transaction.isPessimistic() && transaction.getPrimaryKeyLock() == null) {
+            LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
                 "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable")));
@@ -714,6 +715,7 @@ public final class DingoDriverParser extends DingoParser {
                 transaction.rollBackPessimisticPrimaryLock(jobManager);
                 throw ExceptionUtils.toRuntime(throwable);
             } finally {
+                LogUtils.info(log, "runPessimisticPrimaryKeyJob end. startTs:{}", transaction.getStartTs());
                 jobManager.removeJob(job.getJobId());
             }
         }

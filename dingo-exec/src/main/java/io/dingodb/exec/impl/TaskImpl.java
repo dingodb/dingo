@@ -254,8 +254,8 @@ public final class TaskImpl implements Task {
                     }
                     operator.fin(0, null, vertex);
                 } catch (RuntimeException e) {
-                    LogUtils.error(log, "Run Task:{} catch operator:{} run Exception:{}",
-                        getId().toString(), vertex.getId(), e, e);
+                    LogUtils.error(log, "Run Task:" + getId().toString()
+                            + ",catch operator:" + vertex.getId() + " run Exception: ", e);
                     status.compareAndSet(Status.RUNNING, Status.STOPPED);
                     TaskStatus taskStatus = new TaskStatus();
                     taskStatus.setStatus(false);

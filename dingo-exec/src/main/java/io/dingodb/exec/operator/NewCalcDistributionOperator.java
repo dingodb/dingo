@@ -122,7 +122,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
                                 context1.setDistribution(distribution);
                                 return vertex.getSoleEdge().transformToNext(context1, null);
                             };
-                            return Executors.submit("newCalc", callable);
+                            return Executors.submit("operator-" + vertex.getTask().getJobId() + "-" + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId(), callable);
                         }).toArray(CompletableFuture[]::new));
                     try {
                         allFutures.get();
@@ -130,6 +130,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
                         if (e.getMessage().contains("RegionSplitException")) {
                             throw new RegionSplitException("io.dingodb.sdk.common.DingoClientException$InvalidRouteTableException");
                         } else if (e.getCause() instanceof LockWaitException) {
+                            LogUtils.error(log, "jobId:" + vertex.getTask().getJobId() + ", taskId:" + vertex.getTask().getId() + ", vertexId:" + vertex.getId() + ", error:", e);
                             throw new LockWaitException("Lock wait");
                         } else {
                             throw new RuntimeException(e);
