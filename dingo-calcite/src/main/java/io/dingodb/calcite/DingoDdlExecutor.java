@@ -134,6 +134,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -266,10 +267,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         List<String> originKeyList = new ArrayList<>(columns);
 
         int keySize = columns.size();
-        tableDefinition.getKeyColumns().stream()
+        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+        AtomicInteger num = new AtomicInteger(0);
+        keyColumns.stream()
             .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
             .map(ColumnDefinition::getName)
             .map(String::toUpperCase)
+            .peek(__ -> { if (columns.contains(__)) num.getAndIncrement(); })
             .filter(__ -> !columns.contains(__))
             .forEach(columns::add);
 
@@ -309,8 +313,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
             properties.put("indexType", "document");
-            if (columns.size() <= 2) {
-                throw new RuntimeException("Index column includes at least two columns, The first one must be text_id");
+            String errorMsg = "Index column includes at least two columns, The first one must be text_id";
+            if (num.get() > 0) {
+                if (columns.size() < 2) {
+                    throw new RuntimeException(errorMsg);
+                }
+            } else {
+                if (columns.size() <= 2) {
+                    throw new RuntimeException(errorMsg);
+                }
             }
             type = 3;
             int primary = 0;
@@ -720,7 +731,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
-
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         Long tenantId = tenantService.getTenantId(tenant.name);
         if (tenant.purgeResources) {
@@ -742,7 +752,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 if (schemas.contains(entry.getKey())) {
                     continue;
                 }
-                throw new RuntimeException("Tenants cannot be deleted, tables need to be cleared first");
+                if (!entry.getValue().getTables().isEmpty()) {
+                    throw new RuntimeException("Tenants cannot be deleted, tables need to be cleared first");
+                }
             }
         }
         tenantService.dropTenant(tenant.name);

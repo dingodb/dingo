@@ -408,8 +408,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         CreateRegionRequest request = CreateRegionRequest
                             .builder()
                             .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
-                            .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR ?
-                                RegionType.STORE_REGION : RegionType.INDEX_REGION)
+                            .regionType(mapping(definition.getIndexParameter().getIndexType()))
                             .replicaNum(withId.getTableDefinition().getReplica())
                             .range(partition.getRange())
                             .rawEngine(getRawEngine(definition.getEngine()))
@@ -430,6 +429,19 @@ public class MetaService implements io.dingodb.meta.MetaService {
             throw e;
         }
         return tableEntityId;
+    }
+
+    private static RegionType mapping(IndexType indexType) {
+        switch (indexType) {
+            case INDEX_TYPE_VECTOR:
+                return RegionType.INDEX_REGION;
+            case INDEX_TYPE_SCALAR:
+                return RegionType.STORE_REGION;
+            case INDEX_TYPE_DOCUMENT:
+                return RegionType.DOCUMENT_REGION;
+            default:
+                throw new IllegalStateException("Unexpected value: " + indexType);
+        }
     }
 
     @Override

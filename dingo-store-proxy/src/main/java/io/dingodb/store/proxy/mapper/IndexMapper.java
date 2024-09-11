@@ -175,7 +175,7 @@ public interface IndexMapper {
                     .jsonParameter(json)
                     .build();
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("text_fields format error");
             }
             indexDefinition.setIndexParameter(
                 IndexParameter.builder()
