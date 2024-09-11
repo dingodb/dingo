@@ -99,6 +99,15 @@ public final class ScopeVariables {
         return runDdl.equalsIgnoreCase("on");
     }
 
+    /**
+     * enable txnScan via stream or not.
+     * @return
+     */
+    public static boolean txnScanByStream() {
+        String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
+        return txnScanByStream.equalsIgnoreCase("on");
+    }
+
     public static long getDdlWaitTimeout() {
         try {
             String timeoutStr = executorProp.getOrDefault("ddl_timeout", "180000").toString();
