@@ -18,6 +18,7 @@ package io.dingodb.exec.fin;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Vertex;
@@ -85,6 +86,8 @@ public class FinWithProfiles implements Fin {
     public synchronized void addProfileList(List<Profile> profileList) {
         if (profileList != null) {
             profile.getChildren().addAll(profileList);
+        } else {
+            LogUtils.error(log, "addProfileList is null");
         }
     }
 

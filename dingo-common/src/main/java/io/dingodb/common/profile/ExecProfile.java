@@ -17,12 +17,16 @@
 package io.dingodb.common.profile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.sql.Time;
 import java.util.Base64;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -50,6 +54,27 @@ public class ExecProfile extends Profile {
             dag.append(profile.dumpTree(profile, prefix1));
         }
         return dag.toString();
+    }
+
+    public void traceTree(byte[] prefix, List<Object[]> rowList) {
+        String prefixStr;
+        try {
+            prefixStr = new String(prefix, "GBK");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        Object[] val = new Object[3];
+        val[0] = prefixStr + "runStmt";
+        val[1] = DateTimeUtils.timeFormat(new Time(start));
+        val[2] = String.valueOf(duration);
+        rowList.add(val);
+
+        if (profile != null) {
+            byte[] prefix1 = new byte[prefix.length + 2];
+            System.arraycopy(space, 0, prefix1, 0, 2);
+            System.arraycopy(prefix, 0, prefix1, 2, prefix.length);
+            profile.traceTree(profile, prefix1, rowList);
+        }
     }
 
     public String binaryPlanOp() {

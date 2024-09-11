@@ -145,9 +145,7 @@ public class LogicalDingoTableScan extends TableScan {
                     if (index >= fieldCount) {
                         continue;
                     }
-                    //if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
-                        mappingList.add(index);
-                    //}
+                    mappingList.add(index);
                 }
                 this.selection = TupleMapping.of(mappingList);
             }
@@ -155,7 +153,6 @@ public class LogicalDingoTableScan extends TableScan {
             List<Integer> mapping = dingoTable.getTable()
                 .getColumns()
                 .stream()
-                //.filter(col -> col.getState() == 1)
                 .map(col -> dingoTable.getTable().getColumns().indexOf(col))
                 .collect(Collectors.toList());
             this.selection = TupleMapping.of(mapping);

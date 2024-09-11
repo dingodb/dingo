@@ -45,6 +45,7 @@ import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.impl.JobIteratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -73,6 +74,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -296,7 +298,6 @@ public class DingoMeta extends MetaImpl {
         @NonNull PrepareCallback callback
     ) {
         DingoConnection dingoConnection = (DingoConnection) connection;
-        DingoDriverParser parser = new DingoDriverParser(dingoConnection);
         long jobSeqId = TsoService.getDefault().tso();
         String stmtId = "Stmt_" + sh + "_" + jobSeqId;
         MdcUtils.setStmtId(stmtId);
@@ -304,6 +305,7 @@ public class DingoMeta extends MetaImpl {
         try {
             statement = (DingoStatement) dingoConnection.getStatement(sh);
             statement.initSqlProfile();
+            DingoDriverParser parser = new DingoDriverParser(dingoConnection);
             statement.removeJob(jobManager);
             Signature signature = parser.parseQuery(jobManager, jobSeqId, sql, false);
             sql = signature.sql;
@@ -568,19 +570,29 @@ public class DingoMeta extends MetaImpl {
                     iterator = createIterator(statement);
                     resultSet.setIterator(iterator);
                 }
-                List<ColumnMetaData> columnMetaDataList = new ArrayList<>();
+                List<ColumnMetaData> columnMetaDataList;
+                boolean trace = false;
                 if (signature instanceof DingoSignature) {
                     DingoSignature dingoSignature = (DingoSignature) signature;
                     columnMetaDataList = dingoSignature.allColumnMetaDataList;
+                    trace = dingoSignature.trace;
                 } else {
                     columnMetaDataList = signature.columns;
                 }
-                DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
-                AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
-                for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
-                    rows.add(dingoType.convertTo(iterator.next(), converter));
+                if (!trace) {
+                    DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
+                    AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
+                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                        rows.add(dingoType.convertTo(iterator.next(), converter));
+                    }
+                    sqlProfile = getProfile(iterator, statement);
+                } else {
+                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                        iterator.next();
+                    }
+                    sqlProfile = getProfile(iterator, statement);
+                    getTraceValues(sqlProfile, rows);
                 }
-                sqlProfile = getProfile(iterator, statement);
             } catch (Throwable e) {
                 LogUtils.error(log, "run job exception:{}", e, e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
@@ -1346,5 +1358,12 @@ public class DingoMeta extends MetaImpl {
         String user = dingoConnection.getContext().getOption("user");
         String host = dingoConnection.getContext().getOption("host");
         sqlProfile.setSimpleUser(user + "@" + host);
+    }
+
+    public static void getTraceValues(SqlProfile sqlProfile, List<Object[]> rowList) {
+        long duration = System.currentTimeMillis() - sqlProfile.getStart();
+        String startTs = DateTimeUtils.timeFormat(new Time(sqlProfile.getStart()));
+        rowList.add(new Object[] {"trace", startTs, String.valueOf(duration)});
+        sqlProfile.traceTree(rowList);
     }
 }

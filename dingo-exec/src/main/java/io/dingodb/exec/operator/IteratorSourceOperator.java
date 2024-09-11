@@ -32,13 +32,8 @@ import java.util.Iterator;
 public abstract class IteratorSourceOperator extends SourceOperator {
     @Override
     public boolean push(Context context, Vertex vertex) {
-        SourceParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("iteratorSource");
-        profile.start();
         Iterator<Object[]> iterator = createIterator(vertex);
-        long tmp = System.currentTimeMillis();
         while (iterator.hasNext()) {
-            profile.time(tmp);
             Object[] tuple = iterator.next();
             if (tuple[0] instanceof RangeDistribution) {
                 context.setDistribution((RangeDistribution) tuple[0]);
@@ -51,11 +46,7 @@ public abstract class IteratorSourceOperator extends SourceOperator {
                     break;
                 }
             }
-            tmp = System.currentTimeMillis();
         }
-        profile.end();
-        LogUtils.debug(log, "IteratorSourceOperator push,  count: {}, cost: {}ms.", profile.getCount(),
-            profile.getDuration());
         return false;
     }
 

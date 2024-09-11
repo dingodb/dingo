@@ -48,6 +48,7 @@ public final class DingoSignature extends Meta.Signature {
     @Setter
     private List<String> fullyTableList;
     public List<ColumnMetaData> allColumnMetaDataList;
+    boolean trace;
 
     public DingoSignature(
         List<ColumnMetaData> columns,
@@ -59,7 +60,7 @@ public final class DingoSignature extends Meta.Signature {
         List<ColumnMetaData> allColumnMetaDataList
     ) {
         this(columns, sql, new ArrayList<>(), null, cursorFactory, statementType,
-            jobId, null, null, null, fullyTableList, allColumnMetaDataList);
+            jobId, null, null, null, fullyTableList, allColumnMetaDataList, false);
     }
 
     public DingoSignature(
@@ -74,7 +75,8 @@ public final class DingoSignature extends Meta.Signature {
         RelNode relNode,
         RelDataType parasType,
         List<String> fullyTableList,
-        List<ColumnMetaData> allColumnMetaDataList
+        List<ColumnMetaData> allColumnMetaDataList,
+        boolean trace
     ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.jobId = jobId;
@@ -83,5 +85,6 @@ public final class DingoSignature extends Meta.Signature {
         this.parasType = parasType;
         this.fullyTableList = fullyTableList;
         this.allColumnMetaDataList = allColumnMetaDataList;
+        this.trace = trace;
     }
 }

@@ -38,7 +38,6 @@ import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
-import io.dingodb.calcite.utils.RelNodeCache;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
@@ -66,7 +65,6 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -276,6 +274,7 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         syntacticSugar(sqlNode);
+        boolean trace = trace(sqlNode);
         planProfile.endParse();
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
@@ -415,16 +414,25 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endValidator();
-        RelDataType jdbcType = makeStruct(typeFactory, type);
-        List<List<String>> originList = validator.getFieldOrigins(sqlNode);
-        final List<ColumnMetaData> columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
-        List<ColumnMetaData> enableColumnMetas = columns
-            .stream()
-            .filter(columnMetaData -> {
-                DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
-                return !columnMetaData1.hidden;
-            }
-        ).collect(Collectors.toList());
+
+        List<ColumnMetaData> columns;
+        List<ColumnMetaData> enableColumnMetas;
+        if (!trace) {
+            RelDataType jdbcType = makeStruct(typeFactory, type);
+            List<List<String>> originList = validator.getFieldOrigins(sqlNode);
+            columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
+            enableColumnMetas = columns
+                .stream()
+                .filter(columnMetaData -> {
+                        DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
+                        return !columnMetaData1.hidden;
+                    }
+                ).collect(Collectors.toList());
+        } else {
+            columns = getTraceColMeta(typeFactory);
+            enableColumnMetas = columns;
+        }
+
         long start = System.currentTimeMillis();
         final RelRoot relRoot = convert(sqlNode, false);
         RelNode relNode = optimize(relRoot.rel);
@@ -489,22 +497,7 @@ public final class DingoDriverParser extends DingoParser {
                     explain.getDetailLevel()
                 );
             } else {
-                ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-                ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
-                ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-                ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-                ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-                List<ColumnMetaData> metaDataList = new ArrayList<>();
-                metaDataList.add(colMeta1);
-                metaDataList.add(colMeta2);
-                metaDataList.add(colMeta3);
-                metaDataList.add(colMeta4);
-                metaDataList.add(colMeta5);
+                List<ColumnMetaData> metaDataList = getExplainColMeta(typeFactory);
                 return new ExplainSignature(metaDataList, sql, createParameterList(parasType),
                     null,
                     cursorFactory,
@@ -524,7 +517,8 @@ public final class DingoDriverParser extends DingoParser {
             relNode,
             parasType,
             planProfile.getTableList(),
-            columns
+            columns,
+            trace
         );
     }
 
@@ -679,7 +673,8 @@ public final class DingoDriverParser extends DingoParser {
             relNode,
             parasType,
             null,
-            columns
+            columns,
+            false
         );
     }
     private static void runPessimisticPrimaryKeyJob(
@@ -958,6 +953,47 @@ public final class DingoDriverParser extends DingoParser {
                 sqlNodes.add(i, new SqlBasicCall(call.getOperator(), nodes, call.getParserPosition()));
             }
         }
+    }
+
+    private static boolean trace(SqlNode sqlNode) {
+        if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+            return ((io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode).isTrace();
+        }
+        return false;
+    }
+
+    private static List<ColumnMetaData> getTraceColMeta(JavaTypeFactory typeFactory) {
+        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "operation",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "startTs",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta3 = metaData(typeFactory, 1, "duration",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        List<ColumnMetaData> metaDataList = new ArrayList<>();
+        metaDataList.add(colMeta1);
+        metaDataList.add(colMeta2);
+        metaDataList.add(colMeta3);
+        return metaDataList;
+    }
+
+    private static List<ColumnMetaData> getExplainColMeta(JavaTypeFactory typeFactory) {
+        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
+        ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        List<ColumnMetaData> metaDataList = new ArrayList<>();
+        metaDataList.add(colMeta1);
+        metaDataList.add(colMeta2);
+        metaDataList.add(colMeta3);
+        metaDataList.add(colMeta4);
+        metaDataList.add(colMeta5);
+        return metaDataList;
     }
 
 }

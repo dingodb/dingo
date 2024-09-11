@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
@@ -35,9 +37,19 @@ public final class CacheOpOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, Fin fin, @NonNull Vertex vertex) {
         final Edge edge = vertex.getSoleEdge();
-        CacheOp relOp = (CacheOp) ((RelOpParam) vertex.getParam()).getRelOp();
+        RelOpParam param = vertex.getParam();
+        Profile profile = param.getProfile();
+        if (profile == null) {
+            profile = param.getProfile("aggCache");
+        }
+        CacheOp relOp = (CacheOp) (param).getRelOp();
         synchronized (relOp) {
             RelOpUtils.forwardCacheOpResults(relOp, edge);
+            profile.end();
+            if (fin instanceof FinWithProfiles) {
+                FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                finWithProfiles.addProfile(profile);
+            }
             edge.fin(fin);
             relOp.clear();
         }
@@ -45,7 +57,9 @@ public final class CacheOpOperator extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
-        CacheOp relOp = (CacheOp) ((RelOpParam) vertex.getParam()).getRelOp();
+        RelOpParam param = vertex.getParam();
+        param.getProfile("aggCache");
+        CacheOp relOp = (CacheOp) (param).getRelOp();
         synchronized (relOp) {
             relOp.put(tuple);
         }

@@ -19,10 +19,12 @@ package io.dingodb.common.profile;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.util.ByteUtils;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,6 +93,46 @@ public class Profile {
             duration = end - start;
         }
         return duration;
+    }
+
+    public void traceTree(Profile profile, byte[] prefix, List<Object[]> rowList) {
+        String node;
+        try {
+            node = new String(prefix, "GBK");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        boolean skip = true;
+        if (!"base".equals(profile.type)
+            && !"source".equals(profile.type)
+            && !"root".equals(profile.type) && profile.getEnd() > 0 && profile.getStart() > 0
+        ) {
+            Object[] val = new Object[3];
+            val[0] = node + profile.type;
+            if (profile instanceof SourceProfile) {
+                SourceProfile sourceProfile = (SourceProfile) profile;
+                if (sourceProfile.regionId > 0) {
+                    val[0] = val[0] + ", regionId:" + sourceProfile.regionId
+                        + ",taskType:" + sourceProfile.getTaskType();
+                }
+            }
+            val[1] = DateTimeUtils.timeFormat(new Time(profile.start));
+            val[2] = String.valueOf(profile.getDuration());
+            rowList.add(val);
+            skip = false;
+        }
+        for (Profile child : profile.children) {
+            if (child != null) {
+                if (skip) {
+                    traceTree(child, prefix, rowList);
+                } else {
+                    byte[] prefix1 = new byte[prefix.length + 2];
+                    System.arraycopy(space, 0, prefix1, 0, 2);
+                    System.arraycopy(prefix, 0, prefix1, 2, prefix.length);
+                    traceTree(child, prefix1, rowList);
+                }
+            }
+        }
     }
 
     public String dumpTree(Profile profile, byte[] prefix) {

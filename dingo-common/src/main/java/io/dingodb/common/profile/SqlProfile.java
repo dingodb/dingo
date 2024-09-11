@@ -16,10 +16,13 @@
 
 package io.dingodb.common.profile;
 
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
+import java.sql.Time;
+import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -79,6 +82,34 @@ public class SqlProfile extends Profile {
             schema = "null";
         }
         return simpleUser + ">" + type + schema + ":" + sql;
+    }
+
+    public List<Object[]> traceTree(List<Object[]> rowList) {
+        String termStr;
+        byte[] prefix = new byte[terminated.length + 2];
+        System.arraycopy(space, 0, prefix, 0, 2);
+        System.arraycopy(terminated, 0, prefix, 2, terminated.length);
+        try {
+            termStr = new String(prefix, "GBK");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        long planEndTime = 0;
+        if (planProfile != null) {
+            planEndTime = planProfile.end;
+            planProfile.traceTree(prefix, rowList);
+        }
+        if (execProfile != null) {
+            if (planEndTime > 0) {
+                Object[] val = new Object[3];
+                val[0] = termStr + "schedule job";
+                val[1] = DateTimeUtils.timeFormat(new Time(execProfile.getStart()));
+                val[2] = String.valueOf(execProfile.start - planEndTime);
+                rowList.add(val);
+            }
+            execProfile.traceTree(prefix, rowList);
+        }
+        return rowList;
     }
 
     public String dumpTree() {

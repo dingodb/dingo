@@ -506,10 +506,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         @NonNull TableDefinition tableDefinition,
         @NonNull List<IndexDefinition> indexTableDefinitions) {
         try {
+            LogUtils.info(log, "rollback create table:{}", tableDefinition.getName());
             CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
             Table table = schemaService.getTableDef(id.getEntityId(), tableDefinition.getName());
             if (table == null) {
+                LogUtils.info(log, "rollback create table:{}, resource is null", tableDefinition.getName());
                 return;
             }
 
@@ -521,6 +523,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
                 }
             });
+            infoSchemaService.dropTable(table.getTableId().domain, table.tableId.seq);
             List<IndexTable> indexes = table.getIndexes();
             if (indexes == null || indexes.isEmpty()) {
                 return;
@@ -538,7 +541,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
             }
 
             List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
-            infoSchemaService.dropTable(table.getTableId().domain, table.tableId.seq);
             indexIds.forEach(indexId -> infoSchemaService.dropIndex(indexId.domain, indexId.seq));
         } catch (Exception e) {
             log.error(e.getMessage(), e);

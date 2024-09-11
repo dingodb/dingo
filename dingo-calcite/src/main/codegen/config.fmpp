@@ -175,6 +175,7 @@ data: {
       "TERMINATED"
       "THAN"
       "TTL"
+      "TRACE"
       "UNLOCK"
       "USE"
       "VARIABLES"
@@ -261,6 +262,7 @@ data: {
     ]
 
     statementParserMethods: [
+        "SqlTraceSelect"
         "SqlDescTable"
         "SqlTruncate"
         "SqlGrant"
