@@ -1380,6 +1380,74 @@ SqlNode SqlSelect() :
     }
 }
 
+/**
+ * Parses a leaf SELECT expression without ORDER BY.
+ */
+SqlNode SqlTraceSelect() :
+{
+    final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
+    final SqlLiteral keyword;
+    final SqlNodeList keywordList;
+    final List<SqlNode> selectList = new ArrayList<SqlNode>();
+    final SqlNode fromClause;
+    final SqlNode where;
+    final SqlNodeList groupBy;
+    final SqlNode having;
+    final SqlNodeList windowDecls;
+    final List<SqlNode> hints = new ArrayList<SqlNode>();
+    final Span s;
+    boolean forUpdate = false;
+    ExportOptions exportOptions = null;
+}
+{
+    <TRACE> <SELECT> { s = span(); }
+    [
+        <NEXT_AUTO_INCREMENT> <FROM>
+        { return new SqlNextAutoIncrement(s.end(this), CompoundTableIdentifier()); }
+    ]
+
+    [ <HINT_BEG> AddHint(hints) ( <COMMA> AddHint(hints) )* <COMMENT_END> ]
+    SqlSelectKeywords(keywords)
+    (
+        <STREAM> {
+            keywords.add(SqlSelectKeyword.STREAM.symbol(getPos()));
+        }
+    )?
+    (
+        keyword = AllOrDistinct() { keywords.add(keyword); }
+    )?
+    {
+        keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
+    }
+    AddSelectItem(selectList)
+    ( <COMMA> AddSelectItem(selectList) )*
+    [ exportOptions = exportOptions() ]
+    (
+        <FROM> fromClause = FromClause()
+        ( where = Where() | { where = null; } )
+        ( groupBy = GroupBy() | { groupBy = null; } )
+        ( having = Having() | { having = null; } )
+        ( windowDecls = Window() | { windowDecls = null; } )
+        [ exportOptions = exportOptions() ]
+        [ <FOR> <UPDATE> { forUpdate=true; }]
+    |
+        E() {
+            fromClause = null;
+            where = null;
+            groupBy = null;
+            having = null;
+            windowDecls = null;
+        }
+    )
+    {
+        return new SqlSelect(s.end(this), keywordList,
+            new SqlNodeList(selectList, Span.of(selectList).pos()),
+            fromClause, where, groupBy, having, windowDecls, null, null, null,
+            new SqlNodeList(hints, getPos()),
+            exportOptions, true);
+    }
+}
+
 ExportOptions exportOptions(): {
     boolean export = false;
     String outfile = null;

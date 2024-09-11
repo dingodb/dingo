@@ -123,20 +123,23 @@ public class HashJoinOperator extends SoleOutOperator {
                     profile = param.getProfile("hashJoin");
                 }
                 profile.getChildren().add(param.profileLeft);
+                //if (param.getProfileRight() == null) {
+                //    waitRightFinFlag(param);
+                //}
                 profile.getChildren().add(param.profileRight);
+                profile.end();
                 finWithProfiles.setProfile(profile);
             }
             edge.fin(fin);
             // Reset
             param.clear();
         } else if (pin == 1) { //right
-            param.setRightFinFlag(true);
-            param.getFuture().complete(null);
-
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                 param.setProfileRight(finWithProfiles.getProfile());
             }
+            param.setRightFinFlag(true);
+            param.getFuture().complete(null);
         }
     }
 

@@ -22,7 +22,7 @@ import io.dingodb.common.store.KeyValue;
 import java.util.Iterator;
 
 public interface ProfileScanIterator extends Iterator<KeyValue> {
-    public Profile getRpcProfile();
+    Profile getRpcProfile();
 
-    public Profile getInitRpcProfile();
+    Profile getInitRpcProfile();
 }

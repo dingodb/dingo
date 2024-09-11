@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -64,11 +65,12 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
     @Override
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnScanWithRelOpParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("initIterator");
+        SourceProfile profile = param.getSourceProfile("scanBase");
         long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
+        profile.setRegionId(distribution.getId().seq);
         Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
         if (localIterator.hasNext()) { // Cannot push down
             Iterator<KeyValue> storeIterator = createStoreIterator(
@@ -77,7 +79,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
-            //param.setCoprocessor(null);
+            profile.setTaskType("executor");
             param.setNullCoprocessor(distribution.getId());
             profile.incrTime(start);
             if (storeIterator instanceof ProfileScanIterator) {
@@ -96,6 +98,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getTimeOut()
             );
             profile.incrTime(start);
+            profile.setTaskType("executor");
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
@@ -112,6 +115,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             coprocessor
         );
         param.setCoprocessor(distribution.getId());
+        profile.setTaskType("corp");
         profile.incrTime(start);
         if (storeIterator instanceof ProfileScanIterator) {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;

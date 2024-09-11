@@ -454,7 +454,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public Object getTable(long schemaId, String tableName, long tenantId) {
         List<Object> tableList = listTable(schemaId, tenantId);
         return tableList.stream().map(object -> (TableDefinitionWithId)object)
-            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(tableName))
+            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition()
+                .getName().equalsIgnoreCase(tableName))
             .findFirst().orElse(null);
     }
 

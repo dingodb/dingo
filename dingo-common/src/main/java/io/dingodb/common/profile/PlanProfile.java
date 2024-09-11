@@ -16,10 +16,12 @@
 
 package io.dingodb.common.profile;
 
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
+import java.sql.Time;
 import java.util.List;
 
 @Data
@@ -60,6 +62,46 @@ public class PlanProfile extends Profile {
     public void endLock() {
         this.lockTime = System.currentTimeMillis();
         this.lock = lockTime - optimizeTime;
+    }
+
+    public void traceTree(byte[] prefix, List<Object[]> rowList) {
+        String termStr;
+        try {
+            termStr = new String(prefix, "GBK");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        Object[] val = new Object[3];
+        val[0] = termStr + "compile";
+        val[1] = DateTimeUtils.timeFormat(new Time(start));
+        val[2] = String.valueOf(duration);
+        rowList.add(val);
+
+        byte[] prefix1 = new byte[prefix.length + 2];
+        System.arraycopy(space, 0, prefix1, 0, 2);
+        System.arraycopy(prefix, 0, prefix1, 2, prefix.length);
+        try {
+            termStr = new String(prefix1, "GBK");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        Object[] parseVal = new Object[3];
+        parseVal[0] = termStr + "parse";
+        parseVal[1] = DateTimeUtils.timeFormat(new Time(start));
+        parseVal[2] = String.valueOf(parse);
+        rowList.add(parseVal);
+
+        Object[] validateVal = new Object[3];
+        validateVal[0] = termStr + "validate";
+        validateVal[1] = DateTimeUtils.timeFormat(new Time(parseTime));
+        validateVal[2] = String.valueOf(validate);
+        rowList.add(validateVal);
+
+        Object[] optimizeVal = new Object[3];
+        optimizeVal[0] = termStr + "optimize";
+        optimizeVal[1] = DateTimeUtils.timeFormat(new Time(validateTime));
+        optimizeVal[2] = String.valueOf(optimize);
+        rowList.add(optimizeVal);
     }
 
     public String dumpTree(byte[] prefix) {

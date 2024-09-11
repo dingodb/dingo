@@ -31,6 +31,8 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
     @Setter
     ExportOptions exportOptions;
 
+    boolean trace;
+
     public SqlSelect(SqlParserPos pos,
                      @Nullable SqlNodeList keywordList,
                      SqlNodeList selectList,
@@ -61,6 +63,25 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      ExportOptions exportOptions) {
         super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
         this.exportOptions =  exportOptions;
+    }
+
+    public SqlSelect(SqlParserPos pos,
+                     @Nullable SqlNodeList keywordList,
+                     SqlNodeList selectList,
+                     @Nullable SqlNode from,
+                     @Nullable SqlNode where,
+                     @Nullable SqlNodeList groupBy,
+                     @Nullable SqlNode having,
+                     @Nullable SqlNodeList windowDecls,
+                     @Nullable SqlNodeList orderBy,
+                     @Nullable SqlNode offset,
+                     @Nullable SqlNode fetch,
+                     @Nullable SqlNodeList hints,
+                     ExportOptions exportOptions,
+                     boolean trace) {
+        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
+        this.exportOptions =  exportOptions;
+        this.trace = trace;
     }
 
     public String getSqlId() {

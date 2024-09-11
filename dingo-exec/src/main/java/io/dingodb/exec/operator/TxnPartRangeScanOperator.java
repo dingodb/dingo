@@ -22,6 +22,8 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
@@ -30,6 +32,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.ProfileScanIterator;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +56,7 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
     protected @NonNull Iterator<Object[]> createSourceIterator(Context context, Object[] tuple, Vertex vertex) {
         RangeDistribution distribution = context.getDistribution();
         TxnPartRangeScanParam param = vertex.getParam();
+        SourceProfile profile = param.getSourceProfile("txnPartRange");
         byte[] startKey = distribution.getStartKey();
         byte[] endKey = distribution.getEndKey();
         boolean includeStart = distribution.isWithStart();
@@ -80,12 +84,19 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
                 wrap(ByteUtils::mapping)::apply);
             kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut());
+            profile.setTaskType("executor");
         } else {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
                 wrap(ByteUtils::mapping)::apply);
             kvKVIterator = kvStore.txnScan(param.getScanTs(), new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut());
+            profile.setTaskType("corp");
         }
+        if (kvKVIterator instanceof ProfileScanIterator) {
+            ProfileScanIterator profileScanIterator = (ProfileScanIterator) kvKVIterator;
+            profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+        }
+        profile.setRegionId(partId.seq);
 
         KeyValue kv1 = getNextValue(localKVIterator);
         KeyValue kv2 = getNextValue(kvKVIterator);
@@ -149,7 +160,7 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
             }
             kv2 = getNextValue(kvKVIterator);
         }
-
+        profile.end();
         return Iterators.transform(mergedList.iterator(), wrap(param.getCodec()::decode)::apply);
     }
 

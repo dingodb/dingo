@@ -27,6 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
@@ -76,13 +77,32 @@ public class ScanParam extends AbstractParams {
     }
 
     public synchronized OperatorProfile getProfile(String type) {
+        OperatorProfile profile1 = new OperatorProfile(type);
+        profile1.start();
+        if (profileList == null) {
+            profileList = new ArrayList<>();
+            profileList.add(profile1);
+        } else {
+            if (profileList.size() == 1 && "scanBase".equals(profileList.get(0).getType())) {
+                profileList.get(0).getChildren().add(profile1);
+            }
+        }
+        return profile1;
+    }
+
+    public synchronized SourceProfile getSourceProfile(String type) {
         if (profileList == null) {
             profileList = new ArrayList<>();
         }
-        OperatorProfile profile1 = new OperatorProfile(type);
-        profile1.setLocation(DingoConfiguration.location().url());
+        SourceProfile profile1 = new SourceProfile(type);
         profile1.start();
         profileList.add(profile1);
         return profile1;
+    }
+
+    public synchronized void removeProfile(Profile profile) {
+        if (profileList != null) {
+            profileList.remove(profile);
+        }
     }
 }

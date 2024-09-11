@@ -61,7 +61,7 @@ public final class RelOpUtils {
         @NonNull Iterator<Object[]> iterator
     ) {
         ScanParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("doScan");
+        OperatorProfile profile = param.getProfile("scan");
         long count = 0;
         long tmp = System.currentTimeMillis();
         boolean breakFlg = false;

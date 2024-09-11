@@ -34,7 +34,6 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
@@ -83,7 +82,8 @@ public final class PrepareMeta {
     public static void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         if (TenantConstant.TENANT_ID == 0) {
-            PrepareMeta.prepareTenant();
+            PrepareMeta.prepareTenant(3);
+            LogUtils.info(log, "init tenant success");
         }
         if (infoSchemaService.prepare()) {
             return;
@@ -113,15 +113,22 @@ public final class PrepareMeta {
         log.info("init replica done, store:{}, index:{}", storeReplica, indexReplica);
     }
 
-    public static void prepareTenant() {
+    public static void prepareTenant(int retry) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
-        Object tenantObj = infoSchemaService.getTenant(tenantId);
-        if (tenantObj == null) {
-            Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
-            try {
-                infoSchemaService.createTenant(tenantId, tenant);
-            } catch (Exception e) {
-                LogUtils.warn(log, "create tenant conflict", e);
+        try {
+            Object tenantObj = infoSchemaService.getTenant(tenantId);
+            if (tenantObj == null) {
+                Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
+                try {
+                    infoSchemaService.createTenant(tenantId, tenant);
+                } catch (Exception e) {
+                    LogUtils.warn(log, "create tenant conflict", e);
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            if (retry -- > 0) {
+                prepareTenant(retry);
             }
         }
     }

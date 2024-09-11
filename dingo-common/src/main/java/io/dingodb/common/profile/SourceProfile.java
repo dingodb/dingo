@@ -16,17 +16,17 @@
 
 package io.dingodb.common.profile;
 
-import io.dingodb.common.config.DingoConfiguration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class OperatorProfile extends Profile {
+public class SourceProfile extends Profile {
+    long regionId;
+    String taskType;
 
-    public OperatorProfile(String type) {
+    public SourceProfile(String type) {
         super(type);
-        this.location = DingoConfiguration.location().url();
     }
 
     @Override

@@ -44,7 +44,6 @@ import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -128,7 +127,6 @@ public final class DingoTableScanVisitFun {
             scanTs = pointStartTs;
             transaction.setPointStartTs(0);
         }
-        // TODO
         for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {
