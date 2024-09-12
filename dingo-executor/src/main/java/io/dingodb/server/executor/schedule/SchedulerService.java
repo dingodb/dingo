@@ -19,6 +19,7 @@ package io.dingodb.server.executor.schedule;
 import com.google.auto.service.AutoService;
 import io.dingodb.calcite.stats.task.RefreshStatsTask;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.SessionUtil;
@@ -69,7 +70,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     private void startScheduler(LockService lockService) {
-        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock();
+        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock(DingoConfiguration.location().url());
         CompletableFuture.runAsync(lock::lock).whenComplete((r, e) -> {
             if (e == null) {
                 start();

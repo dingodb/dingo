@@ -37,6 +37,7 @@ import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
 import io.dingodb.server.executor.Configuration;
+import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.tso.TsoService;
 
 import java.util.List;
@@ -67,6 +68,12 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     );
 
     private static Executor executor() {
+        String leaderId;
+        try {
+            leaderId = new String(MetaServiceApiImpl.INSTANCE.lockService.currentLock().getKv().getValue()).split("#")[0];
+        } catch (Exception ignore) {
+            leaderId = DingoConfiguration.serverId().toString();
+        }
         return Executor.builder()
             .serverLocation(io.dingodb.sdk.service.entity.common.Location.builder()
                 .host(DingoConfiguration.host())
@@ -79,6 +86,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             .resourceTag(Configuration.resourceTag())
             .id(DingoConfiguration.serverId().toString())
             .clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID)
+            .leaderId(leaderId)
             .build();
     }
 

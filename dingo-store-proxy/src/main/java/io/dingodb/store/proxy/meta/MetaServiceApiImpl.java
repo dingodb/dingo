@@ -72,7 +72,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
 
     public static final MetaServiceApiImpl INSTANCE = new MetaServiceApiImpl();
 
-    private final io.dingodb.sdk.service.LockService lockService = new io.dingodb.sdk.service.LockService(
+    public final io.dingodb.sdk.service.LockService lockService = new io.dingodb.sdk.service.LockService(
         "MetaNode#0#ExecutorCluster" + TenantConstant.TENANT_ID, Configuration.coordinators()
     );
 
