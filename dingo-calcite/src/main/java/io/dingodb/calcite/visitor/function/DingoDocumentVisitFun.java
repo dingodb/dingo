@@ -125,7 +125,7 @@ public final class DingoDocumentVisitFun {
             throw new IllegalArgumentException("Can not find the text index with name: " + indexName);
         }
 
-        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue().toUpperCase();
+        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not a number.");
@@ -141,6 +141,12 @@ public final class DingoDocumentVisitFun {
         TupleMapping resultSelection = rel.getSelection();
 
         List<Column> columnNames = indexTable.getColumns();
+        for (Column columnName : columnNames) {
+            queryString = queryString.replaceAll(
+                columnName.getName().toLowerCase() + ":",
+                columnName.getName().toUpperCase() + ":"
+            );
+        }
         List<Integer> priKeySecList = dingoTable.getTable()
             .columns.stream()
             .filter(Column::isPrimary)

@@ -135,6 +135,7 @@ public interface IndexMapper {
                     if (!columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()).contains(next.getKey().toUpperCase())) {
                         throw new RuntimeException("The field: [" + next.getKey() + "] does not exist in the document index");
                     }
+                    json = json.replace(next.getKey(), next.getKey().toUpperCase());
 
                     JsonNode tokenizer = next.getValue().get("tokenizer");
                     if (tokenizer == null) {
