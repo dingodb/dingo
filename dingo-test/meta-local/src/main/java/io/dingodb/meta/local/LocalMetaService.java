@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
@@ -29,6 +30,7 @@ import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.meta.MetaService;
@@ -144,8 +146,7 @@ public class LocalMetaService implements MetaService {
         }
     }
 
-    @Override
-    public long createTables(@NonNull TableDefinition tableDefinition,
+    public long createTablesByTruncate(@NonNull TableDefinition tableDefinition,
                              @NonNull List<IndexDefinition> indexTableDefinitions) {
         CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
         tableDefinitions.put(tableId, tableDefinition);
@@ -162,6 +163,42 @@ public class LocalMetaService implements MetaService {
             createDistribution(tableId, start, null, codec);
         }
         return tableId.seq;
+    }
+
+    @Override
+    public long createTables(@NonNull TableDefinition tableDefinition,
+                             @NonNull List<IndexDefinition> indexTableDefinitions) {
+        validatePartBy(tableDefinition);
+        CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());
+        tableDefinitions.put(tableId, tableDefinition);
+        if (tableDefinition.getPartDefinition() != null) {
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(tableDefinition);
+            PartitionDetailDefinition start = null;
+            for (PartitionDetailDefinition detail : tableDefinition.getPartDefinition().getDetails()) {
+                if (detail.getOperand().length == 0) {
+                    continue;
+                }
+                createDistribution(tableId, start, detail, codec);
+                start = detail;
+            }
+            createDistribution(tableId, start, null, codec);
+        }
+        return tableId.seq;
+    }
+
+    public static void validatePartBy(TableDefinition tableDefinition) {
+        PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
+        switch (partDefinition.getFuncName().toUpperCase()) {
+            case "RANGE":
+                DefinitionUtils.checkAndConvertRangePartition(tableDefinition);
+                partDefinition.getDetails().add(new PartitionDetailDefinition(null, null, new Object[0]));
+                break;
+            case "HASH":
+                DefinitionUtils.checkAndConvertHashRangePartition(tableDefinition);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported " + partDefinition.getFuncName());
+        }
     }
 
     @Override
@@ -191,7 +228,7 @@ public class LocalMetaService implements MetaService {
         if (tableDefinition != null) {
             dropTable(id.seq, tableName);
         }
-        createTables(tableDefinition, Collections.emptyList());
+        createTablesByTruncate(tableDefinition, Collections.emptyList());
         return 0;
     }
 

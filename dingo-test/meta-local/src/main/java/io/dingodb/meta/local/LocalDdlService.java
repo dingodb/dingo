@@ -82,12 +82,10 @@ public class LocalDdlService implements DdlService {
             SchemaInfo schemaInfo = new SchemaInfo(0, k, v.id().seq, SchemaState.SCHEMA_PUBLIC);
             Map<String, Table> tableMap = new HashMap<>();
             v.getTables().forEach(table -> {
-                System.out.println("++++_" + table.getName() + ", schemaName:" + k);
                 tableMap.put(table.getName(), table);
             });
             infoSchema.getSchemaMap().put(k, new SchemaTables(schemaInfo, tableMap));
         });
-        System.out.println("--->load is latest");
         return infoSchema;
     }
 

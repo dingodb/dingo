@@ -127,7 +127,7 @@ public final class DingoTableScanVisitFun {
             scanTs = pointStartTs;
             transaction.setPointStartTs(0);
         }
-        for (int i = 0; i <= Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
+        for (int i = 0; i < Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {
                 task = job.getOrCreate(
