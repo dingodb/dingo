@@ -42,11 +42,9 @@ import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -79,7 +77,6 @@ public class ScanWithRelOpParam extends ScanParam {
     protected int limit;
 
     @Getter
-    @Setter
     protected transient CoprocessorV2 coprocessor;
 
     @Getter

@@ -985,8 +985,11 @@ public class DdlWorker {
     public static String addHistoryDDLJob(Session session, DdlJob job, boolean updateRawArgs) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         infoSchemaService.addHistoryDDLJob(job, false);
-        //return JobTableUtil.addHistoryDDLJob2Table(session, job, updateRawArgs);
-        return null;
+        if (ScopeVariables.getJob2Table()) {
+            return JobTableUtil.addHistoryDDLJob2Table(session, job, updateRawArgs);
+        } else {
+            return null;
+        }
     }
 
     public static String waitSchemaSyncedForMDL(DdlContext dc, DdlJob ddlJob, long latestSchemaVersion) {

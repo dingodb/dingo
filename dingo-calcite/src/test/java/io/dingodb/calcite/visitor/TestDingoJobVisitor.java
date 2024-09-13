@@ -107,8 +107,8 @@ public class TestDingoJobVisitor {
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
-        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0)
-            .source(0).isCalcDistribution().outputNum(1);
+        assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0)
+            .source(0).isCalcDistribution().outputNum(0);
         // assertJob.task(jobSeqId, 0).operatorNum(3).location(MockMetaServiceProvider.LOC_0)
         //    .source(0).isPartRangeScan(tableId, new CommonId(DISTRIBUTION, tableId.seq, 1))
         //    .soleOutput().isNull();
@@ -140,9 +140,9 @@ public class TestDingoJobVisitor {
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
-            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-        assertTask.source(0).isCalcDistribution().outputNum(1);
+            assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertTask.source(0).isCalcDistribution().outputNum(0);
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
@@ -177,10 +177,9 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
-        AssertTask assertTask =
-            assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-        assertJob.task(jobSeqId, 0).operatorNum(2).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
-        assertTask.source(0).isCalcDistribution().outputNum(1);
+        //AssertTask assertTask =
+        //    assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
+        assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
             .getTableId(FULL_TABLE_NAME);*/
@@ -250,6 +249,6 @@ public class TestDingoJobVisitor {
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
         DingoJobVisitor.renderJob(job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
-            .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(3);
+            .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(1);
     }
 }

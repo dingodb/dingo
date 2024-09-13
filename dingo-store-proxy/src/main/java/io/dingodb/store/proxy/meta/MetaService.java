@@ -318,7 +318,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .partId(partition.getId().getEntityId())
                 .tenantId(tableDefinitionWithId.getTenantId())
                 .build();
-            coordinatorService.createRegion(tso(), request);
+            LogUtils.info(log, "create region range:{}", partition.getRange());
+            try {
+                coordinatorService.createRegion(tso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create region error, range:{}", partition.getRange());
+                throw e;
+            }
         }
         long incrementColCount = tableDefinition.getColumns()
             .stream()
@@ -420,7 +426,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                             .indexId(withId.getTableId().getEntityId())
                             .indexParameter(indexParameter)
                             .build();
-                        coordinatorService.createRegion(tso(), request);
+                        try {
+                            LogUtils.info(log, "create index region, range:{}", partition.getRange());
+                            coordinatorService.createRegion(tso(), request);
+                        } catch (Exception e) {
+                            LogUtils.error(log, "create index region error, range:{}", partition.getRange());
+                            throw e;
+                        }
                     }
                 }
             }
@@ -507,7 +519,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .partId(partition.getId().getEntityId())
                 .tenantId(tableDefinitionWithId.getTenantId())
                 .build();
-            coordinatorService.createRegion(tso(), request);
+            try {
+                LogUtils.error(log, "create replicate region, range:{}", partition.getRange());
+                coordinatorService.createRegion(tso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create replicate region error, range:{}", partition.getRange());
+                throw e;
+            }
         }
 
         return tableEntityId;
@@ -753,6 +771,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .tenantId(table.getTenantId())
                 .build();
             try {
+                LogUtils.info(log, "create region, range:{}", partition.getRange());
                 coordinatorService.createRegion(tso(), request);
             } catch (Exception e) {
                 LogUtils.error(log, "create region error,regionId:" + id.getEntityId() + partition.getRange(), e);
@@ -841,9 +860,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .indexParameter(indexParameter)
                         .build();
                     try {
+                        LogUtils.info(log, "create region, range:{}", partition.getRange());
                         coordinatorService.createRegion(tso(), request);
                     } catch (Exception e) {
-                        LogUtils.error(log, "create region error,regionId:" + id.getEntityId() + partition.getRange(), e);
+                        LogUtils.error(log, "create region error,regionId:"
+                             + id.getEntityId() + partition.getRange(), e);
                         throw e;
                     }
                 }
@@ -1177,7 +1198,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .indexId(withId.getTableId().getEntityId())
                 .indexParameter(indexParameter)
                 .build();
-            coordinatorService.createRegion(tso(), request);
+            LogUtils.info(log, "create index region, range:{}", partition.getRange());
+            try {
+                coordinatorService.createRegion(tso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create index region error, range:{}", partition.getRange());
+                throw e;
+            }
         }
     }
 

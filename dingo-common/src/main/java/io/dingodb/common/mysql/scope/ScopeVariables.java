@@ -122,6 +122,15 @@ public final class ScopeVariables {
         return transaction1Pc.equalsIgnoreCase("on");
     }
 
+    public static boolean getJob2Table() {
+        try {
+            String job2Table = executorProp.getOrDefault("job2table", "off").toString();
+            return job2Table.equals("on");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static void testIndexBlock() {
         while (true) {
             String testRun = executorProp.getOrDefault("test_index", "off").toString();
