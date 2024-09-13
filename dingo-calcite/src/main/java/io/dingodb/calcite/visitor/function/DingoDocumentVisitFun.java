@@ -147,18 +147,19 @@ public final class DingoDocumentVisitFun {
                 columnName.getName().toUpperCase() + ":"
             );
         }
+        // document index cols in pri table selection
+        TupleMapping map1 = indexTable.getMapping();
+        List<Integer> indexLookupSelectionList = new ArrayList<>();
+        for(int j = 0; j < map1.size(); j++){
+            indexLookupSelectionList.add(map1.get(j));
+        }
         List<Integer> priKeySecList = dingoTable.getTable()
             .columns.stream()
             .filter(Column::isPrimary)
             .map(dingoTable.getTable().columns::indexOf)
             .collect(Collectors.toList());
         int priKeyCount = priKeySecList.size();
-        // document index cols in pri table selection
-        List<Integer> indexLookupSelectionList = columnNames
-            .stream()
-            .filter(col -> !col.isPrimary() && col.getState() == 1)
-            .map(dingoTable.getTable().columns::indexOf)
-            .collect(Collectors.toList());
+
         priKeySecList.addAll(indexLookupSelectionList);
         boolean isLookUp = isNeedLookUp(
             resultSelection,
@@ -196,8 +197,7 @@ public final class DingoDocumentVisitFun {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
         long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
-        // Get query additional parameters
-//        Map<String, Object> parameterMap = getParameterMap(operandsList);
+
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
             metaService.getRangeDistribution(rel.getIndexTableId());
@@ -259,77 +259,6 @@ public final class DingoDocumentVisitFun {
         }
         visitor.setScan(true);
         return outputs;
-    }
-
-    public static String[] getDocumentString(List<Object> operandsList) {
-        String[] stringArray = null;
-        Object call = operandsList.get(2);
-        if (call instanceof RexCall) {
-            RexCall rexCall = (RexCall) call;
-            int documentCount = rexCall.getOperands().size();
-            for (int i = 0; i < documentCount; i++) {
-                RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
-                stringArray[i] = literal.getValueAs(String.class);
-            }
-            return stringArray;
-        }
-        SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
-        if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
-            List<SqlNode> operands = basicCall.getOperandList();
-            for (int i = 0; i < operands.size(); i++) {
-                stringArray[i] = Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
-                .toString();
-            }
-        } else {
-            List<SqlNode> sqlNodes = basicCall.getOperandList();
-            if (sqlNodes.size() < 2) {
-                throw new RuntimeException("document load param error");
-            }
-            List<Object> paramList = sqlNodes.stream().map(e -> {
-                if (e instanceof SqlLiteral) {
-                    return ((SqlLiteral)e).getValue();
-                } else if (e instanceof SqlIdentifier) {
-                    return ((SqlIdentifier)e).getSimple();
-                } else {
-                    return e.toString();
-                }
-            }).collect(Collectors.toList());
-            if (paramList.get(1) == null || paramList.get(0) == null) {
-                throw new RuntimeException("document load param error");
-            }
-            String param = paramList.get(1).toString();
-            if (param.contains("'")) {
-                param = param.replace("'", "");
-            }
-        }
-        /* keyword can be null */
-        return stringArray;
-    }
-
-    private static Map<String, Object> getParameterMap(List<Object> operandsList) {
-        Map<String, Object> parameterMap = new HashMap<>();
-        if (operandsList.size() >= 5) {
-            SqlNode sqlNode = (SqlNode) operandsList.get(4);
-            if (sqlNode instanceof SqlBasicCall) {
-                SqlBasicCall sqlBasicCall = (SqlBasicCall) operandsList.get(4);
-                if (sqlBasicCall.getOperator().getName().equals("MAP")) {
-                    List<SqlNode> operandList = sqlBasicCall.getOperandList();
-                    String currentName = "";
-                    for (int i = 0; i < operandList.size(); i++) {
-                        if ((i % 2 == 0) && operandList.get(i) instanceof SqlIdentifier) {
-                            currentName = ((SqlIdentifier) operandList.get(i)).getSimple();
-                        } else {
-                            SqlNode node = operandList.get(i);
-                            if (!currentName.equals("") && node instanceof SqlNumericLiteral) {
-                                parameterMap.put(currentName, ((SqlNumericLiteral)node).getValue());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return parameterMap;
     }
 
     private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable) {
