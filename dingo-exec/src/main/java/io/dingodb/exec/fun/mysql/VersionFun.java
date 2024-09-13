@@ -21,8 +21,14 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.NullaryOp;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+@Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class VersionFun extends NullaryOp {
     public static final VersionFun INSTANCE = new VersionFun();
@@ -32,7 +38,24 @@ public class VersionFun extends NullaryOp {
 
     @Override
     public Object eval(EvalContext context, ExprConfig config) {
-        return "DingoDB-v0.8.0";
+        String command = "git describe --tag --long --dirty=M --always";
+        String version;
+        BufferedReader reader;
+        try {
+            Process process = Runtime.getRuntime().exec(command);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                log.debug("Failed to get current release version");
+            } else {
+                reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                if ((version = reader.readLine()) != null) {
+                    return version;
+                }
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
