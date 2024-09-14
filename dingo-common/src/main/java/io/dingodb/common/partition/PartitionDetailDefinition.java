@@ -17,16 +17,17 @@
 package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
-import java.util.List;
 
 @Getter
 @Setter
 @ToString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class PartitionDetailDefinition implements Serializable {
 
     private static final long serialVersionUID = -2687766895780655226L;
@@ -38,6 +39,7 @@ public class PartitionDetailDefinition implements Serializable {
     String operator = null;
 
     @JsonProperty("operand")
+    @EqualsAndHashCode.Include
     Object[] operand = null;
 
     public PartitionDetailDefinition() {
