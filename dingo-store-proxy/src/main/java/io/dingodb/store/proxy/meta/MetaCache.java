@@ -262,7 +262,9 @@ public class MetaCache {
         RegionDefinition definition = metaEventRegion.getDefinition();
         LogUtils.info(log, "Invalid table distribution {}", definition);
         distributionCache.invalidate(new CommonId(TABLE, definition.getSchemaId(), definition.getTableId()));
-        distributionCache.invalidate(new CommonId(INDEX, definition.getSchemaId(), definition.getTableId()));
+        if (definition.getIndexId() != 0) {
+            distributionCache.invalidate(new CommonId(INDEX, definition.getTableId(), definition.getIndexId()));
+        }
     }
 
     public void invalidateDistribution(CommonId tableId) {
