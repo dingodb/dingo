@@ -19,6 +19,33 @@ plugins {
     id 'java-library'
 }
 
+def gitVersion() {
+    def proc = "git describe --tag --long --dirty=M --always"
+    def gitversion = proc.execute().text.trim()
+    assert !gitversion.isEmpty()
+    gitversion
+}
+
+task generatePropertiesFile {
+    doLast {
+        def version = gitVersion()
+
+        Properties props = new Properties()
+        props.setProperty("version", version)
+        File outputFile = new File("$buildDir/resources/main/versiontmp.properties")
+        outputFile.getParentFile().mkdirs()
+        props.store(new FileOutputStream(outputFile), null)
+        // copy to source path for finding in jar or war
+        copy {
+             from "$buildDir/resources/main/versiontmp.properties"
+             into 'src/main/resources'
+         }
+
+    }
+}
+
+processResources.dependsOn generatePropertiesFile
+
 dependencies {
 
     annotationProcessor group: 'io.dingodb.expr', name: 'dingo-expr-annotations', version: 'dingo-expr'.v()
