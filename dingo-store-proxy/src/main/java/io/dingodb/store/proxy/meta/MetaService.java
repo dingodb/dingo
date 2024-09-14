@@ -520,7 +520,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .tenantId(tableDefinitionWithId.getTenantId())
                 .build();
             try {
-                LogUtils.error(log, "create replicate region, range:{}", partition.getRange());
+                LogUtils.info(log, "create replicate region, range:{}", partition.getRange());
                 coordinatorService.createRegion(tso(), request);
             } catch (Exception e) {
                 LogUtils.error(log, "create replicate region error, range:{}", partition.getRange());

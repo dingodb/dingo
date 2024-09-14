@@ -126,14 +126,17 @@ public final class TransactionCacheToMutation {
                 }
 
                 Map<String, DocumentValue> documentData = new HashMap<>();
-                documentData.put(column.getName(), new DocumentValue(
-                    DocumentValue.ScalarFieldType.LONG,
-                    new ScalarField(longId))
-                );
                 for (int i = 1; i < index.getColumns().size(); i++) {
                     Column columnDef = index.getColumns().get(i);
                     if (jsonNode != null && jsonNode.get(columnDef.getName().toLowerCase()) == null
                         && jsonNode.get(columnDef.getName().toUpperCase()) == null) {
+                        continue;
+                    }
+                    if (column.getName().equalsIgnoreCase(columnDef.getName())) {
+                        documentData.put(column.getName(), new DocumentValue(
+                            DocumentValue.ScalarFieldType.LONG,
+                            new ScalarField(longId)
+                        ));
                         continue;
                     }
                     DingoType type = columnDef.type;

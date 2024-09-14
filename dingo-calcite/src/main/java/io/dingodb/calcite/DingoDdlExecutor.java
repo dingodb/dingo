@@ -1505,6 +1505,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             partDefinition.setColumns(keyList);
             partDefinition.setDetails(new ArrayList<>());
         }
+
+        List<PartitionDetailDefinition> details = new ArrayList<>();
+        for (PartitionDetailDefinition detail : partDefinition.getDetails()) {
+            if (details.contains(detail)) {
+                continue;
+            }
+            details.add(detail);
+        }
+        partDefinition.setDetails(details);
     }
 
     @NonNull
