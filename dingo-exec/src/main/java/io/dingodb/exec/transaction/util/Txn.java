@@ -49,7 +49,6 @@ import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
-import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -168,7 +167,7 @@ public class Txn {
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
-
+            long start = System.currentTimeMillis();
             boolean prewriteResult = false;
             int i = 0;
             while (!prewriteResult) {
@@ -184,9 +183,11 @@ public class Txn {
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
                     Utils.sleep(100);
-                    LogUtils.error(log, "prewrite primary region split, retry count:" + i);
+                    LogUtils.error(log, "pre write primary region split, retry count:" + i);
                 }
             }
+            long sub = System.currentTimeMillis() - start;
+            LogUtils.info(log, "pre write primary region split failed retry cost:{}", sub);
         }
         if (this.future == null) {
             throw new RuntimeException(txnId + " future is null "
@@ -198,7 +199,7 @@ public class Txn {
     public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
         int size = param.getMutations().size();
-        Timer.Context timeCtx = DingoMetrics.getTimeContext("preWriteSize" + size);
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("preWrite");
         param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
             .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
@@ -218,7 +219,7 @@ public class Txn {
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
             // 2、regin split
-
+            long start = System.currentTimeMillis();
             boolean prewriteSecondResult = false;
             int i = 0;
             while (!prewriteSecondResult) {
@@ -238,11 +239,12 @@ public class Txn {
                     }
                     prewriteSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
-                    LogUtils.error(log, "prewrite second region split, retry count:" + i);
+                    Utils.sleep(1000);
+                    LogUtils.error(log, "pre write second region split, retry count:" + i, e);
                 }
             }
-
+            long sub = System.currentTimeMillis() - start;
+            LogUtils.info(log, "pre write region split failed retry cost:{}", sub);
             return true;
         } finally {
             timeCtx.stop();
@@ -327,11 +329,12 @@ public class Txn {
                 }
                 long elapsed = System.currentTimeMillis() - start;
                 if (elapsed > timeOut) {
+                    LogUtils.error(log, "txn commit primary timeout", cacheToObject);
                     return false;
                 }
             }
         } catch (Throwable throwable) {
-            LogUtils.error(log, throwable.getMessage(), throwable);
+            LogUtils.error(log, "txn commit primary error:" + throwable.getMessage(), throwable);
         }
         return false;
     }
@@ -411,7 +414,7 @@ public class Txn {
             return store.txnCommit(commitRequest);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
-
+            long start = System.currentTimeMillis();
             boolean commitSecondResult = false;
             int i = 0;
             while (!commitSecondResult) {
@@ -434,10 +437,12 @@ public class Txn {
                     }
                     commitSecondResult = true;
                 } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
+                    Utils.sleep(1000);
                     LogUtils.error(log, "commit second region split, retry count:" + i);
                 }
             }
+            long sub = System.currentTimeMillis() - start;
+            LogUtils.info(log, "commit region split failed retry cost:{}", sub);
 
             return true;
         }

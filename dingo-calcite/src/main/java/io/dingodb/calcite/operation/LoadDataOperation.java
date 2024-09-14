@@ -19,14 +19,13 @@ package io.dingodb.calcite.operation;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
-import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -72,6 +71,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -111,8 +111,9 @@ public class LoadDataOperation implements DmlOperation {
     private final String statementId;
     private boolean txnRetry;
     private int txnRetryCnt;
-
     private long timeOut;
+    private CompletableFuture<String> loadDataRead;
+    private long start;
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -140,13 +141,9 @@ public class LoadDataOperation implements DmlOperation {
             if (retryCntStr == null) {
                 retryCntStr = "0";
             }
-            String timeOutStr = connection.getClientInfo("statement_timeout");
-            if (timeOutStr == null) {
-                timeOutStr = "50000";
-            }
             txnRetry = "on".equalsIgnoreCase(txnRetryStr);
             txnRetryCnt = Integer.parseInt(retryCntStr);
-            timeOut = Integer.parseInt(timeOutStr);
+            timeOut = 300000;
         } catch (SQLException e) {
             txnRetry = false;
             txnRetryCnt = 0;
@@ -174,64 +171,87 @@ public class LoadDataOperation implements DmlOperation {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
-        try {
-            new Thread(() -> {
-                try {
-                    byte[] preBytes = null;
-                    long ver = DdlService.root().getIsLatest().getSchemaMetaVersion();
-                    context.getRootSchema().putRelatedTable(table.tableId.seq, ver);
-                    while (true) {
-                        Object val = queue.take();
-                        if (val instanceof byte[]) {
-                            byte[] bytes = (byte[]) val;
-                            preBytes = splitLine(bytes, preBytes, fieldsTerm, linesTerm);
-                        } else {
-                            break;
-                        }
+        start = System.currentTimeMillis();
+        CompletableFuture<String> future = Executors.submit("loadDataDecoder", () -> {
+            try {
+                byte[] preBytes = null;
+                long ver = DdlService.root().getIsLatest().getSchemaMetaVersion();
+                context.getRootSchema().putRelatedTable(table.tableId.seq, ver);
+                while (true) {
+                    Object val = queue.take();
+                    if (val instanceof byte[]) {
+                        byte[] bytes = (byte[]) val;
+                        preBytes = splitLine(bytes, preBytes, fieldsTerm, linesTerm);
+                    } else {
+                        break;
                     }
-                    if (isTxn) {
-                        endWriteWithTxn();
-                    }
-                } catch (DuplicateEntryException e1) {
-                    errMessage = "Duplicate entry for key 'PRIMARY'";
-                } catch (Exception e2) {
-                    LogUtils.error(log, e2.getMessage(), e2);
-                    errMessage = e2.getMessage();
-                } finally {
-                    context.getRootSchema().removeRelatedTable(table.tableId.seq);
-                    isDone = true;
                 }
-            }).start();
+                if (isTxn) {
+                    endWriteWithTxn();
+                }
+                return null;
+            } catch (DuplicateEntryException e1) {
+                errMessage = "Duplicate entry for key 'PRIMARY'";
+                return errMessage;
+            } catch (Exception e2) {
+                LogUtils.error(log, e2.getMessage(), e2);
+                errMessage = e2.getMessage();
+                return errMessage;
+            } finally {
+                context.getRootSchema().removeRelatedTable(table.tableId.seq);
+                isDone = true;
+            }
+        });
+        try {
             FileInputStream is = new FileInputStream(filePath);
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1000];
-            int length;
-            while ((length = is.read(buffer)) != -1) {
-                bos.write(buffer, 0, length);
-                queue.put(bos.toByteArray());
-                bos.reset();
-            }
-            queue.put("end");
-            bos.close();
-            is.close();
+            loadDataRead = Executors.submit("loadDataRead", () -> {
+                try {
+                    byte[] buffer = new byte[1000];
+                    int length;
+                    while ((length = is.read(buffer)) != -1) {
+                        bos.write(buffer, 0, length);
+                        queue.put(bos.toByteArray());
+                        bos.reset();
+                    }
+                    queue.put("end");
+                    bos.close();
+                    is.close();
+                    return null;
+                } catch (IOException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    return e.getMessage();
+                }
+            });
         } catch (FileNotFoundException e) {
             // Err code 2: No such file or directory
             throw DingoResource.DINGO_RESOURCE.accessError(filePath, 2, "No such file or directory").ex();
-        } catch (IOException e) {
-            // Err code 13: Permission denied
-            throw DingoResource.DINGO_RESOURCE.accessError("filepath", 13, "Permission denied").ex();
         } catch (Exception e) {
             throw DingoResource.DINGO_RESOURCE.loadDataError().ex();
         }
+        future.whenCompleteAsync((r, e) -> {
+             if (r != null) {
+                 if (!loadDataRead.isDone()) {
+                     loadDataRead.cancel(true);
+                 }
+             }
+        });
         return true;
     }
 
     @Override
     public Iterator<Object[]> getIterator() {
+        loadDataRead.whenComplete((r, e) -> {
+            if (r != null) {
+                throw DingoResource.DINGO_RESOURCE.accessError("filepath", 13, "Permission denied").ex();
+            }
+        });
         while (!isDone) {
             Utils.sleep(1000L);
         }
+        long sub = System.currentTimeMillis() - start;
         long insertCount = count.get();
+        LogUtils.info(log, "load data done, path:{}, cost:{}, insertCount:{}" , filePath, sub, insertCount);
         if (errMessage != null) {
             if (insertCount == 0) {
                 if (errMessage.contains("Duplicate entry")) {
@@ -254,7 +274,6 @@ public class LoadDataOperation implements DmlOperation {
         }
         List<Object[]> objects = new ArrayList<>();
         objects.add(new Object[] {insertCount});
-        StmtSummaryMap.addAnalyzeEvent(schemaName, table.name, insertCount);
         return objects.iterator();
     }
 
@@ -447,8 +466,9 @@ public class LoadDataOperation implements DmlOperation {
             } finally {
                 env.memCacheFor2PC.memoryCache.remove(statementId);
             }
-            long end = System.currentTimeMillis();
-            LogUtils.debug(log, "insert txn batch size:" + cacheSize + ", cost time:" + (end - start) + "ms");
+            long sub = System.currentTimeMillis() - start;
+            LogUtils.info(log, "insert txn batch size: {}, cost time: {}ms, insert count:{}",
+                cacheSize, sub, count.get());
             refreshTxnId = false;
         }
     }
