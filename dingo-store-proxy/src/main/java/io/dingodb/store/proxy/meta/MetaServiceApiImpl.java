@@ -75,20 +75,16 @@ public class MetaServiceApiImpl implements MetaServiceApi {
     public final io.dingodb.sdk.service.LockService lockService = new io.dingodb.sdk.service.LockService(
         "MetaNode#0#ExecutorCluster" + TenantConstant.TENANT_ID, Configuration.coordinators()
     );
-
     private final VersionService versionService = Services.versionService(Configuration.coordinatorSet());
-
     private io.dingodb.sdk.service.LockService.Lock lock;
-
     private CommonId leaderId;
     private Channel leaderChannel;
     private final Map<CommonId, Location> participantLocations = new ConcurrentHashMap<>();
     private final Map<CommonId, Channel> participantChannels = new ConcurrentHashMap<>();
-
     private final Map<String, TableLock> tableLocks = new ConcurrentHashMap<>();
-
     private boolean needLock = true;
     private final LinkedRunner lockRunner = new LinkedRunner("lock-runner");
+    public volatile boolean initMetaDone = false;
 
     private MetaServiceApiImpl() {
         LogUtils.info(log, "MetaServiceApiImpl init");
@@ -153,6 +149,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
             retryLock();
         }
+        LogUtils.info(log, "meta lock init ready");
     }
 
     public boolean isLeader() {

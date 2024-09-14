@@ -18,7 +18,6 @@ package io.dingodb.server.executor.ddl;
 
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
@@ -37,9 +36,6 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -195,42 +191,16 @@ public final class JobTableUtil {
                 //if (rows[3] != null) {
                 //    tableIds = rows[3].toString();
                 //}
-                //if (processing) {
-                    if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
-                        //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
-                        continue;
-                    } else {
-                        //LogUtils.info(log, "get job processing true, jobId:{}", ddlJob.getId());
-                        //return Pair.of(ddlJob, null);
-                        ddlJobList.add(ddlJob);
-                    }
-                //}
-
-                //Callable<Pair<DdlJob, String>> callable = () -> {
-                //    Pair<Boolean, String> res = filter.apply(ddlJob);
-                //    if (res.getValue() != null) {
-                //        return Pair.of(null, res.getValue());
-                //    }
-                //    if (res.getKey()) {
-                        //if (markJobProcessing(session, ddlJob) != null) {
-                        //    return Pair.of(null, null);
-                        //}
-                //        ddlJobList.add(ddlJob);
-                //        return Pair.of(ddlJob, null);
-                //    }
-                //    return Pair.of(null, null);
-                //};
-                //futureList.add(Executors.submit("filterJob", callable));
+                if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
+                    //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
+                    continue;
+                } else {
+                    ddlJobList.add(ddlJob);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-//        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
-//        try {
-//            allFutures.get();
-//        } catch (ExecutionException | InterruptedException e) {
-//            LogUtils.error(log, e.getMessage(), e);
-//        }
 
         return Pair.of(ddlJobList, null);
     }

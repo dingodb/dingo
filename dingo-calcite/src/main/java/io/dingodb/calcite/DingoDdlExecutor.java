@@ -1284,6 +1284,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             "scalar",
             "TXN_LSM"
         );
+        sqlIndexDeclaration.unique = sqlCreateIndex.isUnique;
         if (isNotTxnEngine(table.getTable().getEngine())) {
             throw new IllegalArgumentException("Table with index, the engine must be transactional.");
         }

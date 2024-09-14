@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.remote.Service;
 
 import java.lang.reflect.Proxy;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 

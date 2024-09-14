@@ -517,12 +517,14 @@ public class DdlWorker {
         // check index exists
         Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
         if (table == null) {
+            job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "table not exists");
         }
         boolean exists = table.getIndexes().stream()
             .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexInfo.getName())
             && indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC);
         if (exists) {
+            job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "index exists");
         }
 
@@ -594,6 +596,7 @@ public class DdlWorker {
         boolean notExists = table.getIndexes().stream()
             .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
+            job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "index not exists");
         }
         TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexName);
@@ -662,6 +665,7 @@ public class DdlWorker {
             .stream().filter(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName))
             .findFirst().orElse(null);
         if (columnDef == null) {
+            job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "not found drop column");
         }
         List<TableDefinitionWithId> markDelIndices = null;
