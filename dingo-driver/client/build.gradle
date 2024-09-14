@@ -32,6 +32,7 @@ dependencies {
     implementation project(':dingo-net-api')
     implementation project(':dingo-net-netty')
     implementation project(':dingo-verify')
+    implementation project(':dingo-calcite')
     implementation project(":dingo-driver:dingo-driver-common")
 }
 
@@ -71,6 +72,7 @@ fatJar.dependsOn([
         ':dingo-net-netty:jar',
         ':dingo-serial:jar',
         ':dingo-verify:jar',
+        ':dingo-calcite:jar',
         ":dingo-driver:dingo-driver-common:jar"
 ])
 

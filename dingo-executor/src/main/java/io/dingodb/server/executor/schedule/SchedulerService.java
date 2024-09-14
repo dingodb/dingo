@@ -24,12 +24,14 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.util.Utils;
 import io.dingodb.scheduler.SchedulerServiceProvider;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.stats.AnalyzeProfileTask;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
+import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -86,11 +88,17 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
 
     public void start()  {
         try {
-            LogUtils.info(log, "owner start");
+            while (!MetaServiceApiImpl.INSTANCE.initMetaDone) {
+                LogUtils.info(log, "wait meta init ready");
+                Utils.sleep(1000);
+            }
+            LogUtils.info(log, "owner meta init start");
             scheduler.start();
+            LogUtils.info(log, "owner prepare meta start");
             PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
             ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
             LogUtils.info(log, "owner prepare done");
+            LogUtils.info(log, "owner meta init done");
         } catch (SchedulerException e) {
             log.error("Start schedule failed.", e);
             throw new RuntimeException(e);

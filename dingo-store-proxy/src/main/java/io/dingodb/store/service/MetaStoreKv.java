@@ -17,7 +17,9 @@
 package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.service.CoordinatorService;
@@ -35,6 +37,7 @@ import io.dingodb.sdk.service.entity.coordinator.ScanRegionsResponse;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TransactionStoreInstance;
 import io.dingodb.tso.TsoService;
@@ -61,9 +64,13 @@ public class MetaStoreKv {
 
     long statementTimeout = 50000;
 
-    public static void init() {
-        instance = new MetaStoreKv(false);
-        instanceDdl = new MetaStoreKv(true);
+    public static synchronized void init() {
+        if (instance == null || instanceDdl == null) {
+            instance = new MetaStoreKv(false);
+            instanceDdl = new MetaStoreKv(true);
+            MetaServiceApiImpl.INSTANCE.initMetaDone = true;
+            LogUtils.info(log, "meta init region ready");
+        }
     }
 
     public static synchronized MetaStoreKv getInstance() {
@@ -107,6 +114,11 @@ public class MetaStoreKv {
         if (regionId > 0) {
             return regionId;
         }
+
+        if (!MetaServiceApiImpl.INSTANCE.isReady() || !MetaServiceApiImpl.INSTANCE.isLeader()) {
+            Utils.sleep(1000);
+            return checkMetaRegion();
+        }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
         String regionName = "meta";
         if (ddl) {
@@ -123,9 +135,10 @@ public class MetaStoreKv {
             .build();
         try {
             CreateRegionResponse response = coordinatorService.createRegion(startTs, createRegionRequest);
+            LogUtils.info(log, "create meta region done,name:{}", regionName);
             return response.getRegionId();
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, "create meta region error,name:" + regionName, e);
         }
         return 0;
     }
