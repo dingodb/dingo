@@ -51,7 +51,7 @@ public class ShowCreateTableOperation extends QueryOperation {
             this.schemaName = defaultSchemaName;
             tableName = tableIdentifier.names.get(0);
         } else if (tableIdentifier.names.size() == 2) {
-            this.schemaName = tableIdentifier.names.get(0);
+            this.schemaName = tableIdentifier.names.get(0).toUpperCase();
             tableName = tableIdentifier.names.get(1);
         }
     }
@@ -78,7 +78,7 @@ public class ShowCreateTableOperation extends QueryOperation {
 
     private String getCreateTable() {
         InfoSchema is = DdlService.root().getIsLatest();
-        Table table = is.getTable(schemaName, tableName);
+        Table table = is.getTable(schemaName.toUpperCase(), tableName);
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
