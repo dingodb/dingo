@@ -45,7 +45,7 @@ public class SqlShowCreateTable extends SqlShow {
         if (tableIdentifier.names.size() == 1) {
             this.tableName = tableIdentifier.names.get(0);
         } else {
-            this.schemaName = tableIdentifier.names.get(0);
+            this.schemaName = tableIdentifier.names.get(0).toUpperCase();
             this.tableName = tableIdentifier.names.get(1);
         }
     }
@@ -56,7 +56,7 @@ public class SqlShowCreateTable extends SqlShow {
         if (StringUtils.isBlank(schemaName)) {
             writer.keyword(tableName);
         } else {
-            writer.keyword(schemaName);
+            writer.keyword(schemaName.toUpperCase());
             writer.keyword(".");
             writer.keyword(tableName);
         }
