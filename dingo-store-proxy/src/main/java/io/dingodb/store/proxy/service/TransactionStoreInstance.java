@@ -1084,12 +1084,18 @@ public class TransactionStoreInstance {
 
                 if(txnScanResponse.getError() == null) {
                     //get and set stream id for next request.
-                    this.streamId = txnScanResponse.getStreamMeta().getStreamId();
-                    keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
-                    hasMore = txnScanResponse.getStreamMeta().isHasMore();
-                    if (hasMore) {
-                        withStart = false;
-                        range = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                    if(txnScanResponse.getStreamMeta() != null) {
+                        this.streamId = txnScanResponse.getStreamMeta().getStreamId();
+                        keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
+                        hasMore = txnScanResponse.getStreamMeta().isHasMore();
+                        if (hasMore) {
+                            withStart = false;
+                            range = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                        }
+                    } else {
+                        keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
+                        hasMore = false;
+                        break;
                     }
                 } else {
                     LogUtils.info(log, txnScanResponse.getError().toString());
