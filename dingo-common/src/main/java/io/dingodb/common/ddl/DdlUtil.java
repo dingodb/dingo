@@ -17,7 +17,6 @@
 package io.dingodb.common.ddl;
 
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.scalar.BooleanType;

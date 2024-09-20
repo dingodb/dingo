@@ -17,6 +17,7 @@
 package io.dingodb.calcite.operation;
 
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
@@ -80,11 +81,9 @@ public class ShowCreateTableOperation extends QueryOperation {
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName.toUpperCase(), tableName);
         if (table == null) {
-            throw new RuntimeException("Table " + tableName + " doesn't exist");
+            String errorKey = schemaName + "." + tableName;
+            throw DingoResource.DINGO_RESOURCE.tableNotExists(errorKey).ex();
         }
-        //if (table.getVersion() == 1) {
-        //    return table.getCreateSql();
-        //}
         StringBuilder createTableSqlStr = new StringBuilder();
         createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
         createTableSqlStr.append("(");
@@ -135,7 +134,7 @@ public class ShowCreateTableOperation extends QueryOperation {
             for (int i = 0; i < indexSize; i ++) {
                 IndexTable indexTable = table.getIndexes().get(i);
                 if (indexTable.getName().equalsIgnoreCase(DdlUtil.ddlTmpTableName)
-                    || indexTable.getSchemaState() == SchemaState.SCHEMA_NONE) {
+                    || indexTable.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
                     continue;
                 }
                 createTableSqlStr.append(",");

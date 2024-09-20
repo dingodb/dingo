@@ -155,454 +155,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         this.userService = UserServiceProvider.getRoot();
     }
 
-    private static List<IndexDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
-        assert create.columnList != null;
-        List<IndexDefinition> tableDefList = create.columnList.stream()
-            .filter(col -> col.getKind() == SqlKind.UNIQUE)
-            .filter(col -> {
-                if (col instanceof DingoSqlKeyConstraint) {
-                    DingoSqlKeyConstraint keyConstraint = (DingoSqlKeyConstraint) col;
-                    return !keyConstraint.isUsePrimary();
-                }
-                return false;
-            })
-            .map(col -> fromSqlUniqueDeclaration((SqlKeyConstraint) col, tableDefinition))
-            .collect(Collectors.toCollection(ArrayList::new));
-        tableDefList.addAll(create.columnList.stream()
-            .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
-            .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
-            .collect(Collectors.toCollection(ArrayList::new)));
-        long count = tableDefList.stream().map(TableDefinition::getName).distinct().count();
-        if (tableDefList.size() > count) {
-            throw new IllegalArgumentException("Duplicate index name");
-        }
-        return tableDefList;
-    }
-
-    private static @Nullable IndexDefinition fromSqlUniqueDeclaration(
-        @NonNull SqlKeyConstraint sqlKeyConstraint,
-        TableDefinition tableDefinition
-    ) {
-        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
-        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
-            .collect(Collectors.toList());
-
-        // Primary key list
-        SqlNodeList sqlNodes = (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
-        List<String> columns = sqlNodes.getList().stream()
-            .filter(Objects::nonNull)
-            .map(SqlIdentifier.class::cast)
-            .map(SqlIdentifier::getSimple)
-            .map(String::toUpperCase)
-            .collect(Collectors.toCollection(ArrayList::new));
-
-        Properties properties = new Properties();
-
-        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
-        properties.put("indexType", "scalar");
-        for (int i = 0; i < columns.size(); i++) {
-            String columnName = columns.get(i);
-            if (!tableColumnNames.contains(columnName)) {
-                throw new RuntimeException("Invalid column name: " + columnName);
-            }
-
-            ColumnDefinition columnDefinition = tableColumns.stream()
-                .filter(f -> f.getName().equals(columnName))
-                .findFirst().orElse(null);
-            if (columnDefinition == null) {
-                throw new RuntimeException("not found column");
-            }
-
-            ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
-                .name(columnDefinition.getName())
-                .type(columnDefinition.getTypeName())
-                .elementType(columnDefinition.getElementType())
-                .precision(columnDefinition.getPrecision())
-                .scale(columnDefinition.getScale())
-                .nullable(columnDefinition.isNullable())
-                .primary(i)
-                .build();
-            indexColumnDefinitions.add(indexColumnDefinition);
-        }
-        tableDefinition.getKeyColumns().stream()
-            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
-            .map(columnDefinition -> ColumnDefinition.builder()
-                .name(columnDefinition.getName())
-                .type(columnDefinition.getTypeName())
-                .elementType(columnDefinition.getElementType())
-                .precision(columnDefinition.getPrecision())
-                .scale(columnDefinition.getScale())
-                .nullable(columnDefinition.isNullable())
-                .primary(-1)
-                .build())
-            .forEach(indexColumnDefinitions::add);
-
-        DingoSqlKeyConstraint dingoSqlKeyConstraint = (DingoSqlKeyConstraint) sqlKeyConstraint;
-        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
-            dingoSqlKeyConstraint.getUniqueName(), tableDefinition, true, columns, null
-        );
-        //TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
-        indexTableDefinition.setColumns(indexColumnDefinitions);
-        indexTableDefinition.setProperties(properties);
-
-        validatePartitionBy(
-            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            indexTableDefinition,
-            indexTableDefinition.getPartDefinition()
-        );
-
-        return indexTableDefinition;
-    }
-
-    private static IndexDefinition fromSqlIndexDeclaration(
-        @NonNull SqlIndexDeclaration indexDeclaration,
-        TableDefinition tableDefinition
-    ) {
-        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
-        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
-            .collect(Collectors.toList());
-
-        // Primary key list
-        List<String> columns = indexDeclaration.columnList;
-        List<String> originKeyList = new ArrayList<>(columns);
-
-        int keySize = columns.size();
-        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
-        AtomicInteger num = new AtomicInteger(0);
-        keyColumns.stream()
-            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
-            .map(ColumnDefinition::getName)
-            .map(String::toUpperCase)
-            .peek(__ -> { if (columns.contains(__)) num.getAndIncrement(); })
-            .filter(__ -> !columns.contains(__))
-            .forEach(columns::add);
-
-        Properties properties = indexDeclaration.getProperties();
-        if (properties == null) {
-            properties = new Properties();
-        }
-
-        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
-        //boolean isScalar = true;
-        int type = 1;
-        if (indexDeclaration.getIndexType().equalsIgnoreCase("scalar")) {
-            properties.put("indexType", "scalar");
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
-                if (!tableColumnNames.contains(columnName)) {
-                    throw new RuntimeException("Invalid column name: " + columnName);
-                }
-
-                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().orElse(null);
-                if (columnDefinition == null) {
-                    throw new RuntimeException("not found column");
-                }
-
-                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
-                    .name(columnDefinition.getName())
-                    .type(columnDefinition.getTypeName())
-                    .elementType(columnDefinition.getElementType())
-                    .precision(columnDefinition.getPrecision())
-                    .scale(columnDefinition.getScale())
-                    .nullable(columnDefinition.isNullable())
-                    .primary(i)
-                    .state(i >= keySize ? ColumnDefinition.HIDE_STATE : ColumnDefinition.NORMAL_STATE)
-                    .build();
-                indexColumnDefinitions.add(indexColumnDefinition);
-            }
-        } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
-            properties.put("indexType", "document");
-            String errorMsg = "Index column includes at least two columns, The first one must be text_id";
-            if (num.get() > 0) {
-                if (columns.size() < 2) {
-                    throw new RuntimeException(errorMsg);
-                }
-            } else {
-                if (columns.size() <= 2) {
-                    throw new RuntimeException(errorMsg);
-                }
-            }
-            type = 3;
-            int primary = 0;
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
-                if (!tableColumnNames.contains(columnName)) {
-                    throw new RuntimeException("Invalid column name: " + columnName);
-                }
-
-                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
-                if (i == 0) {
-                    if (!columnDefinition.getTypeName().equals("LONG")
-                        && !columnDefinition.getTypeName().equals("BIGINT")) {
-                        throw new RuntimeException("Invalid column type: " + columnName);
-                    }
-
-                    if (columnDefinition.isNullable()) {
-                        throw new RuntimeException("Column must be not null, column name: " + columnName);
-                    }
-                } else {
-                    if (!columnDefinition.getTypeName().equals("BIGINT")
-                        && !columnDefinition.getTypeName().equals("LONG")
-                        && !columnDefinition.getTypeName().equals("DOUBLE")
-                        && !columnDefinition.getTypeName().equals("VARCHAR")
-                        && !columnDefinition.getTypeName().equals("STRING")
-                        && !columnDefinition.getTypeName().equals("BYTES")) {
-                        throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
-                    }
-                    primary = -1;
-                }
-                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
-                    .name(columnDefinition.getName())
-                    .type(columnDefinition.getTypeName())
-                    .elementType(columnDefinition.getElementType())
-                    .precision(columnDefinition.getPrecision())
-                    .scale(columnDefinition.getScale())
-                    .nullable(columnDefinition.isNullable())
-                    .primary(primary)
-                    .build();
-                indexColumnDefinitions.add(indexColumnDefinition);
-            }
-            if (properties.get("text_fields") != null) {
-                String fields = String.valueOf(properties.get("text_fields"));
-                fields = fields.startsWith("'") ? fields.substring(1, fields.length() - 1) : fields;
-                properties.setProperty("text_fields", fields);
-            } else {
-                throw new RuntimeException("Invalid parameters");
-            }
-        } else {
-            properties.put("indexType", "vector");
-            type = 2;
-            int primary = 0;
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
-                if (!tableColumnNames.contains(columnName)) {
-                    throw new RuntimeException("Invalid column name: " + columnName);
-                }
-
-                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
-
-                if (i == 0) {
-                    if (!columnDefinition.getTypeName().equals("INTEGER")
-                        && !columnDefinition.getTypeName().equals("BIGINT")) {
-                        throw new RuntimeException("Invalid column type: " + columnName);
-                    }
-
-                    if (columnDefinition.isNullable()) {
-                        throw new RuntimeException("Column must be not null, column name: " + columnName);
-                    }
-                } else if (i == 1) {
-                    if (!columnDefinition.getTypeName().equals("ARRAY")
-                        || !(columnDefinition.getElementType() != null
-                            && columnDefinition.getElementType().equals("FLOAT"))) {
-                        throw new RuntimeException("Invalid column type: " + columnName);
-                    }
-                    if (columnDefinition.isNullable()) {
-                        throw new RuntimeException("Column must be not null, column name: " + columnName);
-                    }
-                    primary = -1;
-                }
-
-                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
-                    .name(columnDefinition.getName())
-                    .type(columnDefinition.getTypeName())
-                    .elementType(columnDefinition.getElementType())
-                    .precision(columnDefinition.getPrecision())
-                    .scale(columnDefinition.getScale())
-                    .nullable(columnDefinition.isNullable())
-                    .primary(primary)
-                    .build();
-                indexColumnDefinitions.add(indexColumnDefinition);
-            }
-        }
-
-        // Not primary key list
-        if (indexDeclaration.withColumnList != null) {
-            List<String> otherColumns = indexDeclaration.withColumnList;
-
-            for (String columnName : otherColumns) {
-                // Check if the column exists in the original table
-                if (!tableColumnNames.contains(columnName)) {
-                    throw new RuntimeException("Invalid column name: " + columnName);
-                }
-
-                if (columns.contains(columnName)) {
-                    continue;
-                }
-
-                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
-                    .findFirst().orElse(null);
-                if (columnDefinition == null) {
-                    throw new RuntimeException("could not find column");
-                }
-
-                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
-                    .name(columnDefinition.getName())
-                    .type(columnDefinition.getTypeName())
-                    .elementType(columnDefinition.getElementType())
-                    .precision(columnDefinition.getPrecision())
-                    .scale(columnDefinition.getScale())
-                    .nullable(columnDefinition.isNullable())
-                    .primary(-1)
-                    .build();
-                indexColumnDefinitions.add(indexColumnDefinition);
-            }
-        }
-        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
-            indexDeclaration.index, tableDefinition, indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
-        );
-        indexTableDefinition.setColumns(indexColumnDefinitions);
-        indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
-        int replica = getReplica(indexDeclaration.getReplica(), type);
-        indexTableDefinition.setReplica(replica);
-        indexTableDefinition.setProperties(properties);
-        String engine = null;
-        if (indexDeclaration.getEngine() != null) {
-            engine = indexDeclaration.getEngine().toUpperCase();
-        }
-        indexTableDefinition.setEngine(engine);
-
-        validatePartitionBy(
-            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            indexTableDefinition,
-            indexTableDefinition.getPartDefinition()
-        );
-
-        return indexTableDefinition;
-    }
-
-    private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
-        @NonNull DingoSqlColumn scd,
-        SqlValidator validator,
-        List<String> pkSet
-    ) {
-        SqlDataTypeSpec typeSpec = scd.dataType;
-        RelDataType dataType = typeSpec.deriveType(validator, true);
-        SqlTypeName typeName = dataType.getSqlTypeName();
-        int precision = typeName.allowsPrec() ? dataType.getPrecision() : RelDataType.PRECISION_NOT_SPECIFIED;
-        if ((typeName == SqlTypeName.TIME || typeName == SqlTypeName.TIMESTAMP)) {
-            if (precision > 3) {
-                throw new RuntimeException("Precision " + precision + " is not support.");
-            }
-        }
-        String defaultValue = null;
-        ColumnStrategy strategy = scd.strategy;
-        if (strategy == ColumnStrategy.DEFAULT) {
-            SqlNode expr = scd.expression;
-            if (expr != null) {
-                defaultValue = expr.toSqlString(c -> c.withDialect(AnsiSqlDialect.DEFAULT)
-                    .withAlwaysUseParentheses(false)
-                    .withSelectListItemsOnSeparateLines(false)
-                    .withUpdateSetListNewline(false)
-                    .withIndentation(0)
-                    .withQuoteAllIdentifiers(false)
-                ).getSql();
-            }
-        }
-
-        String name = scd.name.getSimple().toUpperCase();
-        if (!namePattern.matcher(name).matches()) {
-            throw DINGO_RESOURCE.invalidColumn().ex();
-        }
-
-        // Obtaining id from method
-        if (scd.isAutoIncrement() && !SqlTypeName.INT_TYPES.contains(typeName)) {
-            throw DINGO_RESOURCE.specifierForColumn(name).ex();
-        }
-
-        if (!dataType.isNullable() && "NULL".equalsIgnoreCase(defaultValue)) {
-            throw DINGO_RESOURCE.invalidDefaultValue(name).ex();
-        }
-        assert pkSet != null;
-        int primary = pkSet.indexOf(name);
-        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
-        RelDataType elementType = dataType.getComponentType();
-        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
-        return ColumnDefinition.builder()
-            .name(name)
-            .type(typeName.getName())
-            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
-            .precision(precision)
-            .scale(scale)
-            .nullable(!(primary >= 0) && dataType.isNullable())
-            .primary(primary)
-            .defaultValue(defaultValue)
-            .autoIncrement(scd.isAutoIncrement())
-            .comment(scd.getComment())
-            .build();
-    }
-
-    private static @Nullable ColumnDefinition createRowIdColDef(
-        SqlValidator validator
-    ) {
-        SqlTypeNameSpec sqlTypeNameSpec = new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, -1,
-            new SqlParserPos(0, 0));
-        SqlDataTypeSpec typeSpec = new SqlDataTypeSpec(sqlTypeNameSpec, new SqlParserPos(10, 1));
-        RelDataType dataType = typeSpec.deriveType(validator, true);
-        SqlTypeName typeName = dataType.getSqlTypeName();
-
-        String name = "_ROWID";
-
-        String defaultValue = "";
-
-        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
-        RelDataType elementType = dataType.getComponentType();
-        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
-        return ColumnDefinition.builder()
-            .name(name)
-            .type(typeName.getName())
-            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
-            .precision(-1)
-            .scale(scale)
-            .nullable(false)
-            .primary(0)
-            .defaultValue(defaultValue)
-            .autoIncrement(true)
-            // hide column
-            .state(2)
-            .build();
-    }
-
-    private static SubSnapshotSchema getSnapShotSchema(
-        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context, boolean ifExist
-    ) {
-        CalciteSchema rootSchema = context.getMutableRootSchema();
-        assert rootSchema != null : "No root schema.";
-
-        List<String> names = new ArrayList<>(id.names);
-        Schema schema = null;
-
-        if (names.size() == 1) {
-            final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
-            assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
-            schema = Optional.mapOrNull(rootSchema.getSubSchema(defaultSchemaPath.get(0), false), $ -> $.schema);
-        } else {
-            CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), false);
-            if (subSchema != null) {
-                schema = subSchema.schema;
-            } else if (!ifExist) {
-                throw DINGO_RESOURCE.unknownSchema(names.get(0)).ex();
-            }
-        }
-        return (SubSnapshotSchema) schema;
-    }
-
-    private static @NonNull String getTableName(@NonNull SqlIdentifier id) {
-        if (id.names.size() == 1) {
-            return id.names.get(0).toUpperCase();
-        } else {
-            return id.names.get(1).toUpperCase();
-        }
-    }
-
-    private static @NonNull Pair<SubSnapshotSchema, String> getSchemaAndTableName(
-        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
-    ) {
-        return Pair.of(getSnapShotSchema(id, context, false), getTableName(id));
-    }
-
     public void execute(SqlCreateSchema schema, CalcitePrepare.Context context) {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("createSchema");
         LogUtils.info(log, "DDL execute: {}", schema);
@@ -857,10 +409,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schema.getTable(tableName) != null) {
             if (!create.ifNotExists) {
                 // They did not specify IF NOT EXISTS, so give error.
-                throw SqlUtil.newContextException(
-                    create.name.getParserPosition(),
-                    RESOURCE.tableExists(tableName)
-                );
+                throw DINGO_RESOURCE.tableExists(tableName).ex();
             } else {
                 return;
             }
@@ -1712,6 +1261,477 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
 
+    }
+
+    private static List<IndexDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
+        assert create.columnList != null;
+        List<IndexDefinition> tableDefList = create.columnList.stream()
+            .filter(col -> col.getKind() == SqlKind.UNIQUE)
+            .filter(col -> {
+                if (col instanceof DingoSqlKeyConstraint) {
+                    DingoSqlKeyConstraint keyConstraint = (DingoSqlKeyConstraint) col;
+                    return !keyConstraint.isUsePrimary();
+                }
+                return false;
+            })
+            .map(col -> fromSqlUniqueDeclaration((SqlKeyConstraint) col, tableDefinition))
+            .collect(Collectors.toCollection(ArrayList::new));
+        tableDefList.addAll(create.columnList.stream()
+            .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
+            .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
+            .collect(Collectors.toCollection(ArrayList::new)));
+        long count = tableDefList.stream().map(TableDefinition::getName).distinct().count();
+        if (tableDefList.size() > count) {
+            throw new IllegalArgumentException("Duplicate index name");
+        }
+        return tableDefList;
+    }
+
+    private static IndexDefinition fromSqlUniqueDeclaration(
+        @NonNull SqlKeyConstraint sqlKeyConstraint,
+        TableDefinition tableDefinition
+    ) {
+        // Primary key list
+        SqlNodeList sqlNodes = (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
+        List<String> columns = sqlNodes.getList().stream()
+            .filter(Objects::nonNull)
+            .map(SqlIdentifier.class::cast)
+            .map(SqlIdentifier::getSimple)
+            .map(String::toUpperCase)
+            .collect(Collectors.toCollection(ArrayList::new));
+        DingoSqlKeyConstraint sqlKeyConstraint1 = (DingoSqlKeyConstraint) sqlKeyConstraint;
+        return getIndexDefinition(
+            sqlKeyConstraint1.getUniqueName(),
+            tableDefinition, columns
+        );
+    }
+
+    private static IndexDefinition fromSqlUniqueDeclaration(
+        SqlIndexDeclaration sqlIndexDeclaration,
+        TableDefinition tableDefinition
+    ) {
+        // Primary key list
+        return getIndexDefinition(
+            sqlIndexDeclaration.index,
+            tableDefinition, sqlIndexDeclaration.columnList
+        );
+    }
+
+    @NonNull
+    private static IndexDefinition getIndexDefinition(
+        String name,
+        TableDefinition tableDefinition,
+        List<String> columns
+    ) {
+        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
+        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
+            .collect(Collectors.toList());
+        Properties properties = new Properties();
+        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
+        properties.put("indexType", "scalar");
+        for (int i = 0; i < columns.size(); i++) {
+            String columnName = columns.get(i);
+            if (!tableColumnNames.contains(columnName)) {
+                throw new RuntimeException("Invalid column name: " + columnName);
+            }
+
+            ColumnDefinition columnDefinition = tableColumns.stream()
+                .filter(f -> f.getName().equals(columnName))
+                .findFirst().orElse(null);
+            if (columnDefinition == null) {
+                throw new RuntimeException("not found column");
+            }
+
+            ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                .name(columnDefinition.getName())
+                .type(columnDefinition.getTypeName())
+                .elementType(columnDefinition.getElementType())
+                .precision(columnDefinition.getPrecision())
+                .scale(columnDefinition.getScale())
+                .nullable(columnDefinition.isNullable())
+                .primary(i)
+                .build();
+            indexColumnDefinitions.add(indexColumnDefinition);
+        }
+        tableDefinition.getKeyColumns().stream()
+            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
+            .map(columnDefinition -> ColumnDefinition.builder()
+                .name(columnDefinition.getName())
+                .type(columnDefinition.getTypeName())
+                .elementType(columnDefinition.getElementType())
+                .precision(columnDefinition.getPrecision())
+                .scale(columnDefinition.getScale())
+                .nullable(columnDefinition.isNullable())
+                .primary(-1)
+                .build())
+            .forEach(indexColumnDefinitions::add);
+
+        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
+            name, tableDefinition, true, columns, null
+        );
+        //TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
+        indexTableDefinition.setColumns(indexColumnDefinitions);
+        indexTableDefinition.setProperties(properties);
+
+        validatePartitionBy(
+            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            indexTableDefinition,
+            indexTableDefinition.getPartDefinition()
+        );
+
+        return indexTableDefinition;
+    }
+
+    private static IndexDefinition fromSqlIndexDeclaration(
+        @NonNull SqlIndexDeclaration indexDeclaration,
+        TableDefinition tableDefinition
+    ) {
+        if (indexDeclaration.unique) {
+            return fromSqlUniqueDeclaration(indexDeclaration, tableDefinition);
+        }
+        List<ColumnDefinition> tableColumns = tableDefinition.getColumns();
+        List<String> tableColumnNames = tableColumns.stream().map(ColumnDefinition::getName)
+            .collect(Collectors.toList());
+
+        // Primary key list
+        List<String> columns = indexDeclaration.columnList;
+        List<String> originKeyList = new ArrayList<>(columns);
+
+        int keySize = columns.size();
+        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+        AtomicInteger num = new AtomicInteger(0);
+        keyColumns.stream()
+            .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
+            .map(ColumnDefinition::getName)
+            .map(String::toUpperCase)
+            .peek(__ -> { if (columns.contains(__)) num.getAndIncrement(); })
+            .filter(__ -> !columns.contains(__))
+            .forEach(columns::add);
+
+        Properties properties = indexDeclaration.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+        }
+
+        List<ColumnDefinition> indexColumnDefinitions = new ArrayList<>();
+        //boolean isScalar = true;
+        int type = 1;
+        if (indexDeclaration.getIndexType().equalsIgnoreCase("scalar")) {
+            properties.put("indexType", "scalar");
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().orElse(null);
+                if (columnDefinition == null) {
+                    throw new RuntimeException("not found column");
+                }
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(i)
+                    .state(i >= keySize ? ColumnDefinition.HIDE_STATE : ColumnDefinition.NORMAL_STATE)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
+            properties.put("indexType", "document");
+            String errorMsg = "Index column includes at least two columns, The first one must be text_id";
+            if (num.get() > 0) {
+                if (columns.size() < 2) {
+                    throw new RuntimeException(errorMsg);
+                }
+            } else {
+                if (columns.size() <= 2) {
+                    throw new RuntimeException(errorMsg);
+                }
+            }
+            type = 3;
+            int primary = 0;
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
+                if (i == 0) {
+                    if (!columnDefinition.getTypeName().equals("LONG")
+                        && !columnDefinition.getTypeName().equals("BIGINT")) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                } else {
+                    if (!columnDefinition.getTypeName().equals("BIGINT")
+                        && !columnDefinition.getTypeName().equals("LONG")
+                        && !columnDefinition.getTypeName().equals("DOUBLE")
+                        && !columnDefinition.getTypeName().equals("VARCHAR")
+                        && !columnDefinition.getTypeName().equals("STRING")
+                        && !columnDefinition.getTypeName().equals("BYTES")) {
+                        throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
+                    }
+                    primary = -1;
+                }
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(primary)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+            if (properties.get("text_fields") != null) {
+                String fields = String.valueOf(properties.get("text_fields"));
+                fields = fields.startsWith("'") ? fields.substring(1, fields.length() - 1) : fields;
+                properties.setProperty("text_fields", fields);
+            } else {
+                throw new RuntimeException("Invalid parameters");
+            }
+        } else {
+            properties.put("indexType", "vector");
+            type = 2;
+            int primary = 0;
+            for (int i = 0; i < columns.size(); i++) {
+                String columnName = columns.get(i);
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
+
+                if (i == 0) {
+                    if (!columnDefinition.getTypeName().equals("INTEGER")
+                        && !columnDefinition.getTypeName().equals("BIGINT")) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                } else if (i == 1) {
+                    if (!columnDefinition.getTypeName().equals("ARRAY")
+                        || !(columnDefinition.getElementType() != null
+                        && columnDefinition.getElementType().equals("FLOAT"))) {
+                        throw new RuntimeException("Invalid column type: " + columnName);
+                    }
+                    if (columnDefinition.isNullable()) {
+                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                    }
+                    primary = -1;
+                }
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(primary)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        }
+
+        // Not primary key list
+        if (indexDeclaration.withColumnList != null) {
+            List<String> otherColumns = indexDeclaration.withColumnList;
+
+            for (String columnName : otherColumns) {
+                // Check if the column exists in the original table
+                if (!tableColumnNames.contains(columnName)) {
+                    throw new RuntimeException("Invalid column name: " + columnName);
+                }
+
+                if (columns.contains(columnName)) {
+                    continue;
+                }
+
+                ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
+                    .findFirst().orElse(null);
+                if (columnDefinition == null) {
+                    throw new RuntimeException("could not find column");
+                }
+
+                ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
+                    .name(columnDefinition.getName())
+                    .type(columnDefinition.getTypeName())
+                    .elementType(columnDefinition.getElementType())
+                    .precision(columnDefinition.getPrecision())
+                    .scale(columnDefinition.getScale())
+                    .nullable(columnDefinition.isNullable())
+                    .primary(-1)
+                    .build();
+                indexColumnDefinitions.add(indexColumnDefinition);
+            }
+        }
+        IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
+            indexDeclaration.index, tableDefinition, indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
+        );
+        indexTableDefinition.setColumns(indexColumnDefinitions);
+        indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
+        int replica = getReplica(indexDeclaration.getReplica(), type);
+        indexTableDefinition.setReplica(replica);
+        indexTableDefinition.setProperties(properties);
+        String engine = null;
+        if (indexDeclaration.getEngine() != null) {
+            engine = indexDeclaration.getEngine().toUpperCase();
+        }
+        indexTableDefinition.setEngine(engine);
+
+        validatePartitionBy(
+            indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            indexTableDefinition,
+            indexTableDefinition.getPartDefinition()
+        );
+
+        return indexTableDefinition;
+    }
+
+    private static @Nullable ColumnDefinition fromSqlColumnDeclaration(
+        @NonNull DingoSqlColumn scd,
+        SqlValidator validator,
+        List<String> pkSet
+    ) {
+        SqlDataTypeSpec typeSpec = scd.dataType;
+        RelDataType dataType = typeSpec.deriveType(validator, true);
+        SqlTypeName typeName = dataType.getSqlTypeName();
+        int precision = typeName.allowsPrec() ? dataType.getPrecision() : RelDataType.PRECISION_NOT_SPECIFIED;
+        if ((typeName == SqlTypeName.TIME || typeName == SqlTypeName.TIMESTAMP)) {
+            if (precision > 3) {
+                throw new RuntimeException("Precision " + precision + " is not support.");
+            }
+        }
+        String defaultValue = null;
+        ColumnStrategy strategy = scd.strategy;
+        if (strategy == ColumnStrategy.DEFAULT) {
+            SqlNode expr = scd.expression;
+            if (expr != null) {
+                defaultValue = expr.toSqlString(c -> c.withDialect(AnsiSqlDialect.DEFAULT)
+                    .withAlwaysUseParentheses(false)
+                    .withSelectListItemsOnSeparateLines(false)
+                    .withUpdateSetListNewline(false)
+                    .withIndentation(0)
+                    .withQuoteAllIdentifiers(false)
+                ).getSql();
+            }
+        }
+
+        String name = scd.name.getSimple().toUpperCase();
+        if (!namePattern.matcher(name).matches()) {
+            throw DINGO_RESOURCE.invalidColumn().ex();
+        }
+
+        // Obtaining id from method
+        if (scd.isAutoIncrement() && !SqlTypeName.INT_TYPES.contains(typeName)) {
+            throw DINGO_RESOURCE.specifierForColumn(name).ex();
+        }
+
+        if (!dataType.isNullable() && "NULL".equalsIgnoreCase(defaultValue)) {
+            throw DINGO_RESOURCE.invalidDefaultValue(name).ex();
+        }
+        assert pkSet != null;
+        int primary = pkSet.indexOf(name);
+        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
+        RelDataType elementType = dataType.getComponentType();
+        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
+        return ColumnDefinition.builder()
+            .name(name)
+            .type(typeName.getName())
+            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
+            .precision(precision)
+            .scale(scale)
+            .nullable(!(primary >= 0) && dataType.isNullable())
+            .primary(primary)
+            .defaultValue(defaultValue)
+            .autoIncrement(scd.isAutoIncrement())
+            .comment(scd.getComment())
+            .build();
+    }
+
+    private static @Nullable ColumnDefinition createRowIdColDef(
+        SqlValidator validator
+    ) {
+        SqlTypeNameSpec sqlTypeNameSpec = new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, -1,
+            new SqlParserPos(0, 0));
+        SqlDataTypeSpec typeSpec = new SqlDataTypeSpec(sqlTypeNameSpec, new SqlParserPos(10, 1));
+        RelDataType dataType = typeSpec.deriveType(validator, true);
+        SqlTypeName typeName = dataType.getSqlTypeName();
+
+        String name = "_ROWID";
+
+        String defaultValue = "";
+
+        int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
+        RelDataType elementType = dataType.getComponentType();
+        SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
+        return ColumnDefinition.builder()
+            .name(name)
+            .type(typeName.getName())
+            .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
+            .precision(-1)
+            .scale(scale)
+            .nullable(false)
+            .primary(0)
+            .defaultValue(defaultValue)
+            .autoIncrement(true)
+            // hide column
+            .state(2)
+            .build();
+    }
+
+    private static SubSnapshotSchema getSnapShotSchema(
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context, boolean ifExist
+    ) {
+        CalciteSchema rootSchema = context.getMutableRootSchema();
+        assert rootSchema != null : "No root schema.";
+
+        List<String> names = new ArrayList<>(id.names);
+        Schema schema = null;
+
+        if (names.size() == 1) {
+            final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
+            assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
+            schema = Optional.mapOrNull(rootSchema.getSubSchema(defaultSchemaPath.get(0), false), $ -> $.schema);
+        } else {
+            CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), false);
+            if (subSchema != null) {
+                schema = subSchema.schema;
+            } else if (!ifExist) {
+                throw DINGO_RESOURCE.unknownSchema(names.get(0)).ex();
+            }
+        }
+        return (SubSnapshotSchema) schema;
+    }
+
+    private static @NonNull String getTableName(@NonNull SqlIdentifier id) {
+        if (id.names.size() == 1) {
+            return id.names.get(0).toUpperCase();
+        } else {
+            return id.names.get(1).toUpperCase();
+        }
+    }
+
+    private static @NonNull Pair<SubSnapshotSchema, String> getSchemaAndTableName(
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
+    ) {
+        return Pair.of(getSnapShotSchema(id, context, false), getTableName(id));
     }
 
 }

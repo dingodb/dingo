@@ -454,21 +454,25 @@ public class LoadDataOperation implements DmlOperation {
         if (refreshTxnId) {
             long start = System.currentTimeMillis();
             int cacheSize;
+            Txn txn = new Txn(
+                txnId, txnRetry, txnRetryCnt, timeOut
+            );
             try {
                 List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
-                Txn txn = new Txn(
-                    txnId, txnRetry, txnRetryCnt, timeOut
-                );
                 int result = txn.commit(tupleList);
                 count.addAndGet(result);
                 cacheSize = caches.size();
                 caches.clear();
             } finally {
+                txn.close();
                 env.memCacheFor2PC.memoryCache.remove(statementId);
             }
             long sub = System.currentTimeMillis() - start;
-            LogUtils.info(log, "insert txn batch size: {}, cost time: {}ms, insert count:{}",
-                cacheSize, sub, count.get());
+            long totalCount = count.get();
+            if (totalCount % 4096 == 0) {
+                LogUtils.info(log, "insert txn batch size: {}, cost time: {}ms, insert count:{}",
+                    cacheSize, sub, totalCount);
+            }
             refreshTxnId = false;
         }
     }

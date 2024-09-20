@@ -64,7 +64,7 @@ public interface DingoResource {
     @BaseMessage("Operation DROP USER failed for ''{0}''@''{1}''")
     ExInst<DingoSqlException> dropUserFailed(String a0, String a1);
 
-    @BaseMessage("Operation DROP USER failed for ''{0}''@''{1}''")
+    @BaseMessage("Operation ALTER USER failed for ''{0}''@''{1}''")
     ExInst<DingoSqlException> alterUserFailed(String a0, String a1);
 
     @BaseMessage("Can't find any matching row in the user table")
@@ -141,10 +141,13 @@ public interface DingoResource {
     @BaseMessage("Error 8200 (HY000): can't drop column name with composite index covered or Primary Key covered now")
     ExInst<DingoSqlException> dropColumnError();
 
-    @BaseMessage("ERROR 8200 (HY000): unsupported add column ''{0}'' constraint PRIMARY KEY when altering ''{1}''")
+    @BaseMessage("Error 8200 (HY000): unsupported add column ''{0}'' constraint PRIMARY KEY when altering ''{1}''")
     ExInst<DingoSqlException> addColumnPrimaryError(String columnName, String tableName);
 
-    @BaseMessage("ERROR 8200 (HY000): unsupported add column ''{0}'' constraint AUTO_INCREMENT when altering ''{1}''")
+    @BaseMessage("Error 8200 (HY000): unsupported add column ''{0}'' constraint AUTO_INCREMENT when altering ''{1}''")
     ExInst<DingoSqlException> addColumnAutoIncError(String columnName, String tableName);
+
+    @BaseMessage("Error 1050 (42S01): Table ''{0}'' already exists")
+    ExInst<DingoSqlException> tableExists(String name);
 
 }

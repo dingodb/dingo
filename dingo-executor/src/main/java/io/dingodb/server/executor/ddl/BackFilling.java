@@ -114,17 +114,18 @@ public final class BackFilling {
                 "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
                 bfWorkerType, job.getId(), filler.getScanCount(),
                 filler.getAddCount(), filler.getConflictCount(), (end - start));
+            start = System.currentTimeMillis();
+            boolean commitPriRes = filler.commitPrimary();
+            boolean commitSecondRes = filler.commitSecond();
+            end = System.currentTimeMillis();
+            long sub = (end - start);
+            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, jobId:{}, commitCnt:{}, cost:{}ms",
+                commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, "pre write second error", e);
             return e.getMessage();
         } finally {
-            start = System.currentTimeMillis();
-            boolean commitPriRes = filler.commitPrimary();
-            boolean commitSecondRes = filler.commitSecond();
-            long end = System.currentTimeMillis();
-            long sub = (end - start);
-            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, jobId:{}, commitCnt:{}, cost:{}ms",
-                commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
+            filler.close();
         }
         return null;
     }

@@ -54,6 +54,7 @@ import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.transaction.api.TransactionService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
@@ -90,6 +91,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

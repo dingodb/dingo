@@ -198,7 +198,6 @@ public class Txn {
 
     public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
-        int size = param.getMutations().size();
         Timer.Context timeCtx = DingoMetrics.getTimeContext("preWrite");
         param.setTxnSize(param.getMutations().size());
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
@@ -599,6 +598,12 @@ public class Txn {
                 }
             }
             return true;
+        }
+    }
+
+    public void close() {
+        if (this.future != null) {
+            this.future.cancel(true);
         }
     }
 }
