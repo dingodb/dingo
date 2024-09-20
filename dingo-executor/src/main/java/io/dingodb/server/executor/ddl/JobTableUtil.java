@@ -304,30 +304,11 @@ public final class JobTableUtil {
         }
     }
 
-    public static Pair<List<DdlJob>, String> getReorgJobs(Session session) {
-        try {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("reorgJob");
-            Pair<List<DdlJob>, String> res = getJobs(session, reorg, job1 -> {
-                String sql = "select job_id from mysql.dingo_ddl_job where "
-                    + "(schema_ids = %s and type = %d and processing) "
-                    + " or (table_ids = %s and processing) "
-                    + " limit 1";
-                sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()), job1.getActionType().getCode(), Utils.quoteForSql(job1.getTableId()));
-                return checkJobIsRunnable(session, sql);
-            });
-            timeCtx.stop();
-            return res;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            return Pair.of(null, e.getMessage());
-        }
-    }
-
     public static String removeDDLReorgHandle(Session session, long jobId, MetaElement[] elements) {
         if (elements.length == 0) {
             return null;
         }
-        String sqlTmp = "delete from mysql.tidb_ddl_reorg where job_id = %d";
+        String sqlTmp = "delete from mysql.dingo_ddl_reorg where job_id = %d";
         String sql = String.format(sqlTmp, jobId);
         try {
             session.runInTxn(t -> {

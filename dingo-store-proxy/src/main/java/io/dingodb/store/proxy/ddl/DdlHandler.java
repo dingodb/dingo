@@ -43,6 +43,7 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -418,7 +419,8 @@ public final class DdlHandler {
             return Pair.of(true, null);
         }
         if (ddlJob.getError() != null) {
-            return Pair.of(false, ddlJob.getError());
+            String error = new String(Base64.getDecoder().decode(ddlJob.getError()));
+            return Pair.of(false, error);
         }
         return Pair.of(false, null);
     }

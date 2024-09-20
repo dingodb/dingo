@@ -41,6 +41,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutors;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
+import io.dingodb.calcite.grammar.dql.SqlShowIndexFromTable;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
 import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
@@ -236,6 +237,12 @@ public final class SqlToOperationConverter {
             return Optional.of(new ShowTenantOperation());
         } else if (sqlNode instanceof SqlShowExecutors) {
             return Optional.of(new ShowExecutorsOperation());
+        } else if (sqlNode instanceof SqlShowIndexFromTable) {
+            SqlShowIndexFromTable showIndexFromTable = (SqlShowIndexFromTable) sqlNode;
+            if (StringUtils.isEmpty(showIndexFromTable.schemaName)) {
+                showIndexFromTable.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowIndexFromTableOperation(showIndexFromTable));
         } else {
             return Optional.empty();
         }

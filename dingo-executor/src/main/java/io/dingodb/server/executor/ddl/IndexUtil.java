@@ -83,7 +83,6 @@ public final class IndexUtil {
             if (reorgInfoRes.getValue() != null) {
                 throw new RuntimeException(reorgInfoRes.getValue());
             }
-            //Utils.sleep(30000);
             ReorgInfo reorgInfo = reorgInfoRes.getKey();
             //if (reorgInfo.isFirst()) {
             //    return Pair.of(false, 0L);
@@ -95,19 +94,20 @@ public final class IndexUtil {
                 if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
                     return Pair.of(false, 0L);
                 }
-                if ("ErrKeyExists".equalsIgnoreCase(error)
+                if (error.contains("Duplicate entry")
                     || "ErrCancelledDDLJob".equalsIgnoreCase(error)
                     || "ErrCantDecodeRecord".equalsIgnoreCase(error))
                 {
-                    LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, error:{}", job.getId(), error);
+                    LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, " +
+                        "error:{}", job.getId(), error);
                     Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, index);
                     if (res.getValue() != null) {
                         error = res.getValue();
                     }
-                    String error1 = JobTableUtil.removeDDLReorgHandle(session, job.getId(), reorgInfo.getElements());
-                    if (error1 != null) {
-                        LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, RemoveDDLReorgHandle failed, jobId:{}, error:{}", job.getId(), error1);
-                    }
+                    //String error1 = JobTableUtil.removeDDLReorgHandle(session, job.getId(), reorgInfo.getElements());
+                    //if (error1 != null) {
+                    //    LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, RemoveDDLReorgHandle failed, jobId:{}, error:{}", job.getId(), error1);
+                    //}
                 }
                 throw new RuntimeException(error);
             }

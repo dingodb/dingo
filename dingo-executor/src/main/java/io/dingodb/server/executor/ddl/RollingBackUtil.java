@@ -22,9 +22,6 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.util.Pair;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class RollingBackUtil {
     private RollingBackUtil() {
 
@@ -35,14 +32,11 @@ public final class RollingBackUtil {
         DdlJob ddlJob,
         TableDefinitionWithId indexInfo
     ) {
-//        List<Object> args = new ArrayList<>();
-//        args.add(indexInfo.getTableDefinition().getName());
-//        args.add("false");
-//        ddlJob.setArgs(args);
         io.dingodb.sdk.service.entity.common.SchemaState originalState = indexInfo.getTableDefinition().getSchemaState();
         indexInfo.getTableDefinition().setSchemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY);
         ddlJob.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
-        Pair<Long, String> res = TableUtil.updateVersionAndIndexInfos(dc, ddlJob, indexInfo, originalState != indexInfo.getTableDefinition().getSchemaState());
+        Pair<Long, String> res = TableUtil.updateVersionAndIndexInfos(dc, ddlJob, indexInfo,
+            originalState != indexInfo.getTableDefinition().getSchemaState());
         if (res.getValue() != null) {
             return res;
         }

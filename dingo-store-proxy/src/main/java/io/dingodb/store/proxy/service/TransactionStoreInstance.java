@@ -78,7 +78,6 @@ import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -124,10 +123,12 @@ public class TransactionStoreInstance {
     }
 
     public void heartbeat(TxnPreWrite txnPreWrite) {
+        LogUtils.info(log, "pre write optimistic heartbeat startTs:{}", txnPreWrite.getStartTs());
         heartBeat(txnPreWrite.getStartTs(), txnPreWrite.getPrimaryLock(), false);
     }
 
     public void heartbeat(TxnPessimisticLock txnPessimisticLock) {
+        LogUtils.info(log, "pre write pessimistic heartbeat startTs:{}", txnPessimisticLock.getStartTs());
         heartBeat(txnPessimisticLock.getStartTs(), txnPessimisticLock.getPrimaryLock(), true);
     }
 
@@ -255,19 +256,22 @@ public class TransactionStoreInstance {
 
     public static void getJoinedPrimaryKey(TxnPreWrite txnPreWrite, List<AlreadyExist> keysAlreadyExist) {
         CommonId tableId = LockExtraDataList.decode(txnPreWrite.getLockExtraDatas().get(0).getExtraData()).getTableId();
-        //InfoSchemaService infoSchemaService = new InfoSchemaService(txnPreWrite.getStartTs());
-        //Table table = infoSchemaService.getTableDef(tableId.domain, tableId.seq);
         CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
             TransactionManager.getServerId().seq, txnPreWrite.getStartTs());
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        assert table != null;
+        KeyValueCodec codec = CodecService.getDefault()
+            .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();
         keysAlreadyExist.forEach(
             i -> Optional.ofNullable(codec.decodeKeyPrefix(i.getKey()))
-                .ifPresent(keyValues -> joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping))))
+                .ifPresent(keyValues ->
+                    joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)))
+                )
         );
-        throw new DuplicateEntryException("Duplicate entry " + joinedKey.get() + " for key '" + table.getName() + ".PRIMARY'");
+        throw new DuplicateEntryException("Duplicate entry " + joinedKey.get()
+            + " for key '" + table.getName() + ".PRIMARY'");
     }
 
     public Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
