@@ -84,6 +84,7 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowEngines"
       "io.dingodb.calcite.grammar.dql.SqlShowGrants"
       "io.dingodb.calcite.grammar.dql.SqlShowTableIndex"
+      "io.dingodb.calcite.grammar.dql.SqlShowIndexFromTable"
       "io.dingodb.calcite.grammar.dql.SqlShowLocks"
       "io.dingodb.calcite.grammar.dql.SqlShowTableDistribution"
       "io.dingodb.calcite.grammar.dql.SqlShowTables"

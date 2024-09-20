@@ -157,7 +157,6 @@ public final class TransactionManager {
     public static Object getIndex(CommonId txnId, CommonId indexId) {
         ITransaction transaction = trans.get(txnId);
         if (transaction == null) {
-            LogUtils.info(log, "[ddl] get index by txn, txn is null:{}", txnId);
             return DdlService.root().getTable(indexId);
         }
         InfoSchema is = transaction.getIs();

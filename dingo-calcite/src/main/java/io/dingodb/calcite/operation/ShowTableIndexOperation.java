@@ -16,7 +16,9 @@
 
 package io.dingodb.calcite.operation;
 
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.utils.MetaServiceUtils;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.DdlService;
@@ -60,12 +62,15 @@ public class ShowTableIndexOperation extends QueryOperation {
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName, tableName);
         if (table == null) {
-            throw new RuntimeException("table not exists");
+            String errorKey = schemaName + "." + tableName;
+            throw DingoResource.DINGO_RESOURCE.tableNotExists(errorKey).ex();
         }
-        tuples = metaService.getTableIndexDefinitions(table.getTableId()).values().stream().filter(i -> !i.getName().equalsIgnoreCase(tableName)).map(
-            index -> {
+        tuples = metaService.getTableIndexDefinitions(table.getTableId())
+            .values()
+            .stream().filter(i -> !i.getName().equalsIgnoreCase(tableName))
+            .map(index -> {
                 Properties properties = index.getProperties();
-                if (!properties.containsKey("indexType")) {
+                if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
                     return null;
                 }
                 return new Object[] {

@@ -35,10 +35,10 @@ public class ShowColumnsOperation extends QueryOperation {
     @Setter
     public SqlNode sqlNode;
 
-    private String schemaName;
-    private String tableName;
+    private final String schemaName;
+    private final String tableName;
 
-    private String sqlLikePattern;
+    private final String sqlLikePattern;
 
     public ShowColumnsOperation(SqlNode sqlNode) {
         SqlShowColumns showColumns = (SqlShowColumns) sqlNode;
@@ -48,7 +48,7 @@ public class ShowColumnsOperation extends QueryOperation {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> tuples = new ArrayList<>();
         List<List<String>> columnList = getColumnFields();
         for (List<String> values : columnList) {

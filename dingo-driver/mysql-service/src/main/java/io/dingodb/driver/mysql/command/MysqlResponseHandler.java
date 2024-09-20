@@ -253,12 +253,26 @@ public final class MysqlResponseHandler {
             LogUtils.info(log, e.getMessage(), e);
             return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
-            return new SQLException(e.getMessage(), "HY000", 1105);
+            int code = 1105;
+            String state = "HY000";
+            String reason = e.getMessage();
+            if (reason.contains("Duplicate entry")) {
+                code = 1062;
+                state = "23000";
+                if (reason.contains("java.lang.RuntimeException:")) {
+                    reason = reason.replace("java.lang.RuntimeException:", "");
+                }
+            }
+            return new SQLException(reason, state, code);
         } else if (e.getErrorCode() == 1054 && e.getSQLState().equals("42S22")) {
             return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 5001 && e.getSQLState().equals("45000")) {
             if (e.getMessage().contains("Syntax Error")) {
                 return new SQLException("Syntax error", "HY000", 1105);
+            } else if (e.getMessage().contains("io.dingodb.store.api.transaction.exception.DuplicateEntryException:")) {
+                return new SQLException(e.getMessage()
+                    .replace("io.dingodb.store.api.transaction.exception.DuplicateEntryException:", ""),
+                     "23000", 1062);
             }
             return e;
         } else {

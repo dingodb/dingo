@@ -26,6 +26,8 @@ public interface BackFiller {
     boolean commitPrimary();
     boolean commitSecond();
 
+    default void close() {}
+
     default long getScanCount(){ return 0; }
     default long getAddCount(){ return 0; }
 

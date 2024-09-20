@@ -49,6 +49,7 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -121,7 +122,6 @@ public class DdlWorker {
         DingoMetrics.timer("registerMDLInfo").update((end - start), TimeUnit.MILLISECONDS);
         if (error != null) {
             session.rollback();
-            //dc.getSv().unlockSchemaVersion(job);
             LogUtils.warn(log, "[ddl] registerMdlInfo failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
@@ -131,8 +131,6 @@ public class DdlWorker {
         if (error != null) {
             // session rollback
             session.rollback();
-            // unlockSchemaVersion
-            //dc.getSv().unlockSchemaVersion(job);
             LogUtils.warn(log, "[ddl] update ddl job failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
@@ -141,9 +139,6 @@ public class DdlWorker {
             session.commit();
         } catch (Exception e) {
             LogUtils.error(log, "[ddl] run and update ddl job commit error," + e.getMessage(), e);
-        } finally {
-            // unlockSchemaVersion
-            //dc.getSv().unlockSchemaVersion(job);
         }
 
         registerSync(dc, job);
@@ -164,27 +159,27 @@ public class DdlWorker {
         if (ver == 0) {
             return null;
         }
-//        List<Object[]> rows;
-//        try {
-//            rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id = " + job.getId());
-//        } catch (Exception e) {
-//            LogUtils.error(log, e.getMessage(), e);
-//            return e.getMessage();
-//        }
-//        if (rows.isEmpty()) {
-//            return "can't find ddl job " + job.getId();
-//        }
-//        String ids = (String) rows.get(0)[0];
+        //List<Object[]> rows;
+        //try {
+        //    rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id = " + job.getId());
+        //} catch (Exception e) {
+        //    LogUtils.error(log, e.getMessage(), e);
+        //    return e.getMessage();
+        //}
+        //if (rows.isEmpty()) {
+        //    return "can't find ddl job " + job.getId();
+        //}
+        //String ids = (String) rows.get(0)[0];
         String ids = job.job2TableIDs();
         boolean duplicate = false;
-//        try {
-//            List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where job_id=" + job.getId());
-//            if (!res.isEmpty()) {
-//                duplicate = true;
-//            }
-//        } catch (Exception e) {
-//            LogUtils.error(log, e.getMessage(), e);
-//        }
+        //try {
+        //    List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where job_id=" + job.getId());
+        //    if (!res.isEmpty()) {
+        //        duplicate = true;
+        //    }
+        //} catch (Exception e) {
+        //    LogUtils.error(log, e.getMessage(), e);
+        //}
         String sql;
         if (duplicate) {
             DingoMetrics.counter("registerMDLInfoDuplicate").inc();
@@ -199,16 +194,7 @@ public class DdlWorker {
     }
 
     public String updateDDLJob(DdlJob job, boolean error) {
-        boolean updateRawArgs = needUpdateRawArgs(job, error);
-
-        return JobTableUtil.updateDDLJob2Table(session, job, updateRawArgs);
-    }
-
-    public static boolean needUpdateRawArgs(DdlJob job, boolean meetErr) {
-        //if (meetErr && job.getRawArgs() != null && job.getArgs() == null) {
-        //    return job.getMultiSchemaInfo() != null;
-        //}
-        return true;
+        return JobTableUtil.updateDDLJob2Table(session, job, true);
     }
 
     public String handleJobDone(DdlJob job) {
@@ -283,7 +269,7 @@ public class DdlWorker {
     }
 
     private static String countForError(DdlJob job, String error) {
-        job.setError(error);
+        job.setError(Base64.getEncoder().encodeToString(error.getBytes()));
         job.setErrorCount(job.getErrorCount() + 1);
         if (job.getState() == JobState.jobStateCancelled) {
             LogUtils.info(log, "[ddl] DDL job is cancelled normally");
@@ -498,9 +484,9 @@ public class DdlWorker {
     }
 
     public Pair<Long, String> onCreateIndex(DdlContext dc, DdlJob job) {
-        //if (job.isRollingback()) {
-            //return onDropIndex(dc, job);
-        //}
+        if (job.isRollingback()) {
+            return onDropIndex(dc, job);
+        }
         long schemaId = job.getSchemaId();
         Pair<TableDefinitionWithId, String> tableInfoRes = TableUtil.getTableInfoAndCancelFaultJob(job, schemaId);
         if (tableInfoRes.getValue() != null) {
@@ -565,11 +551,12 @@ public class DdlWorker {
                     indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
                     reorgRes = index.doReorgWorkForCreateIndex(dc, job, this, table.tableId, indexWithId);
                 } catch (Exception e) {
-                    log.error(e.getMessage(), e);
+                    LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(0L, e.getMessage());
                 }
                 assert reorgRes != null;
                 if (!reorgRes.getKey()) {
+                    job.setState(JobState.jobStateCancelled);
                     return Pair.of(reorgRes.getValue(), "[ddl] doReorg failed");
                 }
                 indexInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
@@ -592,7 +579,12 @@ public class DdlWorker {
             return Pair.of(0L, error);
         }
         Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
-        String indexName = job.getArgs().get(0).toString();
+        String indexName;
+        if (job.getArgs().get(0) instanceof IndexDefinition) {
+            indexName = ((IndexDefinition) job.getArgs().get(0)).getName();
+        } else {
+            indexName = job.getArgs().get(0).toString();
+        }
         boolean notExists = table.getIndexes().stream()
             .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
@@ -718,15 +710,15 @@ public class DdlWorker {
                 try {
                     IndexUtil.INSTANCE.doReorgWorkForCreateIndex(dc, job, this, tableId, withId);
                 } catch (Exception e) {
+                    job.setState(JobState.jobStateCancelled);
                     LogUtils.error(log, e.getMessage(), e);
-                    return Pair.of(0L, "reorg failed");
+                    return Pair.of(0L, e.getMessage());
                 }
                 withId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
                 TableUtil.updateReplicaTable(job.getSchemaId(), job.getTableId(), withId);
                 withId.setTableId(tableWithId.getTableId());
                 withId.getTableDefinition().setName(tableWithId.getTableDefinition().getName());
                 // replace replicaTable to table
-                TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
                 try {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
@@ -753,7 +745,7 @@ public class DdlWorker {
                 } else {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 }
-                return updateSchemaVersion(dc, job);
+                return TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
             default:
                 error = "ErrInvalidDDLJob";
         }
@@ -854,8 +846,7 @@ public class DdlWorker {
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
                     job.setState(JobState.jobStateCancelled);
-                    job.setError("reorg failed");
-                    return Pair.of(0L, "reorg failed");
+                    return Pair.of(0L, e.getMessage());
                 }
                 withId.getTableDefinition()
                     .getColumns()
@@ -870,7 +861,6 @@ public class DdlWorker {
                 withId.setTableId(tableRes.getKey().getTableId());
                 withId.getTableDefinition().setName(tableRes.getKey().getTableDefinition().getName());
                 // replace replicaTable to table
-                TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
                 try {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
@@ -884,7 +874,7 @@ public class DdlWorker {
                 } else {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 }
-                return updateSchemaVersion(dc, job);
+                return TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
             default:
                 error = "ErrInvalidDDLJob";
         }

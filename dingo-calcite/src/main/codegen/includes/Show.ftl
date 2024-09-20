@@ -65,6 +65,8 @@ SqlShow SqlShow(): {
     show = SqlShowTenants(s)
     |
     show = SqlShowExecutors(s)
+    |
+    show = SqlShowIndexs(s)
   )
   {
     return show;
@@ -283,4 +285,11 @@ SqlShow SqlShowExecutors(Span s): {
 } {
   <EXECUTORS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
   { return new SqlShowExecutors(s.end(this), pattern); }
+}
+
+SqlShow SqlShowIndexs(Span s): {
+  SqlIdentifier tableName = null;
+} {
+  <INDEX> <FROM> tableName = CompoundTableIdentifier()
+  { return new SqlShowIndexFromTable(s.end(this), tableName); }
 }

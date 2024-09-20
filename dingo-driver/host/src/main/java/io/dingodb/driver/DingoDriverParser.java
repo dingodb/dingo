@@ -63,6 +63,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -295,6 +296,7 @@ public final class DingoDriverParser extends DingoParser {
                 try {
                     final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
                     ddlExecutor.executeDdl(connection, sqlNode);
+                    afterDdl(connection);
                     break;
                 } catch (IllegalArgumentException e) {
                     // Method not found: execute([class org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context])
@@ -994,6 +996,17 @@ public final class DingoDriverParser extends DingoParser {
         metaDataList.add(colMeta4);
         metaDataList.add(colMeta5);
         return metaDataList;
+    }
+
+    public static void afterDdl(DingoConnection connection) {
+        try {
+            if (connection.getTransaction() != null) {
+                boolean pessimistic = "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"));
+                TransactionService.getDefault().begin(connection, pessimistic);
+            }
+        } catch (SQLException e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 
 }

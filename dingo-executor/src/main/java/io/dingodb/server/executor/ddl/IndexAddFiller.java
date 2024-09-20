@@ -76,6 +76,9 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
+import static io.dingodb.exec.transaction.util.Txn.txnCommit;
+import static io.dingodb.exec.transaction.util.Txn.txnPreWrite;
 
 @Slf4j
 public class IndexAddFiller implements BackFiller {
@@ -89,7 +92,6 @@ public class IndexAddFiller implements BackFiller {
     byte[] primaryKey;
     long timeOut = 50000;
     Future<?> future;
-    public static final long preBatch = 1024;
 
     long ownerRegionId;
     Iterator<Object[]> tupleIterator;
@@ -143,7 +145,12 @@ public class IndexAddFiller implements BackFiller {
             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
 
             CommonId tableId = indexTable.tableId;
-            int op = Op.PUT.getCode();
+            int op;
+            if (indexTable.unique) {
+                op = Op.PUTIFABSENT.getCode();
+            } else {
+                op = Op.PUT.getCode();
+            }
             byte[] key = keyValue.getKey();
             byte[] value = keyValue.getValue();
             primaryObj = new CacheToObject(TransactionCacheToMutation.cacheToMutation(
@@ -204,9 +211,8 @@ public class IndexAddFiller implements BackFiller {
             .build();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            //LogUtils.info(log, "[ddl] index reorg call rpc start, startTs:{}", txnId.seq);
+            LogUtils.info(log, "add index pre write primary start.");
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
-            //LogUtils.info(log, "[ddl] index reorg call rpc end, startTs:{}", txnId.seq);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
 
@@ -225,7 +231,7 @@ public class IndexAddFiller implements BackFiller {
                     prewriteResult = true;
                 } catch (RegionSplitException e1) {
                     Utils.sleep(100);
-                    LogUtils.error(log, "prewrite primary region split, retry count:" + i);
+                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
                 }
             }
         }
@@ -254,17 +260,22 @@ public class IndexAddFiller implements BackFiller {
         long end = System.currentTimeMillis();
         LogUtils.info(log, "pre write second, init iterator cost:{}ms", (end - start));
         Map<String, TxnLocalData> caches = new TreeMap<>();
-        //int batchCnt = 1024;
         long scanCount = 0;
         while (tupleIterator.hasNext()) {
             scanCount += 1;
             Object[] tuple = tupleIterator.next();
-            TxnLocalData txnLocalData = getTxnLocalData(tuple);
+            Object[] tuplesTmp = columnIndices.stream().map(i -> tuple[i]).toArray();
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique && ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                duplicateKey(tuplesTmp);
+            }
             String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
             if (!caches.containsKey(cacheKey)) {
                 caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
             }
-            if (caches.size() % preBatch == 0) {
+            if (caches.size() % max_pre_write_count == 0) {
                 try {
                     List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
                     preWriteSecondSkipConflict(txnLocalDataList);
@@ -289,6 +300,9 @@ public class IndexAddFiller implements BackFiller {
 
     @Override
     public boolean commitPrimary() {
+        if (primaryObj == null) {
+            return true;
+        }
         Txn txn = new Txn(txnId, false, 0, timeOut);
         txn.setPrimaryKey(primaryKey);
         txn.setCommitTs(this.commitTs);
@@ -301,6 +315,9 @@ public class IndexAddFiller implements BackFiller {
 
     @Override
     public boolean commitSecond() {
+        if (primaryObj == null) {
+            return true;
+        }
         StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
         byte[] prefix = new byte[1 + txnIdKey.length];
         prefix[0] = (byte)FILL_BACK.getCode();
@@ -308,7 +325,6 @@ public class IndexAddFiller implements BackFiller {
         Iterator<KeyValue> iterator = cache.scan(prefix);
 
         Map<String, KeyValue> caches = new TreeMap<>();
-        int batchCnt = 1024;
         while (iterator.hasNext()) {
             commitCnt.incrementAndGet();
             KeyValue keyValue = iterator.next();
@@ -316,7 +332,7 @@ public class IndexAddFiller implements BackFiller {
             if (!caches.containsKey(key)) {
                 caches.put(key, keyValue);
             }
-            if (caches.size() % batchCnt == 0) {
+            if (caches.size() % max_pre_write_count == 0) {
                 try {
                     commitSecondData(caches.values());
                 } finally {
@@ -351,14 +367,24 @@ public class IndexAddFiller implements BackFiller {
         return this.conflict.get();
     }
 
+    @Override
+    public void close() {
+        if (this.future != null) {
+            this.future.cancel(true);
+        }
+    }
+
     public void commitSecondData(Collection<KeyValue> secondData) {
+        LogUtils.info(log, "commitSecondData start, startTs:{}, commitTs:{}, primaryKey:{}",
+            txnId.seq, commitTs, primaryKey);
         CommitParam param = new CommitParam(dingoType, isolationLevel, txnId.seq,
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
         for (KeyValue keyValue : secondData) {
             CommonId tableId = indexTable.tableId;
             int from = 1;
-            Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN);
+            //Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN);
+            from += CommonId.LEN;
             CommonId newPartId = CommonId.decode(Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN));
             byte[] key = new byte[keyValue.getKey().length - from];
             System.arraycopy(keyValue.getKey(), from , key, 0, key.length);
@@ -370,8 +396,8 @@ public class IndexAddFiller implements BackFiller {
                 param.addKey(key);
             } else if (partId.equals(newPartId)) {
                 param.addKey(key);
-                if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = Txn.txnCommit(param, txnId, tableId, partId);
+                if (param.getKeys().size() == max_pre_write_count) {
+                    boolean result = txnCommit(param, txnId, tableId, partId);
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:"
                             + Arrays.toString(param.getPrimaryKey()));
@@ -380,7 +406,7 @@ public class IndexAddFiller implements BackFiller {
                     param.setPartId(null);
                 }
             } else {
-                boolean result = Txn.txnCommit(param, txnId, param.getTableId(), partId);
+                boolean result = txnCommit(param, txnId, param.getTableId(), partId);
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:"
                         + Arrays.toString(param.getPrimaryKey()));
@@ -392,7 +418,7 @@ public class IndexAddFiller implements BackFiller {
             }
         }
         if (!param.getKeys().isEmpty()) {
-            boolean result = Txn.txnCommit(param, txnId, param.getTableId(), param.getPartId());
+            boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
             if (!result) {
                 throw new RuntimeException(txnId + " " + param.getPartId()
                     + ",txnCommit false,PrimaryKey:" + Arrays.toString(param.getPrimaryKey()));
@@ -400,19 +426,24 @@ public class IndexAddFiller implements BackFiller {
         }
     }
 
-    public TxnLocalData getTxnLocalData(Object[] tuples) {
-        Object[] tuplesTmp = columnIndices.stream().map(i -> tuples[i]).toArray();
+    public TxnLocalData getTxnLocalData(Object[] tuplesTmp) {
         KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
             MetaService.root().getRangeDistribution(indexTable.tableId);
         CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
+        Op op;
+        if (indexTable.unique) {
+            op = Op.PUTIFABSENT;
+        } else {
+            op = Op.PUT;
+        }
         return TxnLocalData.builder()
             .dataType(FILL_BACK)
             .txnId(txnId)
             .tableId(indexTable.tableId)
             .partId(partId)
-            .op(Op.PUT)
+            .op(op)
             .key(keyValue.getKey())
             .value(keyValue.getValue())
             .build();
@@ -468,8 +499,7 @@ public class IndexAddFiller implements BackFiller {
         param.init(null);
         int preDoneCnt = 0;
         try {
-            for (int i = 0; i < secondList.size(); i++) {
-                TxnLocalData txnLocalData = secondList.get(i);
+            for (TxnLocalData txnLocalData : secondList) {
                 CommonId newPartId = txnLocalData.getPartId();
                 int op = txnLocalData.getOp().getCode();
                 byte[] key = txnLocalData.getKey();
@@ -483,12 +513,12 @@ public class IndexAddFiller implements BackFiller {
                     param.addMutation(mutation);
                 } else if (partId.equals(newPartId)) {
                     param.addMutation(mutation);
-                    if (param.getMutations().size() == preBatch) {
+                    if (param.getMutations().size() == max_pre_write_count) {
                         long sub = System.currentTimeMillis() - start;
-                        LogUtils.debug(log, "pre write 1024 cost:{}", sub);
-                        boolean result = Txn.txnPreWrite(param, txnId, indexTable.tableId, partId);
+                        LogUtils.debug(log, "pre write cost:{}", sub);
+                        boolean result = txnPreWrite(param, txnId, indexTable.tableId, partId);
                         sub = System.currentTimeMillis() - start;
-                        LogUtils.debug(log, "pre write 1024 cost:{}", sub);
+                        LogUtils.debug(log, "pre write cost:{}", sub);
 
                         if (!result) {
                             throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
@@ -500,18 +530,18 @@ public class IndexAddFiller implements BackFiller {
                         param.setPartId(null);
                         long tmp = System.currentTimeMillis();
                         sub = tmp - start;
-                        LogUtils.debug(log, "pre write and remove doen key 1024 cost:{}", sub);
+                        LogUtils.debug(log, "pre write and remove done key cost:{}", sub);
                         start = tmp;
                     }
                 } else {
                     LogUtils.info(log, "pre write diff partId");
-                    boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), partId);
+                    boolean result = txnPreWrite(param, txnId, param.getTableId(), partId);
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnPreWrite false,PrimaryKey:"
                             + Arrays.toString(param.getPrimaryKey()));
                     }
                     preDoneCnt += param.getMutations().size();
-                    removeDoneKey(newPartId, param.getMutations());
+                    removeDoneKey(partId, param.getMutations());
                     param.getMutations().clear();
                     param.addMutation(mutation);
                     param.setPartId(newPartId);
@@ -525,7 +555,7 @@ public class IndexAddFiller implements BackFiller {
         long end1 = System.currentTimeMillis();
         if (!param.getMutations().isEmpty()) {
             try {
-                boolean result = Txn.txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
+                boolean result = txnPreWrite(param, txnId, param.getTableId(), param.getPartId());
                 if (!result) {
                     throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPreWrite false,PrimaryKey:"
                         + Arrays.toString(param.getPrimaryKey()));
@@ -539,5 +569,19 @@ public class IndexAddFiller implements BackFiller {
             }
         }
         LogUtils.debug(log, "index reorg mod done, cost:{}", (System.currentTimeMillis() - end1));
+    }
+
+    public void duplicateKey(Object[] tuple) {
+        StringBuilder duplicateKey = new StringBuilder("'");
+        for (int i = 0; i < indexTable.getColumns().size(); i ++) {
+            Column column = indexTable.getColumns().get(i);
+            if (column.isPrimary()) {
+                duplicateKey.append(tuple[i]).append("-");
+            }
+        }
+        duplicateKey.deleteCharAt(duplicateKey.length() - 1);
+        duplicateKey.append("'");
+        throw new RuntimeException("Duplicate entry " + duplicateKey
+            + " for key '" + indexTable.getName() + ".PRIMARY'");
     }
 }

@@ -56,8 +56,6 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     @Getter
     private final List<String> names;
 
-    private TableStatistic tableStatistic;
-
     @Getter
     @EqualsAndHashCode.Include
     private final Table table;
@@ -73,7 +71,6 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         super();
         this.context = context;
         this.names = names;
-        this.tableStatistic = tableStatistic;
         this.table = table;
         this.indexTableDefinitions = table.getIndexes();
     }
