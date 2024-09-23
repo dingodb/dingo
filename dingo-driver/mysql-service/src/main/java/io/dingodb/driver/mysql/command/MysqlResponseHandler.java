@@ -243,6 +243,23 @@ public final class MysqlResponseHandler {
         channel.writeAndFlush(buffer);
     }
 
+    public static String encodeResponseError(String src) {
+        if(src == null) {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for(char c : src.toCharArray()) {
+            if(c > 0x7f)  {
+                //deal with chinese character.
+                builder.append("\\u").append(String.format("%04x", (int)c));
+            } else {
+                builder.append(c);
+            }
+        }
+        return builder.toString();
+    }
+
     public static SQLException errorDingo2Mysql(SQLException e) {
         if (e.getMessage() != null && e.getMessage().contains("Duplicate data")) {
             return new SQLException("Duplicate data for key 'PRIMARY'", "23000", 1062);
@@ -251,11 +268,11 @@ public final class MysqlResponseHandler {
             return new SQLException("Query execution was interrupted", "70100", 1317);
         } else if (e.getMessage() != null && e.getMessage().contains("Statement canceled")) {
             LogUtils.info(log, e.getMessage(), e);
-            return new SQLException(e.getMessage(), "HY000", 1105);
+            return new SQLException(encodeResponseError(e.getMessage()), "HY000", 1105);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
             int code = 1105;
             String state = "HY000";
-            String reason = e.getMessage();
+            String reason = encodeResponseError(e.getMessage());
             if (reason.contains("Duplicate entry")) {
                 code = 1062;
                 state = "23000";
@@ -265,12 +282,15 @@ public final class MysqlResponseHandler {
             }
             return new SQLException(reason, state, code);
         } else if (e.getErrorCode() == 1054 && e.getSQLState().equals("42S22")) {
-            return new SQLException(e.getMessage(), "HY000", 1105);
+            return new SQLException(encodeResponseError(e.getMessage()), "HY000", 1105);
         } else if (e.getErrorCode() == 5001 && e.getSQLState().equals("45000")) {
             if (e.getMessage().contains("Syntax Error")) {
-                return new SQLException("Syntax error", "HY000", 1105);
+                return new SQLException(
+                    encodeResponseError(e.getMessage()),
+                    e.getSQLState(),
+                    e.getErrorCode());
             } else if (e.getMessage().contains("io.dingodb.store.api.transaction.exception.DuplicateEntryException:")) {
-                return new SQLException(e.getMessage()
+                return new SQLException(encodeResponseError(e.getMessage())
                     .replace("io.dingodb.store.api.transaction.exception.DuplicateEntryException:", ""),
                      "23000", 1062);
             }
