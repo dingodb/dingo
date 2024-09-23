@@ -46,7 +46,11 @@ public class DingoUnion extends Union implements DingoRel {
 
     @Override
     public DingoUnion copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
-        return new DingoUnion(getCluster(), traitSet, inputs, all);
+        if (all) {
+            return new DingoUnion(getCluster(), traitSet, inputs, all);
+        } else {
+            throw new UnsupportedOperationException("Union may return duplicated data, disable temporarily");
+        }
     }
 
     @Override
