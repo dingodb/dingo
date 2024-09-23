@@ -65,8 +65,7 @@ public final class TableUtil {
                 subMs.rollbackCreateTable(tableInfo, indices);
                 LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
                 ddlJob.setState(JobState.jobStateCancelled);
-                String error = "[ddl] meta service createTables error";
-                return Pair.of(null, error);
+                return Pair.of(null, e.getMessage());
             }
         }
         return Pair.of(tableInfo, "ErrInvalidDDLState");
