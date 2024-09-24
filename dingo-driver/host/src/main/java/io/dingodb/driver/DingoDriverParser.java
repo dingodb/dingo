@@ -442,6 +442,7 @@ public final class DingoDriverParser extends DingoParser {
         DingoMetrics.timer("relOptimize").update(sub, TimeUnit.MILLISECONDS);
         planProfile.endOptimize();
         markAutoIncForDml(relNode);
+
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
@@ -960,6 +961,8 @@ public final class DingoDriverParser extends DingoParser {
     private static boolean trace(SqlNode sqlNode) {
         if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
             return ((io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode).isTrace();
+        } else if (sqlNode instanceof io.dingodb.calcite.grammar.dml.SqlInsert) {
+            return ((io.dingodb.calcite.grammar.dml.SqlInsert) sqlNode).isTrace();
         }
         return false;
     }
@@ -969,12 +972,16 @@ public final class DingoDriverParser extends DingoParser {
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
         ColumnMetaData colMeta2 = metaData(typeFactory, 1, "startTs",
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta3 = metaData(typeFactory, 1, "duration",
+        ColumnMetaData colMeta3 = metaData(typeFactory, 2, "duration",
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta4 = metaData(typeFactory, 3, "rowcount",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.BIGINT), null, true);
+
         List<ColumnMetaData> metaDataList = new ArrayList<>();
         metaDataList.add(colMeta1);
         metaDataList.add(colMeta2);
         metaDataList.add(colMeta3);
+        metaDataList.add(colMeta4);
         return metaDataList;
     }
 

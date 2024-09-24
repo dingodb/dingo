@@ -731,6 +731,55 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     }
 }
 
+/** Reads optional "ORDER BY", "LIMIT", "OFFSET", "FETCH" following a query,
+ * {@code e}. If any of them are present, adds them to the query;
+ * otherwise returns the query unchanged.
+ * Throws if they are present and {@code e} is not a query. */
+SqlNode OrderByLimitTraceOpt(SqlNode e) :
+{
+    final SqlNodeList orderBy;
+    final Span s = Span.of();
+    SqlNode[] offsetFetch = {null, null};
+    ExportOptions exportOptions = null;
+    boolean forUpdate=false;
+}
+{
+    (
+        // use the syntactic type of the expression we just parsed
+        // to decide whether ORDER BY makes sense
+        orderBy = OrderBy(e.isA(SqlKind.QUERY))
+    |   { orderBy = null; }
+    )
+    [
+        LimitClause(s, offsetFetch)
+        [ OffsetClause(s, offsetFetch) ]
+    |
+        OffsetClause(s, offsetFetch)
+        [
+            LimitClause(s, offsetFetch) {
+                if (!this.conformance.isOffsetLimitAllowed()) {
+                    throw SqlUtil.newContextException(s.end(this),
+                        RESOURCE.offsetLimitNotAllowed());
+                }
+            }
+        |
+            FetchClause(offsetFetch)
+        ]
+    |
+        FetchClause(offsetFetch)
+    ]
+    [ exportOptions = exportOptions() ]
+    [ <FOR><UPDATE> { forUpdate = true;} ]
+    {
+        if (orderBy != null || offsetFetch[0] != null || offsetFetch[1] != null) {
+            return new io.dingodb.calcite.grammar.dql.SqlOrderBy(getPos(), e,
+                Util.first(orderBy, SqlNodeList.EMPTY),
+                offsetFetch[0], offsetFetch[1], true);
+        }
+        return e;
+    }
+}
+
 /**
  * Parses an OFFSET clause in an ORDER BY expression.
  */
@@ -1395,8 +1444,10 @@ SqlNode SqlTraceSelect() :
     final SqlNode having;
     final SqlNodeList windowDecls;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
+    final SqlNodeList orderBy;
     final Span s;
     boolean forUpdate = false;
+    SqlNode[] offsetFetch = {null, null};
     ExportOptions exportOptions = null;
 }
 {
@@ -1428,6 +1479,8 @@ SqlNode SqlTraceSelect() :
         ( groupBy = GroupBy() | { groupBy = null; } )
         ( having = Having() | { having = null; } )
         ( windowDecls = Window() | { windowDecls = null; } )
+        ( orderBy = OrderBy(true) | { orderBy = null; } )
+        [ LimitClause(s, offsetFetch) ]
         [ exportOptions = exportOptions() ]
         [ <FOR> <UPDATE> { forUpdate=true; }]
     |
@@ -1436,13 +1489,14 @@ SqlNode SqlTraceSelect() :
             where = null;
             groupBy = null;
             having = null;
+            orderBy = null;
             windowDecls = null;
         }
     )
     {
         return new SqlSelect(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
-            fromClause, where, groupBy, having, windowDecls, null, null, null,
+            fromClause, where, groupBy, having, windowDecls, orderBy, null, null,
             new SqlNodeList(hints, getPos()),
             exportOptions, true);
     }
@@ -1870,6 +1924,49 @@ SqlNode SqlInsert() :
     source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
         return new SqlInsert(s.end(source), keywordList, tableRef, source,
             columnList);
+    }
+}
+
+/**
+ * Parses a leaf insert into expression.
+ */
+SqlNode SqlTraceInsert() :
+{
+    final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
+    final SqlNodeList keywordList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
+    SqlNode source;
+    final SqlNodeList columnList;
+    final Span s;
+    final Pair<SqlNodeList, SqlNodeList> p;
+}
+{
+
+    <TRACE><INSERT> { s = span(); }
+    SqlInsertKeywords(keywords) {
+        keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
+    }
+    <INTO> tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ LOOKAHEAD(5) tableRef = ExtendTable(tableRef) ]
+    (
+        LOOKAHEAD(2)
+        p = ParenthesizedCompoundIdentifierList() {
+            if (p.right.size() > 0) {
+                tableRef = extend(tableRef, p.right);
+            }
+            if (p.left.size() > 0) {
+                columnList = p.left;
+            } else {
+                columnList = null;
+            }
+        }
+    |   { columnList = null; }
+    )
+    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
+        return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
+            columnList, true);
     }
 }
 

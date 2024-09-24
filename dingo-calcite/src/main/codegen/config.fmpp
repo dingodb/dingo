@@ -264,6 +264,7 @@ data: {
 
     statementParserMethods: [
         "SqlTraceSelect"
+        "SqlTraceInsert"
         "SqlDescTable"
         "SqlTruncate"
         "SqlGrant"
