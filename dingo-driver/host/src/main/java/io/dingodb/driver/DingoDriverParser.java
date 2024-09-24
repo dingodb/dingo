@@ -445,7 +445,7 @@ public final class DingoDriverParser extends DingoParser {
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
-        boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile);
+        boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile, newTxn);
         transaction = connection.initTransaction(isTxn, newTxn);
 
         // get in transaction for mysql update/insert/delete res ok packet
@@ -780,9 +780,10 @@ public final class DingoDriverParser extends DingoParser {
     private static boolean checkEngine(SqlNode sqlNode,
                                        Set<RelOptTable> tables,
                                        ITransaction transaction,
-                                       PlanProfile planProfile) {
+                                       PlanProfile planProfile,
+                                       boolean isNewTxn) {
         boolean isTxn = false;
-//        boolean isNotTransactionTable = false;
+        boolean isNotTransactionTable = false;
         // for UT test
         if ((sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.DELETE) && tables.isEmpty()) {
             return false;
@@ -809,18 +810,21 @@ public final class DingoDriverParser extends DingoParser {
                 name = dingoRelOptTable.getSchemaName() + "." + dingoRelOptTable.getTableName();
                 tableList.add(name);
             }
+
             if (engine == null || !engine.contains("TXN")) {
-//                isNotTransactionTable = true;
+                isNotTransactionTable = true;
             } else {
                 isTxn = true;
             }
-//            if (isTxn && isNotTransactionTable) {
-//                throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
-//            }
-//            if (transaction != null && transaction.getType() != NONE && isNotTransactionTable) {
-//                LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
-//                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
-//            }
+
+            if (isTxn && isNotTransactionTable) {
+                throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
+            }
+
+            if (transaction != null && transaction.getType() != NONE && (!isNewTxn && engine != null && !engine.contains("TXN"))) {
+                LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
+                throw new RuntimeException("Non-transaction tables cannot be used in transactions");
+            }
         }
         return isTxn;
     }
