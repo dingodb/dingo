@@ -88,12 +88,11 @@ public class AddColumnFiller extends IndexAddFiller {
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-        Iterator<KeyValue> iterator = getKeyValueIterator(task, kvStore);
-        //Iterator<KeyValue> iterator = kvStore.txnScan(
-        //    task.getStartTs(),
-        //    new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
-        //    50000
-        //);
+        Iterator<KeyValue> iterator = kvStore.txnScan(
+            task.getStartTs(),
+            new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
+            50000
+        );
         tupleIterator = Iterators.transform(iterator,
             wrap(codec::decode)::apply
         );

@@ -81,7 +81,7 @@ public class ScanWithRelOpParam extends ScanParam {
 
     @Getter
     protected transient Map<CommonId, CoprocessorV2> coprocessorMap = new HashMap<>();
-    private transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void setNullCoprocessor(CommonId regionId) {
         lock.writeLock().lock();
