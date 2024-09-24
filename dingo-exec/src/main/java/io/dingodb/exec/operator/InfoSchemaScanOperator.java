@@ -289,7 +289,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                                 td.getComment()
                             };
                         } catch (Exception e1) {
-                            log.error(e1.getMessage(), e1);
+                            LogUtils.error(log, e1.getMessage(), e1);
                             return null;
                         }
                     }).filter(Objects::nonNull)

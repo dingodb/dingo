@@ -20,6 +20,7 @@ import io.dingodb.calcite.stats.StatsOperator;
 import io.dingodb.calcite.stats.StatsTaskState;
 import io.dingodb.calcite.stats.task.AnalyzeTask;
 import io.dingodb.common.concurrent.LinkedRunner;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +54,7 @@ public class AnalyzeScanTask extends StatsOperator implements Runnable {
                 .tableName((String) v[1])
                 .build();
             if (log.isDebugEnabled()) {
-                log.debug("analyze table task add task queue, detail:" + analyzeTask.toString());
+                LogUtils.debug(log, "analyze table task add task queue, detail:{}", analyzeTask.toString());
             }
             linkedRunner.follow(analyzeTask);
         });

@@ -100,7 +100,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             LogUtils.info(log, "owner prepare done");
             LogUtils.info(log, "owner meta init done");
         } catch (SchedulerException e) {
-            log.error("Start schedule failed.", e);
+            LogUtils.error(log, "Start schedule failed.", e);
             throw new RuntimeException(e);
         }
     }
@@ -112,7 +112,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             //DdlContext.INSTANCE.setOwnerVal(false);
             scheduler.standby();
         } catch (SchedulerException e) {
-            log.error("Stop scheduler error.", e);
+            LogUtils.error(log, "Stop scheduler error.", e);
         }
     }
 

@@ -17,20 +17,28 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.GetDistributionParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
+@Slf4j
 public class GetDistributionOperator extends SourceOperator {
     public static final GetDistributionOperator INSTANCE = new GetDistributionOperator();
 
@@ -45,16 +53,27 @@ public class GetDistributionOperator extends SourceOperator {
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         for (Object[] keyTuple : param.getKeyTuples()) {
             TupleMapping keyMapping = param.getKeyMapping();
             boolean allMatch = keyMapping.stream().allMatch(i -> Objects.isNull(keyTuple[i]));
             if (allMatch) {
                 return false;
             }
-            CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
-            RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
-            context.setDistribution(distribution);
-            vertex.getSoleEdge().transformToNext(context, keyTuple);
+            while (retry-- > 0) {
+                try {
+                    CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());
+                    RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
+                    context.setDistribution(distribution);
+                    vertex.getSoleEdge().transformToNext(context, keyTuple);
+                    break;
+                } catch (RegionSplitException e) {
+                    LogUtils.error(log, e.getMessage());
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
+                        MetaService.root().getRangeDistribution(td.getTableId());
+                    param.setDistributions(distribution);
+                }
+            }
         }
 
         return false;

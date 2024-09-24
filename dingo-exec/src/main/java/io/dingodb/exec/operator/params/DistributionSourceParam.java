@@ -50,6 +50,7 @@ public class DistributionSourceParam extends SourceParam {
     private final boolean withStart;
     @JsonProperty("withEnd")
     private final boolean withEnd;
+    @Setter
     private PartitionService ps;
     private SqlExpr filter;
     private boolean logicalNot;
@@ -90,6 +91,27 @@ public class DistributionSourceParam extends SourceParam {
         ps = PartitionService.getService(
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+    }
+
+    public DistributionSourceParam copy(
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution,
+        byte[] start,
+        byte[] end,
+        boolean withStart,
+        boolean withEnd) {
+        DistributionSourceParam param = new DistributionSourceParam(
+            this.td,
+            rangeDistribution,
+            start,
+            end,
+            withStart,
+            withEnd,
+            this.filter,
+            this.logicalNot,
+            this.notBetween,
+            this.keyTuple);
+        param.setPs(this.ps);
+        return param;
     }
 
 }

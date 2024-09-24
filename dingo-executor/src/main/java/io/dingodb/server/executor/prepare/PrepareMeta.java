@@ -103,14 +103,14 @@ public final class PrepareMeta {
         infoSchemaService.prepareDone();
         DdlContext.prepareDone();
         long end = System.currentTimeMillis();
-        log.info("prepare done, cost:" + (end - start));
+        LogUtils.info(log, "prepare done, cost: {}", (end - start));
     }
 
     public static void initReplica() {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         storeReplica = infoSchemaService.getStoreReplica();
         indexReplica = infoSchemaService.getIndexReplica();
-        log.info("init replica done, store:{}, index:{}", storeReplica, indexReplica);
+        LogUtils.info(log, "init replica done, store:{}, index:{}", storeReplica, indexReplica);
     }
 
     public static void prepareTenant(int retry) {
@@ -159,7 +159,7 @@ public final class PrepareMeta {
         infoSchemaService.createSchema(metaSchemaId,
             SchemaInfo.builder().schemaId(metaSchemaId).name("META").schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
-        log.info("create schema done");
+        LogUtils.info(log, "create schema done");
     }
 
     public static void prepareMysql() {
@@ -179,7 +179,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_REORG", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
-        log.info("prepare mysql meta table done");
+        LogUtils.info(log, "prepare mysql meta table done");
     }
 
     public static void prepareInformation(String coordinators) {
@@ -206,7 +206,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "VIEWS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "COLLATIONS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "DINGO_MDL_VIEW", SYSTEM_VIEW, TXN_LSM, FIXED);
-        log.info("prepare information meta table done");
+        LogUtils.info(log, "prepare information meta table done");
     }
 
     public static void initGlobalVariables(String coordinators) {
@@ -321,13 +321,13 @@ public final class PrepareMeta {
                 return;
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             return;
         }
         CommonId tableIdCommon = Mapper.MAPPER.idFrom(tableId);
         initUserWithRetry(tableName, tableIdCommon);
         exceptionRetries = 0;
-        log.info("init {}.{} success", schemaName, tableName);
+        LogUtils.info(log, "init {}.{} success", schemaName, tableName);
     }
 
     public static void initUserWithRetry(String tableName, CommonId tableId) {
@@ -610,7 +610,7 @@ public final class PrepareMeta {
                 subMetaService.createTables(tableDefinition, new ArrayList<>());
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 

@@ -16,6 +16,7 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -33,7 +34,7 @@ public interface MetaServiceProvider {
             Iterator<MetaServiceProvider> iterator = ServiceLoader.load(MetaServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
-                log.warn("Load multi meta service provider, use {}.", serviceProvider.getClass().getName());
+                LogUtils.warn(log, "Load multi meta service provider, use {}.", serviceProvider.getClass().getName());
             }
         }
     }

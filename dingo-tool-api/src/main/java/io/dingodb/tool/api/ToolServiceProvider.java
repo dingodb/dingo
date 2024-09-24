@@ -16,6 +16,7 @@
 
 package io.dingodb.tool.api;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -34,7 +35,7 @@ public interface ToolServiceProvider {
                 = ServiceLoader.load(ToolServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
-                log.warn("Load multi tool service provider, use {}.", serviceProvider.getClass().getName());
+                LogUtils.warn(log, "Load multi tool service provider, use {}.", serviceProvider.getClass().getName());
             }
         }
     }

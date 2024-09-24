@@ -17,11 +17,9 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Vertex;
@@ -39,9 +37,9 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,8 +66,18 @@ public class NewCalcDistributionOperator extends SourceOperator {
         if (param.getFilter() != null || param.isNotBetween()) {
             if (param.isLogicalNot() || param.isNotBetween()) {
                 distributions = new TreeSet<>(RangeUtils.rangeComparator(1));
-                distributions.addAll(ps.calcPartitionRange(null, param.getStartKey(), true, !param.isWithStart(), param.getRangeDistribution()));
-                distributions.addAll(ps.calcPartitionRange(param.getEndKey(), null, !param.isWithEnd(), true, param.getRangeDistribution()));
+                distributions.addAll(ps.calcPartitionRange(
+                    null,
+                    param.getStartKey(),
+                    true,
+                    !param.isWithStart(),
+                    param.getRangeDistribution()));
+                distributions.addAll(ps.calcPartitionRange(
+                    param.getEndKey(),
+                    null,
+                    !param.isWithEnd(),
+                    true,
+                    param.getRangeDistribution()));
                 return distributions;
             }
         }
@@ -85,66 +93,86 @@ public class NewCalcDistributionOperator extends SourceOperator {
     @Override
     public boolean push(Context context, @NonNull Vertex vertex) {
         DistributionSourceParam param = vertex.getParam();
-        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
-        while (retry-- > 0) {
-            try {
-                Set<RangeDistribution> distributions = getRangeDistributions(param);
-                if (log.isTraceEnabled()) {
-                    if (distributions.isEmpty()) {
-                        log.trace(
-                            "No data distribution from ({}) to ({})",
-                            Arrays.toString(param.getStartKey()),
-                            Arrays.toString(param.getEndKey())
-                        );
-                    }
+        try {
+            Set<RangeDistribution> distributions = getRangeDistributions(param);
+            if (log.isTraceEnabled()) {
+                if (distributions.isEmpty()) {
+                    LogUtils.trace(
+                        log,
+                        "No data distribution from ({}) to ({})",
+                        Arrays.toString(param.getStartKey()),
+                        Arrays.toString(param.getEndKey())
+                    );
                 }
-                boolean parallel = Utils.parallel(param.getKeepOrder());
-                //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
-                //boolean rangePart = false;
-                if (!parallel || distributions.size() == 1) {
-                    for (RangeDistribution distribution : distributions) {
-                        if (log.isTraceEnabled()) {
-                            log.trace("Push distribution: {}", distribution);
-                        }
-                        context.setDistribution(distribution);
-                        if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                            break;
-                        }
-                    }
-                } else {
-                    CompletableFuture<Void> allFutures = CompletableFuture.allOf(
-                        distributions.stream().map(distribution -> {
-                            Callable<Boolean> callable = () -> {
-                                if (log.isTraceEnabled()) {
-                                    log.trace("Push distribution: {}", distribution);
-                                }
-                                Context context1 = context.copy();
-                                context1.setDistribution(distribution);
-                                return vertex.getSoleEdge().transformToNext(context1, null);
-                            };
-                            return Executors.submit("operator-" + vertex.getTask().getJobId() + "-" + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId(), callable);
-                        }).toArray(CompletableFuture[]::new));
-                    try {
-                        allFutures.get();
-                    } catch (ExecutionException | InterruptedException e) {
-                        if (e.getMessage().contains("RegionSplitException")) {
-                            throw new RegionSplitException("io.dingodb.sdk.common.DingoClientException$InvalidRouteTableException");
-                        } else if (e.getCause() instanceof LockWaitException) {
-                            LogUtils.error(log, "jobId:" + vertex.getTask().getJobId() + ", taskId:" + vertex.getTask().getId() + ", vertexId:" + vertex.getId() + ", error:", e);
-                            throw new LockWaitException("Lock wait");
-                        } else {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-                return false;
-            } catch (RegionSplitException e) {
-                LogUtils.error(log, e.getMessage());
-                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
-                    MetaService.root().getRangeDistribution(param.getTd().getTableId());
-                param.setRangeDistribution(distribution);
             }
+            boolean parallel = Utils.parallel(param.getKeepOrder());
+            //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
+            //boolean rangePart = false;
+            if (!parallel || distributions.size() == 1) {
+                for (RangeDistribution distribution : distributions) {
+                    if (log.isTraceEnabled()) {
+                        LogUtils.trace(log, "Push distribution: {}", distribution);
+                    }
+                    context.setDistribution(distribution);
+                    if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                        break;
+                    }
+                }
+            } else {
+                CompletableFuture.allOf(distributions.stream()
+                    .map(distribution -> push(context, vertex, param, distribution))
+                    .toArray(CompletableFuture[]::new))
+                    .get();
+            }
+            return false;
+        } catch (InterruptedException | ExecutionException e) {
+            LogUtils.error(log, e.getMessage());
+            throw new RuntimeException(e);
         }
-        return false;
+    }
+
+    private static CompletableFuture<Boolean> push(
+        Context context,
+        Vertex vertex,
+        DistributionSourceParam param,
+        RangeDistribution distribution
+    ) {
+        Supplier<Boolean> supplier = () -> {
+            if (log.isTraceEnabled()) {
+                LogUtils.trace(log, "Push distribution: {}", distribution);
+            }
+            Context copyContext = context.copy();
+            copyContext.setDistribution(distribution);
+            return vertex.getSoleEdge().transformToNext(copyContext, null);
+        };
+        return CompletableFuture.supplyAsync(
+            supplier, Executors.executor(
+                "operator-" + vertex.getTask().getJobId() + "-"
+                    + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId()))
+            .exceptionally(ex -> {
+                if (ex != null) {
+                    if (ex.getCause() instanceof RegionSplitException) {
+                        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> tmpDistribution =
+                            MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                        DistributionSourceParam copyParam = param.copy(
+                            tmpDistribution,
+                            distribution.getStartKey(),
+                            distribution.getEndKey(),
+                            distribution.isWithStart(),
+                            distribution.isWithEnd());
+                        NavigableSet<RangeDistribution> rangeDistributions = getRangeDistributions(copyParam);
+                        for (RangeDistribution rangeDistribution : rangeDistributions) {
+                            push(context, vertex, param, rangeDistribution);
+                        }
+                    } else if (ex.getCause() instanceof LockWaitException) {
+                        LogUtils.error(log, "jobId:" + vertex.getTask().getJobId() + ", taskId:"
+                            + vertex.getTask().getId() + ", vertexId:" + vertex.getId() + ", error:", ex);
+                        throw new LockWaitException("Lock wait");
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            return true;
+        });
     }
 }

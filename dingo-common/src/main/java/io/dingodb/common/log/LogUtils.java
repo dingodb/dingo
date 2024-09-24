@@ -16,7 +16,6 @@
 
 package io.dingodb.common.log;
 
-import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.StackTraces;
 import org.slf4j.Logger;
 

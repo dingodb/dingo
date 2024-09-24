@@ -16,15 +16,11 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.profile.Profile;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
-import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.AbstractParams;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -36,11 +32,6 @@ public abstract class FanOutOperator extends AbstractOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        /*int index = calcOutputIndex(content, tuple, vertex);
-        if (log.isDebugEnabled()) {
-            log.debug("Tuple is pushing to output {}.", index);
-        }
-        return vertex.getOutList().get(index).transformToNext(content, tuple);*/
         return vertex.getSoleEdge().transformToNext(context, tuple);
     }
 
