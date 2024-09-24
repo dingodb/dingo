@@ -63,10 +63,11 @@ public class ExecProfile extends Profile {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        Object[] val = new Object[3];
+        Object[] val = new Object[4];
         val[0] = prefixStr + "runStmt";
         val[1] = DateTimeUtils.timeFormat(new Time(start));
         val[2] = String.valueOf(duration);
+        val[3] = Long.valueOf(this.getCount());
         rowList.add(val);
 
         if (profile != null) {

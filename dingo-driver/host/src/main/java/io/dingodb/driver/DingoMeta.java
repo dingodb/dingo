@@ -323,6 +323,7 @@ public class DingoMeta extends MetaImpl {
             }
             // For local driver, here `fetch` is called.
             callback.execute();
+
             if (signature.statementType == StatementType.OTHER_DDL) {
                 addSqlProfile(statement.getSqlProfile(), connection);
                 ((DingoConnection) connection).setCommandStartTime(0);
@@ -1363,7 +1364,7 @@ public class DingoMeta extends MetaImpl {
     public static void getTraceValues(SqlProfile sqlProfile, List<Object[]> rowList) {
         long duration = System.currentTimeMillis() - sqlProfile.getStart();
         String startTs = DateTimeUtils.timeFormat(new Time(sqlProfile.getStart()));
-        rowList.add(new Object[] {"trace", startTs, String.valueOf(duration)});
+        rowList.add(new Object[] {"trace", startTs, String.valueOf(duration), Long.valueOf(0)});
         sqlProfile.traceTree(rowList);
     }
 }

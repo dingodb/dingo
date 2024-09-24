@@ -107,7 +107,7 @@ public class Profile {
             && !"source".equals(profile.type)
             && !"root".equals(profile.type) && profile.getEnd() > 0 && profile.getStart() > 0
         ) {
-            Object[] val = new Object[3];
+            Object[] val = new Object[4];
             val[0] = node + profile.type;
             if (profile instanceof SourceProfile) {
                 SourceProfile sourceProfile = (SourceProfile) profile;
@@ -118,6 +118,7 @@ public class Profile {
             }
             val[1] = DateTimeUtils.timeFormat(new Time(profile.start));
             val[2] = String.valueOf(profile.getDuration());
+            val[3] = Long.valueOf(this.getCount());
             rowList.add(val);
             skip = false;
         }
