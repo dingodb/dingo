@@ -58,7 +58,6 @@ import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import io.dingodb.common.metrics.DingoMetrics;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +89,7 @@ public class IndexAddFiller implements BackFiller {
     PartitionService ps;
     CommonId txnId;
     byte[] primaryKey;
+    byte[] originPrimaryKey;
     long timeOut = 50000;
     Future<?> future;
 
@@ -100,6 +100,7 @@ public class IndexAddFiller implements BackFiller {
     int isolationLevel = IsolationLevel.ReadCommitted.getCode();
     long commitTs;
     byte[] txnIdKey;
+    List<CommonId> doneRegionIdList = new ArrayList<>();
 
     AtomicLong conflict = new AtomicLong(0);
     AtomicLong addCount = new AtomicLong(0);
@@ -128,7 +129,11 @@ public class IndexAddFiller implements BackFiller {
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-        Iterator<KeyValue> iterator = getKeyValueIterator(task, kvStore);
+        Iterator<KeyValue> iterator = kvStore.txnScan(
+            task.getStartTs(),
+            new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
+            50000
+        );
         tupleIterator = Iterators.transform(iterator,
             wrap(codec::decode)::apply
         );
@@ -157,10 +162,8 @@ public class IndexAddFiller implements BackFiller {
                 op, key, value,0L, tableId, partId, txnId), tableId, partId
             );
             try {
-                long start = System.currentTimeMillis();
                 preWritePrimaryKey(primaryObj);
-                long sub = System.currentTimeMillis() - start;
-                LogUtils.info(log, "[ddl] index reorg pre write primary, cost:{}", sub);
+                originPrimaryKey = codec.encodeKey(tuples);
             } catch (WriteConflictException e) {
                 conflict.incrementAndGet();
                 continue;
@@ -171,96 +174,19 @@ public class IndexAddFiller implements BackFiller {
         return preRes;
     }
 
-    @NonNull
-    public static Iterator<KeyValue> getKeyValueIterator(ReorgBackFillTask task, StoreInstance kvStore) {
-        Iterator<KeyValue> iterator = null;
-        int retry = 3;
-        while (retry -- > 0) {
-            try {
-                iterator = kvStore.txnScan(
-                    task.getStartTs(),
-                    new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
-                    50000
-                );
-            } catch (RegionSplitException ignored) {
-
-            }
-        }
-        if (iterator == null) {
-            throw new RuntimeException("index reorg pre write get iterator null");
-        }
-        return iterator;
-    }
-
-    protected void preWritePrimaryKey(CacheToObject cacheToObject) {
-        primaryKey = cacheToObject.getMutation().getKey();
-        // 2、call sdk preWritePrimaryKey
-        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
-            .isolationLevel(IsolationLevel.of(
-                IsolationLevel.ReadCommitted.getCode()
-            ))
-            .mutations(Collections.singletonList(cacheToObject.getMutation()))
-            .primaryLock(primaryKey)
-            .startTs(txnId.seq)
-            .lockTtl(TransactionManager.lockTtlTm())
-            .txnSize(1L)
-            .tryOnePc(false)
-            .maxCommitTs(0L)
-            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
-                TransactionType.OPTIMISTIC.getCode(), 1))
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
-            LogUtils.info(log, "add index pre write primary start.");
-            this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-
-            boolean prewriteResult = false;
-            int i = 0;
-            while (!prewriteResult) {
-                i ++;
-                try {
-                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(
-                        cacheToObject.getTableId(),
-                        txnId,
-                        cacheToObject.getMutation().getKey()
-                    );
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
-                    this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
-                    prewriteResult = true;
-                } catch (RegionSplitException e1) {
-                    Utils.sleep(100);
-                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
-                }
-            }
-        }
-        if (this.future == null) {
-            throw new RuntimeException(txnId + " future is null "
-                + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:"
-                + Arrays.toString(primaryKey));
-        }
-    }
-
     @Override
-    public BackFillResult backFillDataInTxn(ReorgBackFillTask task) {
+    public BackFillResult backFillDataInTxn(ReorgBackFillTask task, boolean withCheck) {
         CommonId tableId = task.getTableId();
         Iterator<Object[]> tupleIterator;
-        long start = System.currentTimeMillis();
         if (task.getRegionId().seq != ownerRegionId) {
-            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-            Iterator<KeyValue> iterator = getKeyValueIterator(task, kvStore);
-            tupleIterator = Iterators.transform(iterator,
-                wrap(codec::decode)::apply
-            );
+            tupleIterator = getIterator(task, tableId, withCheck);
         } else {
             tupleIterator = this.tupleIterator;
         }
-        long end = System.currentTimeMillis();
-        LogUtils.info(log, "pre write second, init iterator cost:{}ms", (end - start));
+        long start = System.currentTimeMillis();
         Map<String, TxnLocalData> caches = new TreeMap<>();
         long scanCount = 0;
+        Utils.sleep(30000);
         while (tupleIterator.hasNext()) {
             scanCount += 1;
             Object[] tuple = tupleIterator.next();
@@ -294,7 +220,61 @@ public class IndexAddFiller implements BackFiller {
         List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
         preWriteSecondSkipConflict(txnLocalDataList);
         backFillResult.addCount(tupleList.size());
-        LogUtils.info(log, "pre write second, iterator cost:{}ms", (System.currentTimeMillis() - end));
+        LogUtils.info(log, "pre write second, iterator cost:{}ms", (System.currentTimeMillis() - start));
+        doneRegionIdList.add(task.getRegionId());
+        return backFillResult;
+    }
+
+    @Override
+    public BackFillResult backFillDataInTxnWithCheck(ReorgBackFillTask task, boolean withCheck) {
+        CommonId tableId = task.getTableId();
+        Iterator<Object[]> tupleIterator = getIterator(task, tableId, withCheck);
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        long start = System.currentTimeMillis();
+        Map<String, TxnLocalData> caches = new TreeMap<>();
+        long scanCount = 0;
+        while (tupleIterator.hasNext()) {
+            scanCount += 1;
+            Object[] tuple = tupleIterator.next();
+            Object[] tuplesTmp = columnIndices.stream().map(i -> tuple[i]).toArray();
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique) {
+                if (ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                    duplicateKey(tuplesTmp);
+                } else {
+                    byte[] key = getLocalKey(txnLocalData.getKey(), txnLocalData.getPartId().encode());
+                    if (cache.get(key) != null) {
+                        continue;
+                    }
+                }
+            }
+            String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
+            if (!caches.containsKey(cacheKey)) {
+                caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
+            }
+            if (caches.size() % max_pre_write_count == 0) {
+                try {
+                    List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
+                    preWriteSecondSkipConflict(txnLocalDataList);
+                } finally {
+                    caches.clear();
+                }
+            }
+        }
+
+        this.scanCount.addAndGet(scanCount);
+        BackFillResult backFillResult = BackFillResult.builder().scanCount(scanCount).build();
+        Collection<TxnLocalData> tupleList = caches.values();
+        if (tupleList.isEmpty()) {
+            return backFillResult;
+        }
+        List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
+        preWriteSecondSkipConflict(txnLocalDataList);
+        backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second with check, iterator cost:{}ms", (System.currentTimeMillis() - start));
+        doneRegionIdList.add(task.getRegionId());
         return backFillResult;
     }
 
@@ -318,11 +298,7 @@ public class IndexAddFiller implements BackFiller {
         if (primaryObj == null) {
             return true;
         }
-        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
-        byte[] prefix = new byte[1 + txnIdKey.length];
-        prefix[0] = (byte)FILL_BACK.getCode();
-        System.arraycopy(txnIdKey, 0, prefix, 1, txnIdKey.length);
-        Iterator<KeyValue> iterator = cache.scan(prefix);
+        Iterator<KeyValue> iterator = getLocalIterator();
 
         Map<String, KeyValue> caches = new TreeMap<>();
         while (iterator.hasNext()) {
@@ -372,11 +348,106 @@ public class IndexAddFiller implements BackFiller {
         if (this.future != null) {
             this.future.cancel(true);
         }
+        if (primaryObj == null) {
+            return;
+        }
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        Iterator<KeyValue> iterator = getLocalIterator();
+        long removeLocalKeyCnt = 0;
+        while (iterator.hasNext()) {
+            cache.delete(iterator.next().getKey());
+            removeLocalKeyCnt ++;
+        }
+        LogUtils.info(log, "close done, remove cache cnt:{}", removeLocalKeyCnt);
+    }
+
+    @Override
+    public List<CommonId> getDoneRegion() {
+        return doneRegionIdList;
+    }
+
+    protected void preWritePrimaryKey(CacheToObject cacheToObject) {
+        primaryKey = cacheToObject.getMutation().getKey();
+        // 2、call sdk preWritePrimaryKey
+        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+            .isolationLevel(IsolationLevel.of(
+                IsolationLevel.ReadCommitted.getCode()
+            ))
+            .mutations(Collections.singletonList(cacheToObject.getMutation()))
+            .primaryLock(primaryKey)
+            .startTs(txnId.seq)
+            .lockTtl(TransactionManager.lockTtlTm())
+            .txnSize(1L)
+            .tryOnePc(false)
+            .maxCommitTs(0L)
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+                TransactionType.OPTIMISTIC.getCode(), 1))
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+            this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, e.getMessage(), e);
+
+            boolean prewriteResult = false;
+            int i = 0;
+            while (!prewriteResult) {
+                i ++;
+                try {
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(
+                        cacheToObject.getTableId(),
+                        txnId,
+                        cacheToObject.getMutation().getKey()
+                    );
+                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), regionId);
+                    this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+                    prewriteResult = true;
+                } catch (RegionSplitException e1) {
+                    Utils.sleep(100);
+                    LogUtils.error(log, "preWrite primary region split, retry count:" + i);
+                }
+            }
+        }
+        if (this.future == null) {
+            throw new RuntimeException(txnId + " future is null "
+                + cacheToObject.getPartId() + ",preWritePrimaryKey false,PrimaryKey:"
+                + Arrays.toString(primaryKey));
+        }
+    }
+
+    private Iterator<Object[]> getIterator(ReorgBackFillTask task, CommonId tableId, boolean check) {
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
+        Iterator<KeyValue> iterator = kvStore.txnScan(
+            task.getStartTs(),
+            new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
+            50000
+        );
+        if (!check) {
+            iterator = Iterators.filter(iterator,
+                t -> {
+                    if (originPrimaryKey == null) {
+                        return true;
+                    } else {
+                        return ByteArrayUtils.compare(t.getKey(), originPrimaryKey) != 0;
+                    }
+                }
+            );
+        }
+        return Iterators.transform(iterator,
+            wrap(codec::decode)::apply
+        );
+    }
+
+    private Iterator<KeyValue> getLocalIterator() {
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        byte[] prefix = new byte[1 + txnIdKey.length];
+        prefix[0] = (byte)FILL_BACK.getCode();
+        System.arraycopy(txnIdKey, 0, prefix, 1, txnIdKey.length);
+        return cache.scan(prefix);
     }
 
     public void commitSecondData(Collection<KeyValue> secondData) {
-        LogUtils.info(log, "commitSecondData start, startTs:{}, commitTs:{}, primaryKey:{}",
-            txnId.seq, commitTs, primaryKey);
         CommitParam param = new CommitParam(dingoType, isolationLevel, txnId.seq,
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
@@ -478,15 +549,19 @@ public class IndexAddFiller implements BackFiller {
         mutationList.forEach(mutation -> {
             byte[] key = mutation.getKey();
             byte[] partId = part.encode();
-            byte[] ek = new byte[key.length + 1 + txnIdKey.length + partId.length];
-            ek[0] = (byte) FILL_BACK.getCode();
-            System.arraycopy(txnIdKey, 0, ek, 1, txnIdKey.length);
-            System.arraycopy(partId, 0, ek, 1 + txnIdKey.length, partId.length);
-            System.arraycopy(key, 0, ek, 1 + txnIdKey.length + partId.length, key.length);
-            KeyValue extraKeyValue = new KeyValue(ek, null);
-            localStore.put(extraKeyValue);
+            byte[] localKey = getLocalKey(key, partId);
+            localStore.put(new KeyValue(localKey, null));
         });
         timeCtx.stop();
+    }
+
+    private byte[] getLocalKey(byte[] key, byte[] partId) {
+        byte[] ek = new byte[key.length + 1 + txnIdKey.length + partId.length];
+        ek[0] = (byte) FILL_BACK.getCode();
+        System.arraycopy(txnIdKey, 0, ek, 1, txnIdKey.length);
+        System.arraycopy(partId, 0, ek, 1 + txnIdKey.length, partId.length);
+        System.arraycopy(key, 0, ek, 1 + txnIdKey.length + partId.length, key.length);
+        return ek;
     }
 
     private void preWriteSecondKey(List<TxnLocalData> secondList) {

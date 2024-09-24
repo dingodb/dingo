@@ -16,12 +16,17 @@
 
 package io.dingodb.server.executor.service;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.server.executor.ddl.BackFillResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public interface BackFiller {
     boolean preWritePrimary(ReorgBackFillTask task);
-    BackFillResult backFillDataInTxn(ReorgBackFillTask task);
+    BackFillResult backFillDataInTxn(ReorgBackFillTask task, boolean withCheck);
+    BackFillResult backFillDataInTxnWithCheck(ReorgBackFillTask task, boolean withCheck);
 
     boolean commitPrimary();
     boolean commitSecond();
@@ -34,5 +39,7 @@ public interface BackFiller {
     default long getCommitCount() { return  0; }
 
     default long getConflictCount() { return 0; }
+
+    default List<CommonId> getDoneRegion() { return new ArrayList<>(); }
 
 }

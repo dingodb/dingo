@@ -130,33 +130,35 @@ public final class RelOpUtils {
     ) {
         ScanParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("doScanWithCacheOp");
-        CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) vertex.getParam()).getRelOp();
-        synchronized (relOp) {
-            long count = 0;
-            long tmp = System.currentTimeMillis();
-            boolean breakFlg = true;
-            while (sourceIterator.hasNext()) {
-                profile.time(tmp);
-                Object[] tuple = sourceIterator.next();
-                ++count;
-                relOp.put(tuple);
-                tmp = System.currentTimeMillis();
-            }
-            if (sourceIterator instanceof DingoTransformedIterator) {
-                DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
-                OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
-                if (profile1 != null) {
-                    profile1.end();
-                    profile.getChildren().add(profile1);
-                }
-            }
+        CacheOp relOp = (CacheOp) ((ScanWithRelOpParam) param).getRelOp();
+        long count = 0;
+        long tmp = System.currentTimeMillis();
+        boolean breakFlg = true;
+        while (sourceIterator.hasNext()) {
             profile.time(tmp);
+            Object[] tuple = sourceIterator.next();
+            ++count;
+            synchronized (relOp) {
+                relOp.put(tuple);
+            }
+            tmp = System.currentTimeMillis();
+        }
+        if (sourceIterator instanceof DingoTransformedIterator) {
+            DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
+            OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
+            if (profile1 != null) {
+                profile1.end();
+                profile.getChildren().add(profile1);
+            }
+        }
+        profile.time(tmp);
+        profile.decreaseCount();
 
-            profile.decreaseCount();
+        synchronized (relOp) {
             forwardCacheOpResults(relOp, vertex.getSoleEdge());
             relOp.clear();
-            return Pair.of(count, breakFlg);
         }
+        return Pair.of(count, breakFlg);
     }
 
     private static class BreakException extends RuntimeException {
