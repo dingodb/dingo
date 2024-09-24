@@ -285,10 +285,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         Long tenantId = tenantService.getTenantId(tenant.name);
+        MetaService metaService = MetaService.root();
         if (tenant.purgeResources) {
             InfoSchema infoSchema = infoSchemaService.getInfoSchemaByTenantId(tenantId);
             for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
-                MetaService metaService = MetaService.root();
                 SchemaTables schemaTables = entry.getValue();
                 if (schemaTables.getSchemaInfo() == null) {
                     throw DINGO_RESOURCE.unknownSchema(entry.getKey()).ex();
@@ -300,14 +300,21 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             InfoSchema infoSchema = infoSchemaService.getInfoSchemaByTenantId(tenantId);
             List<String> schemas = Arrays.asList("MYSQL", "META", "INFORMATION_SCHEMA");
-            for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
-                if (schemas.contains(entry.getKey())) {
-                    continue;
-                }
-                if (!entry.getValue().getTables().isEmpty()) {
-                    throw new RuntimeException("Tenants cannot be deleted, tables need to be cleared first");
+            long count = infoSchema.schemaMap.entrySet().stream()
+                .filter(entry -> !schemas.contains(entry.getKey()))
+                .filter(entry -> !entry.getValue().getTables().isEmpty())
+                .count();
+            if (count > 0) {
+                throw new RuntimeException("Tenants cannot be deleted, tables need to be cleared first");
+            } else {
+                for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
+                    SchemaTables schemaTables = entry.getValue();
+                    for (Map.Entry<String, Table> tableEntry : schemaTables.getTables().entrySet()) {
+                        metaService.dropTable(tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey());
+                    }
                 }
             }
+
         }
         tenantService.dropTenant(tenant.name);
         timeCtx.stop();

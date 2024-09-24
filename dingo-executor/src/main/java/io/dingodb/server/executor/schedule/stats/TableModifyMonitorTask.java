@@ -109,7 +109,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
         boolean res = false;
         if (processRows == 0 && commitCount > 10000) {

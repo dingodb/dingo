@@ -162,12 +162,7 @@ public final class SafePointUpdateTask {
             }
 
             LogUtils.info(log, "Update safe point to: {}", safeTs);
-            if (isDisable(reqTs)) {
-                LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
-                Services.coordinatorService(coordinators).updateGCSafePoint(
-                    reqTs, UpdateGCSafePointRequest.builder().gcFlag(GcFlagType.GC_STOP).build()
-                );
-            } else {
+            if (!isDisable(reqTs)) {
                 UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder = UpdateGCSafePointRequest.builder()
                     .gcFlag(GcFlagType.GC_START);
                 // TODO

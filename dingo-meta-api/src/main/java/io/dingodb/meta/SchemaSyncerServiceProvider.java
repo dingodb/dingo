@@ -16,6 +16,7 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -33,7 +34,7 @@ public interface SchemaSyncerServiceProvider {
             Iterator<SchemaSyncerServiceProvider> iterator = ServiceLoader.load(SchemaSyncerServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
-                log.warn("Load multi meta service provider, use {}.", serviceProvider.getClass().getName());
+                LogUtils.warn(log, "Load multi meta service provider, use {}.", serviceProvider.getClass().getName());
             }
         }
     }

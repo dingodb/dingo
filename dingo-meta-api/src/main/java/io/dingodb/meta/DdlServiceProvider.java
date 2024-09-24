@@ -16,6 +16,7 @@
 
 package io.dingodb.meta;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -34,10 +35,10 @@ public interface DdlServiceProvider {
             try {
                 this.serviceProvider = iterator.next();
                 if (iterator.hasNext()) {
-                    log.warn("Load multi info ddl service provider, use {}.", serviceProvider.getClass().getName());
+                    LogUtils.warn(log, "Load multi info ddl service provider, use {}.", serviceProvider.getClass().getName());
                 }
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
             }
         }
     }

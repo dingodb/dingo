@@ -427,7 +427,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 resultSetHoldability
             );
         } catch (RuntimeException e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw ExceptionUtils.toSql(e);
         }
     }

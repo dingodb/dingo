@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.expr;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.expr.runtime.TupleEvalContext;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class DingoEvalContext implements TupleEvalContext {
             try {
                 return val[index];
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LogUtils.error(log, e.getMessage(), e);
             }
         }
         // id < 0 means it is a sql parameter.

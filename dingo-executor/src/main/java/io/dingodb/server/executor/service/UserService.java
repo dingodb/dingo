@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.privilege.PrivilegeDefinition;
 import io.dingodb.common.privilege.PrivilegeDict;
@@ -149,7 +150,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] userRow = createUserRow(userDefinition);
         KeyValue keyValue = userCodec.encode(userRow);
         userStore.insert(keyValue.getKey(), keyValue.getValue());
-        log.debug("create user: {}", userDefinition);
+        LogUtils.debug(log, "create user: {}", userDefinition);
     }
 
     @Override
@@ -341,7 +342,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public void flushPrivileges() {
-        log.info("flush privileges");
+        LogUtils.info(log, "flush privileges");
     }
 
     private Object[] createUserRow(UserDefinition user) {
@@ -458,7 +459,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         );
         Object[] dbValues = decode(dbPrivCodec, old);
         if (dbValues == null) {
-            log.info("db privilege is empty");
+            LogUtils.info(log, "db privilege is empty");
             dbValues = getDbPrivilege(schemaPrivDefinition.getUser(), schemaPrivDefinition.getHost(),
                 schemaPrivDefinition.getSchemaName());
             exist = false;
@@ -767,7 +768,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
             }
             return list;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }

@@ -16,6 +16,7 @@
 
 package io.dingodb.codec;
 
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
@@ -33,7 +34,7 @@ public interface CodecServiceProvider {
             Iterator<CodecServiceProvider> iterator = ServiceLoader.load(CodecServiceProvider.class).iterator();
             this.serviceProvider = iterator.next();
             if (iterator.hasNext()) {
-                log.warn("Load multi codec service provider, use {}.", serviceProvider.getClass().getName());
+                LogUtils.warn(log, "Load multi codec service provider, use {}.", serviceProvider.getClass().getName());
             }
         }
     }

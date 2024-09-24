@@ -27,6 +27,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 import java.util.NavigableMap;
@@ -38,7 +39,8 @@ public class GetDistributionParam extends SourceParam {
 
     private final List<Object[]> keyTuples;
     private final Table table;
-    private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
+    @Setter
+    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     @JsonProperty("keyMapping")
     private final TupleMapping keyMapping;
     private transient KeyValueCodec codec;
