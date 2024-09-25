@@ -26,7 +26,6 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
-import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.ddl.LoadSchemaDiffs;
@@ -34,7 +33,7 @@ import io.dingodb.meta.ddl.RelatedSchemaChange;
 import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.entity.InfoSchema;
-import io.dingodb.sdk.service.LockService;
+import io.dingodb.sdk.service.WatchService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.server.executor.Configuration;
@@ -59,10 +58,9 @@ public final class LoadInfoSchemaTask {
     public static void watchExpSchemaVer() {
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(io.dingodb.meta.InfoSchemaService.expSchemaVer.getBytes()).build()).build();
-        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
-        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
+        WatchService watchService = new WatchService(Configuration.coordinators());
         try {
-            lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+            watchService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             watchExpSchemaVer();
@@ -72,10 +70,9 @@ public final class LoadInfoSchemaTask {
     public static void watchGlobalSchemaVer() {
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(io.dingodb.meta.InfoSchemaService.globalSchemaVer.getBytes()).build()).build();
-        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
-        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
+        WatchService watchService = new WatchService(Configuration.coordinators());
         try {
-            lockService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+            watchService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             watchGlobalSchemaVer();
@@ -127,20 +124,20 @@ public final class LoadInfoSchemaTask {
             InfoSchemaService infoSchemaService = new InfoSchemaService();
             //LogUtils.info(log, "[ddl] loadInfoSchema start");
             LoadIsResponse response = loadInfoSchema(infoSchemaService, startTs);
-            if (!response.hitCache) {
-                if (response.oldSchemaVersion < response.is.schemaMetaVersion) {
+            //if (!response.hitCache) {
+                //if (response.oldSchemaVersion < response.is.schemaMetaVersion) {
                     // report to coordinator
-//                    SchemaSyncerService service = SchemaSyncerService.root();
-//                    try {
-//                        service.updateSelfVersion(startTs, 0, response.is.schemaMetaVersion);
-//                    } catch (Exception e) {
-//                        LogUtils.error(log, e.getMessage(), e);
-//                        LogUtils.error(log, "[ddl] update self version failed, " +
-//                                "oldSchemaVersion:{}, neededSchemaVersion:{}", response.oldSchemaVersion,
-//                            response.is.schemaMetaVersion);
-//                    }
-                }
-            }
+                    //SchemaSyncerService service = SchemaSyncerService.root();
+                    //try {
+                    //    service.updateSelfVersion(startTs, 0, response.is.schemaMetaVersion);
+                    //} catch (Exception e) {
+                    //    LogUtils.error(log, e.getMessage(), e);
+                    //    LogUtils.error(log, "[ddl] update self version failed, " +
+                    //            "oldSchemaVersion:{}, neededSchemaVersion:{}", response.oldSchemaVersion,
+                    //        response.is.schemaMetaVersion);
+                    //}
+                //}
+            //}
             long end = System.currentTimeMillis();
             long sub = end - start;
             long lease = DdlContext.INSTANCE.getLease();

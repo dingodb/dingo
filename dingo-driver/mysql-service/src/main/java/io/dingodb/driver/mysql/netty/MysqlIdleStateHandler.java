@@ -64,9 +64,6 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
 
     public MysqlIdleStateHandler(long allIdleTime, long interval) {
         TimeUnit unit = TimeUnit.SECONDS;
-        if (unit == null) {
-            throw new NullPointerException("unit");
-        }
         delayTime = unit.toNanos(5);
         if (allIdleTime <= 0) {
             idleTimeNanos = 0;
@@ -111,7 +108,7 @@ public class MysqlIdleStateHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(ChannelHandlerContext ctx) {
         destroy();
     }
 

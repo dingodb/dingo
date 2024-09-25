@@ -54,6 +54,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.version.DeleteRangeRequest;
+import io.dingodb.sdk.service.entity.version.DeleteRangeResponse;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
@@ -727,7 +728,10 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public void delKvFromCoordinator(String key, String keyEnd) {
         DeleteRangeRequest deleteRequest = DeleteRangeRequest.builder().key(key.getBytes()).rangeEnd(keyEnd.getBytes()).build();
-        versionService.kvDeleteRange(System.identityHashCode(deleteRequest), deleteRequest);
+        DeleteRangeResponse response = versionService.kvDeleteRange(System.identityHashCode(deleteRequest), deleteRequest);
+        if (response.getDeleted() < 1) {
+            LogUtils.error(log, "del kv failed,key:{}, keyEnd:{}", key, keyEnd);
+        }
     }
 
     @Override
@@ -748,23 +752,36 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public synchronized Long genSchemaVersion(long step) {
-        byte[] ek = CodecKvUtil.encodeStringDataKey(schemaVerKey());
-        RangeRequest rangeRequest = RangeRequest.builder()
-            .key(ek)
-            .build();
-        RangeResponse response = versionService
-            .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
-
+        byte[] ek = genSchemaVerKey;
         long id = 0L;
-        if (response.getKvs() != null && !response.getKvs().isEmpty()) {
-            byte[] val = response.getKvs().get(0).getKv().getValue();
-            id = Long.parseLong(new String(val));
+        if (DdlUtil.genSchemaVerEtcd) {
+            RangeRequest rangeRequest = RangeRequest.builder()
+                .key(ek)
+                .build();
+            RangeResponse response = versionService
+                .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
+            if (response.getKvs() != null && !response.getKvs().isEmpty()) {
+                byte[] val = response.getKvs().get(0).getKv().getValue();
+                id = Long.parseLong(new String(val));
+            }
+        } else {
+            byte[] val = txn.ddlGet(ek);
+            if (val != null) {
+                id = Long.parseLong(new String(val));
+            }
         }
+
         id += step;
-        String idStr = String.valueOf(id);
-        KeyValue keyValue = KeyValue.builder().key(ek).value(idStr.getBytes()).build();
-        PutRequest putRequest = PutRequest.builder().keyValue(keyValue).build();
-        versionService.kvPut(System.identityHashCode(putRequest), putRequest);
+        byte[] valBytes = String.valueOf(id).getBytes();
+
+        if (DdlUtil.genSchemaVerEtcd) {
+            KeyValue keyValue = KeyValue.builder().key(ek).value(valBytes).build();
+            PutRequest putRequest = PutRequest.builder().keyValue(keyValue).build();
+            versionService.kvPut(System.identityHashCode(putRequest), putRequest);
+        } else {
+            txn.ddlPut(ek, valBytes);
+        }
+
         return id;
     }
 
@@ -995,16 +1012,23 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     public long getSchemaVer() {
-        RangeRequest rangeRequest = RangeRequest.builder()
-            .key(genSchemaVerKey)
-            .build();
-        RangeResponse response = versionService
-            .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
-
         long id = 0L;
-        if (response.getKvs() != null && !response.getKvs().isEmpty()) {
-            byte[] val = response.getKvs().get(0).getKv().getValue();
-            id = Long.parseLong(new String(val));
+        if (DdlUtil.genSchemaVerEtcd) {
+            RangeRequest rangeRequest = RangeRequest.builder()
+                .key(genSchemaVerKey)
+                .build();
+            RangeResponse response = versionService
+                .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
+
+            if (response.getKvs() != null && !response.getKvs().isEmpty()) {
+                byte[] val = response.getKvs().get(0).getKv().getValue();
+                id = Long.parseLong(new String(val));
+            }
+        } else {
+            byte[] valBytes = txn.ddlGet(genSchemaVerKey);
+            if (valBytes != null) {
+                id = Long.parseLong(new String(valBytes));
+            }
         }
         return id;
     }

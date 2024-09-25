@@ -173,7 +173,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_BREE, DYNAMIC);
+        initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
@@ -610,7 +610,8 @@ public final class PrepareMeta {
                 subMetaService.createTables(tableDefinition, new ArrayList<>());
             }
         } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
+            LogUtils.error(log, "create table failed:{}, schemaName:{}, tableName:{}",
+                e.getMessage(), schema, tableName, e);
         }
     }
 

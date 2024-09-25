@@ -78,10 +78,17 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
                 start();
                 lock.watchDestroy().thenRun(() -> {
                     pause();
-                    startScheduler(lockService);
+                    lockService.cancel();
+                    LockService newLockService = new LockService("executor-scheduler-" + TenantConstant.TENANT_ID,
+                        Configuration.coordinators());
+                    startScheduler(newLockService);
                 });
             } else {
-                startScheduler(lockService);
+                lockService.cancel();
+                LogUtils.info(log, "lock failed, start retry", e);
+                LockService newLockService = new LockService("executor-scheduler-" + TenantConstant.TENANT_ID,
+                    Configuration.coordinators());
+                startScheduler(newLockService);
             }
         });
     }

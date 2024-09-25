@@ -90,7 +90,6 @@ public final class SafePointUpdateTask {
         LockNotExistRollback, TTLExpirePessimisticRollback, TTLExpireRollback
     );
 
-    private static final LockService lockService = new LockService(lockKeyStr, Configuration.coordinators());
     private static final AtomicBoolean running = new AtomicBoolean(false);
 
     private SafePointUpdateTask() {
@@ -98,6 +97,7 @@ public final class SafePointUpdateTask {
 
     public static void run() {
         Executors.execute(lockKeyStr, () -> {
+            LockService lockService = new LockService(lockKeyStr, Configuration.coordinators());
             try {
                 String value = DingoConfiguration.serverId() + "#" + DingoConfiguration.location();
                 LockService.Lock lock = lockService.newLock(value);
@@ -108,9 +108,11 @@ public final class SafePointUpdateTask {
                 );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
+                    lockService.cancel();
                     run();
                 });
             } catch (Exception e) {
+                lockService.cancel();
                 run();
             }
         });

@@ -30,10 +30,9 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
-import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
-import io.dingodb.sdk.service.LockService;
+import io.dingodb.sdk.service.WatchService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.server.executor.Configuration;
@@ -86,12 +85,13 @@ public final class DdlServer {
     }
 
     public static void watchDdlKey() {
-        String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
-        LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
+        //String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
+        WatchService watchService = new WatchService(Configuration.coordinators());
+        //LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
         try {
-            lockService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
+            watchService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             watchDdlKey();
@@ -156,6 +156,7 @@ public final class DdlServer {
             || !DdlContext.INSTANCE.prepare.get()
             || !ScopeVariables.runDdl()
         ) {
+            LogUtils.info(log, "not ready, owner:{}", env.ddlOwner.get());
             DdlContext.INSTANCE.getWc().setOnceVal(true);
             Utils.sleep(1000);
             return;

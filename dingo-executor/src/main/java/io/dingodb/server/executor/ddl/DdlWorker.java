@@ -278,6 +278,9 @@ public class DdlWorker {
         if (job.getErrorCount() > 5 && job.getState() == JobState.jobStateRunning && job.isRollbackable()) {
             LogUtils.warn(log, "[ddl] DDL job error count exceed the limit, cancelling it now, jobId:{}", job.getId());
             job.setState(JobState.jobStateCancelling);
+        } else if (job.getErrorCount() > 10){
+            LogUtils.error(log, "[ddl] DDL job error count exceed max limit,jobId:{}", job.getId());
+            job.setState(JobState.jobStateCancelling);
         }
         return error;
     }
@@ -447,14 +450,14 @@ public class DdlWorker {
                 }
                 break;
             case SCHEMA_WRITE_ONLY:
-//                tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
-//                res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
-//                    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
-//                if (res.getValue() != null) {
-//                    return res;
-//                }
-//                break;
-//            case SCHEMA_DELETE_ONLY:
+                //tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                //res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
+                //    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+                //if (res.getValue() != null) {
+                //    return res;
+                //}
+                //break;
+            //case SCHEMA_DELETE_ONLY:
                 tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
                 long start = System.currentTimeMillis();
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
@@ -477,7 +480,7 @@ public class DdlWorker {
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 break;
             default:
-                return Pair.of(0L, "ErrInvalidDDLState");
+                return Pair.of(0L, "ErrInvalidDDLState:" + tableInfo.getTableDefinition().getSchemaState());
         }
         job.setSchemaStateNumber(tableInfo.getTableDefinition().getSchemaState().number);
         return res;
