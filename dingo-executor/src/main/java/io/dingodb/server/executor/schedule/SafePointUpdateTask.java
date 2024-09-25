@@ -170,7 +170,7 @@ public final class SafePointUpdateTask {
                 if (TenantConstant.TENANT_ID == 0) {
                     builder.safePoint(safeTs - 1);
                 } else {
-                    builder.tenantSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs));
+                    builder.tenantSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs - 1));
                 }
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, builder.build()

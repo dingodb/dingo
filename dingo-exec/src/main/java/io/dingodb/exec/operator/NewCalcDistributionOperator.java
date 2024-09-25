@@ -127,6 +127,9 @@ public class NewCalcDistributionOperator extends SourceOperator {
             return false;
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, e.getMessage());
+            if (e.getCause() instanceof LockWaitException) {
+                throw new LockWaitException("Lock wait");
+            }
             throw new RuntimeException(e);
         }
     }
