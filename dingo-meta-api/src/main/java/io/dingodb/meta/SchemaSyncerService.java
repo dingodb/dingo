@@ -16,8 +16,6 @@
 
 package io.dingodb.meta;
 
-import io.dingodb.common.ddl.ActionType;
-
 public interface SchemaSyncerService {
     static SchemaSyncerService root() {
         return SchemaSyncerServiceProvider.getDefault().root();

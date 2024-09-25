@@ -60,6 +60,7 @@ public final class DdlUtil {
     public static boolean mdlEnable = true;
     public static boolean delDiff = true;
     public static boolean historyJobEtcd = false;
+    public static boolean genSchemaVerEtcd = false;
     public static String ddlTmpTableName = "replicaTable";
 
     public static int errorCountLimit = 5;
