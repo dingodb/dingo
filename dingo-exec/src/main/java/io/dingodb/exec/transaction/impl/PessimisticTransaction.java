@@ -390,6 +390,7 @@ public class PessimisticTransaction extends BaseTransaction {
         //get primary key.
         cacheToObject = primaryLockTo();
         primaryKey = cacheToObject.getMutation().getKey();
+        mutations.add(cacheToObject.getMutation());
 	    partIdSet.add(cacheToObject.getPartId());
 
         while (transform.hasNext()) {
@@ -403,7 +404,9 @@ public class PessimisticTransaction extends BaseTransaction {
                 break;
             } else {
                 //build Mutaions.
-                mutations.add(TransactionCacheToMutation.localDatatoMutation(txnLocalData, TransactionType.PESSIMISTIC));
+                if(!Arrays.equals(txnLocalData.getKey(), primaryKey)) {
+                    mutations.add(TransactionCacheToMutation.localDatatoMutation(txnLocalData, TransactionType.PESSIMISTIC));
+                }
             }
         }
 
