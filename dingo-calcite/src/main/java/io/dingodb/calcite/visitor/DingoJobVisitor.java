@@ -81,6 +81,7 @@ import io.dingodb.calcite.visitor.function.DingoUnionVisitFun;
 import io.dingodb.calcite.visitor.function.DingoValuesVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorStreamingVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorVisitFun;
+import io.dingodb.common.ExecuteVariables;
 import io.dingodb.common.Location;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
@@ -115,26 +116,26 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     private boolean isScan;
 
     @Getter
-    private boolean isJoinConcurrency;
+    private ExecuteVariables executeVariables;
 
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation,
-                            ITransaction transaction, SqlKind kind, boolean isJoinConcurrency) {
+                            ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.transaction = transaction;
         this.kind = kind;
-        this.isJoinConcurrency = isJoinConcurrency;
+        this.executeVariables = executeVariables;
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false, null, null, false);
+        renderJob(job, input, currentLocation, false, null, null, new ExecuteVariables());
     }
 
     public static void renderJob(Job job, RelNode input, Location currentLocation,
-                                 boolean checkRoot, ITransaction transaction, SqlKind kind, boolean isJoinConcurrency) {
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables) {
         IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, isJoinConcurrency);
+        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, executeVariables);
         Collection<Vertex> outputs = dingo(input).accept(visitor);
         if (checkRoot && !outputs.isEmpty()) {
             throw new IllegalStateException("There root of plan must be `DingoRoot`.");

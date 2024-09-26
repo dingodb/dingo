@@ -23,6 +23,7 @@ import io.dingodb.client.operation.impl.DeleteRangeResult;
 import io.dingodb.client.operation.impl.OpKeyRange;
 import io.dingodb.client.utils.OperationUtils;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecuteVariables;
 import io.dingodb.common.Location;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.partition.RangeDistribution;
@@ -505,7 +506,8 @@ public class OperationServiceV2 {
             null,
             false,
             false,
-            null);
+            null,
+            ExecuteVariables.CONCURRENCY_COUNT);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -561,7 +563,8 @@ public class OperationServiceV2 {
             null,
             false,
             false,
-            null);
+            null,
+            ExecuteVariables.CONCURRENCY_COUNT);
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));

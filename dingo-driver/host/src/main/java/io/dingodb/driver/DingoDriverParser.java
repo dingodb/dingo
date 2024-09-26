@@ -41,6 +41,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecuteVariables;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.config.DingoConfiguration;
@@ -461,7 +462,7 @@ public final class DingoDriverParser extends DingoParser {
         if (pessimisticTxn && transaction.getPrimaryKeyLock() == null && explain == null) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable")));
+                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel()));
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -478,7 +479,7 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"))
+            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel())
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -522,6 +523,18 @@ public final class DingoDriverParser extends DingoParser {
             columns,
             trace
         );
+    }
+
+    public int getConcurrencyLevel() {
+        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
+            connection.getClientInfo("dingo_partition_execute_concurrency"));
+        return concurrencyLevelOpt
+            .map(Integer::parseInt)
+            .orElse(5);
+    }
+
+    public boolean isJoinConcurrency() {
+        return "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"));
     }
 
     @Nullable
@@ -644,7 +657,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable")));
+                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel()));
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -661,7 +674,7 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"))
+            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel())
         );
         return new DingoSignature(
             visitColumns,
@@ -687,12 +700,12 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         Location currentLocation,
         DingoType dingoType,
-        boolean isJoinConcurrency
+        ExecuteVariables executeVariables
     ) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
-            DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind(), isJoinConcurrency);
+            DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind(), executeVariables);
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
                 while (iterator.hasNext()) {

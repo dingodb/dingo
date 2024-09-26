@@ -35,7 +35,7 @@ import java.util.NavigableMap;
 @Getter
 @JsonTypeName("distributionSource")
 @JsonPropertyOrder({
-    "startKey", "endKey", "withStart", "withEnd"
+    "startKey", "endKey", "withStart", "withEnd", "concurrencyLevel"
 })
 public class DistributionSourceParam extends SourceParam {
 
@@ -60,6 +60,8 @@ public class DistributionSourceParam extends SourceParam {
     private boolean filterRange;
     @Setter
     private int keepOrder;
+    @JsonProperty("concurrencyLevel")
+    private final int concurrencyLevel;
 
     public DistributionSourceParam(
         Table td,
@@ -71,7 +73,8 @@ public class DistributionSourceParam extends SourceParam {
         SqlExpr filter,
         boolean logicalNot,
         boolean notBetween,
-        Object[] keyTuple
+        Object[] keyTuple,
+        int concurrencyLevel
     ) {
         this.td = td;
         this.rangeDistribution = rangeDistribution;
@@ -83,6 +86,7 @@ public class DistributionSourceParam extends SourceParam {
         this.logicalNot = logicalNot;
         this.notBetween = notBetween;
         this.keyTuple = keyTuple;
+        this.concurrencyLevel = concurrencyLevel;
     }
 
     @Override
@@ -109,7 +113,8 @@ public class DistributionSourceParam extends SourceParam {
             this.filter,
             this.logicalNot,
             this.notBetween,
-            this.keyTuple);
+            this.keyTuple,
+            this.concurrencyLevel);
         param.setPs(this.ps);
         return param;
     }

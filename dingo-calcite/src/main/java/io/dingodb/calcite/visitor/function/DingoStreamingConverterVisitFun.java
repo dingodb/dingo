@@ -229,7 +229,7 @@ public final class DingoStreamingConverterVisitFun {
     ) {
         List<Vertex> outputs = new LinkedList<>();
         List<Location> locations = new ArrayList<>();
-        if (visitor.isJoinConcurrency()) {
+        if (visitor.getExecuteVariables().isJoinConcurrency()) {
             locations.addAll(ClusterService.getDefault().getComputingLocations());
         }
         final HashStrategy hs = new SimpleHashStrategy();

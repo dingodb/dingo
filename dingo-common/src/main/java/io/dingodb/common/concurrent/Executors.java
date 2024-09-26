@@ -17,6 +17,7 @@
 package io.dingodb.common.concurrent;
 
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -189,9 +190,7 @@ public final class Executors {
         Thread thread = Thread.currentThread();
         contexts.put(thread, new Context());
         try {
-            if (log.isTraceEnabled()) {
-                log.trace("Call [{}] start, thread id [{}], set thread name.", name, thread.getId());
-            }
+            LogUtils.trace(log, "Call [{}] start, thread id [{}], set thread name.", name, thread.getId());
             StringBuilder builder = new StringBuilder(name);
             builder.append("-").append(thread.getId());
             thread.setName(builder.toString());
@@ -201,14 +200,12 @@ public final class Executors {
                 error(log, "Execute {} catch error.", name, e);
                 return null;
             } else {
-                log.error("Execute {} catch error.", name, e);
+                LogUtils.error(log, "Execute {} catch error.", name, e);
                 throw e;
             }
         } finally {
             thread.setName(FREE_THREAD_NAME);
-            if (log.isTraceEnabled()) {
-                log.trace("Call [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
-            }
+            LogUtils.trace(log, "Call [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
             contexts.remove(thread);
         }
     }
@@ -217,9 +214,7 @@ public final class Executors {
         Thread thread = Thread.currentThread();
         contexts.put(thread, new Context());
         try {
-            if (log.isTraceEnabled()) {
-                log.trace("Run [{}] start, thread id [{}], set thread name.", name, thread.getId());
-            }
+            LogUtils.trace(log, "Run [{}] start, thread id [{}], set thread name.", name, thread.getId());
             StringBuilder builder = new StringBuilder(name);
             builder.append("-").append(thread.getId());
             thread.setName(builder.toString());
@@ -228,14 +223,12 @@ public final class Executors {
             if (ignoreError) {
                 error(log, "Execute {} catch error.", name, e);
             } else {
-                log.error("Execute {} catch error.", name, e);
+                LogUtils.error(log, "Execute {} catch error.", name, e);
                 throw e;
             }
         } finally {
             thread.setName(FREE_THREAD_NAME);
-            if (log.isTraceEnabled()) {
-                log.trace("Run [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
-            }
+            LogUtils.trace(log, "Run [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
             contexts.put(thread, new Context());
         }
     }

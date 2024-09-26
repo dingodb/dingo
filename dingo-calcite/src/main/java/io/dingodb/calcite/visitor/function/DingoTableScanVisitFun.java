@@ -98,7 +98,9 @@ public final class DingoTableScanVisitFun {
             filter,
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
-            null);
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
+        );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {

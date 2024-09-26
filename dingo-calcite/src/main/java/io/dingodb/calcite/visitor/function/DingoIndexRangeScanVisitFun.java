@@ -138,7 +138,9 @@ public final class DingoIndexRangeScanVisitFun {
             filter,
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
-            null);
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
+        );
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
 
