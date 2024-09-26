@@ -689,8 +689,26 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Map<String, Table> listTableDef(long schemaId) {
-        List<Object> objList = listTable(schemaId);
-        return objList.stream()
+        List<Object> tableObjList = listTable(schemaId);
+        // check duplicate key TableName
+        List<TableDefinitionWithId> duplicateTableList = tableObjList.stream()
+            .map(obj -> (TableDefinitionWithId) obj)
+            .collect(Collectors.groupingBy(e -> e.getTableDefinition().getName()))
+            .values().stream()
+            .filter(tableDefinitionWithIds -> tableDefinitionWithIds.size() > 1)
+            .map(tableDefinitionWithIds -> tableDefinitionWithIds.get(0))
+            .collect(Collectors.toList());
+        if (!duplicateTableList.isEmpty()) {
+            LogUtils.error(log, "duplicate key Table");
+            try {
+                duplicateTableList.forEach(e -> {
+                    io.dingodb.meta.MetaService.root().dropTable(tenantId, schemaId, e.getTableDefinition().getName());
+                });
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+        }
+        return tableObjList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
                 getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
@@ -902,7 +920,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public void prepareDone() {
         long ver = this.getSchemaVer();
-        LogUtils.info(log, "current ver:" + ver);
+        LogUtils.info(log, "prepareDone, current ver:" + ver);
         genSchemaVersion(100);
         ver = getSchemaVer();
 
@@ -911,10 +929,29 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public void prepareStart() {
+        long ver = this.getSchemaVer();
+        LogUtils.info(log, "prepareStart, current ver:" + ver);
+        if (ver == 0) {
+            versionService.kvPut(putRequest(globalSchemaVer, "1"));
+            LogUtils.info(log, "prepare start");
+        } else {
+            LogUtils.error(log, "prepare already started");
+        }
+    }
+
+    @Override
     public boolean prepare() {
         long version = getSchemaVer();
-        LogUtils.info(log, "newest schema ver:" + version);
+        LogUtils.info(log, "validate prepare done, newest schema ver:" + version);
         return version >= 100;
+    }
+
+    @Override
+    public boolean prepareStarted() {
+        long version = getSchemaVer();
+        LogUtils.info(log, "validate prepare start, newest schema ver:" + version);
+        return version >= 1;
     }
 
     @Override

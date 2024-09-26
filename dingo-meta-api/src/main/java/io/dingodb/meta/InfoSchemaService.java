@@ -262,8 +262,10 @@ public interface InfoSchemaService {
     default void delHistoryDDLJob(long jobId) {};
 
     void prepareDone();
+    default void prepareStart() {};
 
     boolean prepare();
+    default boolean prepareStarted() { return false; }
 
     List<Long> genGlobalIDs(int n);
 

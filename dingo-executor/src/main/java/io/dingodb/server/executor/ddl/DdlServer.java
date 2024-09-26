@@ -162,7 +162,6 @@ public final class DdlServer {
             return;
         }
         loadDDLJobsAndRun(session, JobTableUtil::getGenerateJobs, DdlContext.INSTANCE.getDdlJobPool());
-        //loadDDLJobsAndRun(session, JobTableUtil::getReorgJobs, DdlContext.INSTANCE.getDdlReorgPool());
     }
 
     static synchronized void loadDDLJobsAndRun(Session session, Function<Session, Pair<List<DdlJob>, String>> getJob, DdlWorkerPool pool) {

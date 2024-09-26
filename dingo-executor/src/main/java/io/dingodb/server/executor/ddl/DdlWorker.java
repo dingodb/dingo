@@ -528,8 +528,9 @@ public class DdlWorker {
                     indexInfo.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                     MetaService.root().createIndex(table.tableId, table.getName(), indexInfo);
                 } catch (Exception e) {
+                    job.setState(JobState.jobStateCancelled);
                     LogUtils.error(log, e.getMessage(), e);
-                    return Pair.of(0L, "create index error");
+                    return Pair.of(0L, e.getMessage());
                 }
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);

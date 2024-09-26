@@ -469,7 +469,7 @@ public class LoadDataOperation implements DmlOperation {
             }
             long sub = System.currentTimeMillis() - start;
             long totalCount = count.get();
-            if (totalCount % 4096 == 0) {
+            if (totalCount % 409600 == 0) {
                 LogUtils.info(log, "insert txn batch size: {}, cost time: {}ms, insert count:{}",
                     cacheSize, sub, totalCount);
             }
