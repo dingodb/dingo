@@ -79,7 +79,9 @@ public final class DingoLikeScanVisitFun {
             null,
             false,
             false,
-            null);
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
+        );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionSourceParam);
 
         for (RangeDistribution distribution

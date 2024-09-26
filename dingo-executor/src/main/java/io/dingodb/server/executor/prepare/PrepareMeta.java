@@ -282,6 +282,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"increment_backup", "off"});
         values.add(new Object[]{"dingo_audit_enable", "off"});
         values.add(new Object[]{"ddl_inner_profile", "off"});
+        values.add(new Object[]{"dingo_join_concurrency_enable", "off"});
+        values.add(new Object[]{"dingo_partition_execute_concurrency", "5"});
         return values;
     }
 

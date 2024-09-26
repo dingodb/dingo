@@ -33,12 +33,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -93,45 +94,53 @@ public class NewCalcDistributionOperator extends SourceOperator {
     @Override
     public boolean push(Context context, @NonNull Vertex vertex) {
         DistributionSourceParam param = vertex.getParam();
-        try {
-            Set<RangeDistribution> distributions = getRangeDistributions(param);
-            if (log.isTraceEnabled()) {
-                if (distributions.isEmpty()) {
-                    LogUtils.trace(
-                        log,
-                        "No data distribution from ({}) to ({})",
-                        Arrays.toString(param.getStartKey()),
-                        Arrays.toString(param.getEndKey())
-                    );
-                }
+        Set<RangeDistribution> distributions = getRangeDistributions(param);
+        if (log.isTraceEnabled()) {
+            if (distributions.isEmpty()) {
+                LogUtils.trace(
+                    log,
+                    "No data distribution from ({}) to ({})",
+                    Arrays.toString(param.getStartKey()),
+                    Arrays.toString(param.getEndKey())
+                );
             }
-            boolean parallel = Utils.parallel(param.getKeepOrder());
-            //boolean rangePart = "range".equalsIgnoreCase(param.getTd().getPartitionStrategy());
-            //boolean rangePart = false;
-            if (!parallel || distributions.size() == 1) {
-                for (RangeDistribution distribution : distributions) {
-                    if (log.isTraceEnabled()) {
-                        LogUtils.trace(log, "Push distribution: {}", distribution);
-                    }
-                    context.setDistribution(distribution);
-                    if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                        break;
-                    }
-                }
-            } else {
-                CompletableFuture.allOf(distributions.stream()
-                    .map(distribution -> push(context, vertex, param, distribution))
-                    .toArray(CompletableFuture[]::new))
-                    .get();
-            }
-            return false;
-        } catch (InterruptedException | ExecutionException e) {
-            LogUtils.error(log, e.getMessage());
-            if (e.getCause() instanceof LockWaitException) {
-                throw new LockWaitException("Lock wait");
-            }
-            throw new RuntimeException(e);
         }
+        boolean parallel = Utils.parallel(param.getKeepOrder());
+        if (!parallel || distributions.size() == 1) {
+            for (RangeDistribution distribution : distributions) {
+                if (log.isTraceEnabled()) {
+                    LogUtils.trace(log, "Push distribution: {}", distribution);
+                }
+                context.setDistribution(distribution);
+                if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                    break;
+                }
+            }
+        } else {
+            try {
+                int concurrencyLevel = param.getConcurrencyLevel();
+                Set<CompletableFuture<Boolean>> futures = new HashSet<>(concurrencyLevel);
+                for (RangeDistribution distribution : distributions) {
+                    CompletableFuture<Boolean> future = push(context, vertex, param, distribution);
+                    futures.add(future);
+                    if (futures.size() >= concurrencyLevel) {
+                        // Wait for all the current futures to complete
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                        futures.clear();
+                    }
+                }
+                // Wait for any remaining futures to complete
+                if (!futures.isEmpty()) {
+                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                }
+            } catch (CompletionException exception) {
+                if (exception.getCause() instanceof LockWaitException) {
+                    throw new LockWaitException("Lock wait");
+                }
+                throw exception;
+            }
+        }
+        return false;
     }
 
     private static CompletableFuture<Boolean> push(

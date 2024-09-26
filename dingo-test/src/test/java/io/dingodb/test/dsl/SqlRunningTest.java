@@ -38,6 +38,11 @@ public class SqlRunningTest extends SqlTestRunner {
     }
 
     @TestFactory
+    public Stream<DynamicTest> testInsert() {
+        return getTests(SqlTestCaseYamlBuilder.of("cases/insert.yml"));
+    }
+
+    @TestFactory
     public Stream<DynamicTest> testJoin() {
         return getTests(SqlTestCaseYamlBuilder.of("cases/join.yml"));
     }

@@ -29,7 +29,6 @@ import org.immutables.value.Value;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Value.Enclosing
 public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> implements SubstitutionRule {
@@ -40,29 +39,25 @@ public class DingoValuesUnionRule extends RelRule<DingoValuesUnionRule.Config> i
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         Union union = call.rel(0);
-        LogicalDingoValues value0 = call.rel(1);
-        LogicalDingoValues value1 = call.rel(2);
-        List<Object[]> tuples = new LinkedList<>(value0.getTuples());
-        tuples.addAll(value1.getTuples());
-        LogicalDingoValues values = new LogicalDingoValues(
-            union.getCluster(),
-            union.getTraitSet(),
-            union.getRowType(),
-            tuples
-        );
-        // TODO: bug if there are duplicate inputs.
-        List<RelNode> otherInputs = union.getInputs().stream()
-            .filter(n -> !((RelSubset) n).getRelList().contains(value0)
-                && !((RelSubset) n).getRelList().contains(value1))
-            .collect(Collectors.toList());
-        if (otherInputs.isEmpty()) {
+        List<Object[]> tuples = new LinkedList<>();
+        for (RelNode input : union.getInputs()) {
+            if (input instanceof RelSubset) {
+                List<RelNode> relList = ((RelSubset) input).getRelList();
+                for (RelNode relNode : relList) {
+                    if (relNode instanceof LogicalDingoValues) {
+                        tuples.addAll(((LogicalDingoValues) relNode).getTuples());
+                    }
+                }
+            }
+        }
+        if (tuples.size() == union.getInputs().size()) {
+            LogicalDingoValues values = new LogicalDingoValues(
+                union.getCluster(),
+                union.getTraitSet(),
+                union.getRowType(),
+                tuples
+            );
             call.transformTo(values);
-        } else {
-            otherInputs.add(values);
-            call.transformTo(LogicalUnion.create(
-                otherInputs,
-                union.all
-            ));
         }
     }
 

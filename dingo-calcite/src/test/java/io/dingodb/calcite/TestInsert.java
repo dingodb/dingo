@@ -51,6 +51,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -126,12 +127,17 @@ public class TestInsert {
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized)
+        DingoValues values = (DingoValues) Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoUnion.class);
+            .soleInput().isA(DingoValues.class)
+            .getInstance();
+        assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
+            new Object[]{1, "Alice", 1.0},
+            new Object[]{2, "Betty", 2.0}
+        );
     }
 
     @Test
@@ -145,12 +151,17 @@ public class TestInsert {
             .soleInput().isA(LogicalUnion.class)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
-        Assert.relNode(optimized)
+        DingoValues values = (DingoValues) Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoTableModify.class).prop("operation", TableModify.Operation.INSERT)
             .soleInput().isA(DingoStreamingConverter.class)
-            .soleInput().isA(DingoUnion.class);
+            .soleInput().isA(DingoValues.class)
+            .getInstance();
+        assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
+            new Object[]{1, "Peso", new Date(0L)},
+            new Object[]{2, "Alice", new Date(24L * 60L * 60L * 1000L)}
+        );
     }
 
     @Test

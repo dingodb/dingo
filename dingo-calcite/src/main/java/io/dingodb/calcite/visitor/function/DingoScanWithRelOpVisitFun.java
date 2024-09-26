@@ -100,7 +100,7 @@ public final class DingoScanWithRelOpVisitFun {
             outputs.add(createVerticesForRange(
                 task,
                 idGenerator,
-                (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false),
+                (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, visitor),
                 null,
                 null,
                 scanVertexCreator
@@ -113,7 +113,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
                         null,
                         null,
                         scanVertexCreator
@@ -144,7 +144,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false),
+                        (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, visitor),
                         null,
                         null,
                         scanVertexCreator
@@ -157,7 +157,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false),
+                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
                         partition.getStart(),
                         i < partitionNum - 1 ? partitions.get(i + 1).getStart() : null,
                         scanVertexCreator
@@ -298,7 +298,8 @@ public final class DingoScanWithRelOpVisitFun {
         @NonNull NavigableMap<ComparableByteArray, RangeDistribution> ranges,
         byte[] startKey,
         byte[] endKey,
-        boolean withEnd
+        boolean withEnd,
+        DingoJobVisitor visitor
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         // TODO: need to create range by filters.
@@ -312,7 +313,8 @@ public final class DingoScanWithRelOpVisitFun {
             null,
             false,
             false,
-            null
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
         );
         return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
@@ -322,7 +324,8 @@ public final class DingoScanWithRelOpVisitFun {
         @NonNull TableInfo tableInfo,
         byte[] startKey,
         byte[] endKey,
-        boolean withEnd
+        boolean withEnd,
+        DingoJobVisitor visitor
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -342,7 +345,8 @@ public final class DingoScanWithRelOpVisitFun {
             filter,
             false,
             false,
-            null
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
         );
         return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
@@ -352,7 +356,8 @@ public final class DingoScanWithRelOpVisitFun {
         @NonNull TableInfo tableInfo,
         byte[] startKey,
         byte[] endKey,
-        boolean withEnd
+        boolean withEnd,
+        DingoJobVisitor visitor
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -380,7 +385,8 @@ public final class DingoScanWithRelOpVisitFun {
             filter,
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
-            null
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
         );
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
         distributionParam.setFilterRange(rel.isRangeScan());

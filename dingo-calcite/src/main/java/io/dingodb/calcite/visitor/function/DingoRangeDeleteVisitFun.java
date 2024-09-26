@@ -69,7 +69,9 @@ public final class DingoRangeDeleteVisitFun {
             null,
             false,
             rel.isNotBetween(),
-            null);
+            null,
+            visitor.getExecuteVariables().getConcurrencyLevel()
+        );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {
