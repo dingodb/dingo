@@ -81,13 +81,18 @@ public final class PrepareMeta {
 
     public static void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+        if (infoSchemaService.prepareStarted()) {
+            return;
+        }
+        infoSchemaService.prepareStart();
+        LogUtils.info(log, "prepare start");
         if (TenantConstant.TENANT_ID == 0) {
             PrepareMeta.prepareTenant(3);
             LogUtils.info(log, "init tenant success");
         }
-        if (infoSchemaService.prepare()) {
-            return;
-        }
+        //if (infoSchemaService.prepare()) {
+        //    return;
+        //}
         long start = System.currentTimeMillis();
         MetaStoreKv.init();
         initReplica();
@@ -215,7 +220,7 @@ public final class PrepareMeta {
         for (Object[] objects : globalVariablesList) {
             versionService.kvPut(putRequest(objects[0], objects[1]));
         }
-        System.out.println("INIT GLOBAL VARIABLE VALUES");
+        LogUtils.info(log, "INIT GLOBAL VARIABLE VALUES");
     }
 
     public static List<Object[]> getGlobalVariablesList() {

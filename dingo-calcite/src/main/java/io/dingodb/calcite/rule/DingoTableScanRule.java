@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
@@ -58,28 +59,30 @@ public class DingoTableScanRule extends ConverterRule {
             .replace(DingoRelStreaming.of(scan.getTable()));
         List<String> fullNameList = scan.getTable().getQualifiedName();
         if (metaSchemaList.contains(fullNameList.get(1))) {
-            return new DingoInfoSchemaScan(
-                scan.getCluster(),
-                traits,
-                scan.getHints(),
-                scan.getTable(),
-                scan.getFilter(),
-                scan.getRealSelection()
-            );
-        } else {
-            return new DingoTableScan(
-                scan.getCluster(),
-                traits,
-                scan.getHints(),
-                scan.getTable(),
-                scan.getFilter(),
-                scan.getRealSelection(),
-                scan.getAggCalls(),
-                scan.getGroupSet(),
-                scan.getGroupSets(),
-                scan.isPushDown(),
-                scan.isForDml()
-            );
+            DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
+            if (dingoTable != null && "SYSTEM VIEW".equals(dingoTable.getTable().getTableType())) {
+                return new DingoInfoSchemaScan(
+                    scan.getCluster(),
+                    traits,
+                    scan.getHints(),
+                    scan.getTable(),
+                    scan.getFilter(),
+                    scan.getRealSelection()
+                );
+            }
         }
+        return new DingoTableScan(
+            scan.getCluster(),
+            traits,
+            scan.getHints(),
+            scan.getTable(),
+            scan.getFilter(),
+            scan.getRealSelection(),
+            scan.getAggCalls(),
+            scan.getGroupSet(),
+            scan.getGroupSets(),
+            scan.isPushDown(),
+            scan.isForDml()
+        );
     }
 }

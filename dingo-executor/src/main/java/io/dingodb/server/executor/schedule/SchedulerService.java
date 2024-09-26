@@ -101,11 +101,14 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             }
             LogUtils.info(log, "owner meta init start");
             scheduler.start();
-            LogUtils.info(log, "owner prepare meta start");
-            PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
+
             ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
-            LogUtils.info(log, "owner prepare done");
-            LogUtils.info(log, "owner meta init done");
+
+            new Thread(() -> {
+                LogUtils.info(log, "owner prepare meta start");
+                PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
+                LogUtils.info(log, "owner meta init done");
+            }).start();
         } catch (SchedulerException e) {
             LogUtils.error(log, "Start schedule failed.", e);
             throw new RuntimeException(e);
@@ -116,7 +119,6 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         try {
             LogUtils.info(log, "lose owner");
             ExecutionEnvironment.INSTANCE.ddlOwner.set(false);
-            //DdlContext.INSTANCE.setOwnerVal(false);
             scheduler.standby();
         } catch (SchedulerException e) {
             LogUtils.error(log, "Stop scheduler error.", e);

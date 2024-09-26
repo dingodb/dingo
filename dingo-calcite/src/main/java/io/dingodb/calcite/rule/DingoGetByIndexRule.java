@@ -39,8 +39,14 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.fun.SqlCastFunction;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -156,6 +162,7 @@ public class DingoGetByIndexRule extends ConverterRule {
     public @Nullable RelNode convert(@NonNull RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
+        rexNode = transferNode(rexNode, scan.getCluster().getRexBuilder());
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(rel.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         final Table table = Objects.requireNonNull(scan.getTable().unwrap(DingoTable.class)).getTable();
@@ -253,6 +260,34 @@ public class DingoGetByIndexRule extends ConverterRule {
             }
         }
         return indexTdMap;
+    }
+
+    /**
+    * create table t(id varchar(3), age int, primary key(id)).
+    *  example: select * from t where id='xxxxxxx'
+    *  if condition val length greater than column precision then general expr rexCall like cast inputRef(0) to varchar(7)
+    *  this expr can not batch get
+    */
+    public RexNode transferNode(RexNode relNode, RexBuilder rexBuilder) {
+        if (!(relNode instanceof RexCall)) {
+            return relNode;
+        }
+        RexCall call = (RexCall) relNode;
+        if (call.getOperands().size() == 2 && (call.getOperands().get(0) instanceof RexCall)
+            && call.getOperands().get(1) instanceof RexLiteral) {
+            RexLiteral rexLiteral = (RexLiteral) call.getOperands().get(1);
+            boolean operand1Check = rexLiteral.getTypeName() == SqlTypeName.CHAR;
+            RexCall operandCall = (RexCall) call.getOperands().get(0);
+            boolean operand0Check = operandCall.op instanceof SqlCastFunction
+                && operandCall.type.getSqlTypeName() == SqlTypeName.VARCHAR
+                && operandCall.getOperands().size() == 1
+                && operandCall.getOperands().get(0) instanceof RexInputRef;
+            if (operand0Check && operand1Check) {
+                return rexBuilder.makeCall(call.op, operandCall.getOperands().get(0), rexLiteral);
+            }
+        }
+        return relNode;
+
     }
 
 }
