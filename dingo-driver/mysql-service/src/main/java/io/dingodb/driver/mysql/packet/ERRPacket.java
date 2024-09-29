@@ -22,8 +22,12 @@ import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.driver.mysql.NativeConstants;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.UnsupportedEncodingException;
+
+@Slf4j
 public class ERRPacket extends MysqlPacket {
 
     public int header;
@@ -37,6 +41,10 @@ public class ERRPacket extends MysqlPacket {
     public String errorMessage;
 
     public int capabilities;
+
+    public String characterSet;
+
+    private byte[] errMsgBytes;
 
     @Override
     public void read(byte[] data) {
@@ -52,8 +60,41 @@ public class ERRPacket extends MysqlPacket {
         errorMessage = message.readString();
     }
 
+    public static String encodeResponseError(String src) {
+        if(src == null) {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for(char c : src.toCharArray()) {
+            if(c > 0x7f)  {
+                //deal with chinese character.
+                builder.append("\\u").append(String.format("%04x", (int)c));
+            } else {
+                builder.append(c);
+            }
+        }
+        return builder.toString();
+    }
+
     @Override
     public void write(ByteBuf buffer) {
+        byte[] stringBytes = null;
+
+        if (errorMessage != null) {
+            if(characterSet != null) {
+                try {
+                    errMsgBytes = errorMessage.getBytes(characterSet);
+                    stringBytes = errMsgBytes;
+                } catch (UnsupportedEncodingException e) {
+                    log.error("Error message encoding Exception:{}", e.toString());
+                    stringBytes = encodeResponseError(errorMessage).getBytes();
+                }
+            } else {
+                stringBytes = errorMessage.getBytes();
+            }
+        }
+
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.writeByte(packetId);
         buffer.writeByte(NativeConstants.TYPE_ID_ERROR);
@@ -65,8 +106,9 @@ public class ERRPacket extends MysqlPacket {
             }
             buffer.writeBytes(sqlState.getBytes());
         }
-        if (errorMessage != null) {
-            buffer.writeBytes(errorMessage.getBytes());
+
+        if(stringBytes != null) {
+            buffer.writeBytes(stringBytes);
         }
     }
 
@@ -74,7 +116,11 @@ public class ERRPacket extends MysqlPacket {
     public int calcPacketSize() {
         int size = 9;
         if (errorMessage != null) {
-            size += errorMessage.length();
+            if(characterSet != null && errMsgBytes != null) {
+                size += errMsgBytes.length;
+            } else {
+                size += errorMessage.length();
+            }
         }
         return size;
     }

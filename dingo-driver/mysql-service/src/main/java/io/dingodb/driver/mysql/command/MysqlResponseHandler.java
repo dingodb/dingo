@@ -64,7 +64,9 @@ public final class MysqlResponseHandler {
                                          MysqlConnection mysqlConnection) {
         // 1. column packet
         // 2. ok packet
+        String connCharSet = null;
         try {
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             List<ColumnPacket> columnPackets = factory.getColumnPackets(packetId, resultSet, true);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             for (ColumnPacket columnPacket : columnPackets) {
@@ -74,7 +76,7 @@ public final class MysqlResponseHandler {
             okPacket.write(buffer);
             mysqlConnection.channel.writeAndFlush(buffer);
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e);
+            responseError(packetId, mysqlConnection.channel, e, connCharSet);
         }
     }
 
@@ -94,7 +96,9 @@ public final class MysqlResponseHandler {
         // 5. eof packet
         boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
             & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
+        String connCharSet = null;
         try {
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
             ColumnsNumberPacket columnsNumberPacket = new ColumnsNumberPacket();
@@ -127,7 +131,7 @@ public final class MysqlResponseHandler {
 
             mysqlConnection.channel.writeAndFlush(buffer);
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e);
+            responseError(packetId, mysqlConnection.channel, e, connCharSet);
         }
     }
 
@@ -204,19 +208,23 @@ public final class MysqlResponseHandler {
 
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
-                                     io.dingodb.common.mysql.constant.ErrorCode errorCode) {
-        responseError(packetId, channel, errorCode, errorCode.message);
+                                     io.dingodb.common.mysql.constant.ErrorCode errorCode,
+                                     String characterSet) {
+        responseError(packetId, channel, errorCode, errorCode.message, characterSet);
     }
 
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
-                                     io.dingodb.common.mysql.constant.ErrorCode errorCode, String message) {
+                                     io.dingodb.common.mysql.constant.ErrorCode errorCode,
+                                     String message,
+                                     String characterSet) {
         ERRPacket ep = new ERRPacket();
         ep.packetId = (byte) packetId.getAndIncrement();
         ep.capabilities = MysqlServer.getServerCapabilities();
         ep.errorCode = errorCode.code;
         ep.sqlState = errorCode.sqlState;
         ep.errorMessage = message;
+        ep.characterSet = characterSet;
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
         channel.writeAndFlush(buffer);
@@ -224,13 +232,16 @@ public final class MysqlResponseHandler {
 
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
-                                     SQLException exception) {
+                                     SQLException exception,
+                                     String characterSet) {
         exception = errorDingo2Mysql(exception);
         ERRPacket ep = new ERRPacket();
         ep.packetId = (byte) packetId.getAndIncrement();
         ep.capabilities = MysqlServer.getServerCapabilities();
         ep.errorCode = exception.getErrorCode();
         ep.sqlState = exception.getSQLState();
+        ep.characterSet = characterSet;
+
         if (exception.getMessage() == null) {
             ep.errorMessage = "";
         } else if (exception.getMessage().startsWith("Encountered")) {
@@ -243,23 +254,6 @@ public final class MysqlResponseHandler {
         channel.writeAndFlush(buffer);
     }
 
-    public static String encodeResponseError(String src) {
-        if(src == null) {
-            return null;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for(char c : src.toCharArray()) {
-            if(c > 0x7f)  {
-                //deal with chinese character.
-                builder.append("\\u").append(String.format("%04x", (int)c));
-            } else {
-                builder.append(c);
-            }
-        }
-        return builder.toString();
-    }
-
     public static SQLException errorDingo2Mysql(SQLException e) {
         if (e.getMessage() != null && e.getMessage().contains("Duplicate data")) {
             return new SQLException("Duplicate data for key 'PRIMARY'", "23000", 1062);
@@ -268,11 +262,11 @@ public final class MysqlResponseHandler {
             return new SQLException("Query execution was interrupted", "70100", 1317);
         } else if (e.getMessage() != null && e.getMessage().contains("Statement canceled")) {
             LogUtils.info(log, e.getMessage(), e);
-            return new SQLException(encodeResponseError(e.getMessage()), "HY000", 1105);
+            return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 9001 && e.getSQLState().equals("45000")) {
             int code = 1105;
             String state = "HY000";
-            String reason = encodeResponseError(e.getMessage());
+            String reason = e.getMessage();
             if (reason.contains("Duplicate entry")) {
                 code = 1062;
                 state = "23000";
@@ -282,15 +276,15 @@ public final class MysqlResponseHandler {
             }
             return new SQLException(reason, state, code);
         } else if (e.getErrorCode() == 1054 && e.getSQLState().equals("42S22")) {
-            return new SQLException(encodeResponseError(e.getMessage()), "HY000", 1105);
+            return new SQLException(e.getMessage(), "HY000", 1105);
         } else if (e.getErrorCode() == 5001 && e.getSQLState().equals("45000")) {
             if (e.getMessage().contains("Syntax Error")) {
                 return new SQLException(
-                    encodeResponseError(e.getMessage()),
+                    e.getMessage(),
                     e.getSQLState(),
                     e.getErrorCode());
             } else if (e.getMessage().contains("io.dingodb.store.api.transaction.exception.DuplicateEntryException:")) {
-                return new SQLException(encodeResponseError(e.getMessage())
+                return new SQLException(e.getMessage()
                     .replace("io.dingodb.store.api.transaction.exception.DuplicateEntryException:", ""),
                      "23000", 1062);
             }
@@ -328,7 +322,9 @@ public final class MysqlResponseHandler {
         // 5. eof packet
         boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
             & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
+        String connCharSet = null;
         try {
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
             ColumnsNumberPacket columnsNumberPacket = new ColumnsNumberPacket();
@@ -361,7 +357,7 @@ public final class MysqlResponseHandler {
 
             mysqlConnection.channel.writeAndFlush(buffer);
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e);
+            responseError(packetId, mysqlConnection.channel, e, connCharSet);
         }
     }
 }

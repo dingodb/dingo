@@ -41,6 +41,8 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
+
 @Slf4j
 public final class MessageProcess {
 
@@ -57,8 +59,16 @@ public final class MessageProcess {
         byte packetIdByte = array[0];
         AtomicLong packetId = new AtomicLong(packetIdByte);
         packetId.incrementAndGet();
+        String connCharSet = null;
+
+        try {
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+        } catch(SQLException e) {
+            log.error("Fail to get connection characterSet, {}", e.toString());
+        }
+
         if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE, connCharSet);
             return;
         }
         switch (flg) {
@@ -82,7 +92,7 @@ public final class MessageProcess {
                     String error =
                         String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                        ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error);
+                        ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error, connCharSet);
                     return;
                 }
                 // todo: current version, ignore name case
@@ -94,7 +104,7 @@ public final class MessageProcess {
                     MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 } else {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                        ErrorCode.ER_NO_DATABASE_ERROR);
+                        ErrorCode.ER_NO_DATABASE_ERROR, connCharSet);
                 }
                 break;
             case NativeConstants.COM_QUERY:
@@ -224,7 +234,7 @@ public final class MessageProcess {
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
                 } catch (SQLException e) {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
                 }
                 break;
             case NativeConstants.COM_STMT_RESET:
@@ -240,7 +250,7 @@ public final class MessageProcess {
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
                 } catch (SQLException e) {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
                 }
                 okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, null);
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
