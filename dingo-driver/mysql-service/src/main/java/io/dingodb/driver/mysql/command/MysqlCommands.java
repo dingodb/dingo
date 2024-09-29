@@ -90,7 +90,7 @@ public class MysqlCommands {
             throw new RuntimeException(e);
         }
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
-        LogUtils.debug(log, "receive sql:" + sql);
+        LogUtils.debug(log, "dingo connection:{}, receive sql:{}", mysqlConnection.getConnection().toString(), sql);
         if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
             return;
