@@ -555,6 +555,7 @@ public class DdlWorker {
                     indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
                     reorgRes = index.doReorgWorkForCreateIndex(dc, job, this, table.tableId, indexWithId);
                 } catch (Exception e) {
+                    job.setState(JobState.jobStateCancelled);
                     LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(0L, e.getMessage());
                 }
@@ -712,9 +713,11 @@ public class DdlWorker {
                 // reorg
                 CommonId tableId = MapperImpl.MAPPER.idFrom(tableWithId.getTableId());
                 try {
-                    IndexUtil.INSTANCE.doReorgWorkForCreateIndex(dc, job, this, tableId, withId);
+                    DdlColumn.doReorgWorkForDropCol(dc, job, tableId, withId, this);
                 } catch (Exception e) {
                     job.setState(JobState.jobStateCancelled);
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(replicaTableId));
                     LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(0L, e.getMessage());
                 }
@@ -849,6 +852,8 @@ public class DdlWorker {
                     DdlColumn.doReorgWorkForAddCol(dc, job, tableId, withId, this);
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(replicaTableId));
                     job.setState(JobState.jobStateCancelled);
                     return Pair.of(0L, e.getMessage());
                 }

@@ -18,10 +18,13 @@ package io.dingodb.server.executor.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.server.executor.ddl.BackFillResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
 
 public interface BackFiller {
     boolean preWritePrimary(ReorgBackFillTask task);
@@ -41,5 +44,7 @@ public interface BackFiller {
     default long getConflictCount() { return 0; }
 
     default List<CommonId> getDoneRegion() { return new ArrayList<>(); }
+
+    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList();
 
 }

@@ -179,7 +179,7 @@ public class CommitOperator extends TransactionOperator {
         synchronized (vertex) {
             CommitParam param = vertex.getParam();
             if (!(fin instanceof FinWithException)) {
-                if (param.getKeys().size() > 0) {
+                if (!param.getKeys().isEmpty()) {
                     CommonId txnId = vertex.getTask().getTxnId();
                     boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
                     if (!result) {

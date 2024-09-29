@@ -139,7 +139,7 @@ public final class TransactionManager {
     public static Object getTable(CommonId txnId, CommonId tableId) {
         ITransaction transaction = trans.get(txnId);
         if (transaction == null) {
-            LogUtils.info(log, "get table by txn is null, tableId:{}, txnId:{}", tableId, txnId);
+            //LogUtils.info(log, "get table by txn is null, tableId:{}, txnId:{}", tableId, txnId);
             return DdlService.root().getTable(tableId);
         }
         InfoSchema is = transaction.getIs();

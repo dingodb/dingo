@@ -28,6 +28,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
@@ -55,9 +56,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Txn {
@@ -196,7 +199,7 @@ public class Txn {
         }
     }
 
-    public static boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
+    public static Boolean txnPreWrite(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
         // 1、call sdk TxnPreWrite
         Timer.Context timeCtx = DingoMetrics.getTimeContext("preWrite");
         param.setTxnSize(param.getMutations().size());
@@ -245,6 +248,72 @@ public class Txn {
             long sub = System.currentTimeMillis() - start;
             LogUtils.info(log, "pre write region split failed retry cost:{}", sub);
             return true;
+        } finally {
+            timeCtx.stop();
+        }
+    }
+
+    public static Pair<Boolean, Map<CommonId, List<byte[]>>> txnPreWriteWithRePartId(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
+        // 1、call sdk TxnPreWrite
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("preWrite");
+        param.setTxnSize(param.getMutations().size());
+        TxnPreWrite txnPreWrite = TxnPreWrite.builder()
+            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
+            .mutations(param.getMutations())
+            .primaryLock(param.getPrimaryKey())
+            .startTs(param.getStartTs())
+            .lockTtl(TransactionManager.lockTtlTm())
+            .txnSize(param.getTxnSize())
+            .tryOnePc(param.isTryOnePc())
+            .maxCommitTs(param.getMaxCommitTs())
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(tableId, partId, txnId,
+                param.getTransactionType().getCode(), param.getMutations().size()))
+            .build();
+        try {
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
+            boolean res = store.txnPreWrite(txnPreWrite, param.getTimeOut());
+            if (!res) {
+                return Pair.of(false, new HashMap<>());
+            } else {
+                List<byte[]> keyList = param.getMutations().stream().map(Mutation::getKey)
+                    .collect(Collectors.toList());
+                Map<CommonId, List<byte[]>> map = new HashMap<>();
+                map.put(partId, keyList);
+                return Pair.of(true, map);
+            }
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, e.getMessage(), e);
+            // 2、regin split
+            long start = System.currentTimeMillis();
+            boolean prewriteSecondResult = false;
+            int i = 0;
+            Map<CommonId, List<byte[]>> partMap = null;
+            while (!prewriteSecondResult) {
+                i ++;
+                try {
+                    partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId,
+                        TransactionUtil.mutationToKey(param.getMutations()));
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        txnPreWrite.setMutations(TransactionUtil.keyToMutation(value, param.getMutations()));
+                        boolean result = store.txnPreWrite(txnPreWrite ,param.getTimeOut());
+                        if (!result) {
+                            return Pair.of(false, new HashMap<>());
+                        }
+                    }
+                    prewriteSecondResult = true;
+                } catch (RegionSplitException e1) {
+                    Utils.sleep(1000);
+                    LogUtils.error(log, "pre write second region split with res, "
+                         + "retry count:{}, originRegionId:{}", i, partId, e);
+                }
+            }
+            long sub = System.currentTimeMillis() - start;
+            LogUtils.info(log, "pre write region split with res failed retry cost:{}, originRegionId:{}",
+                sub, partId);
+            return Pair.of(true, partMap);
         } finally {
             timeCtx.stop();
         }

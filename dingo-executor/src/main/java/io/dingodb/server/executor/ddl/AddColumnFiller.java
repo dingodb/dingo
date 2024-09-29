@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
@@ -55,6 +56,8 @@ public class AddColumnFiller extends IndexAddFiller {
 
     boolean withoutPrimary;
 
+    private CommonId replicaId;
+
     @Override
     public boolean preWritePrimary(ReorgBackFillTask task) {
         ownerRegionId = task.getRegionId().seq;
@@ -64,7 +67,7 @@ public class AddColumnFiller extends IndexAddFiller {
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
         withoutPrimary = table.getColumns().stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
         indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().seq, task.getIndexId().seq);
-
+        initFiller();
         Column addColumn = indexTable.getColumns().stream()
             .filter(column -> column.getSchemaState() == SchemaState.SCHEMA_WRITE_REORG)
             .findFirst().orElse(null);
@@ -88,7 +91,7 @@ public class AddColumnFiller extends IndexAddFiller {
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
-        Iterator<KeyValue> iterator = kvStore.txnScan(
+        Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),
             new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
             50000
@@ -103,7 +106,7 @@ public class AddColumnFiller extends IndexAddFiller {
 
             KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
-                MetaService.root().getRangeDistribution(indexTable.tableId);
+                getRegionList();
             CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
 
@@ -141,11 +144,12 @@ public class AddColumnFiller extends IndexAddFiller {
         return tuplesTmp;
     }
 
+    @Override
     public TxnLocalData getTxnLocalData(Object[] tuples) {
         Object[] tuplesTmp = getNewTuples(colLen, tuples);
         KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
-            MetaService.root().getRangeDistribution(indexTable.tableId);
+            getRegionList();
         CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         return TxnLocalData.builder()
@@ -157,6 +161,18 @@ public class AddColumnFiller extends IndexAddFiller {
             .key(keyValue.getKey())
             .value(keyValue.getValue())
             .build();
+    }
+
+    @Override
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList() {
+        return MetaService.root().getRangeDistribution(replicaId);
+    }
+
+    @Override
+    public void initFiller() {
+        super.initFiller();
+        replicaId = indexTable.tableId;
+        LogUtils.info(log, "replicaTableId:{}", replicaId);
     }
 
 }
