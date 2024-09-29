@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
@@ -38,6 +39,7 @@ import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.operation.Operation;
 import io.dingodb.calcite.operation.SqlToOperationConverter;
+import io.dingodb.calcite.program.DecorrelateProgram;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
@@ -51,6 +53,7 @@ import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
@@ -307,7 +310,14 @@ public class DingoParser {
         final Program program = Programs.ofRules(builder.build());
         // Seems the only way to prevent rex simplifying in optimization.
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
-            return program.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
+            Program subQueryProgram = Programs.subQuery(cluster.getMetadataProvider());
+            RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+
+            DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
+            RelNode relNode2 = decorrelateProgram.run(planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of());
+            timeCtx.stop();
+            return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
         }
     }
 

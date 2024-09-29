@@ -135,7 +135,9 @@ public final class StmtSummaryMap {
             if (sqlProfile.getStatementType() != null) {
                 DingoMetrics.latency(sqlProfile.getStatementType(), sqlProfile.duration);
             }
-            profileQueue.offer(sqlProfile);
+            if (!profileQueue.offer(sqlProfile)) {
+                LogUtils.info(log, "profileQueue is busy.");
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
@@ -145,7 +147,9 @@ public final class StmtSummaryMap {
 
     public static void addAnalyzeEvent(String schemaName, String tableName, long modify) {
         AnalyzeEvent analyzeEvent = new AnalyzeEvent(schemaName, tableName, modify);
-        analyzeQueue.add(analyzeEvent);
+        if (!analyzeQueue.offer(analyzeEvent)) {
+            LogUtils.info(log, "analyzeQueue is busy.");
+        }
     }
 
     public static AnalyzeEvent getAnalyzeEvent() {
