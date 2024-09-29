@@ -165,8 +165,7 @@ public final class SafePointUpdateTask {
 
             LogUtils.info(log, "Update safe point to: {}", safeTs);
             if (!isDisable(reqTs)) {
-                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder = UpdateGCSafePointRequest.builder()
-                    .gcFlag(GcFlagType.GC_START);
+                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder = UpdateGCSafePointRequest.builder();
                 // TODO
                 builder.safePoint(0);
                 if (TenantConstant.TENANT_ID == 0) {
@@ -177,6 +176,8 @@ public final class SafePointUpdateTask {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, builder.build()
                 );
+            } else {
+                LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
         } catch (Exception e) {
             LogUtils.error(log, "Update safe point error, skip this run.", e);
