@@ -160,7 +160,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                                 String error =
                                     String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
                                 MysqlResponseHandler.responseError(packetId,
-                                    mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error);
+                                    mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error, null);
                                 if (mysqlConnection.channel.isActive()) {
                                     mysqlConnection.channel.close();
                                 }
@@ -217,7 +217,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         String error =
                             String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
                         MysqlResponseHandler.responseError(packetId,
-                            mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error);
+                            mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error, null);
                         if (mysqlConnection.channel.isActive()) {
                             mysqlConnection.channel.close();
                         }

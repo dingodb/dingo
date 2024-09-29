@@ -70,20 +70,23 @@ public class MysqlCommands {
     MysqlPacketFactory mysqlPacketFactory = MysqlPacketFactory.getInstance();
 
     public static void executeShowFields(String table, AtomicLong packetId, MysqlConnection mysqlConnection) {
+        String connCharSet = null;
         try {
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             ResultSet rs = mysqlConnection.getConnection().getMetaData().getColumns(null, null,
                 table, null);
             MysqlResponseHandler.responseShowField(rs, packetId, mysqlConnection);
         } catch (SQLException e) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
         }
     }
 
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
         String sql;
+        String characterSet = null;
         try {
-            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             characterSet = getCharacterSet(characterSet);
             sql = new String(queryPacket.message, characterSet);
         } catch (Exception e) {
@@ -92,7 +95,8 @@ public class MysqlCommands {
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
         LogUtils.debug(log, "dingo connection:{}, receive sql:{}", mysqlConnection.getConnection().toString(), sql);
         if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
+                characterSet);
             return;
         }
         executeSingleQuery(sql, packetId, mysqlConnection);
@@ -115,10 +119,14 @@ public class MysqlCommands {
             }
         }
 
-        if (sql.startsWith(setPwdSql1) || sql.startsWith(alterUserPwdSql1)) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                ErrorCode.ER_PASSWORD_EXPIRE);
-            return true;
+        try {
+            if (sql.startsWith(setPwdSql1) || sql.startsWith(alterUserPwdSql1)) {
+                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                    ErrorCode.ER_PASSWORD_EXPIRE, mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET));
+                return true;
+            }
+        } catch(SQLException e) {
+            LogUtils.info(log, e.getMessage(), e);
         }
         return false;
     }
@@ -126,9 +134,12 @@ public class MysqlCommands {
     public void prepare(MysqlConnection mysqlConnection, String sql) {
         DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
         AtomicLong packetId = new AtomicLong(2);
+        String connCharSet = null;
+
         try {
             DingoPreparedStatement preparedStatement = (DingoPreparedStatement) connection
                 .prepareStatement(sql);
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             Meta.StatementHandle statementHandle = preparedStatement.handle;
             String placeholder = "?";
             int i = 0;
@@ -173,7 +184,7 @@ public class MysqlCommands {
             MysqlResponseHandler.responsePrepare(preparePacket, mysqlConnection.channel);
         } catch (SQLException e) {
             LogUtils.info(log, e.getMessage(), e);
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
         }
     }
 
@@ -181,8 +192,11 @@ public class MysqlCommands {
                                    MysqlConnection mysqlConnection) {
         Statement statement = null;
         boolean hasResults;
+        String connCharSet = null;
+
         try {
             statement = mysqlConnection.getConnection().createStatement();
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             hasResults = statement.execute(sql);
             if (hasResults) {
                 // select
@@ -212,10 +226,9 @@ public class MysqlCommands {
         } catch (SQLException sqlException) {
             LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:" + sqlException.getErrorCode()
                 + ", message:" + sqlException.getMessage());
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException, connCharSet);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            //MysqlResponseHandler.responseError(bakPacketId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
             throw e;
         } finally {
             try {
@@ -242,9 +255,13 @@ public class MysqlCommands {
                                  AtomicLong packetId,
                                  MysqlConnection mysqlConnection
     ) {
+        String connectionCharSet = null;
         try {
+            connectionCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             statementPacket.paramValMap.forEach((k, v) -> {
+                String connCharSet = null;
                 try {
+                    connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
                     switch (v.getType()) {
                         case MysqlType.FIELD_TYPE_TINY:
                             byte byteVal = v.getValue()[0];
@@ -323,15 +340,17 @@ public class MysqlCommands {
                             preparedStatement.setObject(k, charVal);
                     }
                 } catch (SQLException e) {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
                 }
             });
             if (statementType == Meta.StatementType.SELECT) {
+                String connCharSet = null;
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
                     MysqlResponseHandler.responsePrepareExecute(resultSet, packetId, mysqlConnection);
                 } catch (SQLException e) {
                     LogUtils.error(log, e.getMessage(), e);
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
                 }
             } else if (statementType == Meta.StatementType.OTHER_DDL) {
                 OKPacket okPacket = mysqlPacketFactory.getOkPacket(0, packetId, null);
@@ -353,9 +372,9 @@ public class MysqlCommands {
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } catch (SQLException e) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e);
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connectionCharSet);
         } catch (Exception e) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, "");
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, connectionCharSet);
             LogUtils.error(log, e.getMessage(), e);
         }
     }
