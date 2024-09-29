@@ -16,6 +16,7 @@
 
 package io.dingodb.store.proxy.meta;
 
+import com.codahale.metrics.CachedGauge;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -25,6 +26,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
@@ -99,6 +101,13 @@ public class MetaCache {
                 }
             }
         });
+        DingoMetrics.metricRegistry.register("distributionCache", new CachedGauge<Long>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Long loadValue() {
+                return distributionCache.size();
+            }
+        });
+        DingoMetrics.counter("metaCacheInstanceCount").inc();
     }
 
     private long tso() {

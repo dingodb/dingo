@@ -464,7 +464,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long end = System.currentTimeMillis();
         long cost = end - start;
-        DdlUtil.tableMap.put(tableName.toUpperCase(), schema.getSchemaName());
+        //DdlUtil.tableMap.put(tableName.toUpperCase(), schema.getSchemaName());
         if (cost > 10000) {
             LogUtils.info(log, "[ddl] create table take long time, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
@@ -525,7 +525,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
-        DdlUtil.tableMap.remove(tableName.toUpperCase());
+        //DdlUtil.tableMap.remove(tableName.toUpperCase());
         if (cost > 10000) {
             LogUtils.info(log, "drop table take long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
         } else {
