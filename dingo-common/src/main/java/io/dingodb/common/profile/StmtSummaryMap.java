@@ -16,6 +16,7 @@
 
 package io.dingodb.common.profile;
 
+import com.codahale.metrics.CachedGauge;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -30,10 +31,11 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public final class StmtSummaryMap {
-    static BlockingQueue<SqlProfile> profileQueue;
+    public static BlockingQueue<SqlProfile> profileQueue;
     private static final LoadingCache<String, StmtSummary> stmtSummaryMap;
     private static final BlockingQueue<AnalyzeEvent> analyzeQueue;
 
@@ -57,9 +59,21 @@ public final class StmtSummaryMap {
                     return new StmtSummary(summaryKey);
                 }
             });
-        profileQueue = new LinkedBlockingDeque<>();
+        profileQueue = new LinkedBlockingDeque<>(10000);
         Executors.execute("stmtSummary", StmtSummaryMap::handleProfile);
-        analyzeQueue = new LinkedBlockingDeque<>();
+        analyzeQueue = new LinkedBlockingDeque<>(2000);
+        DingoMetrics.metricRegistry.register("profileQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+               @Override
+               protected Integer loadValue() {
+                   return profileQueue.size();
+               }
+        });
+       DingoMetrics.metricRegistry.register("analyzeTaskQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+           @Override
+           protected Integer loadValue() {
+               return analyzeQueue.size();
+           }
+       });
     }
 
     private static void handleProfile() {
@@ -67,7 +81,8 @@ public final class StmtSummaryMap {
             try {
                 SqlProfile profile = profileQueue.take();
                 summary(profile);
-            } catch (InterruptedException ignored) {
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
             }
         }
     }
@@ -77,7 +92,7 @@ public final class StmtSummaryMap {
             StmtSummary stmtSummary = stmtSummaryMap.get(sqlProfile.summaryKey());
             stmtSummary.addSqlProfile(sqlProfile);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 
@@ -120,10 +135,11 @@ public final class StmtSummaryMap {
             if (sqlProfile.getStatementType() != null) {
                 DingoMetrics.latency(sqlProfile.getStatementType(), sqlProfile.duration);
             }
-            profileQueue.add(sqlProfile);
-            sqlProfile.clear();
+            profileQueue.offer(sqlProfile);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        } finally {
+            sqlProfile.clear();
         }
     }
 

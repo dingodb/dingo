@@ -515,7 +515,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .rawEngine(getRawEngine(withIdTableDefinition.getEngine()))
                 .storeEngine(withIdTableDefinition.getStoreEngine())
                 .schemaId(schemaId)
-                .tableId(tableDefinitionWithId.getTableId().getEntityId())
+                .tableId(originTableId)
+                .indexId(tableEntityId)
                 .partId(partition.getId().getEntityId())
                 .tenantId(tableDefinitionWithId.getTenantId())
                 .build();
@@ -623,7 +624,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
         io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
-        createIndexRegion(indexWithId, indexEntityId, index.getReplica());
+        createIndexRegion(indexWithId, tableId, index.getReplica());
     }
 
     @Override
@@ -1172,7 +1173,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    public void createIndexRegion(TableDefinitionWithId withId, long tableId, int replica) {
+    public void createIndexRegion(TableDefinitionWithId withId, CommonId tableId, int replica) {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = withId.getTableDefinition();
         for (Partition partition : definition.getTablePartition().getPartitions()) {
@@ -1191,8 +1192,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 .range(partition.getRange())
                 .rawEngine(getRawEngine(withId.getTableDefinition().getEngine()))
                 .storeEngine(definition.getStoreEngine())
-                .schemaId(id.getEntityId())
-                .tableId(tableId)
+                .schemaId(tableId.domain)
+                .tableId(tableId.seq)
                 .partId(partition.getId().getEntityId())
                 .tenantId(withId.getTenantId())
                 .indexId(withId.getTableId().getEntityId())

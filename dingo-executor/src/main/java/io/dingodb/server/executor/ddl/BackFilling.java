@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 public final class BackFilling {
     public static final int typeAddIndexWorker = 0;
     public static final int typeAddColumnWorker = 1;
+    public static final int typeDropColumnWorker = 2;
 
     private BackFilling() {
     }
@@ -79,10 +80,12 @@ public final class BackFilling {
             = MetaService.root().getRangeDistribution(reorgInfo.getTableId());
         Set<RangeDistribution> distributions = ps.calcPartitionRange(null, null, true, true, regionMap);
         BackFiller filler;
-        if (bfWorkerType == 0) {
+        if (bfWorkerType == typeAddIndexWorker) {
             filler = new IndexAddFiller();
-        } else if (bfWorkerType == 1) {
+        } else if (bfWorkerType == typeAddColumnWorker) {
             filler = new AddColumnFiller();
+        } else if (bfWorkerType == typeDropColumnWorker) {
+            filler = new DropColumnFiller();
         } else {
             throw new RuntimeException("do not support bf work type");
         }
@@ -143,7 +146,7 @@ public final class BackFilling {
                 commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, "pre write second error", e);
-            if (e.getMessage().contains("RegionSplit")) {
+            if (e.getMessage().contains("RegionSplit") || e.getMessage().contains("InvalidRouteTableException")) {
                 return backFillRegionSplit(bfWorkerType, reorgInfo, ps, job, filler);
             }
             return e.getMessage();
@@ -211,7 +214,7 @@ public final class BackFilling {
                 commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, "region split pre write second error", e);
-            if (e.getMessage().contains("RegionSplit")) {
+            if (e.getMessage().contains("RegionSplit") || e.getMessage().contains("InvalidRouteTableException")) {
                 return backFillRegionSplit(bfWorkerType, reorgInfo, ps, job, filler);
             }
             return e.getMessage();

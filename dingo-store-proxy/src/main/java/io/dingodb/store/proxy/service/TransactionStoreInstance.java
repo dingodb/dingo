@@ -455,6 +455,14 @@ public class TransactionStoreInstance {
         return txnScan(ts, range, timeOut, null);
     }
 
+    public Iterator<io.dingodb.common.store.KeyValue> txnScanWithoutStream(
+        long ts, StoreInstance.Range range, long timeOut
+    ) {
+        Stream.of(range.start).peek(this::setId).forEach($ -> $[0] = 't');
+        Stream.of(range.end).peek(this::setId).forEach($ -> $[0] = 't');
+        return getScanIterator(ts, range, timeOut, null);
+    }
+
     public Iterator<io.dingodb.common.store.KeyValue> txnScan(
         long ts,
         StoreInstance.Range range,

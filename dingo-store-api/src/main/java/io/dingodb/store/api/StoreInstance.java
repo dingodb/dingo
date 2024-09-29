@@ -237,6 +237,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Iterator<KeyValue> txnScanWithoutStream(long startTs, Range range, long timeOut) {
+        throw new UnsupportedOperationException();
+    }
+
     default Iterator<KeyValue> txnScan(long startTs, Range range, long timeOut, CoprocessorV2 coprocessor) {
         if (coprocessor == null) {
             return txnScan(startTs, range, timeOut);

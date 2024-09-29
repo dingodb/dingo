@@ -88,7 +88,7 @@ public final class DdlColumn {
             //    return Pair.of(false, 0L);
             //}
             String error = worker.runReorgJob(dc, reorgInfo,
-                p -> addReplicaTable(reorgInfoRes.getKey())
+                p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeAddColumnWorker)
             );
             if (error != null) {
                 if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
@@ -116,9 +116,64 @@ public final class DdlColumn {
         }
     }
 
-    public static String addReplicaTable(ReorgInfo reorgInfo) {
+    public static Pair<Boolean, Long> doReorgWorkForDropCol(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker
+    ) {
+        MetaElement[] elements = new MetaElement[] {
+            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.addColElementKey)
+        };
+        Session session = SessionUtil.INSTANCE.getSession();
         try {
-            return BackFilling.writePhysicalTableRecord(BackFilling.typeAddColumnWorker, reorgInfo);
+            // get schemaInfo
+            SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
+            if (schemaInfo == null) {
+                return Pair.of(false, 0L);
+            }
+            Reorg reorg = Reorg.INSTANCE;
+            Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
+            if (reorgInfoRes.getValue() != null) {
+                throw new RuntimeException(reorgInfoRes.getValue());
+            }
+            ReorgInfo reorgInfo = reorgInfoRes.getKey();
+            //if (reorgInfo.isFirst()) {
+            //    return Pair.of(false, 0L);
+            //}
+            String error = worker.runReorgJob(dc, reorgInfo,
+                p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeDropColumnWorker)
+            );
+            if (error != null) {
+                if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
+                    return Pair.of(false, 0L);
+                }
+                if ("ErrKeyExists".equalsIgnoreCase(error)
+                    || "ErrCancelledDDLJob".equalsIgnoreCase(error)
+                    || "ErrCantDecodeRecord".equalsIgnoreCase(error))
+                {
+                    LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, error:{}", job.getId(), error);
+                    //Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, replicaTable);
+                    //if (res.getValue() != null) {
+                    //    error = res.getValue();
+                    //}
+                    String error1 = JobTableUtil.removeDDLReorgHandle(session, job.getId(), reorgInfo.getElements());
+                    if (error1 != null) {
+                        LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, RemoveDDLReorgHandle failed, jobId:{}, error:{}", job.getId(), error1);
+                    }
+                }
+                throw new RuntimeException(error);
+            }
+            return Pair.of(true, 0L);
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
+    }
+
+    public static String addReplicaTable(ReorgInfo reorgInfo, int fillType) {
+        try {
+            return BackFilling.writePhysicalTableRecord(fillType, reorgInfo);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             return "reorgAddColumnError:" + e.getMessage();
