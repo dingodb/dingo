@@ -202,6 +202,9 @@ public interface InfoSchemaService {
     Table getTableDef(long schemaId, String tableName);
     Table getTableDef(long schemaId, String tableName, long tenantId);
     IndexTable getIndexDef(long tableId, long indexId);
+    default IndexTable getIndexDef(long schemaId, long tableId, long indexId) {
+        return null;
+    }
 
     Object getTable(long schemaId, String tableName);
     Object getTable(long schemaId, String tableName, long tenantId);

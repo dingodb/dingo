@@ -24,6 +24,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -114,6 +115,20 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     @Override
     protected void validateTableFunction(SqlCall node, SqlValidatorScope scope, RelDataType targetRowType) {
         validateQuery(node, scope, targetRowType);
+    }
+
+    @Override
+    protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
+        if (node instanceof SqlBasicCall) {
+            SqlBasicCall sqlBasicCall = (SqlBasicCall) node;
+            if (sqlBasicCall.getOperator() instanceof SqlMapValueConstructor) {
+                SqlMapValueConstructor mapValueConstructor = (SqlMapValueConstructor) sqlBasicCall.getOperator();
+                if ("MAP".equalsIgnoreCase(mapValueConstructor.getName())) {
+                    return;
+                }
+            }
+        }
+        super.inferUnknownTypes(inferredType, scope, node);
     }
 
 }

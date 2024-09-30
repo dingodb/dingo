@@ -24,7 +24,6 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;

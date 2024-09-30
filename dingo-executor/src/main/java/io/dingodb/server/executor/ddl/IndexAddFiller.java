@@ -119,7 +119,8 @@ public class IndexAddFiller implements BackFiller {
         txnIdKey = txnId.encode();
         commitTs = TsoService.getDefault().tso();
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
-        indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().seq, task.getIndexId().seq);
+        indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().domain, task.getTableId().seq,
+            task.getIndexId().seq);
         initFiller();
         columnIndices = table.getColumnIndices(indexTable.columns.stream()
             .map(Column::getName)
