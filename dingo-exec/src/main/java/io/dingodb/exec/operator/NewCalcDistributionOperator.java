@@ -173,8 +173,12 @@ public class NewCalcDistributionOperator extends SourceOperator {
                             distribution.isWithStart(),
                             distribution.isWithEnd());
                         NavigableSet<RangeDistribution> rangeDistributions = getRangeDistributions(copyParam);
+                        Set<CompletableFuture<Boolean>> futures = new HashSet<>(param.getConcurrencyLevel());
                         for (RangeDistribution rangeDistribution : rangeDistributions) {
-                            push(context, vertex, param, rangeDistribution);
+                            futures.add(push(context, vertex, param, rangeDistribution));
+                        }
+                        if (!futures.isEmpty()) {
+                            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
                         }
                     } else if (ex.getCause() instanceof LockWaitException) {
                         LogUtils.error(log, "jobId:" + vertex.getTask().getJobId() + ", taskId:"
