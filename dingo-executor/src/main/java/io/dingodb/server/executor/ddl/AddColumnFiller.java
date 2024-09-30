@@ -66,7 +66,8 @@ public class AddColumnFiller extends IndexAddFiller {
         commitTs = TsoService.getDefault().tso();
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
         withoutPrimary = table.getColumns().stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
-        indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().seq, task.getIndexId().seq);
+        indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().domain, task.getTableId().seq,
+             task.getIndexId().seq);
         initFiller();
         Column addColumn = indexTable.getColumns().stream()
             .filter(column -> column.getSchemaState() == SchemaState.SCHEMA_WRITE_REORG)

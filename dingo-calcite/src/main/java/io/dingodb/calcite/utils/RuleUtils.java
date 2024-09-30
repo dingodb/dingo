@@ -16,13 +16,23 @@
 
 package io.dingodb.calcite.utils;
 
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.fun.SqlCastFunction;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Calendar;
+import java.util.Objects;
 
 public class RuleUtils {
 
@@ -59,10 +69,30 @@ public class RuleUtils {
     }
 
     private static boolean checkConditionOp(@NonNull RexNode op0, RexNode op1, ConditionInfo info) {
-        if (op0.getKind() == SqlKind.INPUT_REF && op1.getKind() == SqlKind.LITERAL) {
-            info.index = ((RexInputRef) op0).getIndex();
-            info.value = (RexLiteral) op1;
-            return true;
+        if (op0.getKind() == SqlKind.INPUT_REF) {
+            if (op1.getKind() == SqlKind.LITERAL) {
+                info.index = ((RexInputRef) op0).getIndex();
+                info.value = (RexLiteral) op1;
+                return true;
+            } else if (op1 instanceof RexCall) {
+                RexCall rexCall = (RexCall) op1;
+                if (rexCall.op instanceof SqlCastFunction
+                    && rexCall.type.getSqlTypeName() == SqlTypeName.DATE
+                    && rexCall.getOperands().size() == 1
+                    && rexCall.getOperands().get(0).getKind() == SqlKind.LITERAL
+                ) {
+                    info.index = ((RexInputRef) op0).getIndex();
+                    RexLiteral rexLiteral = (RexLiteral) rexCall.getOperands().get(0);
+                    if (rexLiteral.getValue() instanceof NlsString) {
+                        NlsString val = (NlsString) rexLiteral.getValue();
+                        RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTime(Objects.requireNonNull(DateTimeUtils.parseDate(val.getValue())));
+                        info.value = rexBuilder.makeDateLiteral(calendar);
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     }

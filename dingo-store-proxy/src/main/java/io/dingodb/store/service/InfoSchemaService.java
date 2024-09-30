@@ -30,6 +30,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaServiceProvider;
 import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.entity.IndexTable;
@@ -187,10 +188,10 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             throw new RuntimeException("schema is null");
         }
         byte[] tableKey = tableKey(tableId);
-        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
-        if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
-            throw new RuntimeException("table has exists");
-        }
+        //TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
+        //if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
+        //    throw new RuntimeException("table has exists");
+        //}
         byte[] val = getBytesFromObj(table);
         txn.hInsert(schemaKey, tableKey, val);
     }
@@ -198,9 +199,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public void createReplicaTable(long schemaId, long tableId, Object table) {
         byte[] tableKey = tableKey(tableId);
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
-        if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
-            throw new RuntimeException("table has exists");
-        }
+        //if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
+        //    throw new RuntimeException("table has exists");
+        //}
         byte[] replicaKey = indexKey(tableDefinitionWithId.getTableId().getEntityId());
         byte[] val = getBytesFromObj(table);
         txn.hInsert(tableKey, replicaKey, val);
@@ -436,7 +437,20 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public IndexTable getIndexDef(long tableId, long indexId) {
+        LogUtils.warn(log, "getAllTable by tableId:{}, indexId:{}", tableId, indexId);
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) getTable(tableId);
+        if (tableWithId == null) {
+            return null;
+        }
+        Table table =  MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
+        return table.getIndexes()
+            .stream().filter(indexTable -> indexTable.getTableId().seq == indexId)
+            .findFirst().orElse(null);
+    }
+
+    @Override
+    public IndexTable getIndexDef(long schemaId, long tableId, long indexId) {
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) getTable(schemaId, tableId);
         if (tableWithId == null) {
             return null;
         }
