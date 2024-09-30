@@ -151,7 +151,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
                 if (!updateMap.isEmpty()) {
                     synced = false;
                     updateMap.keySet().forEach(str -> {
-                        LogUtils.info(log, "[ddl] syncer check all versions, someone is not synced, instance:{}", str);
+                        LogUtils.debug(log, "[ddl] syncer check all versions, someone is not synced, instance:{}", str);
                     });
                 }
             } else {

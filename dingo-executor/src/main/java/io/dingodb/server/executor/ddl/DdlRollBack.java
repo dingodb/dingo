@@ -31,6 +31,8 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Base64;
+
 @Slf4j
 public final class DdlRollBack {
 
@@ -64,14 +66,10 @@ public final class DdlRollBack {
         }
         if (error != null)  {
             if (job.getError() == null) {
-                job.setError(error);
+                job.encodeError(error);
             }
             job.addErrorCount(1);
-            if ("ErrCancelledDDLJob".equals(error)) {
-                if (!"ErrCancelledDDLJob".equals(job.getError())) {
-                    job.setError(job.getError());
-                }
-            } else {
+            if (!"ErrCancelledDDLJob".equals(error)) {
                 if (job.getErrorCount() > DdlUtil.errorCountLimit) {
                     job.setState(JobState.jobStateCancelled);
                     //job.setError("[ddl] rollback DDL job error count exceed the limit");
