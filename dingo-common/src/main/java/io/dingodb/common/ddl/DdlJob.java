@@ -29,6 +29,7 @@ import lombok.Data;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -268,6 +269,19 @@ public class DdlJob {
 
     public void addErrorCount(int nu) {
         this.errorCount += nu;
+    }
+
+    public void encodeError(String error) {
+        if (error != null) {
+            this.error = Base64.getEncoder().encodeToString(error.getBytes());
+        }
+    }
+
+    public String decodeError() {
+        if (this.error == null) {
+            return null;
+        }
+        return new String(Base64.getDecoder().decode(this.error));
     }
 
     @Override

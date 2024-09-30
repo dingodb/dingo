@@ -419,7 +419,7 @@ public final class DdlHandler {
             return Pair.of(true, null);
         }
         if (ddlJob.getError() != null) {
-            String error = new String(Base64.getDecoder().decode(ddlJob.getError()));
+            String error = ddlJob.decodeError();
             return Pair.of(false, error);
         }
         return Pair.of(false, null);

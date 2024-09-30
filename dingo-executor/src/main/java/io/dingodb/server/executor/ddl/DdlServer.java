@@ -41,6 +41,7 @@ import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -337,7 +338,7 @@ public final class DdlServer {
                 .ownerCheckAllVersions(job.getId(), latestSchemaVersion, job.mayNeedReorg());
             if (error != null) {
                 if ("Lock wait timeout exceeded".equalsIgnoreCase(error)) {
-                    job.setError(error);
+                    job.encodeError(error);
                     ddlWorker.updateDDLJob(job, false);
                 }
                 LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:{}, jobId:{}" , latestSchemaVersion, job.getId());

@@ -269,7 +269,7 @@ public class DdlWorker {
     }
 
     private static String countForError(DdlJob job, String error) {
-        job.setError(Base64.getEncoder().encodeToString(error.getBytes()));
+        job.encodeError(error);
         job.setErrorCount(job.getErrorCount() + 1);
         if (job.getState() == JobState.jobStateCancelled) {
             LogUtils.info(log, "[ddl] DDL job is cancelled normally");
@@ -399,9 +399,12 @@ public class DdlWorker {
             job.setSchemaState(SchemaState.SCHEMA_GLOBAL_TXN_ONLY);
             return updateSchemaVersion(dc, job);
         }
-        if ("Lock wait timeout exceeded".equalsIgnoreCase(job.getError())) {
-            job.setState(JobState.jobStateCancelled);
-            return Pair.of(0L, job.getError());
+        if (job.getError() != null) {
+            String error = job.decodeError();
+            if ("Lock wait timeout exceeded".equalsIgnoreCase(error)) {
+                job.setState(JobState.jobStateCancelled);
+                return Pair.of(0L, error);
+            }
         }
         try {
             ms.truncateTable(job.getTableName(), newTableId);
@@ -426,16 +429,18 @@ public class DdlWorker {
         if (tableInfo == null) {
             return Pair.of(0L, "table not exists");
         }
-        if ("Lock wait timeout exceeded".equalsIgnoreCase(job.getError())
-            && tableInfo.getTableDefinition().getSchemaState() != SCHEMA_PUBLIC) {
-            tableInfo.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
-            ActionType originType = job.getActionType();
-            job.setActionType(ActionType.ActionCreateTable);
-            job.setState(JobState.jobStateCancelling);
-            Pair<Long, String> res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo, true);
-            job.setActionType(originType);
-            DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
-            return res;
+        if (job.getError() != null) {
+            if ("Lock wait timeout exceeded".equalsIgnoreCase(job.decodeError())
+                && tableInfo.getTableDefinition().getSchemaState() != SCHEMA_PUBLIC) {
+                tableInfo.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                ActionType originType = job.getActionType();
+                job.setActionType(ActionType.ActionCreateTable);
+                job.setState(JobState.jobStateCancelling);
+                Pair<Long, String> res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo, true);
+                job.setActionType(originType);
+                DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
+                return res;
+            }
         }
         SchemaState originalState = job.getSchemaState();
         Pair<Long, String> res;
