@@ -38,6 +38,9 @@ import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class DingoSqlValidator extends SqlValidatorImpl {
 
     @Getter
@@ -46,6 +49,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     @Getter
     @Setter
     private String hybridSearchSql;
+    @Getter
+    private Map<SqlBasicCall, String> hybridSearchMap;
 
     static Config CONFIG = Config.DEFAULT
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
@@ -66,6 +71,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         );
         this.hybridSearch = false;
         this.hybridSearchSql = "";
+        this.hybridSearchMap = new ConcurrentHashMap<>();
     }
 
     @Override

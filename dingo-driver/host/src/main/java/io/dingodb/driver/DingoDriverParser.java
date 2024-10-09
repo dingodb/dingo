@@ -44,9 +44,9 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.ExecuteVariables;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
-import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.profile.CommitProfile;
@@ -116,6 +116,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -381,15 +382,6 @@ public final class DingoDriverParser extends DingoParser {
             }
             if (statementType == Meta.StatementType.SELECT) {
                 if (((DingoSqlValidator)validator).isHybridSearch()) {
-                    String hybridSearchSql = ((DingoSqlValidator)validator).getHybridSearchSql();
-                    LogUtils.info(log, "HybridSearchSql: {}", hybridSearchSql);
-                    SqlNode hybridSqlNode;
-                    try {
-                        hybridSqlNode = parse(hybridSearchSql);
-                    } catch (SqlParseException e) {
-                        throw ExceptionUtils.toRuntime(e);
-                    }
-                    syntacticSugar(hybridSqlNode);
                     SqlNode originalSqlNode;
                     try {
                         originalSqlNode = parse(sql);
@@ -397,7 +389,33 @@ public final class DingoDriverParser extends DingoParser {
                         throw ExceptionUtils.toRuntime(e);
                     }
                     syntacticSugar(originalSqlNode);
-                    lockUpHybridSearchNode(originalSqlNode, hybridSqlNode);
+                    if(((DingoSqlValidator) validator).getHybridSearchMap().size() == 1) {
+                        String hybridSearchSql = ((DingoSqlValidator)validator).getHybridSearchSql();
+                        LogUtils.info(log, "HybridSearchSql: {}", hybridSearchSql);
+                        SqlNode hybridSqlNode;
+                        try {
+                            hybridSqlNode = parse(hybridSearchSql);
+                        } catch (SqlParseException e) {
+                            throw ExceptionUtils.toRuntime(e);
+                        }
+                        syntacticSugar(hybridSqlNode);
+                        lockUpHybridSearchNode(originalSqlNode, hybridSqlNode);
+                    } else {
+                        ConcurrentHashMap<SqlBasicCall, SqlNode> sqlNodeHashMap = new ConcurrentHashMap<>();
+                        for (Map.Entry<SqlBasicCall, String> entry : ((DingoSqlValidator) validator).getHybridSearchMap().entrySet()) {
+                            SqlBasicCall key = entry.getKey();
+                            String value = entry.getValue();
+                            SqlNode hybridSqlNode;
+                            try {
+                                hybridSqlNode = parse(value);
+                            } catch (SqlParseException e) {
+                                throw ExceptionUtils.toRuntime(e);
+                            }
+                            syntacticSugar(hybridSqlNode);
+                            sqlNodeHashMap.put(key, hybridSqlNode);
+                        }
+                        lockUpHybridSearchNode(originalSqlNode, sqlNodeHashMap);
+                    }
                     LogUtils.info(log, "HybridSearch Rewrite Sql: {}", originalSqlNode.toString());
                     if (originalSqlNode.getKind().equals(SqlKind.EXPLAIN)) {
                         assert originalSqlNode instanceof SqlExplain;
@@ -920,6 +938,53 @@ public final class DingoDriverParser extends DingoParser {
         }
     }
 
+    private void lockUpHybridSearchNode(SqlNode sqlNode, ConcurrentHashMap<SqlBasicCall, SqlNode> subSqlNode) {
+        if (sqlNode instanceof SqlSelect) {
+            SqlNode from = ((SqlSelect) sqlNode).getFrom();
+            if (from instanceof SqlBasicCall && (((SqlBasicCall) from).getOperator() instanceof SqlHybridSearchOperator)) {
+                SqlBasicCall removeKey = null;
+                for (Map.Entry<SqlBasicCall, SqlNode> entry : subSqlNode.entrySet()) {
+                    SqlBasicCall key = entry.getKey();
+                    SqlNode value = entry.getValue();
+                    if (from.toString().equals(key.toString())) {
+                        ((SqlSelect) sqlNode).setFrom(value);
+                        removeKey = key;
+                        break;
+                    }
+                }
+                if (removeKey != null) {
+                    subSqlNode.remove(removeKey);
+                }
+            } else {
+                if (from instanceof SqlJoin) {
+                    lockUpHybridSearchNode(((SqlJoin) from).getLeft(), subSqlNode);
+                    lockUpHybridSearchNode(((SqlJoin) from).getRight(), subSqlNode);
+                }
+            }
+        } else if (sqlNode instanceof SqlJoin) {
+            lockUpHybridSearchNode(((SqlJoin) sqlNode).getLeft(), subSqlNode);
+            lockUpHybridSearchNode(((SqlJoin) sqlNode).getRight(), subSqlNode);
+        } else if (sqlNode instanceof SqlBasicCall) {
+            if (((SqlBasicCall) sqlNode).getOperator() instanceof SqlAsOperator) {
+                deepLockUpChildren(((SqlBasicCall) sqlNode).getOperandList(), subSqlNode);
+            }
+        } else if (sqlNode instanceof SqlOrderBy) {
+            lockUpHybridSearchNode(((SqlOrderBy)sqlNode).query, subSqlNode);
+        } else if (sqlNode instanceof SqlExplain) {
+            lockUpHybridSearchNode(((SqlExplain) sqlNode).getExplicandum(), subSqlNode);
+        }
+
+    }
+
+    private void deepLockUpChildren(List<SqlNode> sqlNodes, ConcurrentHashMap<SqlBasicCall, SqlNode> subSqlNode) {
+        if (sqlNodes == null) {
+            return;
+        }
+        for (int i = 0; i < sqlNodes.size(); i ++) {
+            lockUpHybridSearchNode(sqlNodes.get(i), subSqlNode);
+        }
+    }
+
     private void deepLockUpChildren(List<SqlNode> sqlNodes, SqlNode subSqlNode) {
         if (sqlNodes == null) {
             return;
@@ -928,6 +993,7 @@ public final class DingoDriverParser extends DingoParser {
             lockUpHybridSearchNode(sqlNodes.get(i), subSqlNode);
         }
     }
+
     private void syntacticSugar(SqlNode sqlNode) {
         if (sqlNode instanceof SqlSelect) {
             SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();

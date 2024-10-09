@@ -162,9 +162,9 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             );
             this.rowType = rowType;
 
-            if (((DingoSqlValidator)validator).isHybridSearch()) {
-                throw new RuntimeException("Multiple hybridSearch in SQL is not supported");
-            }
+//            if (((DingoSqlValidator)validator).isHybridSearch()) {
+//                throw new RuntimeException("Multiple hybridSearch in SQL is not supported");
+//            }
             String sql = HybridSearchSqlUtils.hybridSearchSqlReplace(
                 vectorWeight,
                 documentWeight,
@@ -179,6 +179,7 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             );
             ((DingoSqlValidator)validator).setHybridSearch(true);
             ((DingoSqlValidator)validator).setHybridSearchSql(sql);
+            ((DingoSqlValidator)validator).getHybridSearchMap().put(this.function, sql);
             return rowType;
         } else {
             throw new RuntimeException("unsupported operator type.");
