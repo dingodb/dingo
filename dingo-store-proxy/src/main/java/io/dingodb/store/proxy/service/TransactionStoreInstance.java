@@ -31,6 +31,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.common.utils.Optional;
+import io.dingodb.sdk.common.DingoClientException.RequestErrorException;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
@@ -1059,64 +1060,65 @@ public class TransactionStoreInstance {
                 txnScanRequest.getStreamMeta().setStreamId(streamId);
                 txnScanRequest.getStreamMeta().setClose(closeStream);
 
-                if (indexService != null) {
-                    txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
-                } else {
-                    txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
-                }
-
-                if (txnScanResponse.getTxnResult() != null) {
-                    ResolveLockStatus resolveLockStatus = readResolveConflict(
-                        singletonList(txnScanResponse.getTxnResult()),
-                        IsolationLevel.SnapshotIsolation.getCode(),
-                        startTs,
-                        resolvedLocks,
-                        "txnScan"
-                    );
-                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
-                        || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
-                        if (scanTimeOut < 0) {
-                            throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
-                        }
-                        try {
-                            long lockTtl = TxnVariables.WaitFixTime;
-                            if (n < TxnVariables.WaitFixNum) {
-                                lockTtl = TxnVariables.WaitTime * n;
-                            }
-                            Thread.sleep(lockTtl);
-                            n++;
-                            scanTimeOut -= lockTtl;
-                            LogUtils.info(log, "txnScan lockInfo wait {} ms end.", lockTtl);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    continue;
-                }
-
-                if(txnScanResponse.getError() == null) {
-                    //get and set stream id for next request.
-                    if(txnScanResponse.getStreamMeta() != null) {
-                        this.streamId = txnScanResponse.getStreamMeta().getStreamId();
-                        keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
-                        hasMore = txnScanResponse.getStreamMeta().isHasMore();
-                        if (hasMore) {
-                            withStart = false;
-                            range = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
-                        }
+                try {
+                    if (indexService != null) {
+                        txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
                     } else {
-                        keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
-                        hasMore = false;
-                        break;
+                        txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
                     }
-                } else {
-                    LogUtils.info(log, txnScanResponse.getError().toString());
-                    //stream expired, so need to trigger a new stream to fetch the remained tuples.
-                    this.streamId = null;
-                    this.hasMore = true;
-                    continue;
-                }
 
+                    if (txnScanResponse.getTxnResult() != null) {
+                        ResolveLockStatus resolveLockStatus = readResolveConflict(
+                            singletonList(txnScanResponse.getTxnResult()),
+                            IsolationLevel.SnapshotIsolation.getCode(),
+                            startTs,
+                            resolvedLocks,
+                            "txnScan"
+                        );
+                        if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                            || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                            if (scanTimeOut < 0) {
+                                throw new RuntimeException("startTs:" + txnScanRequest.getStartTs() + " resolve lock timeout");
+                            }
+                            try {
+                                long lockTtl = TxnVariables.WaitFixTime;
+                                if (n < TxnVariables.WaitFixNum) {
+                                    lockTtl = TxnVariables.WaitTime * n;
+                                }
+                                Thread.sleep(lockTtl);
+                                n++;
+                                scanTimeOut -= lockTtl;
+                                LogUtils.info(log, "txnScan lockInfo wait {} ms end.", lockTtl);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        continue;
+                    }
+
+                    if(txnScanResponse.getError() == null) {
+                        //get and set stream id for next request.
+                        if(txnScanResponse.getStreamMeta() != null) {
+                            this.streamId = txnScanResponse.getStreamMeta().getStreamId();
+                            keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
+                            hasMore = txnScanResponse.getStreamMeta().isHasMore();
+                            if (hasMore) {
+                                withStart = false;
+                                range = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                            }
+                        } else {
+                            keyValues = Optional.ofNullable(txnScanResponse.getKvs()).map(List::iterator).orElseGet(Collections::emptyIterator);
+                            hasMore = false;
+                            break;
+                        }
+                    }
+                } catch (RequestErrorException e) {
+                    if(e.getErrorCode() == 10118) {
+                        //ESTREAM_EXPIRED: stream id is expired.
+                        this.streamId = null;
+                        LogUtils.info(log, "Stream id expired, info:{}", e.getMessage());
+                    }
+                }
                 break;
             }
             long sub = System.currentTimeMillis() - start;
