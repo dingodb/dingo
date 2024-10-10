@@ -19,9 +19,11 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
+import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexCall;
@@ -91,6 +93,15 @@ public class DingoDocumentProjectRule extends RelRule<DingoDocumentProjectRule.C
         // Order naturally to help decoding in push down.
         selectedColumns.sort(Comparator.naturalOrder());
         Mapping mapping = Mappings.target(selectedColumns, document.getRowType().getFieldCount());
+
+        List<RelHint> hints = document.hints;
+        if (project.getHints() != null) {
+            for (RelHint hint: project.getHints()) {
+                if (hint.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)) {
+                    hints.add(hint);
+                }
+            }
+        }
 
         LogicalDingoDocument newDocument = new LogicalDingoDocument(
             document.getCluster(),

@@ -222,7 +222,9 @@ public class DingoParser {
         HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
             .hintStrategy("vector_pre", hintPredicate)
             .hintStrategy(HybridSearchTable.HINT_NAME, hintPredicate)
-            .hintStrategy("disable_index", hintPredicate).build();
+            .hintStrategy("disable_index", hintPredicate)
+            .hintStrategy("document_pre", hintPredicate)
+            .build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
             sqlValidator,
