@@ -81,7 +81,7 @@ public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
                     if (!DingoHashJoinRule.match(rel)) {
                         return false;
                     }
-                    if (rel.getHints().size() == 0) {
+                    if (rel.getHints().isEmpty()) {
                         return false;
                     } else {
                         if (!"vector_pre".equalsIgnoreCase(rel.getHints().get(0).hintName)) {
@@ -92,9 +92,7 @@ public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
                         RelSubset subset = (RelSubset) rel.getLeft();
                         if (subset.getRelList().size() == 1) {
                             RelNode relNode = subset.getBestOrOriginal();
-                            if (relNode instanceof LogicalDingoVector) {
-                                return true;
-                            }
+                            return relNode instanceof LogicalDingoVector;
                         }
                     }
                     return false;

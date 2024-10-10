@@ -16,7 +16,7 @@
 
 package io.dingodb.driver;
 
-import io.dingodb.calcite.operation.Operation;
+import io.dingodb.calcite.executor.Executor;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class MysqlSignature extends Meta.Signature {
     @Getter
     @Setter
-    private Operation operation;
+    private Executor operation;
 
     /**
      * Creates a Signature.
@@ -47,7 +47,7 @@ public class MysqlSignature extends Meta.Signature {
                               Map<String, Object> internalParameters,
                               Meta.CursorFactory cursorFactory,
                               Meta.StatementType statementType,
-                              Operation operation) {
+                              Executor operation) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.operation = operation;
     }

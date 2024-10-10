@@ -55,8 +55,6 @@ public final class DdlUtil {
     public static final String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
     public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", tenantPrefix, ADDING_DDL_JOB_CONCURRENT);
 
-    public static Map<String, String> tableMap = new ConcurrentHashMap<>();
-
     public static boolean mdlEnable = true;
     public static boolean delDiff = true;
     public static boolean historyJobEtcd = false;

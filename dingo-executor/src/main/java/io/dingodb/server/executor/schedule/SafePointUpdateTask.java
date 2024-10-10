@@ -16,7 +16,7 @@
 
 package io.dingodb.server.executor.schedule;
 
-import io.dingodb.calcite.operation.ShowLocksOperation;
+import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
@@ -242,8 +242,8 @@ public final class SafePointUpdateTask {
             .orElseGet(() -> requestId);
         long remoteMinStartTs = ClusterService.getDefault().getComputingLocations().stream()
             .filter($ -> !$.equals(DingoConfiguration.location()))
-            .map($ -> ApiRegistry.getDefault().proxy(ShowLocksOperation.Api.class, $))
-            .mapToLong(ShowLocksOperation.Api::getMinTs)
+            .map($ -> ApiRegistry.getDefault().proxy(ShowLocksExecutor.Api.class, $))
+            .mapToLong(ShowLocksExecutor.Api::getMinTs)
             .min().orElse(Long.MAX_VALUE);
         long localMinTs = TransactionManager.getMinTs();
         long minTxnTs = Math.min(remoteMinStartTs, localMinTs);

@@ -95,10 +95,12 @@ public final class DingoGetByIndexVisitFun {
             List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
-                if (keyList.contains(new ByteArrayUtils.ComparableByteArray(keys))) {
+
+                ByteArrayUtils.ComparableByteArray key = new ByteArrayUtils.ComparableByteArray(keys);
+                if (keyList.contains(key)) {
                     continue;
                 }
-                keyList.add(new ByteArrayUtils.ComparableByteArray(keys));
+                keyList.add(key);
                 Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
                     indexTd,
                     indexRanges,

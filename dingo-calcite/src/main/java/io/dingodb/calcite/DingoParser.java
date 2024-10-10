@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
@@ -37,8 +38,8 @@ import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
-import io.dingodb.calcite.operation.Operation;
-import io.dingodb.calcite.operation.SqlToOperationConverter;
+import io.dingodb.calcite.executor.Executor;
+import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.program.DecorrelateProgram;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
@@ -341,11 +342,12 @@ public class DingoParser {
             || sqlNode instanceof SqlKillQuery
             || sqlNode instanceof SqlKillConnection
             || sqlNode instanceof SqlLoadData
-            || sqlNode instanceof SqlCall;
+            || sqlNode instanceof SqlCall
+            || sqlNode instanceof SqlAdminRollback;
     }
 
-    public static Operation convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
-        return SqlToOperationConverter.convert(sqlNode, connection, context)
+    public static Executor convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
+        return SqlToExecutorConverter.convert(sqlNode, connection, context)
             .orElseThrow(() -> DingoException.from(DingoError.UNKNOWN));
     }
 

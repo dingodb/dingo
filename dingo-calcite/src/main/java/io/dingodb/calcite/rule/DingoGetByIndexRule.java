@@ -162,7 +162,7 @@ public class DingoGetByIndexRule extends ConverterRule {
     public @Nullable RelNode convert(@NonNull RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
-        rexNode = transferNode(rexNode, scan.getCluster().getRexBuilder());
+        rexNode = eliminateSpecialCast(rexNode, scan.getCluster().getRexBuilder());
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(rel.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         final Table table = Objects.requireNonNull(scan.getTable().unwrap(DingoTable.class)).getTable();
@@ -263,26 +263,35 @@ public class DingoGetByIndexRule extends ConverterRule {
     }
 
     /**
-    * create table t(id varchar(3), age int, primary key(id)).
-    *  example: select * from t where id='xxxxxxx'
+    *  example1: create table t(id varchar(3), age int, primary key(id)).
+    *  select * from t where id='xxxxxxx'
     *  if condition val length greater than column precision then general expr rexCall like cast inputRef(0) to varchar(7)
-    *  this expr can not batch get
+    *  this expr can not batch get.
+    *  example2: create table t1(id int,address varchar(30), price float,primary key(id), index ax(price))
+    *  select price from t1 where price=3.3; If the condition uses an index, but the index field is of float type, the index cannot be used
     */
-    public RexNode transferNode(RexNode relNode, RexBuilder rexBuilder) {
+    public static RexNode eliminateSpecialCast(RexNode relNode, RexBuilder rexBuilder) {
         if (!(relNode instanceof RexCall)) {
             return relNode;
         }
         RexCall call = (RexCall) relNode;
         if (call.getOperands().size() == 2 && (call.getOperands().get(0) instanceof RexCall)
             && call.getOperands().get(1) instanceof RexLiteral) {
-            RexLiteral rexLiteral = (RexLiteral) call.getOperands().get(1);
-            boolean operand1Check = rexLiteral.getTypeName() == SqlTypeName.CHAR;
             RexCall operandCall = (RexCall) call.getOperands().get(0);
-            boolean operand0Check = operandCall.op instanceof SqlCastFunction
-                && operandCall.type.getSqlTypeName() == SqlTypeName.VARCHAR
-                && operandCall.getOperands().size() == 1
+            boolean isCastFun = operandCall.op instanceof SqlCastFunction;
+            boolean checkOperands = operandCall.getOperands().size() == 1
                 && operandCall.getOperands().get(0) instanceof RexInputRef;
-            if (operand0Check && operand1Check) {
+            boolean operand0PreCheck = isCastFun && checkOperands;
+            if (!operand0PreCheck) {
+                return relNode;
+            }
+
+            RexLiteral rexLiteral = (RexLiteral) call.getOperands().get(1);
+            if (operandCall.type.getSqlTypeName() == SqlTypeName.VARCHAR
+                && rexLiteral.getTypeName() == SqlTypeName.CHAR) {
+                return rexBuilder.makeCall(call.op, operandCall.getOperands().get(0), rexLiteral);
+            } else if (operandCall.type.getSqlTypeName() == SqlTypeName.DOUBLE
+                && rexLiteral.getTypeName() == SqlTypeName.DECIMAL) {
                 return rexBuilder.makeCall(call.op, operandCall.getOperands().get(0), rexLiteral);
             }
         }

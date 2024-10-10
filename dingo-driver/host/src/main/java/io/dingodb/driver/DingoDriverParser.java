@@ -26,13 +26,12 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.meta.DingoColumnMetaData;
-import io.dingodb.calcite.operation.DdlOperation;
-import io.dingodb.calcite.operation.DmlOperation;
-import io.dingodb.calcite.operation.KillConnection;
-import io.dingodb.calcite.operation.KillQuery;
-import io.dingodb.calcite.operation.Operation;
-import io.dingodb.calcite.operation.QueryOperation;
-import io.dingodb.calcite.operation.ShowProcessListOperation;
+import io.dingodb.calcite.executor.DmlExecutor;
+import io.dingodb.calcite.executor.Executor;
+import io.dingodb.calcite.executor.KillConnection;
+import io.dingodb.calcite.executor.KillQuery;
+import io.dingodb.calcite.executor.QueryExecutor;
+import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
 import io.dingodb.calcite.rel.DingoDocument;
@@ -545,28 +544,28 @@ public final class DingoDriverParser extends DingoParser {
         if (compatibleMysql(sqlNode, planProfile)) {
             planProfile.end();
             DingoDdlVerify.verify(sqlNode, connection);
-            Operation operation = convertToOperation(sqlNode, connection, connection.getContext());
+            Executor operation = convertToOperation(sqlNode, connection, connection.getContext());
             Meta.StatementType statementType;
             List<ColumnMetaData> columns = new ArrayList<>();
             if (sqlNode.getKind() == SqlKind.SELECT || sqlNode.getKind() == SqlKind.ORDER_BY) {
                 this.execProfile = new ExecProfile("exec");
-                QueryOperation queryOperation = (QueryOperation) operation;
+                QueryExecutor queryOperation = (QueryExecutor) operation;
                 queryOperation.initExecProfile(execProfile);
                 columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
                     new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))
                     .collect(Collectors.toList());
                 statementType = Meta.StatementType.SELECT;
-                if (queryOperation instanceof ShowProcessListOperation) {
-                    ShowProcessListOperation processListOperation = (ShowProcessListOperation) queryOperation;
+                if (queryOperation instanceof ShowProcessListExecutor) {
+                    ShowProcessListExecutor processListOperation = (ShowProcessListExecutor) queryOperation;
                     List<ProcessInfo> processInfoList
                       = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap);
                     processListOperation.init(processInfoList);
                 }
             } else if (sqlNode.getKind() == SqlKind.INSERT) {
-                columns = ((DmlOperation)operation).columns(typeFactory);
+                columns = ((DmlExecutor)operation).columns(typeFactory);
                 statementType = Meta.StatementType.IS_DML;
                 this.execProfile = new ExecProfile("dml");
-                ((DmlOperation) operation).doExecute(execProfile);
+                ((DmlExecutor) operation).doExecute(execProfile);
             } else {
                 Map<String, Connection> connectionMap
                     = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
@@ -588,17 +587,17 @@ public final class DingoDriverParser extends DingoParser {
                     if (connection.getTransaction() != null) {
                         dingoAudit(connection.getTransaction());
                     }
-                    ((DdlOperation)operation).execute();
+                    ((io.dingodb.calcite.executor.DdlExecutor)operation).execute();
                     this.commitProfile = connection.getCommitProfile();
                 }  else if (sqlNode instanceof SqlRollback) {
                     if (connection.getTransaction() != null) {
                         dingoAudit(connection.getTransaction());
                     }
                     this.execProfile = new ExecProfile("other_ddl");
-                    ((DdlOperation)operation).doExecute(this.execProfile);
+                    ((io.dingodb.calcite.executor.DdlExecutor)operation).doExecute(this.execProfile);
                 }else {
                     this.execProfile = new ExecProfile("other_ddl");
-                    ((DdlOperation)operation).doExecute(this.execProfile);
+                    ((io.dingodb.calcite.executor.DdlExecutor)operation).doExecute(this.execProfile);
                 }
                 statementType = Meta.StatementType.OTHER_DDL;
             }
