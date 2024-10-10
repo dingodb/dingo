@@ -50,6 +50,21 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
     }
 
     @Override
+    public void rollback(long txnId) throws SQLException {
+        Connection connection1 = SessionUtil.INSTANCE.getConnectionMap()
+            .values().stream()
+            .filter(connection -> {
+                DingoConnection dingoConn = (DingoConnection) connection;
+                return dingoConn.getTransaction() != null && dingoConn.getTransaction().getTxnId() != null
+                     && dingoConn.getTransaction().getTxnId().seq == txnId;
+            }).findFirst()
+            .orElse(null);
+        if (connection1 != null) {
+            connection1.rollback();
+        }
+    }
+
+    @Override
     public void lockTable(Connection connection, List<CommonId> tables, LockType type) {
         ((DingoConnection) connection).lockTables(tables, type);
     }

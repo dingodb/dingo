@@ -17,9 +17,9 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.operation.DmlOperation;
-import io.dingodb.calcite.operation.Operation;
-import io.dingodb.calcite.operation.QueryOperation;
+import io.dingodb.calcite.executor.DmlExecutor;
+import io.dingodb.calcite.executor.Executor;
+import io.dingodb.calcite.executor.QueryExecutor;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.SqlProfile;
@@ -167,16 +167,16 @@ public class DingoStatement extends AvaticaStatement {
             }
             return iterator;
         } else if (signature instanceof MysqlSignature) {
-            Operation operation = ((MysqlSignature) signature).getOperation();
-            if (operation instanceof QueryOperation) {
-                Iterator<Object[]> iterator = ((QueryOperation) operation).iterator();
+            Executor operation = ((MysqlSignature) signature).getOperation();
+            if (operation instanceof QueryExecutor) {
+                Iterator<Object[]> iterator = ((QueryExecutor) operation).iterator();
                 if (cancelFlag.get()) {
                     LogUtils.info(log, "cancelFlag is true");
                     throw new SQLException("Statement canceled");
                 }
                 return iterator;
             } else {
-                DmlOperation dmlOperation = (DmlOperation) operation;
+                DmlExecutor dmlOperation = (DmlExecutor) operation;
                 Iterator<Object[]> iterator = dmlOperation.getIterator();
                 warning = dmlOperation.getWarning();
                 if (cancelFlag.get()) {

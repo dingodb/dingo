@@ -154,9 +154,13 @@ public class SqlProfile extends Profile {
 
     @Override
     public String toString() {
+        String logSql = sql;
+        if (logSql.length() > 1000) {
+            logSql = sql.substring(0, 1000) + "...";
+        }
         return "SqlProfile{" +
             "schema='" + schema + '\'' +
-            ", sql='" + sql + '\'' +
+            ", sql='" + logSql + '\'' +
             ", duration=" + duration +
             ", start=" + start +
             ", end=" + end +

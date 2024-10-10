@@ -123,7 +123,11 @@ public final class PrepareMeta {
         try {
             Object tenantObj = infoSchemaService.getTenant(tenantId);
             if (tenantObj == null) {
-                Tenant tenant = Tenant.builder().id(tenantId).name("root").build();
+                long initTime = System.currentTimeMillis();
+                Tenant tenant = Tenant.builder().id(tenantId).name("root")
+                    .createdTime(initTime)
+                    .updatedTime(initTime)
+                    .build();
                 try {
                     infoSchemaService.createTenant(tenantId, tenant);
                 } catch (Exception e) {

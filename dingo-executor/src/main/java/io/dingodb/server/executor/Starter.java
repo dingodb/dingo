@@ -18,7 +18,7 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import io.dingodb.calcite.operation.ShowLocksOperation;
+import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
@@ -121,7 +121,7 @@ public class Starter {
         // Initialize auto increment
         AutoIncrementService.INSTANCE.resetAutoIncrement();
 
-        ApiRegistry.getDefault().register(ShowLocksOperation.Api.class, new ShowLocksOperation.Api() { });
+        ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
 
         SafePointUpdateTask.run();
 

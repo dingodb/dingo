@@ -46,7 +46,6 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.common.ddl.ActionType;
-import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
@@ -60,6 +59,7 @@ import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -126,6 +126,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -233,10 +234,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new RuntimeException("Regular tenants are unable to create tenant.");
         }
         if (tenantService.getTenant(createT.name) == null) {
+            long initTime = System.currentTimeMillis();
             Tenant tenant = Tenant.builder()
                 .name(createT.name)
                 .remarks(createT.remarks)
-                .createdTime(System.currentTimeMillis())
+                .createdTime(initTime)
+                .updatedTime(initTime)
                 .build();
             tenantService.createTenant(tenant);
         } else if (!createT.ifNotExists) {
@@ -464,7 +467,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long end = System.currentTimeMillis();
         long cost = end - start;
-        //DdlUtil.tableMap.put(tableName.toUpperCase(), schema.getSchemaName());
         if (cost > 10000) {
             LogUtils.info(log, "[ddl] create table take long time, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
@@ -525,11 +527,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
-        //DdlUtil.tableMap.remove(tableName.toUpperCase());
         if (cost > 10000) {
-            LogUtils.info(log, "drop table take long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
+            LogUtils.info(log, "drop table take long time, cost:{}, schemaName:{}, tableName:{}",
+                cost, schemaInfo.getName(), tableName);
         } else {
-            LogUtils.info(log, "[ddl] drop table success, cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
+            LogUtils.info(log, "[ddl] drop table success, cost:{}, schemaName:{}, tableName:{}",
+                cost, schema.getSchemaName(), tableName);
         }
     }
 

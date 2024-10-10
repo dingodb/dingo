@@ -41,7 +41,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
+import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
 
 @Slf4j
 public final class MessageProcess {

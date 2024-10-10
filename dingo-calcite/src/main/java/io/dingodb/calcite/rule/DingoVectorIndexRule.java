@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.dispatchDistanceCondition;
+import static io.dingodb.calcite.rule.DingoGetByIndexRule.eliminateSpecialCast;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
@@ -96,7 +97,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         assert vectorIdPair != null;
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
         boolean preFilter = vector.getHints() != null
-            && vector.getHints().size() > 0
+            && !vector.getHints().isEmpty()
             && "vector_pre".equalsIgnoreCase(vector.getHints().get(0).hintName);
 
         // vector filter match primary point get
@@ -213,6 +214,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         }
         DingoTable dingoTable = vector.getTable().unwrap(DingoTable.class);
         RexNode rexNode = RexUtil.toDnf(vector.getCluster().getRexBuilder(), condition);
+        rexNode = eliminateSpecialCast(rexNode, vector.getCluster().getRexBuilder());
         IndexValueMapSetVisitor visitor = new IndexValueMapSetVisitor(vector.getCluster().getRexBuilder());
         IndexValueMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(visitor);
         assert dingoTable != null;
@@ -275,23 +277,6 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
                 b0.operand(DingoVector.class).predicate(rel -> rel.getFilter() != null).noInputs()
             )
             .build();
-
-//        Config VECTOR_JOIN = ImmutableDingoVectorIndexRule.Config.builder()
-//            .description("DingoVectorJoinIndexRule")
-//            .operandSupplier(
-//                b0 -> b0.operand(LogicalJoin.class).predicate(rel -> {
-//                    List<RelHint> hints = rel.getHints();
-//                    if (hints != null && hints.size() > 0) {
-//                        return "vector_pre".equalsIgnoreCase(hints.get(0).hintName);
-//                    }
-//                    return false;
-//                }).oneInput(
-//                  b1 -> b1.operand(LogicalDingoVector.class).predicate(rel -> {
-//                      return rel.getFilter() == null;
-//                  }).noInputs()
-//                )
-//            )
-//            .build();
 
         @Override
         default DingoVectorIndexRule toRule() {

@@ -1144,8 +1144,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .id(tenant.getId())
             .name(tenant.getName())
             .comment(tenant.getRemarks())
-            .createTimestamp(System.currentTimeMillis())
-            .updateTimestamp(0)
+            .createTimestamp(tenant.getCreatedTime())
+            .updateTimestamp(tenant.getUpdatedTime())
             .deleteTimestamp(0)
             .build();
     }

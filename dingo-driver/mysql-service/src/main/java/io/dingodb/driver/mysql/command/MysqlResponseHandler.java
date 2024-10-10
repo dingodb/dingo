@@ -46,7 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.calcite.operation.SetOptionOperation.CONNECTION_CHARSET;
+import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
 import static io.dingodb.driver.mysql.command.MysqlCommands.getInitServerStatus;

@@ -18,12 +18,11 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.visitor.RexConverter;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rex.RexNode;
@@ -43,33 +42,26 @@ public final class TableUtils {
         return Objects.requireNonNull(table.unwrap(DingoTable.class)).getTableId();
     }
 
-    public static List<Object[]> getTuplesForMapping(
-        @NonNull Collection<Map<Integer, RexNode>> items,
-        @NonNull int columnCount,
-        @NonNull TupleMapping mapping
-    ) {
-        final TupleMapping revMapping = mapping.reverse(columnCount);
-        return items.stream()
-            .map(item -> {
-                Object[] tuple = new Object[columnCount];
-                for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
-                    Expr expr = RexConverter.convert(entry.getValue());
-                    tuple[entry.getKey()] = ExprCompiler.ADVANCED.visit(expr).eval();
-                }
-                return tuple;
-            })
-            .collect(Collectors.toList());
-    }
-
     public static List<Object[]> getTuplesForKeyMapping(
         @NonNull Collection<Map<Integer, RexNode>> items,
         @NonNull Table td
     ) {
-        return getTuplesForMapping(items, td.getColumns().size(), td.keyMapping());
-    }
-
-    public static KeyValueCodec getKeyValueCodecForTable(Table td) {
-        return CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
+        return items.stream()
+            .map(item -> {
+                Object[] tuple = new Object[td.getColumns().size()];
+                for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
+                    Expr expr = RexConverter.convert(entry.getValue());
+                    Object val = ExprCompiler.ADVANCED.visit(expr).eval();
+                    Column column = td.getColumns().get(entry.getKey());
+                    if (column.getType() instanceof FloatType && val instanceof Double) {
+                        tuple[entry.getKey()] = Float.valueOf(val.toString());
+                    } else {
+                        tuple[entry.getKey()] = val;
+                    }
+                }
+                return tuple;
+            })
+            .collect(Collectors.toList());
     }
 
 }
