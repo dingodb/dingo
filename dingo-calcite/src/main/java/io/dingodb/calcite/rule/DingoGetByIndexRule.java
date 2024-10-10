@@ -32,6 +32,7 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.Convention;
@@ -255,7 +256,7 @@ public class DingoGetByIndexRule extends ConverterRule {
             if (index.getProperties() == null) {
                 continue;
             }
-            if (!index.indexType.isVector) {
+            if (!index.indexType.isVector && index.indexType != IndexType.DOCUMENT) {
                 indexTdMap.put(index.getTableId(), index);
             }
         }
