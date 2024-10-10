@@ -114,7 +114,7 @@ public class SortOperator extends SoleOutOperator {
         }
     }
 
-    public static List<Float> normalizeScores(List<Float> scores) {
+    public static List<Float> normalizeScoresOld(List<Float> scores) {
         List<Float> validScores = scores.stream()
             .filter(score -> score != null && score >= 0)
             .collect(Collectors.toList());
@@ -130,4 +130,27 @@ public class SortOperator extends SoleOutOperator {
             .map(score -> (max == min) ? 0.0F : 1 - ((score - min) / (max - min)))
             .collect(Collectors.toList());
     }
+
+    public static List<Float> normalizeScores(List<Float> scores) {
+        if (scores == null || scores.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Find the minimum and maximum values
+        Float min = scores.stream().min(Float::compare).orElse(0.0F);
+        Float max = scores.stream().max(Float::compare).orElse(0.0F);
+
+        // If the minimum and maximum values are the same, return a list of all zeros
+        if (min.equals(max)) {
+            return scores.stream()
+                .map(score -> 0.0F)
+                .collect(Collectors.toList());
+        }
+
+        // Shift and normalize the scores
+        return scores.stream()
+            .map(score -> (score - min) / (max - min))
+            .collect(Collectors.toList());
+    }
+
 }
