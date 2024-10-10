@@ -40,6 +40,7 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
+import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.Getter;
 import lombok.Setter;
@@ -260,12 +261,13 @@ public class OptimisticTransaction extends BaseTransaction {
                 //build Mutaions.
                 mutations.add(TransactionCacheToMutation.localDatatoMutation(txnLocalData, TransactionType.OPTIMISTIC));
             }
-        }
 
-        if(mutations.size() > TransactionUtil.max_pre_write_count) {
-            LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
-                transactionOf(), mutations.size(), TransactionUtil.max_pre_write_count);
-            throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
+            //To 2pc if the mutation count exceed the thread directly.
+            if(mutations.size() > TransactionUtil.max_pre_write_count) {
+                LogUtils.info(log, "{} one pc phase failed, current mutation count:{}, max mutation size:{}",
+                    transactionOf(), mutations.size(), TransactionUtil.max_pre_write_count);
+                throw new OnePcDegenerateTwoPcException("one pc phase 1PC degenerate to 2PC, startTs:" + startTs);
+            }
         }
 
         if(forSamePart) {
