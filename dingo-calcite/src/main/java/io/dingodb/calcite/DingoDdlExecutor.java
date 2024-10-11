@@ -721,6 +721,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         PartitionDetailDefinition detail = sqlAlterTableDistribution.getPartitionDefinition();
 
         Table table = schema.getTableInfo(tableName);
+
+        //If the table does not exist, raise an exception.
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+
         List<Column> keyColumns = table.columns.stream()
             .filter(Column::isPrimary)
             .sorted(Comparator.comparingInt(Column::getPrimaryKeyIndex))
