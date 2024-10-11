@@ -123,7 +123,8 @@ public final class PrepareMeta {
         try {
             Object tenantObj = infoSchemaService.getTenant(tenantId);
             if (tenantObj == null) {
-                long initTime = System.currentTimeMillis();
+                // The fixed time of the default tenant is synchronized with the store
+                long initTime = 1577808000000L;
                 Tenant tenant = Tenant.builder().id(tenantId).name("root")
                     .createdTime(initTime)
                     .updatedTime(initTime)
