@@ -139,8 +139,15 @@ public final class ExceptionUtils {
     }
 
     private static @NonNull SQLException internalToSql(@NonNull Throwable throwable) {
+        String message;
+        if(throwable.getMessage() != null) {
+            message = throwable.getMessage();
+        } else {
+            message = throwable.getClass().getName();
+        }
+
         return new SQLException(
-            throwable.getMessage(),
+            message,
             DingoSqlException.CUSTOM_ERROR_STATE,
             DingoSqlException.UNKNOWN_ERROR_CODE
         );
