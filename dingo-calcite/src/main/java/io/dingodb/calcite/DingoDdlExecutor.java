@@ -45,12 +45,13 @@ import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
+import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
-import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -59,7 +60,6 @@ import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
-import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -126,7 +126,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1460,6 +1459,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         } else if (indexDeclaration.getIndexType().equalsIgnoreCase("text")) {
             properties.put("indexType", "document");
+            for (String key : properties.stringPropertyNames()) {
+                if (!IndexParameterUtils.documentKeys.contains(key)) {
+                    throw new RuntimeException("Invalid parameter: " + key);
+                }
+            }
             String errorMsg = "Index column includes at least two columns, The first one must be text_id";
             if (num.get() > 0) {
                 if (columns.size() < 2) {
@@ -1480,25 +1484,27 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
                 ColumnDefinition columnDefinition = tableColumns.stream().filter(f -> f.getName().equals(columnName))
                     .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
-                if (i == 0) {
-                    if (!columnDefinition.getTypeName().equals("LONG")
-                        && !columnDefinition.getTypeName().equals("BIGINT")) {
-                        throw new RuntimeException("Invalid column type: " + columnName);
-                    }
+                if (!tableDefinition.getKeyNames().contains(columnDefinition.getName())) {
+                    if (i == 0) {
+                        if (!columnDefinition.getTypeName().equals("LONG")
+                            && !columnDefinition.getTypeName().equals("BIGINT")) {
+                            throw new RuntimeException("Invalid column type: " + columnName);
+                        }
 
-                    if (columnDefinition.isNullable()) {
-                        throw new RuntimeException("Column must be not null, column name: " + columnName);
+                        if (columnDefinition.isNullable()) {
+                            throw new RuntimeException("Column must be not null, column name: " + columnName);
+                        }
+                    } else {
+                        if (!columnDefinition.getTypeName().equals("BIGINT")
+                            && !columnDefinition.getTypeName().equals("LONG")
+                            && !columnDefinition.getTypeName().equals("DOUBLE")
+                            && !columnDefinition.getTypeName().equals("VARCHAR")
+                            && !columnDefinition.getTypeName().equals("STRING")
+                            && !columnDefinition.getTypeName().equals("BYTES")) {
+                            throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
+                        }
+                        primary = -1;
                     }
-                } else {
-                    if (!columnDefinition.getTypeName().equals("BIGINT")
-                        && !columnDefinition.getTypeName().equals("LONG")
-                        && !columnDefinition.getTypeName().equals("DOUBLE")
-                        && !columnDefinition.getTypeName().equals("VARCHAR")
-                        && !columnDefinition.getTypeName().equals("STRING")
-                        && !columnDefinition.getTypeName().equals("BYTES")) {
-                        throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
-                    }
-                    primary = -1;
                 }
                 ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
                     .name(columnDefinition.getName())
@@ -1520,6 +1526,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         } else {
             properties.put("indexType", "vector");
+            for (String key : properties.stringPropertyNames()) {
+                if (!IndexParameterUtils.vectorKeys.contains(key)) {
+                    throw new RuntimeException("Invalid parameter: " + key);
+                }
+            }
             type = 2;
             int primary = 0;
             for (int i = 0; i < columns.size(); i++) {
