@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.transaction.base;
+package io.dingodb.exec.transaction.visitor.data;
 
-import io.dingodb.common.CommonId;
-import io.dingodb.store.api.transaction.data.Op;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+import io.dingodb.exec.transaction.visitor.Visitor;
+import lombok.experimental.SuperBuilder;
 
-@Builder
-@Getter
-@ToString
-public class TxnLocalData {
-    private final CommonId.CommonType dataType;
-    private final CommonId txnId;
-    private final CommonId tableId;
-    private final CommonId partId;
-    private final CommonId jobId;
-    private final Op op;
-    private final byte[] key;
-    private final byte[] value;
-    private final long forUpdateTs;
+@SuperBuilder
+public class ScanCleanExtraDataCacheLeaf extends Leaf {
+
+    @Override
+    public <T> T accept(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

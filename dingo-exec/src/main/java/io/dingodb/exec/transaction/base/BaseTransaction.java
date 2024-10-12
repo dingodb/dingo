@@ -21,6 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
@@ -51,7 +52,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,19 +168,31 @@ public abstract class BaseTransaction implements ITransaction {
         if (getType() == TransactionType.NONE) {
             return;
         }
-        if (getSqlList().isEmpty() || !cache.checkCleanContinue(isPessimistic())) {
+        if (getSqlList().isEmpty()) {
             //LogUtils.warn(log, "The current {} has no data to cleanUp", transactionOf());
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
-        CompletableFuture.runAsync(() ->
-            cleanUpJobRun(jobManager, currentLocation), Executors.executor("exec-txnCleanUp")
-        ).exceptionally(
-            ex -> {
-                LogUtils.error(log, ex.toString(), ex);
-                return null;
-            }
-        );
+        if (cache.checkCleanContinue(isPessimistic())) {
+            CompletableFuture.runAsync(() ->
+                cleanUpJobRun(jobManager, currentLocation), Executors.executor(txnId.toString() + "-exec-txnCleanUp")
+            ).exceptionally(
+                ex -> {
+                    LogUtils.error(log, ex.toString(), ex);
+                    return null;
+                }
+            );
+        }
+        if (cache.checkCleanExtraDataContinue()) {
+            CompletableFuture.runAsync(() ->
+                cleanUpExtraDataJobRun(jobManager, currentLocation), Executors.executor(txnId.toString() + "-exec-cleanUpExtraData")
+            ).exceptionally(
+                ex -> {
+                    LogUtils.error(log, ex.toString(), ex);
+                    return null;
+                }
+            );
+        }
     }
 
     public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
@@ -506,6 +518,33 @@ public abstract class BaseTransaction implements ITransaction {
                 iterator.next();
             }
             LogUtils.info(log, "{} cleanUpJobRun end", transactionOf());
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+        } finally {
+            MdcUtils.setTxnId(txnId.toString());
+            jobManager.removeJob(jobId);
+        }
+    }
+
+    private void cleanUpExtraDataJobRun(JobManager jobManager, Location currentLocation) {
+        CommonId jobId = CommonId.EMPTY_JOB;
+        try {
+            MdcUtils.setTxnId(txnId.toString());
+            // 1、getTso
+            long cleanUpTs = TransactionManager.nextTimestamp();
+            // 2、generator job、task、cleanExtraDataCacheOperator
+            Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
+            jobId = job.getJobId();
+            DingoTransactionRenderJob.renderCleanExtraDataCacheJob(job, currentLocation, this, true);
+            // 3、run cleanCache
+            if (commitFuture != null) {
+                commitFuture.get();
+            }
+            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+            while (iterator.hasNext()) {
+                iterator.next();
+            }
+            LogUtils.info(log, "{} cleanUpExtraDataJobRun end", transactionOf());
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {

@@ -30,6 +30,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.transaction.params.CleanCacheParam;
+import io.dingodb.exec.transaction.params.CleanExtraDataCacheParam;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.OptimisticRollBackParam;
 import io.dingodb.exec.transaction.params.OptimisticRollBackScanParam;
@@ -41,6 +42,7 @@ import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.params.ScanCacheParam;
 import io.dingodb.exec.transaction.params.ScanCacheResidualLockParam;
 import io.dingodb.exec.transaction.params.ScanCleanCacheParam;
+import io.dingodb.exec.transaction.params.ScanCleanExtraDataCacheParam;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -114,7 +116,9 @@ import lombok.Setter;
     @JsonSubTypes.Type(PessimisticLockParam.class),
     @JsonSubTypes.Type(PessimisticResidualLockParam.class),
     @JsonSubTypes.Type(ScanCacheResidualLockParam.class),
-    @JsonSubTypes.Type(TxnPartDocumentParam.class)
+    @JsonSubTypes.Type(TxnPartDocumentParam.class),
+    @JsonSubTypes.Type(ScanCleanExtraDataCacheParam.class),
+    @JsonSubTypes.Type(CleanExtraDataCacheParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {

@@ -30,6 +30,7 @@ public class TransactionElements {
         elementMap.put(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK, createSingleTransactionRollBackOp());
         elementMap.put(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE, createSingleTransactionCleanCache());
         elementMap.put(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK, createSingleTransactionResidualLock());
+        elementMap.put(ElementName.SINGLE_TRANSACTION_CLEAN_EXTRA_CACHE, createSingleTransactionCleanExtraCache());
         elementMap.put(ElementName.MULTI_TRANSACTION_PRE_WRITE, createMultiTransactionPreWrite());
         elementMap.put(ElementName.MULTI_TRANSACTION_COMMIT, createMultiTransactionCommit());
         elementMap.put(ElementName.MULTI_TRANSACTION_ROLLBACK, createMultiTransactionRollBack());
@@ -37,6 +38,7 @@ public class TransactionElements {
         elementMap.put(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK, createMultiTransactionRollBackOp());
         elementMap.put(ElementName.MULTI_TRANSACTION_CLEAN_CACHE, createMultiTransactionCleanCache());
         elementMap.put(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK, createMultiTransactionResidualLock());
+        elementMap.put(ElementName.MULTI_TRANSACTION_CLEAN_EXTRA_CACHE, createMultiTransactionCleanExtraCache());
     }
 
     private static Element createSingleTransactionPreWrite() {
@@ -269,6 +271,40 @@ public class TransactionElements {
         StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
             .name(ElementName.STREAM)
             .data(pessimisticResidualLockLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(streamConverterLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createSingleTransactionCleanExtraCache() {
+        ScanCleanExtraDataCacheLeaf scanCleanExtraDataCacheLeaf = ScanCleanExtraDataCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        CleanExtraDataCacheLeaf cleanExtraDataCacheLeaf = CleanExtraDataCacheLeaf.builder()
+            .name(ElementName.CLEAN_EXTRA_DATA_CACHE)
+            .data(scanCleanExtraDataCacheLeaf)
+            .build();
+        RootLeaf root = RootLeaf.builder()
+            .name(ElementName.ROOT)
+            .data(cleanExtraDataCacheLeaf)
+            .build();
+        return root;
+    }
+
+    private static Element createMultiTransactionCleanExtraCache() {
+        ScanCleanExtraDataCacheLeaf scanCleanExtraDataCacheLeaf = ScanCleanExtraDataCacheLeaf.builder()
+            .name(ElementName.SCAN_CACHE)
+            .build();
+        CleanExtraDataCacheLeaf cleanExtraDataCacheLeaf = CleanExtraDataCacheLeaf.builder()
+            .name(ElementName.CLEAN_EXTRA_DATA_CACHE)
+            .data(scanCleanExtraDataCacheLeaf)
+            .build();
+        StreamConverterLeaf streamConverterLeaf = StreamConverterLeaf.builder()
+            .name(ElementName.STREAM)
+            .data(cleanExtraDataCacheLeaf)
             .build();
         RootLeaf root = RootLeaf.builder()
             .name(ElementName.ROOT)

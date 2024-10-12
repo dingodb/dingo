@@ -18,6 +18,7 @@ package io.dingodb.exec.transaction.impl;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.codec.PrimitiveCodec;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
@@ -53,12 +54,15 @@ public class TransactionCache {
 
     private final boolean cleanCache;
 
+    private final boolean cleanExtraDataCache;
+
     public TransactionCache(CommonId txnId) {
         this.txnId = txnId;
         this.pessimisticRollback = false;
         this.optimisticRollback = false;
         this.cleanCache = false;
         this.pessimisticResidualLock = false;
+        this.cleanExtraDataCache = false;
     }
 
     public TransactionCache(CommonId txnId, long jobSeqId) {
@@ -68,6 +72,7 @@ public class TransactionCache {
         this.optimisticRollback = false;
         this.cleanCache = false;
         this.pessimisticResidualLock = false;
+        this.cleanExtraDataCache = false;
     }
 
     public TransactionCache(CommonId txnId, long jobSeqId, boolean optimisticRollback) {
@@ -77,6 +82,7 @@ public class TransactionCache {
         this.optimisticRollback = optimisticRollback;
         this.cleanCache = false;
         this.pessimisticResidualLock = false;
+        this.cleanExtraDataCache = false;
     }
 
     public TransactionCache(CommonId txnId, boolean cleanCache, boolean pessimisticTransaction) {
@@ -86,6 +92,7 @@ public class TransactionCache {
         this.cleanCache = cleanCache;
         this.pessimisticTransaction = pessimisticTransaction;
         this.pessimisticResidualLock = false;
+        this.cleanExtraDataCache = false;
     }
 
     public TransactionCache(CommonId txnId, boolean pessimisticResidualLock) {
@@ -95,6 +102,17 @@ public class TransactionCache {
         this.cleanCache = false;
         this.pessimisticTransaction = true;
         this.pessimisticResidualLock = pessimisticResidualLock;
+        this.cleanExtraDataCache = false;
+    }
+
+    public TransactionCache(CommonId txnId, boolean cleanCache, boolean pessimisticTransaction, boolean cleanExtraDataCache) {
+        this.txnId = txnId;
+        this.pessimisticRollback = false;
+        this.optimisticRollback = false;
+        this.cleanCache = cleanCache;
+        this.pessimisticTransaction = pessimisticTransaction;
+        this.pessimisticResidualLock = false;
+        this.cleanExtraDataCache = cleanExtraDataCache;
     }
 
 
@@ -167,6 +185,15 @@ public class TransactionCache {
         cache.delete(key);
     }
 
+    public byte[] getScanPrefix(CommonId.CommonType type, long startTs) {
+        byte[] startTsByte = PrimitiveCodec.encodeLong(startTs);
+        byte[] result = new byte[startTsByte.length + CommonId.TYPE_LEN + CommonId.TYPE_LEN];
+        result[0] = (byte) type.getCode();
+        result[1] = (byte) CommonId.CommonType.JOB.getCode();
+        System.arraycopy(startTsByte, 0, result, CommonId.TYPE_LEN + CommonId.TYPE_LEN, startTsByte.length);
+        return result;
+    }
+
     public byte[] getScanPrefix(CommonId.CommonType type, CommonId commonId) {
         byte[] txnByte = commonId.encode();
         byte[] result = new byte[txnByte.length + CommonId.TYPE_LEN];
@@ -187,6 +214,11 @@ public class TransactionCache {
         } else {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
         }
+        return iterator.hasNext();
+    }
+
+    public boolean checkCleanExtraDataContinue() {
+        Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, txnId.seq));
         return iterator.hasNext();
     }
 
@@ -222,6 +254,9 @@ public class TransactionCache {
             } else {
                 iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
             }
+            return Iterators.transform(iterator, wrap(ByteUtils::decodeTxnCleanUp)::apply);
+        } else if (cleanExtraDataCache) {
+            iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_EXTRA_DATA, txnId.seq));
             return Iterators.transform(iterator, wrap(ByteUtils::decodeTxnCleanUp)::apply);
         } else {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));

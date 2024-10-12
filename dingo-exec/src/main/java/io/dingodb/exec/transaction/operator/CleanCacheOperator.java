@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 import static io.dingodb.store.api.transaction.data.Op.DELETE;
 
@@ -55,7 +54,7 @@ public class CleanCacheOperator extends TransactionOperator {
                 store.delete(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, key));
             } else {
                 byte[] lockKey = keyValue.getKey();
-                long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
+//                long forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
                 byte[] dataKey = Arrays.copyOf(lockKey, lockKey.length);
                 dataKey[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
                 dataKey[dataKey.length - 2] = (byte) DELETE.getCode();
@@ -67,13 +66,13 @@ public class CleanCacheOperator extends TransactionOperator {
                 dataKey[dataKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();
                 // delete dataKey
                 store.delete(dataKey);
-                byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
-                byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
-                // delete extraData
-                byte[] extraData = new byte[CommonId.TYPE_LEN + jobIdBytes.length];
-                extraData[0] = (byte) CommonId.CommonType.TXN_CACHE_EXTRA_DATA.getCode();
-                System.arraycopy(txnIdBytes, 0, extraData, CommonId.TYPE_LEN, jobIdBytes.length);
-                store.delete(extraData);
+//                byte[] jobIdBytes = new CommonId(CommonId.CommonType.JOB, param.getStartTs(), forUpdateTs).encode();
+//                byte[] txnIdBytes = vertex.getTask().getTxnId().encode();
+//                // delete extraData
+//                byte[] extraData = new byte[CommonId.TYPE_LEN + jobIdBytes.length];
+//                extraData[0] = (byte) CommonId.CommonType.TXN_CACHE_EXTRA_DATA.getCode();
+//                System.arraycopy(txnIdBytes, 0, extraData, CommonId.TYPE_LEN, jobIdBytes.length);
+//                store.delete(extraData);
                 // delete lockData
                 store.delete(lockKey);
                 // delete blockLock

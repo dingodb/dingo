@@ -37,6 +37,8 @@ public class ElementName {
 
     public static final String PESSIMISTIC_RESIDUAL_LOCK= "PessimisticResidualLock";
 
+    public static final String CLEAN_EXTRA_DATA_CACHE= "CleanExtraDataCache";
+
     public static final String SINGLE_TRANSACTION_PRE_WRITE = "SingleTransactionPreWrite";
     public static final String MULTI_TRANSACTION_PRE_WRITE = "MultiTransactionPreWrite";
 
@@ -57,4 +59,8 @@ public class ElementName {
 
     public static final String SINGLE_TRANSACTION_CLEAN_CACHE = "SingleTransactionCleanCache";
     public static final String MULTI_TRANSACTION_CLEAN_CACHE = "MultiTransactionCleanCache";
+
+    public static final String SINGLE_TRANSACTION_CLEAN_EXTRA_CACHE = "SingleTransactionCleanExtraCache";
+
+    public static final String MULTI_TRANSACTION_CLEAN_EXTRA_CACHE = "MultiTransactionCleanExtraCache";
 }

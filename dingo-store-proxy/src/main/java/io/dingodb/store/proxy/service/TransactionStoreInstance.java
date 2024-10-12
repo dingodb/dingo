@@ -614,11 +614,11 @@ public class TransactionStoreInstance {
         long start = System.currentTimeMillis();
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
-            LogUtils.info(log, "{} txnResultInfo : {}", funName, txnResultInfo);
+            LogUtils.debug(log, "{} txnResultInfo : {}", funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                LogUtils.info(log, "{} lockInfo : {}", funName, lockInfo);
+                LogUtils.debug(log, "{} lockInfo : {}", funName, lockInfo);
                 long currentTs = TsoService.INSTANCE.tso();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
@@ -728,11 +728,11 @@ public class TransactionStoreInstance {
         long start = System.currentTimeMillis();
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
-            LogUtils.info(log, "startTs:{}, {} txnResultInfo : {}", startTs, funName, txnResultInfo);
+            LogUtils.debug(log, "startTs:{}, {} txnResultInfo : {}", startTs, funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                LogUtils.info(log, "startTs:{}, {} lockInfo : {}", startTs, funName, lockInfo);
+                LogUtils.debug(log, "startTs:{}, {} lockInfo : {}", startTs, funName, lockInfo);
                 long currentTs = TsoService.INSTANCE.tso();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
