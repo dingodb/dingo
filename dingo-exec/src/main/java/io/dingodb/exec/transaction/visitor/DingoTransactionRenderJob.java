@@ -24,6 +24,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.CleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Element;
@@ -40,9 +41,11 @@ import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.ScanCleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 import io.dingodb.exec.transaction.visitor.data.TransactionElements;
 import io.dingodb.exec.transaction.visitor.function.DingoCleanCacheVisitFun;
+import io.dingodb.exec.transaction.visitor.function.DingoCleanExtraDataCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoCommitVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoOptimisticRollBackScanVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoOptimisticRollBackVisitFun;
@@ -54,6 +57,7 @@ import io.dingodb.exec.transaction.visitor.function.DingoRollBackVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoScanCacheResidualLockVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoScanCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoScanCleanCacheVisitFun;
+import io.dingodb.exec.transaction.visitor.function.DingoScanCleanExtraDataCacheVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoStreamConverterVisitFun;
 import io.dingodb.exec.transaction.visitor.function.DingoTransactionRootVisitFun;
 import lombok.Getter;
@@ -236,6 +240,28 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         LogUtils.debug(log, "job = {}", job);
     }
 
+    public static void renderCleanExtraDataCacheJob(Job job, Location currentLocation,
+                                           ITransaction transaction, boolean checkRoot) {
+        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+            job,
+            idGenerator,
+            currentLocation,
+            transaction
+        );
+        Element element;
+        if (!transaction.getChannelMap().isEmpty()) {
+            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_EXTRA_CACHE);
+        } else {
+            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_EXTRA_CACHE);
+        }
+        Collection<Vertex> outputs = element.accept(visitor);
+        if (checkRoot && !outputs.isEmpty()) {
+            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+        }
+        LogUtils.debug(log, "job = {}", job);
+    }
+
     @Override
     public Collection<Vertex> visit(Leaf leaf) {
         return Collections.emptyList();
@@ -312,6 +338,18 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
     public Collection<Vertex> visit(ScanCacheResidualLockLeaf scanCacheResidualLockLeaf) {
         return DingoScanCacheResidualLockVisitFun.visit(job, idGenerator, currentLocation,
             transaction, this, scanCacheResidualLockLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(CleanExtraDataCacheLeaf cleanExtraDataCacheLeaf) {
+        return DingoCleanExtraDataCacheVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, cleanExtraDataCacheLeaf);
+    }
+
+    @Override
+    public Collection<Vertex> visit(ScanCleanExtraDataCacheLeaf scanCleanExtraDataCacheLeaf) {
+        return DingoScanCleanExtraDataCacheVisitFun.visit(job, idGenerator, currentLocation,
+            transaction, this, scanCleanExtraDataCacheLeaf);
     }
 
     @Override

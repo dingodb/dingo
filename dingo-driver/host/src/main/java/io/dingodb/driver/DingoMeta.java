@@ -641,10 +641,6 @@ public class DingoMeta extends MetaImpl {
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
-                        // clean optimistic current job data
-                        if (transaction.isOptimistic() && isDml(signature)) {
-                            transaction.cleanOptimisticCurrentJobData(jobManager);
-                        }
                         cleanTransaction();
                     }
                 }
@@ -666,10 +662,6 @@ public class DingoMeta extends MetaImpl {
                 if (StringUtil.isEmpty(((DingoConnection) connection).getContext().getOption("sql_log"))) {
                     LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                         signature.sql, transaction.isAutoCommit(), transaction.getType());
-                }
-                // clean optimistic current job data
-                if (transaction.isOptimistic() && isDml(signature)) {
-                    transaction.cleanOptimisticCurrentJobData(jobManager);
                 }
                 transaction.addSql(signature.sql);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {

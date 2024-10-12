@@ -17,6 +17,7 @@
 package io.dingodb.exec.impl;
 
 import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.CleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
@@ -31,6 +32,7 @@ import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.ScanCleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 import io.dingodb.exec.transaction.visitor.Visitor;
 import lombok.extern.slf4j.Slf4j;
@@ -151,6 +153,22 @@ public class TestJobVisitor<T> implements Visitor<T> {
         if(scanCacheResidualLockLeaf.getData() != null)
             scanCacheResidualLockLeaf.getData().accept(this);
         System.out.println("visitor scanCacheResidualLockLeaf：" + scanCacheResidualLockLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(CleanExtraDataCacheLeaf cleanExtraDataCacheLeaf) {
+        if(cleanExtraDataCacheLeaf.getData() != null)
+            cleanExtraDataCacheLeaf.getData().accept(this);
+        System.out.println("visitor cleanExtraDataCacheLeaf：" + cleanExtraDataCacheLeaf.getName());
+        return null;
+    }
+
+    @Override
+    public T visit(ScanCleanExtraDataCacheLeaf scanCleanExtraDataCacheLeaf) {
+        if(scanCleanExtraDataCacheLeaf.getData() != null)
+            scanCleanExtraDataCacheLeaf.getData().accept(this);
+        System.out.println("visitor scanCleanExtraDataCacheLeaf：" + scanCleanExtraDataCacheLeaf.getName());
         return null;
     }
 

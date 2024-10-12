@@ -17,6 +17,7 @@
 package io.dingodb.exec.transaction.visitor;
 
 import io.dingodb.exec.transaction.visitor.data.CleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.CleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.CommitLeaf;
 import io.dingodb.exec.transaction.visitor.data.Composite;
 import io.dingodb.exec.transaction.visitor.data.Leaf;
@@ -31,6 +32,7 @@ import io.dingodb.exec.transaction.visitor.data.RootLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCacheResidualLockLeaf;
 import io.dingodb.exec.transaction.visitor.data.ScanCleanCacheLeaf;
+import io.dingodb.exec.transaction.visitor.data.ScanCleanExtraDataCacheLeaf;
 import io.dingodb.exec.transaction.visitor.data.StreamConverterLeaf;
 
 public interface Visitor<T> {
@@ -61,6 +63,10 @@ public interface Visitor<T> {
     T visit(PessimisticResidualLockLeaf pessimisticResidualLockLeaf);
 
     T visit(ScanCacheResidualLockLeaf scanCacheResidualLockLeaf);
+
+    T visit(CleanExtraDataCacheLeaf cleanExtraDataCacheLeaf);
+
+    T visit(ScanCleanExtraDataCacheLeaf scanCleanExtraDataCacheLeaf);
 
     T visit(CleanCacheLeaf cleanCacheLeaf);
 
