@@ -223,7 +223,7 @@ public class DingoParser {
             .hintStrategy("vector_pre", hintPredicate)
             .hintStrategy(HybridSearchTable.HINT_NAME, hintPredicate)
             .hintStrategy("disable_index", hintPredicate)
-            .hintStrategy("document_pre", hintPredicate)
+            .hintStrategy("text_search_pre", hintPredicate)
             .build();
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
