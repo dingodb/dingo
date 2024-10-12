@@ -75,7 +75,7 @@ public class DingoDocumentJoinRule extends RelRule<DingoDocumentJoinRule.Config>
                     if (rel.getHints().size() == 0) {
                         return false;
                     } else {
-                        if (!"document_pre".equalsIgnoreCase(rel.getHints().get(0).hintName)) {
+                        if (!"text_search_pre".equalsIgnoreCase(rel.getHints().get(0).hintName)) {
                             return false;
                         }
                     }
