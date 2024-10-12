@@ -909,7 +909,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
         Table table = schemaService.getTableDef(schemaId, tableName, tenantId);
-        //Table table = (Table) DdlService.root().getTable(name, tableName);
         if (table == null) {
             return false;
         }

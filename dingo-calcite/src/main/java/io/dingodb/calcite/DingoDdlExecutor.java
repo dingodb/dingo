@@ -566,9 +566,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
         if (cost > 10000) {
-            LogUtils.info(log, "truncate table cost long time, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
+            LogUtils.info(log, "truncate table cost long time, cost:{}, schemaName:{}, tableName:{}",
+                cost, schemaInfo.getName(), tableName);
         } else {
-            LogUtils.info(log, "truncate table success, cost:{}, schemaName:{}, tableName:{}", cost, schemaInfo.getName(), tableName);
+            LogUtils.info(log, "truncate table success, cost:{}, schemaName:{}, tableName:{}",
+                cost, schemaInfo.getName(), tableName);
         }
     }
 
@@ -740,9 +742,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } catch (Exception e) {
             throw DINGO_RESOURCE.illegalArgumentException().ex();
         }
-        LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}", tableName, detail);
+        LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}",
+            tableName, detail);
         MetaService metaService = MetaService.root();
-        metaService.addDistribution(schema.getSchemaName(), tableName, sqlAlterTableDistribution.getPartitionDefinition());
+        metaService.addDistribution(schema.getSchemaName(), tableName,
+            sqlAlterTableDistribution.getPartitionDefinition());
         timeCtx.stop();
     }
 

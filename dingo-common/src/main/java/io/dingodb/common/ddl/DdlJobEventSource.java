@@ -90,10 +90,8 @@ public final class DdlJobEventSource {
         }
         for (Object listener : listeners) {
             if (listener instanceof DdlJobListener) {
-                //for (int i = 0; i < size; i ++) {
                 DdlJobListener ddlJobListener = (DdlJobListener) listener;
                 ddlJobListener.eventOccurred(event);
-                //}
             }
         }
     }

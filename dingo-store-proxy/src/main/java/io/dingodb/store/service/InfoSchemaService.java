@@ -188,10 +188,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             throw new RuntimeException("schema is null");
         }
         byte[] tableKey = tableKey(tableId);
-        //TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
-        //if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
-        //    throw new RuntimeException("table has exists");
-        //}
         byte[] val = getBytesFromObj(table);
         txn.hInsert(schemaKey, tableKey, val);
     }
@@ -199,9 +195,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public void createReplicaTable(long schemaId, long tableId, Object table) {
         byte[] tableKey = tableKey(tableId);
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) table;
-        //if (checkTableNameExists(schemaId, tableDefinitionWithId.getTableDefinition().getName())) {
-        //    throw new RuntimeException("table has exists");
-        //}
         byte[] replicaKey = indexKey(tableDefinitionWithId.getTableId().getEntityId());
         byte[] val = getBytesFromObj(table);
         txn.hInsert(tableKey, replicaKey, val);

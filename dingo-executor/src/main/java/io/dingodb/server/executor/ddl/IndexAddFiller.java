@@ -47,6 +47,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.partition.base.RangePartitionService;
 import io.dingodb.server.executor.service.BackFiller;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.meta.entity.Table;
@@ -311,7 +312,6 @@ public class IndexAddFiller implements BackFiller {
         CommitParam param = new CommitParam(dingoType, isolationLevel, txnId.seq,
             commitTs, primaryKey, TransactionType.OPTIMISTIC);
         param.init(null);
-        //Map<String, KeyValue> caches = new TreeMap<>();
         while (iterator.hasNext()) {
             commitCnt.incrementAndGet();
             if (commitCnt.get() % 409600 == 0) {
@@ -327,7 +327,7 @@ public class IndexAddFiller implements BackFiller {
             System.arraycopy(keyValue.getKey(), from , key, 0, key.length);
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
                 getRegionList();
-            if (ranges.size() > 1) {
+            if (ranges.size() > 1 && ps instanceof RangePartitionService) {
                 CodecService.getDefault().setId(key, 0);
                 newPartId = ps.calcPartId(key, ranges);
             }

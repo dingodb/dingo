@@ -560,7 +560,7 @@ public class DdlWorker {
                     indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
                     reorgRes = index.doReorgWorkForCreateIndex(dc, job, this, table.tableId, indexWithId);
                 } catch (Exception e) {
-                    job.setState(JobState.jobStateCancelled);
+                    //job.setState(JobState.jobStateCancelled);
                     LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(0L, e.getMessage());
                 }
@@ -1033,7 +1033,17 @@ public class DdlWorker {
             rc = newReorgCtx(reorgInfo);
             CompletableFuture<String> done = rc.getDone();
             Executors.execute("reorg", () -> {
-                String error = function.apply(null);
+                String error;
+                try {
+                    error = function.apply(null);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (e instanceof NullPointerException) {
+                        error = "NullPointerException";
+                    } else {
+                        error = e.getMessage();
+                    }
+                }
                 done.complete(error);
             });
         }
@@ -1046,7 +1056,7 @@ public class DdlWorker {
             }
             long rowCount = rc.getRowCount();
             if (error != null) {
-                LogUtils.warn(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
+                LogUtils.error(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
             } else {
                 LogUtils.debug(log, "[ddl] run reorg job done, rows:{}", rowCount);
             }
