@@ -122,7 +122,6 @@ public final class LoadInfoSchemaTask {
         try {
             long startTs = TsoService.getDefault().tso();
             InfoSchemaService infoSchemaService = new InfoSchemaService();
-            //LogUtils.info(log, "[ddl] loadInfoSchema start");
             LoadIsResponse response = loadInfoSchema(infoSchemaService, startTs);
             //if (!response.hitCache) {
                 //if (response.oldSchemaVersion < response.is.schemaMetaVersion) {

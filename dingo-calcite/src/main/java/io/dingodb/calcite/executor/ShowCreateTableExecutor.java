@@ -207,7 +207,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                     }
                 }
                 if (indexTable.replica != 3) {
-                    createTableSqlStr.append(" replica=").append(table.getReplica());
+                    createTableSqlStr.append(" replica=").append(indexTable.getReplica());
                 }
                 appendPart(indexTable, createTableSqlStr);
             }

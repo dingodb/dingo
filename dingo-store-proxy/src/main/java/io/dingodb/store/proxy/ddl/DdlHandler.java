@@ -43,16 +43,16 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
 @Slf4j
 public final class DdlHandler {
 
     public static final DdlHandler INSTANCE = new DdlHandler();
-
+    private static final List<Long> insertFailedJobIdList = new CopyOnWriteArrayList<>();
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
     private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids, job_meta, type, processing) values";
@@ -104,9 +104,21 @@ public final class DdlHandler {
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
+            checkDdlContinue();
+            if (!insertFailedJobIdList.contains(jobId)) {
+                insertFailedJobIdList.add(jobId);
+            }
+            return;
         }
         LogUtils.info(log, "insert job 2 table,jobId:{}", jobId);
         asyncNotify(1L, jobId);
+    }
+
+    public static void checkDdlContinue() {
+        if (insertFailedJobIdList.size() > 1000) {
+            Utils.sleep(1000);
+            checkDdlContinue();
+        }
     }
 
     public static void asyncNotify(Long size, long jobId) {
@@ -144,7 +156,13 @@ public final class DdlHandler {
         try {
             doDdlJob(ddlJob);
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] create table error,reason:" + e.getMessage() + ", tabDef" + tableDefinition, e);
+            InfoSchemaService service = InfoSchemaService.root();
+            Object tabObj = service.getTable(ddlJob.getSchemaId(), tableDefinition.getName());
+            if (tabObj != null) {
+                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tabObj;
+                service.dropTable(ddlJob.getSchemaId(), tableDefinitionWithId.getTableId().getEntityId());
+            }
+            LogUtils.error(log, "[ddl-error] create table error, tableName:{}", tableDefinition.getName(), e);
             throw e;
         }
     }
@@ -413,7 +431,12 @@ public final class DdlHandler {
     public static Pair<Boolean, String> historyJob(long jobId) {
         DdlJob ddlJob = getHistoryJobById(jobId);
         if (ddlJob == null) {
-            return Pair.of(false, null);
+            if (insertFailedJobIdList.contains(jobId)) {
+                insertFailedJobIdList.remove(jobId);
+                return Pair.of(false, "ddl failed");
+            } else {
+                return Pair.of(false, null);
+            }
         }
         if (ddlJob.getState() == JobState.jobStateSynced) {
             return Pair.of(true, null);
