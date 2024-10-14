@@ -67,7 +67,6 @@ public final class PrepareMeta {
     private static final String DYNAMIC = "Dynamic";
     private static final String FIXED = "Fixed";
     private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
-    private static final String TXN_BREE = Common.Engine.TXN_BTREE.name();
     private static final long tenantId = TenantConstant.TENANT_ID;
 
     private static int exceptionRetries = 0;
@@ -79,7 +78,7 @@ public final class PrepareMeta {
     private PrepareMeta() {
     }
 
-    public static void prepare(String coordinators) {
+    public static synchronized void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         if (infoSchemaService.prepareStarted()) {
             return;

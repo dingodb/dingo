@@ -18,18 +18,29 @@ package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
+import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
+import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropUser;
+import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
+import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
+import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
@@ -79,6 +90,8 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSetOption;
+import org.apache.calcite.sql.ddl.SqlDropSchema;
+import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
@@ -399,6 +412,15 @@ public class DingoParser {
         if (enclosed != null && enclosed.equals("()")) {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
+    }
+
+    protected static boolean ddlTxn(SqlNode sqlNode) {
+        return sqlNode instanceof DingoSqlCreateTable || sqlNode instanceof SqlTruncate
+            || sqlNode instanceof SqlDropTable || sqlNode instanceof SqlCreateSchema
+            || sqlNode instanceof SqlDropSchema || sqlNode instanceof SqlAlterAddColumn
+            || sqlNode instanceof SqlAlterDropColumn || sqlNode instanceof SqlAlterAddIndex
+            || sqlNode instanceof SqlAlterDropIndex || sqlNode instanceof SqlCreateUser
+            || sqlNode instanceof SqlDropUser || sqlNode instanceof SqlGrant;
     }
 
 }

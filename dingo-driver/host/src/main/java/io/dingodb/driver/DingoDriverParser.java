@@ -293,9 +293,9 @@ public final class DingoDriverParser extends DingoParser {
             Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
             while (retry-- > 0) {
                 try {
+                    beforeDdl(connection, sqlNode);
                     final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
                     ddlExecutor.executeDdl(connection, sqlNode);
-                    afterDdl(connection);
                     break;
                 } catch (IllegalArgumentException e) {
                     // Method not found: execute([class org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context])
@@ -752,14 +752,14 @@ public final class DingoDriverParser extends DingoParser {
             RelOptTable table = input.getTable();
             tables.add(table);
         }
-        RelOptTable functionTable = findUserDefindedFunction(relNode);
+        RelOptTable functionTable = findUserDefinedFunction(relNode);
         if (functionTable != null) {
             tables.add(functionTable);
         }
         return tables;
     }
 
-    private static RelOptTable findUserDefindedFunction(RelNode relNode) {
+    private static RelOptTable findUserDefinedFunction(RelNode relNode) {
         RelShuttleImpl relShuttle = new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
@@ -1005,15 +1005,31 @@ public final class DingoDriverParser extends DingoParser {
         return metaDataList;
     }
 
-    public static void afterDdl(DingoConnection connection) {
+    public static void beforeDdl(DingoConnection connection, SqlNode sqlNode) {
+        if (!ddlTxn(sqlNode)) {
+            return;
+        }
         try {
             if (connection.getTransaction() != null) {
-                boolean pessimistic = "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"));
-                TransactionService.getDefault().begin(connection, pessimistic);
+                TransactionService.getDefault().commit(connection);
             }
         } catch (SQLException e) {
             LogUtils.error(log, e.getMessage(), e);
         }
     }
+
+    //public static void afterDdl(DingoConnection connection, SqlNode sqlNode) {
+    //    if (!ddlTxn(sqlNode)) {
+    //        return;
+    //    }
+    //    try {
+    //        if (connection.getTransaction() != null) {
+    //            boolean pessimistic = "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"));
+    //            TransactionService.getDefault().begin(connection, pessimistic);
+    //        }
+    //    } catch (SQLException e) {
+    //        LogUtils.error(log, e.getMessage(), e);
+    //    }
+    //}
 
 }
