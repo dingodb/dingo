@@ -164,7 +164,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
 
     public static IndexTable getDocumentIndexTable(Table table, String documentColName) {
         for (IndexTable index : table.getIndexes()) {
-            if (index.getIndexType() != IndexType.DOCUMENT) {
+            if (index.getIndexType() != IndexType.DOCUMENT || !documentColName.equalsIgnoreCase(index.getName())) {
                 continue;
             }
             return index;
