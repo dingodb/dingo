@@ -18,7 +18,6 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetByIndex;
-import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
@@ -215,19 +214,20 @@ public class DingoGetByIndexRule extends ConverterRule {
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
         if (indexSetMap.size() > 1) {
-            return new DingoGetByIndexMerge(
-                scan.getCluster(),
-                traits,
-                scan.getHints(),
-                scan.getTable(),
-                scan.getFilter(),
-                scan.getRealSelection(),
-                false,
-                indexSetMap,
-                indexTdMap,
-                table.keyMapping(),
-                true
-            );
+            return null;
+            //return new DingoGetByIndexMerge(
+            //    scan.getCluster(),
+            //    traits,
+            //    scan.getHints(),
+            //    scan.getTable(),
+            //    scan.getFilter(),
+            //    scan.getRealSelection(),
+            //    false,
+            //    indexSetMap,
+            //    indexTdMap,
+            //    table.keyMapping(),
+            //    true
+            //);
         } else {
             return new DingoGetByIndex(
                 scan.getCluster(),

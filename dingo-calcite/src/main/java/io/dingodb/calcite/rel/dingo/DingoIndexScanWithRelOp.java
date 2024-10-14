@@ -29,7 +29,6 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -46,7 +45,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Objects;
 
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
@@ -76,7 +74,8 @@ public class DingoIndexScanWithRelOp extends LogicalIndexScanWithRelOp implement
     ) {
         super(cluster, traitSet, hints, table, rowType, relOp, filter, pushDown, keepOrder, indexTable, rangeScan);
         if (getFilter() != null) {
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault()
+                .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
             RangeDistribution range = RangeUtils.createRangeByFilter(indexTable, codec, filter, null);
             rangeDistribution = range;
             if (range != null && !(range.getStartKey() == null && range.getEndKey() == null)) {
