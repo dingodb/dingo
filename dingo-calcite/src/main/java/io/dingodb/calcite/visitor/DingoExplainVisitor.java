@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
+import io.dingodb.calcite.rel.DingoGetDocumentPreFilter;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
@@ -503,5 +504,14 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             );
         explain1.getChildren().add(explain);
         return explain1;
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoGetDocumentPreFilter rel) {
+        String accessObj = "";
+        if (rel.getIndexTable() != null) {
+            accessObj = rel.getIndexTable().getName();
+        }
+        return getCommonExplain(rel, "DingoGetDocumentPreFilter", accessObj, "");
     }
 }

@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.codec.CodecService;
@@ -27,18 +28,15 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
 import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
-import io.dingodb.store.api.transaction.data.Document;
 import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.data.DocumentValue;
 import io.dingodb.store.api.transaction.data.DocumentWithId;
 import io.dingodb.store.api.transaction.data.DocumentWithScore;
 import io.dingodb.store.api.transaction.data.ScalarField;
-import io.dingodb.store.api.transaction.data.TableData;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -76,9 +74,9 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         List<Object[]> results = new ArrayList<>();
         List<Column> columns = param.getTable().getColumns();
         Object[] priTuples = new Object[param.getTable().columns.size() + 1];
-        if (param.isLookUp()) {
-            for (DocumentWithScore document : documentWithScores) {
-                if(document.getDocumentWithId().getDocument().getTableData() != null){
+        for (DocumentWithScore document : documentWithScores) {
+                if(document.getDocumentWithId().getDocument() != null){
+                    if(document.getDocumentWithId().getDocument().getTableData() != null){
                     KeyValue tableData = new KeyValue(document.getDocumentWithId().getDocument().getTableData().getTableKey(),
                         document.getDocumentWithId().getDocument().getTableData().getTableValue());
                     byte[] tmp1 = new byte[tableData.getKey().length];
@@ -135,33 +133,10 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                     priTuples[priTuples.length - 1] = score;
                     results.add(priTuples);
                 }
-            }
-
-        } else {
-            for (DocumentWithScore document : documentWithScores) {
-                priTuples = new Object[param.getTable().columns.size() + 1];
-                DocumentWithId documentWithId = document.getDocumentWithId();
-                Map<String, DocumentValue> documentData = documentWithId.getDocument().getDocumentData();
-                Set<Map.Entry<String, DocumentValue>> entries = documentData.entrySet();
-                for (Map.Entry<String, DocumentValue> entry : entries) {
-                    String key = entry.getKey();
-                    DocumentValue value = entry.getValue();
-                    ScalarField fieldValue = value.getFieldValue();
-                    int idx = 0;
-                    for (int i = 0; i < columns.size(); i++) {
-                        if (columns.get(i).getName().equals(key)) {
-                            idx = i;
-                            break;
-                        }
-                    }
-                    priTuples[idx] = fieldValue.getData();
+                }else{
+                    LogUtils.error(log,("Failed to get document"));
                 }
-
-                float score = document.getScore();
-                priTuples[priTuples.length - 1] = score;
-                results.add(priTuples);
             }
-        }
         profile.incrTime(start);
         return results.iterator();
     }

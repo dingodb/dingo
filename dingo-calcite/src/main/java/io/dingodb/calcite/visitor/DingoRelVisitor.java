@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
+import io.dingodb.calcite.rel.DingoGetDocumentPreFilter;
 import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
@@ -99,6 +100,8 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull DingoGetVectorByDistance rel);
 
     T visit(@NonNull VectorStreamConvertor rel);
+
+    T visit(@NonNull DingoGetDocumentPreFilter rel);
 
     T visit(@NonNull DingoGetByIndexMerge rel);
 
