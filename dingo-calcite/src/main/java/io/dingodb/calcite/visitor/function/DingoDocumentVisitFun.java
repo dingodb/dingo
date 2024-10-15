@@ -54,28 +54,20 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
-import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
-import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -259,6 +251,22 @@ public final class DingoDocumentVisitFun {
         }
         visitor.setScan(true);
         return outputs;
+    }
+
+    public static String getDocumentQueryStr(List<Object> operandsList) {
+        return Objects.requireNonNull((SqlCharStringLiteral)operandsList.get(2)).getStringValue();
+    }
+
+    public static String getDocuementTabName(List<Object> operandsList) {
+        return operandsList.get(0).toString();
+    }
+
+    public static String getDocuementIndexName(List<Object> operandsList) {
+        return operandsList.get(1).toString();
+    }
+
+    public static Integer getDocumentTopK(@NonNull List<Object> operandsList) {
+        return ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
     }
 
     private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable) {

@@ -171,6 +171,18 @@ public final class DingoRules {
     public static final DingoTableCollationRule SORT_REMOVE_DINGO_SCAN
        = DingoTableCollationRule.Config.SORT_REMOVE_DINGO_SCAN.toRule();
 
+    public static final DingoDocumentIndexRule DINGO_DOCUMENT_INDEX_RULE
+        = DingoDocumentIndexRule.Config.DEFAULT.toRule();
+
+    public static final DingoDocumentJoinRule DINGO_DOCUMENT_JOIN_RULE
+        = DingoDocumentJoinRule.Config.DEFAULT.toRule();
+
+    public static final DingoDocumentFilterRule DINGO_DOCUMENT_FILTER_RULE
+         = DingoDocumentFilterRule.Config.DEFAULT.toRule();
+
+    public static final  DingoDocumentProjectRule DINGO_DOCUMENT_PROJECT_RULE
+        = DingoDocumentProjectRule.Config.DEFAULT.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
@@ -228,7 +240,12 @@ public final class DingoRules {
         DINGO_INDEX_COLLATION_RULE,
         INDEXSCAN_SORT_ASC,
         INDEX_NONLEFT_ORDER,
-        SORT_REMOVE_DINGO_SCAN
+        SORT_REMOVE_DINGO_SCAN,
+        DINGO_DOCUMENT_INDEX_RULE,
+        DINGO_DOCUMENT_JOIN_RULE,
+        DINGO_DOCUMENT_PROJECT_RULE,
+        DINGO_DOCUMENT_FILTER_RULE
+
     );
 
     private DingoRules() {

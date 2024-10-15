@@ -109,7 +109,7 @@ public final class OperatorCodeUtils {
 
     //document
     public static final CommonId DOCUMENT_PARTITION = new CommonId(CommonId.CommonType.OP, OP, 90);
-    public static final CommonId DOCUMENT_TOKEN = new CommonId(CommonId.CommonType.OP, OP, 91);
+    public static final CommonId DOCUMENT_PRE_FILTER = new CommonId(CommonId.CommonType.OP, OP, 91);
 
     private OperatorCodeUtils() {
     }

@@ -118,7 +118,8 @@ import lombok.Setter;
     @JsonSubTypes.Type(ScanCacheResidualLockParam.class),
     @JsonSubTypes.Type(TxnPartDocumentParam.class),
     @JsonSubTypes.Type(ScanCleanExtraDataCacheParam.class),
-    @JsonSubTypes.Type(CleanExtraDataCacheParam.class)
+    @JsonSubTypes.Type(CleanExtraDataCacheParam.class),
+    @JsonSubTypes.Type(DocumentPreFilterParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class AbstractParams {
