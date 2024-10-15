@@ -129,7 +129,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 3;
+    int replica = 0;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
     final SqlNodeList columnList;
@@ -176,7 +176,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 3;
+    int replica = 0;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
     final SqlNodeList columnList;

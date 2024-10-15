@@ -618,7 +618,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableDefinitionWithId indexWithId = Stream.of(index)
             .map(i -> {
                 TableDefinitionWithId td = MAPPER.tableTo(indexIdWithPartIds, i, TenantConstant.TENANT_ID);
-                MAPPER.resetIndexParameter(td.getTableDefinition(), i);
+                try {
+                    MAPPER.resetIndexParameter(td.getTableDefinition(), i);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    throw new RuntimeException("invalid index param");
+                }
                 return td;
             })
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
