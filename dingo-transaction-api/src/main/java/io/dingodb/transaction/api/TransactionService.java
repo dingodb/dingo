@@ -37,4 +37,5 @@ public interface TransactionService {
     void unlockTable(Connection connection);
 
     Iterator<Object[]> getMdlInfo();
+    Iterator<Object[]> getTxnInfo();
 }

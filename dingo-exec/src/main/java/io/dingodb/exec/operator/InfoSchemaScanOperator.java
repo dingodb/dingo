@@ -84,6 +84,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return StmtSummaryMap.iterator();
             case "DINGO_MDL_VIEW":
                 return getMdlView();
+            case "DINGO_TRX":
+                return getTxnInfo();
             default:
                 throw new RuntimeException("no source");
         }
@@ -373,6 +375,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
     private static Iterator<Object[]> getMdlView() {
         return TransactionService.getDefault().getMdlInfo();
+    }
+
+    private static Iterator<Object[]> getTxnInfo() {
+        return TransactionService.getDefault().getTxnInfo();
     }
 
 }
