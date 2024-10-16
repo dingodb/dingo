@@ -344,6 +344,7 @@ public class TransactionStoreInstance {
                     txnPessimisticLock.getMutations().forEach($ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                     response = indexService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
                 } else if (documentService != null) {
+                    txnPessimisticLock.getMutations().forEach($ -> $.setKey(Arrays.copyOf($.getKey(), VectorKeyLen)));
                     response = documentService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
                 } else {
                     response = storeService.txnPessimisticLock(txnPessimisticLock.getStartTs(), MAPPER.pessimisticLockTo(txnPessimisticLock));
@@ -420,6 +421,11 @@ public class TransactionStoreInstance {
                 txnPessimisticRollBack.setKeys(newKeys);
                 response = indexService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
             } else if (documentService != null) {
+                List<byte[]> keys = txnPessimisticRollBack.getKeys();
+                List<byte[]> newKeys = keys.stream()
+                    .map(key -> Arrays.copyOf(key, VectorKeyLen))
+                    .collect(Collectors.toList());
+                txnPessimisticRollBack.setKeys(newKeys);
                 response = documentService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
             } else {
                 response = storeService.txnPessimisticRollback(startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
@@ -516,6 +522,7 @@ public class TransactionStoreInstance {
                             .collect(Collectors.toList());
                     }
                 } else if(documentService != null){
+                    txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
                     response = documentService.txnBatchGet(startTs, txnBatchGetRequest);
                     if (response.getTxnResult() == null) {
                         return response.getDocuments().stream()
@@ -570,6 +577,7 @@ public class TransactionStoreInstance {
             txnBatchRollBack.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
             response = indexService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else if (documentService != null) {
+            txnBatchRollBack.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
             response = documentService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
         } else {
             response = storeService.txnBatchRollback(txnBatchRollBack.getStartTs(), MAPPER.rollbackTo(txnBatchRollBack));
@@ -913,6 +921,8 @@ public class TransactionStoreInstance {
                 TxnScanResponse txnScanResponse;
                 if (indexService != null) {
                     txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
+                } else if (documentService != null) {
+                    txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
                 } else {
                     txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
                 }
@@ -1063,6 +1073,8 @@ public class TransactionStoreInstance {
                 try {
                     if (indexService != null) {
                         txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
+                    } else if (documentService != null) {
+                        txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
                     } else {
                         txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
                     }

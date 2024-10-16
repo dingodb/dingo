@@ -38,6 +38,7 @@ import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
@@ -72,6 +73,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
             KeyValueCodec codec = param.getCodec();
             boolean isVector = false;
+            boolean isDocument = false;
             if (context.getIndexId() != null) {
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
@@ -107,6 +109,9 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                 if (index.indexType.isVector) {
                     isVector = true;
                 }
+                if (index.indexType == IndexType.DOCUMENT) {
+                    isDocument = true;
+                }
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
             }
@@ -114,12 +119,15 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
             Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
             byte[] key = wrap(codec::encodeKey).apply(newTuple);
             CodecService.getDefault().setId(key, partId.domain);
-            byte[] vectorKey;
+            byte[] originalKey;
             if (isVector) {
-                vectorKey = codec.encodeKeyPrefix(newTuple, 1);
-                CodecService.getDefault().setId(vectorKey, partId.domain);
+                originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
+            } else if (isDocument) {
+                originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
             } else {
-                vectorKey = key;
+                originalKey = key;
             }
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
@@ -268,7 +276,7 @@ public class PessimisticLockDeleteOperator extends SoleOutOperator {
                     vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                     return true;
                 }
-                if (isVector) {
+                if (isVector || isDocument) {
                     kvKeyValue.setKey(codec.encodeKey(newTuple));
                 }
                 Object[] result = codec.decode(kvKeyValue);

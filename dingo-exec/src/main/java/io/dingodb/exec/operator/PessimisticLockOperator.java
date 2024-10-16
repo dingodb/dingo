@@ -39,6 +39,7 @@ import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Op;
@@ -82,6 +83,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
             KeyValueCodec codec = param.getCodec();
             boolean isVector = false;
+            boolean isDocument = false;
             if (context.getIndexId() != null) {
                 if (primaryLockKey == null) {
                     return true;
@@ -119,6 +121,9 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 if (indexTable.indexType.isVector) {
                     isVector = true;
                 }
+                if (indexTable.indexType == IndexType.DOCUMENT) {
+                    isDocument = true;
+                }
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
             }
@@ -133,12 +138,15 @@ public class PessimisticLockOperator extends SoleOutOperator {
             }
             byte[] key = wrap(codec::encodeKey).apply(newTuple);
             CodecService.getDefault().setId(key, partId.domain);
-            byte[] vectorKey;
+            byte[] originalKey;
             if (isVector) {
-                vectorKey = codec.encodeKeyPrefix(newTuple, 1);
-                CodecService.getDefault().setId(vectorKey, partId.domain);
+                originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
+            } else if (isDocument) {
+                originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
             } else {
-                vectorKey = key;
+                originalKey = key;
             }
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
