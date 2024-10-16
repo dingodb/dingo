@@ -86,38 +86,52 @@ public class DingoIndexCollationRule extends RelRule<DingoIndexCollationRule.Con
 
         List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
         Table table = logicalScanWithRelOp.getTable().unwrap(DingoTable.class).getTable();
-        if (relFieldCollationList.size() != 1) {
-            return;
+        boolean cancelSort = false;
+        int index = 0;
+        int keepSerialOrder = 0;
+        for (RelFieldCollation relFieldCollation : relFieldCollationList) {
+            int i = relFieldCollation.getFieldIndex();
+            IndexOpExpr indexOpExpr = (IndexOpExpr) projectOp.getProjects()[i];
+            int ix = getIndexByExpr(indexOpExpr);
+            Column orderCol = null;
+            if (ix >= 0) {
+                orderCol = table.getColumns().get(ix);
+            }
+            if (orderCol == null) {
+                cancelSort = false;
+                break;
+            }
+            int matchSortIx = indexScanWithRelOp.getIndexTable().getColumns().indexOf(orderCol);
+            if (matchSortIx < 0) {
+                cancelSort = false;
+                break;
+            }
+            Column matchOrderIxCol = indexScanWithRelOp.getIndexTable().getColumns().get(matchSortIx);
+            if (matchOrderIxCol.primaryKeyIndex < 0) {
+                cancelSort = false;
+                break;
+            }
+            keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
+            if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
+                cancelSort = false;
+                break;
+            }
+            if (index != 0 && ix < index) {
+                cancelSort = false;
+                break;
+            } else {
+                index = ix;
+            }
+            cancelSort = true;
         }
-        RelFieldCollation relFieldCollation = relFieldCollationList.get(0);
-        int i = relFieldCollation.getFieldIndex();
-        IndexOpExpr indexOpExpr = (IndexOpExpr) projectOp.getProjects()[i];
-        int ix = getIndexByExpr(indexOpExpr);
-        Column orderCol = null;
-        if (ix >= 0) {
-            orderCol = table.getColumns().get(ix);
+        if (cancelSort) {
+            RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
+            indexScanWithRelOp.setKeepSerialOrder(keepSerialOrder);
+            LogicalSort newSort = (LogicalSort) logicalSort.copy(
+                logicalSort.getTraitSet(), indexScanWithRelOp, relCollation
+            );
+            call.transformTo(newSort);
         }
-        if (orderCol == null) {
-            return;
-        }
-        int matchSortIx = indexScanWithRelOp.getIndexTable().getColumns().indexOf(orderCol);
-        if (matchSortIx < 0) {
-            return;
-        }
-        Column matchOrderIxCol = indexScanWithRelOp.getIndexTable().getColumns().get(matchSortIx);
-        if (matchOrderIxCol.primaryKeyIndex != 0) {
-            return;
-        }
-        int keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
-        if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
-            return;
-        }
-        RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
-        indexScanWithRelOp.setKeepSerialOrder(keepSerialOrder);
-        LogicalSort newSort = (LogicalSort) logicalSort.copy(
-            logicalSort.getTraitSet(), indexScanWithRelOp, relCollation
-        );
-        call.transformTo(newSort);
     }
 
     public static int getIndexByExpr(IndexOpExpr indexOpExpr) {
