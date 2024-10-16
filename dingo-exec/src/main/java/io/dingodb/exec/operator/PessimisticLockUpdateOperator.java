@@ -44,6 +44,7 @@ import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -98,6 +99,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 }
             }
             boolean isVector = false;
+            boolean isDocument = false;
             boolean calcPartId = false;
             Object[] oldIndexTuple = tuple;
             if (context.getIndexId() != null) {
@@ -146,6 +148,9 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 if (index.indexType.isVector) {
                     isVector = true;
                 }
+                if (index.indexType == IndexType.DOCUMENT) {
+                    isDocument = true;
+                }
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                 if (updated && columnIndices.stream().anyMatch(c -> mapping.contains(c))) {
                     PartitionService ps = PartitionService.getService(
@@ -170,12 +175,15 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
 
             byte[] key = wrap(codec::encodeKey).apply(dest);
             CodecService.getDefault().setId(key, partId.domain);
-            byte[] vectorKey;
+            byte[] originalKey;
             if (isVector) {
-                vectorKey = codec.encodeKeyPrefix(dest, 1);
-                CodecService.getDefault().setId(vectorKey, partId.domain);
+                originalKey = codec.encodeKeyPrefix(dest, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
+            } else if (isDocument) {
+                originalKey = codec.encodeKeyPrefix(dest, 1);
+                CodecService.getDefault().setId(originalKey, partId.domain);
             } else {
-                vectorKey = key;
+                originalKey = key;
             }
             byte[] txnIdByte = txnId.encode();
             byte[] tableIdByte = tableId.encode();
@@ -195,7 +203,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             if (oldKeyValue == null) {
                 if (calcPartId) {
                     resolveKeyChange(vertex, param, txnId, tableId, context.getDistribution().getId(), primaryLockKey,
-                        codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector, key);
+                        codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector, isDocument, key);
                 }
                 // for check deadLock
                 byte[] deadLockKeyBytes = encode(
@@ -333,7 +341,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                     return true;
                 }
-                if (isVector) {
+                if (isVector || isDocument) {
                     kvKeyValue.setKey(codec.encodeKey(dest));
                 }
                 Object[] result = codec.decode(kvKeyValue);
@@ -395,7 +403,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         vertex.getOutList().forEach(o -> o.transformToNext(context, copyTuple));
                         return true;
                     }
-                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+                    KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), originalKey, param.getLockTimeOut());
                     if (kvKeyValue == null || kvKeyValue.getValue() == null) {
                         LogUtils.info(log, "{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
                         @Nullable Object[] finalTuple1 = tuple;
@@ -403,7 +411,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         return true;
                     }
                     LogUtils.info(log, "{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
-                    if (isVector) {
+                    if (isVector || isDocument) {
                         kvKeyValue.setKey(codec.encodeKey(dest));
                     }
                     Object[] result = codec.decode(kvKeyValue);
@@ -417,18 +425,22 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
     private void resolveKeyChange(Vertex vertex, PessimisticLockUpdateParam param, CommonId txnId,
                                   CommonId tableId, CommonId partId, byte[] primaryLockKey,
                                   KeyValueCodec codec, Object[] newTuple, byte[] txnIdByte,
-                                  byte[] tableIdByte, byte[] jobIdByte, int len, boolean isVector, byte[] key) {
+                                  byte[] tableIdByte, byte[] jobIdByte, int len, boolean isVector,
+                                  boolean isDocument, byte[] key) {
         byte[] oldKey = wrap(codec::encodeKey).apply(newTuple);
         CodecService.getDefault().setId(oldKey, partId.domain);
         if (ByteArrayUtils.equal(key, oldKey)) {
             return;
         }
-        byte[] vectorKey;
+        byte[] originalKey;
         if (isVector) {
-            vectorKey = codec.encodeKeyPrefix(newTuple, 1);
-            CodecService.getDefault().setId(vectorKey, partId.domain);
+            originalKey = codec.encodeKeyPrefix(newTuple, 1);
+            CodecService.getDefault().setId(originalKey, partId.domain);
+        } else if (isDocument) {
+            originalKey = codec.encodeKeyPrefix(newTuple, 1);
+            CodecService.getDefault().setId(originalKey, partId.domain);
         } else {
-            vectorKey = oldKey;
+            originalKey = oldKey;
         }
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
@@ -527,7 +539,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
         KeyValue kvKeyValue = null;
         try {
             // index use keyPrefix
-            kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), vectorKey, param.getLockTimeOut());
+            kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), originalKey, param.getLockTimeOut());
         } catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         } finally {
