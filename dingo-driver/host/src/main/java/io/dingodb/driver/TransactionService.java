@@ -19,7 +19,9 @@ package io.dingodb.driver;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.transaction.api.LockType;
 
 import java.sql.Connection;
@@ -93,6 +95,98 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                     sqlBuilder.append(sql).append(";");
                 }
                 res[2] = sqlBuilder.toString();
+                return res;
+            })
+            .iterator();
+    }
+
+    /**
+     * Get the information of running transaction.
+     * @return
+     */
+    @Override
+    public Iterator<Object[]> getTxnInfo() {
+        Map<String, Connection> connectionMap = SessionUtil.INSTANCE.getConnectionMap();
+        return connectionMap.values().stream()
+            .map(conn -> (DingoConnection)conn)
+            .filter(dc -> !dc.getMdlLockJobMap().isEmpty())
+            .filter(dc -> dc.getTransaction() != null)
+            .map(dc -> {
+                long jobId = dc.getMdlLockJobMap().keySet().stream().findFirst().orElse(0L);
+                ITransaction transaction = dc.getTransaction();
+                List<String> sqlList = dc.getTransaction().getSqlList();
+                Object[] res = new Object[14];
+
+                //Get transaction id as string.
+                res[0] = transaction.getTxnId().toString();
+
+                //Get transaction type as string.
+                res[1] = transaction.getType().toString();
+
+                //Get job id as long.
+                res[2] = jobId;
+
+                //Get transaction start timestamp as long.
+                res[3] = transaction.getStartTs();
+
+                //Get transaction commit timestamp as long.
+                res[4] = transaction.getCommitTs();
+
+                //Get sql list in transaction as string.
+                StringBuilder sqlBuilder = new StringBuilder();
+                for (String sql : sqlList) {
+                    sqlBuilder.append(sql).append(";");
+                }
+                res[5] = sqlBuilder.toString();
+
+                //Get transaction status.
+                res[6] = transaction.getStatus().toString();
+
+                //Get transaction isolation level.
+                res[7] = IsolationLevel.of(transaction.getIsolationLevel()).toString();
+
+                //Get transaction auto commit flag.
+                res[8] = String.valueOf(transaction.isAutoCommit());
+
+                //Get transaction primary key.
+                try {
+                    res[9] = (transaction.getPrimaryKey() != null) ? transaction.getPrimaryKey().toString() : "";
+                } catch (UnsupportedOperationException e) {
+                    res[9] = "";
+                }
+
+                //Get forUpdateTs.
+                try {
+                    res[10] = transaction.getForUpdateTs();
+                } catch (UnsupportedOperationException e) {
+                    res[10] = 0;
+                }
+
+                //Get lock timeout time.
+                res[11] = transaction.getLockTimeOut();
+
+                //Get primary key lock.
+                try {
+                    if (transaction.getPrimaryKeyLock() == null) {
+                        res[12] = "";
+                    } else {
+                        StringBuilder hexString = new StringBuilder();
+                        hexString.append("0X");
+                        for (byte b : transaction.getPrimaryKeyLock()) {
+                            hexString.append(String.format("%02X", b));
+                        }
+                        res[12] = hexString;
+                    }
+                } catch(UnsupportedOperationException e) {
+                    res[12] = "";
+                }
+
+                //Get Job Seq id.
+                try {
+                    res[13] = String.valueOf(transaction.getJobSeqId());
+                } catch (UnsupportedOperationException e) {
+                    res[13] = "";
+                }
                 return res;
             })
             .iterator();

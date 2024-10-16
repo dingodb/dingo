@@ -1,0 +1,113 @@
+ [
+    {
+      "name": "transaction_id",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "type",
+      "type": "varchar",
+      "precision": 32,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "job_id",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "txnStart",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "txnCommit",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+     "name": "SQL_DIGESTS",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "varchar",
+      "precision": 32,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "isolation_level",
+      "type": "varchar",
+      "precision": 32,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "auto_commit",
+      "type": "varchar",
+      "precision": 16,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "primary_key",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "for_update_ts",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "lock_timeout",
+      "type": "bigint",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "primary_key_lock",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "job_seq_id",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    }
+ ]
