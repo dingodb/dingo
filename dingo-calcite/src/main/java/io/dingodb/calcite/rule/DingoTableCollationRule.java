@@ -137,6 +137,61 @@ public class DingoTableCollationRule extends RelRule<DingoTableCollationRule.Con
                 logicalSort.getTraitSet(), logicalScanWithRelOp, logicalSort.getCollation()
             );
             call.transformTo(logicalSort1);
+        } else if (relFieldCollationList.size() > 1) {
+            removeMultiSortByOrder(call, logicalScanWithRelOp, logicalSort, limit);
+        }
+    }
+
+    private static void removeMultiSortByOrder(
+        RelOptRuleCall call,
+        LogicalScanWithRelOp logicalScanWithRelOp,
+        LogicalSort logicalSort,
+        int limit) {
+        ProjectOp projectOp = (ProjectOp) logicalScanWithRelOp.getRelOp();
+
+        List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
+        Table table = Objects.requireNonNull(logicalScanWithRelOp.getTable().unwrap(DingoTable.class)).getTable();
+        boolean cancelSort = false;
+        int index = 0;
+        int keepSerialOrder = 0;
+        for (RelFieldCollation relFieldCollation : relFieldCollationList) {
+            int fieldIndex = relFieldCollation.getFieldIndex();
+            IndexOpExpr indexOpExpr = (IndexOpExpr) projectOp.getProjects()[fieldIndex];
+            int indexByExpr = getIndexByExpr(indexOpExpr);
+            Column orderCol = null;
+            if (indexByExpr >= 0) {
+                orderCol = table.getColumns().get(indexByExpr);
+            }
+            if (orderCol == null) {
+                cancelSort = false;
+                break;
+            }
+            if (orderCol.primaryKeyIndex < 0) {
+                cancelSort = false;
+                break;
+            }
+            keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
+
+            if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
+                cancelSort = false;
+                break;
+            }
+            if (index != 0 && indexByExpr < index) {
+                cancelSort = false;
+                break;
+            } else {
+                index = indexByExpr;
+            }
+            cancelSort = true;
+        }
+        if (cancelSort) {
+            RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
+            logicalScanWithRelOp.setKeepSerialOrder(keepSerialOrder);
+            logicalScanWithRelOp.setLimit(limit);
+            LogicalSort logicalSort1 = (LogicalSort) logicalSort.copy(
+                logicalSort.getTraitSet(), logicalScanWithRelOp, relCollation
+            );
+            call.transformTo(logicalSort1);
         }
     }
 
