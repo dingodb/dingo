@@ -230,6 +230,16 @@ public abstract class BaseTransaction implements ITransaction {
     }
 
     @Override
+    public boolean getCancelStatus() {
+        return cancel.get();
+    }
+
+    @Override
+    public boolean getIsCrossNode() {
+        return isCrossNode;
+    }
+
+    @Override
     public synchronized void close(JobManager jobManager) {
         MdcUtils.setTxnId(txnId.toString());
         cleanUp(jobManager);

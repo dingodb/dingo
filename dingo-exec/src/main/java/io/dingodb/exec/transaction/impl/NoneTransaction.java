@@ -102,6 +102,8 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
+    public boolean getCancelStatus() { throw new UnsupportedOperationException(); }
+    @Override
     public void setIs(InfoSchema is) {
 
     }
@@ -122,5 +124,5 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
-    public boolean onePcStage() {throw new UnsupportedOperationException();}
+    public boolean onePcStage() { throw new UnsupportedOperationException(); }
 }

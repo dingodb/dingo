@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.Location;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.DdlService;
@@ -30,6 +31,10 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.transaction.api.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.config.DingoConfiguration;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -377,8 +382,46 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return TransactionService.getDefault().getMdlInfo();
     }
 
-    private static Iterator<Object[]> getTxnInfo() {
-        return TransactionService.getDefault().getTxnInfo();
+    /**
+    * Api to get remote txn informations.
+    */
+    public interface Api {
+        @ApiDeclaration
+        default List<Object[]> txnInfos() {
+            return new ArrayList<>();
+        }
+
+        @ApiDeclaration
+        default List<Object[]> getTxnInfos() {
+            List<Object[]> results = new ArrayList<>();
+            Iterator<Object[]> iterator = TransactionService.getDefault().getTxnInfo();
+            while(iterator.hasNext()) {
+                results.add(iterator.next());
+            }
+            return results;
+        }
     }
 
+    /**
+     * The function is triggered by selecting dingo_trx table to fetch cluster transaction infos.
+     * @return The transaction informations in cluster.
+     */
+    private static Iterator<Object[]> getTxnInfo() {
+        List<Object[]> result = new ArrayList<>();
+
+        //get remote txn infos.
+        ClusterService.getDefault().getComputingLocations().stream()
+            .filter($ -> !$.equals(DingoConfiguration.location()))
+            .map($ -> ApiRegistry.getDefault().proxy(InfoSchemaScanOperator.Api.class, $))
+            .map(InfoSchemaScanOperator.Api::getTxnInfos)
+            .forEach(result::addAll);
+
+        //get local txn infos.
+        Iterator<Object[]> iterator = TransactionService.getDefault().getTxnInfo();
+        while (iterator.hasNext()) {
+            result.add(iterator.next());
+        }
+
+        return result.stream().iterator();
+    }
 }
