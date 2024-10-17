@@ -385,7 +385,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     /**
     * Api to get remote txn informations.
     */
-    public interface Api {
+    public interface TxnApi {
         @ApiDeclaration
         default List<Object[]> txnInfos() {
             return new ArrayList<>();
@@ -412,8 +412,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         //get remote txn infos.
         ClusterService.getDefault().getComputingLocations().stream()
             .filter($ -> !$.equals(DingoConfiguration.location()))
-            .map($ -> ApiRegistry.getDefault().proxy(InfoSchemaScanOperator.Api.class, $))
-            .map(InfoSchemaScanOperator.Api::getTxnInfos)
+            .map($ -> ApiRegistry.getDefault().proxy(InfoSchemaScanOperator.TxnApi.class, $))
+            .map(InfoSchemaScanOperator.TxnApi::getTxnInfos)
             .forEach(result::addAll);
 
         //get local txn infos.

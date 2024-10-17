@@ -123,7 +123,7 @@ public class Starter {
         AutoIncrementService.INSTANCE.resetAutoIncrement();
 
         ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
-        ApiRegistry.getDefault().register(InfoSchemaScanOperator.Api.class, new InfoSchemaScanOperator.Api() { });
+        ApiRegistry.getDefault().register(InfoSchemaScanOperator.TxnApi.class, new InfoSchemaScanOperator.TxnApi() { });
 
         SafePointUpdateTask.run();
 
