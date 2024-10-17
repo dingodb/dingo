@@ -115,7 +115,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                 long jobId = dc.getMdlLockJobMap().keySet().stream().findFirst().orElse(0L);
                 ITransaction transaction = dc.getTransaction();
                 List<String> sqlList = dc.getTransaction().getSqlList();
-                Object[] res = new Object[14];
+                Object[] res = new Object[17];
 
                 //Get transaction id as string.
                 res[0] = transaction.getTxnId().toString();
@@ -170,7 +170,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                     if (transaction.getPrimaryKeyLock() == null) {
                         res[12] = "";
                     } else {
-                        StringBuilder hexString = new StringBuilder();
+                        StringBuffer hexString = new StringBuffer();
                         hexString.append("0X");
                         for (byte b : transaction.getPrimaryKeyLock()) {
                             hexString.append(String.format("%02X", b));
@@ -187,6 +187,26 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                 } catch (UnsupportedOperationException e) {
                     res[13] = "";
                 }
+
+                //Get txn cancel status.
+                res[14] = String.valueOf(transaction.getCancelStatus());
+
+                //Get cross channel status.
+                res[15] = String.valueOf(transaction.getIsCrossNode());
+
+                //Get cross channel infos.
+                if(transaction.getIsCrossNode()) {
+                    StringBuffer stringBuf = new StringBuffer();
+                    transaction.getChannelMap().forEach(
+                        (k,v ) -> {
+                            stringBuf.append(k.toString()).append('-').append(v.channelId()).append(';');
+                        }
+                    );
+                    res[16] = stringBuf.toString();
+                } else {
+                    res[16] = "";
+                }
+
                 return res;
             })
             .iterator();

@@ -109,5 +109,29 @@
       "scale": -2147483648,
       "primary": -1,
       "nullable": true
+    },
+    {
+      "name": "is_canceled",
+      "type": "varchar",
+      "precision": 32,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "is_cross_channel",
+      "type": "varchar",
+      "precision": 32,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "channel_infos",
+      "type": "varchar",
+      "precision": 256,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
     }
  ]

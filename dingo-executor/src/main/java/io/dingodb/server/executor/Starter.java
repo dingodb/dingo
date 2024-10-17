@@ -30,6 +30,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.driver.mysql.SessionVariableChangeWatcher;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.operator.InfoSchemaScanOperator;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.net.MysqlNetService;
 import io.dingodb.net.MysqlNetServiceProvider;
@@ -122,6 +123,7 @@ public class Starter {
         AutoIncrementService.INSTANCE.resetAutoIncrement();
 
         ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
+        ApiRegistry.getDefault().register(InfoSchemaScanOperator.Api.class, new InfoSchemaScanOperator.Api() { });
 
         SafePointUpdateTask.run();
 

@@ -72,6 +72,10 @@ public interface ITransaction {
 
     void cancel();
 
+    boolean getCancelStatus();
+
+    boolean getIsCrossNode();
+
     void addSql(String sql);
 
     List<String> getSqlList();
