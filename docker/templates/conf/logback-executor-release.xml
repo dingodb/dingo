@@ -269,6 +269,26 @@
             <level>${rpcLog.level}</level>
         </filter>
     </appender>
+
+    <appender name="DOCUMENT_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.filePath}/log/documentRpc.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.filePath}/log/%d{yyyy-MM-dd}/documentRpc.%d{yyyyMMdd}.%i.log.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${log.file.max}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${log.maxHistory}</maxHistory>
+            <totalSizeCap>${log.file.total}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}:%line] - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${rpcLog.level}</level>
+        </filter>
+    </appender>
+
     <appender name="COORDINATOR_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.filePath}/log/coordinatorRpc.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -562,6 +582,19 @@
     </logger>
     <logger name="io.dingodb.sdk.service.desc.index.IndexServiceDescriptors$TxnScanLock" level="off" additivity="false">
         <appender-ref ref="ASYNC-INDEX_RPC"/>
+    </logger>
+
+    <appender name="ASYNC-DOCUMENT_RPC" class="ch.qos.logback.classic.AsyncAppender">
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="DOCUMENT_RPC" />
+    </appender>
+    <logger name="io.dingodb.sdk.service.desc.document" level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-DOCUMENT_RPC"/>
+    </logger>
+    <logger name="io.dingodb.sdk.service.desc.document.DocumentServiceDescriptors$TxnScanLock" level="off" additivity="false">
+        <appender-ref ref="ASYNC-DOCUMENT_RPC"/>
     </logger>
 
     <appender name="ASYNC-META_RPC" class="ch.qos.logback.classic.AsyncAppender">

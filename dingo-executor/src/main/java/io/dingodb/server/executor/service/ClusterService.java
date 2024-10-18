@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -39,12 +40,14 @@ import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.tso.TsoService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 public final class ClusterService implements io.dingodb.cluster.ClusterService {
 
     public static final ClusterService DEFAULT_INSTANCE = new ClusterService();
@@ -188,10 +191,18 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     public static void register() {
         Executors.scheduleWithFixedDelayAsync(
             "cluster-heartbeat",
-            () -> coordinatorService.executorHeartbeat(TsoService.getDefault().tso(), executorHeartbeatRequest()),
+            () -> executorHeartbeat(),
             0,
             10,
             TimeUnit.SECONDS
         );
+    }
+
+    private static void executorHeartbeat() {
+        try {
+            coordinatorService.executorHeartbeat(TsoService.getDefault().tso(), executorHeartbeatRequest());
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 }
