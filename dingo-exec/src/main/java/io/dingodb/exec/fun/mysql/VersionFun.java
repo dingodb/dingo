@@ -17,6 +17,7 @@
 package io.dingodb.exec.fun.mysql;
 
 import com.ibm.icu.impl.data.ResourceReader;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.expr.runtime.EvalContext;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.NullaryOp;
@@ -34,28 +35,34 @@ import java.io.InputStreamReader;
 public class VersionFun extends NullaryOp {
     public static final VersionFun INSTANCE = new VersionFun();
     public static final String NAME = "version";
+    public static final String PRE = "5.7.41-DingoDB-";
+
+    public static String version = "UNKNOWN";
     private static final long serialVersionUID = -4130064040675181327L;
+
+    static {
+        try {
+            InputStream inputStream = ResourceReader.class.getResourceAsStream("/versiontmp.properties");
+            if (inputStream != null) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if(line.contains("=")){
+                        version = PRE + line.split("=")[1].toString();
+                        break;
+                    }
+                }
+            } else {
+                LogUtils.debug(log, "Failed to get current release version");
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+    }
 
     @Override
     public Object eval(EvalContext context, ExprConfig config) {
-        String version;
-        InputStream inputStream = ResourceReader.class.getResourceAsStream("/versiontmp.properties");
-        if (inputStream != null) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                   if(line.contains("=")){
-                       version = line.split("=")[1].toString();
-                       return version;
-                   };
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-           log.debug("Failed to get current release version");
-        }
-        return null;
+        return version;
     }
 
     @Override
