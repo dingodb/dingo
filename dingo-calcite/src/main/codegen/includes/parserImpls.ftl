@@ -242,6 +242,9 @@ void TableElement(List<SqlNode> list) :
               list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList));
         }
         [<USING> <IDENTIFIER> ]
+        [
+            <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+        ]
     |
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
@@ -633,6 +636,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     SqlIdentifier table;
     SqlIdentifier column;
     List<SqlIdentifier> columns;
+    int replica = 0;
     SqlNode create = null;
     Boolean ifNotExists = false;
 }
@@ -648,8 +652,11 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
        column = SimpleIdentifier() { columns.add(column); }
     )*
     <RPAREN>
+    [
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+    ]
     {
-       return new SqlCreateIndex(s.end(this), replace, ifNotExists, index, table, columns, isUnique);
+       return new SqlCreateIndex(s.end(this), replace, ifNotExists, index, table, columns, isUnique, replica);
     }
 }
 

@@ -38,6 +38,8 @@ public class SqlCreateIndex extends SqlCreate {
 
     public boolean isUnique;
 
+    public int replica;
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE INDEX", SqlKind.OTHER_DDL);
 
@@ -45,7 +47,7 @@ public class SqlCreateIndex extends SqlCreate {
                           String index,
                           SqlIdentifier table,
                           List<SqlIdentifier> columns,
-                          boolean isUnique) {
+                          boolean isUnique, int replica) {
         super(OPERATOR, pos, replace, ifNotExists);
         this.index = index;
         this.table = table;
@@ -53,6 +55,7 @@ public class SqlCreateIndex extends SqlCreate {
             .map(SqlIdentifier::getSimple)
             .map(String::toUpperCase).collect(Collectors.toList());
         this.isUnique = isUnique;
+        this.replica = replica;
     }
 
     @Override
