@@ -66,7 +66,7 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
         }
         Integer docIdIndex = param.getDocumentIdIndex();
         List<Long> rightList = cache.stream().map(e ->
-            (Long) e[param.getDocumentIdIndex()]
+            (Long) e[docIdIndex]
         ).collect(Collectors.toList());
 
         if (rightList.isEmpty()) {
@@ -96,15 +96,14 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
             }
         }
 
-        for (int i = 0; i < cache.size(); i ++) {
-            Object[] resTuple = new Object[param.getTable().columns.size() + 1];
-            for(Pair<Long, Float> doc: docs) {
-                if (cache.get(i)[docIdIndex] == doc.getKey()){
-                    for(int k = 0; k < cache.get(i).length; k++){
-                        resTuple[k] = cache.get(i)[k];
-                    }
-                    resTuple[resTuple.length -1] = doc.getValue();
+        Object[] resTuple = new Object[param.getTable().columns.size() + 1];
+        for (Object[] cacheElement : cache) {
+            for (Pair<Long, Float> doc : docs) {
+                if (cacheElement[docIdIndex] == doc.getKey()) {
+                    System.arraycopy(cacheElement, 0, resTuple, 0, cacheElement.length);
+                    resTuple[resTuple.length - 1] = doc.getValue();
                     edge.transformToNext(param.getContext(), selection.revMap(resTuple));
+                    break;
                 }
             }
         }
