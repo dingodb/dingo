@@ -33,6 +33,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -252,7 +253,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"net_write_timeout", "60"});
         values.add(new Object[]{"net_read_timeout", "60"});
         values.add(new Object[]{"lower_case_table_names", "0"});
-        values.add(new Object[]{"version", "5.7.24"});
+        values.add(new Object[]{"version", VersionFun.version});
         values.add(new Object[]{"version_compile_os", "Linux"});
         values.add(new Object[]{"version_compile_machine", "x86_64"});
         values.add(new Object[]{"init_connect", ""});
