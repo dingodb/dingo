@@ -848,7 +848,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             null,
             null,
             null,
-            0,
+            sqlCreateIndex.replica,
             "scalar",
             "TXN_LSM"
         );
