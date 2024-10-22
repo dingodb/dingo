@@ -34,7 +34,6 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreService;
 import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.data.DocumentValue;
-import io.dingodb.store.api.transaction.data.DocumentWithId;
 import io.dingodb.store.api.transaction.data.DocumentWithScore;
 import io.dingodb.store.api.transaction.data.ScalarField;
 import lombok.extern.slf4j.Slf4j;
@@ -99,11 +98,12 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                     if (local != null) {
                         while (local.hasNext()) {
                             Object[] objects = local.next();
-                            results.add(objects);
+                            if(objects[priTuples.length-1] instanceof Float){
+                                results.add(objects);
+                            }
                         }
                         continue;
                     }
-
                     StoreInstance storeInstance = StoreService.getDefault().getInstance(param.getTableId(), regionId);
                     KeyValue keyValue = storeInstance.txnGet(param.getScanTs(), tableData.getKey(), param.getTimeOut());
                     if (keyValue == null || keyValue.getValue() == null) {
