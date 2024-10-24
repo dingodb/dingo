@@ -220,7 +220,7 @@ public class DdlWorker {
         if (job.isCancelling()) {
             LogUtils.debug(log, "[ddl] cancel DDL job, job:{}", job);
             // convertJob2RollbackJob
-            return DdlRollBack.convertJob2RollbackJob(this, dc, job);
+            return DdlRollBack.convertJob2RollbackJob(job);
         }
         if (!job.isRollingback() && !job.isCancelling()) {
             job.setState(JobState.jobStateRunning);
@@ -1049,7 +1049,7 @@ public class DdlWorker {
         }
 
         try {
-            String error = rc.getDone().get(3600, TimeUnit.SECONDS);
+            String error = rc.getDone().get();
             if (rc.isReorgCanceled() || "ErrCancelledDDLJob".equalsIgnoreCase(error)) {
                 dc.removeReorgCtx(job.getId());
                 return "ErrCancelledDDLJob";
@@ -1065,11 +1065,6 @@ public class DdlWorker {
             if (error != null) {
                 return error;
             }
-        } catch (TimeoutException e1) {
-            long rowCount = rc.getRowCount();
-            job.setRowCount(rowCount);
-            LogUtils.error(log, "run reorg job wait timeout, addCount:{}", rowCount);
-            return "ErrWaitReorgTimeout";
         } catch (ExecutionException e) {
             long rowCount = rc.getRowCount();
             job.setRowCount(rowCount);

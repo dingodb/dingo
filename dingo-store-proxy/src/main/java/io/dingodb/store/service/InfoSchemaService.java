@@ -633,7 +633,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         long storeCount = response.getStoremap().getStores()
             .stream()
-            .filter(store -> store.getStoreType() == null || store.getStoreType() == StoreType.NODE_TYPE_STORE
+            .filter(store -> (store.getStoreType() == null || store.getStoreType() == StoreType.NODE_TYPE_STORE)
                 && store.getState() == StoreState.STORE_NORMAL)
             .count();
         return (int) storeCount;
