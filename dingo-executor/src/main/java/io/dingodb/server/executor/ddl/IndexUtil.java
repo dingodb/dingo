@@ -76,6 +76,7 @@ public final class IndexUtil {
             // get schemaInfo
             SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
             if (schemaInfo == null) {
+                LogUtils.error(log, "reorg get schemaInfo is null, job:{}", job);
                 return Pair.of(false, 0L);
             }
             Reorg reorg = Reorg.INSTANCE;
@@ -91,10 +92,6 @@ public final class IndexUtil {
                 p -> addTableIndex(reorgInfoRes.getKey())
             );
             if (error != null) {
-                if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
-                    return Pair.of(false, 0L);
-                }
-
                 LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, " +
                     "error:{}", job.getId(), error);
                 Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, index);

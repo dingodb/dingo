@@ -25,7 +25,7 @@ for srcSchema in $databases; do
     chmod 777 $ROOT/$data_dir/$srcSchema -R *
 
     mysql -u$srcUser -p$srcPwd -h $srcHost -P$srcPort $srcSchema --ssl-mode=disabled -e "show tables" >tables.sql
-    echo "show table list complete" 
+    echo "show table list complete"
     mysqldump -u$srcUser -p$srcPwd -h $srcHost -P $srcPort --ssl-mode=disabled --no-data $srcSchema >create.sql
     echo "export table with data success"
     mysql -u$srcUser -p$srcPwd -h $srcHost -P $srcPort --ssl-mode=disabled -e "show startts" >ts.sql
@@ -34,7 +34,7 @@ for srcSchema in $databases; do
 
     for i in `cat tables.sql|grep -v Tables_in`
     do
-            mysql -u$srcUser -p$srcPwd -h $srcHost -P $srcPort --ssl-mode=disabled $srcSchema -e "select * from $i into outfile '$ROOT/$data_dir/$srcSchema/$i.data' startts $ts"
+            mysql -u$srcUser -p$srcPwd -h $srcHost -P $srcPort --ssl-mode=disabled $srcSchema -e "select * from \`$i\` into outfile '$ROOT/$data_dir/$srcSchema/$i.data' startts $ts"
             #echo "-------------$ROOT/$data_dir/$srcSchema/$i.data    -------$ts"
             echo "$i export success"
     done

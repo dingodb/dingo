@@ -424,6 +424,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         int replica = getReplica(create.getReplica(), 1);
+        if (replica < 3) {
+            throw DINGO_RESOURCE.notEnoughRegion().ex();
+        }
 
         TableDefinition tableDefinition = TableDefinition.builder()
             .name(tableName)
@@ -924,7 +927,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         } else {
             if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("Drop index, the engine must be transactional.");
+                throw new IllegalArgumentException("Drop column, the engine must be transactional.");
             }
         }
         String dropColumn = sqlAlterDropColumn.columnNm.toUpperCase();
@@ -1008,17 +1011,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             String name = existIndex.getName();
             if (indexName.equalsIgnoreCase(name)) {
                 throw new RuntimeException("The index " + indexName + " already exist.");
-            }
-            List<String> existIndexColumns = existIndex.getColumns().stream()
-                .map(Column::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            List<String> newIndexColumns = index.getColumns().stream()
-                .map(ColumnDefinition::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            if (existIndexColumns.equals(newIndexColumns)) {
-                throw new RuntimeException("The index columns same of " + existIndex.getName());
             }
 
             if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
@@ -1618,6 +1610,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
         int replica = getReplica(indexDeclaration.getReplica(), type);
+        if (replica < 3) {
+            throw DINGO_RESOURCE.notEnoughRegion().ex();
+        }
         indexTableDefinition.setReplica(replica);
         indexTableDefinition.setProperties(properties);
         String engine = null;
