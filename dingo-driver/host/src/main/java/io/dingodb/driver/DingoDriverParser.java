@@ -521,6 +521,9 @@ public final class DingoDriverParser extends DingoParser {
                     statementType, relNode);
             }
         }
+        if(trace && statementType == Meta.StatementType.IS_DML){
+            statementType = Meta.StatementType.CALL;
+        }
         planProfile.endLock();
         return new DingoSignature(
             enableColumnMetas,
