@@ -16,13 +16,10 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.SourceParam;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 

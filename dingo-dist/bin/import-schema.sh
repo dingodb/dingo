@@ -12,7 +12,7 @@ for i in `cat $dstPath/tables.sql|grep -v Tables_in`
 do
         if test -f $dstPath/$i.data; then
           echo "$i import"
-          mysql -u$dstUser -p$dstPwd -h $dstHost -P$dstPort $1 --ssl-mode=disabled -e "load data infile '$dstPath/$i.data' into table $i"
+          mysql -u$dstUser -p$dstPwd -h $dstHost -P$dstPort $1 --ssl-mode=disabled -e "load data infile '$dstPath/$i.data' into table \`$i\`"
         fi
 done
 

@@ -924,7 +924,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         } else {
             if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("Drop index, the engine must be transactional.");
+                throw new IllegalArgumentException("Drop column, the engine must be transactional.");
             }
         }
         String dropColumn = sqlAlterDropColumn.columnNm.toUpperCase();
@@ -1008,17 +1008,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             String name = existIndex.getName();
             if (indexName.equalsIgnoreCase(name)) {
                 throw new RuntimeException("The index " + indexName + " already exist.");
-            }
-            List<String> existIndexColumns = existIndex.getColumns().stream()
-                .map(Column::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            List<String> newIndexColumns = index.getColumns().stream()
-                .map(ColumnDefinition::getName)
-                .sorted()
-                .collect(Collectors.toList());
-            if (existIndexColumns.equals(newIndexColumns)) {
-                throw new RuntimeException("The index columns same of " + existIndex.getName());
             }
 
             if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
@@ -1145,6 +1134,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (type == 1) {
             replica = InfoSchemaService.root().getStoreReplica();
             if (targetReplica == 0) {
+                if (replica < 3) {
+                    throw DINGO_RESOURCE.notEnoughRegion().ex();
+                }
                 return replica;
             }
             if (targetReplica > 0 && replica < targetReplica) {
@@ -1153,6 +1145,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else if (type == 2) {
             replica = InfoSchemaService.root().getIndexReplica();
             if (targetReplica == 0) {
+                if (replica < 3) {
+                    throw DINGO_RESOURCE.notEnoughRegion().ex();
+                }
                 return replica;
             }
             if (targetReplica > 0 && replica < targetReplica) {
@@ -1161,6 +1156,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else if (type == 3) {
             replica = InfoSchemaService.root().getDocumentReplica();
             if (targetReplica == 0) {
+                if (replica < 3) {
+                    throw DINGO_RESOURCE.notEnoughRegion().ex();
+                }
                 return replica;
             }
             if (targetReplica > 0 && replica < targetReplica) {

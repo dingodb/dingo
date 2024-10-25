@@ -592,7 +592,7 @@ public class IndexAddFiller implements BackFiller {
 
     protected void preWriteSecondSkipConflict(List<TxnLocalData> secondList) {
         try {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("ReorgPreSecond" + secondList.size());
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("ReorgPreSecond");
             preWriteSecondKey(secondList);
             timeCtx.stop();
         } catch (WriteConflictException e) {

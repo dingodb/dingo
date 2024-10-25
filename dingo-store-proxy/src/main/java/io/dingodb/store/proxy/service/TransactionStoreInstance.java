@@ -296,11 +296,14 @@ public class TransactionStoreInstance {
 
     public boolean txnCommitRealKey(TxnCommit txnCommit) {
         long start = System.currentTimeMillis();
+        String type = "normal";
         try {
             TxnCommitResponse response;
             if (indexService != null) {
+                type = "index";
                 response = indexService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
             } else if (documentService != null) {
+                type = "document";
                 response = documentService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
             } else {
                 response = storeService.txnCommit(txnCommit.getStartTs(), MAPPER.commitTo(txnCommit));
@@ -311,7 +314,7 @@ public class TransactionStoreInstance {
             return response.getTxnResult() == null;
         } finally {
             long sub = System.currentTimeMillis() - start;
-            DingoMetrics.timer("txnCommitRpc").update(sub, TimeUnit.MILLISECONDS);
+            DingoMetrics.timer("txnCommitRpc" + type).update(sub, TimeUnit.MILLISECONDS);
         }
     }
 

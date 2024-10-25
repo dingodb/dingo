@@ -39,7 +39,7 @@ public final class DdlRollBack {
     private DdlRollBack() {
     }
 
-    public static Pair<Long, String> convertJob2RollbackJob(DdlWorker worker, DdlContext dc, DdlJob job) {
+    public static Pair<Long, String> convertJob2RollbackJob(DdlJob job) {
         String error = null;
         Long ver = 0L;
         Pair<Long, String> res = null;
