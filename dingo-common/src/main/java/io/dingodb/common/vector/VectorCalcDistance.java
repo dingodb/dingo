@@ -38,4 +38,7 @@ public class VectorCalcDistance {
     private String metricType;
 
     private int dimension;
+
+    // The number of top results to return.
+    private int topN;
 }

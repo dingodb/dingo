@@ -340,6 +340,11 @@ public final class DingoVectorVisitFun {
         return floatArray;
     }
 
+    public static Integer getTopkParam(List<Object> operandsList) {
+        Integer topK = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
+        return topK;
+    }
+
     private static Map<String, Object> getParameterMap(List<Object> operandsList) {
         Map<String, Object> parameterMap = new HashMap<>();
         if (operandsList.size() >= 5) {
