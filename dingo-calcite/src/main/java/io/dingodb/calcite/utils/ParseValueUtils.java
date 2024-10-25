@@ -59,8 +59,15 @@ public final class ParseValueUtils {
                }
             }
             if (mat) {
+                // case '|/n'
+                if (image.startsWith("'") && image.endsWith("'")) {
+                    byte[] res1 = new byte[2];
+                    System.arraycopy(res, 1, res1, 0, 2);
+                    return res1;
+                }
                 return res;
             } else {
+                // case ''''
                 return new byte[] {39};
             }
         } else {

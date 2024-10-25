@@ -44,7 +44,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -52,7 +54,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 public final class DdlHandler {
 
     public static final DdlHandler INSTANCE = new DdlHandler();
-    private static final List<Long> insertFailedJobIdList = new CopyOnWriteArrayList<>();
+    private static final Map<Long, String> insertFailedJobIdList = new ConcurrentHashMap<>();
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
     private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids, job_meta, type, processing) values";
@@ -105,8 +107,8 @@ public final class DdlHandler {
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
             checkDdlContinue();
-            if (!insertFailedJobIdList.contains(jobId)) {
-                insertFailedJobIdList.add(jobId);
+            if (!insertFailedJobIdList.containsKey(jobId)) {
+                insertFailedJobIdList.put(jobId, error);
             }
             return;
         }
@@ -431,9 +433,10 @@ public final class DdlHandler {
     public static Pair<Boolean, String> historyJob(long jobId) {
         DdlJob ddlJob = getHistoryJobById(jobId);
         if (ddlJob == null) {
-            if (insertFailedJobIdList.contains(jobId)) {
+            if (insertFailedJobIdList.containsKey(jobId)) {
+                String error = insertFailedJobIdList.get(jobId);
                 insertFailedJobIdList.remove(jobId);
-                return Pair.of(false, "ddl failed");
+                return Pair.of(false, error);
             } else {
                 return Pair.of(false, null);
             }

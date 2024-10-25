@@ -1130,40 +1130,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static int getReplica(int targetReplica, int type) {
-        int replica;
+        if (targetReplica <= 0) {
+            throw DINGO_RESOURCE.notAllowedZeroReplica().ex();
+        }
+        int replica = 0;
         if (type == 1) {
             replica = InfoSchemaService.root().getStoreReplica();
-            if (targetReplica == 0) {
-                if (replica < 3) {
-                    throw DINGO_RESOURCE.notEnoughRegion().ex();
-                }
-                return replica;
-            }
-            if (targetReplica > 0 && replica < targetReplica) {
-                throw DINGO_RESOURCE.notEnoughRegion().ex();
-            }
         } else if (type == 2) {
             replica = InfoSchemaService.root().getIndexReplica();
-            if (targetReplica == 0) {
-                if (replica < 3) {
-                    throw DINGO_RESOURCE.notEnoughRegion().ex();
-                }
-                return replica;
-            }
-            if (targetReplica > 0 && replica < targetReplica) {
-                throw DINGO_RESOURCE.notEnoughRegion().ex();
-            }
         } else if (type == 3) {
             replica = InfoSchemaService.root().getDocumentReplica();
-            if (targetReplica == 0) {
-                if (replica < 3) {
-                    throw DINGO_RESOURCE.notEnoughRegion().ex();
-                }
-                return replica;
-            }
-            if (targetReplica > 0 && replica < targetReplica) {
-                throw DINGO_RESOURCE.notEnoughRegion().ex();
-            }
+        }
+        if (replica < targetReplica) {
+            throw DINGO_RESOURCE.notEnoughRegion().ex();
         }
         return targetReplica;
     }

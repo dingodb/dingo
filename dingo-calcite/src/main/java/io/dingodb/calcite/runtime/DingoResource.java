@@ -135,6 +135,9 @@ public interface DingoResource {
     @BaseMessage("Error 9001 (45000): Not enough regions is created")
     ExInst<DingoSqlException> notEnoughRegion();
 
+    @BaseMessage("Error 9001 (45000): Not allowed to set 0 replicas")
+    ExInst<DingoSqlException> notAllowedZeroReplica();
+
     @BaseMessage("Error 9001 (45000): table definition illegal, multi auto_increment column")
     ExInst<DingoSqlException> multiAutoInc();
 

@@ -43,26 +43,25 @@ public final class TableUtil {
         long tableId = ddlJob.getTableId();
         tableInfo.setPrepareTableId(tableId);
 
-        InfoSchemaService service = InfoSchemaService.root();
-        Object tabObj = service.getTable(schemaId, tableInfo.getName());
-        if (tabObj != null) {
-            ddlJob.setState(JobState.jobStateCancelled);
-            return Pair.of(null, "table has exist");
-        }
+        //InfoSchemaService service = InfoSchemaService.root();
+        //Object tabObj = service.getTable(schemaId, tableInfo.getName());
+        //if (tabObj != null) {
+        //    ddlJob.setState(JobState.jobStateCancelled);
+        //    return Pair.of(null, "table has existed");
+        //}
         if (tableInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
             tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             MetaService metaService = MetaService.root();
-            MetaService subMs = metaService.getSubMetaService(ddlJob.getSchemaName());
             List<IndexDefinition> indices = tableInfo.getIndices();
             if (indices != null) {
                 indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
             }
             try {
                 assert indices != null;
-                subMs.createTables(tableInfo, indices);
+                metaService.createTables(schemaId, tableInfo, indices);
                 return Pair.of(tableInfo, null);
             } catch (Exception e) {
-                subMs.rollbackCreateTable(tableInfo, indices);
+                metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
                 ddlJob.setState(JobState.jobStateCancelled);
                 return Pair.of(null, e.getMessage());

@@ -84,7 +84,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
         <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
         { strategy = ColumnStrategy.DEFAULT; }
     |
-       <PRIMARY> <KEY> { primary=true; }  
+       <PRIMARY> <KEY> { primary=true; }
     |
        <COMMENT> comment = dingoIdentifier()
     |
@@ -98,7 +98,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
                     : ColumnStrategy.NOT_NULLABLE;
         }
         return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
-            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary 
+            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary
         ));
     }
 }
@@ -129,7 +129,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
     final SqlNodeList columnList;
@@ -139,8 +139,8 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     { index = getNextToken().image; }
     (
         <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
-    | 
-        <TEXT> { indexType = "text"; } columnList = ParenthesizedSimpleIdentifierList() 
+    |
+        <TEXT> { indexType = "text"; } columnList = ParenthesizedSimpleIdentifierList()
     |
         [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
     )
@@ -176,7 +176,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
     final SqlNodeList columnList;

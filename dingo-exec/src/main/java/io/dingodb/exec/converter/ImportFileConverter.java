@@ -50,7 +50,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return Integer.parseInt(valStr);
+            try {
+                return Integer.parseInt(valStr);
+            } catch (Exception e) {
+                return new BigDecimal(valStr).intValue();
+            }
         }
     }
 
@@ -60,7 +64,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return Long.parseLong(valStr);
+            try {
+                return Long.parseLong(valStr);
+            } catch (Exception e) {
+                return new BigDecimal(valStr).longValue();
+            }
         }
     }
 

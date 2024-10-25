@@ -258,6 +258,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public long createTables(
         @NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions
     ) {
+        return createTables(id.getEntityId(), tableDefinition, indexTableDefinitions);
+    }
+
+    @Override
+    public long createTables(
+        long schemaId, @NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions
+    ) {
         validatePartBy(tableDefinition);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
 
@@ -277,7 +284,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
         DingoCommonId tableId = DingoCommonId.builder()
             .entityType(EntityType.ENTITY_TYPE_TABLE)
-            .parentEntityId(id.getEntityId())
+            .parentEntityId(schemaId)
             .entityId(tableEntityId).build();
         List<DingoCommonId> tablePartIds = coordinatorService.createIds(tso(), CreateIdsRequest.builder()
                 .idEpochType(IdEpochType.ID_NEXT_TABLE)
@@ -294,12 +301,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableIdWithPartIds tableIdWithPartIds =
             TableIdWithPartIds.builder().tableId(tableId).partIds(tablePartIds).build();
         TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition, TenantConstant.TENANT_ID);
-        // create table
-        infoSchemaService.createTableOrView(
-            id.getEntityId(),
-            tableDefinitionWithId.getTableId().getEntityId(),
-            tableDefinitionWithId
-        );
+
+        synchronized (this) {
+            io.dingodb.meta.InfoSchemaService service = io.dingodb.meta.InfoSchemaService.root();
+            Object tabObj = service.getTable(schemaId, tableName);
+            if (tabObj != null) {
+                throw new RuntimeException("table has existed");
+            }
+            // create table
+            infoSchemaService.createTableOrView(
+                schemaId,
+                tableDefinitionWithId.getTableId().getEntityId(),
+                tableDefinitionWithId
+            );
+        }
 
         // table region
         io.dingodb.sdk.service.entity.meta.TableDefinition withIdTableDefinition
@@ -307,13 +322,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
         for (Partition partition : withIdTableDefinition.getTablePartition().getPartitions()) {
             CreateRegionRequest request = CreateRegionRequest
                 .builder()
-                .regionName("T_" + id.getEntityId() + "_" + withIdTableDefinition.getName() + "_part_" + partition.getId().getEntityId())
+                .regionName("T_" + schemaId + "_" + withIdTableDefinition.getName() + "_part_" + partition.getId().getEntityId())
                 .regionType(RegionType.STORE_REGION)
                 .replicaNum(withIdTableDefinition.getReplica())
                 .range(partition.getRange())
                 .rawEngine(getRawEngine(withIdTableDefinition.getEngine()))
                 .storeEngine(withIdTableDefinition.getStoreEngine())
-                .schemaId(id.getEntityId())
+                .schemaId(schemaId)
                 .tableId(tableDefinitionWithId.getTableId().getEntityId())
                 .partId(partition.getId().getEntityId())
                 .tenantId(tableDefinitionWithId.getTenantId())
@@ -413,13 +428,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         }
                         CreateRegionRequest request = CreateRegionRequest
                             .builder()
-                            .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
+                            .regionName("I_" + schemaId + "_" + definition.getName() + "_part_" + partition.getId().getEntityId())
                             .regionType(mapping(definition.getIndexParameter().getIndexType()))
                             .replicaNum(withId.getTableDefinition().getReplica())
                             .range(partition.getRange())
                             .rawEngine(getRawEngine(definition.getEngine()))
                             .storeEngine(definition.getStoreEngine())
-                            .schemaId(id.getEntityId())
+                            .schemaId(schemaId)
                             .tableId(tableId.getEntityId())
                             .partId(partition.getId().getEntityId())
                             .tenantId(withId.getTenantId())
@@ -534,13 +549,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void rollbackCreateTable(
+        long schemaId,
         @NonNull TableDefinition tableDefinition,
         @NonNull List<IndexDefinition> indexTableDefinitions) {
         try {
             LogUtils.info(log, "rollback create table:{}", tableDefinition.getName());
             CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
-            Table table = schemaService.getTableDef(id.getEntityId(), tableDefinition.getName());
+            Table table = schemaService.getTableDef(schemaId, tableDefinition.getName());
             if (table == null) {
                 LogUtils.info(log, "rollback create table:{}, resource is null", tableDefinition.getName());
                 return;

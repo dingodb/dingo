@@ -111,9 +111,26 @@ public interface MetaService {
         return 0L;
     }
 
-    long createTables(@NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions);
+    long createTables(TableDefinition tableDefinition, List<IndexDefinition> indexTableDefinitions);
 
-    default void rollbackCreateTable(@NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions) {
+    default long createTables(
+        long schemaId, TableDefinition tableDefinition, List<IndexDefinition> indexTableDefinitions
+    ) {
+        return 0;
+    }
+
+    default void rollbackCreateTable(
+        @NonNull TableDefinition tableDefinition,
+        @NonNull List<IndexDefinition> indexTableDefinitions
+    ) {
+
+    }
+
+    default void rollbackCreateTable(
+        long schemaId,
+        @NonNull TableDefinition tableDefinition,
+        @NonNull List<IndexDefinition> indexTableDefinitions
+    ) {
 
     }
 

@@ -136,7 +136,7 @@ void TableElement(List<SqlNode> list) :
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String engine = null;
     String indexType = "scalar";
     Boolean primaryKey = false;
@@ -349,7 +349,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNode query = null;
     int ttl = -1;
     PartitionDefinition partitionDefinition = null;
-    int replica = 0;
+    int replica = 3;
     String engine = null;
     Properties properties = null;
     int autoIncrement = 1;
@@ -636,7 +636,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     SqlIdentifier table;
     SqlIdentifier column;
     List<SqlIdentifier> columns;
-    int replica = 0;
+    int replica = 3;
     SqlNode create = null;
     Boolean ifNotExists = false;
 }
@@ -670,7 +670,7 @@ SqlCreate SqlCreateVectorIndex(Span s, boolean replace) :
     Boolean ifNotExists = false;
     SqlNodeList withColumnList = null;
     String engine = null;
-    int replica = 0;
+    int replica = 3;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
 }
@@ -715,7 +715,7 @@ SqlCreate SqlCreateDocumentIndex(Span s, boolean replace) :
     Boolean ifNotExists = false;
     SqlNodeList withColumnList = null;
     String engine = null;
-    int replica = 0;
+    int replica = 3;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
 }
