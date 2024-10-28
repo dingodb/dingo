@@ -30,6 +30,7 @@ import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
+import io.dingodb.meta.entity.Partition;
 import lombok.AllArgsConstructor;
 
 import java.util.Arrays;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
+import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getTopkParam;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 
 public final class DingoGetVectorByDistanceVisitFun {
@@ -84,6 +86,10 @@ public final class DingoGetVectorByDistanceVisitFun {
             } else {
                 algType = "";
             }
+            int topk = getTopkVector(rel.getOperands());
+            List<Partition> partitions = rel.getIndexTable().getPartitions();
+            int len = partitions.size();
+            int resc = topk * len;
             VectorPointDistanceParam param = new VectorPointDistanceParam(
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
@@ -92,6 +98,7 @@ public final class DingoGetVectorByDistanceVisitFun {
                 dimension,
                 algType,
                 indexTable.getProperties().getProperty("metricType"),
+                resc,
                 rel.getSelection()
             );
 
@@ -102,6 +109,10 @@ public final class DingoGetVectorByDistanceVisitFun {
     public static List<Float> getTargetVector(List<Object> operandList) {
         Float[] vector = getVectorFloats(operandList);
         return Arrays.asList(vector);
+    }
+
+    public static Integer getTopkVector(List<Object> operandList) {
+        return getTopkParam(operandList);
     }
 
     private static IndexTable getVectorIndexTable(DingoRelOptTable dingoRelOptTable, int dimension) {

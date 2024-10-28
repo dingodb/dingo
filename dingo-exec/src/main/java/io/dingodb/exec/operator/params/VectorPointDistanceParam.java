@@ -50,6 +50,8 @@ public class VectorPointDistanceParam extends AbstractParams {
 
     private final TupleMapping selection;
 
+    private final Integer topk;
+
     public VectorPointDistanceParam(
         RangeDistribution rangeDistribution,
         Integer vectorIndex,
@@ -58,6 +60,7 @@ public class VectorPointDistanceParam extends AbstractParams {
         Integer dimension,
         String algType,
         String metricType,
+        Integer topk,
         TupleMapping selection
     ) {
         this.rangeDistribution = rangeDistribution;
@@ -69,6 +72,7 @@ public class VectorPointDistanceParam extends AbstractParams {
         this.indexTableId = indexTableId;
         cache = new LinkedList<>();
         this.selection = selection;
+        this.topk = topk;
     }
 
     public void clear() {

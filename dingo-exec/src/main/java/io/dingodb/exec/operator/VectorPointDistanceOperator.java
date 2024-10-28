@@ -33,7 +33,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -67,7 +70,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         List<List<Float>> rightList = cache.stream().map(e ->
             (List<Float>) e[param.getVectorIndex()]
         ).collect(Collectors.toList());
-
+        int topn = param.getTopk();
         if (rightList.isEmpty()) {
             edge.fin(fin);
             return;
@@ -76,6 +79,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         List<List<List<Float>>> partition = Lists.partition(rightList, 1024);
         for (List<List<Float>> right : partition) {
             VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
+                .topN(topn)
                 .leftList(Collections.singletonList(param.getTargetVector()))
                 .rightList(right)
                 .dimension(param.getDimension())
@@ -86,13 +90,28 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
                 param.getRangeDistribution().getId(),
                 vectorCalcDistance).get(0));
         }
-
+        TreeMap<Float, Object[]> map = new TreeMap<>(new Comparator<Float>() {
+           @Override
+           public int compare(Float f1, Float f2) {
+                           return f2.compareTo(f1);
+                       }
+        });
         for (int i = 0; i < cache.size(); i ++) {
             Object[] tuple = cache.get(i);
             Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
             result[tuple.length] = floatArray.get(i);
-            edge.transformToNext(param.getContext(), selection.revMap(result));
+            map.put((Float) result[tuple.length], result);
         }
+        int count = 0;
+        Object[] value;
+        for (Map.Entry<Float, Object[]> entry : map.entrySet()) {
+            if (count < topn) {
+                value = entry.getValue();
+                edge.transformToNext(param.getContext(), selection.revMap(value));
+            }
+            count++;
+        }
+
         param.clear();
         profile.time(start);
         edge.fin(fin);
