@@ -90,12 +90,7 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
                 param.getRangeDistribution().getId(),
                 vectorCalcDistance).get(0));
         }
-        TreeMap<Float, Object[]> map = new TreeMap<>(new Comparator<Float>() {
-           @Override
-           public int compare(Float f1, Float f2) {
-                           return f2.compareTo(f1);
-                       }
-        });
+        TreeMap<Float, Object[]> map = new TreeMap<>();
         for (int i = 0; i < cache.size(); i ++) {
             Object[] tuple = cache.get(i);
             Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
