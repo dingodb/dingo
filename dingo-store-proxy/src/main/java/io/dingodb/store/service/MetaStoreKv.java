@@ -18,9 +18,14 @@ package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.MetaService;
+import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.partition.PartitionService;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -32,6 +37,7 @@ import io.dingodb.sdk.service.entity.common.RegionType;
 import io.dingodb.sdk.service.entity.common.StorageEngine;
 import io.dingodb.sdk.service.entity.coordinator.CreateRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.CreateRegionResponse;
+import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionsRequest;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionsResponse;
 import io.dingodb.store.api.StoreInstance;
@@ -47,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Set;
 
 @Slf4j
@@ -59,8 +66,9 @@ public class MetaStoreKv {
     private static MetaStoreKv instanceDdl;
     Set<Location> coordinators = Services.parse(Configuration.coordinators());
     // putAbsent
-    StoreService storeService;
-    MetaKvTxn metaKvTxn;
+    StoreService preStoreService;
+    MetaKvTxn preMetaKvTxn;
+    PartitionService ps = PartitionService.getService(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
 
     long statementTimeout = 50000;
 
@@ -87,20 +95,20 @@ public class MetaStoreKv {
         return instanceDdl;
     }
 
-    private MetaStoreKv(boolean ddl) {
+    public MetaStoreKv(boolean ddl) {
         this.ddl = ddl;
         if (!ddl) {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
             long metaPartId = checkMetaRegion();
-            metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
-            metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
+            metaId = new CommonId(CommonId.CommonType.META, 0, 0);
+            preStoreService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
+            preMetaKvTxn = new MetaKvTxn(preStoreService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         } else {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 3);
             long metaPartId = checkMetaRegion();
-            metaId = new CommonId(CommonId.CommonType.META, 0, metaPartId);
-            storeService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
-            metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
+            metaId = new CommonId(CommonId.CommonType.DDL, 0, 0);
+            preStoreService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
+            preMetaKvTxn = new MetaKvTxn(preStoreService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         }
     }
 
@@ -121,8 +129,10 @@ public class MetaStoreKv {
         }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
         String regionName = "meta";
+        long schemaId = 1001;
         if (ddl) {
             regionName = "ddl";
+            schemaId = 1002;
         }
         CreateRegionRequest createRegionRequest = CreateRegionRequest.builder()
             .regionName(regionName)
@@ -132,6 +142,7 @@ public class MetaStoreKv {
             .storeEngine(StorageEngine.STORE_ENG_RAFT_STORE)
             .regionType(RegionType.STORE_REGION)
             .tenantId(0)
+            .schemaId(schemaId)
             .build();
         try {
             CreateRegionResponse response = coordinatorService.createRegion(startTs, createRegionRequest);
@@ -144,6 +155,14 @@ public class MetaStoreKv {
     }
 
     public long getScanRegionId(byte[] start, byte[] end) {
+        List<ScanRegionInfo> regionInfoList = scanRegion(start, end);
+        if (regionInfoList == null || regionInfoList.isEmpty()) {
+            return 0;
+        }
+        return regionInfoList.get(0).getRegionId();
+    }
+
+    public List<ScanRegionInfo> scanRegion(byte[] start, byte[] end) {
         long startTs = io.dingodb.tso.TsoService.getDefault().tso();
         ScanRegionsRequest request = ScanRegionsRequest.builder()
             .key(start)
@@ -153,16 +172,18 @@ public class MetaStoreKv {
         CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
         ScanRegionsResponse response = coordinatorService.scanRegions(startTs, request);
         if (response.getRegions() == null || response.getRegions().isEmpty()) {
-            return 0;
+            return new ArrayList<>();
         }
-        return response.getRegions().get(0).getRegionId();
+        return response.getRegions();
     }
 
     public byte[] mGet(byte[] key, long startTs) {
         key = getMetaDataKey(key);
 
         List<byte[]> keys = Collections.singletonList(key);
+        StoreService storeService = getStoreService(key);
         TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+
         List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, statementTimeout);
         if (keyValueList.isEmpty()) {
             return null;
@@ -173,8 +194,9 @@ public class MetaStoreKv {
 
     public byte[] mGetImmediately(byte[] key, long startTs) {
         key = getMetaDataKey(key);
-
         List<byte[]> keys = Collections.singletonList(key);
+
+        StoreService storeService = getStoreService(key);
         TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
         try {
             List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, 1000);
@@ -191,7 +213,7 @@ public class MetaStoreKv {
     public List<byte[]> mRange(byte[] start, byte[] end, long startTs) {
         start = getMetaDataKey(start);
         end = getMetaDataKey(end);
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+        TransactionStoreInstance storeInstance = new TransactionStoreInstance(preStoreService, null, partId);
         StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
         Iterator<KeyValue> scanIterator = storeInstance.getScanIterator(startTs, range, statementTimeout, null);
         List<byte[]> values = new ArrayList<>();
@@ -203,17 +225,22 @@ public class MetaStoreKv {
 
     public void mDel(byte[] key, long startTs) {
         key = getMetaDataKey(key);
+        StoreService storeService = getStoreService(key);
+        MetaKvTxn metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         metaKvTxn.commit(key, null, Op.DELETE.getCode(), startTs);
-        //commit(key, null, Op.DELETE.getCode(), startTs);
     }
 
     public void mInsert(byte[] key, byte[] value, long startTs) {
         key = getMetaDataKey(key);
+        StoreService storeService = getStoreService(key);
+        MetaKvTxn metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         metaKvTxn.commit(key, value, Op.PUTIFABSENT.getCode(), startTs);
     }
 
     public void put(byte[] key, byte[] value, long startTs) {
         key = getMetaDataKey(key);
+        StoreService storeService = getStoreService(key);
+        MetaKvTxn metaKvTxn = new MetaKvTxn(storeService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         metaKvTxn.commit(key, value, Op.PUT.getCode(), startTs);
     }
 
@@ -225,7 +252,7 @@ public class MetaStoreKv {
         return bytes;
     }
 
-    private byte[] getMetaRegionEndKey() {
+    public byte[] getMetaRegionEndKey() {
         byte[] bytes = new byte[9];
         BufImpl buf = new BufImpl(bytes);
         // skip namespace
@@ -237,11 +264,20 @@ public class MetaStoreKv {
         return bytes;
     }
 
-    private byte[] getMetaRegionKey() {
+    public byte[] getMetaRegionKey() {
         byte[] key = new byte[9];
         CodecService.INSTANCE.setId(key, partId.seq);
         key[0] = namespace;
         return key;
+    }
+
+    public StoreService getStoreService(byte[] key) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges
+            = MetaService.root().getRangeDistribution(metaId);
+        CommonId commonId = ps.calcPartId(key, ranges);
+        return Services.storeRegionService(
+            coordinators, commonId.seq, TransactionUtil.STORE_RETRY
+        );
     }
 
 }

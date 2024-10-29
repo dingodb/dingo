@@ -123,7 +123,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             if (metaService == null) {
                 return;
             }
-            Table td = (Table) DdlService.root().getTable(schemaName, tableName);
+            Table td = DdlService.root().getTable(schemaName, tableName);
             if (td == null) {
                 return;
             }
@@ -144,17 +144,21 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             List<CountMinSketch> cmSketchList = new ArrayList<>();
             List<StatsNormal> statsNormals = new ArrayList<>();
             long end1 = System.currentTimeMillis();
-            LogUtils.info(log, "step1 cost:{}", (end1 - start));
 
             // varchar -> count-min-sketch  int,float,double,date,time,timestamp -> histogram
             // ndv, nullCount -> normal
             typeMetricAdaptor(td, histogramList, cmSketchList, statsNormals, cmSketchWidth, cmSketchHeight);
             // par scan get min, max
             // histogram equ-width need max, min
-            buildHistogram(histogramList, distributions, tableId, td);
+            try {
+                buildHistogram(histogramList, distributions, tableId, td);
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                //histogramList.clear();
+            }
 
             long end2 = System.currentTimeMillis();
-            LogUtils.info(log, "step2 cost:{}", (end2 - end1));
+            LogUtils.info(log, "init type cost:{}", (end2 - end1));
             List<TableStats> statsList = null;
             try {
                 List<CompletableFuture<TableStats>> futureList = getCompletableFutures(td, tableId, distributions,
@@ -178,22 +182,22 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 return;
             }
             long end3 = System.currentTimeMillis();
-            LogUtils.info(log, "step3 cost:{}", (end3 - end2));
+            LogUtils.info(log, "build stats cost:{}", (end3 - end2));
             TableStats.mergeStats(statsList);
             TableStats tableStats = statsList.get(0);
             long end4 = System.currentTimeMillis();
-            LogUtils.info(log, "step4 merge success cost:{}", (end4 - end3));
+            LogUtils.info(log, "stats merge success cost:{}", (end4 - end3));
 
             // save stats to store
             addHistogram(tableStats.getHistogramList());
             long end5 = System.currentTimeMillis();
-            LogUtils.info(log, "step5 cost:{}", (end5 - end4));
+            LogUtils.info(log, "add histogram cost:{}", (end5 - end4));
             addCountMinSketch(tableStats.getCountMinSketchList());
             long end6 = System.currentTimeMillis();
-            LogUtils.info(log, "step6 cost:{}", (end6 - end5));
+            LogUtils.info(log, "add count min sketch cost:{}", (end6 - end5));
             addStatsNormal(tableStats.getStatsNormalList());
             long end7 = System.currentTimeMillis();
-            LogUtils.info(log, "step7 cost:{}", (end7 - end6));
+            LogUtils.info(log, "add stats normal cost:{}", (end7 - end6));
             // update analyze job status
             cache(tableStats);
             rowCount = tableStats.getRowCount();

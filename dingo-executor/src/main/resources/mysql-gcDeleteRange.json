@@ -8,14 +8,7 @@
       "nullable": false
     },
     {
-      "name": "data_type",
-      "type": "varchar",
-      "scale": -2147483648,
-      "primary": -1,
-      "nullable": false
-    },
-    {
-      "name": "element_id",
+      "name": "region_id",
       "type": "bigint",
       "scale": -2147483648,
       "precision": -1,

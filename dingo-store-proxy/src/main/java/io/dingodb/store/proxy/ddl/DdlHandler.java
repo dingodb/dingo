@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
 @Slf4j
@@ -421,12 +420,10 @@ public final class DdlHandler {
                 throw new RuntimeException("wait ddl timeout");
             }
         }
-        if (DdlUtil.historyJobEtcd) {
-            try {
-                InfoSchemaService.root().delHistoryDDLJob(job.getId());
-            } catch (Exception e) {
-                LogUtils.error(log, "ddlhandler del history job:" + e.getMessage(), e);
-            }
+        try {
+            InfoSchemaService.root().delHistoryDDLJob(job.getId());
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] ddl handler del history job:" + e.getMessage(), e);
         }
     }
 

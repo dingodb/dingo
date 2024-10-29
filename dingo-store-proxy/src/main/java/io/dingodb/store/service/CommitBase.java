@@ -74,7 +74,7 @@ public abstract class CommitBase {
     public void commit(byte[] key, byte[] value, int opCode, long startTs) {
         CommonId txnId = getTxnId(startTs);
         boolean need2PcPreWrite = false;
-        boolean need2PcCommit = false;
+        boolean need2PcCommit;
 
         try {
             Mutation mutation = new Mutation(

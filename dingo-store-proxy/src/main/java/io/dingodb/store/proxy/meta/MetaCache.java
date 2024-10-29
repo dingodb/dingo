@@ -52,6 +52,7 @@ import io.dingodb.sdk.service.entity.meta.WatchRequest.RequestUnionNest.CreateRe
 import io.dingodb.sdk.service.entity.meta.WatchRequest.RequestUnionNest.ProgressRequest;
 import io.dingodb.sdk.service.entity.meta.WatchResponse;
 import io.dingodb.store.proxy.service.TsoService;
+import io.dingodb.store.service.MetaStoreKv;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -68,7 +69,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.CommonId.CommonType.DDL;
 import static io.dingodb.common.CommonId.CommonType.INDEX;
+import static io.dingodb.common.CommonId.CommonType.META;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_DELETE;
@@ -216,6 +219,31 @@ public class MetaCache {
     @SneakyThrows
     private NavigableMap<ComparableByteArray, RangeDistribution> loadDistribution(CommonId tableId) {
         try {
+            if (tableId.type == META || tableId.type == DDL) {
+                byte[] startKey = MetaStoreKv.getInstance().getMetaRegionKey();
+                byte[] endKey = MetaStoreKv.getInstance().getMetaRegionEndKey();
+
+                if (tableId.type == DDL) {
+                    startKey = MetaStoreKv.getDdlInstance().getMetaRegionKey();
+                    endKey = MetaStoreKv.getDdlInstance().getMetaRegionEndKey();
+                }
+                List<Object> regionList = infoSchemaService
+                    .scanRegions(startKey, endKey);
+                NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+                regionList
+                    .forEach(object -> {
+                        ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                        RangeDistribution distribution = RangeDistribution.builder()
+                            .id(new CommonId(tableId.type,
+                                0, scanRegionInfo.getRegionId()))
+                            .startKey(scanRegionInfo.getRange().getStartKey())
+                            .endKey(scanRegionInfo.getRange().getEndKey())
+                            .build();
+                        result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
+                    });
+                return result;
+            }
+
             TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
                 tableId
             );
@@ -270,9 +298,15 @@ public class MetaCache {
     public void invalidateDistribution(MetaEventRegion metaEventRegion) {
         RegionDefinition definition = metaEventRegion.getDefinition();
         LogUtils.info(log, "Invalid table distribution {}", definition);
-        distributionCache.invalidate(new CommonId(TABLE, definition.getSchemaId(), definition.getTableId()));
-        if (definition.getIndexId() != 0) {
-            distributionCache.invalidate(new CommonId(INDEX, definition.getTableId(), definition.getIndexId()));
+        if (definition.getSchemaId() == 1001) {
+            distributionCache.invalidate(new CommonId(META, 0, 0));
+        } else if (definition.getSchemaId() == 1002) {
+            distributionCache.invalidate(new CommonId(DDL, 0, 0));
+        } else {
+            distributionCache.invalidate(new CommonId(TABLE, definition.getSchemaId(), definition.getTableId()));
+            if (definition.getIndexId() != 0) {
+                distributionCache.invalidate(new CommonId(INDEX, definition.getTableId(), definition.getIndexId()));
+            }
         }
     }
 
