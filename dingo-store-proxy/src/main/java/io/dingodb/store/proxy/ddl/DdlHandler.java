@@ -157,13 +157,15 @@ public final class DdlHandler {
         try {
             doDdlJob(ddlJob);
         } catch (Exception e) {
-            InfoSchemaService service = InfoSchemaService.root();
-            Object tabObj = service.getTable(ddlJob.getSchemaId(), tableDefinition.getName());
-            if (tabObj != null) {
-                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tabObj;
-                service.dropTable(ddlJob.getSchemaId(), tableDefinitionWithId.getTableId().getEntityId());
-            }
             LogUtils.error(log, "[ddl-error] create table error, tableName:{}", tableDefinition.getName(), e);
+            //if (e.getMessage() != null && !e.getMessage().contains("table has existed")) {
+            //    InfoSchemaService service = InfoSchemaService.root();
+            //    Object tabObj = service.getTable(ddlJob.getSchemaId(), tableDefinition.getName());
+            //    if (tabObj != null) {
+            //        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tabObj;
+            //        service.dropTable(ddlJob.getSchemaId(), tableDefinitionWithId.getTableId().getEntityId());
+            //    }
+            //}
             throw e;
         }
     }

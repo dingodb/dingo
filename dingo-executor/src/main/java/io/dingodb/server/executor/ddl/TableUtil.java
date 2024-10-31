@@ -61,8 +61,12 @@ public final class TableUtil {
                 metaService.createTables(schemaId, tableInfo, indices);
                 return Pair.of(tableInfo, null);
             } catch (Exception e) {
-                metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
+                if (e.getMessage() != null && e.getMessage().contains("table has existed")) {
+                    ddlJob.setState(JobState.jobStateCancelled);
+                    return Pair.of(null, "table has existed");
+                }
+                metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 ddlJob.setState(JobState.jobStateCancelled);
                 return Pair.of(null, e.getMessage());
             }

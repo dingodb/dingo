@@ -223,6 +223,7 @@ public class InfoSchemaBuilder {
                 table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableName());
             }
             if (table == null) {
+                LogUtils.error(log, "applyCreateTable error, table is null,diff:{}", diff);
                 return Pair.of(new ArrayList<>(), null);
             }
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
