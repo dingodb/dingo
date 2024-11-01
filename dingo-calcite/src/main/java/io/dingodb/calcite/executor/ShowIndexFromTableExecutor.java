@@ -21,6 +21,7 @@ import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 
@@ -95,7 +96,11 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         Object[] val = new Object[16];
         val[0] = tableName;
         val[1] = unique ? "1" : "0";
-        val[2] = index.getName();
+        if (index instanceof IndexTable) {
+            val[2] = index.getName();
+        } else {
+            val[2] = "PRIMARY";
+        }
         val[3] = seqIndex;
         val[4] = columnName;
         val[5] = 'A';
