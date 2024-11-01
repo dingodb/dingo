@@ -259,6 +259,50 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public void createView(String tableName, TableDefinition tableDefinition) {
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+
+        long tableEntityId;
+        if (tableDefinition.getPrepareTableId() != 0) {
+            tableEntityId = tableDefinition.getPrepareTableId();
+        } else {
+            // Generate new table ids.
+            tableEntityId = coordinatorService.createIds(
+                tso(),
+                CreateIdsRequest.builder()
+                    .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
+                    .build()
+            ).getIds().get(0);
+        }
+        DingoCommonId tableId = DingoCommonId.builder()
+            .entityType(EntityType.ENTITY_TYPE_TABLE)
+            .parentEntityId(id.getEntityId())
+            .entityId(tableEntityId).build();
+//        List<DingoCommonId> tablePartIds = coordinatorService.createIds(tso(), CreateIdsRequest.builder()
+//                .idEpochType(IdEpochType.ID_NEXT_TABLE)
+//                .count(tableDefinition.getPartDefinition().getDetails().size())
+//                .build()
+//            )
+//            .getIds()
+//            .stream()
+//            .map(id -> DingoCommonId.builder()
+//                .entityType(EntityType.ENTITY_TYPE_PART)
+//                .parentEntityId(tableEntityId)
+//                .entityId(id).build())
+//            .collect(Collectors.toList());
+        TableIdWithPartIds tableIdWithPartIds =
+            TableIdWithPartIds.builder().tableId(tableId).build();
+        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition, TenantConstant.TENANT_ID);
+        // create view
+        infoSchemaService.createTableOrView(
+            id.getEntityId(),
+            tableDefinitionWithId.getTableId().getEntityId(),
+            tableDefinitionWithId
+        );
+    }
+
+
+    @Override
     public long createTables(
         @NonNull TableDefinition tableDefinition, @NonNull List<IndexDefinition> indexTableDefinitions
     ) {
@@ -993,34 +1037,30 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (autoInc) {
             delAutoInc(MAPPER.idTo(table.getTableId()));
         }
-        List<IndexTable> indexes = table.getIndexes();
 
-        loadDistribution(table.tableId, tenantId, table).values().forEach(rangeDistribution -> {
-            try {
-                coordinatorService.dropRegion(
-                    tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
-                );
-            } catch (Exception e) {
-                LogUtils.error(log, e.getMessage(), e);
+        if (!"view".equalsIgnoreCase(table.getTableType())) {
+            loadDistribution(table.tableId, tenantId, table).values().forEach(rangeDistribution -> {
+                coordinatorService.dropRegion(tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build());
+            });
+            List<IndexTable> indexes = table.getIndexes();
+
+            for (IndexTable index : indexes) {
+                loadDistribution(index.tableId, tenantId, index)
+                    .values()
+                    .forEach(rangeDistribution ->
+                        coordinatorService.dropRegion(
+                            tso(),
+                            DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
+                        )
+                    );
             }
-        });
-
-        for (IndexTable index : indexes) {
-            loadDistribution(index.tableId, tenantId, index)
-                .values()
-                .forEach(rangeDistribution ->
-                    coordinatorService.dropRegion(
-                        tso(),
-                        DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
-                    )
-                );
+            List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
+            indexIds.forEach(indexId -> {
+                infoSchemaService.dropIndex(indexId.domain, indexId.seq);
+            });
         }
 
-        List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
         infoSchemaService.dropTable(table.getTableId().domain, table.tableId.seq);
-        indexIds.forEach(indexId -> {
-            infoSchemaService.dropIndex(indexId.domain, indexId.seq);
-        });
         return true;
     }
 

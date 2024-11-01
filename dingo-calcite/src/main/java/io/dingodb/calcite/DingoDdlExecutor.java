@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
@@ -46,6 +47,7 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.utils.IndexParameterUtils;
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
@@ -96,6 +98,8 @@ import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.ContextSqlValidator;
@@ -104,20 +108,26 @@ import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.DingoSqlKeyConstraint;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlCreateView;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
+import org.apache.calcite.sql.ddl.SqlDropView;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
+import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -139,6 +149,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
@@ -457,9 +468,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
         String connId = (String) context.getDataContext().get("connId");
-        ddlService.createTableWithInfo(
-            schema.getSchemaName(), tableName, tableDefinition, connId, create.getOriginalCreateSql()
-        );
+        ddlService.createTableWithInfo(schema.getSchemaName(), tableName, tableDefinition,
+            connId, create.getOriginalCreateSql());
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -518,6 +528,48 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 cost, schemaInfo.getName(), tableName);
         } else {
             LogUtils.info(log, "[ddl] drop table success, cost:{}, schemaName:{}, tableName:{}",
+                cost, schema.getSchemaName(), tableName);
+        }
+    }
+
+    public void execute(SqlDropView sqlDropView, CalcitePrepare.Context context) throws Exception {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropView");
+        long start = System.currentTimeMillis();
+        LogUtils.info(log, "DDL execute: {}", sqlDropView);
+        String connId = (String) context.getDataContext().get("connId");
+        final SubSnapshotSchema schema = getSnapShotSchema(sqlDropView.name, context, sqlDropView.ifExists);
+        if (schema == null) {
+            return;
+        }
+        final String tableName = getTableName(sqlDropView.name);
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        if (schemaInfo == null) {
+            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        }
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            if (sqlDropView.ifExists) {
+                return;
+            } else {
+                throw DINGO_RESOURCE.unknownTable(schema.getSchemaName() + "." + tableName).ex();
+            }
+        }
+        DdlService ddlService = DdlService.root();
+        ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .type(ActionType.ActionDropTable).tableId(table.tableId.seq).build();
+        rootSnapshotSchema.applyDiff(diff);
+
+        timeCtx.stop();
+        long cost = System.currentTimeMillis() - start;
+        if (cost > 10000) {
+            LogUtils.info(log, "drop view take long time, cost:{}, schemaName:{}, tableName:{}",
+                cost, schemaInfo.getName(), tableName);
+        } else {
+            LogUtils.info(log, "[ddl] drop view success, cost:{}, schemaName:{}, tableName:{}",
                 cost, schema.getSchemaName(), tableName);
         }
     }
@@ -651,6 +703,92 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("You are not allowed to create a user with GRANT");
         }
+    }
+
+    public void execute(SqlCreateView sqlCreateView, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", sqlCreateView);
+        String connId = (String) context.getDataContext().get("connId");
+        SubSnapshotSchema schema = getSnapShotSchema(sqlCreateView.name, context, false);
+        if (schema == null) {
+            if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
+                throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
+            } else {
+                throw DINGO_RESOURCE.unknownSchema("DINGO").ex();
+            }
+        }
+        String tableName = getTableName(sqlCreateView.name);
+
+        // Check table exist
+        if (schema.getTable(tableName) != null) {
+            throw DINGO_RESOURCE.tableExists(tableName).ex();
+        }
+        SqlNode query = renameColumns(sqlCreateView.columnList, sqlCreateView.query);
+
+        List<String> schemas = new ArrayList<>();
+        schemas.add(schema.getSchemaName());
+        List<List<String>> schemaPaths = new ArrayList<>();
+        schemaPaths.add(schemas);
+        schemaPaths.add(new ArrayList<>());
+
+        CalciteConnectionConfigImpl config;
+        config = new CalciteConnectionConfigImpl(new Properties());
+        config.set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(PARSER_CONFIG.caseSensitive()));
+        DingoCatalogReader catalogReader = new DingoCatalogReader(context.getRootSchema(),
+            schemaPaths, DingoSqlTypeFactory.INSTANCE, config);
+        DingoSqlValidator sqlValidator = new DingoSqlValidator(catalogReader, DingoSqlTypeFactory.INSTANCE);
+        SqlNode sqlNode = sqlValidator.validate(query);
+        RelDataType type = sqlValidator.getValidatedNodeType(sqlNode);
+
+        RelDataType jdbcType = type;
+        if (!type.isStruct()) {
+            jdbcType = sqlValidator.getTypeFactory().builder().add("$0", type).build();
+        }
+
+        List<ColumnDefinition> columnDefinitionList = jdbcType.getFieldList()
+            .stream().map(f -> {
+                int precision = f.getType().getPrecision();
+                int scale = f.getType().getScale();
+                String name = f.getType().getSqlTypeName().getName();
+                if ("BIGINT".equals(name) || "FLOAT".equals(name)) {
+                    precision = -1;
+                    scale = -2147483648;
+                }
+                boolean nullable = f.getType().isNullable();
+                if (sqlValidator.isHybridSearch() && "BIGINT".equals(name)) {
+                    nullable = true;
+                }
+                return ColumnDefinition
+                    .builder()
+                    .name(f.getName())
+                    .type(f.getType().getSqlTypeName().getName())
+                    .scale(scale)
+                    .precision(precision)
+                    .nullable(nullable)
+                    .build();
+            })
+            .collect(Collectors.toList());
+
+        String schemaName = schema.getSchemaName();
+
+        String sql = query.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
+        // build tableDefinition
+        TableDefinition tableDefinition = TableDefinition.builder()
+            .name(tableName)
+            .columns(columnDefinitionList)
+            .version(1)
+            .ttl(0)
+            .replica(3)
+            .createSql(sql)
+            .comment("VIEW")
+            .charset(null)
+            .collate(null)
+            .tableType("VIEW")
+            .rowFormat(null)
+            .createTime(System.currentTimeMillis())
+            .updateTime(0)
+            .build();
+        DdlService ddlService = DdlService.root();
+        ddlService.createViewWithInfo(schemaName, tableName, tableDefinition, connId, null);
     }
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
@@ -1759,6 +1897,24 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new RuntimeException("The vector index column same of " + existIndex.getName());
             }
         }
+    }
+
+    static SqlNode renameColumns(@Nullable SqlNodeList columnList,
+                                 SqlNode query) {
+        if (columnList == null) {
+            return query;
+        }
+        final SqlParserPos p = query.getParserPosition();
+        final SqlNodeList selectList = SqlNodeList.SINGLETON_STAR;
+        final SqlCall from =
+            SqlStdOperatorTable.AS.createCall(p,
+                ImmutableList.<SqlNode>builder()
+                    .add(query)
+                    .add(new SqlIdentifier("_", p))
+                    .addAll(columnList)
+                    .build());
+        return new SqlSelect(p, null, selectList, from, null, null, null, null,
+            null, null, null, null);
     }
 
 }

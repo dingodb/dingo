@@ -107,6 +107,8 @@ public interface MetaService {
         createTables(tableDefinition, Collections.emptyList());
     }
 
+    default void createView(String viewName, TableDefinition tableDefinition) {}
+
     default long createReplicaTable(long schemaId, Object tableDefinition, String tableName) {
         return 0L;
     }
@@ -246,11 +248,11 @@ public interface MetaService {
 
     default void deleteRegionByTableId(CommonId tableId) {}
 
-    default void createTenant(Tenant tenant) {};
+    default void createTenant(Tenant tenant) {}
 
-    default void updateTenant(Tenant tenant) {};
+    default void updateTenant(Tenant tenant) {}
 
-    default void deleteTenant(long tenantId) {};
+    default void deleteTenant(long tenantId) {}
 
     void close();
 }

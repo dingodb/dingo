@@ -68,6 +68,47 @@ public final class TableUtil {
                 }
                 metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 ddlJob.setState(JobState.jobStateCancelled);
+                if (e instanceof NullPointerException) {
+                    return Pair.of(null, "NullPointerException");
+                }
+                return Pair.of(null, e.getMessage());
+            }
+        }
+        return Pair.of(tableInfo, "ErrInvalidDDLState");
+    }
+
+    public static Pair<TableDefinition, String> createView(DdlJob ddlJob) {
+        long schemaId = ddlJob.getSchemaId();
+        TableDefinition tableInfo = (TableDefinition) ddlJob.getArgs().get(0);
+        tableInfo.setSchemaState(SchemaState.SCHEMA_NONE);
+        long tableId = ddlJob.getTableId();
+        tableInfo.setPrepareTableId(tableId);
+
+        InfoSchemaService service = InfoSchemaService.root();
+        Object tabObj = service.getTable(schemaId, tableInfo.getName());
+        if (tabObj != null) {
+            ddlJob.setState(JobState.jobStateCancelled);
+            return Pair.of(null, "view has existed");
+        }
+        if (tableInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
+            tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+            MetaService metaService = MetaService.root();
+            MetaService subMs = metaService.getSubMetaService(ddlJob.getSchemaName());
+            List<IndexDefinition> indices = tableInfo.getIndices();
+            if (indices != null) {
+                indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
+            }
+            try {
+                assert indices != null;
+                subMs.createView(tableInfo.getName(), tableInfo);
+                return Pair.of(tableInfo, null);
+            } catch (Exception e) {
+                subMs.rollbackCreateTable(tableInfo, indices);
+                LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
+                ddlJob.setState(JobState.jobStateCancelled);
+                if (e instanceof NullPointerException) {
+                    return Pair.of(null, "NullPointerException");
+                }
                 return Pair.of(null, e.getMessage());
             }
         }

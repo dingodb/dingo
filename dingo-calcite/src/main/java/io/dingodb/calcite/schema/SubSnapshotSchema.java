@@ -76,7 +76,6 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
         return new DingoTable(
             context,
             ImmutableList.<String>builder().addAll(names).add(tableName).build(),
-            null,
             table
         );
     }
@@ -116,7 +115,6 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
         return new DingoTable(
             context,
             ImmutableList.<String>builder().addAll(names).add(tableName).build(),
-            null,
             table
         );
     }

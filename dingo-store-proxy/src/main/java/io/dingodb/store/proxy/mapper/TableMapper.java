@@ -188,17 +188,20 @@ public interface TableMapper {
         Table.TableBuilder builder = Table.builder();
         tableFrom(definition, builder);
         PartitionRule partitionRule = definition.getTablePartition();
-        builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
+        if (partitionRule != null) {
+            builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
+        }
         KeyValueCodec codec = CodecService.INSTANCE
             .createKeyValueCodec(definition.getVersion(), columnDefinitionFrom(definition.getColumns()));
-        builder.partitions(partitionFrom(
-            definition.getTablePartition().getPartitions(),
-            codec,
-            fromPartitionStrategy(partitionRule.getStrategy()))
-        );
-        builder.schemaState(io.dingodb.common.meta.SchemaState.get(
-            tableWithId.getTableDefinition().getSchemaState().number)
-        );
+
+        if (definition.getTablePartition() != null) {
+            builder.partitions(partitionFrom(
+                definition.getTablePartition().getPartitions(),
+                codec,
+                fromPartitionStrategy(partitionRule.getStrategy()))
+            );
+        }
+        builder.schemaState(io.dingodb.common.meta.SchemaState.get(tableWithId.getTableDefinition().getSchemaState().number));
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.indexes(indexes.stream().map($ -> indexTableFrom(builder, $, Collections.emptyList()))
             .collect(Collectors.toList()));
@@ -253,13 +256,16 @@ public interface TableMapper {
         tableDefinition.setEngine(tableDefinition.getEngine().toUpperCase());
         byte namespace = (byte) (tableDefinition.getEngine().startsWith("TXN") ? 't' : 'r');
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableTo(tableDefinition);
-        definition.setTablePartition(
-            partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
-        );
+        if (tableDefinition.getPartDefinition() != null) {
+            definition.setTablePartition(
+                partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
+            );
+        }
         definition.setName(definition.getName().toUpperCase());
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
-        return TableDefinitionWithId.builder().tenantId(tenantId).tableDefinition(definition)
-            .tableId(ids.getTableId()).build();
+
+        return TableDefinitionWithId.builder().tenantId(tenantId)
+            .tableDefinition(definition).tableId(ids.getTableId()).build();
     }
 
     default SchemaState convertSchemaState(io.dingodb.common.meta.SchemaState schemaState) {

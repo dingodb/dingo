@@ -160,7 +160,7 @@ public class TestCreateTable {
 
     @Test
     public void flush() {
-        String sql = "flush privileges";
+        String sql = "create view v2 as select count(1) from t1";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
         SqlParser parser = SqlParser.create(sql, config);
         try {

@@ -389,7 +389,8 @@ public final class DingoDriverParser extends DingoParser {
             if (validator.isHybridSearch()) {
                 SqlNode originalSqlNode;
                 try {
-                    originalSqlNode = parse(sql);
+                    originalSqlNode
+                        = parse(sql);
                 } catch (SqlParseException e) {
                     throw ExceptionUtils.toRuntime(e);
                 }
@@ -676,7 +677,6 @@ public final class DingoDriverParser extends DingoParser {
         Meta.StatementType statementType;
         markAutoIncForDml(relNode);
         Location currentLocation = MetaService.root().currentLocation();
-        Set<RelOptTable> tables = useTables(relNode, sqlNode);
         switch (sqlNode.getKind()) {
             case INSERT:
             case DELETE:

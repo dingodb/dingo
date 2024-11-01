@@ -34,7 +34,11 @@ public interface DdlService {
 
     void dropSchema(SchemaInfo schemaInfo, String connId);
 
-    void createTableWithInfo(String schemaName, String tableName, @NonNull TableDefinition tableDefinition, String connId, String sql);
+    void createTableWithInfo(String schemaName, String tableName,
+                             TableDefinition tableDefinition, String connId, String sql);
+
+    default void createViewWithInfo(String schemaName, String tableName,
+                             TableDefinition tableDefinition, String connId, String sql) {}
 
     void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId);
 

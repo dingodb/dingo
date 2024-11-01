@@ -254,6 +254,12 @@ public class DdlWorker {
             case ActionAddColumn:
                 res = onAddColumn(dc, job);
                 break;
+            case ActionCreateView:
+                res = onCreateView(dc, job);
+                break;
+            case ActionDropView:
+                res = onDropView(dc, job);
+                break;
             default:
                 job.setState(JobState.jobStateCancelled);
                 break;
@@ -480,6 +486,7 @@ public class DdlWorker {
                     DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     LogUtils.error(log, "drop table error", e);
+                    return Pair.of(0L, "dropTableError:" + e.getMessage());
                 }
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 break;
@@ -1089,6 +1096,99 @@ public class DdlWorker {
         reorgCtx.setRowCount(reorgInfo.getDdlJob().getRowCount());
         DdlContext.INSTANCE.getReorgCtx().putReorg(reorgInfo.getDdlJob().getId(), reorgCtx);
         return reorgCtx;
+    }
+
+    public static Pair<Long, String> onCreateView(DdlContext dc, DdlJob ddlJob) {
+        String err = ddlJob.decodeArgs();
+        if (err != null) {
+            ddlJob.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, err);
+        }
+        Pair<TableDefinition, String> res = TableUtil.createView(ddlJob);
+        if (res.getValue() != null) {
+            return Pair.of(0L, res.getValue());
+        }
+        LogUtils.info(log, "[ddl] create view info done, jobId:{}", ddlJob.getId());
+
+        Pair<Long, String> res1 = updateSchemaVersion(dc, ddlJob);
+
+        if (res1.getValue() != null) {
+            return res1;
+        }
+        ddlJob.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        LogUtils.debug(log, "[ddl] onCreateView done, jobId:{}", ddlJob.getId());
+        return res1;
+    }
+
+    public static Pair<Long, String> onDropView(DdlContext dc, DdlJob job) {
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        TableDefinitionWithId tableInfo = tableRes.getKey();
+        if (tableInfo == null) {
+            return Pair.of(0L, "view not exists");
+        }
+        if (job.getError() != null) {
+            if ("Lock wait timeout exceeded".equalsIgnoreCase(job.decodeError())
+                && tableInfo.getTableDefinition().getSchemaState() != SCHEMA_PUBLIC) {
+                tableInfo.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                ActionType originType = job.getActionType();
+                job.setActionType(ActionType.ActionCreateTable);
+                job.setState(JobState.jobStateCancelling);
+                Pair<Long, String> res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo, true);
+                job.setActionType(originType);
+                DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
+                return res;
+            }
+        }
+        SchemaState originalState = job.getSchemaState();
+        Pair<Long, String> res;
+        switch (tableInfo.getTableDefinition().getSchemaState()) {
+            case SCHEMA_PUBLIC:
+                tableInfo.getTableDefinition()
+                    .setSchemaState(SCHEMA_WRITE_ONLY);
+                res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
+                    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+                if (res.getValue() != null) {
+                    return res;
+                }
+                break;
+            case SCHEMA_WRITE_ONLY:
+                //tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                //res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
+                //    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+                //if (res.getValue() != null) {
+                //    return res;
+                //}
+                //break;
+                //case SCHEMA_DELETE_ONLY:
+                tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
+                long start = System.currentTimeMillis();
+                res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
+                    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
+                long sub = System.currentTimeMillis() - start;
+                DingoMetrics.timer("updateVerAndTable").update(sub, TimeUnit.MILLISECONDS);
+                if (res.getValue() != null) {
+                    return res;
+                }
+                MetaService rootMs = MetaService.root();
+                MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
+                try {
+                    start = System.currentTimeMillis();
+                    ms.dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
+                    sub = System.currentTimeMillis() - start;
+                    DingoMetrics.timer("metaDropView").update(sub, TimeUnit.MILLISECONDS);
+                } catch (Exception e) {
+                    LogUtils.error(log, "drop view error", e);
+                }
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
+                break;
+            default:
+                return Pair.of(0L, "ErrInvalidDDLState:" + tableInfo.getTableDefinition().getSchemaState());
+        }
+        job.setSchemaStateNumber(tableInfo.getTableDefinition().getSchemaState().number);
+        return res;
     }
 
     public static void checkDropColumnForStatePublic(ColumnDefinition columnDefinition) {

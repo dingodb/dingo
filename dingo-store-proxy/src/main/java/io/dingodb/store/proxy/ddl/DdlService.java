@@ -28,7 +28,6 @@ import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Slf4j
 public class DdlService implements io.dingodb.meta.DdlService {
@@ -54,10 +53,15 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
-    public void createTableWithInfo(
-        String schemaName, String tableName, @NonNull TableDefinition tableDefinition, String connId, String sql
-    ) {
+    public void createTableWithInfo(String schemaName, String tableName,
+        TableDefinition tableDefinition, String connId, String sql) {
         DdlHandler.createTableWithInfo(schemaName, tableDefinition, connId, sql);
+    }
+
+    @Override
+    public void createViewWithInfo(String schemaName, String tableName,
+        TableDefinition tableDefinition, String connId, String sql) {
+        DdlHandler.createViewWithInfo(schemaName, tableDefinition, connId, sql);
     }
 
     @Override

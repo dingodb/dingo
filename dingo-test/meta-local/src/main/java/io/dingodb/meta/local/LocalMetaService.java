@@ -144,6 +144,10 @@ public class LocalMetaService implements MetaService {
         }
     }
 
+    public void createView(String tableName, TableDefinition tableDefinition) {
+
+    }
+
     public long createTablesByTruncate(@NonNull TableDefinition tableDefinition,
                              @NonNull List<IndexDefinition> indexTableDefinitions) {
         CommonId tableId = new CommonId(TABLE, id.seq, tableSeq.incrementAndGet());

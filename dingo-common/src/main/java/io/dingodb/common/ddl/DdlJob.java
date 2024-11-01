@@ -226,7 +226,7 @@ public class DdlJob {
                 return null;
             }
             TypeReference t = null;
-            if (actionType == ActionType.ActionCreateTable) {
+            if (actionType == ActionType.ActionCreateTable || actionType == ActionType.ActionCreateView) {
                 t = new TypeReference<List<TableDefinition>>() {};
             } else if (actionType == ActionType.ActionCreateSchema) {
                 t = new TypeReference<List<SchemaInfo>>() {};
