@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import com.google.common.collect.Lists;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.vector.VectorCalcDistance;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
@@ -35,8 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -90,18 +89,20 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
                 param.getRangeDistribution().getId(),
                 vectorCalcDistance).get(0));
         }
-        TreeMap<Float, Object[]> map = new TreeMap<>();
+        List<Pair<Float, Object[]>> pairList = new ArrayList<>();
         for (int i = 0; i < cache.size(); i ++) {
             Object[] tuple = cache.get(i);
             Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
             result[tuple.length] = floatArray.get(i);
-            map.put((Float) result[tuple.length], result);
+            pairList.add(new Pair<>((Float) result[tuple.length], result));
         }
+        Collections.sort(pairList, Comparator.comparing(p -> (Float)p.getKey()));
         int count = 0;
         Object[] value;
-        for (Map.Entry<Float, Object[]> entry : map.entrySet()) {
+
+        for (Pair<Float, Object[]> pair : pairList) {
             if (count < topn) {
-                value = entry.getValue();
+                value = pair.getValue();
                 edge.transformToNext(param.getContext(), selection.revMap(value));
             }
             count++;
@@ -111,4 +112,5 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         profile.time(start);
         edge.fin(fin);
     }
+
 }
