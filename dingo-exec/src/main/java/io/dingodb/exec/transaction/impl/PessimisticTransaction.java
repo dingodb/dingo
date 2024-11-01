@@ -436,6 +436,7 @@ public class PessimisticTransaction extends BaseTransaction {
             .txnSize(mutations.size())
             .tryOnePc(true)
             .maxCommitTs(0L)
+            .minCommitTs(TransactionManager.nextTimestamp())
             .pessimisticChecks(TransactionUtil.toPessimisticCheck(mutations.size()))
             .forUpdateTsChecks(TransactionUtil.toForUpdateTsChecks(mutations))
             .lockExtraDatas(

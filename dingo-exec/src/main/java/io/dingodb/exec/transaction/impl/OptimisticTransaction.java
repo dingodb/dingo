@@ -291,6 +291,7 @@ public class OptimisticTransaction extends BaseTransaction {
             .txnSize(mutations.size())
             .tryOnePc(true)
             .maxCommitTs(0L)
+            .minCommitTs(TransactionManager.nextTimestamp())
             .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
                 TransactionType.OPTIMISTIC.getCode(), mutations.size()))
             .build();

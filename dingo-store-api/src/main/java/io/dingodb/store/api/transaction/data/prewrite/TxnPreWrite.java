@@ -53,6 +53,8 @@ public class TxnPreWrite {
     // schema change. This field is unused now.
     @Builder.Default
     private long maxCommitTs = 0L;  // NOT IMPLEMENTED
+    @Builder.Default
+    private long minCommitTs = 0L;
     // for pessimistic transaction
     // check if the keys is locked by pessimistic transaction
     @Builder.Default
