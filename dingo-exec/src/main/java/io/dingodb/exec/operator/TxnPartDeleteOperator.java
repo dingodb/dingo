@@ -130,7 +130,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 }
                 KeyValue value = keyValues.get(0);
                 byte[] oldKey = value.getKey();
-                LogUtils.info(log, "{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                LogUtils.debug(log, "{}, repeat key :{}", txnId, Arrays.toString(oldKey));
                 if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
                     profile.time(start);
                     return true;

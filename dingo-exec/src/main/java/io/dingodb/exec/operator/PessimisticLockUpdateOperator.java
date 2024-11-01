@@ -51,6 +51,7 @@ import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
+import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -101,6 +102,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             boolean isVector = false;
             boolean isDocument = false;
             boolean calcPartId = false;
+            boolean isUnique = false;
             Object[] oldIndexTuple = tuple;
             if (context.getIndexId() != null) {
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
@@ -151,6 +153,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 if (index.indexType == IndexType.DOCUMENT) {
                     isDocument = true;
                 }
+                isUnique = index.unique;
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
                 if (updated && columnIndices.stream().anyMatch(c -> mapping.contains(c))) {
                     PartitionService ps = PartitionService.getService(
@@ -293,6 +296,21 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         throwable
                     );
                 }
+                if (calcPartId && isUnique && kvKeyValue != null && kvKeyValue.getValue() != null) {
+                    TransactionUtil.resolvePessimisticLock(
+                        param.getIsolationLevel(),
+                        txnId,
+                        tableId,
+                        partId,
+                        deadLockKeyBytes,
+                        key,
+                        param.getStartTs(),
+                        txnPessimisticLock.getForUpdateTs(),
+                        true,
+                        new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
+                    );
+                }
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
                 byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
@@ -330,7 +348,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     localStore.put(extraKeyValue);
                 }
                 if (context.getIndexId() != null) {
-                    LogUtils.info(log, "{}, txnPessimisticLock :{} , index is not null", txnId, Arrays.toString(key));
+                    LogUtils.debug(log, "{}, txnPessimisticLock :{} , index is not null", txnId, Arrays.toString(key));
                     vertex.getOutList().forEach(o -> o.transformToNext(context, copyTuple));
                     return true;
                 }
@@ -365,7 +383,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     }
                     KeyValue value = keyValues.get(0);
                     byte[] oldKey = value.getKey();
-                    LogUtils.info(log, "{}, repeat key :{}", txnId, Arrays.toString(oldKey));
+                    LogUtils.debug(log, "{}, repeat key :{}", txnId, Arrays.toString(oldKey));
                     if (oldKey[oldKey.length - 2] == Op.DELETE.getCode()) {
                         return true;
                     }
@@ -388,7 +406,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     }
                     localStore.put(extraKeyValue);
                     if (context.getIndexId() != null) {
-                        LogUtils.info(log, "{}, repeat primary key :{} keyValue is not null, index is not null", txnId, Arrays.toString(key));
+                        LogUtils.debug(log, "{}, repeat primary key :{} keyValue is not null, index is not null", txnId, Arrays.toString(key));
                         vertex.getOutList().forEach(o -> o.transformToNext(context, copyTuple));
                         return true;
                     }
@@ -399,18 +417,18 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     return true;
                 } else {
                     if (context.getIndexId() != null) {
-                        LogUtils.info(log, "{}, repeat primary key :{} keyValue is not null, index is not null", txnId, Arrays.toString(key));
+                        LogUtils.debug(log, "{}, repeat primary key :{} keyValue is not null, index is not null", txnId, Arrays.toString(key));
                         vertex.getOutList().forEach(o -> o.transformToNext(context, copyTuple));
                         return true;
                     }
                     KeyValue kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), originalKey, param.getLockTimeOut());
                     if (kvKeyValue == null || kvKeyValue.getValue() == null) {
-                        LogUtils.info(log, "{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
+                        LogUtils.debug(log, "{}, repeat primary key :{} keyValue is null", txnId, Arrays.toString(primaryLockKeyBytes));
                         @Nullable Object[] finalTuple1 = tuple;
                         vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                         return true;
                     }
-                    LogUtils.info(log, "{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
+                    LogUtils.debug(log, "{}, repeat primary key :{} keyValue is not null", txnId, Arrays.toString(key));
                     if (isVector || isDocument) {
                         kvKeyValue.setKey(codec.encodeKey(dest));
                     }
@@ -497,7 +515,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             if (newForUpdateTs != forUpdateTs) {
                 forUpdateTsByte = PrimitiveCodec.encodeLong(newForUpdateTs);
             }
-            LogUtils.info(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(oldKey));
+            LogUtils.debug(log, "{}, forUpdateTs:{} txnPessimisticLock :{}", txnId, newForUpdateTs, Arrays.toString(oldKey));
             if(vertex.getTask().getStatus() == Status.STOPPED) {
                 TransactionUtil.resolvePessimisticLock(
                     param.getIsolationLevel(),
