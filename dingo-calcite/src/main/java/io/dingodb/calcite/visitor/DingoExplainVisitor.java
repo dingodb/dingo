@@ -52,6 +52,7 @@ import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.mysql.Explain;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Utils;
@@ -63,6 +64,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -96,9 +98,11 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         if (rel.getFilter() != null) {
             info = rel.getFilter().toString();
         }
-        List<String> nameList = rel.getIndexTdMap().values()
-            .stream()
-            .map(Table::getName)
+        List<CommonId> idList = rel.getIndexSetMap().keySet().stream().collect(Collectors.toList());
+        Map<CommonId, Table> tableIndexes = rel.getIndexTdMap();
+        List<String> nameList = idList.stream()
+            .filter(id -> tableIndexes.containsKey(id))
+            .map(id -> tableIndexes.get(id).getName())
             .collect(Collectors.toList());
         String table = StringUtils.join(nameList);
         return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info);
