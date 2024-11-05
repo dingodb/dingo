@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -30,7 +31,9 @@ import io.dingodb.partition.PartitionService;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @JsonTypeName("distributionSource")
@@ -62,6 +65,8 @@ public class DistributionSourceParam extends SourceParam {
     private int keepOrder;
     @JsonProperty("concurrencyLevel")
     private final int concurrencyLevel;
+    @Setter
+    private Map<CommonId, Integer> splitRetry = new ConcurrentHashMap<>();
 
     public DistributionSourceParam(
         Table td,

@@ -17,9 +17,11 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Vertex;
@@ -157,6 +159,8 @@ public class NewCalcDistributionOperator extends SourceOperator {
             copyContext.setDistribution(distribution);
             return vertex.getSoleEdge().transformToNext(copyContext, null);
         };
+        Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 30);
         return CompletableFuture.supplyAsync(
             supplier, Executors.executor(
                 "operator-" + vertex.getTask().getJobId() + "-"
@@ -164,6 +168,21 @@ public class NewCalcDistributionOperator extends SourceOperator {
             .exceptionally(ex -> {
                 if (ex != null) {
                     if (ex.getCause() instanceof RegionSplitException) {
+                        int retry;
+                        if (param.getSplitRetry().containsKey(distribution.getId())) {
+                            int retryCnt = param.getSplitRetry().get(distribution.getId());
+                            retry = retryCnt + 1;
+                        } else {
+                            retry = 1;
+                        }
+                        if (retry > 10) {
+                            MetaService.root().invalidateDistribution(param.getTd().getTableId());
+                        }
+                        if (retry > maxRetry) {
+                            LogUtils.error(log, ex.getMessage(), ex);
+                            throw new RuntimeException("The number of split retries exceeds the maximum limit");
+                        }
+                        param.getSplitRetry().put(distribution.getId(), retry);
                         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> tmpDistribution =
                             MetaService.root().getRangeDistribution(param.getTd().getTableId());
                         DistributionSourceParam copyParam = param.copy(

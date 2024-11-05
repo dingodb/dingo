@@ -98,7 +98,8 @@ public final class DdlHandler {
         sqlBuilder.append(
             String.format(
                 format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
-                Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(), !job.notStarted()
+                Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(),
+                !job.notStarted()
             )
         );
         String sql = sqlBuilder.toString();
