@@ -247,6 +247,17 @@ public class MetaCache {
             TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(
                 tableId
             );
+            if (tableWithId == null) {
+                LogUtils.error(log, "getTableByStore is null, tableId:{}", tableId);
+                InfoSchema is = DdlService.root().getIsLatest();
+                Table table = is.getTable(tableId.seq);
+                if (table == null) {
+                    LogUtils.error(log, "getTableByIs is null, tableId:{}", tableId);
+                } else {
+                    LogUtils.error(log, "getTableByIs is not null, tableId:{}", tableId);
+                }
+                return null;
+            }
             TableDefinition tableDefinition = tableWithId.getTableDefinition();
             List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
             tableDefinition.getTablePartition().getPartitions()

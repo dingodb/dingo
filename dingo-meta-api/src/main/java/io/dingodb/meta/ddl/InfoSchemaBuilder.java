@@ -59,7 +59,9 @@ public class InfoSchemaBuilder {
     }
 
     public static Map<String, SchemaTables> deepCopy(Map<String, SchemaTables> original) {
-        if (original == null) return null;
+        if (original == null) {
+            return null;
+        }
         Map<String, SchemaTables> copy = new ConcurrentHashMap<>();
         for (Map.Entry<String, SchemaTables> entry : original.entrySet()) {
             copy.put(entry.getKey(), entry.getValue().copy());
@@ -81,7 +83,9 @@ public class InfoSchemaBuilder {
         return copy;
     }
 
-    public void initWithSchemaInfos(List<SchemaInfo> schemaInfos, long schemaVersion, InfoSchemaService infoSchemaService) {
+    public void initWithSchemaInfos(
+        List<SchemaInfo> schemaInfos, long schemaVersion, InfoSchemaService infoSchemaService
+    ) {
         if (is == null) {
             is = new InfoSchema();
         }
@@ -100,7 +104,9 @@ public class InfoSchemaBuilder {
             int idx = bucketIdx(t.tableId.seq);
             is.sortedTablesBuckets.computeIfAbsent(idx, k -> new ArrayList<>());
             is.sortedTablesBuckets.computeIfPresent(idx, (k, v) -> {
-                TableInfoCache tableInfo = new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName());
+                TableInfoCache tableInfo = new TableInfoCache(
+                    t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName()
+                );
                 if (!v.contains(tableInfo)) {
                     v.add(new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName()));
                 }
@@ -137,7 +143,9 @@ public class InfoSchemaBuilder {
             int idx = bucketIdx(t.tableId.seq);
             is.sortedTablesBuckets.computeIfAbsent(idx, k -> new ArrayList<>());
             is.sortedTablesBuckets.computeIfPresent(idx, (k, v) -> {
-                TableInfoCache tableInfo = new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName());
+                TableInfoCache tableInfo = new TableInfoCache(
+                    t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName()
+                );
                 if (!v.contains(tableInfo)) {
                     v.add(new TableInfoCache(t.tableId.seq, t.name, schemaInfo.getSchemaId(), schemaInfo.getName()));
                 }
@@ -229,7 +237,9 @@ public class InfoSchemaBuilder {
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
             this.is.putTable(schemaInfo.getName(), table.name, table);
             int idx = bucketIdx(diff.getTableId());
-            TableInfoCache tmp = new TableInfoCache(table.tableId.seq, table.name, schemaInfo.getSchemaId(), schemaInfo.getName());
+            TableInfoCache tmp = new TableInfoCache(
+                table.tableId.seq, table.name, schemaInfo.getSchemaId(), schemaInfo.getName()
+            );
             if (is.sortedTablesBuckets.containsKey(idx)) {
                 List<TableInfoCache> buckets = is.sortedTablesBuckets.get(idx);
                 buckets.add(tmp);

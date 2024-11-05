@@ -34,14 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public final class MetaLockCheckHandler {
-    volatile static long saveMaxSchemaVersion = 0;
-    volatile static boolean jobNeedToSync = false;
-    volatile static Map<Long, Long> jobCache = new ConcurrentHashMap<>();
+    static volatile long saveMaxSchemaVersion = 0;
+    static volatile boolean jobNeedToSync = false;
+    static volatile Map<Long, Long> jobCache = new ConcurrentHashMap<>();
+
     private MetaLockCheckHandler() {
     }
 
     public static void watchCheckMdlVer() {
-        MdlCheckMdlVerListenerImpl checkListener = new MdlCheckMdlVerListenerImpl(MetaLockCheckHandler::checkMdlVersionByLocal);
+        MdlCheckMdlVerListenerImpl checkListener
+            = new MdlCheckMdlVerListenerImpl(MetaLockCheckHandler::checkMdlVersionByLocal);
         DdlJobEventSource ddlJobEventSource = DdlJobEventSource.ddlJobEventSource;
         ddlJobEventSource.addMdlCheckVerListener(checkListener);
     }
@@ -62,7 +64,7 @@ public final class MetaLockCheckHandler {
         }
     }
 
-    private synchronized static void checkMdlVersion() {
+    private static synchronized void checkMdlVersion() {
         try {
             MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
             mdlCheckTableInfo.wLock();
@@ -72,7 +74,8 @@ public final class MetaLockCheckHandler {
             } else if (!jobNeedToSync) {
                 mdlCheckTableInfo.wUnlock();
                 if (DdlUtil.timeOutError.get()) {
-                    LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                    LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
+                        maxVer, saveMaxSchemaVersion);
                     //DdlUtil.timeOutError.set(false);
                 }
                 return;
@@ -80,7 +83,8 @@ public final class MetaLockCheckHandler {
             int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
             if (jobNeedToCheckCnt == 0) {
                 jobNeedToSync = false;
-                LogUtils.info(log, "[ddl] mdl check job need to check cnt is 0,max ver:{} saveMaxSchema ver:{}", maxVer, saveMaxSchemaVersion);
+                LogUtils.info(log, "[ddl] mdl check job need to check cnt is 0,max ver:{} saveMaxSchema ver:{}",
+                    maxVer, saveMaxSchemaVersion);
                 mdlCheckTableInfo.wUnlock();
                 return;
             }
@@ -94,8 +98,8 @@ public final class MetaLockCheckHandler {
                 jobNeedToSync = false;
             }
             if (maxVer > maxMdlInfoVer) {
-                LogUtils.info(log, "maxVer > maxMdlVer, maxVer:{}, maxMdlVer:{}, jobNeedToSync:{}"
-                    , maxVer, maxMdlInfoVer, jobNeedToSync);
+                LogUtils.info(log, "maxVer > maxMdlVer, maxVer:{}, maxMdlVer:{}, jobNeedToSync:{}",
+                    maxVer, maxMdlInfoVer, jobNeedToSync);
             }
             if (jobCache.size() > 1000) {
                 jobCache = new HashMap<>();
@@ -124,7 +128,8 @@ public final class MetaLockCheckHandler {
                 LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}, save ver:{}, jobNeedSync:{}",
                     entry.getKey(), entry.getValue(), saveMaxSchemaVersion, jobNeedToSync);
                 try {
-                    DdlContext.INSTANCE.getSchemaSyncer().updateSelfVersion(System.identityHashCode(entry), entry.getKey(), entry.getValue());
+                    DdlContext.INSTANCE.getSchemaSyncer().updateSelfVersion(System.identityHashCode(entry),
+                        entry.getKey(), entry.getValue());
                     jobCache.put(entry.getKey(), entry.getValue());
                 } catch (Exception e) {
                     LogUtils.warn(log, "update self version failed, reason:{}", e.getMessage());

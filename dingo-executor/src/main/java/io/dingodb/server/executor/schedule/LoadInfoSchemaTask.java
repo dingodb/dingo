@@ -28,10 +28,10 @@ import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
+import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.ddl.LoadSchemaDiffs;
 import io.dingodb.meta.ddl.RelatedSchemaChange;
 import io.dingodb.meta.entity.InfoCache;
-import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.sdk.service.WatchService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
@@ -159,11 +159,14 @@ public final class LoadInfoSchemaTask {
         long start = System.currentTimeMillis();
         if (currentSchemaVersion != 0 && neededSchemaVersion > currentSchemaVersion
             && neededSchemaVersion - currentSchemaVersion < 100) {
-            LoadSchemaDiffs loadSchemaDiffs = tryLoadSchemaDiffs(infoSchemaService, currentSchemaVersion, neededSchemaVersion);
+            LoadSchemaDiffs loadSchemaDiffs = tryLoadSchemaDiffs(
+                infoSchemaService, currentSchemaVersion, neededSchemaVersion
+            );
             if (loadSchemaDiffs.getError() == null) {
                 infoCache.insert(loadSchemaDiffs.getIs(), startTs);
                 DdlContext.INSTANCE.incrementNewVer(loadSchemaDiffs.getIs().getSchemaMetaVersion());
-                return new LoadIsResponse(loadSchemaDiffs.getIs(), false, currentSchemaVersion, loadSchemaDiffs.getRelatedChange(), null);
+                return new LoadIsResponse(loadSchemaDiffs.getIs(), false, currentSchemaVersion,
+                    loadSchemaDiffs.getRelatedChange(), null);
             }
             LogUtils.error(log, "[ddl-error] failed to load schema diff, reason:{}", loadSchemaDiffs.getError());
         }
@@ -175,15 +178,17 @@ public final class LoadInfoSchemaTask {
         infoCache.insert(newIs, startTs);
         DdlContext.INSTANCE.incrementNewVer(newIs.schemaMetaVersion);
         long end = System.currentTimeMillis();
-        LogUtils.info(log, "[ddl] full load InfoSchema success,currentSchemaVersion: {}, " +
-            "neededSchemaVersion: {}, cost:{}ms, " +
-            "is schemaMap size: {}"
-            , currentSchemaVersion, neededSchemaVersion, (end - start), newIs.getSchemaMap().size());
+        LogUtils.info(log, "[ddl] full load InfoSchema success,currentSchemaVersion: {}, "
+            + "neededSchemaVersion: {}, cost:{}ms, "
+            + "is schemaMap size: {}",
+            currentSchemaVersion, neededSchemaVersion, (end - start), newIs.getSchemaMap().size());
         DdlContext.INSTANCE.waiting.set(false);
         return new LoadIsResponse(newIs, false, currentSchemaVersion, null, null);
     }
 
-    public static LoadSchemaDiffs tryLoadSchemaDiffs(InfoSchemaService infoSchemaService, long usedVersion, long newVersion) {
+    public static LoadSchemaDiffs tryLoadSchemaDiffs(
+        InfoSchemaService infoSchemaService, long usedVersion, long newVersion
+    ) {
         List<SchemaDiff> schemaDiffList = new ArrayList<>();
         LogUtils.info(log, "[ddl] start try load schema diff, use ver:{}, new ver:{}", usedVersion, newVersion);
         long usedVerTmp = usedVersion;

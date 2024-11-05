@@ -53,6 +53,21 @@ public class InfoSchema {
         return null;
     }
 
+    public Table getTable(long tableId) {
+        int idx = bucketIdx(tableId);
+        List<TableInfoCache> buckets = this.sortedTablesBuckets.get(idx);
+        if (buckets == null) {
+            return null;
+        }
+        TableInfoCache tableInfo
+            = buckets.stream().filter(t -> t.getTableId() == tableId).findFirst().orElse(null);
+        if (tableInfo == null) {
+            return null;
+        }
+        SchemaTables schemaTables = schemaMap.get(tableInfo.getSchemaName());
+        return schemaTables.getTables().get(tableInfo.getName());
+    }
+
     public boolean dropTable(String schemaName, String tableName) {
         schemaName = schemaName.toUpperCase();
         tableName = tableName.toUpperCase();
@@ -70,21 +85,6 @@ public class InfoSchema {
             return true;
         }
         return false;
-    }
-
-    public Table getTable(long tableId) {
-        int idx = bucketIdx(tableId);
-        List<TableInfoCache> buckets = this.sortedTablesBuckets.get(idx);
-        if (buckets == null) {
-            return null;
-        }
-        TableInfoCache tableInfo
-            = buckets.stream().filter(t -> t.getTableId() == tableId).findFirst().orElse(null);
-        if (tableInfo == null) {
-            return null;
-        }
-        SchemaTables schemaTables = schemaMap.get(tableInfo.getSchemaName());
-        return schemaTables.getTables().get(tableInfo.getName());
     }
 
     public Table getIndex(long tableId, long indexId) {

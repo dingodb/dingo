@@ -113,7 +113,9 @@ public class SubCalciteSchema extends CalciteSchema {
     }
 
     @Override
-    protected void addImplicitFunctionsToBuilder(ImmutableList.Builder<Function> builder, String name, boolean caseSensitive) {
+    protected void addImplicitFunctionsToBuilder(
+        ImmutableList.Builder<Function> builder, String name, boolean caseSensitive
+    ) {
 
     }
 
@@ -128,7 +130,9 @@ public class SubCalciteSchema extends CalciteSchema {
     }
 
     @Override
-    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder(ImmutableSortedMap.Builder<String, Table> builder) {
+    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder(
+        ImmutableSortedMap.Builder<String, Table> builder
+    ) {
 
     }
 

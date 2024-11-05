@@ -99,7 +99,8 @@ public class RootCalciteSchema extends CalciteSchema {
             SubSnapshotSchema subSnapshotSchema = new SubSnapshotSchema(
                 rootSchema.is, name, rootSchema.context, ImmutableList.of(RootSnapshotSchema.ROOT_SCHEMA_NAME, name)
             );
-            builder.put(name, SubCalciteSchema.builder().rootCalciteSchema(this).name(name).schema(subSnapshotSchema).build());
+            builder.put(name, SubCalciteSchema.builder().rootCalciteSchema(this)
+                .name(name).schema(subSnapshotSchema).build());
         });
     }
 
@@ -109,7 +110,9 @@ public class RootCalciteSchema extends CalciteSchema {
     }
 
     @Override
-    protected void addImplicitFunctionsToBuilder(ImmutableList.Builder<Function> builder, String name, boolean caseSensitive) {
+    protected void addImplicitFunctionsToBuilder(
+        ImmutableList.Builder<Function> builder, String name, boolean caseSensitive
+    ) {
 
     }
 
@@ -124,7 +127,9 @@ public class RootCalciteSchema extends CalciteSchema {
     }
 
     @Override
-    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder(ImmutableSortedMap.Builder<String, Table> builder) {
+    protected void addImplicitTablesBasedOnNullaryFunctionsToBuilder(
+        ImmutableSortedMap.Builder<String, Table> builder
+    ) {
 
     }
 

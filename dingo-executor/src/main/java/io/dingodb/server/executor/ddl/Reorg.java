@@ -40,6 +40,7 @@ import java.util.function.Function;
 @Slf4j
 public class Reorg {
     public static final Reorg INSTANCE = new Reorg();
+
     private Reorg() {
 
     }

@@ -23,6 +23,7 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -45,12 +46,12 @@ import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.partition.base.RangePartitionService;
 import io.dingodb.server.executor.service.BackFiller;
 import io.dingodb.store.api.StoreInstance;
-import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.data.Op;
@@ -59,7 +60,6 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
-import io.dingodb.common.metrics.DingoMetrics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -133,7 +133,9 @@ public class IndexAddFiller implements BackFiller {
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
-        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
+        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(
+            table.getVersion(), table.tupleType(), table.keyMapping()
+        );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),
             new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
@@ -445,7 +447,8 @@ public class IndexAddFiller implements BackFiller {
             .txnSize(1L)
             .tryOnePc(false)
             .maxCommitTs(0L)
-            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(
+                cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
                 TransactionType.OPTIMISTIC.getCode(), 1))
             .build();
         try {
@@ -482,7 +485,9 @@ public class IndexAddFiller implements BackFiller {
 
     private Iterator<Object[]> getIterator(ReorgBackFillTask task, CommonId tableId, boolean check) {
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            table.getVersion(), table.tupleType(), table.keyMapping()
+        );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),
             new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),
@@ -561,17 +566,12 @@ public class IndexAddFiller implements BackFiller {
             }
         }
     }
-    private List<CommonId> regionList = new ArrayList<>();
 
     public TxnLocalData getTxnLocalData(Object[] tuplesTmp) {
         KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
             getRegionList();
         CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
-        if (!regionList.contains(partId)) {
-            regionList.add(partId);
-            LogUtils.info(log, "multi part region, list size:{}", regionList.size());
-        }
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         Op op;
         if (indexTable.unique) {
@@ -648,7 +648,9 @@ public class IndexAddFiller implements BackFiller {
                 int op = txnLocalData.getOp().getCode();
                 byte[] key = txnLocalData.getKey();
                 byte[] value = txnLocalData.getValue();
-                Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, indexTable.tableId, newPartId, txnId);
+                Mutation mutation = TransactionCacheToMutation.cacheToMutation(
+                    op, key, value, 0L, indexTable.tableId, newPartId, txnId
+                );
                 CommonId partId = param.getPartId();
                 if (partId == null) {
                     partId = newPartId;

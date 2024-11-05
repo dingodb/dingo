@@ -54,7 +54,9 @@ public class DdlService implements io.dingodb.meta.DdlService {
     }
 
     @Override
-    public void createTableWithInfo(String schemaName, String tableName, @NonNull TableDefinition tableDefinition, String connId, String sql) {
+    public void createTableWithInfo(
+        String schemaName, String tableName, @NonNull TableDefinition tableDefinition, String connId, String sql
+    ) {
         DdlHandler.createTableWithInfo(schemaName, tableDefinition, connId, sql);
     }
 
@@ -110,7 +112,8 @@ public class DdlService implements io.dingodb.meta.DdlService {
         InfoSchemaService service = InfoSchemaService.root();
         Object tableObj = service.getTable(schemaName, tableName);
 
-        LogUtils.info(log, "[ddl] ddlService getTable by name from store kv, schemaName:{},tableName:{}, tab is null:{}", schemaName, tableName, (tableObj == null));
+        LogUtils.info(log, "[ddl] ddlService getTable by name from store kv, schemaName:{},tableName:{}, "
+            + "tab is null:{}", schemaName, tableName, (tableObj == null));
         return (Table) tableObj;
     }
 

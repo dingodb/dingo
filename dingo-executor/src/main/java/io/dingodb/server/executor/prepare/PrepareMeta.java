@@ -221,7 +221,9 @@ public final class PrepareMeta {
     }
 
     public static void initGlobalVariables(String coordinators) {
-        VersionService versionService = io.dingodb.sdk.service.Services.versionService(io.dingodb.sdk.service.Services.parse(coordinators));
+        VersionService versionService = io.dingodb.sdk.service.Services.versionService(
+            io.dingodb.sdk.service.Services.parse(coordinators)
+        );
         List<Object[]> globalVariablesList = getGlobalVariablesList();
         for (Object[] objects : globalVariablesList) {
             versionService.kvPut(putRequest(objects[0], objects[1]));
@@ -246,7 +248,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"thread_concurrency", "10"});
         values.add(new Object[]{"time_zone", "SYSTEM"});
         values.add(new Object[]{"system_time_zone", "UTC"});
-        values.add(new Object[]{"sql_mode", "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"});
+        values.add(new Object[]{"sql_mode",
+            "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"});
         values.add(new Object[]{"query_cache_type", "OFF"});
         values.add(new Object[]{"query_cache_size", "16777216"});
         values.add(new Object[]{"performance_schema", "0"});
@@ -317,7 +320,7 @@ public final class PrepareMeta {
                                           String tableType,
                                           String engine,
                                           String rowFormat
-                                          ) {
+    ) {
         TableDefinition tableDefinition;
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
@@ -328,7 +331,8 @@ public final class PrepareMeta {
             if (tableWithId == null) {
                 tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
                 subMetaService.createTables(tableDefinition, new ArrayList<>());
-                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
+                TableDefinitionWithId tableDefinitionWithId
+                    = (TableDefinitionWithId) infoSchemaService.getTable(schemaName, tableName);
                 tableId = tableDefinitionWithId.getTableId();
             } else {
                 return;
@@ -590,7 +594,8 @@ public final class PrepareMeta {
         byte[] bytes = new byte[is.available()];
         is.read(bytes);
         is.close();
-        List<io.dingodb.sdk.common.table.ColumnDefinition> definitions = JSON.parseArray(new String(bytes), io.dingodb.sdk.common.table.ColumnDefinition.class);
+        List<io.dingodb.sdk.common.table.ColumnDefinition> definitions
+            = JSON.parseArray(new String(bytes), io.dingodb.sdk.common.table.ColumnDefinition.class);
         return definitions
             .stream()
             .map(def -> ColumnDefinition.builder()

@@ -19,10 +19,10 @@ package io.dingodb.exec.transaction.util;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -62,7 +62,7 @@ import java.util.stream.IntStream;
 public final class TransactionUtil {
     public static final long lock_ttl = 60000L;
     public static final int max_pre_write_count = 4096;
-    public static final long maxRpcDataSize = 56*1024*1024;
+    public static final long maxRpcDataSize = 56 * 1024 * 1024;
     public static final long heartBeatLockTtl = 80L;
     public static final int STORE_RETRY = 60;
     public static final String snapshotIsolation = "REPEATABLE-READ";
@@ -92,7 +92,8 @@ public final class TransactionUtil {
             throw new RuntimeException("singleKeySplitRegionId get table by txn is null, tableId:" + tableId);
         }
         MetaService root = MetaService.root();
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            = root.getRangeDistribution(tableId);
         if (Optional.ofNullable(table.getPartitionStrategy())
             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME)
             .equalsIgnoreCase(DingoPartitionServiceProvider.RANGE_FUNC_NAME)) {
@@ -106,14 +107,17 @@ public final class TransactionUtil {
         return regionId;
     }
 
-    public static Map<CommonId, List<byte[]>> multiKeySplitRegionId(CommonId tableId, CommonId txnId, List<byte[]> keys) {
+    public static Map<CommonId, List<byte[]>> multiKeySplitRegionId(
+        CommonId tableId, CommonId txnId, List<byte[]> keys
+    ) {
         // 2、regin split
         MetaService root = MetaService.root();
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
         if (table == null) {
             throw new RuntimeException("multiKeySplitRegionId get table by txn is null, tableId:" + tableId);
         }
-        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution = root.getRangeDistribution(tableId);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            = root.getRangeDistribution(tableId);
         final PartitionService ps = PartitionService.getService(
             Optional.ofNullable(table.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
@@ -208,7 +212,7 @@ public final class TransactionUtil {
             }
         }
 
-        if(kvRet.size() == 0) {
+        if (kvRet.size() == 0) {
             return null;
         }
         return kvRet.get(0);
@@ -290,7 +294,9 @@ public final class TransactionUtil {
         if (table == null) {
             throw new RuntimeException("duplicateEntryKey get table by txn is null, tableId:" + tableId);
         }
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            table.version, table.tupleType(), table.keyMapping()
+        );
         TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);
     }
@@ -299,7 +305,7 @@ public final class TransactionUtil {
     public static void resolvePessimisticLock(int isolationLevel, CommonId txnId, CommonId tableId,
                                               CommonId partId, byte[] deadLockKeyBytes, byte[] primaryKey,
                                               long startTs, long forUpdateTs,
-                                              boolean hasException, Throwable e) {
+                                              boolean hasException, Throwable ex) {
         StoreInstance store;
         try {
             LogUtils.info(log, "pessimisticPrimaryLockRollBack key is {}, forUpdateTs:{}",
@@ -319,24 +325,24 @@ public final class TransactionUtil {
                     Arrays.toString(primaryKey), forUpdateTs);
             }
         } catch (Throwable throwable) {
-            LogUtils.error(log, e.getMessage(), e);
+            LogUtils.error(log, ex.getMessage(), ex);
             store = Services.LOCAL_STORE.getInstance(tableId, partId);
             // delete deadLockKey
             store.delete(deadLockKeyBytes);
         }
-        if (hasException){
-            if (e instanceof LockWaitException) {
-                throw (LockWaitException) e;
+        if (hasException) {
+            if (ex instanceof LockWaitException) {
+                throw (LockWaitException) ex;
             }
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(ex.getMessage());
         }
     }
 
     public static boolean rollBackPrimaryKey(CommonId txnId, CommonId tableId, CommonId newPartId,
                                    int isolationLevel, long startTs, byte[] key) {
         // 1、Async call sdk TxnRollBack
-        TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
-            isolationLevel(IsolationLevel.of(isolationLevel))
+        TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder()
+            .isolationLevel(IsolationLevel.of(isolationLevel))
             .startTs(startTs)
             .keys(Collections.singletonList(key))
             .build();

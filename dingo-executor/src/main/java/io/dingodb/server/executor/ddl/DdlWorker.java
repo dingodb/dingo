@@ -40,21 +40,18 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
-import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
@@ -161,7 +158,8 @@ public class DdlWorker {
         }
         //List<Object[]> rows;
         //try {
-        //    rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id = " + job.getId());
+        //    rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id
+        //    = " + job.getId());
         //} catch (Exception e) {
         //    LogUtils.error(log, e.getMessage(), e);
         //    return e.getMessage();
@@ -173,7 +171,8 @@ public class DdlWorker {
         String ids = job.job2TableIDs();
         boolean duplicate = false;
         //try {
-        //    List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where job_id=" + job.getId());
+        //    List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where
+        //    job_id=" + job.getId());
         //    if (!res.isEmpty()) {
         //        duplicate = true;
         //    }
@@ -276,9 +275,10 @@ public class DdlWorker {
         }
         LogUtils.error(log, "[ddl] run DDL job error," + error + ", jobId:{}", job.getId());
         if (job.getErrorCount() > 5 && job.getState() == JobState.jobStateRunning && job.isRollbackable()) {
-            LogUtils.warn(log, "[ddl] DDL job error count exceed the limit, cancelling it now, jobId:{}", job.getId());
+            LogUtils.warn(log, "[ddl] DDL job error count exceed the limit, cancelling it now, jobId:{}",
+                job.getId());
             job.setState(JobState.jobStateCancelling);
-        } else if (job.getErrorCount() > 10){
+        } else if (job.getErrorCount() > 10) {
             LogUtils.error(log, "[ddl] DDL job error count exceed max limit,jobId:{}", job.getId());
             job.setState(JobState.jobStateCancelling);
         }
@@ -394,7 +394,6 @@ public class DdlWorker {
         if (job.getArgs() != null) {
             newTableId = (long) job.getArgs().get(0);
         }
-        Pair<Long, String> res;
         if (job.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
             job.setSchemaState(SchemaState.SCHEMA_GLOBAL_TXN_ONLY);
             return updateSchemaVersion(dc, job);
@@ -412,7 +411,7 @@ public class DdlWorker {
             LogUtils.error(log, "truncate table error", e);
         }
         //job.setTableId(tableId);
-        res = updateSchemaVersion(dc, job);
+        Pair<Long, String> res = updateSchemaVersion(dc, job);
         if (res.getValue() != null) {
             return res;
         }
@@ -462,7 +461,7 @@ public class DdlWorker {
                 //    return res;
                 //}
                 //break;
-            //case SCHEMA_DELETE_ONLY:
+                //case SCHEMA_DELETE_ONLY:
                 tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
                 long start = System.currentTimeMillis();
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
@@ -545,14 +544,16 @@ public class DdlWorker {
                 TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
-                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, indexInfo.getSchemaState() != originState);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    indexInfo.getSchemaState() != originState);
             case SCHEMA_WRITE_ONLY:
                 indexInfo.setSchemaState(SchemaState.SCHEMA_WRITE_REORG);
                 indexWithId = IndexUtil.getIndexWithId(table, indexInfo.getName());
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_REORG);
                 job.setSnapshotVer(0);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_REORG);
-                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, indexInfo.getSchemaState() != originState);
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    indexInfo.getSchemaState() != originState);
             case SCHEMA_WRITE_REORG:
                 Pair<Boolean, Long> reorgRes;
                 try {
@@ -574,7 +575,8 @@ public class DdlWorker {
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
                 // update version and index info
-                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, originState != indexInfo.getSchemaState());
+                return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                    originState != indexInfo.getSchemaState());
             default:
                 error = "ErrInvalidDDLState";
                 break;
@@ -602,7 +604,8 @@ public class DdlWorker {
             return Pair.of(0L, "index not exists");
         }
         TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexName);
-        io.dingodb.sdk.service.entity.common.SchemaState originState = indexWithId.getTableDefinition().getSchemaState();
+        io.dingodb.sdk.service.entity.common.SchemaState originState
+            = indexWithId.getTableDefinition().getSchemaState();
         switch (indexWithId.getTableDefinition().getSchemaState()) {
             case SCHEMA_PUBLIC:
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
@@ -653,8 +656,6 @@ public class DdlWorker {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, error);
         }
-        String columnName = job.getArgs().get(0).toString();
-        String markDel = job.getArgs().get(1).toString();
         //String related = job.getArgs().get(2).toString();
         InfoSchemaService.root().getTable(job.getSchemaId(), job.getTableId());
         Pair<TableDefinitionWithId, String> tableInfoRes
@@ -663,6 +664,7 @@ public class DdlWorker {
             return Pair.of(0L, tableInfoRes.getValue());
         }
         TableDefinitionWithId tableWithId = tableInfoRes.getKey();
+        String columnName = job.getArgs().get(0).toString();
         ColumnDefinition columnDef = tableWithId.getTableDefinition().getColumns()
             .stream().filter(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName))
             .findFirst().orElse(null);
@@ -671,6 +673,7 @@ public class DdlWorker {
             return Pair.of(0L, "not found drop column");
         }
         List<TableDefinitionWithId> markDelIndices = null;
+        String markDel = job.getArgs().get(1).toString();
         if (StringUtils.isNotEmpty(markDel)) {
             Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
             if (StringUtils.isNotEmpty(markDel)) {
@@ -684,13 +687,13 @@ public class DdlWorker {
         switch (job.getSchemaState()) {
             case SCHEMA_PUBLIC:
                 //columnDef.setSchemaState(SCHEMA_WRITE_ONLY);
-                String originTableName = tableWithId.getTableDefinition().getName();
                 DdlColumn.setIndicesState(markDelIndices, SCHEMA_WRITE_ONLY);
                 tableWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 tableWithId.getTableDefinition()
                     .getColumns()
                     .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
                 tableWithId.getTableDefinition().setName(DdlUtil.ddlTmpTableName);
+                String originTableName = tableWithId.getTableDefinition().getName();
                 MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId, originTableName);
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
@@ -797,7 +800,6 @@ public class DdlWorker {
         switch (columnDefinition.getSchemaState()) {
             case SCHEMA_NONE:
                 TableDefinitionWithId definitionWithId = tableRes.getKey();
-                String originTableName = definitionWithId.getTableDefinition().getName();
                 definitionWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 columnDefinition.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 List<ColumnDefinition> columnDefinitions = definitionWithId.getTableDefinition().getColumns();
@@ -814,6 +816,7 @@ public class DdlWorker {
                         .getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
                 }
                 definitionWithId.getTableDefinition().setName("replicaTable");
+                String originTableName = definitionWithId.getTableDefinition().getName();
                 MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId, originTableName);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 return updateSchemaVersion(dc, job);
@@ -974,7 +977,8 @@ public class DdlWorker {
             DingoMetrics.counter("setSchemaDiff").inc();
             return Pair.of(schemaVersion, null);
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] put schemaDiff error, jobId:" + ddlJob.getId() + ", version:" + schemaVersion, e);
+            LogUtils.error(log, "[ddl-error] put schemaDiff error, jobId:" + ddlJob.getId()
+                + ", version:" + schemaVersion, e);
             return Pair.of(0L, e.getMessage());
         } finally {
             LogUtils.info(log, "[ddl] updateSchemaVersion done, jobId:{}, version:{}", ddlJob.getId(), schemaVersion);
@@ -1010,8 +1014,8 @@ public class DdlWorker {
                 return error;
             }
             long end = System.currentTimeMillis();
-            LogUtils.info(log, "[ddl] wait latest schema version changed, ver:{}, " +
-                "take time:{}, job:{}", latestSchemaVersion, (end - start), ddlJob.getId());
+            LogUtils.info(log, "[ddl] wait latest schema version changed, ver:{}, "
+                + "take time:{}, job:{}", latestSchemaVersion, (end - start), ddlJob.getId());
             return null;
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);

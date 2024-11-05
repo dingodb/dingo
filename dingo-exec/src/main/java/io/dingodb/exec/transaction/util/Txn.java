@@ -162,7 +162,8 @@ public class Txn {
             .txnSize(1L)
             .tryOnePc(false)
             .maxCommitTs(0L)
-            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(),
+                cacheToObject.getPartId(), txnId,
                 TransactionType.OPTIMISTIC.getCode(), 1))
             .build();
         try {
@@ -253,7 +254,9 @@ public class Txn {
         }
     }
 
-    public static Pair<Boolean, Map<CommonId, List<byte[]>>> txnPreWriteWithRePartId(PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId) {
+    public static Pair<Boolean, Map<CommonId, List<byte[]>>> txnPreWriteWithRePartId(
+        PreWriteParam param, CommonId txnId, CommonId tableId, CommonId partId
+    ) {
         // 1、call sdk TxnPreWrite
         Timer.Context timeCtx = DingoMetrics.getTimeContext("preWrite");
         param.setTxnSize(param.getMutations().size());
@@ -330,7 +333,9 @@ public class Txn {
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
             byte[] value = txnLocalData.getValue();
-            Mutation mutation = TransactionCacheToMutation.cacheToMutation(op, key, value, 0L, tableId, newPartId, txnId);
+            Mutation mutation = TransactionCacheToMutation.cacheToMutation(
+                op, key, value, 0L, tableId, newPartId, txnId
+            );
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -383,12 +388,16 @@ public class Txn {
                     .keys(Collections.singletonList(primaryKey))
                     .build();
                 try {
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                    StoreInstance store = Services.KV_STORE.getInstance(
+                        cacheToObject.getTableId(), cacheToObject.getPartId()
+                    );
                     return store.txnCommit(commitRequest);
                 } catch (RegionSplitException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     // 2、regin split
-                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(
+                        cacheToObject.getTableId(), txnId, primaryKey
+                    );
                     cacheToObject.setPartId(regionId);
                     Utils.sleep(100);
                 } catch (CommitTsExpiredException e) {
@@ -422,12 +431,16 @@ public class Txn {
                     indexTable = (IndexTable) DdlService.root().getTable(tableId);
                 }
                 if (indexTable.indexType.isVector) {
-                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                        indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                    );
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
                     TupleMapping mapping = TupleMapping.of(new int[]{0});
                     DingoType dingoType = new LongType(false);
                     TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
+                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(
+                        indexTable.version, tupleType, mapping
+                    );
                     key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                 }
             }
@@ -516,7 +529,9 @@ public class Txn {
         }
     }
 
-    public void resolveWriteConflict(RuntimeException exception, List<TxnLocalData> secondList, List<TxnLocalData> tupleList) {
+    public void resolveWriteConflict(
+        RuntimeException exception, List<TxnLocalData> secondList, List<TxnLocalData> tupleList
+    ) {
         rollback(tupleList);
         int txnRetryLimit = retryCnt;
         RuntimeException conflictException = exception;
@@ -552,7 +567,9 @@ public class Txn {
             // 1、get commit_ts
             // 2、generator job、task、RollBackOperator
             // 3、run RollBack
-            RollBackParam param = new RollBackParam(dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC, primaryKey);
+            RollBackParam param = new RollBackParam(
+                dingoType, isolationLevel, startTs, TransactionType.OPTIMISTIC, primaryKey
+            );
             param.init(null);
             for (TxnLocalData txnLocalData : tupleList) {
                 CommonId txnId = txnLocalData.getTxnId();
@@ -567,12 +584,16 @@ public class Txn {
                         indexTable = (IndexTable) DdlService.root().getTable(tableId);
                     }
                     if (indexTable.indexType.isVector) {
-                        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                            indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                        );
                         Object[] decodeKey = codec.decodeKeyPrefix(key);
                         TupleMapping mapping = TupleMapping.of(new int[]{0});
                         DingoType dingoType = new LongType(false);
                         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                        KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
+                        KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(
+                            indexTable.version, tupleType, mapping
+                        );
                         key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                     }
                 }

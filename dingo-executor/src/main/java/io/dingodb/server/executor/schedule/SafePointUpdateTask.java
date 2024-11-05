@@ -160,12 +160,14 @@ public final class SafePointUpdateTask {
                     } else {
                         break;
                     }
-                } while (true);
+                }
+                while (true);
             }
 
             LogUtils.info(log, "Update safe point to: {}", safeTs);
             if (!isDisable(reqTs)) {
-                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder = UpdateGCSafePointRequest.builder();
+                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
+                    = UpdateGCSafePointRequest.builder();
                 // TODO
                 builder.safePoint(0);
                 if (TenantConstant.TENANT_ID == 0) {
@@ -206,7 +208,7 @@ public final class SafePointUpdateTask {
     }
 
     private static boolean isDisable(long reqTs) {
-       return Optional.of(Services.versionService(coordinatorSet()).kvRange(reqTs, enableKeyReq))
+        return Optional.of(Services.versionService(coordinatorSet()).kvRange(reqTs, enableKeyReq))
             .map(RangeResponse::getKvs)
             .filter($ -> !$.isEmpty())
             .map($ -> $.get(0))

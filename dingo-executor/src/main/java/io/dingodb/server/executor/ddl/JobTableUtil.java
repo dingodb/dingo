@@ -123,8 +123,8 @@ public final class JobTableUtil {
                 Session session1 = SessionUtil.INSTANCE.getSession();
                 try {
                     if (job1.getActionType() == ActionType.ActionDropSchema) {
-                        String sql = "select job_id from mysql.dingo_ddl_job where schema_ids = %s " +
-                            "and processing limit 1";
+                        String sql = "select job_id from mysql.dingo_ddl_job where schema_ids = %s "
+                            + "and processing limit 1";
                         sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()));
                         return checkJobIsRunnable(session1, sql);
                     }

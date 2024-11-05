@@ -33,13 +33,13 @@ public class DdlWorkerFactory extends BasePooledObjectFactory<DdlWorker> {
     }
 
     @Override
-    public boolean validateObject(PooledObject<DdlWorker> p) {
-        return p.getObject().getSession().validate();
+    public boolean validateObject(PooledObject<DdlWorker> pool) {
+        return pool.getObject().getSession().validate();
     }
 
 
     @Override
-    public void destroyObject(PooledObject<DdlWorker> p) throws Exception {
-        SessionUtil.INSTANCE.closeSession(p.getObject().getSession());
+    public void destroyObject(PooledObject<DdlWorker> pool) throws Exception {
+        SessionUtil.INSTANCE.closeSession(pool.getObject().getSession());
     }
 }

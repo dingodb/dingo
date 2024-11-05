@@ -65,7 +65,8 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         try {
             scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.setJobFactory(Job.FACTORY);
-            startScheduler(new LockService("executor-scheduler-" + TenantConstant.TENANT_ID, Configuration.coordinators()));
+            startScheduler(new LockService("executor-scheduler-" + TenantConstant.TENANT_ID,
+                Configuration.coordinators()));
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }

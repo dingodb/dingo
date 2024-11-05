@@ -36,6 +36,7 @@ import java.util.function.Function;
 public class MetaKvTxn extends CommitBase {
     Function<String, byte[]> getMetaRegionKey;
     Function<String, byte[]> getMetaRegionEndKey;
+
     public MetaKvTxn(StoreService storeService,
                      CommonId partId,
                      Function<String, byte[]> getMetaRegionKey,
@@ -84,7 +85,11 @@ public class MetaKvTxn extends CommitBase {
             byte[] startInner = scanRegionInfo.getRange().getStartKey();
             byte[] endInner = scanRegionInfo.getRange().getEndKey();
             RangeDistribution distribution = RangeDistribution.builder()
-                .id(new CommonId(CommonId.CommonType.DISTRIBUTION, scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId()))
+                .id(
+                    new CommonId(CommonId.CommonType.DISTRIBUTION,
+                        scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId()
+                    )
+                )
                 .startKey(startInner)
                 .endKey(endInner)
                 .build();

@@ -108,37 +108,16 @@ public final class DingoScanWithRelOpVisitFun {
         } else {
             int partitionNum = partitions.size();
             if (td.getPartitionStrategy().equalsIgnoreCase("HASH")) {
-                // Partition will be split in executing time.
-//                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
-                    outputs.add(createVerticesForRange(
-                        task,
-                        idGenerator,
-                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
-                        null,
-                        null,
-                        scanVertexCreator
-                    ));
-                    visitor.setScan(true);
-                    return outputs;
-//                }
-//                NavigableMap<ComparableByteArray, RangeDistribution> rangeDistributions = tableInfo.getRangeDistributions();
-//                for (int i = 0; i < partitionNum; ++i) {
-//                    Partition partition = partitions.get(i);
-//                    NavigableMap<ComparableByteArray, RangeDistribution> subMap = rangeDistributions.subMap(
-//                        new ComparableByteArray(partition.getStart()),
-//                        true,
-//                        new ComparableByteArray(partition.getEnd()),
-//                        false
-//                    );
-//                    outputs.add(createVerticesForRange(
-//                        task,
-//                        idGenerator,
-//                        (start, end) -> createCalcHashDistributionVertex(rel, subMap, start, end, false),
-//                        null,
-//                        null,
-//                        scanVertexCreator
-//                    ));
-//                }
+                outputs.add(createVerticesForRange(
+                    task,
+                    idGenerator,
+                    (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
+                    null,
+                    null,
+                    scanVertexCreator
+                ));
+                visitor.setScan(true);
+                return outputs;
             } else {
                 if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(

@@ -59,7 +59,6 @@ import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.proxy.Configuration;
-
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.SneakyThrows;
@@ -158,7 +157,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return val != null;
     }
 
-    public boolean checkSchemaNameExists(String schemaName){
+    public boolean checkSchemaNameExists(String schemaName) {
         List<SchemaInfo> schemaInfoList = listSchema();
         return schemaInfoList.stream()
             .anyMatch(schemaInfo -> schemaInfo.getName().equalsIgnoreCase(schemaName));
@@ -339,6 +338,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return getSchemaInfos(tenantKey);
     }
 
+    public List<SchemaInfo> listSchema(long tenantId) {
+        byte[] tenantKey = tenantKey(tenantId);
+
+        return getSchemaInfos(tenantKey);
+    }
+
     @NonNull
     private List<SchemaInfo> getSchemaInfos(byte[] tenantKey) {
         List<byte[]> valueList = txn.hGetAll(tenantKey);
@@ -349,12 +354,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();
-    }
-
-    public List<SchemaInfo> listSchema(long tenantId) {
-        byte[] tenantKey = tenantKey(tenantId);
-
-        return getSchemaInfos(tenantKey);
     }
 
     @Override
@@ -378,6 +377,58 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public Object getTable(CommonId tableId) {
+        return getTable(tableId,-1);
+    }
+
+    @Override
+    public Object getTable(CommonId tableId, long tenantId) {
+        if (tableId.type == CommonId.CommonType.TABLE) {
+            return tenantId != -1 ? getTable(tableId.domain, tableId.seq, tenantId)
+                : getTable(tableId.domain, tableId.seq);
+        } else if (tableId.type == CommonId.CommonType.INDEX) {
+            return getIndex(tableId.domain, tableId.seq);
+        }
+        return null;
+    }
+
+    @Override
+    public Object getTable(long schemaId, String tableName) {
+        return getTable(schemaId, tableName, tenantId);
+    }
+
+    @Override
+    public Object getTable(long schemaId, String tableName, long tenantId) {
+        List<Object> tableList = listTable(schemaId, tenantId);
+        return tableList.stream().map(object -> (TableDefinitionWithId)object)
+            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition()
+                .getName().equalsIgnoreCase(tableName))
+            .findFirst().orElse(null);
+    }
+
+    @Override
+    public Object getTable(String schemaName, String tableName) {
+        SchemaInfo schemaInfo = getSchema(schemaName);
+        if (schemaInfo == null) {
+            return null;
+        }
+        return getTable(schemaInfo.getSchemaId(), tableName);
+    }
+
+    @Override
+    public Object getTable(long tableId) {
+        List<SchemaInfo> schemaList = listSchema();
+        return schemaList.stream()
+            .map(schemaInfo -> listTable(schemaInfo.getSchemaId()))
+            .map(tableList -> tableList.stream().filter(object -> {
+                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) object;
+                return tableDefinitionWithId.getTableId().getEntityId() == tableId;
+            }).findAny().orElse(null))
+            .filter(Objects::nonNull)
+            .findFirst().orElse(null);
+    }
+
+    @Override
     public Object getReplicaTable(long schemaId, long tableId, long replicaTableId) {
         List<Object> withIdList = listIndex(schemaId, tableId);
         return withIdList.stream()
@@ -386,21 +437,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 return withId.getTableDefinition().getName().equalsIgnoreCase(DdlUtil.ddlTmpTableName);
             }).findFirst()
             .orElse(null);
-    }
-
-    @Override
-    public Object getTable(CommonId tableId) {
-        return getTable(tableId,-1);
-    }
-
-    @Override
-    public Object getTable(CommonId tableId, long tenantId) {
-        if (tableId.type == CommonId.CommonType.TABLE) {
-            return tenantId != -1 ? getTable(tableId.domain, tableId.seq, tenantId) : getTable(tableId.domain, tableId.seq);
-        } else if (tableId.type == CommonId.CommonType.INDEX) {
-            return getIndex(tableId.domain, tableId.seq);
-        }
-        return null;
     }
 
     @Override
@@ -448,42 +484,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         Table table =  MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
         return table.getIndexes()
             .stream().filter(indexTable -> indexTable.getTableId().seq == indexId)
-            .findFirst().orElse(null);
-    }
-
-    @Override
-    public Object getTable(long schemaId, String tableName) {
-        return getTable(schemaId, tableName, tenantId);
-    }
-
-    @Override
-    public Object getTable(long schemaId, String tableName, long tenantId) {
-        List<Object> tableList = listTable(schemaId, tenantId);
-        return tableList.stream().map(object -> (TableDefinitionWithId)object)
-            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition()
-                .getName().equalsIgnoreCase(tableName))
-            .findFirst().orElse(null);
-    }
-
-    @Override
-    public Object getTable(String schemaName, String tableName) {
-        SchemaInfo schemaInfo = getSchema(schemaName);
-        if (schemaInfo == null) {
-            return null;
-        }
-        return getTable(schemaInfo.getSchemaId(), tableName);
-    }
-
-    @Override
-    public Object getTable(long tableId) {
-        List<SchemaInfo> schemaList = listSchema();
-        return schemaList.stream()
-            .map(schemaInfo -> listTable(schemaInfo.getSchemaId()))
-            .map(tableList -> tableList.stream().filter(object -> {
-                    TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) object;
-                    return tableDefinitionWithId.getTableId().getEntityId() == tableId;
-                }).findAny().orElse(null))
-            .filter(Objects::nonNull)
             .findFirst().orElse(null);
     }
 
@@ -687,7 +687,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return 0;
         }
         if (schemaDiff == null && version > 0) {
-           version --;
+            version --;
         }
         return version;
     }
@@ -750,8 +750,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public void delKvFromCoordinator(String key, String keyEnd) {
-        DeleteRangeRequest deleteRequest = DeleteRangeRequest.builder().key(key.getBytes()).rangeEnd(keyEnd.getBytes()).build();
-        DeleteRangeResponse response = versionService.kvDeleteRange(System.identityHashCode(deleteRequest), deleteRequest);
+        DeleteRangeRequest deleteRequest = DeleteRangeRequest.builder()
+            .key(key.getBytes()).rangeEnd(keyEnd.getBytes()).build();
+        DeleteRangeResponse response = versionService.kvDeleteRange(
+            System.identityHashCode(deleteRequest), deleteRequest
+        );
         if (response.getDeleted() < 1) {
             LogUtils.error(log, "del kv failed,key:{}, keyEnd:{}", key, keyEnd);
         }
@@ -918,10 +921,10 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public synchronized List<Long> genGlobalIDs(int n) {
+    public synchronized List<Long> genGlobalIDs(int number) {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         CreateIdsRequest request = CreateIdsRequest.builder()
-            .idEpochType(IdEpochType.ID_DDL_JOB).count(n)
+            .idEpochType(IdEpochType.ID_DDL_JOB).count(number)
             .build();
         long ts = System.identityHashCode(request);
         return coordinatorService.createIds(

@@ -132,8 +132,8 @@ public final class BackFilling {
         try {
             allFutures.get();
             long end = System.currentTimeMillis();
-            LogUtils.info(log, "[ddl] pre second key done, " +
-                "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
+            LogUtils.info(log, "[ddl] pre second key done, "
+                + "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
                 bfWorkerType, job.getId(), filler.getScanCount(),
                 filler.getAddCount(), filler.getConflictCount(), (end - start));
             start = System.currentTimeMillis();
@@ -141,8 +141,8 @@ public final class BackFilling {
             boolean commitSecondRes = filler.commitSecond();
             end = System.currentTimeMillis();
             long sub = (end - start);
-            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, " +
-                "jobId:{}, commitCnt:{}, cost:{}ms",
+            LogUtils.info(log, "[ddl] commit done, primary:{}, second:{}, bf type:{}, "
+                +  "jobId:{}, commitCnt:{}, cost:{}ms",
                 commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, "pre write second error", e);
@@ -200,8 +200,8 @@ public final class BackFilling {
         try {
             allFutures.get();
             long end = System.currentTimeMillis();
-            LogUtils.info(log, "[ddl] region split pre second key done, " +
-                    "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
+            LogUtils.info(log, "[ddl] region split pre second key done, "
+                    + "bf type:{}, jobId:{}, scanCount:{}, addCount:{}, conflict count:{}, cost:{}ms",
                 bfWorkerType, job.getId(), filler.getScanCount(),
                 filler.getAddCount(), filler.getConflictCount(), (end - start));
             start = System.currentTimeMillis();
@@ -209,8 +209,8 @@ public final class BackFilling {
             boolean commitSecondRes = filler.commitSecond();
             end = System.currentTimeMillis();
             long sub = (end - start);
-            LogUtils.info(log, "[ddl] region split commit done, primary:{}, second:{}, bf type:{}, " +
-                    "jobId:{}, commitCnt:{}, cost:{}ms",
+            LogUtils.info(log, "[ddl] region split commit done, primary:{}, second:{}, bf type:{}, "
+                    + "jobId:{}, commitCnt:{}, cost:{}ms",
                 commitPriRes, commitSecondRes, bfWorkerType, job.getId(), filler.getCommitCount(), sub);
         } catch (InterruptedException | ExecutionException e) {
             LogUtils.error(log, "region split pre write second error", e);

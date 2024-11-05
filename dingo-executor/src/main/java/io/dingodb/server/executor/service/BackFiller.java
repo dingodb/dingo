@@ -28,22 +28,38 @@ import java.util.NavigableMap;
 
 public interface BackFiller {
     boolean preWritePrimary(ReorgBackFillTask task);
+
     BackFillResult backFillDataInTxn(ReorgBackFillTask task, boolean withCheck);
+
     BackFillResult backFillDataInTxnWithCheck(ReorgBackFillTask task, boolean withCheck);
 
     boolean commitPrimary();
+
     boolean commitSecond();
 
-    default void close() {}
+    default void close() {
 
-    default long getScanCount(){ return 0; }
-    default long getAddCount(){ return 0; }
+    }
 
-    default long getCommitCount() { return  0; }
+    default long getScanCount() {
+        return 0;
+    }
 
-    default long getConflictCount() { return 0; }
+    default long getAddCount() {
+        return 0;
+    }
 
-    default List<CommonId> getDoneRegion() { return new ArrayList<>(); }
+    default long getCommitCount() {
+        return  0;
+    }
+
+    default long getConflictCount() {
+        return 0;
+    }
+
+    default List<CommonId> getDoneRegion() {
+        return new ArrayList<>();
+    }
 
     NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList();
 

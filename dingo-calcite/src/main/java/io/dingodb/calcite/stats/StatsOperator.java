@@ -87,7 +87,9 @@ public abstract class StatsOperator {
             statsTblId = statsTable.tableId;
             cmSketchTblId = cmSketchTable.tableId;
             analyzeTaskCodec = CodecService.getDefault()
-                .createKeyValueCodec(analyzeTaskTable.version, analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping());
+                .createKeyValueCodec(
+                    analyzeTaskTable.version, analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping()
+                );
             bucketsCodec = CodecService.getDefault()
                 .createKeyValueCodec(bucketsTable.version, bucketsTable.tupleType(), bucketsTable.keyMapping());
             statsCodec = CodecService.getDefault()
@@ -126,20 +128,6 @@ public abstract class StatsOperator {
     }
 
     public static void delStats(String schemaName, String tableName) {
-        try {
-//            String delTemp = "delete from %s where schema_name='%s' and table_name='%s'";
-//            List<String> sqlList = new ArrayList<>();
-//            String sqlAnalyzeTask = String.format(delTemp, "mysql.analyze_task", schemaName, tableName);
-//            String sqlStats = String.format(delTemp, "mysql.table_stats", schemaName, tableName);
-//            String sqlBuckets = String.format(delTemp, "mysql.TABLE_BUCKETS", schemaName, tableName);
-//            String sqlCmSketch = String.format(delTemp, "mysql.CM_SKETCH", schemaName, tableName);
-//            sqlList.add(sqlAnalyzeTask);
-//            sqlList.add(sqlBuckets);
-//            sqlList.add(sqlStats);
-//            sqlList.add(sqlCmSketch);
-//            StatsCache.removeCache(schemaName, tableName);
-        } catch (Exception ignored) {
-        }
     }
 
     public static void delStats(String table, String schemaName, String tableName) {
@@ -147,7 +135,8 @@ public abstract class StatsOperator {
         String sql = String.format(sqlTemp, table, schemaName, tableName);
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
-            LogUtils.error(log, "delStats error:{}, table:{}, schema:{}, tableName:{}", error, table, schemaName, tableName);
+            LogUtils.error(log, "delStats error:{}, table:{}, schema:{}, tableName:{}",
+                error, table, schemaName, tableName);
         }
     }
 

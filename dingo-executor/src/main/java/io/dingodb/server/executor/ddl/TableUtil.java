@@ -80,7 +80,7 @@ public final class TableUtil {
                                                                 boolean shouldUpdateVer) {
         Long version = 0L;
         if (shouldUpdateVer) {
-            Pair<Long, String> res= DdlWorker.updateSchemaVersion(dc, job);
+            Pair<Long, String> res = DdlWorker.updateSchemaVersion(dc, job);
             if (res.getValue() != null) {
                 return res;
             }
@@ -98,7 +98,7 @@ public final class TableUtil {
     ) {
         Long version = 0L;
         if (shouldUpdateVer) {
-            Pair<Long, String> res= DdlWorker.updateSchemaVersion(dc, job);
+            Pair<Long, String> res = DdlWorker.updateSchemaVersion(dc, job);
             if (res.getValue() != null) {
                 return res;
             }
@@ -121,7 +121,7 @@ public final class TableUtil {
     public static void updateIndex(TableDefinitionWithId indexInfo) {
         long tableId = indexInfo.getTableId().getParentEntityId();
 
-        InfoSchemaService infoSchemaService =InfoSchemaService.root();
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
         infoSchemaService.updateIndex(tableId, indexInfo);
     }
 

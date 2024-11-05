@@ -125,7 +125,7 @@ public class MysqlCommands {
                     ErrorCode.ER_PASSWORD_EXPIRE, mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET));
                 return true;
             }
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             LogUtils.info(log, e.getMessage(), e);
         }
         return false;
@@ -216,7 +216,9 @@ public class MysqlCommands {
                 if (dingoStatement.isHasIncId()) {
                     Long lastInsertId = dingoStatement.getAutoIncId();
                     okPacket = MysqlPacketFactory.getInstance()
-                        .getOkPacket(count, packetId, initServerStatus, new BigInteger(String.valueOf(lastInsertId)), sqlWarning);
+                        .getOkPacket(
+                            count, packetId, initServerStatus, new BigInteger(String.valueOf(lastInsertId)), sqlWarning
+                        );
                 } else {
                     okPacket = MysqlPacketFactory.getInstance()
                         .getOkPacket(count, packetId, initServerStatus, BigInteger.ZERO, sqlWarning);
@@ -224,7 +226,8 @@ public class MysqlCommands {
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } catch (SQLException sqlException) {
-            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:" + sqlException.getErrorCode()
+            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:"
+                + sqlException.getErrorCode()
                 + ", message:" + sqlException.getMessage());
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException, connCharSet);
         } catch (Exception e) {
@@ -374,15 +377,14 @@ public class MysqlCommands {
         } catch (SQLException e) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connectionCharSet);
         } catch (Exception e) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, connectionCharSet);
+            MysqlResponseHandler.responseError(
+                packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, connectionCharSet
+            );
             LogUtils.error(log, e.getMessage(), e);
         }
     }
 
     public static int getInitServerStatus(DingoConnection connection) {
-        String tranReadOnly = connection.getClientInfo("transaction_read_only");
-        tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
-        boolean txReadOnly = tranReadOnly.equalsIgnoreCase("on");
         ITransaction transaction = connection.getTransaction();
         boolean inTransaction = false;
         if (transaction != null) {
@@ -395,6 +397,9 @@ public class MysqlCommands {
         if (connection.getAutoCommit()) {
             initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
         }
+        String tranReadOnly = connection.getClientInfo("transaction_read_only");
+        tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
+        boolean txReadOnly = tranReadOnly.equalsIgnoreCase("on");
         if (txReadOnly) {
             initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
         }

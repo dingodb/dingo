@@ -87,7 +87,8 @@ public final class DdlRollBack {
     }
 
     public static String rollingbackDropTableOrView(DdlJob ddlJob) {
-        Pair<TableDefinitionWithId, String> res = DdlWorker.checkTableExistAndCancelNonExistJob(ddlJob, ddlJob.getSchemaId());
+        Pair<TableDefinitionWithId, String> res
+            = DdlWorker.checkTableExistAndCancelNonExistJob(ddlJob, ddlJob.getSchemaId());
         if (res.getValue() != null && res.getKey() == null) {
             return res.getValue();
         }
@@ -136,7 +137,9 @@ public final class DdlRollBack {
         return cancelOnlyNotHandledJob(job, io.dingodb.common.meta.SchemaState.SCHEMA_NONE);
     }
 
-    public static Pair<Long, String> cancelOnlyNotHandledJob(DdlJob job, io.dingodb.common.meta.SchemaState schemaState) {
+    public static Pair<Long, String> cancelOnlyNotHandledJob(
+        DdlJob job, io.dingodb.common.meta.SchemaState schemaState
+    ) {
         if (job.getSchemaState() == schemaState) {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "ErrCancelledDDLJob");

@@ -38,6 +38,7 @@ public class StoreKvTxn extends CommitBase implements io.dingodb.store.api.trans
     private final CommonId tableId;
     @Getter
     private final CommonId regionId;
+
     public StoreKvTxn(CommonId tableId, CommonId regionId) {
         super(
             Services.storeRegionService(coordinators, regionId.seq, TransactionUtil.STORE_RETRY),

@@ -32,8 +32,10 @@ public final class RollingBackUtil {
         DdlJob ddlJob,
         TableDefinitionWithId indexInfo
     ) {
-        io.dingodb.sdk.service.entity.common.SchemaState originalState = indexInfo.getTableDefinition().getSchemaState();
-        indexInfo.getTableDefinition().setSchemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY);
+        io.dingodb.sdk.service.entity.common.SchemaState originalState
+            = indexInfo.getTableDefinition().getSchemaState();
+        indexInfo.getTableDefinition()
+            .setSchemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY);
         ddlJob.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
         Pair<Long, String> res = TableUtil.updateVersionAndIndexInfos(dc, ddlJob, indexInfo,
             originalState != indexInfo.getTableDefinition().getSchemaState());

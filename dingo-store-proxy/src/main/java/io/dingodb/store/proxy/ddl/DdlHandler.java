@@ -56,7 +56,8 @@ public final class DdlHandler {
     private static final Map<Long, String> insertFailedJobIdList = new ConcurrentHashMap<>();
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
-    private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids, job_meta, type, processing) values";
+    private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids,"
+        + " job_meta, type, processing) values";
 
     private DdlHandler() {
         start();
@@ -87,14 +88,14 @@ public final class DdlHandler {
         List<Long> ids = service.genGlobalIDs(1);
         // jdbc insert into ddlJob to table
         // insert into dingo_ddl_job
-        StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
-        String format = "(%d, %b, %s, %s, %s, %d, %b)";
         long jobId;
         job.setId(ids.get(0));
         jobId = job.getId();
         job.setState(JobState.jobStateQueueing);
         byte[] meta = job.encode(updateRawArgs);
         String jobMeta = new String(meta);
+        StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
+        String format = "(%d, %b, %s, %s, %s, %d, %b)";
         sqlBuilder.append(
             String.format(
                 format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
@@ -261,7 +262,8 @@ public final class DdlHandler {
             throw new RuntimeException("schema not exists");
         }
         long schemaId = schemaInfo.getSchemaId();
-        TableDefinitionWithId tableInfo = (TableDefinitionWithId) InfoSchemaService.root().getTable(schemaId, tableName);
+        TableDefinitionWithId tableInfo = (TableDefinitionWithId) InfoSchemaService.root()
+            .getTable(schemaId, tableName);
         if (tableInfo == null) {
             throw new RuntimeException("table not exists");
         }
@@ -336,7 +338,8 @@ public final class DdlHandler {
         try {
             doDdlJob(job);
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] add column error, tableName:" + table.getName() + ", column:" + column.getName(), e);
+            LogUtils.error(log, "[ddl-error] add column error, tableName:{}, column:{}",
+                table.getName(), column.getName(), e);
             throw e;
         }
     }
@@ -366,7 +369,8 @@ public final class DdlHandler {
         try {
             doDdlJob(job);
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] dropColumn error, tableName:" + tableName + ", columnName:" + columnName, e);
+            LogUtils.error(log, "[ddl-error] dropColumn error, tableName:{}, columnName:{}",
+                tableName, columnName, e);
             throw e;
         }
     }

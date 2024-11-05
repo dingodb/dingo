@@ -41,7 +41,6 @@ import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLException;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -51,6 +50,7 @@ import java.util.function.Function;
 @Slf4j
 public final class DdlServer {
     public static BlockingQueue<Long> verDelQueue = new LinkedBlockingDeque<>(10000);
+
     private DdlServer() {
     }
 
@@ -131,24 +131,6 @@ public final class DdlServer {
         return true;
     }
 
-    public static void startDispatchLoop() {
-        // ticker/watchDdlJobEvent/watchDdlJobCoordinator
-        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
-        while (!env.ddlOwner.get()) {
-            Utils.sleep(1000);
-        }
-        watchDdlJob();
-        watchDdlKey();
-        Session session = SessionUtil.INSTANCE.getSession();
-        session.setAutoCommit(true);
-        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRunBySchedule(session), 10000, 1000, TimeUnit.MILLISECONDS);
-    }
-
-    public static void startLoadDDLAndRunBySchedule(Session session) {
-        //LogUtils.info(log, "startJob by local schedule");
-        startLoadDDLAndRun(session);
-    }
-
     public static void startLoadDDLAndRun(Session session) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         // if owner continue,not break;
@@ -165,7 +147,28 @@ public final class DdlServer {
         loadDDLJobsAndRun(session, JobTableUtil::getGenerateJobs, DdlContext.INSTANCE.getDdlJobPool());
     }
 
-    static synchronized void loadDDLJobsAndRun(Session session, Function<Session, Pair<List<DdlJob>, String>> getJob, DdlWorkerPool pool) {
+    public static void startDispatchLoop() {
+        // ticker/watchDdlJobEvent/watchDdlJobCoordinator
+        ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
+        while (!env.ddlOwner.get()) {
+            Utils.sleep(1000);
+        }
+        watchDdlJob();
+        watchDdlKey();
+        Session session = SessionUtil.INSTANCE.getSession();
+        session.setAutoCommit(true);
+        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRunBySchedule(session),
+            10000, 1000, TimeUnit.MILLISECONDS);
+    }
+
+    public static void startLoadDDLAndRunBySchedule(Session session) {
+        //LogUtils.info(log, "startJob by local schedule");
+        startLoadDDLAndRun(session);
+    }
+
+    static synchronized void loadDDLJobsAndRun(
+        Session session, Function<Session, Pair<List<DdlJob>, String>> getJob, DdlWorkerPool pool
+    ) {
         long start = System.currentTimeMillis();
         Pair<List<DdlJob>, String> res = getJob.apply(session);
         if (res == null || res.getValue() != null) {
@@ -190,7 +193,9 @@ public final class DdlServer {
         }
     }
 
-    static synchronized void loadDDLJobAndRun(Session session, Function<Session, Pair<DdlJob, String>> getJob, DdlWorkerPool pool) {
+    static synchronized void loadDDLJobAndRun(
+        Session session, Function<Session, Pair<DdlJob, String>> getJob, DdlWorkerPool pool
+    ) {
         long start = System.currentTimeMillis();
         Pair<DdlJob, String> res = getJob.apply(session);
         if (res == null || res.getValue() != null) {
@@ -245,7 +250,8 @@ public final class DdlServer {
                             waitSchemaSynced(dc, ddlJob, 2 * dc.getLease(), worker);
                         } catch (Exception e) {
                             pool.returnObject(worker);
-                            LogUtils.error(log, "[ddl] wait ddl job sync failed, reason:" + e.getMessage() + ", job:" + ddlJob);
+                            LogUtils.error(log, "[ddl] wait ddl job sync failed, reason:" + e.getMessage()
+                                + ", job:" + ddlJob);
                             Utils.sleep(1000);
                             return;
                         }
@@ -254,7 +260,8 @@ public final class DdlServer {
                 }
                 Pair<Long, String> res = worker.handleDDLJobTable(dc, ddlJob);
                 if (res.getValue() != null) {
-                    LogUtils.error(log, "[ddl] handle ddl job failed, jobId:{}, error:{}", ddlJob.getId(), res.getValue());
+                    LogUtils.error(log, "[ddl] handle ddl job failed, jobId:{}, error:{}",
+                        ddlJob.getId(), res.getValue());
                 } else {
                     long schemaVer = res.getKey();
                     waitSchemaChanged(dc, 2 * dc.getLease(), schemaVer, ddlJob, worker);
@@ -341,7 +348,8 @@ public final class DdlServer {
                     job.encodeError(error);
                     ddlWorker.updateDDLJob(job, false);
                 }
-                LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:{}, jobId:{}" , latestSchemaVersion, job.getId());
+                LogUtils.error(log, "[ddl] wait latest schema version encounter error, "
+                    + "latest version:{}, jobId:{}" , latestSchemaVersion, job.getId());
                 return;
             } else {
                 if (DdlUtil.delDiff) {
@@ -351,11 +359,13 @@ public final class DdlServer {
                 DingoMetrics.timer("mdlWaitChanged").update(sub, TimeUnit.MILLISECONDS);
             }
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:" + latestSchemaVersion, e);
+            LogUtils.error(log, "[ddl] wait latest schema version encounter error, latest version:{}",
+                latestSchemaVersion, e);
             return;
         }
         long end = System.currentTimeMillis();
-        LogUtils.info(log, "[ddl] wait latest schema version changed,version: {}, take time:{}, jobId:{}", latestSchemaVersion, (end - start), job.getId());
+        LogUtils.info(log, "[ddl] wait latest schema version changed,version: {}, take time:{}, jobId:{}",
+            latestSchemaVersion, (end - start), job.getId());
     }
 
 }

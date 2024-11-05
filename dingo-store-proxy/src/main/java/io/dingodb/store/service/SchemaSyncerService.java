@@ -61,16 +61,18 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
     public void updateSelfVersion(long startTs, long jobId, long schemaVersion) {
         String path;
         if (DdlUtil.mdlEnable) {
-            path = String.format(DdlUtil.MDL_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId, DdlUtil.ddlId);
+            path = String.format(DdlUtil.MDL_TEMPLATE, tenantPrefix,
+                DdlUtil.DDLAllSchemaVersionsByJob, jobId, DdlUtil.ddlId);
         } else {
-            path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
+            path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE,
+                tenantPrefix, DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
         }
         //LogUtils.info(log, "[ddl] updateSelfVersion info, path:{}, ver:{}", path, schemaVersion);
         lockPut(startTs, path, String.valueOf(schemaVersion), 3);
         LogUtils.info(log, "[ddl] updateSelfVersion info success, path:{}, ver:{}", path, schemaVersion);
     }
 
-    public void lockPut(long startTs, String path, String value, int retry){
+    public void lockPut(long startTs, String path, String value, int retry) {
         try {
             lockService.put(startTs, path, value);
         } catch (Exception e) {
@@ -98,7 +100,8 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
         String pathEnd = String.format("%s:%s", tenantPrefix, DdlUtil.DDLAllSchemaVersionsEnd);
         if (DdlUtil.mdlEnable) {
             path = String.format(DdlUtil.MDL_PREFIX_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
-            pathEnd = String.format(DdlUtil.MDL_PREFIX_TEMPLATE_END, tenantPrefix, DdlUtil.DDLAllSchemaVersionsByJob, jobId);
+            pathEnd = String.format(DdlUtil.MDL_PREFIX_TEMPLATE_END, tenantPrefix,
+                DdlUtil.DDLAllSchemaVersionsByJob, jobId);
         }
         LogUtils.info(log, "owner check all ver, path:{}, latestVer:{}", path, latestVer);
         long start = System.currentTimeMillis();
@@ -138,7 +141,8 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
                     long ver = Long.parseLong(verStr);
                     if (ver < latestVer) {
                         if (notMatchVerCnt % intervalCnt == 0) {
-                            LogUtils.info(log, "[ddl] syncer check all versions, someone is not synced, continue checking");
+                            LogUtils.info(log, "[ddl] syncer check all versions, someone is not synced, "
+                                + "continue checking");
                         }
                         synced = false;
                         notMatchVerCnt++;
@@ -181,13 +185,16 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
     @Override
     public synchronized void ownerUpdateGlobalVersion(long version) {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
-        LogUtils.info(log, "owner update global path:{}, ver:{}", io.dingodb.meta.InfoSchemaService.globalSchemaVer, version);
-        infoSchemaService.putKvToCoordinator(io.dingodb.meta.InfoSchemaService.globalSchemaVer, String.valueOf(version));
+        LogUtils.info(log, "owner update global path:{}, ver:{}",
+            io.dingodb.meta.InfoSchemaService.globalSchemaVer, version);
+        infoSchemaService.putKvToCoordinator(io.dingodb.meta.InfoSchemaService.globalSchemaVer,
+            String.valueOf(version));
     }
 
     @Override
     public void removeSelfVersionPath() {
-        String path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE, tenantPrefix, DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
+        String path = String.format(DdlUtil.ALL_SCHEMA_VER_SYNC_NORMAL_TEMPLATE, tenantPrefix,
+            DdlUtil.DDLAllSchemaVersions, DdlUtil.ddlId);
         lockService.delete(System.identityHashCode(path), path);
     }
 

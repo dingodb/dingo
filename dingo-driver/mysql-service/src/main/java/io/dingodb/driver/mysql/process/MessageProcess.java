@@ -63,12 +63,14 @@ public final class MessageProcess {
 
         try {
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             log.error("Fail to get connection characterSet, {}", e.toString());
         }
 
         if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE, connCharSet);
+            MysqlResponseHandler.responseError(
+                packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE, connCharSet
+            );
             return;
         }
         switch (flg) {
@@ -201,7 +203,9 @@ public final class MessageProcess {
                 ExecuteStatementPacket statementPacket = new ExecuteStatementPacket(paramCount,
                     preparedStatement.getTypes());
                 statementPacket.read(array);
-                commands.executeStatement(statementPacket, preparedStatement, preparedStatement.getStatementType(), packetId, mysqlConnection);
+                commands.executeStatement(
+                    statementPacket, preparedStatement, preparedStatement.getStatementType(), packetId, mysqlConnection
+                );
                 preparedStatement.setBoundTypes(statementPacket.types);
                 break;
             case NativeConstants.COM_STMT_SEND_LONG_DATA:

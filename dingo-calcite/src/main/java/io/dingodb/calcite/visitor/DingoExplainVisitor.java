@@ -374,7 +374,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         }
         String accessObj = "";
         if (rel.getTable() != null) {
-           accessObj = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable().getName();
+            accessObj = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable().getName();
         }
         return new Explain("dingoInfoSchemaScan", rel.getRowCount(), "root", accessObj, filter);
     }
@@ -387,6 +387,54 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         );
         explain1.getChildren().add(explain);
         return explain1;
+    }
+
+    @Override
+    public Explain visit(@NonNull IndexFullScan rel) {
+        StringBuilder info = new StringBuilder();
+        if (rel.getFilter() != null) {
+            info.append("condition:");
+            info.append(rel.getFilter().toString());
+        }
+        info.append(",lookup:").append(rel.isLookup());
+        if (rel.getSelection() != null && rel.getSelection().size() < 10) {
+            info.append(",selection:").append(rel.getSelection().toString());
+        }
+        StringBuilder rootInfo = new StringBuilder("rpcBatchSize:" + ScopeVariables.getRpcBatchSize());
+        rootInfo.append(", parallel = ").append(Utils.parallel(rel.getKeepSerialOrder())).append(" ");
+        Explain explain1 = new Explain(
+            "indexFullScanReader", rel.getRowCount(), "root",
+            "", rootInfo.toString()
+        );
+        if (rel.isPushDown() && rel.getFilter() != null) {
+            Explain explain = new Explain("indexFullScan", rel.getFullRowCount(),
+                "cop[store]", rel.getIndexTable().getName(), info.toString());
+            explain1.getChildren().add(explain);
+        }
+        return explain1;
+    }
+
+    @Override
+    public Explain visit(@NonNull IndexRangeScan indexRangeScan) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("parallel=").append(Utils.parallel(indexRangeScan.getKeepSerialOrder()));
+        if (indexRangeScan.getFilter() != null) {
+            filter.append(", condition=").append(indexRangeScan.getFilter().toString());
+        }
+        filter.append(", lookup:").append(indexRangeScan.isLookup());
+        return new Explain(
+            "indexRangeScan", indexRangeScan.getRowCount(), "root",
+            indexRangeScan.getIndexTable().getName(), filter.toString()
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoGetDocumentPreFilter rel) {
+        String accessObj = "";
+        if (rel.getIndexTable() != null) {
+            accessObj = rel.getIndexTable().getName();
+        }
+        return getCommonExplain(rel, "DingoGetDocumentPreFilter", accessObj, "");
     }
 
     private Explain getCommonExplain(DingoRel rel, String id, String accessObj, String info) {
@@ -453,45 +501,6 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
     }
 
     @Override
-    public Explain visit(@NonNull IndexFullScan rel) {
-        StringBuilder info = new StringBuilder();
-        if (rel.getFilter() != null) {
-            info.append("condition:");
-            info.append(rel.getFilter().toString());
-        }
-        info.append(",lookup:").append(rel.isLookup());
-        if (rel.getSelection() != null && rel.getSelection().size() < 10) {
-            info.append(",selection:").append(rel.getSelection().toString());
-        }
-        StringBuilder rootInfo = new StringBuilder("rpcBatchSize:" + ScopeVariables.getRpcBatchSize());
-        rootInfo.append(", parallel = ").append(Utils.parallel(rel.getKeepSerialOrder())).append(" ");
-        Explain explain1 = new Explain(
-            "indexFullScanReader", rel.getRowCount(), "root",
-            "", rootInfo.toString()
-        );
-        if (rel.isPushDown() && rel.getFilter() != null) {
-            Explain explain = new Explain("indexFullScan", rel.getFullRowCount(),
-                "cop[store]", rel.getIndexTable().getName(), info.toString());
-            explain1.getChildren().add(explain);
-        }
-        return explain1;
-    }
-
-    @Override
-    public Explain visit(@NonNull IndexRangeScan indexRangeScan) {
-        StringBuilder filter = new StringBuilder();
-        filter.append("parallel=").append(Utils.parallel(indexRangeScan.getKeepSerialOrder()));
-        if (indexRangeScan.getFilter() != null) {
-            filter.append(", condition=").append(indexRangeScan.getFilter().toString());
-        }
-        filter.append(", lookup:").append(indexRangeScan.isLookup());
-        return new Explain(
-            "indexRangeScan", indexRangeScan.getRowCount(), "root",
-            indexRangeScan.getIndexTable().getName(), filter.toString()
-            );
-    }
-
-    @Override
     public Explain visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel) {
         Explain explain;
         if (rel.isRangeScan()) {
@@ -510,12 +519,4 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         return explain1;
     }
 
-    @Override
-    public Explain visit(@NonNull DingoGetDocumentPreFilter rel) {
-        String accessObj = "";
-        if (rel.getIndexTable() != null) {
-            accessObj = rel.getIndexTable().getName();
-        }
-        return getCommonExplain(rel, "DingoGetDocumentPreFilter", accessObj, "");
-    }
 }

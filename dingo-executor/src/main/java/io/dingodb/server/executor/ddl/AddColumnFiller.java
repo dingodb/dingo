@@ -91,7 +91,9 @@ public class AddColumnFiller extends IndexAddFiller {
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
-        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getVersion(), table.tupleType(), table.keyMapping());
+        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(
+            table.getVersion(), table.tupleType(), table.keyMapping()
+        );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),
             new StoreInstance.Range(task.getStart(), task.getEnd(), task.isWithStart(), task.isWithEnd()),

@@ -52,13 +52,13 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
+import io.dingodb.expr.coding.CodingFlag;
+import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.Exprs;
 import io.dingodb.expr.runtime.type.TupleType;
-import io.dingodb.expr.coding.CodingFlag;
-import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -138,7 +138,8 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 = metaService.getRangeDistribution(tableId);
 
             Set<RangeDistribution> distributions
-               = ps.calcPartitionRange(null, null, true, true, rangeDistributionNavigableMap);
+                = ps.calcPartitionRange(null, null, true, true,
+                rangeDistributionNavigableMap);
 
             List<Histogram> histogramList = new ArrayList<>();
             List<CountMinSketch> cmSketchList = new ArrayList<>();
@@ -319,9 +320,6 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 histogramList.stream().flatMap(histogram ->
                     Arrays.stream(new DingoType[]{histogram.getDingoType(),
                         histogram.getDingoType()})).toArray(DingoType[]::new));
-            TupleMapping outputKeyMapping = TupleMapping.of(
-                IntStream.range(0, 0).boxed().collect(Collectors.toList())
-            );
             CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
             if (coprocessor == null) {
                 return null;
@@ -339,7 +337,14 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 30000,
                 coprocessor
             );
-            return Iterators.transform(iterator, wrap(CodecService.getDefault().createKeyValueCodec(td.version, outputSchema, outputKeyMapping)::decode)::apply);
+            TupleMapping outputKeyMapping = TupleMapping.of(
+                IntStream.range(0, 0).boxed().collect(Collectors.toList())
+            );
+            return Iterators.transform(
+                iterator,
+                wrap(CodecService.getDefault().createKeyValueCodec(td.version,
+                   outputSchema, outputKeyMapping)::decode)::apply
+            );
         }).collect(Collectors.toList());
         for (Iterator<Object[]> iterator : iteratorList) {
             if (iterator == null) {
@@ -410,13 +415,13 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             values[6] = StatsTaskState.FAIL.getState();
             values[7] = failReason;
         }
-        Timestamp startTime = (Timestamp) values[4];
         values[5] = current;
         values[9] = 0L;
         values[10] = current;
         values[3] = rowCount;
         Long lastModifyCount = (Long) values[11];
         values[11] = lastModifyCount + modify;
+        Timestamp startTime = (Timestamp) values[4];
         long duration = now - startTime.getTime();
         values[12] = duration;
         long lastExecTime = (long) values[14];

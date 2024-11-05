@@ -61,13 +61,13 @@ public class ERRPacket extends MysqlPacket {
     }
 
     public static String encodeResponseError(String src) {
-        if(src == null) {
+        if (src == null) {
             return null;
         }
 
         StringBuilder builder = new StringBuilder();
-        for(char c : src.toCharArray()) {
-            if(c > 0x7f)  {
+        for (char c : src.toCharArray()) {
+            if (c > 0x7f)  {
                 //deal with chinese character.
                 builder.append("\\u").append(String.format("%04x", (int)c));
             } else {
@@ -82,7 +82,7 @@ public class ERRPacket extends MysqlPacket {
         byte[] stringBytes = null;
 
         if (errorMessage != null) {
-            if(characterSet != null) {
+            if (characterSet != null) {
                 try {
                     errMsgBytes = errorMessage.getBytes(characterSet);
                     stringBytes = errMsgBytes;
@@ -107,7 +107,7 @@ public class ERRPacket extends MysqlPacket {
             buffer.writeBytes(sqlState.getBytes());
         }
 
-        if(stringBytes != null) {
+        if (stringBytes != null) {
             buffer.writeBytes(stringBytes);
         }
     }
@@ -116,7 +116,7 @@ public class ERRPacket extends MysqlPacket {
     public int calcPacketSize() {
         int size = 9;
         if (errorMessage != null) {
-            if(characterSet != null && errMsgBytes != null) {
+            if (characterSet != null && errMsgBytes != null) {
                 size += errMsgBytes.length;
             } else {
                 size += errorMessage.length();

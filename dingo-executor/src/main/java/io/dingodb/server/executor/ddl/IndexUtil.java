@@ -70,7 +70,8 @@ public final class IndexUtil {
         CommonId tableId,
         TableDefinitionWithId index
     ) {
-        MetaElement[] elements = new MetaElement[] {new MetaElement(index.getTableId().getEntityId(), DdlUtil.indexElementKey)};
+        MetaElement[] elements = new MetaElement[] {new MetaElement(index.getTableId().getEntityId(),
+            DdlUtil.indexElementKey)};
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             // get schemaInfo
@@ -92,8 +93,8 @@ public final class IndexUtil {
                 p -> addTableIndex(reorgInfoRes.getKey())
             );
             if (error != null) {
-                LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, " +
-                    "error:{}", job.getId(), error);
+                LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, "
+                    + "error:{}", job.getId(), error);
                 Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, index);
                 if (res.getValue() != null) {
                     error = res.getValue();
