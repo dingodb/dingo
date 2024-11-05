@@ -16,8 +16,13 @@
 
 package io.dingodb.driver;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.calcite.visitor.DingoExplainVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.mysql.Explain;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -33,15 +38,23 @@ import static io.dingodb.calcite.rel.DingoRel.dingo;
 public class ExplainSignature extends Meta.Signature {
     RelNode relNode;
 
+    @JsonProperty("jobId")
+    @Getter
+    @JsonSerialize(using = CommonId.JacksonSerializer.class)
+    @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
+    private final CommonId jobId;
+
     public ExplainSignature(List<ColumnMetaData> columns,
                             String sql,
                             List<AvaticaParameter> parameters,
                             Map<String, Object> internalParameters,
                             Meta.CursorFactory cursorFactory,
                             Meta.StatementType statementType,
-                            RelNode relNode) {
+                            RelNode relNode,
+                            CommonId jobId) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.relNode = relNode;
+        this.jobId = jobId;
     }
 
     public Iterator<Object[]> getIterator() {

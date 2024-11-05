@@ -20,6 +20,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -86,180 +87,220 @@ public class DingoTransactionRenderJob implements Visitor<Collection<Vertex>> {
         this.transaction = transaction;
     }
 
-    public static void renderPreWriteJob(Job job, Location currentLocation,
+    public static void renderPreWriteJob(JobManager jobManager, Job job, Location currentLocation,
                                          ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PRE_WRITE);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PRE_WRITE);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PRE_WRITE);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PRE_WRITE);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderCommitJob(Job job, Location currentLocation,
+    public static void renderCommitJob(JobManager jobManager, Job job, Location currentLocation,
                                        ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_COMMIT);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_COMMIT);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_COMMIT);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_COMMIT);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderRollBackJob(Job job, Location currentLocation,
+    public static void renderRollBackJob(JobManager jobManager, Job job, Location currentLocation,
                                          ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_ROLLBACK);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_ROLLBACK);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_ROLLBACK);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_ROLLBACK);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderRollBackPessimisticLockJob(Job job, Location currentLocation,
+    public static void renderRollBackPessimisticLockJob(JobManager jobManager, Job job, Location currentLocation,
                                                         ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_PESSIMISTIC_ROLLBACK);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_PESSIMISTIC_ROLLBACK);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderRollBackOptimisticData(Job job, Location currentLocation,
+    public static void renderRollBackOptimisticData(JobManager jobManager, Job job, Location currentLocation,
                                                         ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_OPTIMISTIC_ROLLBACK);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_OPTIMISTIC_ROLLBACK);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderRollBackResidualPessimisticLockJob(Job job, Location currentLocation,
+    public static void renderRollBackResidualPessimisticLockJob(JobManager jobManager, Job job, Location currentLocation,
                                                                 ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_RESIDUAL_LOCK);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_RESIDUAL_LOCK);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderCleanCacheJob(Job job, Location currentLocation,
+    public static void renderCleanCacheJob(JobManager jobManager, Job job, Location currentLocation,
                                                         ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_CACHE);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_CACHE);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_CACHE);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
-    public static void renderCleanExtraDataCacheJob(Job job, Location currentLocation,
+    public static void renderCleanExtraDataCacheJob(JobManager jobManager, Job job, Location currentLocation,
                                            ITransaction transaction, boolean checkRoot) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
-            job,
-            idGenerator,
-            currentLocation,
-            transaction
-        );
-        Element element;
-        if (!transaction.getChannelMap().isEmpty()) {
-            element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_EXTRA_CACHE);
-        } else {
-            element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_EXTRA_CACHE);
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoTransactionRenderJob visitor = new DingoTransactionRenderJob(
+                job,
+                idGenerator,
+                currentLocation,
+                transaction
+            );
+            Element element;
+            if (!transaction.getChannelMap().isEmpty()) {
+                element = TransactionElements.getElement(ElementName.MULTI_TRANSACTION_CLEAN_EXTRA_CACHE);
+            } else {
+                element = TransactionElements.getElement(ElementName.SINGLE_TRANSACTION_CLEAN_EXTRA_CACHE);
+            }
+            Collection<Vertex> outputs = element.accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
         }
-        Collection<Vertex> outputs = element.accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        LogUtils.debug(log, "job = {}", job);
     }
 
     @Override

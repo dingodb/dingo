@@ -101,7 +101,7 @@ public class OptimisticTransaction extends BaseTransaction {
             // 2、generator job、task、rollBackOptimisticOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackOptimisticData(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackOptimisticData(jobManager, job, currentLocation, this, true);
             // 3、run RollBackOptimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
@@ -143,7 +143,7 @@ public class OptimisticTransaction extends BaseTransaction {
             // 2、generator job、task、rollBackOptimisticOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackOptimisticData(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackOptimisticData(jobManager, job, currentLocation, this, true);
             // 3、run RollBackOptimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
@@ -214,7 +214,7 @@ public class OptimisticTransaction extends BaseTransaction {
         return job;
     }
     public void retryRun(JobManager jobManager, Job job, Location currentLocation) {
-        DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
+        DingoTransactionRenderJob.renderPreWriteJob(jobManager, job, currentLocation, this, true);
         Iterator<Object[]> iterator = jobManager.createIterator(job, null);
         while (iterator.hasNext()) {
             Object[] next = iterator.next();

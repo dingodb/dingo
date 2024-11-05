@@ -96,7 +96,7 @@ public class TestTableScan {
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
@@ -121,7 +121,7 @@ public class TestTableScan {
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
@@ -145,7 +145,7 @@ public class TestTableScan {
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
@@ -170,7 +170,7 @@ public class TestTableScan {
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }
@@ -195,7 +195,7 @@ public class TestTableScan {
         // To job.
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, relNode, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(tableTestPartNum);
         assertJob.task(jobSeqId, 0).location(currentLocation).operatorNum(3);
     }

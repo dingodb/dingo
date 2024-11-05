@@ -102,7 +102,7 @@ public class TestDingoJobVisitor {
         );
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, scan, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, scan, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         /*CommonId tableId = MetaService.root()
             .getSubMetaService(RootSnapshotSchema.DEFAULT_SCHEMA_NAME)
@@ -137,7 +137,7 @@ public class TestDingoJobVisitor {
         );
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, converter, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         AssertTask assertTask =
             assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
@@ -175,7 +175,7 @@ public class TestDingoJobVisitor {
         );
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, converter, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, converter, currentLocation);
         AssertJob assertJob = Assert.job(job).taskNum(1);
         //AssertTask assertTask =
         //    assertJob.task(jobSeqId, 0).operatorNum(1).location(MockMetaServiceProvider.LOC_0).sourceNum(1);
@@ -207,7 +207,7 @@ public class TestDingoJobVisitor {
         );
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, values, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, values, currentLocation);
         Vertex vertex = Assert.job(job)
             .soleTask().location(MockMetaServiceProvider.LOC_0).operatorNum(1)
             .soleSource().isA(ValuesOperator.class)
@@ -247,7 +247,7 @@ public class TestDingoJobVisitor {
         );
         long jobSeqId = TsoService.getDefault().tso();
         Job job = jobManager.createJob(jobSeqId, jobSeqId);
-        DingoJobVisitor.renderJob(job, partModify, currentLocation);
+        DingoJobVisitor.renderJob(jobManager, job, partModify, currentLocation);
         Assert.job(job).taskNum(1)
             .task(jobSeqId, 0).location(MockMetaServiceProvider.LOC_0).operatorNum(1);
     }

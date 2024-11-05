@@ -66,21 +66,21 @@ public class DingoTransactionRenderJobTest {
 
     @Test
     public void testRenderPreWriteJob() {
-        DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, transaction, true);
+        DingoTransactionRenderJob.renderPreWriteJob(JobManagerImpl.INSTANCE, job, currentLocation, transaction, true);
         System.out.println(job.toString());
         assertThat(job.getTasks().size() == 1);
     }
 
     @Test
     public void testRenderCommitJob() {
-        DingoTransactionRenderJob.renderCommitJob(job, currentLocation, transaction, true);
+        DingoTransactionRenderJob.renderCommitJob(JobManagerImpl.INSTANCE, job, currentLocation, transaction, true);
         System.out.println(job.toString());
         assertThat(job.getTasks().size() == 1);
     }
 
     @Test
     public void testRenderRollBackJob() {
-        DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, transaction, true);
+        DingoTransactionRenderJob.renderRollBackJob(JobManagerImpl.INSTANCE, job, currentLocation, transaction, true);
         System.out.println(job.toString());
         assertThat(job.getTasks().size() == 1);
     }

@@ -396,7 +396,7 @@ public abstract class BaseTransaction implements ITransaction {
                 long jobSeqId = TransactionManager.nextTimestamp();
                 job = jobManager.createJob(startTs, jobSeqId, txnId, null);
                 jobId.set(job.getJobId());
-                DingoTransactionRenderJob.renderPreWriteJob(job, currentLocation, this, true);
+                DingoTransactionRenderJob.renderPreWriteJob(jobManager, job, currentLocation, this, true);
                 // 3、run PreWrite
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
                 while (iterator.hasNext()) {
@@ -518,7 +518,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 2、generator job、task、cleanCacheOperator
             Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderCleanCacheJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderCleanCacheJob(jobManager, job, currentLocation, this, true);
             // 3、run cleanCache
             if (commitFuture != null) {
                 commitFuture.get();
@@ -545,7 +545,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 2、generator job、task、cleanExtraDataCacheOperator
             Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderCleanExtraDataCacheJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderCleanExtraDataCacheJob(jobManager, job, currentLocation, this, true);
             // 3、run cleanCache
             if (commitFuture != null) {
                 commitFuture.get();
@@ -570,7 +570,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 5、generator job、task、CommitOperator
             job = jobManager.createJob(startTs, commitTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderCommitJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderCommitJob(jobManager, job, currentLocation, this, true);
             // 6、run Commit
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
@@ -612,7 +612,7 @@ public abstract class BaseTransaction implements ITransaction {
             // 2、generator job、task、RollBackOperator
             job = jobManager.createJob(startTs, rollbackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
             // 3、run RollBack
             jobManager.createIterator(job, null);
             this.status = TransactionStatus.ROLLBACK;

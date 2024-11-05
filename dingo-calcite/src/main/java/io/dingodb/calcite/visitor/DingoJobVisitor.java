@@ -88,6 +88,7 @@ import io.dingodb.common.Location;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
+import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -130,23 +131,28 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         this.executeVariables = executeVariables;
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation) {
-        renderJob(job, input, currentLocation, false, null, null, new ExecuteVariables());
+    public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation) {
+        renderJob(jobManager, job, input, currentLocation, false, null, null, new ExecuteVariables());
     }
 
-    public static void renderJob(Job job, RelNode input, Location currentLocation,
+    public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables) {
-        IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-        DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, executeVariables);
-        Collection<Vertex> outputs = dingo(input).accept(visitor);
-        if (checkRoot && !outputs.isEmpty()) {
-            throw new IllegalStateException("There root of plan must be `DingoRoot`.");
-        }
-        if (transaction != null) {
-            transaction.setJob(job);
-        }
+        try {
+            IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
+            DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, executeVariables);
+            Collection<Vertex> outputs = dingo(input).accept(visitor);
+            if (checkRoot && !outputs.isEmpty()) {
+                throw new IllegalStateException("There root of plan must be `DingoRoot`.");
+            }
+            if (transaction != null) {
+                transaction.setJob(job);
+            }
 
-        LogUtils.debug(log, "job = {}", job);
+            LogUtils.debug(log, "job = {}", job);
+        } catch (Exception e) {
+            jobManager.removeJob(job.getJobId());
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

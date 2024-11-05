@@ -40,6 +40,12 @@ public final class DingoStatementUtils {
                 LogUtils.debug(log, "Job id \"{}\" found in signature, remove it.", jobId);
                 jobManager.removeJob(jobId);
             }
+        } else if (signature instanceof ExplainSignature) {
+            CommonId jobId = ((ExplainSignature) signature).getJobId();
+            if (jobId != null) {
+                LogUtils.debug(log, "Job id \"{}\" found in signature, remove it.", jobId);
+                jobManager.removeJob(jobId);
+            }
         }
     }
 }

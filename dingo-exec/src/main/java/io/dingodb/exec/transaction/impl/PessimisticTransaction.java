@@ -125,7 +125,7 @@ public class PessimisticTransaction extends BaseTransaction {
             // 2、generator job、task、rollBackPessimisticLockOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackPessimisticLockJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackPessimisticLockJob(jobManager, job, currentLocation, this, true);
             // 3、run RollBackPessimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
@@ -224,7 +224,7 @@ public class PessimisticTransaction extends BaseTransaction {
             // 2、generator job、task、rollBackResidualPessimisticLock
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackResidualPessimisticLockJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackResidualPessimisticLockJob(jobManager, job, currentLocation, this, true);
             // 3、run rollBackResidualPessimisticLock
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()) {
@@ -488,7 +488,7 @@ public class PessimisticTransaction extends BaseTransaction {
             // 2、generator job、task、RollBackOperator
             job = jobManager.createJob(startTs, rollbackTs, txnId, null);
             jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackJob(job, currentLocation, this, true);
+            DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
             // 3、run RollBack
             Iterator<Object[]> iterator = jobManager.createIterator(job, null);
             while (iterator.hasNext()){

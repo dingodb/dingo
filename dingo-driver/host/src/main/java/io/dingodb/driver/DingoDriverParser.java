@@ -487,6 +487,7 @@ public final class DingoDriverParser extends DingoParser {
             statementType == Meta.StatementType.SELECT
         );
         DingoJobVisitor.renderJob(
+            jobManager,
             job,
             relNode,
             currentLocation,
@@ -515,10 +516,16 @@ public final class DingoDriverParser extends DingoParser {
                 );
             } else {
                 List<ColumnMetaData> metaDataList = getExplainColMeta(typeFactory);
-                return new ExplainSignature(metaDataList, sql, createParameterList(parasType),
+                return new ExplainSignature(
+                    metaDataList,
+                    sql,
+                    createParameterList(parasType),
                     null,
                     cursorFactory,
-                    statementType, relNode);
+                    statementType,
+                    relNode,
+                    job.getJobId()
+                );
             }
         }
         if(trace && statementType == Meta.StatementType.IS_DML){
@@ -685,6 +692,7 @@ public final class DingoDriverParser extends DingoParser {
             false
         );
         DingoJobVisitor.renderJob(
+            jobManager,
             job,
             relNode,
             currentLocation,
@@ -722,7 +730,7 @@ public final class DingoDriverParser extends DingoParser {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
-            DingoJobVisitor.renderJob(job, relNode, currentLocation, true, transaction, sqlNode.getKind(), executeVariables);
+            DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation, true, transaction, sqlNode.getKind(), executeVariables);
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
                 while (iterator.hasNext()) {
