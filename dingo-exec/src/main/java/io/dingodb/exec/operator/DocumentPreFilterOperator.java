@@ -76,7 +76,8 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
 
         String queStr = param.getQueryString();
         Integer topK = param.getTopK();
-        StoreInstance instance = Services.KV_STORE.getInstance(param.getTable().getTableId(), param.getDistributions().firstEntry().getValue().getId());
+        StoreInstance instance = Services.KV_STORE.getInstance(param.getTable().getTableId(),
+            param.getDistributions().firstEntry().getValue().getId());
         DocumentSearchParameter documentSearchParameter = DocumentSearchParameter.builder()
             .topN(topK)
             .documentIds(rightList)
@@ -89,7 +90,7 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
             documentSearchParameter);
         List<Pair<Long, Float>> docs = new ArrayList<>();
         for (DocumentWithScore document : documentWithScores) {
-            if(document.getDocumentWithId().getDocument().getDocumentData() != null){
+            if (document.getDocumentWithId().getDocument().getDocumentData() != null) {
                 float score = document.getScore();
                 Pair<Long, Float> p = new Pair<>(document.getDocumentWithId().getId(), score);
                 docs.add(p);
@@ -99,7 +100,8 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
         Object[] resTuple = new Object[param.getTable().columns.size() + 1];
         for (Object[] cacheElement : cache) {
             for (Pair<Long, Float> doc : docs) {
-                if (cacheElement[docIdIndex] == doc.getKey()) {
+                if (cacheElement[docIdIndex] != null && doc.getKey() != null
+                    && cacheElement[docIdIndex].equals(doc.getKey())) {
                     System.arraycopy(cacheElement, 0, resTuple, 0, cacheElement.length);
                     resTuple[resTuple.length - 1] = doc.getValue();
                     edge.transformToNext(param.getContext(), selection.revMap(resTuple));
