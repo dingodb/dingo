@@ -62,19 +62,6 @@ public final class JobTableUtil {
         return session.executeUpdate(sql);
     }
 
-    public static void cleanDDLReorgHandles(DdlJob job) {
-        String sql = "delete from mysql.dingo_ddl_reorg where job_id = " + job.getId();
-        Session session = SessionUtil.INSTANCE.getSession();
-        try {
-            session.runInTxn(session1 -> {
-                session1.executeUpdate(sql);
-                return null;
-            });
-        } finally {
-            SessionUtil.INSTANCE.closeSession(session);
-        }
-    }
-
     public static String deleteDDLJob(Session session, DdlJob job) {
         String sql = "delete from mysql.dingo_ddl_job where job_id = " + job.getId();
         return session.executeUpdate(sql);
@@ -275,24 +262,6 @@ public final class JobTableUtil {
                 return markJobProcessing(session, sql, retry);
             }
             return e.getMessage();
-        }
-    }
-
-    public static String removeDDLReorgHandle(Session session, long jobId, MetaElement[] elements) {
-        if (elements.length == 0) {
-            return null;
-        }
-        String sqlTmp = "delete from mysql.dingo_ddl_reorg where job_id = %d";
-        String sql = String.format(sqlTmp, jobId);
-        try {
-            session.runInTxn(t -> {
-                t.executeUpdate(sql);
-                return null;
-            });
-            return null;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage());
-            return "removeDDLReorg error";
         }
     }
 

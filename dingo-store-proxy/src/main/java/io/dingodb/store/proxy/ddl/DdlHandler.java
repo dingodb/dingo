@@ -445,7 +445,7 @@ public final class DdlHandler {
                 return Pair.of(false, null);
             }
         }
-        if (ddlJob.getState() == JobState.jobStateSynced) {
+        if (ddlJob.getState() == JobState.jobStateSynced && ddlJob.getError() == null) {
             return Pair.of(true, null);
         }
         if (ddlJob.getError() != null) {

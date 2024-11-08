@@ -105,11 +105,6 @@ public final class DdlColumn {
                     //if (res.getValue() != null) {
                     //    error = res.getValue();
                     //}
-                    String error1 = JobTableUtil.removeDDLReorgHandle(session, job.getId(), reorgInfo.getElements());
-                    if (error1 != null) {
-                        LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, "
-                            + "RemoveDDLReorgHandle failed, jobId:{}, error:{}", job.getId(), error1);
-                    }
                 }
                 throw new RuntimeException(error);
             }
@@ -149,25 +144,6 @@ public final class DdlColumn {
                 p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeDropColumnWorker)
             );
             if (error != null) {
-                if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
-                    return Pair.of(false, 0L);
-                }
-                if ("ErrKeyExists".equalsIgnoreCase(error)
-                    || "ErrCancelledDDLJob".equalsIgnoreCase(error)
-                    || "ErrCantDecodeRecord".equalsIgnoreCase(error)
-                ) {
-                    LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, "
-                        + "jobId:{}, error:{}", job.getId(), error);
-                    //Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, replicaTable);
-                    //if (res.getValue() != null) {
-                    //    error = res.getValue();
-                    //}
-                    String error1 = JobTableUtil.removeDDLReorgHandle(session, job.getId(), reorgInfo.getElements());
-                    if (error1 != null) {
-                        LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, "
-                            + "RemoveDDLReorgHandle failed, jobId:{}, error:{}", job.getId(), error1);
-                    }
-                }
                 throw new RuntimeException(error);
             }
             return Pair.of(true, 0L);

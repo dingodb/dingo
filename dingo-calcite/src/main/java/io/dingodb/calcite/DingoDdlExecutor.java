@@ -65,6 +65,7 @@ import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -312,7 +313,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 for (Map.Entry<String, SchemaTables> entry : infoSchema.schemaMap.entrySet()) {
                     SchemaTables schemaTables = entry.getValue();
                     for (Map.Entry<String, Table> tableEntry : schemaTables.getTables().entrySet()) {
-                        metaService.dropTable(tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey());
+                        metaService.dropTable(
+                            tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey()
+                        );
                     }
                 }
             }
@@ -328,8 +331,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long start = System.currentTimeMillis();
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         LogUtils.info(log, "DDL execute: {}", create.getOriginalCreateSql().toUpperCase());
-        String connId = (String) context.getDataContext().get("connId");
-        SubSnapshotSchema schema = getSnapShotSchema(create.name, context, false);
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
@@ -406,6 +407,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (distinctColCnt != realColCnt) {
             throw DINGO_RESOURCE.duplicateColumn().ex();
         }
+        SubSnapshotSchema schema = getSnapShotSchema(create.name, context, false);
         if (schema == null) {
             if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
                 throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
@@ -454,7 +456,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
-        ddlService.createTableWithInfo(schema.getSchemaName(), tableName, tableDefinition, connId, create.getOriginalCreateSql());
+        String connId = (String) context.getDataContext().get("connId");
+        ddlService.createTableWithInfo(
+            schema.getSchemaName(), tableName, tableDefinition, connId, create.getOriginalCreateSql()
+        );
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -475,29 +480,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    private static void validateEngine(List<IndexDefinition> indexTableDefinitions, String engine) {
-        if (!indexTableDefinitions.isEmpty()) {
-            if (isNotTxnEngine(engine)) {
-                throw new IllegalArgumentException("Table with index, the engine must be transactional.");
-            }
-            indexTableDefinitions.stream()
-                .filter(index -> isNotTxnEngine(index.getEngine()))
-                .findAny().ifPresent(index -> {
-                    throw new IllegalArgumentException("Index [" + index.getName() + "] engine must be transactional.");
-                });
-        }
-    }
-
-    private static boolean isNotTxnEngine(String engine) {
-        return engine != null && !engine.isEmpty() && !engine.toUpperCase().startsWith("TXN");
-    }
-
-    @SuppressWarnings({"unused", "MethodMayBeStatic"})
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropTable");
         long start = System.currentTimeMillis();
         LogUtils.info(log, "DDL execute: {}", drop);
-        String connId = (String) context.getDataContext().get("connId");
         final SubSnapshotSchema schema = getSnapShotSchema(drop.name, context, drop.ifExists);
         if (schema == null) {
             return;
@@ -516,6 +502,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         DdlService ddlService = DdlService.root();
+        String connId = (String) context.getDataContext().get("connId");
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
@@ -674,7 +661,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.createUserFailed(sqlCreateUser.user, sqlCreateUser.host).ex();
         } else {
             userDefinition.setPlugin(sqlCreateUser.plugin);
-            if ("dingo_ldap".equalsIgnoreCase(sqlCreateUser.plugin) && StringUtils.isNoneBlank(sqlCreateUser.pluginDn)) {
+            if ("dingo_ldap".equalsIgnoreCase(sqlCreateUser.plugin)
+                && StringUtils.isNoneBlank(sqlCreateUser.pluginDn)) {
                 userDefinition.setLdapUser(sqlCreateUser.pluginDn);
             }
             userDefinition.setRequireSsl(sqlCreateUser.requireSsl);
@@ -748,42 +736,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         metaService.addDistribution(schema.getSchemaName(), tableName,
             sqlAlterTableDistribution.getPartitionDefinition());
         timeCtx.stop();
-    }
-
-    private static TableDefinition fromTable(Table table) {
-        return TableDefinition.builder()
-            .name(table.name)
-            .tableType(table.tableType)
-            .updateTime(table.updateTime)
-            .version(table.version)
-            .engine(table.engine)
-            .autoIncrement(table.autoIncrement)
-            .charset(table.charset)
-            .createSql(table.createSql)
-            .replica(table.replica)
-            .rowFormat(table.rowFormat)
-            .createTime(table.createTime)
-            .comment(table.comment)
-            .collate(table.collate)
-            .columns(table.columns.stream().map(DingoDdlExecutor::fromColumn).collect(Collectors.toList()))
-            .properties(table.properties)
-            .build();
-    }
-
-    private static ColumnDefinition fromColumn(Column column) {
-        return ColumnDefinition.builder()
-            .name(column.name)
-            .type(column.sqlTypeName)
-            .state(column.state)
-            .autoIncrement(column.autoIncrement)
-            .elementType(column.elementTypeName)
-            .comment(column.comment)
-            .defaultValue(column.defaultValueExpr)
-            .nullable(column.isNullable())
-            .precision(column.precision)
-            .primary(column.primaryKeyIndex)
-            .scale(column.scale)
-            .build();
     }
 
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
@@ -983,38 +935,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
         rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "drop column done, tableName:{}, column:{}", tableName, sqlAlterDropColumn.columnNm);
-    }
-
-    public static void validateDropIndex(DingoTable table, String indexName) {
-        if (isNotTxnEngine(table.getTable().getEngine())) {
-            throw new IllegalArgumentException("Drop index, the engine must be transactional.");
-        }
-        if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
-            throw new RuntimeException("The index " + indexName + " not exist.");
-        }
-    }
-
-    public static void validateIndex(SubSnapshotSchema schema, String tableName, TableDefinition index) {
-        if (isNotTxnEngine(index.getEngine())) {
-            throw new IllegalArgumentException("the index engine must be transactional.");
-        }
-        DingoTable table = schema.getTable(tableName);
-        if (table == null) {
-            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        }
-        String indexName = index.getName();
-
-        for (IndexTable existIndex : table.getIndexTableDefinitions()) {
-            String name = existIndex.getName();
-            if (indexName.equalsIgnoreCase(name)) {
-                throw new RuntimeException("The index " + indexName + " already exist.");
-            }
-
-            if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
-                && existIndex.getColumns().get(1).equals(index.getColumn(1))) {
-                throw new RuntimeException("The vector index column same of " + existIndex.getName());
-            }
-        }
     }
 
     public void execute(@NonNull SqlAlterUser sqlAlterUser, CalcitePrepare.Context context) {
@@ -1259,7 +1179,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     }
 
-    private static List<IndexDefinition> getIndexDefinitions(DingoSqlCreateTable create, TableDefinition tableDefinition) {
+    private static List<IndexDefinition> getIndexDefinitions(
+        DingoSqlCreateTable create, TableDefinition tableDefinition
+    ) {
         assert create.columnList != null;
         List<IndexDefinition> tableDefList = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.UNIQUE)
@@ -1391,7 +1313,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         // Primary key list
         List<String> columns = indexDeclaration.columnList;
-        List<String> originKeyList = new ArrayList<>(columns);
 
         int keySize = columns.size();
         List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
@@ -1400,7 +1321,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .sorted(Comparator.comparingInt(ColumnDefinition::getPrimary))
             .map(ColumnDefinition::getName)
             .map(String::toUpperCase)
-            .peek(__ -> { if (columns.contains(__)) num.getAndIncrement(); })
+            .peek(__ -> {
+                if (columns.contains(__)) {
+                    num.getAndIncrement();
+                }
+            })
             .filter(__ -> !columns.contains(__))
             .forEach(columns::add);
 
@@ -1589,8 +1514,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
         }
+        List<String> originKeyList = new ArrayList<>(columns);
         IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
-            indexDeclaration.index, tableDefinition, indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
+            indexDeclaration.index, tableDefinition,
+            indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
         );
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setPartDefinition(indexDeclaration.getPartDefinition());
@@ -1740,6 +1667,91 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context
     ) {
         return Pair.of(getSnapShotSchema(id, context, false), getTableName(id));
+    }
+
+    private static void validateEngine(List<IndexDefinition> indexTableDefinitions, String engine) {
+        if (!indexTableDefinitions.isEmpty()) {
+            if (isNotTxnEngine(engine)) {
+                throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+            }
+            indexTableDefinitions.stream()
+                .filter(index -> isNotTxnEngine(index.getEngine()))
+                .findAny().ifPresent(index -> {
+                    throw new IllegalArgumentException("Index [" + index.getName() + "] engine must be transactional.");
+                });
+        }
+    }
+
+    private static boolean isNotTxnEngine(String engine) {
+        return engine != null && !engine.isEmpty() && !engine.toUpperCase().startsWith("TXN");
+    }
+
+    private static TableDefinition fromTable(Table table) {
+        return TableDefinition.builder()
+            .name(table.name)
+            .tableType(table.tableType)
+            .updateTime(table.updateTime)
+            .version(table.version)
+            .engine(table.engine)
+            .autoIncrement(table.autoIncrement)
+            .charset(table.charset)
+            .createSql(table.createSql)
+            .replica(table.replica)
+            .rowFormat(table.rowFormat)
+            .createTime(table.createTime)
+            .comment(table.comment)
+            .collate(table.collate)
+            .columns(table.columns.stream().map(DingoDdlExecutor::fromColumn).collect(Collectors.toList()))
+            .properties(table.properties)
+            .build();
+    }
+
+    private static ColumnDefinition fromColumn(Column column) {
+        return ColumnDefinition.builder()
+            .name(column.name)
+            .type(column.sqlTypeName)
+            .state(column.state)
+            .autoIncrement(column.autoIncrement)
+            .elementType(column.elementTypeName)
+            .comment(column.comment)
+            .defaultValue(column.defaultValueExpr)
+            .nullable(column.isNullable())
+            .precision(column.precision)
+            .primary(column.primaryKeyIndex)
+            .scale(column.scale)
+            .build();
+    }
+
+    public static void validateDropIndex(DingoTable table, String indexName) {
+        if (isNotTxnEngine(table.getTable().getEngine())) {
+            throw new IllegalArgumentException("Drop index, the engine must be transactional.");
+        }
+        if (table.getIndexTableDefinitions().stream().map(IndexTable::getName).noneMatch(indexName::equalsIgnoreCase)) {
+            throw new RuntimeException("The index " + indexName + " not exist.");
+        }
+    }
+
+    public static void validateIndex(SubSnapshotSchema schema, String tableName, TableDefinition index) {
+        if (isNotTxnEngine(index.getEngine())) {
+            throw new IllegalArgumentException("the index engine must be transactional.");
+        }
+        DingoTable table = schema.getTable(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        String indexName = index.getName();
+
+        for (IndexTable existIndex : table.getIndexTableDefinitions()) {
+            String name = existIndex.getName();
+            if (indexName.equalsIgnoreCase(name)) {
+                throw new RuntimeException("The index " + indexName + " already exist.");
+            }
+
+            if ("vector".equalsIgnoreCase(index.getProperties().getProperty("indexType"))
+                && existIndex.getColumns().get(1).equals(index.getColumn(1))) {
+                throw new RuntimeException("The vector index column same of " + existIndex.getName());
+            }
+        }
     }
 
 }

@@ -76,7 +76,6 @@ public final class MetaLockCheckHandler {
                 if (DdlUtil.timeOutError.get()) {
                     LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
                         maxVer, saveMaxSchemaVersion);
-                    //DdlUtil.timeOutError.set(false);
                 }
                 return;
             }

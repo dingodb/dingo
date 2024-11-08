@@ -46,6 +46,7 @@ public final class DingoTypeFactory {
 
     private DingoTypeFactory() {
         scalarGenerators = new TreeMap<>(String::compareToIgnoreCase);
+        scalarGenerators.put("TINYINT", IntegerType::new);
         scalarGenerators.put("INT", IntegerType::new);
         scalarGenerators.put("INTEGER", IntegerType::new);
         scalarGenerators.put("LONG", LongType::new);
@@ -82,6 +83,7 @@ public final class DingoTypeFactory {
 
     private static String typeNameOfSqlTypeId(int typeId) {
         switch (typeId) {
+            case Types.TINYINT:
             case Types.INTEGER:
                 return "INT";
             case Types.BIGINT:
