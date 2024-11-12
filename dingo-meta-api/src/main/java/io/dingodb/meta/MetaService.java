@@ -41,7 +41,6 @@ public interface MetaService {
         return MetaServiceProvider.getDefault().root();
     }
 
-    String ROOT_NAME = "DINGO_ROOT";
     String DINGO_NAME = "DINGO";
 
     /**
@@ -131,10 +130,6 @@ public interface MetaService {
 
     }
 
-    default void updateTable(CommonId tableId, @NonNull Table table) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Drop table meta and table storage.
      * Notice: check the table name case, because by default, the table names are converted to uppercase
@@ -142,13 +137,13 @@ public interface MetaService {
      * @param tableName table name
      * @return true if success
      */
-    boolean dropTable(long schemaId, String tableName);
+    boolean dropTable(long schemaId, String tableName, long jobId);
 
-    boolean dropTable(long tenantId, long schemaId, String tableName);
+    boolean dropTable(long tenantId, long schemaId, String tableName, long jobId);
 
-    long truncateTable(@NonNull String tableName, long tableEntityId);
+    long truncateTable(@NonNull String tableName, long tableEntityId, long jobId);
 
-    default long truncateTable(long schemaId, @NonNull String tableName, long tableEntityId) {
+    default long truncateTable(long schemaId, @NonNull String tableName, long tableEntityId, long jobId) {
         return 0;
     }
 
@@ -206,7 +201,7 @@ public interface MetaService {
         throw new UnsupportedOperationException();
     }
 
-    default void dropIndex(CommonId table, CommonId index) {
+    default void dropIndex(CommonId table, CommonId index, long jobId, long startTs) {
         throw new UnsupportedOperationException();
     }
 
@@ -250,15 +245,25 @@ public interface MetaService {
 
     long getLastId(CommonId tableId);
 
-    default void invalidateDistribution(CommonId tableId) {}
+    default void invalidateDistribution(CommonId tableId) {
 
-    default void deleteRegionByTableId(CommonId tableId) {}
+    }
 
-    default void createTenant(Tenant tenant) {}
+    default void dropRegionByTable(CommonId tableId, long jobId, long startTs) {
 
-    default void updateTenant(Tenant tenant) {}
+    }
 
-    default void deleteTenant(long tenantId) {}
+    default void createTenant(Tenant tenant) {
+
+    }
+
+    default void updateTenant(Tenant tenant) {
+
+    }
+
+    default void deleteTenant(long tenantId) {
+
+    }
 
     void close();
 }

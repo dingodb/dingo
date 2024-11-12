@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
-import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.session.Session;
@@ -264,6 +263,29 @@ public final class JobTableUtil {
             }
             return e.getMessage();
         }
+    }
+
+    public static boolean gcDeleteDone(
+        Object jobId,
+        Object ts,
+        long regionId,
+        Object startKey,
+        Object endKey
+    ) {
+        LogUtils.info(log, "gcDeleteDone start, jobId:{}, regionId:{}", jobId, regionId);
+        String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key)"
+            + " values(%d, %d, %d, %s, %s)";
+        sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
+            Utils.quoteForSql(endKey.toString()));
+        Session session = SessionUtil.INSTANCE.getSession();
+        session.setAutoCommit(false);
+        session.executeUpdate(sql);
+
+        String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
+        session.executeUpdate(removeSql);
+        session.commit();
+        LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
+        return true;
     }
 
 }

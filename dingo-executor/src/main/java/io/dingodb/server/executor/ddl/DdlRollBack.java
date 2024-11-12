@@ -111,7 +111,9 @@ public final class DdlRollBack {
         if (indexWithId == null) {
             return "add index error";
         }
-        MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
+        MetaService.root().dropIndex(
+            table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs()
+        );
         return null;
     }
 

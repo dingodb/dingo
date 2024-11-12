@@ -181,6 +181,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "TABLE_BUCKETS", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PROCS_PRIV", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "GC_DELETE_RANGE_DONE", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
@@ -583,6 +584,9 @@ public final class PrepareMeta {
                 break;
             case "DINGO_DDL_REORG":
                 jsonFile = "/mysql-dingoDdlReorg.json";
+                break;
+            case "GC_DELETE_RANGE_DONE":
+                jsonFile = "/mysql-gcDeleteRangeDone.json";
                 break;
             default:
                 throw new RuntimeException("table not found");

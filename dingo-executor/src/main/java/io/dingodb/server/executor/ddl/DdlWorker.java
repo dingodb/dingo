@@ -414,7 +414,7 @@ public class DdlWorker {
             }
         }
         try {
-            ms.truncateTable(job.getTableName(), newTableId);
+            ms.truncateTable(job.getTableName(), newTableId, job.getId());
         } catch (Exception e) {
             LogUtils.error(log, "truncate table error", e);
         }
@@ -481,7 +481,9 @@ public class DdlWorker {
                 }
                 try {
                     start = System.currentTimeMillis();
-                    MetaService.root().dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
+                    MetaService.root().dropTable(
+                        job.getSchemaId(), tableInfo.getTableDefinition().getName(), job.getId()
+                    );
                     sub = System.currentTimeMillis() - start;
                     DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
@@ -641,7 +643,10 @@ public class DdlWorker {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 }
                 try {
-                    MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
+                    MetaService.root().dropIndex(
+                        table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()),
+                        job.getId(), job.getRealStartTs()
+                    );
                 } catch (Exception e) {
                     LogUtils.error(log, "drop index error", e);
                 }
@@ -732,7 +737,9 @@ public class DdlWorker {
                 } catch (Exception e) {
                     job.setState(JobState.jobStateCancelled);
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
-                    MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(replicaTableId));
+                    MetaService.root().dropRegionByTable(
+                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
+                    );
                     LogUtils.error(log, e.getMessage(), e);
                     return Pair.of(0L, e.getMessage());
                 }
@@ -745,7 +752,7 @@ public class DdlWorker {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
-                    MetaService.root().deleteRegionByTableId(tableId);
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs());
                 } catch (Exception e) {
                     LogUtils.error(log, "drop replicaTable error", e);
                 }
@@ -755,7 +762,9 @@ public class DdlWorker {
                 if (markDelIndices != null) {
                     try {
                         markDelIndices.forEach(index -> {
-                            MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(index.getTableId()));
+                            MetaService.root().dropRegionByTable(
+                                Mapper.MAPPER.idFrom(index.getTableId()), job.getId(), job.getRealStartTs()
+                            );
                             InfoSchemaService.root().dropIndex(tableId.seq, index.getTableId().getEntityId());
                         });
                     } catch (Exception e) {
@@ -868,7 +877,9 @@ public class DdlWorker {
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
-                    MetaService.root().deleteRegionByTableId(Mapper.MAPPER.idFrom(replicaTableId));
+                    MetaService.root().dropRegionByTable(
+                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
+                    );
                     job.setState(JobState.jobStateCancelled);
                     return Pair.of(0L, e.getMessage());
                 }
@@ -889,7 +900,7 @@ public class DdlWorker {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
-                    MetaService.root().deleteRegionByTableId(tableId);
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs());
                 } catch (Exception e) {
                     LogUtils.error(log, "drop replicaTable error", e);
                 }
@@ -1176,7 +1187,7 @@ public class DdlWorker {
                 MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
                 try {
                     start = System.currentTimeMillis();
-                    ms.dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
+                    ms.dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName(), job.getId());
                     sub = System.currentTimeMillis() - start;
                     DingoMetrics.timer("metaDropView").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {

@@ -18,8 +18,6 @@ package io.dingodb.common.mysql.scope;
 
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Utils;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +26,7 @@ import java.util.Properties;
 
 public final class ScopeVariables {
 
-    private static Properties executorProp = new Properties();
+    private static final Properties executorProp = new Properties();
 
     private static Properties globalVariablesValidator = new Properties();
 
@@ -101,7 +99,7 @@ public final class ScopeVariables {
 
     /**
      * enable txnScan via stream or not.
-     * @return
+     * @return streamScan
      */
     public static boolean txnScanByStream() {
         String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
@@ -126,6 +124,15 @@ public final class ScopeVariables {
         try {
             String job2Table = executorProp.getOrDefault("job2table", "on").toString();
             return job2Table.equals("on");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean getNeedGc() {
+        try {
+            String jobNeedGc = executorProp.getOrDefault("job_need_gc", "on").toString();
+            return jobNeedGc.equals("on");
         } catch (Exception e) {
             return false;
         }

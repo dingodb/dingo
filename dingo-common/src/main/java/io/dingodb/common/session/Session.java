@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -45,6 +46,10 @@ public class Session {
         }
     }
 
+    public PreparedStatement getPrepareStatement(String sql) throws SQLException {
+        return connection.prepareStatement(sql);
+    }
+
     public String executeUpdate(String sql) {
         Statement statement = null;
         try {
@@ -54,6 +59,27 @@ public class Session {
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage() + ",sql:{}" , e, sql);
             return e.getMessage();
+        } finally {
+            close(null, statement);
+        }
+    }
+
+    public void executeUpdate(List<String> sqlList) {
+        Statement statement = null;
+        try {
+            connection.setAutoCommit(false);
+            statement = connection.createStatement();
+            for (String sql : sqlList) {
+                statement.executeUpdate(sql);
+            }
+            connection.setAutoCommit(true);
+        } catch (Exception e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+            log.error(e.getMessage(), e);
         } finally {
             close(null, statement);
         }
@@ -79,27 +105,6 @@ public class Session {
             close(rs, statement);
         }
         return objectList;
-    }
-
-    public void executeUpdate(List<String> sqlList) {
-        Statement statement = null;
-        try {
-            connection.setAutoCommit(false);
-            statement = connection.createStatement();
-            for (String sql : sqlList) {
-                statement.executeUpdate(sql);
-            }
-            connection.setAutoCommit(true);
-        } catch (Exception e) {
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            log.error(e.getMessage(), e);
-        } finally {
-            close(null, statement);
-        }
     }
 
     public void runInTxn(Function<Session, Exception> f) {

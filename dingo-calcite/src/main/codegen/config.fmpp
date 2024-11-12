@@ -323,6 +323,7 @@ data: {
       "Call.ftl"
       "Tenant.ftl"
       "Admin.ftl"
+      "Flashback.ftl"
     ]
 
     includePosixOperators: false

@@ -21,10 +21,13 @@ import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.LockService;
@@ -36,7 +39,7 @@ import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.Region;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
-import io.dingodb.sdk.service.entity.coordinator.GcFlagType;
+import io.dingodb.sdk.service.entity.coordinator.DropRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.UpdateGCSafePointRequest;
 import io.dingodb.sdk.service.entity.store.Action;
@@ -50,6 +53,7 @@ import io.dingodb.sdk.service.entity.store.TxnScanLockResponse;
 import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
+import io.dingodb.server.executor.ddl.JobTableUtil;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +80,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public final class SafePointUpdateTask {
 
     private static final int PHYSICAL_SHIFT = 18;
+    public static volatile long safePointTs;
+    public static volatile boolean isLeader;
 
     private static final String lockKeyStr =  "safe_point_update_" + TenantConstant.TENANT_ID;
 
@@ -102,12 +108,18 @@ public final class SafePointUpdateTask {
                 String value = DingoConfiguration.serverId() + "#" + DingoConfiguration.location();
                 LockService.Lock lock = lockService.newLock(value);
                 lock.lock();
+                isLeader = true;
                 LogUtils.info(log, "Start safe point update task.");
                 ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
                     lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
                 );
+                ScheduledFuture<?> gcRegionFuture = Executors.scheduleWithFixedDelay(
+                    lockKeyStr, SafePointUpdateTask::gcDeleteRange, 300, 600, TimeUnit.SECONDS
+                );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
+                    gcRegionFuture.cancel(true);
+                    isLeader = false;
                     lockService.cancel();
                     run();
                 });
@@ -164,11 +176,10 @@ public final class SafePointUpdateTask {
                 while (true);
             }
 
-            LogUtils.info(log, "Update safe point to: {}", safeTs);
+            LogUtils.info(log, "Update safe point to safeTs: {}, reqTs: {}", safeTs, reqTs);
             if (!isDisable(reqTs)) {
                 UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
                     = UpdateGCSafePointRequest.builder();
-                // TODO
                 builder.safePoint(0);
                 if (TenantConstant.TENANT_ID == 0) {
                     builder.safePoint(safeTs - 1);
@@ -178,6 +189,7 @@ public final class SafePointUpdateTask {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, builder.build()
                 );
+                safePointTs = safeTs;
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
@@ -186,6 +198,37 @@ public final class SafePointUpdateTask {
             throw e;
         } finally {
             running.set(false);
+        }
+    }
+
+    private static void gcDeleteRange() {
+        String sql = "select region_id,start_key,end_key,job_id,ts from mysql.gc_delete_range where ts<" + safePointTs;
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+            List<Object[]> gcResults = session.executeQuery(sql);
+            LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}", gcResults.size(), safePointTs);
+            gcResults.forEach(objects -> {
+                long regionId = (long) objects[0];
+                try {
+                    coordinatorService.dropRegion(
+                        tso(),
+                        DropRegionRequest.builder().regionId(regionId).build()
+                    );
+                    LogUtils.info(log, "gcDeleteRange success, regionId:{}", regionId);
+                    long jobId = (long) objects[3];
+                    long ts = (long) objects[4];
+                    String startKey = objects[1].toString();
+                    String endKey = objects[2].toString();
+                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey)) {
+                        LogUtils.error(log, "remove gcDeleteTask failed");
+                    }
+                } catch (Exception e) {
+                    LogUtils.error(log, "gcDeleteRange error, regionId:{}", regionId, e);
+                }
+            });
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 

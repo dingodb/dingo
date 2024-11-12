@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -204,12 +205,12 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public boolean dropTable(long schemaId, String tableName) {
-        return dropTable(TenantConstant.TENANT_ID, schemaId, tableName);
+    public boolean dropTable(long schemaId, String tableName, long jobId) {
+        return dropTable(TenantConstant.TENANT_ID, schemaId, tableName, jobId);
     }
 
     @Override
-    public boolean dropTable(long tenantId, long schemaId, String tableName) {
+    public boolean dropTable(long tenantId, long schemaId, String tableName, long jobId) {
         tableName = tableName.toUpperCase();
         CommonId tableId = getTable(tableName).getTableId();
         if (tableId != null) {
@@ -225,10 +226,10 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
-    public long truncateTable(@NonNull String tableName, long tableEntityId) {
+    public long truncateTable(@NonNull String tableName, long tableEntityId, long jobId) {
         TableDefinition tableDefinition = tableDefinitions.get(getTableId(tableName));
         if (tableDefinition != null) {
-            dropTable(id.seq, tableName);
+            dropTable(id.seq, tableName, -1);
         }
         createTablesByTruncate(tableDefinition, Collections.emptyList());
         return 0;

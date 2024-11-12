@@ -19,7 +19,6 @@ package io.dingodb.store.proxy.service;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.config.VariableConfiguration;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;

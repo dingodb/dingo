@@ -62,7 +62,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
             Arrays.toString(param.getEndKey()),
             ps.getClass().getCanonicalName(),
             rangeDistribution.entrySet().stream()
-                .map(e -> e.getKey().encodeToString()+": "+e.getValue())
+                .map(e -> e.getKey().encodeToString() + ": " + e.getValue())
                 .collect(Collectors.joining("\n"))
         );
         NavigableSet<RangeDistribution> distributions;
@@ -207,7 +207,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
                         throw new RuntimeException(ex);
                     }
                 }
-            return true;
-        });
+                return true;
+            });
     }
 }

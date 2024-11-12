@@ -694,7 +694,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             LogUtils.error(log, "duplicate key Table");
             try {
                 duplicateTableList.forEach(e -> {
-                    io.dingodb.meta.MetaService.root().dropTable(tenantId, schemaId, e.getTableDefinition().getName());
+                    io.dingodb.meta.MetaService.root()
+                        .dropTable(tenantId, schemaId, e.getTableDefinition().getName(), -1);
                 });
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);

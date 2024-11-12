@@ -35,6 +35,8 @@ import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropTenant;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
@@ -308,7 +310,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     throw DINGO_RESOURCE.unknownSchema(entry.getKey()).ex();
                 }
                 for (Map.Entry<String, Table> tableEntry : schemaTables.getTables().entrySet()) {
-                    metaService.dropTable(tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey());
+                    metaService.dropTable(
+                        tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey(), -1
+                    );
                 }
             }
         } else {
@@ -325,7 +329,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     SchemaTables schemaTables = entry.getValue();
                     for (Map.Entry<String, Table> tableEntry : schemaTables.getTables().entrySet()) {
                         metaService.dropTable(
-                            tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey()
+                            tenantId, schemaTables.getSchemaInfo().getSchemaId(), tableEntry.getKey(), -1
                         );
                     }
                 }
@@ -1100,6 +1104,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
         // for example use mysql
+    }
+
+    public void execute(SqlFlashBackTable sqlFlashBackTable, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlFlashBackSchema sqlFlashBackSchema, CalcitePrepare.Context context) {
+
     }
 
     public static void validatePartitionBy(

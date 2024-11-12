@@ -65,13 +65,13 @@ public class LocalDdlService implements DdlService {
     @Override
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaInfo.getName());
-        ms.dropTable(ms.id().seq, tableName);
+        ms.dropTable(ms.id().seq, tableName, -1);
     }
 
     @Override
     public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaInfo.getName());
-        ms.truncateTable(table.getName(), 1);
+        ms.truncateTable(table.getName(), 1, -1);
     }
 
     @Override

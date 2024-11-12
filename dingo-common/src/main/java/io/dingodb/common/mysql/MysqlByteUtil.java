@@ -29,17 +29,17 @@ public final class MysqlByteUtil {
     }
 
     public static int bytesToIntLittleEndian(byte[] bytes) {
-        return bytes[0] & 0xFF | //
-            (bytes[1] & 0xFF) << 8 | //
-            (bytes[2] & 0xFF) << 16 | //
-            (bytes[3] & 0xFF) << 24; //
+        return bytes[0] & 0xFF
+            | (bytes[1] & 0xFF) << 8
+            | (bytes[2] & 0xFF) << 16
+            | (bytes[3] & 0xFF) << 24;
     }
 
     public static int bytesToIntBigEndian(byte[] bytes) {
-        return bytes[3] & 0xFF | //
-            (bytes[2] & 0xFF) << 8 | //
-            (bytes[1] & 0xFF) << 16 | //
-            (bytes[0] & 0xFF) << 24; //
+        return bytes[3] & 0xFF
+            | (bytes[2] & 0xFF) << 8
+            | (bytes[1] & 0xFF) << 16
+            | (bytes[0] & 0xFF) << 24;
     }
 
     public static byte[] intToBytesBigEndian(int operand) {
@@ -83,16 +83,16 @@ public final class MysqlByteUtil {
         return (short) (((bytes[0] << 8) | bytes[1] & 0xff));
     }
 
-    public static byte[] longToBytesBigEndian(long n) {
+    public static byte[] longToBytesBigEndian(long number) {
         byte[] b = new byte[8];
-        b[7] = (byte) (n & 0xff);
-        b[6] = (byte) (n >> 8  & 0xff);
-        b[5] = (byte) (n >> 16 & 0xff);
-        b[4] = (byte) (n >> 24 & 0xff);
-        b[3] = (byte) (n >> 32 & 0xff);
-        b[2] = (byte) (n >> 40 & 0xff);
-        b[1] = (byte) (n >> 48 & 0xff);
-        b[0] = (byte) (n >> 56 & 0xff);
+        b[7] = (byte) (number & 0xff);
+        b[6] = (byte) (number >> 8  & 0xff);
+        b[5] = (byte) (number >> 16 & 0xff);
+        b[4] = (byte) (number >> 24 & 0xff);
+        b[3] = (byte) (number >> 32 & 0xff);
+        b[2] = (byte) (number >> 40 & 0xff);
+        b[1] = (byte) (number >> 48 & 0xff);
+        b[0] = (byte) (number >> 56 & 0xff);
         return b;
     }
 
