@@ -53,6 +53,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.privilege.PrivilegeDefinition;
@@ -210,7 +211,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 return;
             }
         }
-        long schemaId = 0;
+        long schemaId;
         if (subSchema.getTableNames().isEmpty()) {
             SchemaInfo schemaInfo = subSchema.getSchemaInfo(schemaName);
             schemaId = schemaInfo.getSchemaId();
@@ -1061,7 +1062,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else if (type == 3) {
             replica = InfoSchemaService.root().getDocumentReplica();
         }
+        boolean defaultSingleReplica = replica == 1 && replica == ScopeVariables.getDefaultReplica();
         if (replica < targetReplica) {
+            if (defaultSingleReplica) {
+                return replica;
+            }
             throw DINGO_RESOURCE.notEnoughRegion().ex();
         }
         return targetReplica;

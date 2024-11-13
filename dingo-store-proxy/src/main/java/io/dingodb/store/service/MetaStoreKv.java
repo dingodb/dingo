@@ -35,8 +35,12 @@ import io.dingodb.sdk.service.entity.common.Range;
 import io.dingodb.sdk.service.entity.common.RawEngine;
 import io.dingodb.sdk.service.entity.common.RegionType;
 import io.dingodb.sdk.service.entity.common.StorageEngine;
+import io.dingodb.sdk.service.entity.common.StoreState;
+import io.dingodb.sdk.service.entity.common.StoreType;
 import io.dingodb.sdk.service.entity.coordinator.CreateRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.CreateRegionResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionsRequest;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionsResponse;
@@ -134,10 +138,14 @@ public class MetaStoreKv {
             regionName = "ddl";
             schemaId = 1002;
         }
+        int replica = getActReplica();
+        if (replica > 3) {
+            replica = 3;
+        }
         CreateRegionRequest createRegionRequest = CreateRegionRequest.builder()
             .regionName(regionName)
             .range(range)
-            .replicaNum(3)
+            .replicaNum(replica)
             .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
             .storeEngine(StorageEngine.STORE_ENG_RAFT_STORE)
             .regionType(RegionType.STORE_REGION)
@@ -278,6 +286,24 @@ public class MetaStoreKv {
         return Services.storeRegionService(
             coordinators, commonId.seq, TransactionUtil.STORE_RETRY
         );
+    }
+
+    public static int getActReplica() {
+        CoordinatorService coordinatorService
+            = Services.coordinatorService(Services.parse(Configuration.coordinators()));
+        GetStoreMapRequest storeMapRequest = GetStoreMapRequest.builder().epoch(0).build();
+        GetStoreMapResponse response = coordinatorService.getStoreMap(
+            System.identityHashCode(storeMapRequest), storeMapRequest
+        );
+        if (response.getStoremap() == null) {
+            return 3;
+        }
+        long storeCount = response.getStoremap().getStores()
+            .stream()
+            .filter(store -> (store.getStoreType() == null || store.getStoreType() == StoreType.NODE_TYPE_STORE)
+                && store.getState() == StoreState.STORE_NORMAL)
+            .count();
+        return (int) storeCount;
     }
 
 }

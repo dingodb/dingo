@@ -349,8 +349,8 @@ public final class DingoDriverParser extends DingoParser {
             } else {
                 // autocommit is true use current txn mode
                 transaction = connection.createTransaction(
-                    "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ?
-                        TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
+                    "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"))
+                        ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
                     connection.getAutoCommit());
             }
             txn_Id = transaction.getTxnId();

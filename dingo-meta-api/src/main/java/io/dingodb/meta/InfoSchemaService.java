@@ -23,7 +23,6 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.MysqlByteUtil;
-
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
@@ -35,11 +34,11 @@ import java.util.Map;
 public interface InfoSchemaService {
     long tenantId = TenantConstant.TENANT_ID;
     byte[] mTenants = "tenants".getBytes();
-    String mTenantPrefix= "tenant";
+    String mTenantPrefix = "tenant";
     //byte[] mDBs = "DBs".getBytes();
-    String mDBPrefix= "DB";
-    String mTablePrefix= "Table";
-    String mIndexPrefix= "Index";
+    String mDBPrefix = "DB";
+    String mTablePrefix = "Table";
+    String mIndexPrefix = "Index";
     String mSchemaDiffPrefix = "Diff";
     String TEMPLATE = "%s:%d";
     String mSchemaVersionKey = "SchemaVersionKey";
@@ -170,15 +169,22 @@ public interface InfoSchemaService {
     boolean checkTableExists(byte[] schemaKey, byte[] tableKey);
 
     void createTableOrView(long schemaId, long tableId, Object table);
-    default void createReplicaTable(long schemaId, long tableId, Object table) {}
+
+    default void createReplicaTable(long schemaId, long tableId, Object table) {
+
+    }
 
     void createIndex(long schemaId, long tableId, Object index);
 
     void createSchema(long schemaId, SchemaInfo schema);
 
-    default boolean createTenant(long tenantId, Tenant tenant) { return true; };
+    default boolean createTenant(long tenantId, Tenant tenant) {
+        return true;
+    }
 
-    default boolean updateTenant(long tenantId, Tenant tenant) { return true; }
+    default boolean updateTenant(long tenantId, Tenant tenant) {
+        return true;
+    }
 
     Object getTenant(long tenantId);
 
@@ -193,37 +199,57 @@ public interface InfoSchemaService {
     List<SchemaInfo> listSchema();
 
     Object getTable(long schemaId, long tableId);
+
     Object getTable(long schemaId, long tableId, long tenantId);
+
     Object getTable(CommonId tableId);
+
     Object getTable(CommonId tableId, long tenantId);
-    default Object getReplicaTable(long schemaId, long tableId, long replicaTableId) { return null; }
+
+    Object getTable(long schemaId, String tableName);
+
+    Object getTable(long schemaId, String tableName, long tenantId);
+
+    Object getTable(String schemaName, String tableName);
+
+    Object getTable(long tableId);
+
+    default Object getReplicaTable(long schemaId, long tableId, long replicaTableId) {
+        return null;
+    }
 
     Table getTableDef(long schemaId, long tableId);
+
     Table getTableDef(long schemaId, String tableName);
+
     Table getTableDef(long schemaId, String tableName, long tenantId);
+
     IndexTable getIndexDef(long tableId, long indexId);
+
     default IndexTable getIndexDef(long schemaId, long tableId, long indexId) {
         return null;
     }
 
-    Object getTable(long schemaId, String tableName);
-    Object getTable(long schemaId, String tableName, long tenantId);
-    Object getTable(String schemaName, String tableName);
-    Object getTable(long tableId);
-
     List<Object> listTable(long schemaId);
 
-    default List<Object> listTable(long schemaId, long tenantId) { return null; }
+    default List<Object> listTable(long schemaId, long tenantId) {
+        return null;
+    }
 
     List<Object> listTable(String schemaName);
 
     List<Object> listIndex(long schemaId, long tableId);
+
     List<Object> listIndex(long schemaId, long tableId, long tenantId);
+
     Object getIndex(long tableId, long indexId);
 
     void dropTenant(long tenantId);
+
     void dropSchema(long schemaId);
+
     void dropTable(long schemaId, long tableId);
+
     void dropIndex(long tableId, long indexId);
 
     long genSchemaId();
@@ -239,7 +265,10 @@ public interface InfoSchemaService {
     long getSchemaVersionWithNonEmptyDiff();
 
     Map<String, Table> listTableDef(long schemaId);
-    default Map<String, Table> listTableDef(long schemaId, long tenantId) { return null; };
+
+    default Map<String, Table> listTableDef(long schemaId, long tenantId) {
+        return null;
+    }
 
     void putKvToCoordinator(String key, String val);
 
@@ -250,28 +279,47 @@ public interface InfoSchemaService {
     Long genSchemaVersion(long step);
 
     void setSchemaDiff(SchemaDiff schemaDiff);
-    default void delSchemaDiff(long ver) {};
+
+    default void delSchemaDiff(long ver) {
+
+    }
 
     void updateTable(long schemaId, Object table);
 
-    default void updateReplicaTable(long schemaId, long tableId, Object table) {}
+    default void updateReplicaTable(long schemaId, long tableId, Object table) {
 
-    default void updateIndex(long tableId, Object index) {}
+    }
+
+    default void updateIndex(long tableId, Object index) {
+
+    }
 
     DdlJob getHistoryDDLJob(long jobId);
 
     void addHistoryDDLJob(DdlJob job, boolean updateRawArgs);
 
-    default void delHistoryDDLJob(long jobId) {};
+    default void delHistoryDDLJob(long jobId) {
+
+    }
 
     void prepareDone();
-    default void prepareStart() {};
+
+    default void prepareStart() {
+
+    }
 
     boolean prepare();
-    default boolean prepareStarted() { return false; }
 
-    List<Long> genGlobalIDs(int n);
+    default boolean prepareStarted() {
+        return false;
+    }
 
-    default InfoSchema getInfoSchemaByTenantId(long tenantId) { return null; }
+    List<Long> genGlobalIDs(
+        int number
+    );
+
+    default InfoSchema getInfoSchemaByTenantId(long tenantId) {
+        return null;
+    }
 
 }

@@ -74,7 +74,6 @@ public final class PrepareMeta {
     private static final Long retryInterval = 6000L;
     private static final int maxRetries = 20;
     public static int storeReplica = 3;
-    public static int indexReplica = 3;
 
     private PrepareMeta() {
     }
@@ -90,9 +89,6 @@ public final class PrepareMeta {
             PrepareMeta.prepareTenant(3);
             LogUtils.info(log, "init tenant success");
         }
-        //if (infoSchemaService.prepare()) {
-        //    return;
-        //}
         long start = System.currentTimeMillis();
         MetaStoreKv.init();
         initReplica();
@@ -114,8 +110,10 @@ public final class PrepareMeta {
     public static void initReplica() {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         storeReplica = infoSchemaService.getStoreReplica();
-        indexReplica = infoSchemaService.getIndexReplica();
-        LogUtils.info(log, "init replica done, store:{}, index:{}", storeReplica, indexReplica);
+        if (storeReplica > 3) {
+            storeReplica = 3;
+        }
+        LogUtils.info(log, "init replica done, store:{}", storeReplica);
     }
 
     public static void prepareTenant(int retry) {
@@ -185,9 +183,6 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "GC_DELETE_RANGE", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_DDL_BACKFILL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
-        initTableByTemplate(schemaName, "DINGO_DDL_REORG", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
         LogUtils.info(log, "prepare mysql meta table done");
     }

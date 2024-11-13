@@ -124,7 +124,7 @@ public final class ScopeVariables {
 
     public static boolean getJob2Table() {
         try {
-            String job2Table = executorProp.getOrDefault("job2table", "off").toString();
+            String job2Table = executorProp.getOrDefault("job2table", "on").toString();
             return job2Table.equals("on");
         } catch (Exception e) {
             return false;
@@ -144,6 +144,15 @@ public final class ScopeVariables {
                     break;
                 }
             }
+        }
+    }
+
+    public static int getDefaultReplica() {
+        try {
+            String replica = executorProp.getOrDefault("default_replica", "3").toString();
+            return Integer.parseInt(replica);
+        } catch (Exception e) {
+            return 3;
         }
     }
 

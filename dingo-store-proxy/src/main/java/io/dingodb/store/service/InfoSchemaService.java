@@ -106,7 +106,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     public InfoSchemaService(Long startTs) {
         this.coordinators = Services.parse(Configuration.coordinators());
-        this.versionService = Services.versionService(this.coordinators);
+        this.versionService = Services.versionService(coordinators);
         this.txn = new TxStructure(startTs);
     }
 
@@ -621,20 +621,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public int getStoreReplica() {
-        CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
-        GetStoreMapRequest storeMapRequest = GetStoreMapRequest.builder().epoch(0).build();
-        GetStoreMapResponse response = coordinatorService.getStoreMap(
-            System.identityHashCode(storeMapRequest), storeMapRequest
-        );
-        if (response.getStoremap() == null) {
-            return 3;
-        }
-        long storeCount = response.getStoremap().getStores()
-            .stream()
-            .filter(store -> (store.getStoreType() == null || store.getStoreType() == StoreType.NODE_TYPE_STORE)
-                && store.getState() == StoreState.STORE_NORMAL)
-            .count();
-        return (int) storeCount;
+        return MetaStoreKv.getActReplica();
     }
 
     @Override
