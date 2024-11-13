@@ -43,6 +43,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
+import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -210,7 +211,7 @@ public class DdlWorker {
 
     public Pair<Long, String> runDdlJob(DdlContext dc, DdlJob job) {
         if (job.getRealStartTs() == 0) {
-            job.setRealStartTs(System.currentTimeMillis());
+            job.setRealStartTs(TsoService.getDefault().tso());
         }
         if (job.isFinished()) {
             LogUtils.debug(log, "[ddl] finish DDL job, job:{}", job);
@@ -692,8 +693,8 @@ public class DdlWorker {
                 tableWithId.getTableDefinition()
                     .getColumns()
                     .removeIf(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(columnName));
-                tableWithId.getTableDefinition().setName(DdlUtil.ddlTmpTableName);
                 String originTableName = tableWithId.getTableDefinition().getName();
+                tableWithId.getTableDefinition().setName(DdlUtil.ddlTmpTableName);
                 MetaService.root().createReplicaTable(job.getSchemaId(), tableWithId, originTableName);
                 IndexUtil.pickBackFillType(job);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
@@ -815,8 +816,8 @@ public class DdlWorker {
                     definitionWithId.getTableDefinition()
                         .getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
                 }
-                definitionWithId.getTableDefinition().setName("replicaTable");
                 String originTableName = definitionWithId.getTableDefinition().getName();
+                definitionWithId.getTableDefinition().setName("replicaTable");
                 MetaService.root().createReplicaTable(job.getSchemaId(), definitionWithId, originTableName);
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 return updateSchemaVersion(dc, job);

@@ -27,11 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DingoSqlKeyConstraint extends SqlKeyConstraint {
     private static final AtomicInteger ixNu = new AtomicInteger(1);
+
     @Getter
     private String uniqueName;
+
     @Getter
     @Setter
     private boolean usePrimary;
+
     public DingoSqlKeyConstraint(SqlParserPos pos, @Nullable SqlIdentifier name, SqlNodeList columnList) {
         super(pos, name, columnList);
         if (name != null) {

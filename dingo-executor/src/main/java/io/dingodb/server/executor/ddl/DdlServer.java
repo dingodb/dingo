@@ -86,9 +86,7 @@ public final class DdlServer {
     }
 
     public static void watchDdlKey() {
-        //String resourceKey = String.format("tenantId:{%d}", TenantConstant.TENANT_ID);
         WatchService watchService = new WatchService(Configuration.coordinators());
-        //LockService lockService = new LockService(resourceKey, Configuration.coordinators(), 45000);
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
         try {

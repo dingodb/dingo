@@ -72,7 +72,8 @@ public final class JobTableUtil {
         String sql = "insert into mysql.dingo_ddl_history(job_id, job_meta, schema_name, table_name, schema_ids, "
             + "table_ids, create_time) values (%d, %s, %s, %s, %s, %s, %s)";
         try {
-            byte[] meta = job.encode(updateRawArgs);
+            job.setRawArgs(null);
+            byte[] meta = job.encode(false);
             String jobMeta = new String(meta);
             sql = String.format(sql, job.getId(), Utils.quoteForSql(jobMeta), Utils.quoteForSql(job.getSchemaName()),
                 Utils.quoteForSql(job.getTableName()), Utils.quoteForSql(job.getSchemaId()),

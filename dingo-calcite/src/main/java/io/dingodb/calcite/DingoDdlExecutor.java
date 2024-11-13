@@ -1295,6 +1295,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         //TableDefinition indexTableDefinition = tableDefinition.copyWithName(dingoSqlKeyConstraint.getUniqueName());
         indexTableDefinition.setColumns(indexColumnDefinitions);
         indexTableDefinition.setProperties(properties);
+        indexTableDefinition.setPartDefinition(null);
 
         validatePartitionBy(
             indexTableDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
