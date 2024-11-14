@@ -1051,7 +1051,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static int getReplica(int targetReplica, int type) {
-        if (targetReplica <= 0) {
+        if (targetReplica < 0) {
             throw DINGO_RESOURCE.notAllowedZeroReplica().ex();
         }
         int replica = 0;

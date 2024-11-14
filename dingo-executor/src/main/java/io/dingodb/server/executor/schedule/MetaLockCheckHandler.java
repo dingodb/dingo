@@ -22,6 +22,7 @@ import io.dingodb.common.ddl.MdlCheckMdlVerListenerImpl;
 import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Utils;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.session.SessionManager;
@@ -77,7 +78,7 @@ public final class MetaLockCheckHandler {
                     LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
                         maxVer, saveMaxSchemaVersion);
                 }
-                return;
+                DingoMetrics.counter("jobNeedToSync").inc();
             }
             int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
             if (jobNeedToCheckCnt == 0) {
