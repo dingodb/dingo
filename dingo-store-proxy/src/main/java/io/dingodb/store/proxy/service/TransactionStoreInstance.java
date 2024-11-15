@@ -625,11 +625,11 @@ public class TransactionStoreInstance {
         long start = System.currentTimeMillis();
         ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
         for (TxnResultInfo txnResultInfo : txnResult) {
-            LogUtils.debug(log, "{} txnResultInfo : {}", funName, txnResultInfo);
+            LogUtils.debug(log, "startTs:{}, {} txnResultInfo : {}", startTs, funName, txnResultInfo);
             LockInfo lockInfo = txnResultInfo.getLocked();
             if (lockInfo != null) {
                 // CheckTxnStatus
-                LogUtils.debug(log, "{} lockInfo : {}", funName, lockInfo);
+                LogUtils.debug(log, "startTs:{}, {} lockInfo : {}", startTs, funName, lockInfo);
                 long currentTs = TsoService.INSTANCE.tso();
                 TxnCheckStatus txnCheckStatus = TxnCheckStatus.builder().
                     isolationLevel(IsolationLevel.of(isolationLevel)).
@@ -639,7 +639,7 @@ public class TransactionStoreInstance {
                     currentTs(currentTs).
                     build();
                 TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
-                LogUtils.info(log, "{} txnCheckStatus : {}", funName, statusResponse);
+                LogUtils.info(log, "startTs:{}, {} txnCheckStatus : {}", startTs, funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
                 // success
                 Action action = statusResponse.getAction();
@@ -671,7 +671,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "startTs:{}, {} txnResolveLockResponse: {}", startTs, funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.COMMIT;
                     } else if (lockTtl == 0 && commitTs == 0) {
                         // resolveLock store rollback
@@ -682,7 +682,7 @@ public class TransactionStoreInstance {
                             keys(singletonList(lockInfo.getKey())).
                             build();
                         TxnResolveLockResponse txnResolveLockRes = txnResolveLock(resolveLockRequest);
-                        LogUtils.info(log, "{} txnResolveLockResponse: {}", funName, txnResolveLockRes);
+                        LogUtils.info(log, "startTs:{}, {} txnResolveLockResponse: {}", startTs, funName, txnResolveLockRes);
                         resolveLockStatus = ResolveLockStatus.ROLLBACK;
                     }
                 } else {
@@ -711,7 +711,7 @@ public class TransactionStoreInstance {
                     if (resultInfo.getPrimaryMismatch() != null) {
                         throw new PrimaryMismatchException(resultInfo.getPrimaryMismatch().toString());
                     } else if (resultInfo.getTxnNotFound() != null) {
-                        LogUtils.warn(log, "{} txnNotFound : {}", funName, resultInfo.getTxnNotFound().toString());
+                        LogUtils.warn(log, "startTs:{}, {} txnNotFound : {}", startTs, funName, resultInfo.getTxnNotFound().toString());
                         resolveLockStatus = ResolveLockStatus.TXN_NOT_FOUND;
                     } else if (resultInfo.getLocked() != null) {
                         throw new RuntimeException(resultInfo.getLocked().toString());
@@ -719,7 +719,7 @@ public class TransactionStoreInstance {
                 }
             } else {
                 WriteConflict writeConflict = txnResultInfo.getWriteConflict();
-                LogUtils.info(log, "{} writeConflict : {}", funName, writeConflict);
+                LogUtils.info(log, "startTs:{}, {} writeConflict : {}", startTs, funName, writeConflict);
                 if (writeConflict != null) {
                     //  write column exist and commit_ts > for_update_ts
                     if (funName.equalsIgnoreCase("txnPessimisticLock")) {
@@ -753,7 +753,7 @@ public class TransactionStoreInstance {
                     currentTs(currentTs).
                     build();
                 TxnCheckTxnStatusResponse statusResponse = txnCheckTxnStatus(txnCheckStatus);
-                LogUtils.info(log, "startTs: {}, {} txnCheckStatus : {}", start, funName, statusResponse);
+                LogUtils.info(log, "startTs: {}, {} txnCheckStatus : {}", startTs, funName, statusResponse);
                 TxnResultInfo resultInfo = statusResponse.getTxnResult();
                 if (resultInfo == null) {
                     Action action = statusResponse.getAction();
@@ -1132,6 +1132,8 @@ public class TransactionStoreInstance {
                         //ESTREAM_EXPIRED: stream id is expired.
                         this.streamId = null;
                         LogUtils.info(log, "Stream id expired, info:{}", e.getMessage());
+                    } else {
+                        throw e;
                     }
                 }
                 break;
