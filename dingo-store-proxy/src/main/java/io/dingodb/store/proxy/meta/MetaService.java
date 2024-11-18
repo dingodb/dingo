@@ -39,6 +39,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaServiceProvider;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
@@ -66,6 +67,7 @@ import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.CreateAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTenantRequest;
+import io.dingodb.sdk.service.entity.meta.DeleteAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.DropTenantRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
@@ -787,7 +789,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         // Generate new table ids.
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
-
+        boolean autoInc = table.getTableDefinition().getColumns().stream()
+            .anyMatch(io.dingodb.sdk.service.entity.meta.ColumnDefinition::isAutoIncrement);
+        if (autoInc) {
+            delAutoInc(table.getTableId());
+        }
         dropRegionByTable(table, coordinatorService);
 
         for (TableDefinitionWithId index : indexes) {
@@ -981,6 +987,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         Table table = schemaService.getTableDef(schemaId, tableName, tenantId);
         if (table == null) {
             return false;
+        }
+        boolean autoInc = table.getColumns().stream()
+            .anyMatch(Column::isAutoIncrement);
+        if (autoInc) {
+            delAutoInc(MAPPER.idTo(table.getTableId()));
         }
         List<IndexTable> indexes = table.getIndexes();
 
@@ -1274,6 +1285,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 return RawEngine.RAW_ENG_BDB;
             default:
                 return RawEngine.RAW_ENG_ROCKSDB;
+        }
+    }
+
+    public void delAutoInc(DingoCommonId tableId) {
+        DeleteAutoIncrementRequest req = DeleteAutoIncrementRequest.builder()
+            .tableId(tableId)
+            .build();
+        try {
+            io.dingodb.sdk.service.MetaService metaService
+                = Services.autoIncrementMetaService(Configuration.coordinatorSet());
+            metaService.deleteAutoIncrement(System.identityHashCode(req), req);
+            LogUtils.info(log, "delAutoInc success, tableId:{}", tableId);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 }

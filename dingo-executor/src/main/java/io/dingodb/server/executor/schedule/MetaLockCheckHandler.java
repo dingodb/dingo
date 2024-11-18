@@ -73,7 +73,6 @@ public final class MetaLockCheckHandler {
             if (maxVer > saveMaxSchemaVersion) {
                 saveMaxSchemaVersion = maxVer;
             } else if (!jobNeedToSync) {
-                mdlCheckTableInfo.wUnlock();
                 if (DdlUtil.timeOutError.get()) {
                     LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
                         maxVer, saveMaxSchemaVersion);
@@ -83,8 +82,8 @@ public final class MetaLockCheckHandler {
             int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
             if (jobNeedToCheckCnt == 0) {
                 jobNeedToSync = false;
-                LogUtils.info(log, "[ddl] mdl check job need to check cnt is 0,max ver:{} saveMaxSchema ver:{}",
-                    maxVer, saveMaxSchemaVersion);
+                //LogUtils.info(log, "[ddl] mdl check job need to check cnt is 0,max ver:{} saveMaxSchema ver:{}",
+                //    maxVer, saveMaxSchemaVersion);
                 mdlCheckTableInfo.wUnlock();
                 return;
             }
@@ -117,12 +116,6 @@ public final class MetaLockCheckHandler {
                 if (jobCache.containsKey(entry.getKey())
                     && jobCache.get(entry.getKey()) >= entry.getValue()
                 ) {
-                    if (DdlUtil.timeOutError.get()) {
-                        //LogUtils.info(log, "[ddl] mdl check skip, max ver:{},"
-                        // +" saveMaxSchema ver:{}, new ver:{}, jobs ver:{}", maxVer,
-                        //  saveMaxSchemaVersion, DdlContext.INSTANCE.getNewVer(), entry.getValue());
-                        //DdlUtil.timeOutError.set(false);
-                    }
                     continue;
                 }
                 LogUtils.info(log, "mdl gets lock, update to owner, jobId:{}, version:{}, save ver:{}, jobNeedSync:{}",
@@ -136,7 +129,7 @@ public final class MetaLockCheckHandler {
                 }
             }
         } catch (Exception e) {
-            LogUtils.error(log, "mdlCheckLoop error, error:" + e.getMessage());
+            LogUtils.error(log, "mdlCheckLoop error, error:" + e.getMessage(), e);
         }
     }
 }
