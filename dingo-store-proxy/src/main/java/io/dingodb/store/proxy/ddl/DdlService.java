@@ -16,18 +16,30 @@
 
 package io.dingodb.store.proxy.ddl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.RecoverInfo;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 @Slf4j
 public class DdlService implements io.dingodb.meta.DdlService {
@@ -146,4 +158,13 @@ public class DdlService implements io.dingodb.meta.DdlService {
             return service.getIndexDef(id.domain, id.seq);
         }
     }
+
+    public void flashbackTable(RecoverInfo recoverInfo) {
+        DdlHandler.recoverTable(recoverInfo);
+    }
+
+    public void flashbackSchema(RecoverInfo recoverInfo) {
+        DdlHandler.recoverSchema(recoverInfo);
+    }
+
 }

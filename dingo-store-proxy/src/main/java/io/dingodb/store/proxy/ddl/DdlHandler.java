@@ -21,6 +21,7 @@ import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -31,7 +32,9 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -500,6 +503,45 @@ public final class DdlHandler {
     public static DdlJob getHistoryJobById(long jobId) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         return infoSchemaService.getHistoryDDLJob(jobId);
+    }
+
+    public static void recoverTable(RecoverInfo recoverInfo) {
+        DdlJob ddlJob = DdlJob.builder()
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .actionType(ActionType.ActionRecoverTable)
+            .schemaId(recoverInfo.getSchemaId())
+            .schemaName(recoverInfo.getOldSchemaName())
+            .tableId(recoverInfo.getTableId())
+            .state(JobState.jobStateQueueing)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(recoverInfo);
+        ddlJob.setArgs(args);
+        try {
+            doDdlJob(ddlJob);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    public static void recoverSchema(RecoverInfo recoverInfo) {
+        DdlJob ddlJob = DdlJob.builder()
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .actionType(ActionType.ActionRecoverSchema)
+            .schemaId(recoverInfo.getSchemaId())
+            .schemaName(recoverInfo.getOldSchemaName())
+            .state(JobState.jobStateQueueing)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(recoverInfo);
+        ddlJob.setArgs(args);
+        try {
+            doDdlJob(ddlJob);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            throw e;
+        }
     }
 
 }

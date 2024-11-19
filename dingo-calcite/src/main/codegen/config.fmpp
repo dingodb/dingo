@@ -57,6 +57,9 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
       "io.dingodb.calcite.grammar.ddl.SqlDropTenant"
       "io.dingodb.calcite.grammar.ddl.SqlEnd"
+      "io.dingodb.calcite.grammar.ddl.SqlFlashBack"
+      "io.dingodb.calcite.grammar.ddl.SqlFlashBackTable"
+      "io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema"
       "io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
@@ -136,6 +139,7 @@ data: {
       "VIRTUAL"
       "JAR"
       "FILE"
+      "FLASHBACK"
       "ARCHIVE"
       "ACCOUNT"
       "AUTO_INCREMENT"
@@ -292,6 +296,7 @@ data: {
         "SqlLoadData"
         "SqlCall"
         "SqlAdminRollback"
+        "SqlFlashBack"
     ]
 
     sqlTypeNameMethods: [

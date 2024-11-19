@@ -169,14 +169,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return value != null;
     }
 
-    public boolean checkTableNameExists(long schemaId, String tableName) {
-        List<Object> tableDefinitionWithIds = listTable(schemaId);
-        return tableDefinitionWithIds.stream().map(object -> (TableDefinitionWithId)object)
-            .anyMatch(tableDefinitionWithId ->
-                tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(tableName)
-                );
-    }
-
     @Override
     public void createTableOrView(long schemaId, long tableId, Object table) {
         byte[] tenantKey = tenantKey(tenantId);

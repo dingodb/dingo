@@ -1378,6 +1378,8 @@ SqlNode SqlSelect() :
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
     boolean forUpdate = false;
+    boolean flashbackQuery = false;
+    String flashbackQueryTime = null;
     ExportOptions exportOptions = null;
 }
 {
@@ -1411,6 +1413,14 @@ SqlNode SqlSelect() :
         ( windowDecls = Window() | { windowDecls = null; } )
         [ exportOptions = exportOptions() ]
         [ <FOR> <UPDATE> { forUpdate=true; }]
+        [ <AS> <OF> { flashbackQuery = true; }
+         (
+           <TIMESTAMP>
+             flashbackQueryTime = dingoIdentifier();
+           |
+           <TSO>
+             flashbackQueryTime = dingoIdentifier();
+         ) ]
     |
         E() {
             fromClause = null;
@@ -1425,7 +1435,7 @@ SqlNode SqlSelect() :
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
             new SqlNodeList(hints, getPos()),
-            exportOptions);
+            exportOptions, flashbackQuery, flashbackQueryTime);
     }
 }
 

@@ -18,8 +18,12 @@ package io.dingodb.server.executor.ddl;
 
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.RecoverInfo;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
@@ -43,12 +47,6 @@ public final class TableUtil {
         long tableId = ddlJob.getTableId();
         tableInfo.setPrepareTableId(tableId);
 
-        //InfoSchemaService service = InfoSchemaService.root();
-        //Object tabObj = service.getTable(schemaId, tableInfo.getName());
-        //if (tabObj != null) {
-        //    ddlJob.setState(JobState.jobStateCancelled);
-        //    return Pair.of(null, "table has existed");
-        //}
         if (tableInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
             tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             MetaService metaService = MetaService.root();
@@ -176,5 +174,41 @@ public final class TableUtil {
             return Pair.of(null, "table is not in public");
         }
         return res;
+    }
+
+    public static void recoverTable(
+        DdlJob job,
+        RecoverInfo recoverInfo,
+        TableDefinitionWithId tableDefinitionWithId,
+        List<Object> indexList
+    ) {
+        // remove gc_delete_range to gc_delete_range_done
+        String sql = "select region_id,start_key,end_key,job_id,ts from mysql.gc_delete_range where ts<"
+            + recoverInfo.getDropJobId();
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            List<Object[]> gcResults = session.executeQuery(sql);
+            LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}",
+                gcResults.size(), ExecutionEnvironment.INSTANCE);
+            gcResults.forEach(objects -> {
+                long regionId = (long) objects[0];
+                try {
+                    long jobId = (long) objects[3];
+                    long ts = (long) objects[4];
+                    String startKey = objects[1].toString();
+                    String endKey = objects[2].toString();
+                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey)) {
+                        LogUtils.error(log, "remove gcDeleteTask failed");
+                    }
+                } catch (Exception e) {
+                    LogUtils.error(log, "gcDeleteRange error, regionId:{}", regionId, e);
+                }
+            });
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+
+        // create table Info and set autoIncId
+        MetaService.root().recoverTable(job.getSchemaId(), tableDefinitionWithId, indexList);
     }
 }

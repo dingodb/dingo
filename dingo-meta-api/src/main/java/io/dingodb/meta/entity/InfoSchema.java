@@ -18,6 +18,7 @@ package io.dingodb.meta.entity;
 
 import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.SchemaInfo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,6 +95,13 @@ public class InfoSchema {
             return null;
         }
         return table.getIndexes().stream().filter(index -> index.getTableId().seq == indexId).findFirst().orElse(null);
+    }
+
+    public SchemaInfo schemaById(long schemaId) {
+        return schemaMap.values().stream()
+            .map(SchemaTables::getSchemaInfo)
+            .filter(info -> info.getSchemaId() == schemaId)
+            .findFirst().orElse(null);
     }
 
 }

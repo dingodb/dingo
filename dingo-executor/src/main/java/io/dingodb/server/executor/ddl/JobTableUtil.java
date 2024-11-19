@@ -69,14 +69,14 @@ public final class JobTableUtil {
     public static String addHistoryDDLJob2Table(Session session, DdlJob job, boolean updateRawArgs) {
         String time = DateTimeUtils.dateFormat(new Date(System.currentTimeMillis()), "yyyy-MM-dd HH:mm:ss");
         String sql = "insert into mysql.dingo_ddl_history(job_id, job_meta, schema_name, table_name, schema_ids, "
-            + "table_ids, create_time) values (%d, %s, %s, %s, %s, %s, %s)";
+            + "table_ids, create_time, type) values (%d, %s, %s, %s, %s, %s, %s, %d)";
         try {
             job.setRawArgs(null);
             byte[] meta = job.encode(false);
             String jobMeta = new String(meta);
             sql = String.format(sql, job.getId(), Utils.quoteForSql(jobMeta), Utils.quoteForSql(job.getSchemaName()),
                 Utils.quoteForSql(job.getTableName()), Utils.quoteForSql(job.getSchemaId()),
-                Utils.quoteForSql(job.getTableId()), Utils.quoteForSql(time));
+                Utils.quoteForSql(job.getTableId()), Utils.quoteForSql(time), job.getActionType().getCode());
             session.executeUpdate(sql);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);

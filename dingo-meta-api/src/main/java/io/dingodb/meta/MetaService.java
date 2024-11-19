@@ -122,6 +122,10 @@ public interface MetaService {
         return 0;
     }
 
+    default void recoverTable(long schemaId, Object tableWithId, List<Object> indexTableList) {
+
+    }
+
     default void rollbackCreateTable(
         long schemaId,
         @NonNull TableDefinition tableDefinition,
@@ -250,6 +254,10 @@ public interface MetaService {
     }
 
     default void dropRegionByTable(CommonId tableId, long jobId, long startTs) {
+        dropRegionByTable(tableId, jobId, startTs, false);
+    }
+
+    default void dropRegionByTable(CommonId tableId, long jobId, long startTs, boolean autoInc) {
 
     }
 

@@ -180,6 +180,10 @@ public class InfoSchemaBuilder {
                 return applyDropColumn(schemaDiff);
             case ActionAddColumn:
                 return applyAddColumn(schemaDiff);
+            case ActionRecoverTable:
+                return applyRecoverTable(schemaDiff);
+            case ActionRecoverSchema:
+                return applyRecoverSchema(schemaDiff);
             default:
                 break;
         }
@@ -377,6 +381,15 @@ public class InfoSchemaBuilder {
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
         }
+    }
+
+    public Pair<List<Long>, String> applyRecoverTable(SchemaDiff diff) {
+        return applyCreateTable(diff);
+    }
+
+    public Pair<List<Long>, String> applyRecoverSchema(SchemaDiff diff) {
+        String error = applyCreateSchema(diff);
+        return Pair.of(null, error);
     }
 
     public static int bucketIdx(long tableId) {

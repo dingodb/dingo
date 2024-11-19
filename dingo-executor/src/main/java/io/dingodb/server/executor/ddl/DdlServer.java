@@ -267,6 +267,8 @@ public final class DdlServer {
                     dc.getWc().synced(ddlJob);
                 }
             } catch (Exception e) {
+                ddlJob.encodeError("handleDDLJobTable error");
+                ddlJob.setErrorCount(ddlJob.getErrorCount() + 1);
                 LogUtils.error(log, "delivery2worker failed", e);
             } finally {
                 if (ddlJob.isDone() || ddlJob.isRollbackDone()) {

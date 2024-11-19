@@ -16,6 +16,7 @@
 
 package io.dingodb.store.proxy.meta;
 
+import com.codahale.metrics.Timer;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
@@ -23,6 +24,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -41,6 +43,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaServiceProvider;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
@@ -396,112 +399,132 @@ public class MetaService implements io.dingodb.meta.MetaService {
             );
         }
 
-        try {
-            // create index id
-            if (!indexTableDefinitions.isEmpty()) {
-                List<DingoCommonId> indexIds = coordinatorService.createIds(
+        // create index id
+        if (!indexTableDefinitions.isEmpty()) {
+            List<DingoCommonId> indexIds = coordinatorService.createIds(
+                    tso(),
+                    CreateIdsRequest.builder()
+                        .idEpochType(IdEpochType.ID_NEXT_TABLE)
+                        .count(indexTableDefinitions.size())
+                        .build())
+                .getIds()
+                .stream()
+                .map(id -> DingoCommonId.builder()
+                    .entityType(EntityType.ENTITY_TYPE_INDEX)
+                    .parentEntityId(tableEntityId)
+                    .entityId(id)
+                    .build())
+                .collect(Collectors.toList());
+            List<TableDefinitionWithId> indexWithIds = new ArrayList<>();
+            for (int i = 0; i < indexTableDefinitions.size(); i++) {
+                int finalI = i;
+                int count = 0;
+                TableDefinition indexDef = indexTableDefinitions.get(i);
+                validatePartBy(indexDef);
+                for (PartitionDetailDefinition detail : indexDef.getPartDefinition().getDetails()) {
+                    count += detail.getOperand().length == 0 ? 1 : detail.getOperand().length;
+                }
+                List<DingoCommonId> indexPartIds = coordinatorService.createIds(
                         tso(),
                         CreateIdsRequest.builder()
                             .idEpochType(IdEpochType.ID_NEXT_TABLE)
-                            .count(indexTableDefinitions.size())
+                            .count(count == 0 ? 1 : count)
                             .build())
                     .getIds()
                     .stream()
                     .map(id -> DingoCommonId.builder()
-                        .entityType(EntityType.ENTITY_TYPE_INDEX)
-                        .parentEntityId(tableEntityId)
-                        .entityId(id)
-                        .build())
+                        .entityType(EntityType.ENTITY_TYPE_PART)
+                        .parentEntityId(indexIds.get(finalI).getEntityId())
+                        .entityId(id).build())
                     .collect(Collectors.toList());
-                List<TableDefinitionWithId> indexWithIds = new ArrayList<>();
-                for (int i = 0; i < indexTableDefinitions.size(); i++) {
-                    int finalI = i;
-                    int count = 0;
-                    TableDefinition indexDef = indexTableDefinitions.get(i);
-                    validatePartBy(indexDef);
-                    for (PartitionDetailDefinition detail : indexDef.getPartDefinition().getDetails()) {
-                        count += detail.getOperand().length == 0 ? 1 : detail.getOperand().length;
-                    }
-                    List<DingoCommonId> indexPartIds = coordinatorService.createIds(
-                            tso(),
-                            CreateIdsRequest.builder()
-                                .idEpochType(IdEpochType.ID_NEXT_TABLE)
-                                .count(count == 0 ? 1 : count)
-                                .build())
-                        .getIds()
-                        .stream()
-                        .map(id -> DingoCommonId.builder()
-                            .entityType(EntityType.ENTITY_TYPE_PART)
-                            .parentEntityId(indexIds.get(finalI).getEntityId())
-                            .entityId(id).build())
-                        .collect(Collectors.toList());
-                    TableIdWithPartIds indexIdWithPartIds = TableIdWithPartIds.builder()
-                        .tableId(indexIds.get(i))
-                        .partIds(indexPartIds)
-                        .build();
-                    TableDefinitionWithId indexWithId = Stream.of(indexTableDefinitions.get(i))
-                        .map(index -> {
-                            TableDefinitionWithId td = MAPPER.tableTo(
-                                indexIdWithPartIds, index, TenantConstant.TENANT_ID
-                            );
-                            MAPPER.resetIndexParameter(td.getTableDefinition(), index);
-                            return td;
-                        })
-                        .peek(td -> td.getTableDefinition().setName(
-                            tableName + "." + td.getTableDefinition().getName())
-                        )
-                        .findAny()
-                        .get();
-                    indexWithIds.add(indexWithId);
-                    // create index
-                    infoSchemaService.createIndex(
-                        schemaId,
-                        tableEntityId,
-                        indexWithId
-                    );
-                }
 
-                // index region
-                for (TableDefinitionWithId withId : indexWithIds) {
-                    io.dingodb.sdk.service.entity.meta.TableDefinition definition = withId.getTableDefinition();
-                    for (Partition partition : definition.getTablePartition().getPartitions()) {
-                        IndexParameter indexParameter = definition.getIndexParameter();
-                        if (indexParameter.getVectorIndexParameter() != null) {
-                            indexParameter.setIndexType(IndexType.INDEX_TYPE_VECTOR);
-                        } else if (indexParameter.getDocumentIndexParameter() != null) {
-                            indexParameter.setIndexType(IndexType.INDEX_TYPE_DOCUMENT);
-                        }
-                        CreateRegionRequest request = CreateRegionRequest
-                            .builder()
-                            .regionName("I_" + schemaId + "_" + definition.getName() + "_part_"
-                                + partition.getId().getEntityId())
-                            .regionType(mapping(definition.getIndexParameter().getIndexType()))
-                            .replicaNum(withId.getTableDefinition().getReplica())
-                            .range(partition.getRange())
-                            .rawEngine(getRawEngine(definition.getEngine()))
-                            .storeEngine(definition.getStoreEngine())
-                            .schemaId(schemaId)
-                            .tableId(tableId.getEntityId())
-                            .partId(partition.getId().getEntityId())
-                            .tenantId(withId.getTenantId())
-                            .indexId(withId.getTableId().getEntityId())
-                            .indexParameter(indexParameter)
-                            .build();
-                        try {
-                            LogUtils.info(log, "create index region, range:{}", partition.getRange());
-                            coordinatorService.createRegion(tso(), request);
-                        } catch (Exception e) {
-                            LogUtils.error(log, "create index region error, range:{}", partition.getRange());
-                            throw e;
-                        }
+                TableIdWithPartIds indexIdWithPartIds = TableIdWithPartIds.builder()
+                    .tableId(indexIds.get(i))
+                    .partIds(indexPartIds)
+                    .build();
+                TableDefinitionWithId indexWithId = Stream.of(indexTableDefinitions.get(i))
+                    .map(index -> {
+                        TableDefinitionWithId td = MAPPER.tableTo(
+                            indexIdWithPartIds, index, TenantConstant.TENANT_ID
+                        );
+                        MAPPER.resetIndexParameter(td.getTableDefinition(), index);
+                        return td;
+                    })
+                    .peek(td -> td.getTableDefinition().setName(
+                        tableName + "." + td.getTableDefinition().getName())
+                    )
+                    .findAny()
+                    .get();
+                indexWithIds.add(indexWithId);
+                // create index
+                infoSchemaService.createIndex(
+                    id.getEntityId(),
+                    tableEntityId,
+                    indexWithId
+                );
+            }
+
+            // index region
+            for (TableDefinitionWithId withId : indexWithIds) {
+                io.dingodb.sdk.service.entity.meta.TableDefinition definition = withId.getTableDefinition();
+                for (Partition partition : definition.getTablePartition().getPartitions()) {
+                    IndexParameter indexParameter = definition.getIndexParameter();
+                    if (indexParameter.getVectorIndexParameter() != null) {
+                        indexParameter.setIndexType(IndexType.INDEX_TYPE_VECTOR);
+                    } else if (indexParameter.getDocumentIndexParameter() != null) {
+                        indexParameter.setIndexType(IndexType.INDEX_TYPE_DOCUMENT);
+                    }
+                    CreateRegionRequest request = CreateRegionRequest
+                        .builder()
+                        .regionName("I_" + schemaId + "_" + definition.getName() + "_part_"
+                            + partition.getId().getEntityId())
+                        .regionType(mapping(definition.getIndexParameter().getIndexType()))
+                        .replicaNum(withId.getTableDefinition().getReplica())
+                        .range(partition.getRange())
+                        .rawEngine(getRawEngine(definition.getEngine()))
+                        .storeEngine(definition.getStoreEngine())
+                        .schemaId(schemaId)
+                        .tableId(tableId.getEntityId())
+                        .partId(partition.getId().getEntityId())
+                        .tenantId(withId.getTenantId())
+                        .indexId(withId.getTableId().getEntityId())
+                        .indexParameter(indexParameter)
+                        .build();
+                    try {
+                        LogUtils.info(log, "create index region, range:{}", partition.getRange());
+                        coordinatorService.createRegion(tso(), request);
+                    } catch (Exception e) {
+                        LogUtils.error(log, "create index region error, range:{}", partition.getRange());
+                        throw e;
                     }
                 }
             }
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            throw e;
         }
         return tableEntityId;
+    }
+
+    @Override
+    public synchronized void recoverTable(long schemaId, Object tableWithId, List<Object> indexTableList) {
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tableWithId;
+        Object tabObj = infoSchemaService.getTable(schemaId, tableDefinitionWithId.getTableDefinition().getName());
+        if (tabObj != null) {
+            throw new RuntimeException("table has existed");
+        }
+        // recover table meta
+        infoSchemaService.createTableOrView(
+            schemaId,
+            tableDefinitionWithId.getTableId().getEntityId(),
+            tableDefinitionWithId
+        );
+        // recover index meta
+        for (Object indexObj : indexTableList) {
+            TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
+            infoSchemaService.createIndex(
+                id.getEntityId(),
+                tableDefinitionWithId.getTableId().getEntityId(),
+                indexWithId
+            );
+        }
     }
 
     private static RegionType mapping(IndexType indexType) {
@@ -798,14 +821,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
 
         // Generate new table ids.
-        //boolean autoInc = table.getTableDefinition().getColumns().stream()
-        //    .anyMatch(io.dingodb.sdk.service.entity.meta.ColumnDefinition::isAutoIncrement);
-        //if (autoInc) {
-        //    delAutoInc(table.getTableId());
-        //}
+        boolean autoInc = table.getTableDefinition().getColumns().stream()
+            .anyMatch(io.dingodb.sdk.service.entity.meta.ColumnDefinition::isAutoIncrement);
 
         long ts = TsoService.getDefault().tso();
-        dropRegionByTable(MAPPER.idFrom(table.getTableId()), jobId, ts);
+        dropRegionByTable(MAPPER.idFrom(table.getTableId()), jobId, ts, autoInc);
 
         for (TableDefinitionWithId index : indexes) {
             dropRegionByTable(MAPPER.idFrom(index.getTableId()), jobId, ts);
@@ -965,14 +985,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public void dropRegionByTable(
         CommonId tableId,
         long jobId,
-        long ts
+        long ts,
+        boolean autoInc
     ) {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
         if (ScopeVariables.getNeedGc() && jobId >= 0) {
-            insertGcDeleteRange(rangeDistributions, jobId, ts);
+            Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
+            insertGcDeleteRange(rangeDistributions, jobId, ts, tableId, autoInc);
+            context.stop();
         } else {
+            if (autoInc) {
+                delAutoInc(MAPPER.idTo(tableId));
+            }
             for (RangeDistribution rangeDistribution : rangeDistributions) {
                 try {
                     DropRegionRequest r = DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build();
@@ -1008,14 +1034,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (table == null) {
             return false;
         }
-        //boolean autoInc = table.getColumns().stream()
-        //    .anyMatch(Column::isAutoIncrement);
-        //if (autoInc) {
-        //    delAutoInc(MAPPER.idTo(table.getTableId()));
-        //}
+        boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
 
         long ts = TsoService.getDefault().tso();
-        dropRegionByTable(table.getTableId(), jobId, ts);
+        dropRegionByTable(table.getTableId(), jobId, ts, autoInc);
+
         List<IndexTable> indexes = null;
         if (!"view".equalsIgnoreCase(table.getTableType())) {
             indexes = table.getIndexes();
@@ -1273,13 +1296,27 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    public static void insertGcDeleteRange(Collection<RangeDistribution> rangeDistributions, long jobId, long ts) {
-        String sql = "insert into mysql.gc_delete_range values(?, ?, ?, ?, ?)";
+    public static void insertGcDeleteRange(
+        Collection<RangeDistribution> rangeDistributions,
+        long jobId,
+        long ts,
+        CommonId id,
+        boolean autoInc
+    ) {
+        String sql = "insert into mysql.gc_delete_range"
+            + "(job_id, region_id, start_key, end_key, ts, element_id, element_type) "
+            + "values(?, ?, ?, ?, ?, ?, ?)";
         Session session = SessionUtil.INSTANCE.getSession();
         PreparedStatement ps = null;
         try {
+            String eleType = id.type.name();
+            if (autoInc) {
+                eleType = id.type + "_auto";
+            }
+            String eleId = id.domain + "-" + id.seq;
             session.setAutoCommit(false);
             ps = session.getPrepareStatement(sql);
+            int i = 0;
             for (RangeDistribution rangeDistribution : rangeDistributions) {
                 ps.setLong(1, jobId);
                 ps.setLong(2, rangeDistribution.getId().seq);
@@ -1288,6 +1325,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 ps.setString(3, startKey);
                 ps.setString(4, endKey);
                 ps.setLong(5, ts);
+                ps.setString(6, eleId);
+                if (i == 0) {
+                    ps.setString(7, eleType);
+                } else {
+                    ps.setString(7, id.type.name());
+                }
+                i ++;
                 ps.addBatch();
             }
             ps.executeBatch();

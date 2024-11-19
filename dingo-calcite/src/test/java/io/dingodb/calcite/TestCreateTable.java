@@ -174,7 +174,16 @@ public class TestCreateTable {
 
     @Test
     public void setPassword() {
-
+        String sql = "flashback table t1";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            System.out.println("---> sqlNode:" + sqlNode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
 }

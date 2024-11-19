@@ -20,6 +20,7 @@ import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
@@ -42,6 +43,9 @@ import io.dingodb.sdk.service.entity.common.RegionDefinition;
 import io.dingodb.sdk.service.entity.coordinator.DropRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.UpdateGCSafePointRequest;
+import io.dingodb.sdk.service.entity.meta.DeleteAutoIncrementRequest;
+import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.LockInfo;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusRequest;
@@ -80,7 +84,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public final class SafePointUpdateTask {
 
     private static final int PHYSICAL_SHIFT = 18;
-    public static volatile long safePointTs;
     public static volatile boolean isLeader;
 
     private static final String lockKeyStr =  "safe_point_update_" + TenantConstant.TENANT_ID;
@@ -114,7 +117,7 @@ public final class SafePointUpdateTask {
                     lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
                 );
                 ScheduledFuture<?> gcRegionFuture = Executors.scheduleWithFixedDelay(
-                    lockKeyStr, SafePointUpdateTask::gcDeleteRange, 300, 600, TimeUnit.SECONDS
+                    lockKeyStr, SafePointUpdateTask::gcDeleteRange, 300, 60, TimeUnit.SECONDS
                 );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
@@ -189,7 +192,7 @@ public final class SafePointUpdateTask {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, builder.build()
                 );
-                safePointTs = safeTs;
+                ExecutionEnvironment.INSTANCE.safePointTs = safeTs;
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
@@ -202,12 +205,15 @@ public final class SafePointUpdateTask {
     }
 
     private static void gcDeleteRange() {
-        String sql = "select region_id,start_key,end_key,job_id,ts from mysql.gc_delete_range where ts<" + safePointTs;
+        String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type"
+            + " from mysql.gc_delete_range where ts<"
+            + ExecutionEnvironment.INSTANCE.safePointTs;
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             List<Object[]> gcResults = session.executeQuery(sql);
-            LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}", gcResults.size(), safePointTs);
+            LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}",
+                gcResults.size(), ExecutionEnvironment.INSTANCE);
             gcResults.forEach(objects -> {
                 long regionId = (long) objects[0];
                 try {
@@ -222,6 +228,23 @@ public final class SafePointUpdateTask {
                     String endKey = objects[2].toString();
                     if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey)) {
                         LogUtils.error(log, "remove gcDeleteTask failed");
+                    }
+                    String eleType = (String) objects[6];
+                    if (eleType.endsWith("auto")) {
+                        String eleId = (String) objects[5];
+                        String[] eleIds = eleId.split("-");
+                        DingoCommonId tableId = DingoCommonId.builder()
+                            .parentEntityId(Long.parseLong(eleIds[0]))
+                            .entityId(Long.parseLong(eleIds[1]))
+                            .entityType(EntityType.ENTITY_TYPE_TABLE)
+                            .build();
+                        DeleteAutoIncrementRequest req = DeleteAutoIncrementRequest.builder()
+                            .tableId(tableId)
+                            .build();
+                        io.dingodb.sdk.service.MetaService metaService
+                            = Services.autoIncrementMetaService(Configuration.coordinatorSet());
+                        metaService.deleteAutoIncrement(System.identityHashCode(req), req);
+                        LogUtils.info(log, "delAutoInc success, tableId:{}", tableId);
                     }
                 } catch (Exception e) {
                     LogUtils.error(log, "gcDeleteRange error, regionId:{}", regionId, e);

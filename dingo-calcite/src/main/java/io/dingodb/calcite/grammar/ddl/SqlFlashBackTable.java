@@ -23,13 +23,10 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlFlashBackTable extends SqlFlashback {
+public class SqlFlashBackTable extends SqlFlashBack {
 
-    public String schemaName;
+    public SqlIdentifier tableId;
 
-    public String tableName;
-
-    public String newSchemaName;
     public String newTableName;
 
     private static final SqlOperator OPERATOR =
@@ -37,14 +34,11 @@ public class SqlFlashBackTable extends SqlFlashback {
 
     public SqlFlashBackTable(SqlParserPos pos, SqlIdentifier tableId, SqlIdentifier newTableId) {
         super(OPERATOR, pos);
-        if (tableId.names.size() > 1) {
-            this.schemaName = tableId.names.get(0);
-            this.tableName = tableId.names.get(1);
-        } else {
-            this.tableName = tableId.names.get(0);
+        this.tableId = tableId;
+        if (newTableId == null) {
+            return;
         }
         if (newTableId.names.size() > 1) {
-            this.newSchemaName = newTableId.names.get(0);
             this.newTableName = newTableId.names.get(1);
         } else {
             this.newTableName = newTableId.names.get(0);
@@ -54,6 +48,6 @@ public class SqlFlashBackTable extends SqlFlashback {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("FLASHBACK TABLE ");
-        writer.keyword(tableName);
+        tableId.unparse(writer, leftPrec, rightPrec);
     }
 }

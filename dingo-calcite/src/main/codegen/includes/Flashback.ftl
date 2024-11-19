@@ -16,9 +16,9 @@
 -->
 
 
-SqlFlashBack SqlFlashback(): {
+SqlFlashBack SqlFlashBack(): {
   final Span s;
-  final SqlFlashback sqlFlashback;
+  final SqlFlashBack sqlFlashback;
   final SqlIdentifier tableId;
   SqlIdentifier newTableId = null;
   SqlIdentifier schemaId = null;
@@ -33,8 +33,8 @@ SqlFlashBack SqlFlashback(): {
   |
    (<SCHEMA>|<DATABASE>) schemaId = CompoundIdentifier()
     {
-      return new SqlFlashBackSchema(s.end(this), schemaId); 
+      return new SqlFlashBackSchema(s.end(this), schemaId);
     }
-  )    
+  )
 
 }

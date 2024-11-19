@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.calcite.grammar.ddl;
+package io.dingodb.common.ddl;
 
-import org.apache.calcite.sql.SqlDdl;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.parser.SqlParserPos;
+import lombok.Data;
+import lombok.ToString;
 
-import java.util.List;
-
-public class SqlFlashback extends SqlDdl {
-
-    public SqlFlashback(SqlOperator operator, SqlParserPos pos) {
-        super(operator, pos);
-    }
-
-    @Override
-    public List<SqlNode> getOperandList() {
-        return null;
-    }
+@ToString
+@Data
+public class RecoverInfo {
+    long schemaId;
+    long dropJobId;
+    long snapshotTs;
+    long tableId;
+    String oldSchemaName;
+    String oldTableName;
+    String newTableName;
+    boolean enableGc;
 }

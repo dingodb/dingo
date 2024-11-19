@@ -263,7 +263,6 @@ public interface TableMapper {
         }
         definition.setName(definition.getName().toUpperCase());
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
-
         return TableDefinitionWithId.builder().tenantId(tenantId)
             .tableDefinition(definition).tableId(ids.getTableId()).build();
     }

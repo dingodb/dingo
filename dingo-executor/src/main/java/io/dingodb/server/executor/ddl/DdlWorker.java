@@ -22,6 +22,7 @@ import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
@@ -260,6 +261,12 @@ public class DdlWorker {
             case ActionDropView:
                 res = onDropView(dc, job);
                 break;
+            case ActionRecoverTable:
+                res = onRecoverTable(dc, job);
+                break;
+            case ActionRecoverSchema:
+                res = onRecoverSchema(dc, job);
+                break;
             default:
                 job.setState(JobState.jobStateCancelled);
                 break;
@@ -462,14 +469,6 @@ public class DdlWorker {
                 }
                 break;
             case SCHEMA_WRITE_ONLY:
-                //tableInfo.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
-                //res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
-                //    originalState.getCode() != tableInfo.getTableDefinition().getSchemaState().number());
-                //if (res.getValue() != null) {
-                //    return res;
-                //}
-                //break;
-                //case SCHEMA_DELETE_ONLY:
                 tableInfo.getTableDefinition().setSchemaState(SCHEMA_NONE);
                 long start = System.currentTimeMillis();
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
@@ -1009,6 +1008,9 @@ public class DdlWorker {
         if (error != null) {
             return error;
         }
+        if (job.getActionType() == ActionType.ActionRecoverTable) {
+            finishRecoverTable(job);
+        }
         boolean updateRawArgs = job.getActionType() != ActionType.ActionAddPrimaryKey || job.isCancelled();
         return addHistoryDDLJob(session, job, updateRawArgs);
     }
@@ -1205,6 +1207,94 @@ public class DdlWorker {
     public static void checkDropColumnForStatePublic(ColumnDefinition columnDefinition) {
         if (!columnDefinition.isNullable() && columnDefinition.getDefaultVal() == null) {
             DdlColumn.generateOriginDefaultValue(columnDefinition);
+        }
+    }
+
+    public Pair<Long, String> onRecoverTable(DdlContext dc, DdlJob job) {
+        // checkEnableGc
+        String enableGcStr = InfoSchemaService.root().getGlobalVariables().get("enable_safe_point_update");
+        boolean enableGc = Boolean.parseBoolean(enableGcStr);
+
+        // get tableInfo
+        job.decodeArgs();
+
+        RecoverInfo recoverInfo = (RecoverInfo) job.getArgs().get(0);
+        long tableId = job.getTableId();
+        // schemaState none: save flg
+        // write-only: disableGc -> checkSafePoint -> recoverTable -> updateVersionAndTableInfo
+        // -> public -> finishTable
+        String error;
+        switch (job.getSchemaState()) {
+            case SCHEMA_NONE:
+                recoverInfo.setEnableGc(enableGc);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_ONLY:
+                if (enableGc) {
+                    // disableGc
+                    InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                }
+                // recover table
+                InfoSchemaService infoSchemaService
+                    = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
+                    .getTable(recoverInfo.getSchemaId(), tableId);
+                List<Object> indexList = infoSchemaService.listIndex(job.getSchemaId(), job.getTableId());
+                tableDefinitionWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                return updateSchemaVersion(dc, job);
+            default:
+                error = "ErrInvalidDDLJob";
+        }
+        return Pair.of(0L, error);
+    }
+
+    public Pair<Long, String> onRecoverSchema(DdlContext dc, DdlJob job) {
+        // checkEnableGc
+        String enableGcStr = InfoSchemaService.root().getGlobalVariables().get("enable_safe_point_update");
+        boolean enableGc = Boolean.parseBoolean(enableGcStr);
+
+        // get tableInfo
+        job.decodeArgs();
+
+        RecoverInfo recoverInfo = (RecoverInfo) job.getArgs().get(0);
+        // schemaState none: save flg
+        // write-only: disableGc -> checkSafePoint -> recoverTable -> updateVersionAndTableInfo
+        // -> public -> finishTable
+        String error;
+        switch (job.getSchemaState()) {
+            case SCHEMA_NONE:
+                recoverInfo.setEnableGc(enableGc);
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_ONLY:
+                if (enableGc) {
+                    // disableGc
+                    InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                }
+                // recover table
+                InfoSchemaService infoSchemaService
+                    = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                InfoSchemaService currentInfoService = InfoSchemaService.root();
+                currentInfoService.createSchema(schemaInfo.getSchemaId(), schemaInfo);
+                return updateSchemaVersion(dc, job);
+            default:
+                error = "ErrInvalidDDLJob";
+        }
+        return Pair.of(0L, error);
+    }
+
+    public static void finishRecoverTable(DdlJob ddlJob) {
+        String error = ddlJob.decodeArgs();
+        if (error != null) {
+            return;
+        }
+        RecoverInfo recoverInfo = (RecoverInfo) ddlJob.getArgs().get(0);
+        if (recoverInfo.isEnableGc()) {
+            InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", 1);
         }
     }
 }

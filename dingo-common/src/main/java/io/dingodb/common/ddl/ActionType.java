@@ -30,8 +30,10 @@ public enum ActionType {
     ActionModifyColumn(12),
     ActionCreateView(21),
     ActionDropView(24),
+    ActionRecoverTable(25),
     ActionAddPrimaryKey(32),
     ActionCreateTables(60),
+    ActionRecoverSchema(63),
     ;
     private final int code;
 

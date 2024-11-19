@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
@@ -48,9 +49,11 @@ import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
-import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
+import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -65,6 +68,8 @@ import io.dingodb.common.privilege.PrivilegeType;
 import io.dingodb.common.privilege.SchemaPrivDefinition;
 import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
+import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -85,6 +90,7 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.common.util.Utils;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
@@ -1107,11 +1113,86 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(SqlFlashBackTable sqlFlashBackTable, CalcitePrepare.Context context) {
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlFlashBackTable.tableId, context);
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
+        if (schemaInfo == null) {
+            throw new RuntimeException("Can't find dropped/truncated table " + tableName);
+        }
 
+        String schemaName = schema.getSchemaName();
+        DdlJob job = getRecoverJob(schemaName, tableName);
+        if (job == null) {
+            throw new RuntimeException("Can't find dropped/truncated table " + tableName);
+        }
+        InfoSchema is = DdlService.root().getIsLatest();
+        String validateTableName;
+        if (sqlFlashBackTable.newTableName != null) {
+            validateTableName = sqlFlashBackTable.newTableName;
+        } else {
+            validateTableName = tableName;
+        }
+        Table table = is.getTable(schemaInfo.getName(), validateTableName);
+        if (table != null) {
+            throw DINGO_RESOURCE.tableExists(tableName).ex();
+        }
+        RecoverInfo recoverInfo = new RecoverInfo();
+        recoverInfo.setDropJobId(job.getId());
+        recoverInfo.setSchemaId(job.getSchemaId());
+        recoverInfo.setTableId(job.getTableId());
+        recoverInfo.setSnapshotTs(job.getRealStartTs());
+        recoverInfo.setOldSchemaName(job.getSchemaName());
+        recoverInfo.setOldTableName(job.getTableName());
+        recoverInfo.setNewTableName(sqlFlashBackTable.newTableName);
+        DdlService.root().flashbackTable(recoverInfo);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(job.getTableId())
+            .type(ActionType.ActionRecoverTable)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "recover table done, tableName:{}", validateTableName);
     }
 
     public void execute(SqlFlashBackSchema sqlFlashBackSchema, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("flashBackSchema");
+        LogUtils.info(log, "DDL execute: {}", sqlFlashBackSchema);
+        String connId = (String) context.getDataContext().get("connId");
+        RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
+        String schemaName = sqlFlashBackSchema.schemaId.names.get(0).toUpperCase();;
 
+        SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);
+        if (subSchema != null) {
+            throw SqlUtil.newContextException(
+                sqlFlashBackSchema.schemaId.getParserPosition(),
+                RESOURCE.schemaExists(schemaName)
+            );
+        }
+        DdlJob job = getRecoverJob(schemaName);
+        if (job == null) {
+            throw new RuntimeException("Can't find dropped schema " + schemaName);
+        }
+        RecoverInfo recoverInfo = new RecoverInfo();
+        recoverInfo.setDropJobId(job.getId());
+        recoverInfo.setSchemaId(job.getSchemaId());
+        recoverInfo.setTableId(job.getTableId());
+        recoverInfo.setSnapshotTs(job.getRealStartTs());
+        recoverInfo.setOldSchemaName(job.getSchemaName());
+        recoverInfo.setOldTableName(job.getTableName());
+        DdlService.root().flashbackSchema(recoverInfo);
+
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(job.getSchemaId())
+            .type(ActionType.ActionRecoverSchema)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "recover schema done, schemaName:{}", schemaName);
+        timeCtx.stop();
     }
 
     public static void validatePartitionBy(
@@ -1927,6 +2008,49 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .build());
         return new SqlSelect(p, null, selectList, from, null, null, null, null,
             null, null, null, null);
+    }
+
+    public static DdlJob getRecoverJob(String schemaName, String tableName) {
+        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s and table_name= %s "
+            + "and type in (4,11) order by create_time desc limit 10";
+        sql = String.format(sql, Utils.quoteForSql(schemaName),
+            Utils.quoteForSql(tableName));
+        return getRecoverJobBySql(sql, true);
+    }
+
+    public static DdlJob getRecoverJob(String schemaName) {
+        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s "
+            + "and type = 2 order by create_time desc limit 10";
+        sql = String.format(sql, Utils.quoteForSql(schemaName));
+        return getRecoverJobBySql(sql, false);
+    }
+
+    public static DdlJob getRecoverJobBySql(String querySql, boolean table) {
+        Session session = SessionUtil.INSTANCE.getSession();
+        DdlJob ddlJob = null;
+        try {
+            List<Object[]> resultList = session.executeQuery(querySql);
+            if (resultList.isEmpty()) {
+                if (table) {
+                    throw new RuntimeException("Can't find dropped/truncated table");
+                } else {
+                    throw new RuntimeException("Can't find dropped schema");
+                }
+            }
+            Object[] row = resultList.get(0);
+            byte[] jobMeta = (byte[]) row[0];
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                ddlJob = objectMapper.readValue(jobMeta, DdlJob.class);
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        } finally {
+            session.destroy();
+        }
+        return ddlJob;
     }
 
 }

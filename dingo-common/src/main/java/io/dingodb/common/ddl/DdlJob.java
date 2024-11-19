@@ -19,6 +19,7 @@ package io.dingodb.common.ddl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
@@ -26,6 +27,7 @@ import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,6 +35,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 @Data
 public class DdlJob {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -240,11 +243,14 @@ public class DdlJob {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionAddColumn) {
                 t = new TypeReference<List<ColumnDefinition>>() {};
+            } else if (actionType == ActionType.ActionRecoverTable || actionType == ActionType.ActionRecoverSchema) {
+                t = new TypeReference<List<RecoverInfo>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);
             return null;
         } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
             return e.getMessage();
         }
     }
