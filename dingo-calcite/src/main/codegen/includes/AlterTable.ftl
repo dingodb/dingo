@@ -184,11 +184,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
 } {
  <UNIQUE><INDEX> { s.add(this); }
     { index = getNextToken().image; }
-    (
-        <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
-    |
-        [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
-    )
+    [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
     (
        <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
      |

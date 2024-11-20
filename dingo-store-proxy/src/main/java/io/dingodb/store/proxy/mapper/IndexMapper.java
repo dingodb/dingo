@@ -101,7 +101,11 @@ public interface IndexMapper {
         if (target == null) {
             return new Properties();
         }
-        return JSON.convertValue(target, Properties.class);
+        try {
+            return JSON.convertValue(target, Properties.class);
+        } catch (Exception e) {
+            return new Properties();
+        }
     }
 
     default void resetIndexParameter(TableDefinition indexDefinition, io.dingodb.common.table.IndexDefinition indexDef) {

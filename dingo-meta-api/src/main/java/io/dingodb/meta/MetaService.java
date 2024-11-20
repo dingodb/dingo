@@ -120,13 +120,6 @@ public interface MetaService {
     }
 
     default void rollbackCreateTable(
-        @NonNull TableDefinition tableDefinition,
-        @NonNull List<IndexDefinition> indexTableDefinitions
-    ) {
-
-    }
-
-    default void rollbackCreateTable(
         long schemaId,
         @NonNull TableDefinition tableDefinition,
         @NonNull List<IndexDefinition> indexTableDefinitions
@@ -151,7 +144,6 @@ public interface MetaService {
 
     long truncateTable(@NonNull String tableName, long tableEntityId);
 
-//    boolean dropTables(@NonNull Collection<CommonId> tableIds);
 
     /**
      * Get table by table name.
