@@ -100,8 +100,7 @@ public class DingoFunctionScanRule extends ConverterRule {
                 hybridSearch.getFilter(),
                 hybridSearch.hints
             );
-        }
-        else if (rel instanceof DingoFunctionScan) {
+        } else if (rel instanceof DingoFunctionScan) {
             DingoFunctionScan scan = (DingoFunctionScan) rel;
             return new DingoFunctionScan(
                 scan.getCluster(),

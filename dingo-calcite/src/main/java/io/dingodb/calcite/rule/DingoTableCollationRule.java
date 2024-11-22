@@ -114,7 +114,9 @@ public class DingoTableCollationRule extends RelRule<DingoTableCollationRule.Con
         call.transformTo(logicalSort1);
     }
 
-    private static void logicalScanProjectSortRemove(RelOptRuleCall call, LogicalScanWithRelOp logicalScanWithRelOp, LogicalSort logicalSort) {
+    private static void logicalScanProjectSortRemove(
+        RelOptRuleCall call, LogicalScanWithRelOp logicalScanWithRelOp, LogicalSort logicalSort
+    ) {
         ProjectOp projectOp = (ProjectOp) logicalScanWithRelOp.getRelOp();
         if (!validateProjectOp(projectOp)) {
             return;
@@ -232,7 +234,9 @@ public class DingoTableCollationRule extends RelRule<DingoTableCollationRule.Con
         call.transformTo(logicalSort1);
     }
 
-    private static void logicalScanFilterSortRemove(RelOptRuleCall call, LogicalSort logicalSort, LogicalScanWithRelOp logicalScanWithRelOp) {
+    private static void logicalScanFilterSortRemove(
+        RelOptRuleCall call, LogicalSort logicalSort, LogicalScanWithRelOp logicalScanWithRelOp
+    ) {
         List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
         if (relFieldCollationList.size() != 1) {
             return;

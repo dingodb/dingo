@@ -80,44 +80,44 @@ public class DingoProjectRule extends ConverterRule {
         RelNode input = logicalProject.getInput();
 
         for (RexNode rexNode : projects) {
-           if (rexNode instanceof RexCall && ((RexCall)rexNode).op.getName().equalsIgnoreCase("distance")) {
-               RexCall rexCall = (RexCall) rexNode;
-               RexNode ref = rexCall.getOperands().get(0);
-               RexInputRef rexInputRef = (RexInputRef) ref;
+            if (rexNode instanceof RexCall && ((RexCall)rexNode).op.getName().equalsIgnoreCase("distance")) {
+                RexCall rexCall = (RexCall) rexNode;
+                RexNode ref = rexCall.getOperands().get(0);
+                RexInputRef rexInputRef = (RexInputRef) ref;
 
-               DingoTable dingoTable = null;
-               TupleMapping tupleMapping = null;
-               if (input instanceof RelSubset) {
-                   RelSubset relSubset = (RelSubset) input;
-                   List<RelNode> relList = relSubset.getRelList();
-                   for (RelNode rel : relList) {
-                       if (rel instanceof LogicalDingoTableScan) {
-                           tupleMapping = ((LogicalDingoTableScan) rel).getSelection();
-                           dingoTable = Objects.requireNonNull(rel.getTable()).unwrap(DingoTable.class);
-                           break;
-                       }
-                   }
-               } else if (input instanceof LogicalDingoTableScan) {
-                   dingoTable = Objects.requireNonNull(input.getTable()).unwrap(DingoTable.class);
-                   tupleMapping = ((LogicalDingoTableScan) input).getSelection();
-               }
+                DingoTable dingoTable = null;
+                TupleMapping tupleMapping = null;
+                if (input instanceof RelSubset) {
+                    RelSubset relSubset = (RelSubset) input;
+                    List<RelNode> relList = relSubset.getRelList();
+                    for (RelNode rel : relList) {
+                        if (rel instanceof LogicalDingoTableScan) {
+                            tupleMapping = ((LogicalDingoTableScan) rel).getSelection();
+                            dingoTable = Objects.requireNonNull(rel.getTable()).unwrap(DingoTable.class);
+                            break;
+                        }
+                    }
+                } else if (input instanceof LogicalDingoTableScan) {
+                    dingoTable = Objects.requireNonNull(input.getTable()).unwrap(DingoTable.class);
+                    tupleMapping = ((LogicalDingoTableScan) input).getSelection();
+                }
 
-               int colIndex = tupleMapping.get(rexInputRef.getIndex());
+                int colIndex = tupleMapping.get(rexInputRef.getIndex());
 
-               assert dingoTable != null;
-               Column column = dingoTable.getTable().getColumns().get(colIndex);
-               String metricType = getIndexMetricType(dingoTable, column.getName());
-               SqlOperator sqlOperator1 = findSqlOperator(metricType);
+                assert dingoTable != null;
+                Column column = dingoTable.getTable().getColumns().get(colIndex);
+                String metricType = getIndexMetricType(dingoTable, column.getName());
+                SqlOperator sqlOperator1 = findSqlOperator(metricType);
 
-               try {
-                   Field field = RexCall.class.getDeclaredField("op");
-                   field.setAccessible(true);
-                   field.set(rexCall, sqlOperator1);
-                   field.setAccessible(false);
-               } catch (Exception e) {
-                   throw new RuntimeException(e);
-               }
-           }
+                try {
+                    Field field = RexCall.class.getDeclaredField("op");
+                    field.setAccessible(true);
+                    field.set(rexCall, sqlOperator1);
+                    field.setAccessible(false);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 

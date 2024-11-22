@@ -18,14 +18,14 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.DingoGetDocumentPreFilter;
 import io.dingodb.calcite.rel.DingoTableScan;
-import io.dingodb.calcite.rel.DingoDocument;
-import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
+import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -82,7 +82,9 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         call.transformTo(relNode);
     }
 
-    public static RelNode getDingoGetDocumentPreFilter(RexNode condition, LogicalDingoDocument document, boolean forJoin) {
+    public static RelNode getDingoGetDocumentPreFilter(
+        RexNode condition, LogicalDingoDocument document, boolean forJoin
+    ) {
         DingoTable dingoTable = document.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
         TupleMapping selection = getDefaultSelection(dingoTable);
@@ -117,7 +119,7 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         DingoTableScan dingoTableScan = new DingoTableScan(document.getCluster(),
             traitSet,
             ImmutableList.of(),
-           document.getTable(),
+            document.getTable(),
             condition,
             selection,
             null,
@@ -128,12 +130,12 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         );
 
         DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(
-           document.getCluster(),
-           document.getTraitSet(),
+            document.getCluster(),
+            document.getTraitSet(),
             dingoTableScan,
-           document.getIndexTableId(),
+            document.getIndexTableId(),
             textIdPair.getKey(),
-           document.getIndexTable(),
+            document.getIndexTable(),
             false);
         return new DingoGetDocumentPreFilter(
            document.getCluster(),
@@ -210,6 +212,7 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
             return new DingoDocumentIndexRule(this);
         }
     }
+
     private static RelNode prePrimaryOrScalarPlan(
         RexNode condition,
         LogicalDingoDocument document,
@@ -276,6 +279,7 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         return new DingoStreamingConverter(document.getCluster(),
             traits, dingoGetDocumentPreFilter);
     }
+
     private static Pair<Integer, Integer> getTextIdIndex(DingoTable dingoTable) {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {

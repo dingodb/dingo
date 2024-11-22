@@ -115,12 +115,8 @@ public final class DingoVectorVisitFun {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
-        MetaService metaService = MetaService.root();
         assert dingoTable != null;
-        CommonId tableId = dingoTable.getTableId();
-        Table td = dingoTable.getTable();
 
-        NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
 
         SqlIdentifier vectorColNmIdf = (SqlIdentifier) operandsList.get(1);
@@ -128,15 +124,10 @@ public final class DingoVectorVisitFun {
         if (vectorColNmIdf != null) {
             vectorColNm = vectorColNmIdf.getSimple();
         }
-        Float[] floatArray = getVectorFloats(operandsList);
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not number.");
         }
-
-        int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
-
-        List<Vertex> outputs = new ArrayList<>();
 
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
@@ -197,8 +188,13 @@ public final class DingoVectorVisitFun {
         Map<String, Object> parameterMap = getParameterMap(operandsList);
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
-            metaService.getRangeDistribution(rel.getIndexTableId());
-
+            MetaService.root().getRangeDistribution(rel.getIndexTableId());
+        Table td = dingoTable.getTable();
+        CommonId tableId = dingoTable.getTableId();
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = MetaService.root().getRangeDistribution(tableId);
+        Float[] floatArray = getVectorFloats(operandsList);
+        int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
+        List<Vertex> outputs = new ArrayList<>();
         // Create tasks based on partitions
         for (RangeDistribution rangeDistribution : indexRanges.values()) {
             Vertex vertex;
@@ -341,8 +337,7 @@ public final class DingoVectorVisitFun {
     }
 
     public static Integer getTopkParam(List<Object> operandsList) {
-        Integer topK = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
-        return topK;
+        return ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
     }
 
     private static Map<String, Object> getParameterMap(List<Object> operandsList) {

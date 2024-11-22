@@ -36,7 +36,7 @@ public class DingoDocumentJoinRule extends RelRule<DingoDocumentJoinRule.Config>
     /**
      * Creates a RelRule.
      *
-     * @param config
+     * @param config config
      */
     public DingoDocumentJoinRule(Config config) {
         super(config);

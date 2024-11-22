@@ -20,8 +20,8 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.common.CommonId;
-import io.dingodb.meta.entity.Table;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -41,9 +41,9 @@ import java.util.List;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
+import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
 
 public class LogicalIndexFullScan extends LogicalDingoTableScan {
 

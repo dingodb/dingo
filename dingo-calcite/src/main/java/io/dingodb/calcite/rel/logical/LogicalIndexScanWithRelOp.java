@@ -52,7 +52,7 @@ public class LogicalIndexScanWithRelOp extends TableScan {
     @Getter
     protected boolean rangeScan;
 
-    public LogicalIndexScanWithRelOp (
+    public LogicalIndexScanWithRelOp(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         List<RelHint> hints,

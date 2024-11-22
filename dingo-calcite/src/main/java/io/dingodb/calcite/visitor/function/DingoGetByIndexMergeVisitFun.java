@@ -92,8 +92,9 @@ public final class DingoGetByIndexMergeVisitFun {
             NavigableMap<ComparableByteArray, RangeDistribution> indexRanges = metaService.getRangeDistribution(idxId);
 
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
-            KeyValueCodec codec =
-                CodecService.getDefault().createKeyValueCodec(indexTd.version, indexTd.tupleType(), indexTd.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
+            );
             List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
@@ -177,7 +178,9 @@ public final class DingoGetByIndexMergeVisitFun {
         }
 
         List<Vertex> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
-        return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel, lookupKeyMapping));
+        return DingoBridge.bridge(
+            idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel, lookupKeyMapping)
+        );
     }
 
     @AllArgsConstructor

@@ -61,7 +61,9 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
             return;
         }
         LogicalIndexScanWithRelOp logicalIndexScanWithRelOp = getLogicalIndexScanWithRelOp(scan);
-        if (logicalIndexScanWithRelOp == null) return;
+        if (logicalIndexScanWithRelOp == null) {
+            return;
+        }
         call.transformTo(
             logicalIndexScanWithRelOp
         );
@@ -106,7 +108,9 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
             int ix = (int) val1.getValue();
             Column column = table.getColumns().get(ix);
             int indexIx = indexTable.getColumns().indexOf(column);
-            RexInputRef rexInputRef = new RexInputRef(indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
+            RexInputRef rexInputRef = new RexInputRef(
+                indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
+            );
             return RexConverter.convert(rexInputRef);
         }).toArray(Expr[]::new);
         RelOp relOp = RelOpBuilder.builder()
@@ -129,7 +133,8 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        DingoFullScanProjectRule.Config DINGO_FULL_SCAN_PROJECT_RULE = ImmutableDingoFullScanProjectRule.Config.builder()
+        DingoFullScanProjectRule.Config DINGO_FULL_SCAN_PROJECT_RULE
+            = ImmutableDingoFullScanProjectRule.Config.builder()
             .description("DingoFullScanProjectRule")
             .operandSupplier(b0 ->
                 b0.operand(LogicalScanWithRelOp.class).trait(Convention.NONE)

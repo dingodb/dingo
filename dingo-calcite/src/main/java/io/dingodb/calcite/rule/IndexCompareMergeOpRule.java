@@ -96,7 +96,9 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
                 int ix = (int) val1.getValue();
                 Column column = table.getColumns().get(indexRangeScan.getSelection().get(ix));
                 int indexIx = indexTable.getColumns().indexOf(column);
-                RexInputRef rexInputRef = new RexInputRef(indexIx, indexRangeScan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
+                RexInputRef rexInputRef = new RexInputRef(
+                    indexIx, indexRangeScan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
+                );
                 return RexConverter.convert(rexInputRef);
             }).toArray(Expr[]::new);
             relOp = RelOpBuilder.builder()
@@ -111,7 +113,8 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
         RelOp filterRelOp = null;
         RexNode rexFilter = indexRangeScan.getFilter();
         List<Column> columnNames = indexTable.getColumns();
-        List<Integer> indexSelectionList = columnNames.stream().map(table.columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = columnNames.stream()
+            .map(table.columns::indexOf).collect(Collectors.toList());
         Mapping mapping = Mappings.target(indexSelectionList, table.getColumns().size());
         if (indexRangeScan.getFilter() != null) {
             rexFilter = RexUtil.apply(mapping, rexFilter);

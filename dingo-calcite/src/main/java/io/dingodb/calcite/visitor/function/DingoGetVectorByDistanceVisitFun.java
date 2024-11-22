@@ -40,8 +40,8 @@ import java.util.NavigableMap;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
-import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
 import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getTopkParam;
+import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 
 public final class DingoGetVectorByDistanceVisitFun {

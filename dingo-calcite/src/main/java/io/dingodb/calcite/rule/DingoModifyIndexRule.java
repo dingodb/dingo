@@ -33,7 +33,7 @@ public class DingoModifyIndexRule extends RelRule<RelRule.Config> implements Sub
     /**
      * Creates a temporary RelRule for update index col.
      *
-     * @param config
+     * @param config config
      */
     protected DingoModifyIndexRule(Config config) {
         super(config);

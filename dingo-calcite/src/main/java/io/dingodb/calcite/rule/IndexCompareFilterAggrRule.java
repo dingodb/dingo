@@ -70,7 +70,7 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
         }
         DingoTable dingoTable = dingoScanWithRelOp.getTable().unwrap(DingoTable.class);
         Table table = Objects.requireNonNull(dingoTable).getTable();
-        if (!(dingoScanWithRelOp.getRelOp() instanceof TandemPipeCacheOp)){
+        if (!(dingoScanWithRelOp.getRelOp() instanceof TandemPipeCacheOp)) {
             return;
         }
         TandemPipeCacheOp tandemPipeCacheOp = (TandemPipeCacheOp) dingoScanWithRelOp.getRelOp();
@@ -178,7 +178,9 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
                 if (!rangeScan.get()) {
                     rangeScan.set(ixCol.primaryKeyIndex == 0);
                 }
-                RexInputRef rexInputRef = new RexInputRef(indexIx, dingoScanWithRelOp.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
+                RexInputRef rexInputRef = new RexInputRef(
+                    indexIx, dingoScanWithRelOp.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
+                );
                 Expr indexOpExpr = RexConverter.convert(rexInputRef);
                 return new BinaryOpExpr(binaryOpExpr.getOp(), indexOpExpr, binaryOpExpr.getOperand1());
             }).toArray(Expr[]::new);

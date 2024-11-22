@@ -131,7 +131,9 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
                     int ix = (int) val1.getValue();
                     Column column = table.getColumns().get(ix);
                     int indexIx = indexTable.getColumns().indexOf(column);
-                    RexInputRef rexInputRef = new RexInputRef(indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
+                    RexInputRef rexInputRef = new RexInputRef(
+                        indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
+                    );
                     return RexConverter.convert(rexInputRef);
                 }).toArray(Expr[]::new);
                 relOp = RelOpBuilder.builder()
@@ -198,7 +200,8 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
             return new DingoAggTransformRule(this);
         }
 
-        /** Forwards a call to {@link #onMatch(RelOptRuleCall)}. */
+        /**
+        * Forwards a call to {@link #onMatch(RelOptRuleCall)}. */
         MatchHandler<DingoAggTransformRule> matchHandler();
 
     }

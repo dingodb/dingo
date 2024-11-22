@@ -31,7 +31,6 @@ import io.dingodb.expr.runtime.expr.IndexOpExpr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.RelOptRuleCall;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelCollation;
@@ -113,8 +112,12 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                     new DingoRelCollationImpl(ImmutableList.of(), true, keepSerialOrder)));
                 return;
             }
-        } else return;
-        if (RuleUtils.matchTablePrimary(logicalSort)) return;
+        } else {
+            return;
+        }
+        if (RuleUtils.matchTablePrimary(logicalSort)) {
+            return;
+        }
 
         int[] ixs = scan.getSelection().getMappings();
         List<Integer> ixList = new ArrayList<>();
@@ -127,7 +130,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             return;
         }
 
-        if (validateNotRemoveSort(result.matchIndexTable, orderCol)) return;
+        if (validateNotRemoveSort(result.matchIndexTable, orderCol)) {
+            return;
+        }
 
         RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
 
@@ -203,9 +208,13 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                     new DingoRelCollationImpl(ImmutableList.of(), true, keepSerialOrder)));
                 return;
             }
-        } else return;
+        } else {
+            return;
+        }
 
-        if (RuleUtils.matchTablePrimary(logicalSort)) return;
+        if (RuleUtils.matchTablePrimary(logicalSort)) {
+            return;
+        }
 
         int[] ixs = scan.getSelection().getMappings();
         List<Integer> ixList = new ArrayList<>();
@@ -260,7 +269,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             return;
         }
         LogicalProject logicalProject1 = getLogicalProject(scan, logicalProject);
-        if (logicalProject1 == null) return;
+        if (logicalProject1 == null) {
+            return;
+        }
 
         call.transformTo(logicalProject1);
     }
@@ -329,7 +340,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (disableIndex) {
             return;
         }
-        if (RuleUtils.matchTablePrimary(logicalSort)) return;
+        if (RuleUtils.matchTablePrimary(logicalSort)) {
+            return;
+        }
 
         List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
         if (relFieldCollationList.size() != 1) {
@@ -349,7 +362,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (orderCol == null) {
             return;
         }
-        if (validateNotRemoveSort(logicalIndexRangeScan.getIndexTable(), orderCol)) return;
+        if (validateNotRemoveSort(logicalIndexRangeScan.getIndexTable(), orderCol)) {
+            return;
+        }
         int keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
         if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
             return;
@@ -375,7 +390,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         LogicalDingoTableScan scan = call.rel(1);
 
         RelNode relNode = getIndexFullScanRelNode(project, scan);
-        if (relNode == null) return;
+        if (relNode == null) {
+            return;
+        }
 
         call.transformTo(relNode);
     }
@@ -389,7 +406,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             return;
         }
 
-        if (RuleUtils.matchTablePrimary(logicalSort)) return;
+        if (RuleUtils.matchTablePrimary(logicalSort)) {
+            return;
+        }
 
         List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
         if (relFieldCollationList.size() != 1) {
@@ -406,7 +425,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         } else {
             return;
         }
-        if (validateNotRemoveSort(logicalIndexFullScan.getIndexTable(), orderCol)) return;
+        if (validateNotRemoveSort(logicalIndexFullScan.getIndexTable(), orderCol)) {
+            return;
+        }
         int keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
         if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
             return;
@@ -651,7 +672,8 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 b0.operand(LogicalSort.class).oneInput(b1 ->
                     b1.operand(LogicalProject.class).oneInput(b2 ->
                       b2.operand(LogicalDingoTableScan.class)
-                        .predicate(scan -> scan.getFilter() == null && !(scan instanceof LogicalIndexFullScan)).noInputs()
+                        .predicate(scan -> scan.getFilter() == null
+                            && !(scan instanceof LogicalIndexFullScan)).noInputs()
                     )
                 )
             )

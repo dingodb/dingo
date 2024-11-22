@@ -55,7 +55,9 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
         if (td.getEngine() != null && td.getEngine().contains("TXN")) {
             return;
         }
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            td.version, td.tupleType(), td.keyMapping()
+        );
         RangeDistribution range;
         if (rel.getFilter() == null && (rel.getSelection().size() == rel.getTable().getRowType().getFieldCount())) {
             range = RangeDistribution.builder()
@@ -111,9 +113,9 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
                                         default:
                                             return false;
                                     }
-                                } else if(selection != null) {
+                                } else if (selection != null) {
                                     // Optimize delete of full table data: delete from t1
-                                    if(selection.size() == r.getTable().getRowType().getFieldCount()) {
+                                    if (selection.size() == r.getTable().getRowType().getFieldCount()) {
                                         DingoTable dingoTable = r.getTable().unwrap(DingoTable.class);
                                         List<IndexTable> indexDefinitions = dingoTable.getTable().getIndexes();
                                         return indexDefinitions.size() == 0;

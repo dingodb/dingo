@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
@@ -37,10 +37,11 @@ import static io.dingodb.calcite.rule.DingoVectorIndexRule.getDingoGetVectorByDi
 
 @Value.Enclosing
 public class DingoVectorJoinRule extends RelRule<DingoVectorJoinRule.Config>  {
+
     /**
      * Creates a RelRule.
      *
-     * @param config
+     * @param config config
      */
     public DingoVectorJoinRule(Config config) {
         super(config);

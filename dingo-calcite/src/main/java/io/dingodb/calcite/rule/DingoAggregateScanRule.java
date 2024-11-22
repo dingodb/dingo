@@ -66,7 +66,8 @@ public class DingoAggregateScanRule extends RelRule<RelRule.Config> {
             if (scan.getSelection() != null) {
                 schema = schema.select(scan.getSelection());
             } else if (isCountNoArgListAgg) {
-                // Optimization scenario similar to this SQL: select count(*) from t1 where sal > 1 and id = 1 and name ='a'
+                // Optimization scenario similar to this SQL:
+                // select count(*) from t1 where sal > 1 and id = 1 and name ='a'
                 final List<Integer> selectedColumns = new ArrayList<>();
                 final RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
                     @Override
