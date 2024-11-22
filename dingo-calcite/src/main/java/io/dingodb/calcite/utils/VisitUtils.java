@@ -25,16 +25,24 @@ import org.apache.calcite.sql.SqlKind;
 public class VisitUtils {
 
     public static long getScanTs(ITransaction transaction, SqlKind kind) {
+        if (transaction == null) {
+            return 0;
+        }
+        long pointStartTs = transaction.getPointStartTs();
+        if (pointStartTs > 0) {
+            transaction.setPointStartTs(0);
+            return pointStartTs;
+        }
         long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);
         // Use current read
-        if (transaction != null && transaction.isPessimistic()
+        if (transaction.isPessimistic()
             && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
             && (kind == SqlKind.INSERT
             || kind == SqlKind.DELETE
             || kind == SqlKind.UPDATE)) {
             scanTs = TsoService.getDefault().tso();
         }
-        if (transaction != null && transaction.isPessimistic()
+        if (transaction.isPessimistic()
             && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
             && (kind == SqlKind.SELECT
             || kind == SqlKind.UPDATE)) {

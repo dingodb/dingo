@@ -396,8 +396,9 @@ public class DdlWorker {
             newTableId = (long) job.getArgs().get(0);
         }
         if (job.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+            Pair<Long, String> res = updateSchemaVersion(dc, job);
             job.setSchemaState(SchemaState.SCHEMA_GLOBAL_TXN_ONLY);
-            return updateSchemaVersion(dc, job);
+            return res;
         }
         if (job.getError() != null) {
             String error = job.decodeError();
@@ -953,6 +954,7 @@ public class DdlWorker {
                 .schemaId(ddlJob.getSchemaId())
                 .version(schemaVersion)
                 .type(ddlJob.getActionType())
+                .schemaState(ddlJob.getSchemaState())
                 .build();
             switch (ddlJob.getActionType()) {
                 case ActionTruncateTable:

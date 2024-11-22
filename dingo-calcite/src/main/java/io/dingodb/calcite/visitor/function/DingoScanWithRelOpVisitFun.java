@@ -87,7 +87,7 @@ public final class DingoScanWithRelOpVisitFun {
                 transaction.getType(),
                 IsolationLevel.of(transaction.getIsolationLevel())
             );
-            final long scanTs = getScanTs(transaction, visitor.getKind());
+            final long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
             scanVertexCreator = () -> createTxnScanVertex(rel, tableInfo, transaction, scanTs);
         } else {
             task = job.getOrCreate(currentLocation, idGenerator);
@@ -185,15 +185,6 @@ public final class DingoScanWithRelOpVisitFun {
         calcVertex.addEdge(edge);
         vertex.addIn(edge);
         return vertex;
-    }
-
-    private static long getScanTs(@NonNull ITransaction transaction, SqlKind kind) {
-        long pointStartTs = transaction.getPointStartTs();
-        if (pointStartTs > 0) {
-            transaction.setPointStartTs(0);
-            return pointStartTs;
-        }
-        return VisitUtils.getScanTs(transaction, kind);
     }
 
     private static @NonNull Vertex createScanVertex(

@@ -118,17 +118,7 @@ public final class DingoTableScanVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
-        long pointStartTs = 0;
-        if (transaction != null) {
-            pointStartTs = transaction.getPointStartTs();
-        }
-        long scanTs;
-        if (pointStartTs == 0) {
-            scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
-        } else {
-            scanTs = pointStartTs;
-            transaction.setPointStartTs(0);
-        }
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
         for (int i = 0; i < Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {

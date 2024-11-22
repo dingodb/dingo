@@ -23,6 +23,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
@@ -211,7 +212,7 @@ public class InfoSchemaBuilder {
             SchemaDiff optDiff = new SchemaDiff(diff.getVersion(), ActionType.ActionCreateTable,
                 affectedOption.getSchemaId(),
                 affectedOption.getTableId(), affectedOption.getSchemaId(), affectedOption.getOldTableId(),
-                false, null);
+                false, null, null);
             Pair<List<Long>, String> optTableIds = applyDiff(infoSchemaService, optDiff);
             if (optTableIds.getValue() != null) {
                 return optTableIds;
@@ -327,11 +328,32 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyTruncateTable(SchemaDiff diff) {
         try {
-            //dropTable(diff.getSchemaId(), diff.getOldTableId());
+            if (diff.getSchemaState() != null && diff.getSchemaState() == SchemaState.SCHEMA_GLOBAL_TXN_ONLY) {
+                applyDelTableInfo(diff.getOldTableId());
+                LogUtils.info(log, "applyDelTableInfo done, diff:{}", diff);
+            }
+            LogUtils.info(log, "appTruncateTable diff:{}", diff);
             return applyCreateTable(diff);
         } catch (Exception e) {
             return Pair.of(null, e.getMessage());
         }
+    }
+
+    public void applyDelTableInfo(long tableId) {
+        LogUtils.info(log, "applyDelTableInfo tableId:{}", tableId);
+        int idx = bucketIdx(tableId);
+        List<TableInfoCache> buckets = this.is.sortedTablesBuckets.get(idx);
+        if (buckets == null) {
+            return;
+        }
+        TableInfoCache tableInfo
+            = buckets.stream().filter(t -> t.getTableId() == tableId).findFirst().orElse(null);
+        if (tableInfo == null) {
+            return;
+        }
+
+        boolean res = buckets.remove(tableInfo);
+        LogUtils.info(log, "applyDelTableInfo {}, tableId:{}", res, tableId);
     }
 
     public Pair<List<Long>, String> applyDropColumn(SchemaDiff diff) {

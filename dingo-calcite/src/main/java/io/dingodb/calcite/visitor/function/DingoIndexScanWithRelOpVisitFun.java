@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.SqlExprUtils;
+import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
@@ -84,7 +85,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 transaction.getType(),
                 IsolationLevel.of(transaction.getIsolationLevel())
             );
-            final long scanTs = getScanTs(transaction, visitor.getKind());
+            final long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
             scanVertexCreator = () -> createTxnScanVertex(rel, transaction, scanTs);
         } else {
             task = job.getOrCreate(currentLocation, idGenerator);
@@ -162,33 +163,6 @@ public final class DingoIndexScanWithRelOpVisitFun {
         calcVertex.addEdge(edge);
         vertex.addIn(edge);
         return vertex;
-    }
-
-    private static long getScanTs(@NonNull ITransaction transaction, SqlKind kind) {
-        long pointStartTs = transaction.getPointStartTs();
-        if (pointStartTs > 0) {
-            transaction.setPointStartTs(0);
-            return pointStartTs;
-        }
-        long scanTs = transaction.getStartTs();
-        // Use current read
-        if (
-            transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
-                && (kind == SqlKind.INSERT
-                || kind == SqlKind.DELETE
-                || kind == SqlKind.UPDATE)
-        ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        if (
-            transaction.isPessimistic()
-                && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.ReadCommitted
-                && kind == SqlKind.SELECT
-        ) {
-            scanTs = TsoService.getDefault().tso();
-        }
-        return scanTs;
     }
 
     private static @NonNull Vertex createScanVertex(

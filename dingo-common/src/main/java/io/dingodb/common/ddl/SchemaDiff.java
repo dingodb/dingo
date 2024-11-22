@@ -16,6 +16,7 @@
 
 package io.dingodb.common.ddl;
 
+import io.dingodb.common.meta.SchemaState;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
@@ -35,6 +36,7 @@ public class SchemaDiff {
     boolean regenerateSchemaMap;
 
     AffectedOption[] affectedOpts;
+    SchemaState schemaState;
 
     @Builder
     public SchemaDiff(long version,
@@ -44,7 +46,8 @@ public class SchemaDiff {
                       long oldTableId,
                       long oldSchemaId,
                       boolean regenerateSchemaMap,
-                      AffectedOption[] affectedOpts) {
+                      AffectedOption[] affectedOpts,
+                      SchemaState schemaState) {
         this.version = version;
         this.type = type;
         this.schemaId = schemaId;
@@ -53,6 +56,7 @@ public class SchemaDiff {
         this.oldSchemaId = oldSchemaId;
         this.regenerateSchemaMap = regenerateSchemaMap;
         this.affectedOpts = affectedOpts;
+        this.schemaState = schemaState;
     }
 
     public SchemaDiff() {
