@@ -61,11 +61,11 @@ public class IndexFullScan extends LogicalIndexFullScan implements DingoRel {
                          boolean pushDown,
                          boolean lookup,
                          int keepSerialOrder
-                        ) {
+    ) {
         super(
             cluster, traitSet, hints, table, filter,
-           selection, indexTable, indexId, selectionIndexList, pushDown, lookup, keepSerialOrder
-           );
+            selection, indexTable, indexId, selectionIndexList, pushDown, lookup, keepSerialOrder
+        );
     }
 
     @Override

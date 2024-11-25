@@ -18,6 +18,8 @@ package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.executor.Executor;
+import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
@@ -37,7 +39,6 @@ import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
-import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
@@ -49,8 +50,6 @@ import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
-import io.dingodb.calcite.executor.Executor;
-import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.program.DecorrelateProgram;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
@@ -135,7 +134,9 @@ public class DingoParser {
     static {
         sensitiveKey.put(".\"USER\"", ".USER");
         // for mysql dump start
-        sensitiveKey.put("GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, INITIAL_SIZE ORDER BY LOGFILE_GROUP_NAME", "GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, INITIAL_SIZE, EXTRA ORDER BY LOGFILE_GROUP_NAME");
+        sensitiveKey.put("GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, INITIAL_SIZE "
+            + "ORDER BY LOGFILE_GROUP_NAME", "GROUP BY LOGFILE_GROUP_NAME, FILE_NAME, ENGINE, TOTAL_EXTENTS, "
+            + "INITIAL_SIZE, EXTRA ORDER BY LOGFILE_GROUP_NAME");
         // for mysql dump end
     }
 
@@ -331,7 +332,9 @@ public class DingoParser {
             RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
 
             DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
-            RelNode relNode2 = decorrelateProgram.run(planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of());
+            RelNode relNode2 = decorrelateProgram.run(
+                planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of()
+            );
             timeCtx.stop();
             return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
         }
@@ -344,21 +347,23 @@ public class DingoParser {
         } else if (sqlNode instanceof SqlSetOption && !(sqlNode instanceof SqlSetPassword)) {
             planProfile.setStmtType("set");
             return true;
-        } else return sqlNode instanceof SqlPrepare
-            || sqlNode instanceof SqlExecute
-            || sqlNode instanceof SqlAnalyze
-            || sqlNode instanceof SqlBeginTx
-            || sqlNode instanceof SqlCommit
-            || sqlNode instanceof SqlRollback
-            || sqlNode instanceof SqlLockTable
-            || sqlNode instanceof SqlLockBlock
-            || sqlNode instanceof SqlUnLockTable
-            || sqlNode instanceof SqlUnLockBlock
-            || sqlNode instanceof SqlKillQuery
-            || sqlNode instanceof SqlKillConnection
-            || sqlNode instanceof SqlLoadData
-            || sqlNode instanceof SqlCall
-            || sqlNode instanceof SqlAdminRollback;
+        } else {
+            return sqlNode instanceof SqlPrepare
+                || sqlNode instanceof SqlExecute
+                || sqlNode instanceof SqlAnalyze
+                || sqlNode instanceof SqlBeginTx
+                || sqlNode instanceof SqlCommit
+                || sqlNode instanceof SqlRollback
+                || sqlNode instanceof SqlLockTable
+                || sqlNode instanceof SqlLockBlock
+                || sqlNode instanceof SqlUnLockTable
+                || sqlNode instanceof SqlUnLockBlock
+                || sqlNode instanceof SqlKillQuery
+                || sqlNode instanceof SqlKillConnection
+                || sqlNode instanceof SqlLoadData
+                || sqlNode instanceof SqlCall
+                || sqlNode instanceof SqlAdminRollback;
+        }
     }
 
     public static Executor convertToOperation(SqlNode sqlNode, Connection connection, DingoParserContext context) {
@@ -387,7 +392,7 @@ public class DingoParser {
         // tmp todo replace
         if (sql.startsWith("/*!") && sql.endsWith("*/")) {
             sql = "set session net_write_timeout=10000";
-        } else if (sql.contains("/*!") && sql.contains("*/")){
+        } else if (sql.contains("/*!") && sql.contains("*/")) {
             int beginIndex = sql.indexOf("/*!");
             int endIndex = sql.indexOf("*/");
             String comment = sql.substring(beginIndex, endIndex + 2);

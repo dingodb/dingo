@@ -56,8 +56,8 @@ import java.util.stream.Collectors;
 
 public class LogicalDingoHybridSearch extends TableFunctionScan {
 
-    public final static String NAME_ID = HybridSearchTable.getColumns().get(0);
-    public final static String NAME_RANK_HYBRID = HybridSearchTable.getColumns().get(1);
+    public static final String NAME_ID = HybridSearchTable.getColumns().get(0);
+    public static final String NAME_RANK_HYBRID = HybridSearchTable.getColumns().get(1);
     @Getter
     private final RexCall call;
     @Getter
@@ -99,7 +99,7 @@ public class LogicalDingoHybridSearch extends TableFunctionScan {
                                     TupleMapping selection,
                                     RexNode filter,
                                     List<RelHint> hints
-                              ) {
+    ) {
         super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
         this.call = call;
         this.table = table;
@@ -120,9 +120,7 @@ public class LogicalDingoHybridSearch extends TableFunctionScan {
                 List<Integer> mappingList = new ArrayList<>();
                 for (int index : selection.getMappings()) {
                     if (index < HybridSearchTable.getColumns().size()) {
-                        //if (dingoTable.getTable().getColumns().get(index).getState() == 1) {
-                            mappingList.add(index);
-                        //}
+                        mappingList.add(index);
                     } else {
                         mappingList.add(index);
                     }
@@ -161,7 +159,8 @@ public class LogicalDingoHybridSearch extends TableFunctionScan {
         return new LogicalDingoHybridSearch(
             getCluster(),
             traitSet,
-            call, table, operands, documentIndexTableId, documentIndexTable, vectorIndexTableId, vectorIndexTable, selection, filter, hints);
+            call, table, operands, documentIndexTableId, documentIndexTable,
+            vectorIndexTableId, vectorIndexTable, selection, filter, hints);
     }
 
     @Override

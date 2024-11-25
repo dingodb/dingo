@@ -54,7 +54,7 @@ public class SqlLoadData extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlLoadData(SqlParserPos pos,
                        SqlIdentifier tableId,

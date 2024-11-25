@@ -41,13 +41,15 @@ public class MysqlSignature extends Meta.Signature {
      * @param cursorFactory cursorFactory
      * @param statementType statementType
      */
-    public MysqlSignature(List<ColumnMetaData> columns,
-                              String sql,
-                              List<AvaticaParameter> parameters,
-                              Map<String, Object> internalParameters,
-                              Meta.CursorFactory cursorFactory,
-                              Meta.StatementType statementType,
-                              Executor operation) {
+    public MysqlSignature(
+        List<ColumnMetaData> columns,
+        String sql,
+        List<AvaticaParameter> parameters,
+        Map<String, Object> internalParameters,
+        Meta.CursorFactory cursorFactory,
+        Meta.StatementType statementType,
+        Executor operation
+    ) {
         super(columns, sql, parameters, internalParameters, cursorFactory, statementType);
         this.operation = operation;
     }

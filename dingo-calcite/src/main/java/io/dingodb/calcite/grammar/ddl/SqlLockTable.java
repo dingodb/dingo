@@ -36,7 +36,7 @@ public class SqlLockTable extends SqlLock {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlLockTable(SqlParserPos pos, List<SqlIdentifier> tableList) {
         super(OPERATOR, pos);

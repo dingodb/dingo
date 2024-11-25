@@ -241,7 +241,8 @@ public class ServerMeta implements Meta {
         String schema,
         String table
     ) {
-        LogUtils.debug(log, "connection handle = {}, catalog = {}, schema = {}, table = {}.", ch, catalog, schema, table);
+        LogUtils.debug(log, "connection handle = {}, catalog = {}, schema = {}, table = {}.",
+            ch, catalog, schema, table);
         return mapMetaResultSet(
             ch.id,
             getConnectionMeta(ch).getPrimaryKeys(ch, catalog, schema, table)

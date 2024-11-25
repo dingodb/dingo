@@ -53,10 +53,10 @@ public final class ParseValueUtils {
         if (res.length == 4) {
             boolean mat = false;
             for (byte b : res) {
-               if (b != 39) {
-                   mat = true;
-                   break;
-               }
+                if (b != 39) {
+                    mat = true;
+                    break;
+                }
             }
             if (mat) {
                 // case '|/n'

@@ -27,8 +27,8 @@ public class SqlLock extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param operator
-     * @param pos
+     * @param operator op
+     * @param pos pos
      */
     public SqlLock(SqlOperator operator, SqlParserPos pos) {
         super(operator, pos);

@@ -32,8 +32,8 @@ public class SqlKill extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param operator
-     * @param pos
+     * @param operator op
+     * @param pos pos
      */
     public SqlKill(SqlOperator operator, SqlParserPos pos, String threadId) {
         super(operator, pos);

@@ -96,12 +96,12 @@ public class UserService implements io.dingodb.verify.service.UserService {
             }
             metaService = MetaService.root();
             userTd = getTable(userTable);
-            CommonId userTblId = userTd.getTableId();
             dbPrivTd = getTable(dbPrivilegeTable);
-            CommonId dbPrivTblId = dbPrivTd.getTableId();
             tablePrivTd = getTable(tablePrivilegeTable);
             tablePrivTblId = tablePrivTd.getTableId();
+            CommonId userTblId = userTd.getTableId();
             userStore = new StoreKvTxn(userTblId, getRegionId(userTblId));
+            CommonId dbPrivTblId = dbPrivTd.getTableId();
             dbPrivStore = new StoreKvTxn(tablePrivTblId, getRegionId(dbPrivTblId));
             tablePrivStore = new StoreKvTxn(tablePrivTblId, getRegionId(tablePrivTblId));
             userCodec = CodecService.getDefault().createKeyValueCodec(
@@ -111,7 +111,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
                 getPartId(dbPrivTblId, dbPrivStore.getRegionId()), dbPrivTd.tupleType(), dbPrivTd.keyMapping()
             );
             tablePrivCodec = CodecService.getDefault().createKeyValueCodec(
-                getPartId(tablePrivTblId, tablePrivStore.getRegionId()), tablePrivTd.tupleType(), tablePrivTd.keyMapping()
+                getPartId(tablePrivTblId, tablePrivStore.getRegionId()),
+                tablePrivTd.tupleType(), tablePrivTd.keyMapping()
             );
         } catch (Exception e) {
             log.error(e.getMessage(), e);

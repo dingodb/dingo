@@ -298,7 +298,9 @@ public class MetaCache {
         byte[] startKey = scanRegionInfo.getRange().getStartKey();
         byte[] endKey = scanRegionInfo.getRange().getEndKey();
         return RangeDistribution.builder()
-            .id(new CommonId(CommonId.CommonType.DISTRIBUTION, scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId()))
+            .id(new CommonId(
+                CommonId.CommonType.DISTRIBUTION, scanRegionWithPartId.getPartId(), scanRegionInfo.getRegionId())
+            )
             .startKey(startKey)
             .endKey(endKey)
             .start(codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(startKey, startKey.length) : startKey))

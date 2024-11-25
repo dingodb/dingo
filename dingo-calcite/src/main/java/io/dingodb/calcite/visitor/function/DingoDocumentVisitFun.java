@@ -104,16 +104,12 @@ public final class DingoDocumentVisitFun {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
-        MetaService metaService = MetaService.root().getSubMetaService(relTable.getSchemaName());
         assert dingoTable != null;
-        CommonId tableId = dingoTable.getTableId();
-        Table td = dingoTable.getTable();
 
-        NavigableMap<ComparableByteArray, RangeDistribution> ranges = metaService.getRangeDistribution(tableId);
         List<Object> operandsList = rel.getOperands();
         String indexName = Objects.requireNonNull((SqlIdentifier) operandsList.get(1)).toString();
         String indexTableName = rel.getIndexTable().getName();
-        if(!indexTableName.equalsIgnoreCase(indexName)){
+        if (!indexTableName.equalsIgnoreCase(indexName)) {
             throw new IllegalArgumentException("Can not find the text index with name: " + indexName);
         }
 
@@ -122,10 +118,6 @@ public final class DingoDocumentVisitFun {
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not a number.");
         }
-
-        int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
-
-        List<Vertex> outputs = new ArrayList<>();
 
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         boolean pushDown = false;
@@ -142,7 +134,7 @@ public final class DingoDocumentVisitFun {
         // document index cols in pri table selection
         TupleMapping map1 = indexTable.getMapping();
         List<Integer> indexLookupSelectionList = new ArrayList<>();
-        for(int j = 0; j < map1.size(); j++){
+        for (int j = 0; j < map1.size(); j++) {
             indexLookupSelectionList.add(map1.get(j));
         }
         List<Integer> priKeySecList = dingoTable.getTable()
@@ -192,9 +184,14 @@ public final class DingoDocumentVisitFun {
 
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
-            metaService.getRangeDistribution(rel.getIndexTableId());
+            MetaService.root().getRangeDistribution(rel.getIndexTableId());
 
+        Table td = dingoTable.getTable();
+        CommonId tableId = dingoTable.getTableId();
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = MetaService.root().getRangeDistribution(tableId);
+        int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
         // Create tasks based on partitions
+        List<Vertex> outputs = new ArrayList<>();
         for (RangeDistribution rangeDistribution : indexRanges.values()) {
             Vertex vertex;
             if (transaction == null) {

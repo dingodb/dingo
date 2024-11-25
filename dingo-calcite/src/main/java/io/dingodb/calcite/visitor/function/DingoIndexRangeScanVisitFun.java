@@ -82,7 +82,6 @@ public final class DingoIndexRangeScanVisitFun {
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaService.root();
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         CommonId idxId = rel.getIndexId();
@@ -92,11 +91,6 @@ public final class DingoIndexRangeScanVisitFun {
 
         List<Column> columnNames = indexTd.getColumns();
         List<Integer> indexSelectionList = columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList());
-        TupleMapping tupleMapping = TupleMapping.of(
-            indexSelectionList
-        );
-
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
 
         RexNode rexFilter = rel.getFilter();
 
@@ -119,7 +113,9 @@ public final class DingoIndexRangeScanVisitFun {
         boolean withEnd = false;
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTd.version, indexTd.tupleType(), indexTd.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
+            );
             RangeDistribution range = RangeUtils.createRangeByFilter(indexTd, codec, rexFilter, null);
             if (range != null) {
                 startKey = range.getStartKey();
@@ -159,6 +155,11 @@ public final class DingoIndexRangeScanVisitFun {
         task.putVertex(calcVertex);
 
         Vertex indexScanvertex = null;
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        TupleMapping tupleMapping = TupleMapping.of(
+            indexSelectionList
+        );
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
         if (transaction != null) {
             indexScanvertex = new Vertex(TXN_INDEX_RANGE_SCAN, new TxnIndexRangeScanParam(
                 idxId,

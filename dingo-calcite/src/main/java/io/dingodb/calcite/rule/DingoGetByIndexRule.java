@@ -266,10 +266,12 @@ public class DingoGetByIndexRule extends ConverterRule {
     /**
     *  example1: create table t(id varchar(3), age int, primary key(id)).
     *  select * from t where id='xxxxxxx'
-    *  if condition val length greater than column precision then general expr rexCall like cast inputRef(0) to varchar(7)
+    *  if condition val length greater than column precision then general
+     *  expr rexCall like cast inputRef(0) to varchar(7)
     *  this expr can not batch get.
     *  example2: create table t1(id int,address varchar(30), price float,primary key(id), index ax(price))
-    *  select price from t1 where price=3.3; If the condition uses an index, but the index field is of float type, the index cannot be used
+    *  select price from t1 where price=3.3; If the condition uses an index, but the index field is of float type,
+    *  the index cannot be used
     */
     public static RexNode eliminateSpecialCast(RexNode relNode, RexBuilder rexBuilder) {
         if (!(relNode instanceof RexCall)) {

@@ -33,8 +33,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.List;
 
 public final class DingoRoot extends LogicalDingoRoot implements DingoRel {
+
     @Getter
     private double rowCount;
+
     public DingoRoot(RelOptCluster cluster, RelTraitSet traits, RelNode input, TupleMapping selection) {
         super(cluster, traits, input, selection);
     }

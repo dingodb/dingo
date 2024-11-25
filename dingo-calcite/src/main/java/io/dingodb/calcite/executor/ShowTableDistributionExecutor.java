@@ -114,7 +114,8 @@ public class ShowTableDistributionExecutor extends QueryExecutor {
         regionList.forEach(row -> {
             if (hashPartition) {
                 // hash(partid) [key, key)
-                row.set(row.size() - 3, String.format("%s [ %s, %s )", row.get(row.size() - 3), row.get(row.size() - 2), row.get(row.size() - 1)));
+                row.set(row.size() - 3, String.format("%s [ %s, %s )", row.get(row.size() - 3),
+                    row.get(row.size() - 2), row.get(row.size() - 1)));
                 row.remove(row.size() - 2);
             } else {
                 // [key, key)

@@ -74,36 +74,36 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
 
     private static void matchProjectSortOrder(DingoIndexScanMatchRule rule, RelOptRuleCall call) {
         LogicalSort logicalSort = call.rel(0);
-        LogicalProject logicalProject = call.rel(1);
-        LogicalDingoTableScan scan = call.rel(2);
 
         if (RuleUtils.validateDisableIndex(logicalSort.getHints())) {
             return;
         }
 
-        DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
         List<RelFieldCollation> relFieldCollationList = logicalSort.getCollation().getFieldCollations();
         if (relFieldCollationList.size() != 1) {
             return;
         }
-        Column orderCol;
+
         RelFieldCollation relFieldCollation = relFieldCollationList.get(0);
         int collationIndex = relFieldCollation.getFieldIndex();
         int keepSerialOrder = RuleUtils.getSerialOrder(relFieldCollation);
         if (RuleUtils.preventRemoveOrder(keepSerialOrder)) {
             return;
         }
-
+        LogicalProject logicalProject = call.rel(1);
         List<RexNode> projects = logicalProject.getProjects();
         if (!(projects.size() > collationIndex && projects.get(collationIndex) instanceof RexInputRef)) {
             return;
         }
         int projectIndex = ((RexInputRef) projects.get(collationIndex)).getIndex();
+        LogicalDingoTableScan scan = call.rel(2);
         int colIndex = scan.getSelection().get(projectIndex);
         if (colIndex < 0) {
             return;
         }
+        DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
+        Column orderCol;
         if (colIndex < dingoTable.getTable().columns.size()) {
             orderCol = dingoTable.getTable().columns.get(colIndex);
             if (RuleUtils.matchRemoveSort(orderCol.primaryKeyIndex, dingoTable.getTable().partitionStrategy)) {
@@ -334,7 +334,6 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
     public static void indexRangeAsc(DingoIndexScanMatchRule rule, RelOptRuleCall call) {
         LogicalSort logicalSort = call.rel(0);
         LogicalProject logicalProject = call.rel(1);
-        LogicalIndexRangeScan logicalIndexRangeScan = call.rel(2);
         boolean disableIndex = !logicalProject.getHints().isEmpty()
             && "disable_index".equalsIgnoreCase(logicalProject.getHints().get(0).hintName);
         if (disableIndex) {
@@ -348,6 +347,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (relFieldCollationList.size() != 1) {
             return;
         }
+        LogicalIndexRangeScan logicalIndexRangeScan = call.rel(2);
         Table table = logicalIndexRangeScan.getTable().unwrap(DingoTable.class).getTable();
         Column orderCol = null;
         RelFieldCollation relFieldCollation = relFieldCollationList.get(0);
@@ -400,7 +400,6 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
     public static void nonLeftmostMatchingOrder(DingoIndexScanMatchRule rule, RelOptRuleCall call) {
         LogicalSort logicalSort = call.rel(0);
         LogicalProject project = call.rel(1);
-        LogicalIndexFullScan logicalIndexFullScan = call.rel(2);
 
         if (RuleUtils.validateDisableIndex(project.getHints())) {
             return;
@@ -420,6 +419,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         IndexOpExpr indexOpExpr = (IndexOpExpr) RexConverter.convert(rexNode);
         int ix = getIndexByExpr(indexOpExpr);
         Column orderCol;
+        LogicalIndexFullScan logicalIndexFullScan = call.rel(2);
         if (ix >= 0 && ix < logicalIndexFullScan.getIndexTable().getColumns().size()) {
             orderCol = logicalIndexFullScan.getIndexTable().getColumns().get(ix);
         } else {

@@ -1080,10 +1080,10 @@ public class DingoMeta extends MetaImpl {
                         tableType = t.getTable().getJdbcTableType().jdbcName;
                     }
                     return new Object[]{
-                    catalog,
-                    t.schema.name,
-                    t.name,
-                    tableType
+                        catalog,
+                        t.schema.name,
+                        t.name,
+                        tableType
                     };
                 }),
             new Class[] {String.class, String.class, String.class, String.class},

@@ -81,8 +81,10 @@ public class ScanIteratorV2 implements Iterator<KeyValue>, AutoCloseable {
 
     public long scanBegin(long requestTs, ChannelProvider channelProvider) {
         int retry = retryTimes;
-        Optional.ofNullable(coprocessor).map(CoprocessorV2::getOriginalSchema).ifPresent($ -> $.setCommonId(regionId.domain));
-        Optional.ofNullable(coprocessor).map(CoprocessorV2::getResultSchema).ifPresent($ -> $.setCommonId(regionId.domain));
+        Optional.ofNullable(coprocessor).map(CoprocessorV2::getOriginalSchema)
+            .ifPresent($ -> $.setCommonId(regionId.domain));
+        Optional.ofNullable(coprocessor).map(CoprocessorV2::getResultSchema)
+            .ifPresent($ -> $.setCommonId(regionId.domain));
         while (retry-- > 0) {
             Channel channel = channelProvider.channel();
             try {

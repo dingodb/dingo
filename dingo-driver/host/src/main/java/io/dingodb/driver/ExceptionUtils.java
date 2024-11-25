@@ -140,7 +140,7 @@ public final class ExceptionUtils {
 
     private static @NonNull SQLException internalToSql(@NonNull Throwable throwable) {
         String message;
-        if(throwable.getMessage() != null) {
+        if (throwable.getMessage() != null) {
             message = throwable.getMessage();
         } else {
             message = throwable.getClass().getName();

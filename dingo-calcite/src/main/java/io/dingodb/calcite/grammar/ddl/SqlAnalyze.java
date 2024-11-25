@@ -43,11 +43,6 @@ public class SqlAnalyze extends SqlDdl {
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ANALYZE", SqlKind.OTHER_DDL);
 
-    /**
-     * Creates a SqlDdl.
-     *
-     * @param pos pos
-     */
     public SqlAnalyze(SqlParserPos pos,
                       SqlIdentifier tableId,
                       List<SqlIdentifier> columnList,

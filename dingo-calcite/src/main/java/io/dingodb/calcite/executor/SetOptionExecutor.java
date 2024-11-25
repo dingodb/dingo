@@ -89,8 +89,8 @@ public class SetOptionExecutor implements DdlExecutor {
                 && "READ-COMMITTED".equalsIgnoreCase(value)
                 && connection.getClientInfo("txn_mode").equalsIgnoreCase("optimistic")
             ) {
-                throw new RuntimeException("Optimistic transaction mode cannot be changed" +
-                    " to read committed transaction isolation level");
+                throw new RuntimeException("Optimistic transaction mode cannot be changed"
+                    + " to read committed transaction isolation level");
             }
             if ("SESSION".equals(scope) || "USER".equals(scope)) {
                 if (!setCharacter(name, value)) {

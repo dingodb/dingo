@@ -78,7 +78,9 @@ public final class DingoScanWithRelOp extends LogicalScanWithRelOp implements Di
         super(cluster, traitSet, hints, table, rowType, relOp, filter, pushDown, keepOrder, limit);
         if (getFilter() != null) {
             Table td = Objects.requireNonNull(table.unwrap(DingoTable.class)).getTable();
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                td.version, td.tupleType(), td.keyMapping()
+            );
             RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, filter, null);
             rangeDistribution = range;
             if (range != null && !(range.getStartKey() == null && range.getEndKey() == null)) {

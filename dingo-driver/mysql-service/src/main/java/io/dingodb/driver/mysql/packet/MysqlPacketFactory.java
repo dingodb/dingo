@@ -93,10 +93,10 @@ public class MysqlPacketFactory {
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
         okPacket.packetId = (byte) packetId.getAndIncrement();
-//        int status = SERVER_STATUS_AUTOCOMMIT;
-//        if (serverStatus != 0) {
-//            status |= serverStatus;
-//        }
+        //int status = SERVER_STATUS_AUTOCOMMIT;
+        //if (serverStatus != 0) {
+        //    status |= serverStatus;
+        //}
         okPacket.warningCount = warningCount;
         okPacket.serverStatus = serverStatus;
         okPacket.insertId = lastInsertId;

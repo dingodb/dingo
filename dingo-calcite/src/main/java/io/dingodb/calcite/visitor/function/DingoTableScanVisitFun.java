@@ -79,7 +79,9 @@ public final class DingoTableScanVisitFun {
         boolean withEnd = false;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(td.version, td.tupleType(), td.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                td.version, td.tupleType(), td.keyMapping()
+            );
             RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
             if (range != null) {
                 startKey = range.getStartKey();

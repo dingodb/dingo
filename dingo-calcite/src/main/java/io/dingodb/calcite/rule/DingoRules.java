@@ -148,28 +148,28 @@ public final class DingoRules {
         = DingoAggTransformRule.Config.AGG_COUNT_TRANSFORM.toRule();
 
     public static final DingoIndexScanWithRelOpRule DINGO_INDEX_SCAN_WITH_REL_OP_RULE
-      = DingoIndexScanWithRelOpRule.DEFAULT.toRule(DingoIndexScanWithRelOpRule.class);
+        = DingoIndexScanWithRelOpRule.DEFAULT.toRule(DingoIndexScanWithRelOpRule.class);
 
     public static final IndexCompareMergeOpRule INDEX_COMPARE_MERGE_OP_RULE
-       = IndexCompareMergeOpRule.Config.INDEX_COMPARE_MERGE2P.toRule();
+        = IndexCompareMergeOpRule.Config.INDEX_COMPARE_MERGE2P.toRule();
 
     public static final IndexCompareFilterAggrRule INDEX_COMPARE_FILTER_AGGR_RULE
-       = IndexCompareFilterAggrRule.Config.INDEX_COMPARE_FILTER_AGG_RULE.toRule();
+        = IndexCompareFilterAggrRule.Config.INDEX_COMPARE_FILTER_AGG_RULE.toRule();
 
     public static final IndexFullScanWithRelOpRule INDEX_FULL_SCAN_WITH_REL_OP_RULE
-       = IndexFullScanWithRelOpRule.Config.INDEX_FULL_WITH_RELOP.toRule();
+        = IndexFullScanWithRelOpRule.Config.INDEX_FULL_WITH_RELOP.toRule();
 
     public static final DingoFullScanProjectRule DINGO_FULL_SCAN_PROJECT_RULE
-       = DingoFullScanProjectRule.Config.DINGO_FULL_SCAN_PROJECT_RULE.toRule();
+        = DingoFullScanProjectRule.Config.DINGO_FULL_SCAN_PROJECT_RULE.toRule();
 
     public static final DingoIndexCollationRule DINGO_INDEX_COLLATION_RULE
-       = DingoIndexCollationRule.Config.PROJECT_SORT.toRule();
+        = DingoIndexCollationRule.Config.PROJECT_SORT.toRule();
 
     public static final DingoIndexScanMatchRule INDEXSCAN_SORT_ASC
-       = DingoIndexScanMatchRule.Config.INDEXSCAN_SORT_ORDER.toRule();
+        = DingoIndexScanMatchRule.Config.INDEXSCAN_SORT_ORDER.toRule();
 
     public static final DingoTableCollationRule SORT_REMOVE_DINGO_SCAN
-       = DingoTableCollationRule.Config.SORT_REMOVE_DINGO_SCAN.toRule();
+        = DingoTableCollationRule.Config.SORT_REMOVE_DINGO_SCAN.toRule();
 
     public static final DingoDocumentIndexRule DINGO_DOCUMENT_INDEX_RULE
         = DingoDocumentIndexRule.Config.DEFAULT.toRule();

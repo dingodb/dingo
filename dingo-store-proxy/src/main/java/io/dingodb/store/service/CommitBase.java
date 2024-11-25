@@ -81,7 +81,7 @@ public abstract class CommitBase {
                 io.dingodb.store.api.transaction.data.Op.forNumber(opCode), key, value, 0, null, null
             );
 
-            if(ScopeVariables.transaction1Pc()) {
+            if (ScopeVariables.transaction1Pc()) {
                 try {
                     preWritePrimaryKey(mutation, startTs, true);
                     return;
@@ -98,7 +98,7 @@ public abstract class CommitBase {
                 need2PcCommit = true;
             }
 
-            if(need2PcPreWrite) {
+            if (need2PcPreWrite) {
                 preWritePrimaryKey(mutation, startTs, false);
             }
         } catch (WriteConflictException e) {
@@ -114,7 +114,7 @@ public abstract class CommitBase {
             throw e;
         }
 
-        if(need2PcCommit) {
+        if (need2PcCommit) {
             long commitTs = TsoService.getDefault().tso();
             boolean result = commitPrimaryData(isolationLevel, startTs, commitTs, key);
             if (!result) {
@@ -150,9 +150,9 @@ public abstract class CommitBase {
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
 
-            if(enableOnePc) {
+            if (enableOnePc) {
                 throw new OnePcDegenerateTwoPcException("1PC degenerate to 2PC, startTs:" + startTs);
-            }else {
+            } else {
                 boolean prewriteResult = false;
                 int i = 0;
                 while (!prewriteResult) {

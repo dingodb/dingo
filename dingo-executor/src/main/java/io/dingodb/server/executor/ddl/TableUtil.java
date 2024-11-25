@@ -79,6 +79,7 @@ public final class TableUtil {
                                                                 TableDefinitionWithId tableInfo,
                                                                 boolean shouldUpdateVer) {
         Long version = 0L;
+        updateTable(job.getSchemaId(), tableInfo);
         if (shouldUpdateVer) {
             Pair<Long, String> res = DdlWorker.updateSchemaVersion(dc, job);
             if (res.getValue() != null) {
@@ -86,7 +87,6 @@ public final class TableUtil {
             }
             version = res.getKey();
         }
-        updateTable(job.getSchemaId(), tableInfo);
         return Pair.of(version, null);
     }
 
@@ -97,6 +97,7 @@ public final class TableUtil {
         boolean shouldUpdateVer
     ) {
         Long version = 0L;
+        updateIndex(indexInfo);
         if (shouldUpdateVer) {
             Pair<Long, String> res = DdlWorker.updateSchemaVersion(dc, job);
             if (res.getValue() != null) {
@@ -104,7 +105,6 @@ public final class TableUtil {
             }
             version = res.getKey();
         }
-        updateIndex(indexInfo);
         return Pair.of(version, null);
     }
 

@@ -37,7 +37,8 @@ public class HybridNodeUtils {
     public static void lockUpHybridSearchNode(SqlNode sqlNode, SqlNode subSqlNode) {
         if (sqlNode instanceof SqlSelect) {
             SqlNode from = ((SqlSelect) sqlNode).getFrom();
-            if (from instanceof SqlBasicCall && (((SqlBasicCall) from).getOperator() instanceof SqlHybridSearchOperator)) {
+            if (from instanceof SqlBasicCall
+                && (((SqlBasicCall) from).getOperator() instanceof SqlHybridSearchOperator)) {
                 ((SqlSelect) sqlNode).setFrom(subSqlNode);
             } else {
                 if (from instanceof SqlJoin) {
@@ -71,7 +72,8 @@ public class HybridNodeUtils {
     public static void lockUpHybridSearchNode(SqlNode sqlNode, ConcurrentHashMap<SqlBasicCall, SqlNode> subSqlNode) {
         if (sqlNode instanceof SqlSelect) {
             SqlNode from = ((SqlSelect) sqlNode).getFrom();
-            if (from instanceof SqlBasicCall && (((SqlBasicCall) from).getOperator() instanceof SqlHybridSearchOperator)) {
+            if (from instanceof SqlBasicCall
+                && (((SqlBasicCall) from).getOperator() instanceof SqlHybridSearchOperator)) {
                 SqlBasicCall removeKey = null;
                 for (Map.Entry<SqlBasicCall, SqlNode> entry : subSqlNode.entrySet()) {
                     SqlBasicCall key = entry.getKey();

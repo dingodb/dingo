@@ -16,14 +16,13 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.util.Optional;
-
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnPartDocumentParam;
@@ -74,9 +73,10 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         List<Column> columns = param.getTable().getColumns();
         Object[] priTuples = new Object[param.getTable().columns.size() + 1];
         for (DocumentWithScore document : documentWithScores) {
-                if(document.getDocumentWithId().getDocument() != null){
-                    if(document.getDocumentWithId().getDocument().getTableData() != null){
-                    KeyValue tableData = new KeyValue(document.getDocumentWithId().getDocument().getTableData().getTableKey(),
+            if (document.getDocumentWithId().getDocument() != null) {
+                if (document.getDocumentWithId().getDocument().getTableData() != null) {
+                    KeyValue tableData = new KeyValue(
+                        document.getDocumentWithId().getDocument().getTableData().getTableKey(),
                         document.getDocumentWithId().getDocument().getTableData().getTableValue());
                     byte[] tmp1 = new byte[tableData.getKey().length];
                     System.arraycopy(tableData.getKey(), 0, tmp1, 0, tableData.getKey().length);
@@ -98,7 +98,7 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                     if (local != null) {
                         while (local.hasNext()) {
                             Object[] objects = local.next();
-                            if(objects[priTuples.length-1] instanceof Float){
+                            if (objects[priTuples.length - 1] instanceof Float) {
                                 results.add(objects);
                             }
                         }
@@ -113,7 +113,8 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                     decode[decode.length - 1] = document.getScore();
                     results.add(decode);
                 } else {
-                    Map<String, DocumentValue> documentData = document.getDocumentWithId().getDocument().getDocumentData();
+                    Map<String, DocumentValue> documentData = document.getDocumentWithId()
+                        .getDocument().getDocumentData();
                     Set<Map.Entry<String, DocumentValue>> entries = documentData.entrySet();
                     for (Map.Entry<String, DocumentValue> entry : entries) {
                         String key = entry.getKey();
@@ -133,24 +134,24 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                     priTuples[priTuples.length - 1] = score;
                     results.add(priTuples);
                 }
-                }else{
-                    LogUtils.error(log,("Failed to get document"));
-                }
+            } else {
+                LogUtils.error(log, ("Failed to get document"));
             }
+        }
         profile.incrTime(start);
         return results.iterator();
     }
 
-//    private static Map<Integer, Integer> getDocPriIdxMapping(TxnPartDocumentParam param) {
-//        int docColSize = param.getTableDataColList().size();
-//        Map<Integer, Integer> mapping = new HashMap<>();
-//        for (int i = 0; i < docColSize; i ++) {
-//            Column column = param.getTableDataColList().get(i);
-//            if (!column.isPrimary()) {
-//                int ix1 = param.getTable().getColumns().indexOf(column);
-//                mapping.put(i, ix1);
-//            }
-//        }
-//        return mapping;
-//    }
+    //private static Map<Integer, Integer> getDocPriIdxMapping(TxnPartDocumentParam param) {
+    //    int docColSize = param.getTableDataColList().size();
+    //    Map<Integer, Integer> mapping = new HashMap<>();
+    //    for (int i = 0; i < docColSize; i ++) {
+    //        Column column = param.getTableDataColList().get(i);
+    //        if (!column.isPrimary()) {
+    //            int ix1 = param.getTable().getColumns().indexOf(column);
+    //            mapping.put(i, ix1);
+    //        }
+    //    }
+    //    return mapping;
+    //}
 }

@@ -37,7 +37,7 @@ public class SqlLockBlock extends SqlLock {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlLockBlock(SqlParserPos pos, List<SqlBlock> sqlBlockList) {
         super(OPERATOR, pos);
@@ -74,7 +74,7 @@ public class SqlLockBlock extends SqlLock {
             writer.keyword(block.name);
 
             if (j < sqlBlockList.size() - 1) {
-               writer.keyword(",");
+                writer.keyword(",");
             }
         }
     }

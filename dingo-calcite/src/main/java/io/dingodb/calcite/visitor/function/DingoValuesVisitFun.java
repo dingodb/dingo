@@ -75,7 +75,6 @@ public final class DingoValuesVisitFun {
         }
         DingoRelPartition distribution = streaming.getDistribution();
         if (distribution instanceof DingoRelPartitionByTable) {
-            List<Vertex> outputs = new LinkedList<>();
             ValuesParam param = new ValuesParam(
                 rel.getTuples(),
                 Objects.requireNonNull(DefinitionMapper.mapToDingoType(rel.getRowType()))
@@ -97,6 +96,7 @@ public final class DingoValuesVisitFun {
             hint.setLocation(currentLocation);
             vertex.setHint(hint);
             task.putVertex(vertex);
+            List<Vertex> outputs = new LinkedList<>();
             outputs.add(vertex);
 
             return outputs;

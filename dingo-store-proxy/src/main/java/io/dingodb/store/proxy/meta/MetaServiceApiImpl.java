@@ -232,7 +232,8 @@ public class MetaServiceApiImpl implements MetaServiceApi {
                     syncTableLock(tableLock);
                 }
             }
-        } while (rangeResponse.isMore());
+        }
+        while (rangeResponse.isMore());
     }
 
     private void pubTableLock(TableLock lock) {

@@ -56,7 +56,8 @@ public class DingoHybridSearch extends LogicalDingoHybridSearch implements Dingo
         RexNode filter,
         List<RelHint> hints
     ) {
-        super(cluster, traitSet, call, table, operands, documentIndexTableId, documentIndexTable, vectorIndexTableId, vectorIndexTable, selection, filter, hints);
+        super(cluster, traitSet, call, table, operands, documentIndexTableId, documentIndexTable,
+            vectorIndexTableId, vectorIndexTable, selection, filter, hints);
     }
 
     @Override

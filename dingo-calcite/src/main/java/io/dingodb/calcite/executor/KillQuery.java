@@ -39,7 +39,7 @@ public class KillQuery implements DdlExecutor {
 
     @Override
     public void execute() {
-        Connection connection = connectionMap.get("mysql:" +threadId);
+        Connection connection = connectionMap.get("mysql:" + threadId);
         AvaticaConnection avaticaConnection = (AvaticaConnection) connection;
         if (avaticaConnection.statementMap != null) {
             avaticaConnection.statementMap.forEach((k, v) -> {

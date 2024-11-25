@@ -48,7 +48,7 @@ public class SqlCall extends SqlDdl {
      * @param pos pos
      */
     public SqlCall(SqlParserPos pos, SqlIdentifier call, Object[] val) {
-        super(call.names.get(1).equals("setClientInfo")? OPERATOR : OPERATOR_SELECT, pos);
+        super(call.names.get(1).equals("setClientInfo") ? OPERATOR : OPERATOR_SELECT, pos);
         this.call = call;
         this.val = val;
     }

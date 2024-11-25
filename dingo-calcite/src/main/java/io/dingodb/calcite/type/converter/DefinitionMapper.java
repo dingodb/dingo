@@ -186,20 +186,6 @@ public final class DefinitionMapper {
         return typeFactory.createTypeWithNullability(relDataType, column.isNullable());
     }
 
-    public static RelDataType mapToJavaRelDataType(String typeName, RelDataTypeFactory typeFactory) {
-        switch (typeName) {
-            case "INT":
-                return typeFactory.createJavaType(Integer.class);
-            case "LONG":
-                return typeFactory.createJavaType(Long.class);
-            case "BOOL":
-                return typeFactory.createJavaType(Boolean.class);
-            case "STRING":
-                return typeFactory.createJavaType(String.class);
-        }
-        return null;
-    }
-
     public static RelDataType mapToRelDataType(TableDefinition table, @NonNull RelDataTypeFactory typeFactory) {
         // make column name uppercase to adapt to calcite
         List<ColumnDefinition> columns = table.getColumns();
@@ -267,6 +253,20 @@ public final class DefinitionMapper {
                 }
         }
         return typeFactory.createTypeWithNullability(relDataType, column.isNullable());
+    }
+
+    public static RelDataType mapToJavaRelDataType(String typeName, RelDataTypeFactory typeFactory) {
+        switch (typeName) {
+            case "INT":
+                return typeFactory.createJavaType(Integer.class);
+            case "LONG":
+                return typeFactory.createJavaType(Long.class);
+            case "BOOL":
+                return typeFactory.createJavaType(Boolean.class);
+            case "STRING":
+                return typeFactory.createJavaType(String.class);
+        }
+        return null;
     }
 
 }

@@ -290,7 +290,6 @@ public final class DingoIndexScanWithRelOpVisitFun {
         SqlExpr filter = null;
         boolean withStart = true;
 
-        boolean filterRange = false;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
         }
@@ -314,6 +313,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()
         );
+        boolean filterRange = false;
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
         distributionParam.setFilterRange(filterRange);
         return new Vertex(CALC_DISTRIBUTION_1, distributionParam);

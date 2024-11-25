@@ -98,7 +98,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                 if (oldValues[6] != null) {
                     String state = (String) oldValues[6];
                     if (StatsTaskState.PENDING.getState().equalsIgnoreCase(state)
-                     || StatsTaskState.RUNNING.getState().equalsIgnoreCase(state)) {
+                        || StatsTaskState.RUNNING.getState().equalsIgnoreCase(state)) {
                         return false;
                     } else if (StatsTaskState.INIT.getState().equalsIgnoreCase(state)) {
                         if (oldValues[9] != null) {

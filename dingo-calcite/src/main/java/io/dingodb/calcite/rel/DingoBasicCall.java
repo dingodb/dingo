@@ -26,9 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DingoBasicCall extends SqlBasicCall {
+
     private List<SqlNode> operandList;
+
     public DingoBasicCall(SqlBasicCall sqlBasicCall) {
-        super(sqlBasicCall.getOperator(), sqlBasicCall.getOperandList(), sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
+        super(sqlBasicCall.getOperator(), sqlBasicCall.getOperandList(),
+            sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
         operandList = new ArrayList<>(sqlBasicCall.getOperandList());
     }
 
@@ -37,24 +40,24 @@ public class DingoBasicCall extends SqlBasicCall {
         return this.operandList;
     }
 
-    public SqlNode operand(int i) {
-        return Nullness.castNonNull(this.operandList.get(i));
+    public SqlNode operand(int index) {
+        return Nullness.castNonNull(this.operandList.get(index));
     }
 
     public int operandCount() {
         return this.operandList.size();
     }
 
-    public void setOperand(int i, @Nullable SqlNode operand) {
-        this.operandList = set(this.operandList, i, operand);
+    public void setOperand(int index, @Nullable SqlNode operand) {
+        this.operandList = set(this.operandList, index, operand);
     }
 
-    private static <E> List<E> set(List<SqlNode> list, int i, E e) {
-        if (i == 0 && list.size() == 1) {
-            return ImmutableNullableList.of(e);
+    private static <E> List<E> set(List<SqlNode> list, int index, E element) {
+        if (index == 0 && list.size() == 1) {
+            return ImmutableNullableList.of(element);
         } else {
             E[] objects = (E[]) list.toArray();
-            objects[i] = e;
+            objects[index] = element;
             return ImmutableNullableList.copyOf(objects);
         }
     }

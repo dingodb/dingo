@@ -144,24 +144,10 @@ public final class Mapping {
             operand);
     }
 
-    public static PartitionDetailDefinition mapping(io.dingodb.common.partition.PartitionDetailDefinition partitionDetail) {
+    public static PartitionDetailDefinition mapping(
+        io.dingodb.common.partition.PartitionDetailDefinition partitionDetail
+    ) {
         return new PartitionDetailDefinition(partitionDetail);
-    }
-
-    @NonNull
-    private static Object[] cleanOperand(Object[] operand) {
-        if (operand.length > 0) {
-            for (int i = (operand.length - 1); i >= 0; --i) {
-                if (operand[i] != null) {
-                    operand = Arrays.copyOf(operand, i + 1);
-                    break;
-                }
-            }
-        }
-        if (operand.length > 0 && operand[operand.length - 1] == null) {
-            operand = new Object[0];
-        }
-        return operand;
     }
 
     public static ColumnDefinition mapping(Column column) {
@@ -204,6 +190,22 @@ public final class Mapping {
 
     public static RangeWithOptions mapping(StoreInstance.Range range) {
         return new RangeWithOptions(new Range(range.start, range.end), range.withStart, range.withEnd);
+    }
+
+    @NonNull
+    private static Object[] cleanOperand(Object[] operand) {
+        if (operand.length > 0) {
+            for (int i = (operand.length - 1); i >= 0; --i) {
+                if (operand[i] != null) {
+                    operand = Arrays.copyOf(operand, i + 1);
+                    break;
+                }
+            }
+        }
+        if (operand.length > 0 && operand[operand.length - 1] == null) {
+            operand = new Object[0];
+        }
+        return operand;
     }
 
 }

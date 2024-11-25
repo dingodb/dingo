@@ -54,7 +54,7 @@ public class SqlCreateVectorIndex extends SqlCreate {
                           int replica,
                           Properties properties,
                           PartitionDefinition partitionDefinition
-                          ) {
+    ) {
         super(OPERATOR, pos, replace, ifNotExists);
         this.index = index;
         this.table = table;

@@ -89,19 +89,19 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
                 throw new RuntimeException("Incorrect parameter count for hybrid search function.");
             }
             // Get all index table definition
-            Table table = dingoTable.getTable();
 
             List<SqlNode> documentOperandList = ((SqlBasicCall) this.function.operand(0)).getOperandList();
-            String documentSelect = this.function.operand(0).toString();
-            String vectorSelect = this.function.operand(1).toString();
             float documentWeight = 0.5F;
             float vectorWeight = 0.5F;
             try {
                 if (operandList.size() == 3) {
-                    documentWeight = ((BigDecimal) Objects.requireNonNull(((SqlNumericLiteral) operandList.get(2)).getValue())).floatValue();
+                    documentWeight = ((BigDecimal) Objects.requireNonNull(
+                        ((SqlNumericLiteral) operandList.get(2)).getValue())).floatValue();
                 } else if (operandList.size() == 4) {
-                    documentWeight = ((BigDecimal) Objects.requireNonNull(((SqlNumericLiteral) operandList.get(2)).getValue())).floatValue();
-                    vectorWeight = ((BigDecimal) Objects.requireNonNull(((SqlNumericLiteral) operandList.get(3)).getValue())).floatValue();
+                    documentWeight = ((BigDecimal) Objects.requireNonNull(
+                        ((SqlNumericLiteral) operandList.get(2)).getValue())).floatValue();
+                    vectorWeight = ((BigDecimal) Objects.requireNonNull(
+                        ((SqlNumericLiteral) operandList.get(3)).getValue())).floatValue();
                 }
             } catch (Exception e) {
                 throw new RuntimeException("The third or fourth parameter of the hybrid search function is incorrect");
@@ -113,14 +113,16 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             SqlIdentifier sqlIdentifier = (SqlIdentifier) documentOperandList.get(1);
             int documentLimit = 10;
             try {
-                documentLimit = ((Number) Objects.requireNonNull(((SqlNumericLiteral) documentOperandList.get(3)).getValue())).intValue();
+                documentLimit = ((Number) Objects.requireNonNull(
+                    ((SqlNumericLiteral) documentOperandList.get(3)).getValue())).intValue();
             } catch (Exception e) {
                 throw new RuntimeException("The document topN parameter of the hybrid search function is incorrect");
             }
-            this.documentIndex = TableFunctionNamespace.getDocumentIndexTable(table, sqlIdentifier.getSimple().toUpperCase());
+            Table table = dingoTable.getTable();
+            this.documentIndex = TableFunctionNamespace.getDocumentIndexTable(
+                table, sqlIdentifier.getSimple().toUpperCase()
+            );
 
-            String documentId = documentIndex.getColumns().get(0).getName();
-            String documentRankBm25 = documentIndex.getName() + "$rank_bm25";
             List<SqlNode> verctorOperandList = ((SqlBasicCall) this.function.operand(1)).getOperandList();
             if (verctorOperandList.size() < 4) {
                 throw new RuntimeException("Hybrid search incorrect parameter count for vector function.");
@@ -128,14 +130,14 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             SqlIdentifier columnIdentifier = (SqlIdentifier) verctorOperandList.get(1);
             int vectorLimit = 10;
             try {
-                vectorLimit = ((Number) Objects.requireNonNull(((SqlNumericLiteral) verctorOperandList.get(3)).getValue())).intValue();
+                vectorLimit = ((Number) Objects.requireNonNull(
+                    ((SqlNumericLiteral) verctorOperandList.get(3)).getValue())).intValue();
             } catch (Exception e) {
                 throw new RuntimeException("The vector topN parameter of the hybrid search function is incorrect");
             }
-            this.vectorIndex = TableFunctionNamespace.getVectorIndexTable(table, columnIdentifier.getSimple().toUpperCase());
-
-            String vectorId = vectorIndex.getColumns().get(0).getName();
-            String vectorDistance = vectorIndex.getName() + "$distance";
+            this.vectorIndex = TableFunctionNamespace.getVectorIndexTable(
+                table, columnIdentifier.getSimple().toUpperCase()
+            );
 
             cols.add(Column
                 .builder()
@@ -162,9 +164,15 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             );
             this.rowType = rowType;
 
-//            if (((DingoSqlValidator)validator).isHybridSearch()) {
-//                throw new RuntimeException("Multiple hybridSearch in SQL is not supported");
-//            }
+            //if (((DingoSqlValidator)validator).isHybridSearch()) {
+            //    throw new RuntimeException("Multiple hybridSearch in SQL is not supported");
+            //}
+            String documentId = documentIndex.getColumns().get(0).getName();
+            String documentRankBm25 = documentIndex.getName() + "$rank_bm25";
+            String documentSelect = this.function.operand(0).toString();
+            String vectorSelect = this.function.operand(1).toString();
+            String vectorId = vectorIndex.getColumns().get(0).getName();
+            String vectorDistance = vectorIndex.getName() + "$distance";
             String sql = HybridSearchSqlUtils.hybridSearchSqlReplace(
                 vectorWeight,
                 documentWeight,

@@ -185,7 +185,8 @@ public abstract class BaseTransaction implements ITransaction {
         }
         if (cache.checkCleanExtraDataContinue()) {
             CompletableFuture.runAsync(() ->
-                cleanUpExtraDataJobRun(jobManager, currentLocation), Executors.executor(txnId.toString() + "-exec-cleanUpExtraData")
+                cleanUpExtraDataJobRun(jobManager, currentLocation),
+                Executors.executor(txnId.toString() + "-exec-cleanUpExtraData")
             ).exceptionally(
                 ex -> {
                     LogUtils.error(log, ex.toString(), ex);
@@ -195,7 +196,9 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    public abstract void resolveWriteConflict(JobManager jobManager, Location currentLocation, RuntimeException e);
+    public abstract void resolveWriteConflict(
+        JobManager jobManager, Location currentLocation, RuntimeException exception
+    );
 
     public abstract void preWritePrimaryKey();
 
@@ -273,12 +276,16 @@ public abstract class BaseTransaction implements ITransaction {
                     .keys(Collections.singletonList(primaryKey))
                     .build();
                 try {
-                    StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
+                    StoreInstance store = Services.KV_STORE.getInstance(
+                        cacheToObject.getTableId(), cacheToObject.getPartId()
+                    );
                     return store.txnCommit(commitRequest);
                 } catch (RegionSplitException e) {
                     LogUtils.error(log, e.getMessage(), e);
                     // 2、regin split
-                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, primaryKey);
+                    CommonId regionId = TransactionUtil.singleKeySplitRegionId(
+                        cacheToObject.getTableId(), txnId, primaryKey
+                    );
                     cacheToObject.setPartId(regionId);
                     Utils.sleep(100);
                 } catch (CommitTsExpiredException e) {
@@ -340,7 +347,7 @@ public abstract class BaseTransaction implements ITransaction {
         try {
             checkContinue();
 
-            if(ScopeVariables.transaction1Pc()) {
+            if (ScopeVariables.transaction1Pc()) {
                 try {
                     //1PC phase。
                     this.status = TransactionStatus.ONE_PC_START;
@@ -358,7 +365,8 @@ public abstract class BaseTransaction implements ITransaction {
                         return;
                     } else {
                         this.status = TransactionStatus.START;
-                        LogUtils.info(log, "{} one pc phase failed, change txn state, status:{}", transactionOf(), this.status);
+                        LogUtils.info(log, "{} one pc phase failed, change txn state, status:{}",
+                            transactionOf(), this.status);
                     }
                 } catch (OnePcMaxSizeExceedException e) {
                     //Need 2PC.
@@ -377,7 +385,7 @@ public abstract class BaseTransaction implements ITransaction {
             }
 
             //2PC phase.
-            if(this.status == TransactionStatus.START && !only2PcCommit) {
+            if (this.status == TransactionStatus.START && !only2PcCommit) {
                 this.status = TransactionStatus.PRE_WRITE_START;
                 LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
 
@@ -390,7 +398,8 @@ public abstract class BaseTransaction implements ITransaction {
                     LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
                     return;
                 }
-                LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}", transactionOf(), Arrays.toString(primaryKey));
+                LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}",
+                    transactionOf(), Arrays.toString(primaryKey));
                 checkContinue();
                 // 2、generator job、task、PreWriteOperator
                 long jobSeqId = TransactionManager.nextTimestamp();
@@ -472,7 +481,7 @@ public abstract class BaseTransaction implements ITransaction {
                     Arrays.toString(primaryKey));
                 rollback(jobManager);
                 throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                    + ",txnCommitPrimaryKey false, commit_ts:" + commitTs +",PrimaryKey:"
+                    + ",txnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
                     + Arrays.toString(primaryKey));
             }
             this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
@@ -505,7 +514,7 @@ public abstract class BaseTransaction implements ITransaction {
             if (!cancel.get()) {
                 commitFuture = null;
             }
-//            cleanUp();
+            //cleanUp();
         }
     }
 
@@ -604,7 +613,7 @@ public abstract class BaseTransaction implements ITransaction {
         if (cacheToObject != null) {
             rollBackPrimaryKey(cacheToObject);
         }
-         Location currentLocation = MetaService.root().currentLocation();
+        Location currentLocation = MetaService.root().currentLocation();
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
             // 1、get commit_ts
@@ -624,7 +633,7 @@ public abstract class BaseTransaction implements ITransaction {
             LogUtils.info(log, "{} RollBack End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - rollBackStart));
             jobManager.removeJob(jobId);
-//            cleanUp();
+            //cleanUp();
         }
     }
 

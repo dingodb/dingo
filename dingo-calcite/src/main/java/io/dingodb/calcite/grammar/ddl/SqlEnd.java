@@ -35,7 +35,7 @@ public class SqlEnd extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlEnd(SqlParserPos pos, boolean pessimistic) {
         super(OPERATOR, pos);

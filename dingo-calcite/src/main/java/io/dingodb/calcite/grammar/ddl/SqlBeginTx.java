@@ -35,7 +35,7 @@ public class SqlBeginTx extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlBeginTx(SqlParserPos pos, String txnMode) {
         super(OPERATOR, pos);

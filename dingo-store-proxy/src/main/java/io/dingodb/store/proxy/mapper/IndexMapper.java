@@ -85,7 +85,8 @@ public interface IndexMapper {
                     );
             }
             builder.properties(toMap(
-                Optional.mapOrNull(indexParameter.getVectorIndexParameter(), VectorIndexParameter::getVectorIndexParameter)
+                Optional.mapOrNull(indexParameter.getVectorIndexParameter(),
+                    VectorIndexParameter::getVectorIndexParameter)
             ));
         } else if (indexParameter.getIndexType() == IndexType.INDEX_TYPE_DOCUMENT) {
             builder.indexType(io.dingodb.meta.entity.IndexType.DOCUMENT);
@@ -108,7 +109,9 @@ public interface IndexMapper {
         }
     }
 
-    default void resetIndexParameter(TableDefinition indexDefinition, io.dingodb.common.table.IndexDefinition indexDef) {
+    default void resetIndexParameter(
+        TableDefinition indexDefinition, io.dingodb.common.table.IndexDefinition indexDef
+    ) {
         Map<String, String> properties = indexDefinition.getProperties();
         String indexType = properties.get("indexType");
         if (indexType.equals("scalar")) {
@@ -136,8 +139,10 @@ public interface IndexMapper {
                 List<ScalarSchemaItem> scalarSchemaItems = new ArrayList<>();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> next = fields.next();
-                    if (!columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()).contains(next.getKey().toUpperCase())) {
-                        throw new RuntimeException("The field: [" + next.getKey() + "] does not exist in the document index");
+                    if (!columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList())
+                        .contains(next.getKey().toUpperCase())) {
+                        throw new RuntimeException("The field: [" + next.getKey()
+                            + "] does not exist in the document index");
                     }
                     json = json.replace(next.getKey(), next.getKey().toUpperCase());
 
@@ -146,9 +151,12 @@ public interface IndexMapper {
                         throw new RuntimeException("Tokenizer parameters not found");
                     }
                     String type = next.getValue().get("tokenizer").get("type").asText();
-                    ColumnDefinition columnDefinition = columns.stream().filter(c -> c.getName().equalsIgnoreCase(next.getKey())).findFirst().orElse(null);
-                    if (columnDefinition != null && !checkType(type.toUpperCase(), columnDefinition.getSqlType().toUpperCase())) {
-                        throw new RuntimeException("Table field type: " + columnDefinition.getSqlType() + " and Tokenizer type : " + type + " do not match");
+                    ColumnDefinition columnDefinition = columns.stream()
+                        .filter(c -> c.getName().equalsIgnoreCase(next.getKey())).findFirst().orElse(null);
+                    if (columnDefinition != null
+                        && !checkType(type.toUpperCase(), columnDefinition.getSqlType().toUpperCase())) {
+                        throw new RuntimeException("Table field type: " + columnDefinition.getSqlType()
+                            + " and Tokenizer type : " + type + " do not match");
                     }
                     ScalarFieldType scalarFieldType;
                     switch (type.toLowerCase()) {
@@ -173,7 +181,8 @@ public interface IndexMapper {
                         default:
                             throw new IllegalStateException("Unsupported type: " + type);
                     }
-                    scalarSchemaItems.add(ScalarSchemaItem.builder().key(next.getKey().toUpperCase()).fieldType(scalarFieldType).build());
+                    scalarSchemaItems.add(ScalarSchemaItem.builder().key(next.getKey().toUpperCase())
+                        .fieldType(scalarFieldType).build());
                 }
                 documentIndexParameter = DocumentIndexParameter.builder()
                     .scalarSchema(ScalarSchema.builder().fields(scalarSchemaItems).build())
@@ -193,7 +202,8 @@ public interface IndexMapper {
         } else {
             VectorIndexParameter vectorIndexParameter;
             int dimension = Optional.mapOrThrow(
-                properties.get("dimension"), Integer::parseInt, indexDefinition.getName() + " vector index dimension is null."
+                properties.get("dimension"), Integer::parseInt,
+                indexDefinition.getName() + " vector index dimension is null."
             );
             MetricType metricType;
             String metricType1 = properties.getOrDefault("metricType", "L2");
@@ -310,7 +320,8 @@ public interface IndexMapper {
     default ScalarValue scalarValueTo(io.dingodb.store.api.transaction.data.ScalarValue scalarValue) {
         return ScalarValue.builder()
             .fieldType(fieldTypeTo(scalarValue.getFieldType()))
-            .fields(scalarValue.getFields().stream().map(f -> scalarFieldTo(f, scalarValue.getFieldType())).collect(Collectors.toList()))
+            .fields(scalarValue.getFields().stream()
+                .map(f -> scalarFieldTo(f, scalarValue.getFieldType())).collect(Collectors.toList()))
             .build();
     }
 

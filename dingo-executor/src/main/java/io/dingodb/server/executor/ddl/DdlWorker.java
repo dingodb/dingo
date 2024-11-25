@@ -473,11 +473,9 @@ public class DdlWorker {
                 if (res.getValue() != null) {
                     return res;
                 }
-                MetaService rootMs = MetaService.root();
-                MetaService ms = rootMs.getSubMetaService(job.getSchemaName());
                 try {
                     start = System.currentTimeMillis();
-                    ms.dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
+                    MetaService.root().dropTable(job.getSchemaId(), tableInfo.getTableDefinition().getName());
                     sub = System.currentTimeMillis() - start;
                     DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
@@ -635,15 +633,15 @@ public class DdlWorker {
                 } else {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE);
                 }
-                Pair<Long, String> res = TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
-                    originState != indexWithId.getTableDefinition().getSchemaState()
-                );
                 try {
                     MetaService.root().dropIndex(table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()));
                 } catch (Exception e) {
                     LogUtils.error(log, "drop index error", e);
                 }
-                return res;
+                return updateSchemaVersion(dc, job);
+                //return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
+                //    originState != indexWithId.getTableDefinition().getSchemaState()
+                //);
             default:
                 error = "ErrInvalidDDLState";
                 break;

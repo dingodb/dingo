@@ -51,6 +51,8 @@ public interface EntityMapper {
         return new CommonId(CommonType.of(id.getEntityType().number), id.getParentEntityId(), id.getEntityId());
     }
 
+    List<CommonId> idFrom(Collection<DingoCommonId> ids);
+
     default DingoCommonId idTo(CommonId id) {
         return DingoCommonId.builder()
             .entityType(EntityType.forNumber(id.type.code))
@@ -59,13 +61,11 @@ public interface EntityMapper {
             .build();
     }
 
+    List<DingoCommonId> idTo(Collection<CommonId> ids);
+
     CommonId copyId(CommonId id);
 
     DingoCommonId copyId(DingoCommonId id);
-
-    List<CommonId> idFrom(Collection<DingoCommonId> ids);
-
-    List<DingoCommonId> idTo(Collection<CommonId> ids);
 
     default Map<String, String> mapping(Properties properties) {
         Map<String, String> result = new HashMap<>();
@@ -109,16 +109,24 @@ public interface EntityMapper {
     })
     CoprocessorV2 coprocessorTo(io.dingodb.common.CoprocessorV2 coprocessor);
 
-    default io.dingodb.sdk.service.entity.store.SchemaWrapper toSchemaWrapper(io.dingodb.common.SchemaWrapper schemaWrapper) {
+    default io.dingodb.sdk.service.entity.store.SchemaWrapper toSchemaWrapper(
+        io.dingodb.common.SchemaWrapper schemaWrapper
+    ) {
         return io.dingodb.sdk.service.entity.store.SchemaWrapper.builder()
-            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
+            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(
+                MAPPER.columnsTo(schemaWrapper.getSchemas())))
+                )
             .commonId(schemaWrapper.getCommonId())
             .build();
     }
 
-    default io.dingodb.sdk.service.entity.common.SchemaWrapper toSchemaWrapper1(io.dingodb.common.SchemaWrapper schemaWrapper) {
+    default io.dingodb.sdk.service.entity.common.SchemaWrapper toSchemaWrapper1(
+        io.dingodb.common.SchemaWrapper schemaWrapper
+    ) {
         return io.dingodb.sdk.service.entity.common.SchemaWrapper.builder()
-            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(MAPPER.columnsTo(schemaWrapper.getSchemas()))))
+            .schema(toSchemas(CodecUtils.createSchemaForColumnDefinitions(
+                MAPPER.columnsTo(schemaWrapper.getSchemas())))
+                )
             .commonId(schemaWrapper.getCommonId())
             .build();
     }

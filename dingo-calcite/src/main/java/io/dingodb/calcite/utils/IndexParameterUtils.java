@@ -21,12 +21,12 @@ import java.util.List;
 
 public final class IndexParameterUtils {
 
-    public final static List<String> vectorKeys = Arrays.asList(
+    public static final List<String> vectorKeys = Arrays.asList(
         "indexType", "type", "metricType", "dimension", "ncentroids", "nsubvector", "bucketInitSize",
         "bucket_init_size", "bucketMaxSize", "bucket_max_size", "nbitsPerIdx", "nbits_per_idx", "efConstruction",
         "maxElements", "max_elements", "nlinks", "valueType", "value_type", "maxDegree", "max_degree", "searchListSize",
         "search_list_size", "qd", "codebookPrefix", "codebook_prefix", "pqDiskBytes", "pq_disk_bytes",
         "appendReorderData", "append_reorder_data", "buildPqBytes", "build_pq_bytes", "useOpq", "use_opq");
 
-    public final static List<String> documentKeys = Arrays.asList("indexType", "text_fields");
+    public static final List<String> documentKeys = Arrays.asList("indexType", "text_fields");
 }

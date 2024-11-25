@@ -41,7 +41,8 @@ public class SqlHybridSearchOperator extends SqlFunction implements SqlTableFunc
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.HYBRID_SEARCH,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableHybridFunctionNamespace namespace = (TableHybridFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableHybridFunctionNamespace namespace
+                    = (TableHybridFunctionNamespace) cx.getValidator().getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
     }

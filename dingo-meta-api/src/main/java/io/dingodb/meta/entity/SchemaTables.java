@@ -58,9 +58,9 @@ public class SchemaTables {
         schemaTables.setSchemaInfo(schemaInfo.copy());
         for (Map.Entry<String, Table> entry : tables.entrySet()) {
             List<Column> copyColList = entry.getValue().columns
-             .stream()
-             .map(Column::copy)
-             .collect(Collectors.toList());
+                .stream()
+                .map(Column::copy)
+                .collect(Collectors.toList());
             schemaTables.tables.put(entry.getKey(), entry.getValue().copyWithColumns(copyColList));
         }
         return schemaTables;

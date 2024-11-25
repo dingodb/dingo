@@ -99,8 +99,8 @@ public final class DingoSort extends Sort implements DingoRel {
         return planner.getCostFactory().makeCost(readCount, cpu, 0.0);
     }
 
-    private static @Nullable Double doubleValue(@Nullable RexNode r) {
-        return r instanceof RexLiteral ? ((RexLiteral)r).getValueAs(Double.class) : null;
+    private static @Nullable Double doubleValue(@Nullable RexNode rexNode) {
+        return rexNode instanceof RexLiteral ? ((RexLiteral)rexNode).getValueAs(Double.class) : null;
     }
 
     @Override

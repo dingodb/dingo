@@ -19,9 +19,9 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
@@ -45,7 +45,7 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public class TxnPartDeleteOperator extends PartModifyOperator {
-    public final static TxnPartDeleteOperator INSTANCE = new TxnPartDeleteOperator();
+    public static final TxnPartDeleteOperator INSTANCE = new TxnPartDeleteOperator();
 
     private TxnPartDeleteOperator() {
     }
@@ -94,7 +94,9 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 }).toArray();
             }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
-            codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+            codec = CodecService.getDefault().createKeyValueCodec(
+                indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+            );
         }
         byte[] keys = wrap(codec::encodeKey).apply(tuple);
         CodecService.getDefault().setId(keys, partId.domain);
@@ -164,7 +166,9 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     param.inc();
                 }
             } else {
-                byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                byte[] rollBackKey = ByteUtils.getKeyByOp(
+                    CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
+                );
                 // first lock and kvGet is null
                 if (localStore.get(rollBackKey) != null) {
                     profile.time(start);
@@ -209,7 +213,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             byte[] insertKey = Arrays.copyOf(keyValue.getKey(), keyValue.getKey().length);
             insertKey[insertKey.length - 2] = (byte) Op.PUT.getCode();
             if (localStore.get(insertKey) != null) {
-               op = Op.PUT;
+                op = Op.PUT;
             }
             localStore.delete(insertKey);
             insertKey[insertKey.length - 2] = (byte) Op.PUTIFABSENT.getCode();

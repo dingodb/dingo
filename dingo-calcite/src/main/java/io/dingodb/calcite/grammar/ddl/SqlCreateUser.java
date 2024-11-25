@@ -58,7 +58,8 @@ public class SqlCreateUser extends SqlCreate {
         this.requireSsl = requireSsl;
         this.lock = lock;
         this.expireDays = expireDays;
-        this.plugin = plugin == null ? "mysql_native_password" : plugin.contains("'") ? plugin.replace("'", ""): plugin;
+        this.plugin = plugin == null ? "mysql_native_password" : plugin.contains("'")
+            ? plugin.replace("'", "") : plugin;
         this.pluginDn = pluginDn == null ? "" : pluginDn.contains("'") ? pluginDn.replace("'", "") : pluginDn;
     }
 
@@ -98,7 +99,8 @@ public class SqlCreateUser extends SqlCreate {
 
     public String toLog() {
         StringBuilder str = new StringBuilder();
-        str.append("CREATE").append(" USER ").append(user).append("@").append(host).append(" IDENTIFIED BY ").append("***");
+        str.append("CREATE").append(" USER ").append(user).append("@").append(host)
+            .append(" IDENTIFIED BY ").append("***");
         if (StringUtils.isNotBlank(requireSsl)) {
             str.append(" REQUIRE ");
             str.append(requireSsl);

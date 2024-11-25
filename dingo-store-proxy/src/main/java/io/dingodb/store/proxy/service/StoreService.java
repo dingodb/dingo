@@ -244,7 +244,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 && (((IndexTable) table).indexType == IndexType.DOCUMENT)) {
                 documentService = documentService(tableId, regionId);
             }
-            this.transactionStoreInstance = new TransactionStoreInstance(storeService, indexService, documentService, partitionId);
+            this.transactionStoreInstance = new TransactionStoreInstance(
+                storeService, indexService, documentService, partitionId
+            );
         }
 
         public StoreInstance(CommonId tableId, CommonId regionId, CommonId indexId) {
@@ -438,7 +440,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                             requestTs,
                             KvBatchDeleteRequest
                                 .builder()
-                                .keys(singletonList(indexCodec.resetPrefix(oldKv.getKey(), regionId.getParentEntityId())))
+                                .keys(singletonList(indexCodec.resetPrefix(oldKv.getKey(),
+                                    regionId.getParentEntityId())))
                                 .build()
                         );
                     }
@@ -563,7 +566,6 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
 
             List<VectorWithId> vectors = new ArrayList<>();
             IndexTable indexTable = tableMap.get(indexId);
-            boolean isTxn = indexTable.getEngine().contains("TXN");
 
             Vector vector = Vector.builder()
                 .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
@@ -597,6 +599,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             if (results == null) {
                 return vectorSearchResponseList;
             }
+            boolean isTxn = indexTable.getEngine().contains("TXN");
             for (VectorWithDistanceResult vectorWithDistanceResult : results) {
                 if (vectorWithDistanceResult == null) {
                     continue;
@@ -763,7 +766,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     if (o != null) {
                         recallNum = ((Number) o).intValue();
                     }
-                    return SearchNest.IvfPq.builder().nprobe(np).parallelOnQueries(parallels).recallNum(recallNum).build();
+                    return SearchNest.IvfPq.builder().nprobe(np).parallelOnQueries(parallels)
+                        .recallNum(recallNum).build();
                 case VECTOR_HNSW:
                     int efSearch = 10;
                     o = parameterMap.get("efSearch");

@@ -171,7 +171,6 @@ public class ShowLocksExecutor extends QueryExecutor {
         while (iterator.hasNext()) {
             Object[] lockKeyTuple = ByteUtils.decode(iterator.next());
             TxnLocalData txnLocalData = (TxnLocalData) lockKeyTuple[0];
-            CommonId txnId = txnLocalData.getTxnId();
             CommonId tableId = txnLocalData.getTableId();
             String[] lock = new String[COLUMNS.size()];
             lock[SERVER_INDEX] = DingoConfiguration.serverId().toString();
@@ -179,6 +178,7 @@ public class ShowLocksExecutor extends QueryExecutor {
             if (table == null) {
                 continue;
             }
+            CommonId txnId = txnLocalData.getTxnId();
             lock[TABLE_INDEX] = table.name;
             lock[SCHEMA_INDEX] = getSchema(tableId);
             lock[TXN_INDEX] = txnId.toString();
@@ -218,55 +218,15 @@ public class ShowLocksExecutor extends QueryExecutor {
         }
     }
 
-//    private static void addTableLocks(long tso, List<String[]> locks) {
-//        List<TableLock> tableLocks = TableLockService.getDefault().allTableLocks();
-//        List<Location> locations = ClusterService.getDefault().getComputingLocations();
-//        locations.remove(DingoConfiguration.location());
-//        tableLocks.addAll(locations.stream()
-//            .map($ -> ApiRegistry.getDefault().proxy(Api.class, $))
-//            .flatMap($ -> {
-//                    try {
-//                        return $.tableLocks().stream();
-//                    } catch (Throwable throwable) {
-//                        Throwable extractThrowable = Utils.extractThrowable(throwable);
-//                        LogUtils.error(log, extractThrowable.getMessage(), extractThrowable);
-//                        throw new RuntimeException($.toString() + " connection refused, retry in 20 seconds.");
-//                    }
-//                })
-//            .filter($ -> $.getType() == ROW)
-//            .collect(Collectors.toCollection(ArrayList::new)));
-//        tableLocks.stream().distinct().forEach(tableLock -> {
-//            // todo require filter?
-////            if (tableLock.getType() == ROW && tableLock.lockFuture.isDone()) {
-////                return;
-////            }
-//            CompletableFuture<Boolean> lockFuture = tableLock.getLockFuture();
-//            String[] lock = new String[COLUMNS.size()];
-//            CommonId txnId = new CommonId(TRANSACTION, tableLock.lockTs, tableLock.currentTs);
-//            CommonId tableId = tableLock.tableId;
-//            Table table = MetaService.root().getTable(tableId);
-//            if (table == null) {
-//                return;
-//            }
-//            lock[SERVER_INDEX] = tableLock.getServerId().toString();
-//            lock[TXN_INDEX] = txnId.toString();
-//            lock[TABLE_INDEX] = MetaService.root().getTable(tableId).name;
-//            lock[SCHEMA_INDEX] = getSchema(tableId);
-//            lock[STATUS_INDEX] = lockFuture == null ? "-" : lockFuture.isDone() && !lockFuture.isCancelled() ? LOCKED : BLOCK;
-//            lock[KEY_INDEX] = "-";
-//            lock[TYPE_INDEX] = tableLock.getType() == TABLE ? TABLE_TYPE : ROW_TYPE;
-//            lock[DURATION_INDEX] = String.valueOf(tsoService.timestamp(tso) - tsoService.timestamp(txnId.seq));
-//            locks.add(lock);
-//        });
-//    }
-
     private static String lockKey(CommonId tableId, byte[] keyBytes) {
         InfoSchema is = InfoCache.infoCache.getLatest();;
         Table table = is.getTable(tableId.seq);
         if (table == null) {
             return "";
         }
-        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            table.version, table.tupleType(), table.keyMapping()
+        );
         return Utils.buildKeyStr(table.keyMapping(), codec.decodeKeyPrefix(keyBytes));
     }
 

@@ -353,6 +353,10 @@ public final class DdlHandler {
         String markDel, String relatedIndex,
         String connId
     ) {
+        List<Object> args = new ArrayList<>();
+        args.add(columnName);
+        args.add(markDel);
+        args.add(relatedIndex);
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
             .tableId(tableId)
@@ -361,10 +365,6 @@ public final class DdlHandler {
             .schemaState(SchemaState.SCHEMA_PUBLIC)
             .actionType(ActionType.ActionDropColumn)
             .build();
-        List<Object> args = new ArrayList<>();
-        args.add(columnName);
-        args.add(markDel);
-        args.add(relatedIndex);
         job.setArgs(args);
         try {
             doDdlJob(job);

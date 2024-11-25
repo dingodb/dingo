@@ -22,6 +22,7 @@ import java.util.List;
 
 public class ShowStatusExecutor extends QueryExecutor {
     String sqlLikePattern;
+
     public ShowStatusExecutor(String sqlLikePattern) {
         this.sqlLikePattern = sqlLikePattern;
     }

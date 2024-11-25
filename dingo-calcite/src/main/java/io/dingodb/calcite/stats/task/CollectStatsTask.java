@@ -109,7 +109,9 @@ public class CollectStatsTask implements Callable<TableStats> {
         } else {
             Iterator<KeyValue> iterator = kvStore.txnScan(
                 startTs,
-                new StoreInstance.Range(region.getStartKey(), region.getEndKey(), region.isWithStart(), region.isWithEnd()),
+                new StoreInstance.Range(
+                    region.getStartKey(), region.getEndKey(), region.isWithStart(), region.isWithEnd()
+                ),
                 timeout
             );
             tupleIterator = Iterators.transform(iterator,

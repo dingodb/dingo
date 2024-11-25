@@ -50,7 +50,6 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
     }
 
     public static void delete(DingoWithoutPriModifyRule rule, @NonNull RelOptRuleCall call) {
-        LogicalTableModify modify = call.rel(0);
         LogicalDingoTableScan tableScan = call.rel(1);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
@@ -87,13 +86,12 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
         newScan.setSelectionForDml(actualSelection);
         List<RelNode> inputs = new ArrayList<>();
         inputs.add(newScan);
+        LogicalTableModify modify = call.rel(0);
         LogicalTableModify newModify = modify.copy(modify.getTraitSet(), inputs);
         call.transformTo(newModify);
     }
 
     public static void update(DingoWithoutPriModifyRule rule, @NonNull RelOptRuleCall call) {
-        LogicalTableModify modify = call.rel(0);
-        LogicalProject project = call.rel(1);
         LogicalDingoTableScan tableScan = call.rel(2);
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
         assert dingoTable != null;
@@ -129,11 +127,13 @@ public class DingoWithoutPriModifyRule extends RelRule<DingoWithoutPriModifyRule
         );
         newScan.setSelectionForDml(actualSelection);
 
+        LogicalProject project = call.rel(1);
         LogicalProject logicalProject = LogicalProject.create(newScan, project.getHints(),
             project.getProjects(), project.getRowType());
 
         List<RelNode> inputs = new ArrayList<>();
         inputs.add(logicalProject);
+        LogicalTableModify modify = call.rel(0);
         LogicalTableModify newModify = modify.copy(modify.getTraitSet(), inputs);
         call.transformTo(newModify);
     }

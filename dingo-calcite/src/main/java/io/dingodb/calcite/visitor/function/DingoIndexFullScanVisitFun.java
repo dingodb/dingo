@@ -77,11 +77,9 @@ public final class DingoIndexFullScanVisitFun {
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaService.root();
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         CommonId idxId = rel.getIndexId();
-        Table indexTd = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges = metaService
             .getRangeDistribution(idxId);
         DistributionSourceParam distributionParam = new DistributionSourceParam(
@@ -113,8 +111,9 @@ public final class DingoIndexFullScanVisitFun {
         }
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
-
-        List<Integer> indexSelectionList = indexTd.getColumns().stream().map(td.columns::indexOf).collect(Collectors.toList());
+        Table indexTd = rel.getIndexTable();
+        List<Integer> indexSelectionList = indexTd.getColumns().stream()
+            .map(td.columns::indexOf).collect(Collectors.toList());
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList
         );
@@ -133,6 +132,7 @@ public final class DingoIndexFullScanVisitFun {
             }
         }
 
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Vertex indexScanvertex = null;
         if (transaction != null) {
             indexScanvertex = new Vertex(TXN_INDEX_RANGE_SCAN, new TxnIndexRangeScanParam(

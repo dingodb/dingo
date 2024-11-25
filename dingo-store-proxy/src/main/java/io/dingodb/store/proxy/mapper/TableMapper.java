@@ -53,8 +53,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.xml.bind.ValidationException;
-
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.partition.DingoPartitionServiceProvider.RANGE_FUNC_NAME;
 import static io.dingodb.sdk.service.entity.meta.PartitionStrategy.PT_STRATEGY_HASH;
@@ -198,7 +196,9 @@ public interface TableMapper {
             codec,
             fromPartitionStrategy(partitionRule.getStrategy()))
         );
-        builder.schemaState(io.dingodb.common.meta.SchemaState.get(tableWithId.getTableDefinition().getSchemaState().number));
+        builder.schemaState(io.dingodb.common.meta.SchemaState.get(
+            tableWithId.getTableDefinition().getSchemaState().number)
+        );
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.indexes(indexes.stream().map($ -> indexTableFrom(builder, $, Collections.emptyList()))
             .collect(Collectors.toList()));
@@ -210,7 +210,6 @@ public interface TableMapper {
         io.dingodb.sdk.service.entity.meta.TableDefinitionWithId tableWithId,
         List<io.dingodb.sdk.service.entity.meta.TableDefinitionWithId> indexes
     ) {
-        Table table = tableBuilder.build();
         IndexTable.IndexTableBuilder builder = IndexTable.builder();
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
         tableFrom(definition, builder);
@@ -223,6 +222,7 @@ public interface TableMapper {
             codec,
             fromPartitionStrategy(partitionRule.getStrategy())
         ));
+        Table table = tableBuilder.build();
         builder.tableId(MAPPER.idFrom(tableWithId.getTableId()));
         builder.primaryId(table.tableId);
         List<String> names = definition.getColumns().stream()
@@ -230,7 +230,9 @@ public interface TableMapper {
             .collect(Collectors.toList());
         List<Integer> columnIndices = table.getColumnIndices(names);
         builder.mapping(TupleMapping.of(columnIndices));
-        builder.schemaState(io.dingodb.common.meta.SchemaState.get(tableWithId.getTableDefinition().getSchemaState().number));
+        builder.schemaState(io.dingodb.common.meta.SchemaState.get(
+            tableWithId.getTableDefinition().getSchemaState().number)
+        );
         MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }
@@ -256,7 +258,8 @@ public interface TableMapper {
         );
         definition.setName(definition.getName().toUpperCase());
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
-        return TableDefinitionWithId.builder().tenantId(tenantId).tableDefinition(definition).tableId(ids.getTableId()).build();
+        return TableDefinitionWithId.builder().tenantId(tenantId).tableDefinition(definition)
+            .tableId(ids.getTableId()).build();
     }
 
     default SchemaState convertSchemaState(io.dingodb.common.meta.SchemaState schemaState) {

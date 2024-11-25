@@ -19,9 +19,9 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -120,7 +120,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 }
                 tableId = context.getIndexId();
                 schema = indexTable.tupleType();
-                codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                codec = CodecService.getDefault().createKeyValueCodec(
+                    indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                );
                 Object[] finalNewTuple = newTuple;
                 Object finalDefaultVal = defaultVal;
                 newTuple = columnIndices.stream().map(c -> {
@@ -176,7 +178,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     LogUtils.warn(log, "{} updated is false key is {}", txnId, Arrays.toString(key));
                     // data is not exist local store
                     if (oldKeyValue == null) {
-                        byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                        byte[] rollBackKey = ByteUtils.getKeyByOp(
+                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
+                        );
                         KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                         LogUtils.debug(log, "{}, updated is false residual key is:{}",
                             txnId, Arrays.toString(rollBackKey));
@@ -211,7 +215,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         }
                     }
                 } else {
-                    byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey);
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(
+                        CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
+                    );
                     // first lock and kvGet is null
                     if (localStore.get(rollBackKey) != null) {
                         return true;
@@ -241,7 +247,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             } else {
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
-                LogUtils.debug(log, "{} update key is {}, partId is {}", txnId, Arrays.toString(keyValue.getKey()), partId);
+                LogUtils.debug(log, "{} update key is {}, partId is {}",
+                    txnId, Arrays.toString(keyValue.getKey()), partId);
                 if (calcPartId) {
                     // begin insert update commit
                     byte[] oldKey = wrap(codec::encodeKey).apply(copyTuple);
@@ -310,8 +317,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             oldKey = value.getKey();
                             if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                                 || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                                throw new DuplicateEntryException("Duplicate entry " +
-                                    TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                                throw new DuplicateEntryException("Duplicate entry "
+                                    + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                             } else {
                                 // delete  ->  insert  convert --> put
                                 insertKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
@@ -319,7 +326,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             }
                         } else {
                             keyValue.setKey(
-                                ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
+                                ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                                Op.CheckNotExists, insertKey)
                             );
                             localStore.put(keyValue);
                         }
@@ -337,7 +345,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             tableIdBytes,
                             partIdBytes
                         );
-                        localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
+                        localStore.put(
+                            new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
+                        );
                         if (localStore.put(keyValue) && context.getIndexId() == null) {
                             param.inc();
                             context.addKeyState(true);
@@ -375,7 +385,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         tableIdBytes,
                         partIdBytes
                     );
-                    localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
+                    localStore.put(
+                        new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
+                    );
                     localStore.delete(keyValue.getKey());
                     if (localStore.put(keyValue) && context.getIndexId() == null) {
                         param.inc();

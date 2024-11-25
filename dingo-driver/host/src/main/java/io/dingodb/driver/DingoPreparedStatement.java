@@ -16,10 +16,10 @@
 
 package io.dingodb.driver;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.driver.type.converter.TypedValueConverter;
-import io.dingodb.common.CommonId;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import lombok.Getter;
@@ -148,6 +148,7 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
         }
         return null;
     }
+
     public void setTxnId(@NonNull JobManager jobManager, @NonNull CommonId txnId) {
         Meta.Signature signature = getSignature();
         if (signature instanceof DingoSignature) {
@@ -186,33 +187,33 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
     }
 
     /**
-     * long bytes need append to slots on prepare statement
+     * long bytes need append to slots on prepare statement.
      * @param parameterIndex the first parameter is 1, the second is 2, ...
-     * @param x the parameter value
+     * @param bytesVal the parameter value
      * @throws SQLException e
      */
     @Override
-    public void setBytes(int parameterIndex, byte[] x) throws SQLException {
+    public void setBytes(int parameterIndex, byte[] bytesVal) throws SQLException {
         if (slots.length >= parameterIndex) {
             TypedValue value = slots[parameterIndex - 1];
             if (value == null) {
-                super.setBytes(parameterIndex, x);
+                super.setBytes(parameterIndex, bytesVal);
             } else {
                 // base64 encode
                 String valStr = (String) value.value;
                 byte[] preBytes = ByteString.ofBase64(valStr).getBytes();
-                byte[] bytes = new byte[preBytes.length + x.length];
+                byte[] bytes = new byte[preBytes.length + bytesVal.length];
                 System.arraycopy(preBytes, 0, bytes, 0, preBytes.length);
-                System.arraycopy(x, 0, bytes, preBytes.length, x.length);
+                System.arraycopy(bytesVal, 0, bytes, preBytes.length, bytesVal.length);
                 super.setBytes(parameterIndex, bytes);
             }
         } else {
-            super.setBytes(parameterIndex, x);
+            super.setBytes(parameterIndex, bytesVal);
         }
     }
 
     /**
-     * prepare statement add batch : first with type to cache,secondly without type;
+     * prepare statement add batch : first with type to cache,secondly without type.
      * @param types data schema
      */
     public void setBoundTypes(Integer[] types) {

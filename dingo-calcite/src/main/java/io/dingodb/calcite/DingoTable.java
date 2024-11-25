@@ -113,7 +113,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             null,
             null,
             ((DingoParserContext) context.getCluster().getPlanner().getContext()).isPushDown(),
-                // && Optional.mapOrGet(table.engine, __ -> !__.contains("TXN"), () -> true),
+            // && Optional.mapOrGet(table.engine, __ -> !__.contains("TXN"), () -> true),
             false
         );
     }

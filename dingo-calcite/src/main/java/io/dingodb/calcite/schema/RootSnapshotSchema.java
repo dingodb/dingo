@@ -40,11 +40,9 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Schemas;
-
 import org.apache.calcite.schema.Table;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +91,7 @@ public class RootSnapshotSchema implements Schema {
     }
 
     @Override
-    public @Nullable Table getTable(String s) {
+    public @Nullable Table getTable(String name) {
         return null;
     }
 
@@ -103,7 +101,7 @@ public class RootSnapshotSchema implements Schema {
     }
 
     @Override
-    public @Nullable RelProtoDataType getType(String s) {
+    public @Nullable RelProtoDataType getType(String type) {
         return null;
     }
 
@@ -113,7 +111,7 @@ public class RootSnapshotSchema implements Schema {
     }
 
     @Override
-    public Collection<Function> getFunctions(String s) {
+    public Collection<Function> getFunctions(String fun) {
         return ImmutableSet.of();
     }
 

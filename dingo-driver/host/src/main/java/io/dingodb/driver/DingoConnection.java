@@ -79,7 +79,8 @@ import java.util.concurrent.TimeoutException;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
 @Slf4j
-public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context{
+public class DingoConnection extends AvaticaConnection implements CalcitePrepare.Context {
+
     @Getter
     private final DingoParserContext context;
 
@@ -138,8 +139,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
             Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
             this.setClientInfo(globalProp);
-        } catch (Exception ignore) {
-
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 
@@ -232,8 +233,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 txIsolation = getClientInfo("transaction_isolation");
             }
             if (type == TransactionType.OPTIMISTIC && "READ-COMMITTED".equalsIgnoreCase(txIsolation)) {
-                throw new RuntimeException("Optimistic transaction only support" +
-                    " read committed transaction isolation level");
+                throw new RuntimeException("Optimistic transaction only support"
+                    + " read committed transaction isolation level");
             }
             if (!this.getContext().keyExists("sql_log")) {
                 LogUtils.info(log, "create transaction, startTs:{}, type:{}, txIsolation:{}, autoCommit:{}",
@@ -306,8 +307,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             getMeta().cleanTransaction();
         }
         if (!autoCommit) {
-            createTransaction("pessimistic".equalsIgnoreCase(getClientInfo("txn_mode")) ?
-                TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
+            createTransaction("pessimistic".equalsIgnoreCase(getClientInfo("txn_mode"))
+                ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
             this.autoCommit = false;
         }
     }
@@ -473,7 +474,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         if (name.equalsIgnoreCase("transaction_isolation")
             || name.equalsIgnoreCase("onetime_transaction_isolation")) {
             if (transaction != null) {
-                throw new RuntimeException("Transaction characteristics can't be changed while a transaction is in progress");
+                throw new RuntimeException(
+                    "Transaction characteristics can't be changed while a transaction is in progress"
+                );
             }
             if (name.startsWith("onetime_transaction_isolation")) {
                 oneTimeTxIsolation = value;
@@ -495,16 +498,6 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     @Override
-    public String getClientInfo(String name) {
-        return sessionVariables.getProperty(name);
-    }
-
-    @Override
-    public Properties getClientInfo() {
-        return sessionVariables;
-    }
-
-    @Override
     public void setClientInfo(Properties properties) {
         sessionVariables.putAll(properties);
         sessionVariables.remove("metric_log_enable");
@@ -521,6 +514,16 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 SessionVariableChange.builder().id(id).name("interactive_timeout").value(value).build()
             );
         }
+    }
+
+    @Override
+    public String getClientInfo(String name) {
+        return sessionVariables.getProperty(name);
+    }
+
+    @Override
+    public Properties getClientInfo() {
+        return sessionVariables;
     }
 
     static class DingoDataContext implements DataContext {

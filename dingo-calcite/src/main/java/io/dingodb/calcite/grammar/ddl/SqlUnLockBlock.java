@@ -30,7 +30,7 @@ public class SqlUnLockBlock extends SqlUnLock {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlUnLockBlock(SqlParserPos pos) {
         super(OPERATOR, pos);

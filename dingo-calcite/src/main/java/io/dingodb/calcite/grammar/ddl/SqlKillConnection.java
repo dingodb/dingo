@@ -30,8 +30,8 @@ public class SqlKillConnection extends SqlKill {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
-     * @param threadId
+     * @param pos pos
+     * @param threadId threadId
      */
     public SqlKillConnection(SqlParserPos pos, String threadId) {
         super(OPERATOR, pos, threadId);

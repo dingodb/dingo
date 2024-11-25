@@ -39,7 +39,7 @@ public class SqlExportData extends SqlDdl {
     /**
      * Creates a SqlDdl.
      *
-     * @param pos
+     * @param pos pos
      */
     public SqlExportData(SqlParserPos pos) {
         super(OPERATOR, pos);

@@ -41,7 +41,8 @@ public class ShowTenantExecutor extends QueryExecutor {
         if (TenantConstant.TENANT_ID == 0) {
             tenantStream = service.listTenant().stream().map(o -> (Tenant) o);
         } else {
-            tenantStream = service.listTenant().stream().map(o -> (Tenant) o).filter(t -> t.getId() == TenantConstant.TENANT_ID);
+            tenantStream = service.listTenant().stream()
+                .map(o -> (Tenant) o).filter(t -> t.getId() == TenantConstant.TENANT_ID);
         }
         return tenantStream
             .map(t -> new Object[] {

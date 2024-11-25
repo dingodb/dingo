@@ -108,7 +108,9 @@ public class IndexValueMapSetVisitor extends RexVisitorImpl<IndexValueMapSet<Int
             case IS_NULL:
                 if (operands.get(0).isA(SqlKind.INPUT_REF)) {
                     RexInputRef inputRef = (RexInputRef) operands.get(0);
-                    return IndexValueMapSet.single(inputRef.getIndex(), rexBuilder.makeLiteral(null, inputRef.getType()));
+                    return IndexValueMapSet.single(
+                        inputRef.getIndex(), rexBuilder.makeLiteral(null, inputRef.getType())
+                    );
                 }
                 break;
             default:

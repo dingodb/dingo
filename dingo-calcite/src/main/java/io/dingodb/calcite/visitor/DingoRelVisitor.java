@@ -24,30 +24,30 @@ import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
-import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoGetDocumentPreFilter;
+import io.dingodb.calcite.rel.DingoGetVectorByDistance;
 import io.dingodb.calcite.rel.DingoHybridSearch;
-import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoLikeScan;
 import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
-import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
-import io.dingodb.calcite.rel.dingo.DingoRoot;
-import io.dingodb.calcite.rel.dingo.DingoSort;
-import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
-import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
+import io.dingodb.calcite.rel.VectorStreamConvertor;
+import io.dingodb.calcite.rel.dingo.DingoHashJoin;
+import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
 import io.dingodb.calcite.rel.dingo.DingoRelOp;
+import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.rel.dingo.DingoScanWithRelOp;
+import io.dingodb.calcite.rel.dingo.DingoSort;
+import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -109,15 +109,15 @@ public interface DingoRelVisitor<T> {
 
     T visit(@NonNull DingoExportData rel);
 
+    T visit(@NonNull IndexFullScan indexFullScan);
+
+    T visit(@NonNull IndexRangeScan indexRangeScan);
+
     T visitDingoRelOp(@NonNull DingoRelOp rel);
 
     T visitDingoScanWithRelOp(@NonNull DingoScanWithRelOp rel);
 
     T visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel);
-
-    T visit(@NonNull IndexFullScan indexFullScan);
-
-    T visit(@NonNull IndexRangeScan indexRangeScan);
 
     T visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel);
 }

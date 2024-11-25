@@ -44,9 +44,9 @@ import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocuementIndexName;
+import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocuementTabName;
 import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocumentQueryStr;
 import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocumentTopK;
-import static io.dingodb.calcite.visitor.function.DingoDocumentVisitFun.getDocuementTabName;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DOCUMENT_PRE_FILTER;
 
 public final class DingoGetDocumentPreFilterVisitFun {
@@ -132,10 +132,12 @@ public final class DingoGetDocumentPreFilterVisitFun {
         Integer topk = getDocumentTopK(operandList).intValue();
         return topk;
     }
-    public static Table getTable(DingoRelOptTable dingoRelOptTable){
+
+    public static Table getTable(DingoRelOptTable dingoRelOptTable) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         return dingoTable.getTable();
     }
+
     private static IndexTable getDocumentIndexTable(DingoRelOptTable dingoRelOptTable) {
         DingoTable dingoTable = dingoRelOptTable.unwrap(DingoTable.class);
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
@@ -143,7 +145,7 @@ public final class DingoGetDocumentPreFilterVisitFun {
             if (index.getIndexType() != IndexType.DOCUMENT) {
                 continue;
             }
-                return index;
+            return index;
         }
         return null;
     }

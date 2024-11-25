@@ -49,7 +49,8 @@ public class IndexRangeScan extends LogicalIndexRangeScan implements DingoRel {
                           boolean pushDown,
                           boolean lookup,
                           int keepSerialOrder) {
-        super(cluster, traitSet, hints, table, filter, selection, indexTable, indexId, pushDown, lookup, keepSerialOrder);
+        super(cluster, traitSet, hints, table, filter, selection, indexTable,
+            indexId, pushDown, lookup, keepSerialOrder);
     }
 
     @Override

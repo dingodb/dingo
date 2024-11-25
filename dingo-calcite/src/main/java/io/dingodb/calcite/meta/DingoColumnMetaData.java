@@ -34,7 +34,9 @@ public class DingoColumnMetaData extends ColumnMetaData {
         boolean definitelyWritable, String columnClassName,
         boolean hidden
     ) {
-        super(ordinal, autoIncrement, caseSensitive, searchable, currency, nullable, signed, displaySize, label, columnName, schemaName, precision, scale, tableName, catalogName, type, readOnly, writable, definitelyWritable, columnClassName);
+        super(ordinal, autoIncrement, caseSensitive, searchable, currency, nullable, signed,
+            displaySize, label, columnName, schemaName, precision, scale, tableName, catalogName, type, readOnly,
+            writable, definitelyWritable, columnClassName);
         this.hidden = hidden;
     }
 }

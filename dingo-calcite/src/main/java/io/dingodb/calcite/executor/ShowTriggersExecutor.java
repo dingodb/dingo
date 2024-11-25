@@ -22,6 +22,7 @@ import java.util.List;
 
 public class ShowTriggersExecutor  extends QueryExecutor {
     String sqlLikePattern;
+
     public ShowTriggersExecutor(String sqlLikePattern) {
         this.sqlLikePattern = sqlLikePattern;
     }

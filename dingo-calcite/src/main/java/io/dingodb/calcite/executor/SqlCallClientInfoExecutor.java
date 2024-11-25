@@ -26,6 +26,7 @@ public class SqlCallClientInfoExecutor implements DdlExecutor {
     private final Connection connection;
 
     private final SqlCall sqlCall;
+
     public SqlCallClientInfoExecutor(Connection connection, SqlCall call) {
         this.connection = connection;
         this.sqlCall = call;

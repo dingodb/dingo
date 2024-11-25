@@ -102,7 +102,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
 
     /**
      * Get the information of running transaction.
-     * @return
+     * @return iterator
      */
     @Override
     public Iterator<Object[]> getTxnInfo() {
@@ -113,7 +113,6 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
             .map(dc -> {
                 long jobId = dc.getMdlLockJobMap().keySet().stream().findFirst().orElse(0L);
                 ITransaction transaction = dc.getTransaction();
-                List<String> sqlList = dc.getTransaction().getSqlList();
                 Object[] res = new Object[17];
 
                 //Get transaction id as string.
@@ -133,6 +132,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
 
                 //Get sql list in transaction as string.
                 StringBuilder sqlBuilder = new StringBuilder();
+                List<String> sqlList = dc.getTransaction().getSqlList();
                 for (String sql : sqlList) {
                     sqlBuilder.append(sql).append(";");
                 }
@@ -176,7 +176,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                         }
                         res[12] = hexString;
                     }
-                } catch(UnsupportedOperationException e) {
+                } catch (UnsupportedOperationException e) {
                     res[12] = "";
                 }
 
@@ -194,7 +194,7 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                 res[15] = String.valueOf(transaction.getIsCrossNode());
 
                 //Get cross channel infos.
-                if(transaction.getIsCrossNode()) {
+                if (transaction.getIsCrossNode()) {
                     StringBuffer stringBuf = new StringBuffer();
                     transaction.getChannelMap().forEach(
                         (k,v ) -> {
@@ -212,7 +212,8 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
     }
 
     @AutoService(io.dingodb.transaction.api.TransactionServiceProvider.class)
-    public static final class TransactionServiceProvider implements io.dingodb.transaction.api.TransactionServiceProvider {
+    public static final class TransactionServiceProvider
+        implements io.dingodb.transaction.api.TransactionServiceProvider {
 
         @Override
         public TransactionService get() {

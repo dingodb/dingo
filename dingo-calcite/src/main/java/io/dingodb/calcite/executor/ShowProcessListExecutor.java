@@ -60,12 +60,13 @@ public class ShowProcessListExecutor extends QueryExecutor {
             processInfo.getDb(),
             processInfo.getCommand(), processInfo.getTime(), processInfo.getState(), processInfo.getInfo(),
             processInfo.getType(), processInfo.getTxnIdStr()
-        }).collect(Collectors.toList());
+            }).collect(Collectors.toList());
         return tupleList.iterator();
     }
 
     @Override
-    public List<String> columns() {List<String> columns = new ArrayList<>();
+    public List<String> columns() {
+        List<String> columns = new ArrayList<>();
         columns.add("id");
         columns.add("User");
         columns.add("Host");

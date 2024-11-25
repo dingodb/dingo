@@ -136,10 +136,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
-                                 boolean checkRoot, ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables) {
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind,
+                                 ExecuteVariables executeVariables) {
         try {
             IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
-            DingoJobVisitor visitor = new DingoJobVisitor(job, idGenerator, currentLocation, transaction, kind, executeVariables);
+            DingoJobVisitor visitor = new DingoJobVisitor(
+                job, idGenerator, currentLocation, transaction, kind, executeVariables
+            );
             Collection<Vertex> outputs = dingo(input).accept(visitor);
             if (checkRoot && !outputs.isEmpty()) {
                 throw new IllegalStateException("There root of plan must be `DingoRoot`.");
@@ -297,6 +300,15 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     }
 
     @Override
+    public Collection<Vertex> visit(@NonNull IndexFullScan rel) {
+        return DingoIndexFullScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
+    }
+
+    public Collection<Vertex> visit(@NonNull IndexRangeScan rel) {
+        return DingoIndexRangeScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
+    }
+
+    @Override
     public Collection<Vertex> visitDingoRelOp(@NonNull DingoRelOp rel) {
         return DingoRelOpVisitFun.visit(job, idGenerator, currentLocation, this, rel);
     }
@@ -309,15 +321,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Override
     public Collection<Vertex> visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel) {
         return DingoReduceAggregateVisitFun.visit(job, idGenerator, currentLocation, this, rel);
-    }
-
-    @Override
-    public Collection<Vertex> visit(@NonNull IndexFullScan rel) {
-        return DingoIndexFullScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
-    }
-
-    public Collection<Vertex> visit(@NonNull IndexRangeScan rel) {
-        return DingoIndexRangeScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, rel);
     }
 
     @Override

@@ -38,17 +38,17 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.DdlService;
-import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.InfoSchema;
-import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -230,11 +230,11 @@ public class LoadDataExecutor implements DmlExecutor {
             throw DingoResource.DINGO_RESOURCE.loadDataError().ex();
         }
         future.whenCompleteAsync((r, e) -> {
-             if (r != null) {
-                 if (!loadDataRead.isDone()) {
-                     loadDataRead.cancel(true);
-                 }
-             }
+            if (r != null) {
+                if (!loadDataRead.isDone()) {
+                    loadDataRead.cancel(true);
+                }
+            }
         });
         return true;
     }

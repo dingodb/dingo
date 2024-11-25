@@ -27,12 +27,12 @@ import io.dingodb.sdk.service.entity.store.TxnCommitRequest;
 import io.dingodb.sdk.service.entity.store.TxnPessimisticLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnPessimisticRollbackRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
+import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanRequest;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.DocumentValue;
 import io.dingodb.store.api.transaction.data.DocumentWithScore;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -83,7 +83,9 @@ public interface TxnMapper {
         return Op.forNumber(op.getCode());
     }
 
-    DocumentSearchParameter documentSearchParamTo(io.dingodb.store.api.transaction.data.DocumentSearchParameter documentSearchParameter);
+    DocumentSearchParameter documentSearchParamTo(
+        io.dingodb.store.api.transaction.data.DocumentSearchParameter documentSearchParameter
+    );
 
     DocumentWithScore documentWithScoreTo(io.dingodb.sdk.service.entity.common.DocumentWithScore documentWithScore);
 
@@ -94,7 +96,16 @@ public interface TxnMapper {
             .build();
     }
 
-    default DocumentValue.ScalarFieldType scalarFieldTypeTo(io.dingodb.sdk.service.entity.common.ScalarFieldType scalarFieldType) {
+    default io.dingodb.sdk.service.entity.common.DocumentValue documentValueTo(DocumentValue documentValue) {
+        return io.dingodb.sdk.service.entity.common.DocumentValue.builder()
+            .fieldType(scalarFieldTypeTo(documentValue.getFieldType()))
+            .fieldValue(scalarFieldTo(documentValue.getFieldValue(), documentValue.getFieldType()))
+            .build();
+    }
+
+    default DocumentValue.ScalarFieldType scalarFieldTypeTo(
+        io.dingodb.sdk.service.entity.common.ScalarFieldType scalarFieldType
+    ) {
         switch (scalarFieldType) {
             case BOOL:
                 return DocumentValue.ScalarFieldType.BOOL;
@@ -115,6 +126,26 @@ public interface TxnMapper {
         }
     }
 
+    default ScalarFieldType scalarFieldTypeTo(DocumentValue.ScalarFieldType fieldType) {
+        switch (fieldType) {
+            case BOOL:
+                return ScalarFieldType.BOOL;
+            case INTEGER:
+                return ScalarFieldType.INT32;
+            case LONG:
+                return ScalarFieldType.INT64;
+            case FLOAT:
+                return ScalarFieldType.FLOAT32;
+            case DOUBLE:
+                return ScalarFieldType.DOUBLE;
+            case STRING:
+                return ScalarFieldType.STRING;
+            case BYTES:
+                return ScalarFieldType.BYTES;
+            default:
+                throw new IllegalStateException("Unexpected value: " + fieldType);
+        }
+    }
 
     default io.dingodb.store.api.transaction.data.ScalarField scalarFieldTo(
         ScalarField field
@@ -150,34 +181,6 @@ public interface TxnMapper {
                     .build();
             default:
                 throw new IllegalStateException("Unexpected value: " + field.getData().nest());
-        }
-    }
-
-    default io.dingodb.sdk.service.entity.common.DocumentValue documentValueTo(DocumentValue documentValue) {
-        return io.dingodb.sdk.service.entity.common.DocumentValue.builder()
-            .fieldType(scalarFieldTypeTo(documentValue.getFieldType()))
-            .fieldValue(scalarFieldTo(documentValue.getFieldValue(), documentValue.getFieldType()))
-            .build();
-    }
-
-    default ScalarFieldType scalarFieldTypeTo(DocumentValue.ScalarFieldType fieldType) {
-        switch (fieldType) {
-            case BOOL:
-                return ScalarFieldType.BOOL;
-            case INTEGER:
-                return ScalarFieldType.INT32;
-            case LONG:
-                return ScalarFieldType.INT64;
-            case FLOAT:
-                return ScalarFieldType.FLOAT32;
-            case DOUBLE:
-                return ScalarFieldType.DOUBLE;
-            case STRING:
-                return ScalarFieldType.STRING;
-            case BYTES:
-                return ScalarFieldType.BYTES;
-            default:
-                throw new IllegalStateException("Unexpected value: " + fieldType);
         }
     }
 
