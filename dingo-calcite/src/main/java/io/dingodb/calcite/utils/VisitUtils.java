@@ -22,7 +22,10 @@ import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import org.apache.calcite.sql.SqlKind;
 
-public class VisitUtils {
+public final class VisitUtils {
+
+    private VisitUtils() {
+    }
 
     public static long getScanTs(ITransaction transaction, SqlKind kind) {
         if (transaction == null) {

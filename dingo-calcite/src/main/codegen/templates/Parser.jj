@@ -1379,7 +1379,8 @@ SqlNode SqlSelect() :
     final Span s;
     boolean forUpdate = false;
     boolean flashbackQuery = false;
-    String flashbackQueryTime = null;
+    String flashBackStr = null;
+    String flashBackTsoStr = null;
     ExportOptions exportOptions = null;
 }
 {
@@ -1415,11 +1416,9 @@ SqlNode SqlSelect() :
         [ <FOR> <UPDATE> { forUpdate=true; }]
         [ <AS> <OF> { flashbackQuery = true; }
          (
-           <TIMESTAMP>
-             flashbackQueryTime = dingoIdentifier();
+           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
            |
-           <TSO>
-             flashbackQueryTime = dingoIdentifier();
+           <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; } 
          ) ]
     |
         E() {
@@ -1435,7 +1434,7 @@ SqlNode SqlSelect() :
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
             new SqlNodeList(hints, getPos()),
-            exportOptions, flashbackQuery, flashbackQueryTime);
+            exportOptions, flashbackQuery, flashBackStr, flashBackTsoStr);
     }
 }
 
@@ -2415,8 +2414,11 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
     final SqlIdentifier alias;
     final Span s;
     SqlNodeList args;
-    final SqlNodeList columnAliasList;
+    SqlNodeList columnAliasList = null;
     SqlUnnestOperator unnestOp = SqlStdOperatorTable.UNNEST;
+    String flashBackStr = null;
+    String flashBackTsoStr = null;
+    boolean flashBack = false;
 }
 {
     (
@@ -2463,12 +2465,24 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         tableRef = Unpivot(tableRef)
     ]
     [
-        [ <AS> ] alias = SimpleIdentifier()
+        [ <AS> ]
+        (
+          alias = SimpleIdentifier()
+         |
+          <OF> (
+                <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
+                |
+                <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
+               )
+          { alias = null; flashBack=true; }
+        )
         (
             columnAliasList = ParenthesizedSimpleIdentifierList()
-        |   { columnAliasList = null; }
+         |
+           { columnAliasList = null; }
         )
         {
+            if (!flashBack) {
             // Standard SQL (and Postgres) allow applying "AS alias" to a JOIN,
             // e.g. "FROM (a CROSS JOIN b) AS c". The new alias obscures the
             // internal aliases, and columns cannot be referenced if they are
@@ -2485,6 +2499,10 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
                 idList.addAll(columnAliasList.getList());
                 tableRef = SqlStdOperatorTable.AS.createCall(
                     Span.of(tableRef).end(this), idList);
+            }
+            } else if (tableRef instanceof SqlIdentifier) {
+              SqlIdentifier ident = (SqlIdentifier)tableRef;
+              tableRef = new FlashBackSqlIdentifier(ident.names, ident.getParserPosition(), flashBackStr, flashBackTsoStr);
             }
         }
     ]

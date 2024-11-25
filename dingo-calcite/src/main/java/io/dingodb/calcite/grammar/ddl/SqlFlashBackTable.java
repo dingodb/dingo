@@ -38,10 +38,11 @@ public class SqlFlashBackTable extends SqlFlashBack {
         if (newTableId == null) {
             return;
         }
+        // todo ignore lowUpper case
         if (newTableId.names.size() > 1) {
-            this.newTableName = newTableId.names.get(1);
+            this.newTableName = newTableId.names.get(1).toUpperCase();
         } else {
-            this.newTableName = newTableId.names.get(0);
+            this.newTableName = newTableId.names.get(0).toUpperCase();
         }
     }
 

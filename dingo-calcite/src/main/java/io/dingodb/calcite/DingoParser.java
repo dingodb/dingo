@@ -47,6 +47,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
+import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
@@ -65,9 +66,11 @@ import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.config.Lex;
@@ -275,6 +278,26 @@ public class DingoParser {
                     context.getTimeZone()
                 );
                 pointTs = sqlSelect.getPointStartTs();
+            } else if (flashBackQuery(sqlNode)) {
+                io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+                if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                    FlashBackSqlIdentifier flashBackSqlIdentifier = (FlashBackSqlIdentifier) sqlSelect.getFrom();
+                    LogUtils.info(log, "flashback query str:{}", flashBackSqlIdentifier.flashBackTimeStr);
+                    if (flashBackSqlIdentifier.flashBackTimeStr != null) {
+                        long time = DataTimeUtils.parseDate(flashBackSqlIdentifier.flashBackTimeStr);
+                        pointTs = TsoService.getDefault().tso(time);
+                    } else {
+                        pointTs = flashBackSqlIdentifier.tso;
+                    }
+                } else if (sqlSelect.isFlashBackQuery()) {
+                    if (sqlSelect.getFlashBackTimeStr() != null) {
+                        long time = DataTimeUtils.parseDate(sqlSelect.getFlashBackTimeStr());
+                        pointTs = TsoService.getDefault().tso(time);
+                    } else {
+                        pointTs = sqlSelect.getFlashBackTso();
+                    }
+                }
+                LogUtils.info(log, "flashback query tso:{}", pointTs);
             }
         }
         // Insert a `DingoRoot` to collect the results.
@@ -285,6 +308,18 @@ public class DingoParser {
         if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
             io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
             return sqlSelect.isExport();
+        }
+        return false;
+    }
+
+    private static boolean flashBackQuery(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+            io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+            if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                return true;
+            } else {
+                return sqlSelect.isFlashBackQuery();
+            }
         }
         return false;
     }

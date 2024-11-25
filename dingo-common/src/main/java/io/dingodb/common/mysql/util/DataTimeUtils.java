@@ -24,6 +24,15 @@ import java.util.Calendar;
 public class DataTimeUtils {
     private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
+    public static long parseDate(String dateStr) {
+        SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
+        try {
+            return sdf.parse(dateStr).getTime();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static String getTimeStamp(Timestamp timestamp) {
         return new SimpleDateFormat(TIMESTAMP_FORMAT).format(timestamp);
     }

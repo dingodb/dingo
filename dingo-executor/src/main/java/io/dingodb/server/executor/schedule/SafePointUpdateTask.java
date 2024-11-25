@@ -69,6 +69,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.toHex;
@@ -116,12 +117,8 @@ public final class SafePointUpdateTask {
                 ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
                     lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
                 );
-                ScheduledFuture<?> gcRegionFuture = Executors.scheduleWithFixedDelay(
-                    lockKeyStr, SafePointUpdateTask::gcDeleteRange, 300, 60, TimeUnit.SECONDS
-                );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
-                    gcRegionFuture.cancel(true);
                     isLeader = false;
                     lockService.cancel();
                     run();
@@ -189,10 +186,15 @@ public final class SafePointUpdateTask {
                 } else {
                     builder.tenantSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs - 1));
                 }
+                UpdateGCSafePointRequest request = builder.build();
                 Services.coordinatorService(coordinators).updateGCSafePoint(
-                    reqTs, builder.build()
+                    reqTs, request
                 );
-                ExecutionEnvironment.INSTANCE.safePointTs = safeTs;
+                if (TenantConstant.TENANT_ID == 0) {
+                    gcDeleteRange(request.getSafePoint());
+                } else {
+                    gcDeleteRange(request.getTenantSafePoints().get(TenantConstant.TENANT_ID));
+                }
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
@@ -204,16 +206,18 @@ public final class SafePointUpdateTask {
         }
     }
 
-    private static void gcDeleteRange() {
+    private static void gcDeleteRange(long startTs) {
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type"
-            + " from mysql.gc_delete_range where ts<"
-            + ExecutionEnvironment.INSTANCE.safePointTs;
+            + " from mysql.gc_delete_range where ts<" + startTs;
+        LogUtils.info(log, "gcDeleteRange sql:{}", sql);
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             List<Object[]> gcResults = session.executeQuery(sql);
             LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}",
-                gcResults.size(), ExecutionEnvironment.INSTANCE);
+                gcResults.size(), startTs);
+            int gcResultSize = gcResults.size();
+            AtomicInteger delDone = new AtomicInteger(0);
             gcResults.forEach(objects -> {
                 long regionId = (long) objects[0];
                 try {
@@ -228,6 +232,8 @@ public final class SafePointUpdateTask {
                     String endKey = objects[2].toString();
                     if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey)) {
                         LogUtils.error(log, "remove gcDeleteTask failed");
+                    } else {
+                        delDone.incrementAndGet();
                     }
                     String eleType = (String) objects[6];
                     if (eleType.endsWith("auto")) {
@@ -250,6 +256,10 @@ public final class SafePointUpdateTask {
                     LogUtils.error(log, "gcDeleteRange error, regionId:{}", regionId, e);
                 }
             });
+            LogUtils.info(log, "delete region done size:{}", delDone.get());
+            if (delDone.get() < gcResultSize) {
+                LogUtils.error(log, "delete region has failed");
+            }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         }

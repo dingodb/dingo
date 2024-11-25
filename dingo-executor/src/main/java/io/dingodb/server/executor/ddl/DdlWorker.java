@@ -1241,6 +1241,9 @@ public class DdlWorker {
                     .getTable(recoverInfo.getSchemaId(), tableId);
                 List<Object> indexList = infoSchemaService.listIndex(job.getSchemaId(), job.getTableId());
                 tableDefinitionWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                if (recoverInfo.getNewTableName() != null) {
+                    tableDefinitionWithId.getTableDefinition().setName(recoverInfo.getNewTableName());
+                }
                 TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 return updateSchemaVersion(dc, job);

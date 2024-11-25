@@ -93,7 +93,8 @@ public class TsoService implements io.dingodb.tso.TsoService {
 
     @Override
     public long tso(long timestamp) {
-        return timestamp << PHYSICAL_SHIFT;
+        timestamp = timestamp - 1577808000000L;
+        return (timestamp << PHYSICAL_SHIFT) + (1 & MAX_LOGICAL);
     }
 
     @Override

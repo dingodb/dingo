@@ -33,9 +33,11 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
 
     boolean trace;
 
-    boolean flashbackQuery;
+    boolean flashBackQuery;
 
-    String flashbackQueryTime;
+    String flashBackTimeStr;
+
+    long flashBackTso;
 
     public SqlSelect(SqlParserPos pos,
                      @Nullable SqlNodeList keywordList,
@@ -66,11 +68,15 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      @Nullable SqlNodeList hints,
                      ExportOptions exportOptions,
                      boolean flashbackQuery,
-                     String flashbackQueryTime) {
+                     String flashBackStr,
+                     String flashBackTsoStr) {
         super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
         this.exportOptions =  exportOptions;
-        this.flashbackQuery = flashbackQuery;
-        this.flashbackQueryTime = flashbackQueryTime;
+        this.flashBackQuery = flashbackQuery;
+        this.flashBackTimeStr = flashBackStr;
+        if (flashBackTsoStr != null) {
+            this.flashBackTso = Long.parseLong(flashBackTsoStr);
+        }
     }
 
     public SqlSelect(SqlParserPos pos,

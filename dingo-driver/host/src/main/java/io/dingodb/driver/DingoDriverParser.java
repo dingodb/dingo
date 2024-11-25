@@ -470,6 +470,9 @@ public final class DingoDriverParser extends DingoParser {
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
         boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile, newTxn);
         transaction = connection.initTransaction(isTxn, newTxn);
+        if (pointTs > 0) {
+            transaction.setPointStartTs(pointTs);
+        }
 
         // get in transaction for mysql update/insert/delete res ok packet
         if (transaction.getType() != NONE) {
