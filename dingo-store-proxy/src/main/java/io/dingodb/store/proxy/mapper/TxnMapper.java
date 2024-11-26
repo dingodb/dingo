@@ -90,10 +90,14 @@ public interface TxnMapper {
     DocumentWithScore documentWithScoreTo(io.dingodb.sdk.service.entity.common.DocumentWithScore documentWithScore);
 
     default DocumentValue documentValueTo(io.dingodb.sdk.service.entity.common.DocumentValue documentValue) {
-        return DocumentValue.builder()
-            .fieldType(scalarFieldTypeTo(documentValue.getFieldType()))
-            .fieldValue(scalarFieldTo(documentValue.getFieldValue()))
-            .build();
+        DocumentValue res = new DocumentValue();
+        if(documentValue.getFieldValue() != null) {
+            return DocumentValue.builder()
+                .fieldType(scalarFieldTypeTo(documentValue.getFieldType()))
+                .fieldValue(scalarFieldTo(documentValue.getFieldValue()))
+                .build();
+        }
+        return  res;
     }
 
     default io.dingodb.sdk.service.entity.common.DocumentValue documentValueTo(DocumentValue documentValue) {
