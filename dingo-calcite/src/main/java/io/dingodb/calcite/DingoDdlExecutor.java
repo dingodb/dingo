@@ -66,7 +66,6 @@ import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -571,7 +570,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
             final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
             if (schema.getTable(tableName) == null) {
-                throw new RuntimeException("table doesn't exist");
+                throw DINGO_RESOURCE.tableNotExists(tableName).ex();
             }
         }
         sqlGrant.host = getRealAddress(sqlGrant.host);
@@ -587,7 +586,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
             userService.grant(privilegeDefinition);
         } else {
-            throw new RuntimeException("You are not allowed to create a user with GRANT");
+            throw DINGO_RESOURCE.grantError().ex();
         }
     }
 
@@ -619,7 +618,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         if (definition.getColumn(newColumn.getName()) != null) {
-            throw new RuntimeException("Duplicate column name '" + newColumn.getName() + "'");
+            throw DINGO_RESOURCE.duplicateColumn().ex();
         }
         if (dingoSqlColumn.isPrimaryKey()) {
             throw DINGO_RESOURCE.addColumnPrimaryError(newColumn.getName(), tableName).ex();
@@ -885,7 +884,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .noneMatch(column -> column.getSchemaState() == SchemaState.SCHEMA_PUBLIC
                 && column.getName().equalsIgnoreCase(dropColumn));
         if (noneMatchCol) {
-            throw new RuntimeException("column " + dropColumn +  " does not exists");
+            throw DINGO_RESOURCE.dropColumnNotExists(dropColumn).ex();
         }
 
         if (Objects.requireNonNull(table.getColumn(dropColumn)).isPrimary()) {
@@ -1011,7 +1010,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else if ("*".equals(tableName)) {
             // todo: current version, ignore name case
             if (context.getRootSchema().getSubSchema(schemaName, false) == null) {
-                throw new RuntimeException("schema " + schemaName + " does not exist");
+                throw DINGO_RESOURCE.unknownSchema(schemaName).ex();
             }
             privilegeDefinition = SchemaPrivDefinition.builder()
                 .schemaName(schemaName)
@@ -1020,7 +1019,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             CalciteSchema schema = context.getRootSchema().getSubSchema(schemaName, false);
             if (schema == null) {
-                throw new RuntimeException("schema " + schemaName + " does not exist");
+                throw DINGO_RESOURCE.unknownSchema(schemaName).ex();
             }
             InfoSchema is = null;
             if (schema instanceof SubCalciteSchema) {
@@ -1032,11 +1031,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 is = DdlService.root().getIsLatest();
                 if (is == null) {
                     LogUtils.error(log, "getPrivilegeDefinition get is null");
-                    throw new RuntimeException("table " + tableName + " does not exist");
+                    throw DINGO_RESOURCE.tableNotExists(tableName).ex();
                 }
             }
             if (is.getTable(schemaName, tableName) == null) {
-                throw new RuntimeException("table " + tableName + " does not exist");
+                throw DINGO_RESOURCE.tableNotExists(tableName).ex();
             }
             privilegeDefinition = TablePrivDefinition.builder()
                 .schemaName(schemaName)

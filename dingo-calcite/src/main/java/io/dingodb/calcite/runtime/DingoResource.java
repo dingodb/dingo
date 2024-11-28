@@ -153,4 +153,10 @@ public interface DingoResource {
     @BaseMessage("Error 1050 (42S01): Table ''{0}'' already exists")
     ExInst<DingoSqlException> tableExists(String name);
 
+    @BaseMessage("Error 1091 (42000): Can not DROP ''{0}''; check that column/key exists")
+    ExInst<DingoSqlException> dropColumnNotExists(String name);
+
+    @BaseMessage("Error 1410 (42000): You are not allowed to create a user with GRANT")
+    ExInst<DingoSqlException> grantError();
+
 }
