@@ -30,6 +30,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
             alterTable = addUniqueIndex(s, scope, id)
         |
             alterTable = addColumn(s, scope, id)
+        |
+            alterTable = addConstraint(s, scope, id)
 	    )
 	  |
          <DROP>
@@ -37,12 +39,31 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
            alterTable = dropIndex(s, scope, id)
            |
            alterTable = dropColumn(s, scope, id)
+           |
+           alterTable = dropConstraint(s, scope, id)
+           |
+           alterTable = dropCheck(s, scope, id)
+           |
+           alterTable = dropForeignKey(s, scope, id)
          )
         |
+          <MODIFY>
+          alterTable = modifyColumn(s, scope, id)
+        |
+          <CHANGE>
+          alterTable = changeColumn(s, scope, id)
+        |
         <ALTER>
-        alterTable = alterIndex(s, scope, id)
-	    <CONVERT> <TO>
-	    alterTable = convertCharset(s, id)
+         (
+          alterTable = alterIndex(s, scope, id)
+          |
+          alterTable = alterConstraint(s, scope, id)
+          |
+          alterTable = alterColumn(s, scope, id)
+         )
+        |
+	<CONVERT> <TO>
+	alterTable = convertCharset(s, id)
     )
     { return alterTable; }
 }
@@ -182,7 +203,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     final SqlNodeList columnList;
     String engine = null;
 } {
- <UNIQUE><INDEX> { s.add(this); }
+ <UNIQUE> [<INDEX>][<KEY>] { s.add(this); }
     { index = getNextToken().image; }
     [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
     (
@@ -243,4 +264,313 @@ SqlAlterTable convertCharset(Span s, SqlIdentifier id): {
 } {
   <CHARACTER> <SET> { charset = this.getNextToken().image; } [<COLLATE> { collate = this.getNextToken().image; }]
   { return new SqlAlterConvertCharset(s.end(this), id, charset, collate); }
+}
+
+SqlAlterTable addConstraint(Span s, String scope, SqlIdentifier id): {
+   SqlIdentifier name = null;
+   SqlNode e = null;
+   boolean enforced = false;
+   SqlNodeList columnList = null;
+   String index = null;
+   SqlAlterAddForeign sqlAlterAddForeign = null;
+} {
+    <CONSTRAINT> { s.add(this); } [ name = SimpleIdentifier() ]
+    (
+     <CHECK> <LPAREN>
+     e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+     <RPAREN>
+     [<NOT> <ENFORCED> { enforced = false; }]
+     [<ENFORCED> { enforced = true;}]
+     {
+        return new SqlAlterAddConstraint(s.end(this), name, e, enforced);
+     }
+    |
+      <UNIQUE> [<KEY>] [<INDEX>] { index = getNextToken().image; }
+      columnList = ParenthesizedSimpleIdentifierList()
+      {
+        return new SqlAlterAddIndex(
+            s.end(this), id,
+            new SqlIndexDeclaration(
+                s.end(this), index, columnList, null, null,null, 3, "scalar", null, true
+            )
+         );
+      }
+    |
+      sqlAlterAddForeign = foreign(s, id)
+      {
+         return sqlAlterAddForeign;
+      }
+    )
+}
+
+SqlAlterAddForeign foreign(Span s, SqlIdentifier id): {
+   SqlNodeList columnList = null;
+   SqlNodeList refColumnList = null;
+   SqlIdentifier refTable = null;
+   SqlIdentifier name = null;
+   String updateRefOpt = null;
+   String deleteRefOpt = null;
+} {
+   <FOREIGN><KEY> [ name = SimpleIdentifier() ]
+   columnList = ParenthesizedSimpleIdentifierList()
+   <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+   ( <ON> (
+           <UPDATE> updateRefOpt = referenceOpt()
+           |
+           <DELETE> deleteRefOpt = referenceOpt()
+          )
+   )*
+   {
+      return new SqlAlterAddForeign(s.end(this), id, name, columnList, refTable, refColumnList, updateRefOpt, deleteRefOpt);
+   }
+}
+
+String referenceOpt(): {
+  String refOpt = null;
+} {
+  (
+   <RESTRICT> { refOpt = "restrict"; }
+   |
+   <CASCADE> { refOpt = "cascade"; }
+   |
+   <SET>
+    (
+      <NULL> { refOpt = "setNull"; }
+      |
+      <DEFAULT_> { refOpt = "setDefault"; }
+    )
+   |
+   <NO> <ACTION> { refOpt = "noAction"; }
+  )
+  {
+    return refOpt;
+  }
+}
+
+SqlAlterTable dropConstraint(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+} {
+   <CONSTRAINT> { s.add(this); } name = SimpleIdentifier()
+   {
+     return new SqlAlterDropConstraint(s.end(this), name);
+   }
+}
+
+SqlAlterTable dropCheck(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+} {
+   <CHECK> { s.add(this); } name = SimpleIdentifier()
+   {
+     return new SqlAlterDropConstraint(s.end(this), name);
+   }
+}
+
+
+SqlAlterTable alterConstraint(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+  boolean enforced = false;
+} {
+  <CONSTRAINT> { s.add(this); } name = SimpleIdentifier()
+  (
+    <NOT> <ENFORCED> { enforced = false; }
+   |
+    <ENFORCED> { enforced = true; }
+  )
+  {
+    return new SqlAlterConstraint(s.end(this), name, enforced);
+  }
+}
+
+SqlAlterTable dropForeignKey(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+} {
+   <FOREIGN> <KEY> { s.add(this); } name = SimpleIdentifier()
+   {
+     return new SqlAlterDropForeign(s.end(this), name);
+   }
+}
+
+SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id): {
+  DingoSqlColumn columnDec;
+    final SqlDataTypeSpec type;
+    boolean nullable = true;
+    SqlNode checkExpr = null;
+    SqlNode e = null;
+    final SqlNode constraint;
+    SqlIdentifier name = null;
+    final SqlNodeList columnList;
+    SqlNodeList withColumnList = null;
+    ColumnStrategy strategy = null;
+    final String index;
+    Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 3;
+    String engine = null;
+    String indexType = "scalar";
+    Boolean primaryKey = false;
+    String comment = "";
+    SqlNodeList refColumnList = null;
+    SqlIdentifier refTable = null;
+    String updateRefOpt = null;
+    String deleteRefOpt = null;
+} {
+   <COLUMN> name = SimpleIdentifier()
+    (
+        type = DataType()
+        (
+           <AUTO_INCREMENT> {autoIncrement = true; }
+         |
+           <NULL> { nullable = true; }
+         |
+           <NOT> <NULL> { nullable = false; }
+         |
+           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
+            (
+                <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
+            |
+                <STORED> { strategy = ColumnStrategy.STORED; }
+            |
+                { strategy = ColumnStrategy.VIRTUAL; }
+            )
+         |
+           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
+         |
+           <PRIMARY> <KEY> { primaryKey = true; }
+         |
+           <CHECK>  <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>]
+         |
+           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+         |
+          <ON> <UPDATE> <CURRENT_TIMESTAMP>
+         |
+          <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>]
+         |
+          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+          ( <ON> (
+           <UPDATE> updateRefOpt = referenceOpt()
+           |
+           <DELETE> deleteRefOpt = referenceOpt()
+          )
+          )*
+        )*
+        {
+            if (e == null) {
+                strategy = nullable ? ColumnStrategy.NULLABLE
+                    : ColumnStrategy.NOT_NULLABLE;
+            }
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
+        }
+    )
+   {
+     return new SqlAlterModifyColumn(s.end(this), id, columnDec);
+   }
+}
+
+SqlAlterTable alterColumn(Span s, String scope, SqlIdentifier id): {
+    SqlIdentifier name = null;
+    SqlNode e = null;
+}
+{
+    <COLUMN> { s.add(this); }
+    name = SimpleIdentifier()
+    (
+      <SET>
+      <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+      {
+        return new SqlAlterColumn(
+            s.end(this), name, 1, e 
+        );
+      }
+    |
+      <DROP> <DEFAULT_> { return new SqlAlterColumn(s.end(this), name, 2, e); }
+    )
+}
+
+SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+  SqlIdentifier newName = null;
+  DingoSqlColumn columnDec = null;
+    final SqlDataTypeSpec type;
+    boolean nullable = true;
+    SqlNode checkExpr = null;
+    SqlNode e = null;
+    final SqlNode constraint;
+    final SqlNodeList columnList;
+    SqlNodeList withColumnList = null;
+    ColumnStrategy strategy = null;
+    final String index;
+    Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 3;
+    String engine = null;
+    String indexType = "scalar";
+    Boolean primaryKey = false;
+    String comment = "";
+    SqlNodeList refColumnList = null;
+    SqlIdentifier refTable = null;
+    String updateRefOpt = null;
+    String deleteRefOpt = null;
+} {
+  <COLUMN> name = SimpleIdentifier() newName = SimpleIdentifier()
+   (
+        type = DataType()
+        (
+           <AUTO_INCREMENT> {autoIncrement = true; }
+         |
+           <NULL> { nullable = true; }
+         |
+           <NOT> <NULL> { nullable = false; }
+         |
+           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
+            (
+                <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
+            |
+                <STORED> { strategy = ColumnStrategy.STORED; }
+            |
+                { strategy = ColumnStrategy.VIRTUAL; }
+            )
+         |
+           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
+         |
+           <PRIMARY> <KEY> { primaryKey = true; }
+         |
+           <CHECK>  <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>]
+         |
+           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+         |
+          <ON> <UPDATE> <CURRENT_TIMESTAMP>
+         |
+          <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>]
+         |
+          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+          ( <ON> (
+           <UPDATE> updateRefOpt = referenceOpt()
+           |
+           <DELETE> deleteRefOpt = referenceOpt()
+          )
+          )*
+        )*
+        {
+            if (e == null) {
+                strategy = nullable ? ColumnStrategy.NULLABLE
+                    : ColumnStrategy.NOT_NULLABLE;
+            }
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
+        }
+    )?
+  {
+    return new SqlAlterChangeColumn(s.end(this), name, newName, columnDec);
+  }
 }

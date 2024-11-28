@@ -40,4 +40,17 @@ public class ColumnStatus {
     public static final int COLUMN_SET = 0X0800;
 
     public static final int allEmpty = 0x8000;
+
+    public static final int groupFlag = 1 << 15;
+
+    public static final int uniqueFlag = 1 << 16;
+    public static final int binCmpFlag = 1 << 17;
+    public static final int parseToJsonFlag = 1 << 18;
+
+    public static final int isBooleanFlag = 1 << 19;
+
+    public static final int preventNullInsertFlag = 1 << 20;
+    public static final int enumSetAsIntFlag = 1 << 21;
+
+    public static final int dropColumnIndexFlag = 1 << 22;
 }

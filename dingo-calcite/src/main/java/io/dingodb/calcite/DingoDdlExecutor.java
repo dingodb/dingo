@@ -21,11 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
@@ -1219,7 +1227,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         LogUtils.info(log, "DDL execute: {}", sqlFlashBackSchema);
         String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
-        String schemaName = sqlFlashBackSchema.schemaId.names.get(0).toUpperCase();;
+        String schemaName = sqlFlashBackSchema.schemaId.names.get(0).toUpperCase();
+        ;
 
         SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);
         if (subSchema != null) {
@@ -1249,6 +1258,51 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "recover schema done, schemaName:{}", schemaName);
         timeCtx.stop();
+    }
+
+    public void execute(SqlAlterDropForeign sqlAlterDropForeign, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlAlterAddConstraint sqlAlterAddConstraint, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlAlterAddForeign sqlAlterAddForeign, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlAlterConstraint sqlAlterConstraint, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlAlterDropConstraint sqlAlterDropConstraint, CalcitePrepare.Context context) {
+
+    }
+
+    public void execute(SqlAlterModifyColumn sqlAlterModifyColumn, CalcitePrepare.Context context) {
+        LogUtils.info(log, "");
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterModifyColumn.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            if (isNotTxnEngine(table.getEngine())) {
+                throw new IllegalArgumentException("modify column, the engine must be transactional.");
+            }
+        }
+
+    }
+
+    public void execute(SqlAlterChangeColumn sqlAlterChangeColumn, CalcitePrepare.Context context) {
+        LogUtils.info(log, "alter table");
+    }
+
+    public void execute(SqlAlterColumn sqlAlterColumn, CalcitePrepare.Context context) {
+
     }
 
     public static void validatePartitionBy(

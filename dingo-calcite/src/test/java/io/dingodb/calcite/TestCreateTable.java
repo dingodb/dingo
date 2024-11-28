@@ -16,6 +16,15 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterConstraint;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
+import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -159,13 +168,15 @@ public class TestCreateTable {
     }
 
     @Test
-    public void flush() {
-        String sql = "create view v2 as select count(1) from t1";
+    public void addConstraint() {
+        //String sql = "alter table t1 add constraint t2 check(a>10)";
+        //String sql = "alter table t1 add constraint t2 check(a>10) enforced";
+        String sql = "alter table t1 add constraint check(a>10) not enforced";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlAlterAddConstraint;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -173,15 +184,163 @@ public class TestCreateTable {
     }
 
     @Test
-    public void setPassword() {
-        String sql = "flashback table t1";
+    public void addConstraintUnique() {
+        //String sql = "alter table t1 add constraint t2 check(a>10)";
+        //String sql = "alter table t1 add constraint t2 check(a>10) enforced";
+        String sql = "alter table t1 add constraint unique key u2(age)";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlAlterAddIndex;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void addUniqueIndex() {
+        String sql = "alter table t1 add unique key u2(age)";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterAddIndex;
         } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void dropConstraint() {
+        String sql = "alter table t1 drop constraint t2";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterDropConstraint;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void alterConstraint() {
+        String sql = "alter table t1 alter constraint t2 enforced";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterConstraint;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void alterConstraintForeign() {
+        //String sql = "alter table t1 add constraint foreign key (id,name) references t2(id,name) on update no action";
+        String sql = "alter table t1 add constraint foreign key (id,name) references t2(id,name) "
+            + "on update no action on delete CASCADE";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterAddForeign;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void createTableWithForeign() {
+        String sql = "create table t1(id int,age int,name int,primary key(id), constraint foreign key (id,name) references t2(id,name) "
+            + "on update no action on delete CASCADE)";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateTable;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterDropForeign() {
+        String sql = "ALTER TABLE table_name DROP FOREIGN KEY fk_identifier";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterDropForeign;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterModifyColumn() {
+        String sql = "ALTER TABLE table_name modify column a int constraint c1 check(a>10) enforced";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterModifyColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterModifyColumn1() {
+        String sql = "ALTER TABLE table_name modify column a int references t2(age)";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterModifyColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterColumnDropDefault() {
+        String sql = "ALTER TABLE table_name alter column a drop default";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterColumnSetDefault() {
+        String sql = "ALTER TABLE table_name alter column a set default 'abc'";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterChangeColumn() {
+        String sql = "ALTER TABLE table_name change column a b int not null";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterChangeColumn;
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -134,6 +134,7 @@ void TableElement(List<SqlNode> list) :
     final SqlIdentifier id;
     final SqlDataTypeSpec type;
     boolean nullable = true;
+    SqlNode checkExpr = null;
     SqlNode e = null;
     final SqlNode constraint;
     SqlIdentifier name = null;
@@ -150,6 +151,10 @@ void TableElement(List<SqlNode> list) :
     String indexType = "scalar";
     Boolean primaryKey = false;
     String comment = "";
+    SqlNodeList refColumnList = null;
+    SqlIdentifier refTable = null;
+    String updateRefOpt = null;
+    String deleteRefOpt = null;
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
@@ -176,9 +181,18 @@ void TableElement(List<SqlNode> list) :
          |
            <PRIMARY> <KEY> { primaryKey = true; }
          |
+           <CHECK>  <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>]
+         |
            <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
          |
+
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
+         |
+          <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT>] [<ENFORCED>] 
         )*
         {
             if (e == null) {
@@ -190,10 +204,10 @@ void TableElement(List<SqlNode> list) :
         }
     )
 |
-    [ <CONSTRAINT> { s.add(this); } name = SimpleIdentifier() ]
+    [ <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] ]
     (
         <CHECK> { s.add(this); } <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN> {
+        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN> [<NOT>] [<ENFORCED>]{
             list.add(SqlDdlNodes.check(s.end(this), name, e));
         }
     |
@@ -259,6 +273,20 @@ void TableElement(List<SqlNode> list) :
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
         }
+    |
+      <FOREIGN><KEY> [ name = SimpleIdentifier() ]
+      columnList = ParenthesizedSimpleIdentifierList()
+      <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+      ( <ON> (
+           <UPDATE> updateRefOpt = referenceOpt()
+           |
+           <DELETE> deleteRefOpt = referenceOpt()
+          )
+      )*
+      {
+        SqlForeign sqlForeign = new SqlForeign(s.end(this), name, columnList, refTable, refColumnList, updateRefOpt, deleteRefOpt);
+        list.add(sqlForeign);
+      }
     )
 }
 
