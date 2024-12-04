@@ -17,6 +17,11 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDiskAnnBuild;
+import io.dingodb.calcite.rel.DingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.DingoDiskAnnLoad;
+import io.dingodb.calcite.rel.DingoDiskAnnReset;
+import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
@@ -52,6 +57,11 @@ import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDiskAnnBuildVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDiskAnnCountMemoryVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDiskAnnLoadVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDiskAnnResetVisitFun;
+import io.dingodb.calcite.visitor.function.DingoDiskAnnStatusVisitFun;
 import io.dingodb.calcite.visitor.function.DingoDocumentStreamingVisitFun;
 import io.dingodb.calcite.visitor.function.DingoDocumentVisitFun;
 import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
@@ -328,4 +338,28 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         return DingoIndexScanWithRelOpVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel);
     }
 
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDiskAnnStatus dingoDiskAnnStatus) {
+        return DingoDiskAnnStatusVisitFun.visit(job, idGenerator, currentLocation, transaction, this, dingoDiskAnnStatus);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDiskAnnCountMemory dingoDiskAnnCountMemory) {
+        return DingoDiskAnnCountMemoryVisitFun.visit(job, idGenerator, currentLocation, transaction, this, dingoDiskAnnCountMemory);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDiskAnnReset dingoDiskAnnReset) {
+        return DingoDiskAnnResetVisitFun.visit(job, idGenerator, currentLocation, transaction, this, dingoDiskAnnReset);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDiskAnnBuild dingoDiskAnnBuild) {
+        return DingoDiskAnnBuildVisitFun.visit(job, idGenerator, currentLocation, transaction, this, dingoDiskAnnBuild);
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoDiskAnnLoad dingoDiskAnnLoad) {
+        return DingoDiskAnnLoadVisitFun.visit(job, idGenerator, currentLocation, transaction, this, dingoDiskAnnLoad);
+    }
 }

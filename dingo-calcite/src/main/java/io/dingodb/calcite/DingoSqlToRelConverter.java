@@ -17,9 +17,16 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnn;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnLoad;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnReset;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.common.table.DiskAnnTable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -35,8 +42,10 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
+import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
@@ -111,6 +120,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             && !(operator instanceof SqlVectorOperator)
             && !(operator instanceof SqlDocumentOperator)
             && !(operator instanceof SqlHybridSearchOperator)
+            && !(operator instanceof SqlDiskAnnOperator)
         ) {
             super.convertCollectionTable(bb, call);
             return;
@@ -168,6 +178,80 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             if (operator instanceof SqlHybridSearchOperator) {
                 assert namespace != null;
                 throw new RuntimeException("Not support convert hybrid search node.");
+            }
+        } else if (validator.getNamespace(call) instanceof TableDiskAnnFunctionNamespace) {
+            TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) validator.getNamespace(call);
+
+            if (operator instanceof SqlDiskAnnOperator) {
+                assert namespace != null;
+                List<Object> operands = new ArrayList<>(call.getOperandList());
+                String funcName = call.getOperator().getName();
+                if (funcName.equals(DiskAnnTable.TABLE_BUILD_NAME)) {
+                    callRel = new LogicalDingoDiskAnnBuild(
+                        cluster,
+                        traits,
+                        (RexCall) rexCall,
+                        namespace.getTable(),
+                        operands,
+                        namespace.getIndex().getTableId(),
+                        namespace.getIndex(),
+                        null,
+                        null,
+                        new ArrayList<>()
+                    );
+                } else if (funcName.equals(DiskAnnTable.TABLE_LOAD_NAME)) {
+                    callRel = new LogicalDingoDiskAnnLoad(
+                        cluster,
+                        traits,
+                        (RexCall) rexCall,
+                        namespace.getTable(),
+                        operands,
+                        namespace.getIndex().getTableId(),
+                        namespace.getIndex(),
+                        null,
+                        null,
+                        new ArrayList<>()
+                    );
+                } else if (funcName.equals(DiskAnnTable.TABLE_STATUS_NAME)) {
+                    callRel = new LogicalDingoDiskAnnStatus(
+                        cluster,
+                        traits,
+                        (RexCall) rexCall,
+                        namespace.getTable(),
+                        operands,
+                        namespace.getIndex().getTableId(),
+                        namespace.getIndex(),
+                        null,
+                        null,
+                        new ArrayList<>()
+                    );
+                } else if (funcName.equals(DiskAnnTable.TABLE_RESET_NAME)) {
+                    callRel = new LogicalDingoDiskAnnReset(
+                        cluster,
+                        traits,
+                        (RexCall) rexCall,
+                        namespace.getTable(),
+                        operands,
+                        namespace.getIndex().getTableId(),
+                        namespace.getIndex(),
+                        null,
+                        null,
+                        new ArrayList<>()
+                    );
+                } else if (funcName.equals(DiskAnnTable.TABLE_COUNT_MEMORY_NAME)) {
+                    callRel = new LogicalDingoDiskAnnCountMemory(
+                        cluster,
+                        traits,
+                        (RexCall) rexCall,
+                        namespace.getTable(),
+                        operands,
+                        namespace.getIndex().getTableId(),
+                        namespace.getIndex(),
+                        null,
+                        null,
+                        new ArrayList<>()
+                    );
+                }
             }
         }
 

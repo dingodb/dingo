@@ -111,6 +111,14 @@ public final class OperatorCodeUtils {
     public static final CommonId DOCUMENT_PARTITION = new CommonId(CommonId.CommonType.OP, OP, 90);
     public static final CommonId DOCUMENT_PRE_FILTER = new CommonId(CommonId.CommonType.OP, OP, 91);
 
+    public static final CommonId TXN_DISK_ANN_STATUS = new CommonId(CommonId.CommonType.OP, SOURCE, 92);
+
+    public static final CommonId TXN_DISK_ANN_COUNT_MEMORY = new CommonId(CommonId.CommonType.OP, SOURCE, 93);
+
+    public static final CommonId TXN_DISK_ANN_RESET = new CommonId(CommonId.CommonType.OP, SOURCE, 94);
+    public static final CommonId TXN_DISK_ANN_BUILD = new CommonId(CommonId.CommonType.OP, SOURCE, 95);
+
+    public static final CommonId TXN_DISK_ANN_LOAD = new CommonId(CommonId.CommonType.OP, SOURCE, 96);
     private OperatorCodeUtils() {
     }
 }

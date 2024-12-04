@@ -32,6 +32,7 @@ import io.dingodb.sdk.service.entity.common.ScalarIndexType;
 import io.dingodb.sdk.service.entity.common.ScalarSchema;
 import io.dingodb.sdk.service.entity.common.ScalarSchemaItem;
 import io.dingodb.sdk.service.entity.common.ScalarValue;
+import io.dingodb.sdk.service.entity.common.ValueType;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.DiskannParameter;
 import io.dingodb.sdk.service.entity.common.VectorIndexParameter.VectorIndexParameterNest.FlatParameter;
@@ -228,10 +229,19 @@ public interface IndexMapper {
             }
             switch (properties.getOrDefault("type", "HNSW").toUpperCase()) {
                 case "DISKANN":
+                    int maxDegree = Integer.parseInt(properties.getOrDefault("max_degree", "64"));
+                    int searchListSize = Integer.parseInt(properties.getOrDefault("search_list_size", "100"));
                     vectorIndexParameter = VectorIndexParameter.builder()
                         .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_DISKANN)
                         .vectorIndexParameter(
-                            DiskannParameter.builder().dimension(dimension).metricType(metricType).build()
+                            DiskannParameter.builder()
+                                .dimension(dimension)
+                                .metricType(metricType)
+                                .maxDegree(maxDegree)
+                                .searchListSize(searchListSize)
+                                .valueType(ValueType.FLOAT)
+                                .codebookPrefix("")
+                                .build()
                         )
                         .build();
                     break;

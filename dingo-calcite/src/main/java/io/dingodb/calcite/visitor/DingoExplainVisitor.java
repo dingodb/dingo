@@ -18,6 +18,11 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDiskAnnBuild;
+import io.dingodb.calcite.rel.DingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.DingoDiskAnnLoad;
+import io.dingodb.calcite.rel.DingoDiskAnnReset;
+import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
@@ -519,4 +524,83 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         return explain1;
     }
 
+    @Override
+    public Explain visit(@NonNull DingoDiskAnnStatus dingoDiskAnnStatus) {
+        String filter = "";
+        if (dingoDiskAnnStatus.getFilter() != null) {
+            filter = dingoDiskAnnStatus.getFilter().toString();
+        }
+        String tableNames = "";
+        if (dingoDiskAnnStatus.getIndexTable() != null) {
+            tableNames = dingoDiskAnnStatus.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingoDiskAnnStatus", dingoDiskAnnStatus.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoDiskAnnCountMemory dingoDiskAnnCountMemory) {
+        String filter = "";
+        if (dingoDiskAnnCountMemory.getFilter() != null) {
+            filter = dingoDiskAnnCountMemory.getFilter().toString();
+        }
+        String tableNames = "";
+        if (dingoDiskAnnCountMemory.getIndexTable() != null) {
+            tableNames = dingoDiskAnnCountMemory.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingoDiskAnnCountMemory", dingoDiskAnnCountMemory.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoDiskAnnReset dingoDiskAnnReset) {
+        String filter = "";
+        if (dingoDiskAnnReset.getFilter() != null) {
+            filter = dingoDiskAnnReset.getFilter().toString();
+        }
+        String tableNames = "";
+        if (dingoDiskAnnReset.getIndexTable() != null) {
+            tableNames = dingoDiskAnnReset.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingoDiskAnnReset", dingoDiskAnnReset.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoDiskAnnBuild dingoDiskAnnBuild) {
+        String filter = "";
+        if (dingoDiskAnnBuild.getFilter() != null) {
+            filter = dingoDiskAnnBuild.getFilter().toString();
+        }
+        String tableNames = "";
+        if (dingoDiskAnnBuild.getIndexTable() != null) {
+            tableNames = dingoDiskAnnBuild.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingoDiskAnnBuild", dingoDiskAnnBuild.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(@NonNull DingoDiskAnnLoad dingoDiskAnnLoad) {
+        String filter = "";
+        if (dingoDiskAnnLoad.getFilter() != null) {
+            filter = dingoDiskAnnLoad.getFilter().toString();
+        }
+        String tableNames = "";
+        if (dingoDiskAnnLoad.getIndexTable() != null) {
+            tableNames = dingoDiskAnnLoad.getIndexTable().getName();
+        }
+        return new Explain(
+            "dingoDiskAnnLoad", dingoDiskAnnLoad.getRowCount(), "root",
+            tableNames, filter
+        );
+    }
 }

@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.vector.VectorSearchResponse;
 import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
@@ -155,11 +156,20 @@ public interface StoreInstance {
     default List<VectorSearchResponse> vectorSearch(
         CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap
     ) {
-        return vectorSearch(System.identityHashCode(floatArray), indexId, floatArray, topN, parameterMap, null);
+        return vectorSearch(
+            System.identityHashCode(floatArray),
+            indexId,
+            floatArray,
+            topN,
+            parameterMap,
+            null,
+            false
+        );
     }
 
     default List<VectorSearchResponse> vectorSearch(
-        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap, CoprocessorV2 coprocessorV2
+        long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap,
+        CoprocessorV2 coprocessorV2, boolean isDiskAnn
     ) {
         throw new UnsupportedOperationException();
     }
@@ -172,6 +182,35 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default String diskAnnBuild(
+        long requestTs, CommonId indexId, long ts
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default String diskAnnLoad(
+        long requestTs, CommonId indexId, int nodesCacheNum, boolean warmup
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default String diskAnnStatus(
+        long requestTs, CommonId indexId
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default String diskAnnReset(
+        long requestTs, CommonId indexId
+    ) {
+        throw new UnsupportedOperationException();
+    }
+
+    default long diskAnnCountMemory(
+        long requestTs, CommonId indexId
+    ) {
+        throw new UnsupportedOperationException();
+    }
     @Deprecated
     default long count(Range range) {
         throw new UnsupportedOperationException();

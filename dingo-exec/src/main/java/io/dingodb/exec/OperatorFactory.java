@@ -64,6 +64,11 @@ import io.dingodb.exec.operator.ScanWithPipeOpOperator;
 import io.dingodb.exec.operator.SendOperator;
 import io.dingodb.exec.operator.SortOperator;
 import io.dingodb.exec.operator.SumUpOperator;
+import io.dingodb.exec.operator.TxnDiskAnnBuildOperator;
+import io.dingodb.exec.operator.TxnDiskAnnCountMemoryOperator;
+import io.dingodb.exec.operator.TxnDiskAnnLoadOperator;
+import io.dingodb.exec.operator.TxnDiskAnnResetOperator;
+import io.dingodb.exec.operator.TxnDiskAnnStatusOperator;
 import io.dingodb.exec.operator.TxnGetByIndexOperator;
 import io.dingodb.exec.operator.TxnGetByKeysOperator;
 import io.dingodb.exec.operator.TxnIndexRangeScanOperator;
@@ -148,6 +153,11 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.SORT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SUM_UP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_CLEAN_CACHE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_CLEAN_EXTRA_DATA_CACHE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_BUILD;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_COUNT_MEMORY;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_LOAD;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_RESET;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_STATUS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
@@ -244,6 +254,11 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_PART_DOCUMENT, TxnPartDocumentOperator.INSTANCE);
         OPERATORS.put(DOCUMENT_PRE_FILTER, DocumentPreFilterOperator.INSTANCE);
         OPERATORS.put(TXN_CLEAN_EXTRA_DATA_CACHE, CleanExtraDataCacheOperator.INSTANCE);
+        OPERATORS.put(TXN_DISK_ANN_STATUS, TxnDiskAnnStatusOperator.INSTANCE);
+        OPERATORS.put(TXN_DISK_ANN_COUNT_MEMORY, TxnDiskAnnCountMemoryOperator.INSTANCE);
+        OPERATORS.put(TXN_DISK_ANN_RESET, TxnDiskAnnResetOperator.INSTANCE);
+        OPERATORS.put(TXN_DISK_ANN_BUILD, TxnDiskAnnBuildOperator.INSTANCE);
+        OPERATORS.put(TXN_DISK_ANN_LOAD, TxnDiskAnnLoadOperator.INSTANCE);
     }
 
     private OperatorFactory() {

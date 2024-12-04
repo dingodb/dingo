@@ -16,10 +16,20 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.rel.DingoDiskAnnBuild;
+import io.dingodb.calcite.rel.DingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.DingoDiskAnnLoad;
+import io.dingodb.calcite.rel.DingoDiskAnnReset;
+import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnLoad;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnReset;
+import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoHybridSearch;
 import io.dingodb.calcite.rel.LogicalDingoVector;
@@ -99,6 +109,76 @@ public class DingoFunctionScanRule extends ConverterRule {
                 hybridSearch.getSelection(),
                 hybridSearch.getFilter(),
                 hybridSearch.hints
+            );
+        } else if (rel instanceof LogicalDingoDiskAnnBuild && !(rel instanceof DingoDiskAnnBuild)) {
+            LogicalDingoDiskAnnBuild vector = (LogicalDingoDiskAnnBuild) rel;
+            return new DingoDiskAnnBuild(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter(),
+                vector.getHints()
+            );
+        } else if (rel instanceof LogicalDingoDiskAnnLoad && !(rel instanceof DingoDiskAnnLoad)) {
+            LogicalDingoDiskAnnLoad vector = (LogicalDingoDiskAnnLoad) rel;
+            return new DingoDiskAnnLoad(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter(),
+                vector.getHints()
+            );
+        } else if (rel instanceof LogicalDingoDiskAnnStatus && !(rel instanceof DingoDiskAnnStatus)) {
+            LogicalDingoDiskAnnStatus vector = (LogicalDingoDiskAnnStatus) rel;
+            return new DingoDiskAnnStatus(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter(),
+                vector.getHints()
+            );
+        } else if (rel instanceof LogicalDingoDiskAnnCountMemory && !(rel instanceof DingoDiskAnnCountMemory)) {
+            LogicalDingoDiskAnnCountMemory vector = (LogicalDingoDiskAnnCountMemory) rel;
+            return new DingoDiskAnnCountMemory(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter(),
+                vector.getHints()
+            );
+        } else if (rel instanceof LogicalDingoDiskAnnReset && !(rel instanceof DingoDiskAnnReset)) {
+            LogicalDingoDiskAnnReset vector = (LogicalDingoDiskAnnReset) rel;
+            return new DingoDiskAnnReset(
+                vector.getCluster(),
+                traits,
+                vector.getCall(),
+                vector.getTable(),
+                vector.getOperands(),
+                vector.getIndexTableId(),
+                vector.getIndexTable(),
+                vector.getSelection(),
+                vector.getFilter(),
+                vector.getHints()
             );
         } else if (rel instanceof DingoFunctionScan) {
             DingoFunctionScan scan = (DingoFunctionScan) rel;

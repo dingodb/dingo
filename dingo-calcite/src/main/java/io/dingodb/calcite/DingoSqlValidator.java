@@ -30,8 +30,10 @@ import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
+import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
@@ -101,6 +103,15 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             super.registerNamespace(
                 usingScope, alias,
                 new TableHybridFunctionNamespace(this, (SqlBasicCall) enclosingNode),
+                forceNullable
+            );
+            return;
+        } else if (enclosingNode instanceof SqlBasicCall
+            && (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlDiskAnnOperator)
+        ) {
+            super.registerNamespace(
+                usingScope, alias,
+                new TableDiskAnnFunctionNamespace(this, (SqlBasicCall) enclosingNode),
                 forceNullable
             );
             return;

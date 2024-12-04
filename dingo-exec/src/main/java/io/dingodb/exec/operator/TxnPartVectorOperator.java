@@ -72,7 +72,9 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
             param.getFloatArray(),
             param.getTopN(),
             param.getParameterMap(),
-            param.getCoprocessor());
+            param.getCoprocessor(),
+            param.isDiskAnnVector()
+        );
         List<Object[]> results = new ArrayList<>();
         if (param.isLookUp()) {
             Map<Integer, Integer> vecPriIdxMapping = getVecPriIdxMapping(param);

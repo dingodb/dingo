@@ -16,11 +16,13 @@
 
 package io.dingodb.calcite.grammar;
 
+import io.dingodb.common.table.DiskAnnTable;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
+import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
@@ -46,6 +48,16 @@ public class SqlUserDefinedOperators {
     public static SqlDocumentOperator TEXT_SEARCH = new SqlDocumentOperator("TEXT_SEARCH", SqlKind.COLLECTION_TABLE);
 
     public static SqlHybridSearchOperator HYBRID_SEARCH = new SqlHybridSearchOperator("HYBRID_SEARCH", SqlKind.COLLECTION_TABLE);
+
+    public static SqlDiskAnnOperator DISK_ANN_BUILD = new SqlDiskAnnOperator(DiskAnnTable.TABLE_BUILD_NAME, SqlKind.COLLECTION_TABLE);
+
+    public static SqlDiskAnnOperator DISK_ANN_LOAD = new SqlDiskAnnOperator(DiskAnnTable.TABLE_LOAD_NAME, SqlKind.COLLECTION_TABLE);
+
+    public static SqlDiskAnnOperator DISK_ANN_STATUS = new SqlDiskAnnOperator(DiskAnnTable.TABLE_STATUS_NAME, SqlKind.COLLECTION_TABLE);
+
+    public static SqlDiskAnnOperator DISK_ANN_COUNT_MEMORY = new SqlDiskAnnOperator(DiskAnnTable.TABLE_COUNT_MEMORY_NAME, SqlKind.COLLECTION_TABLE);
+
+    public static SqlDiskAnnOperator DISK_ANN_RESET = new SqlDiskAnnOperator(DiskAnnTable.TABLE_RESET_NAME, SqlKind.COLLECTION_TABLE);
 
     public static SqlCosineSimilarityOperator COSINE_SIMILARITY
         = new SqlCosineSimilarityOperator(VectorCosineDistanceFun.NAME, SqlKind.OTHER_FUNCTION);

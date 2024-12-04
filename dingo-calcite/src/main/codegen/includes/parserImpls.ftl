@@ -1258,5 +1258,85 @@ SqlNode TableFunctionCall() :
         {
             return SqlUserDefinedOperators.HYBRID_SEARCH.createCall(s.end(this), list);
         }
+    |
+        <DISK_ANN_BUILD> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.DISK_ANN_BUILD.createCall(s.end(this), list);
+        }
+    |
+        <DISK_ANN_LOAD> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.DISK_ANN_LOAD.createCall(s.end(this), list);
+        }
+    |
+        <DISK_ANN_STATUS> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.DISK_ANN_STATUS.createCall(s.end(this), list);
+        }
+    |
+        <DISK_ANN_RESET> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.DISK_ANN_RESET.createCall(s.end(this), list);
+        }
+    |
+        <DISK_ANN_COUNT_MEMORY> { s = span(); } <LPAREN>
+        [
+            AddArg0(list, ExprContext.ACCEPT_CURSOR)
+            (
+                <COMMA> {
+                    // a comma-list can't appear where only a query is expected
+                    checkNonQueryExpression(ExprContext.ACCEPT_CURSOR);
+                }
+                AddArg(list, ExprContext.ACCEPT_CURSOR)
+            )*
+        ]
+        <RPAREN>
+        {
+            return SqlUserDefinedOperators.DISK_ANN_COUNT_MEMORY.createCall(s.end(this), list);
+        }
     )
 }

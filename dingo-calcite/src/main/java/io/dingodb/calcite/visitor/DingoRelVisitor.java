@@ -17,6 +17,11 @@
 package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.rel.DingoAggregate;
+import io.dingodb.calcite.rel.DingoDiskAnnBuild;
+import io.dingodb.calcite.rel.DingoDiskAnnCountMemory;
+import io.dingodb.calcite.rel.DingoDiskAnnLoad;
+import io.dingodb.calcite.rel.DingoDiskAnnReset;
+import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
@@ -120,4 +125,14 @@ public interface DingoRelVisitor<T> {
     T visitDingoAggregateReduce(@NonNull DingoReduceAggregate rel);
 
     T visitDingoIndexScanWithRelOp(@NonNull DingoIndexScanWithRelOp rel);
+
+    T visit(@NonNull DingoDiskAnnStatus dingoDiskAnnStatus);
+
+    T visit(@NonNull DingoDiskAnnCountMemory dingoDiskAnnCountMemory);
+
+    T visit(@NonNull DingoDiskAnnReset dingoDiskAnnReset);
+
+    T visit(@NonNull DingoDiskAnnBuild dingoDiskAnnBuild);
+
+    T visit(@NonNull DingoDiskAnnLoad dingoDiskAnnLoad);
 }

@@ -29,6 +29,7 @@ import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.common.vector.TxnVectorSearchResponse;
 import io.dingodb.common.vector.VectorSearchResponse;
@@ -53,19 +54,32 @@ import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.DocumentWithScore;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
+import io.dingodb.sdk.service.entity.common.StateDiskAnnParam;
 import io.dingodb.sdk.service.entity.common.ValueType;
 import io.dingodb.sdk.service.entity.common.Vector;
 import io.dingodb.sdk.service.entity.common.VectorFilter;
 import io.dingodb.sdk.service.entity.common.VectorFilterType;
+import io.dingodb.sdk.service.entity.common.VectorLoadParameter;
 import io.dingodb.sdk.service.entity.common.VectorSearchParameter;
 import io.dingodb.sdk.service.entity.common.VectorSearchParameter.SearchNest;
+import io.dingodb.sdk.service.entity.common.VectorStateParameter;
 import io.dingodb.sdk.service.entity.common.VectorTableData;
 import io.dingodb.sdk.service.entity.common.VectorWithDistance;
 import io.dingodb.sdk.service.entity.common.VectorWithId;
 import io.dingodb.sdk.service.entity.document.DocumentSearchRequest;
 import io.dingodb.sdk.service.entity.index.VectorAddRequest;
+import io.dingodb.sdk.service.entity.index.VectorBuildRequest;
+import io.dingodb.sdk.service.entity.index.VectorBuildResponse;
+import io.dingodb.sdk.service.entity.index.VectorCountMemoryRequest;
+import io.dingodb.sdk.service.entity.index.VectorCountMemoryResponse;
 import io.dingodb.sdk.service.entity.index.VectorDeleteRequest;
+import io.dingodb.sdk.service.entity.index.VectorLoadRequest;
+import io.dingodb.sdk.service.entity.index.VectorLoadResponse;
+import io.dingodb.sdk.service.entity.index.VectorResetRequest;
+import io.dingodb.sdk.service.entity.index.VectorResetResponse;
 import io.dingodb.sdk.service.entity.index.VectorSearchRequest;
+import io.dingodb.sdk.service.entity.index.VectorStatusRequest;
+import io.dingodb.sdk.service.entity.index.VectorStatusResponse;
 import io.dingodb.sdk.service.entity.index.VectorWithDistanceResult;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.store.KvBatchCompareAndSetRequest;
@@ -75,6 +89,7 @@ import io.dingodb.sdk.service.entity.store.KvDeleteRangeRequest;
 import io.dingodb.sdk.service.entity.store.KvGetRequest;
 import io.dingodb.sdk.service.entity.store.KvPutIfAbsentRequest;
 import io.dingodb.sdk.service.entity.store.KvPutRequest;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.proxy.service.CodecService.KeyValueCodec;
@@ -561,7 +576,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             Float[] floatArray,
             int topN,
             Map<String, Object> parameterMap,
-            CoprocessorV2 coprocessor
+            CoprocessorV2 coprocessor,
+            boolean isDiskAnn
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
@@ -581,6 +597,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .topN(topN)
                 .search(search)
                 .build();
+            if (isDiskAnn) {
+                String diskAnnStatus = diskAnnStatus(requestTs, indexId);
+                if (diskAnnStatus != null && diskAnnStatus.equals("NODATA")) {
+                    parameter.setUseBruteForce(true);
+                }
+            }
             if (coprocessor != null) {
                 parameter.setVectorCoprocessor(MAPPER.coprocessorTo(coprocessor));
                 parameter.setVectorFilter(VectorFilter.TABLE_FILTER);
@@ -612,14 +634,22 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     VectorSearchResponse response;
                     if (isTxn) {
                         TxnVectorSearchResponse txnResponse = new TxnVectorSearchResponse();
-                        txnResponse.setTableKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
-                        txnResponse.setTableVal(vectorWithDistance.getVectorWithId().getTableData().getTableValue());
+                        if (vectorWithDistance.getVectorWithId().getTableData() != null) {
+                            txnResponse.setTableKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
+                            txnResponse.setTableVal(vectorWithDistance.getVectorWithId().getTableData().getTableValue());
+                        } else {
+                            continue;
+                        }
                         response = txnResponse;
                     } else {
                         response = new VectorSearchResponse();
                     }
                     response.setFloatValues(vectorWithDistance.getVectorWithId().getVector().getFloatValues());
-                    response.setKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
+                    if (vectorWithDistance.getVectorWithId().getTableData() != null) {
+                        response.setKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
+                    } else {
+                        continue;
+                    }
                     response.setDistance(vectorWithDistance.getDistance());
                     response.setVectorId(vectorWithDistance.getVectorWithId().getId());
                     vectorSearchResponseList.add(response);
@@ -646,6 +676,74 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             }
 
             return documentWithScores.stream().map(MAPPER::documentWithScoreTo).collect(Collectors.toList());
+        }
+
+        @Override
+        public String diskAnnBuild(long requestTs, CommonId indexId, long ts) {
+            VectorBuildResponse vectorBuildResponse = indexService(indexId, regionId).vectorBuild(
+                requestTs,
+                VectorBuildRequest.builder().ts(ts).build()
+            );
+            Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorBuildResponse.getState());
+            return optionalState
+                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
+                .orElse("INITIALIZED");
+        }
+
+        @Override
+        public String diskAnnLoad(long requestTs, CommonId indexId, int nodesCacheNum, boolean warmup) {
+            VectorLoadResponse vectorLoadResponse = indexService(indexId, regionId).vectorLoad(
+                requestTs,
+                VectorLoadRequest.builder()
+                    .parameter(
+                        VectorLoadParameter.builder()
+                            .load(
+                                VectorLoadParameter.LoadNest.Diskann.builder()
+                                    .numNodesToCache(nodesCacheNum)
+                                    .warmup(warmup)
+                                    .build()
+                            )
+                            .build())
+                    .build()
+            );
+            Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorLoadResponse.getState());
+            return optionalState
+                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
+                .orElse("INITIALIZED");
+        }
+
+        @Override
+        public String diskAnnStatus(long requestTs, CommonId indexId) {
+            VectorStatusResponse vectorStatusResponse = indexService(indexId, regionId).vectorStatus(
+                requestTs,
+                VectorStatusRequest.builder().build()
+            );
+            Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorStatusResponse.getState());
+            return optionalState
+                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
+                .orElse("INITIALIZED");
+        }
+
+        @Override
+        public String diskAnnReset(long requestTs, CommonId indexId) {
+            VectorResetResponse vectorResetResponse = indexService(indexId, regionId).vectorReset(
+                requestTs,
+                VectorResetRequest.builder().build()
+            );
+            Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorResetResponse.getState());
+            return optionalState
+                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
+                .orElse("INITIALIZED");
+        }
+
+        @Override
+        public long diskAnnCountMemory(long requestTs, CommonId indexId) {
+
+            VectorCountMemoryResponse vectorCountMemoryResponse = indexService(indexId, regionId).vectorCountMemory(
+                requestTs,
+                VectorCountMemoryRequest.builder().build()
+            );
+            return vectorCountMemoryResponse.getCount();
         }
 
         @Override
@@ -734,7 +832,12 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             Object o;
             switch (indexType) {
                 case VECTOR_DISKANN:
-                    return SearchNest.Diskann.builder().build();
+                    int beamWidth = 2;
+                    o = parameterMap.get("beamwidth");
+                    if (o != null) {
+                        beamWidth = ((Number) o).intValue();
+                    }
+                    return SearchNest.Diskann.builder().beamwidth(beamWidth).build();
                 case VECTOR_IVF_FLAT:
                     int nprobe = 10;
                     o = parameterMap.get("nprobe");

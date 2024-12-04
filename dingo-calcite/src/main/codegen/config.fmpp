@@ -210,6 +210,11 @@ data: {
       "RENAME"
       "TEXT_SEARCH"
       "HYBRID_SEARCH"
+      "DISK_ANN_BUILD"
+      "DISK_ANN_LOAD"
+      "DISK_ANN_STATUS"
+      "DISK_ANN_RESET"
+      "DISK_ANN_COUNT_MEMORY"
     ]
 
     # List of non-reserved keywords to add;

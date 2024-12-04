@@ -39,6 +39,7 @@ import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.type.TupleType;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -182,4 +183,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         return TupleMapping.of(Arrays.copyOf(mappings, keyCount));
     }
 
+    public boolean isDiskAnnVector() {
+        return indexTable.getIndexType() == IndexType.VECTOR_DISKANN;
+    }
 }

@@ -36,6 +36,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
@@ -141,11 +142,17 @@ public final class DingoParserContext implements Context {
         tableInstance.register(SqlUserDefinedOperators.SCAN);
         tableInstance.register(SqlUserDefinedOperators.TEXT_SEARCH);
         tableInstance.register(SqlUserDefinedOperators.HYBRID_SEARCH);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_BUILD);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_LOAD);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_STATUS);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_COUNT_MEMORY);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_RESET);
         SqlLikeBinaryOperator.register();
         SqlFunctionScanOperator.register(this);
         SqlVectorOperator.register(this);
         SqlDocumentOperator.register(this);
         SqlHybridSearchOperator.register(this);
+        SqlDiskAnnOperator.register(this);
         // select user from user ; user is default special operator
         eliminateUserOperator(tableInstance);
 
