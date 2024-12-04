@@ -134,6 +134,7 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
+                                    visitor.getExecuteVariables().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex()));
@@ -158,6 +159,7 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     0L,
                                     transaction.getLockTimeOut(),
+                                    visitor.getExecuteVariables().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex()));

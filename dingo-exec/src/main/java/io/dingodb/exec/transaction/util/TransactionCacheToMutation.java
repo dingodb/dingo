@@ -225,14 +225,36 @@ public final class TransactionCacheToMutation {
         int op = txnLocalData.getOp().getCode();
         byte[] key = txnLocalData.getKey();
         byte[] value = txnLocalData.getValue();
+        return preWriteMutation(
+            txnId,
+            tableId,
+            newPartId,
+            op,
+            key,
+            value,
+            txnType == TransactionType.PESSIMISTIC
+        );
+    }
 
+    public static Mutation cacheToPessimisticLockMutation(@NonNull byte[] key, byte[] value, long forUpdateTs) {
+        return new Mutation(Op.LOCK, key, value, forUpdateTs, null, null);
+    }
+
+    @NonNull
+    public static Mutation preWriteMutation(CommonId txnId,
+                                            CommonId tableId,
+                                            CommonId newPartId,
+                                            int op,
+                                            byte[] key,
+                                            byte[] value,
+                                            boolean isPessimistic) {
         StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = tableId.encode();
         byte[] partIdByte = newPartId.encode();
         int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
         long forUpdateTs = 0;
-        if (txnType == TransactionType.PESSIMISTIC) {
+        if (isPessimistic) {
             byte[] lockBytes = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_LOCK,
                 key,
@@ -266,10 +288,6 @@ public final class TransactionCacheToMutation {
             }
         }
         // cache to mutations
-        return TransactionCacheToMutation.cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId, txnId);
-    }
-
-    public static Mutation cacheToPessimisticLockMutation(@NonNull byte[] key, byte[] value, long forUpdateTs) {
-        return new Mutation(Op.LOCK, key, value, forUpdateTs, null, null);
+        return cacheToMutation(op, key, value, forUpdateTs, tableId, newPartId, txnId);
     }
 }

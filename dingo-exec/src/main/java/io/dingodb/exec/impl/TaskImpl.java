@@ -41,6 +41,7 @@ import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
@@ -56,6 +57,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -114,6 +116,9 @@ public final class TaskImpl implements Task {
 
     @JsonProperty("isSelect")
     private Boolean isSelect;
+
+    @Getter
+    private transient final Map<TxnPartData, Boolean> partData;
     private CommonId rootOperatorId = null;
 
     private transient AtomicInteger status = new AtomicInteger(Status.BORN);
@@ -147,6 +152,7 @@ public final class TaskImpl implements Task {
         this.maxExecutionTime = maxExecutionTime;
         this.isSelect = isSelect;
         this.context = Context.builder().pin(0).keyState(new ArrayList<>()).build();
+        this.partData = new ConcurrentHashMap<>();
     }
 
     public Context getContext() {

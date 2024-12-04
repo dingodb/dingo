@@ -33,16 +33,20 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -80,6 +84,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         DingoType schema = param.getSchema();
         StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
         KeyValueCodec codec = param.getCodec();
+        boolean isVector = false;
+        boolean isDocument = false;
         if (context.getIndexId() != null) {
             Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
             if (indexTable == null) {
@@ -111,6 +117,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                     return finalTuple[i];
                 }).toArray();
+            }
+            IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+            if (index.indexType.isVector) {
+                isVector = true;
+            }
+            if (index.indexType == IndexType.DOCUMENT) {
+                isDocument = true;
             }
             schema = indexTable.tupleType();
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
@@ -181,6 +194,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     // write data
                     keyValue.setKey(dataKey);
                     localStore.delete(deleteKey);
+                    vertex.getTask().getPartData().put(
+                        new TxnPartData(tableId, partId),
+                        (!isVector && !isDocument)
+                    );
                     if (localStore.put(keyValue) && context.getIndexId() == null) {
                         param.inc();
                     }
@@ -205,6 +222,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
                 // write data
                 keyValue.setKey(dataKey);
+                vertex.getTask().getPartData().put(
+                    new TxnPartData(tableId, partId),
+                    (!isVector && !isDocument)
+                );
                 if ( localStore.put(keyValue)
                     && context.getIndexId() == null
                 ) {
@@ -246,6 +267,28 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     op = Op.DELETE;
                 }
             } else {
+                if (param.isCheckInPlace()) {
+                    byte[] originalKey;
+                    if (isVector) {
+                        originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                        CodecService.getDefault().setId(originalKey, partId.domain);
+                    } else if (isDocument) {
+                        originalKey = codec.encodeKeyPrefix(newTuple, 1);
+                        CodecService.getDefault().setId(originalKey, partId.domain);
+                    } else {
+                        originalKey = key;
+                    }
+                    StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+                    KeyValue kvKeyValue = kvStore.txnGet(
+                        TsoService.getDefault().tso(),
+                        originalKey,
+                        param.getLockTimeOut()
+                    );
+                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                        throw new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                    }
+                }
                 keyValue.setKey(
                     ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
                 );
@@ -264,6 +307,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 jobIdByte,
                 tableIdByte,
                 partIdByte
+            );
+            vertex.getTask().getPartData().put(
+                new TxnPartData(tableId, partId),
+                (!isVector && !isDocument)
             );
             localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (localStore.put(keyValue) && context.getIndexId() == null) {

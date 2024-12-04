@@ -14,18 +14,34 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.exec.transaction.base;
 
-import lombok.AllArgsConstructor;
+import io.dingodb.common.CommonId;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
+@Builder
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class ExecuteVariables {
-    public final static int CONCURRENCY_COUNT = 5;
-    private boolean isJoinConcurrency = false;
-    private int concurrencyLevel = CONCURRENCY_COUNT;
-    private boolean isInsertCheckInplace = false;
+@Setter
+@ToString
+public class TwoPhaseCommitData {
+    private final CommonId txnId;
+
+    private final byte[] primaryKey;
+
+    private final boolean isPessimistic;
+
+    private final int isolationLevel;
+    @Builder.Default
+    private final long commitTs = 0L;
+
+    private final TransactionType type;
+    @Builder.Default
+    private final long lockTimeOut = 50 * 1000L;
+
+    public boolean isPessimistic() {
+        return type == TransactionType.PESSIMISTIC;
+    }
 }

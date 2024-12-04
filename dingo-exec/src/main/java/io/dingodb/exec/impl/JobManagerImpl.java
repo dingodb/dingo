@@ -21,7 +21,6 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
-import io.dingodb.common.ddl.RunningJobs;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.type.DingoType;
@@ -39,6 +38,7 @@ import io.dingodb.exec.impl.message.RunTaskMessage;
 import io.dingodb.exec.impl.message.TaskMessage;
 import io.dingodb.exec.operator.params.RootParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.Channel;
@@ -133,6 +133,13 @@ public final class JobManagerImpl implements JobManager {
         param.setTakeTtl(takeNextTimeout);
         return createIterator(job, paras);
     }
+
+    @Override
+    public @NonNull Map<TxnPartData, Boolean> getPartData(@NonNull Job job) {
+        Task root = job.getRoot();
+        return root.getPartData();
+    }
+
 
     @Override
     public void close() {

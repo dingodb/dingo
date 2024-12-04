@@ -28,6 +28,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.exception.TaskCancelException;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -40,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.Iterator;
+import java.util.Map;
 
 @Slf4j
 public class DingoStatement extends AvaticaStatement {
@@ -187,6 +189,25 @@ public class DingoStatement extends AvaticaStatement {
             }
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
+    }
+
+    @SneakyThrows
+    public Map<TxnPartData, Boolean> getJobPartData(@NonNull JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+       if (signature instanceof DingoSignature) {
+            if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
+            Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
+            this.job = job;
+            this.jobManager = jobManager;
+           Map<TxnPartData, Boolean> partData = jobManager.getPartData(job);
+           if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
+           return partData;
+        }
+       return null;
     }
 
     public void removeJob(JobManager jobManager) {

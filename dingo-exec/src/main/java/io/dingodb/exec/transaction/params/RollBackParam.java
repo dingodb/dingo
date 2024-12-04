@@ -80,4 +80,8 @@ public class RollBackParam extends AbstractParams {
     public void addForUpdateTs(long forUpdateTs) {
         forUpdateTsList.add(forUpdateTs);
     }
+
+    public boolean isPessimistic() {
+        return getTransactionType() == TransactionType.PESSIMISTIC;
+    }
 }

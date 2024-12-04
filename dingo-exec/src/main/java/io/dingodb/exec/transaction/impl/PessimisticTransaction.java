@@ -59,6 +59,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class PessimisticTransaction extends BaseTransaction {
@@ -121,7 +122,7 @@ public class PessimisticTransaction extends BaseTransaction {
         this.setForUpdateTs(jobSeqId);
         try {
             // 1、get rollback_ts
-            long rollBackTs = TransactionManager.nextTimestamp();
+            long rollBackTs = TransactionManager.getCacheTso();
             // 2、generator job、task、rollBackPessimisticLockOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
@@ -220,7 +221,7 @@ public class PessimisticTransaction extends BaseTransaction {
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
             // 1、get rollback_ts
-            long rollBackTs = TransactionManager.nextTimestamp();
+            long rollBackTs = TransactionManager.getCacheTso();
             // 2、generator job、task、rollBackResidualPessimisticLock
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
@@ -382,6 +383,9 @@ public class PessimisticTransaction extends BaseTransaction {
 
     @Override
     public boolean onePcStage() {
+        if (partDataMap.size() > 1) {
+            return false;
+        }
         Iterator<Object[]> transform = cache.iterator();
         List<Mutation> mutations = new ArrayList<Mutation>();
         Set<CommonId> partIdSet = new HashSet<CommonId>();
@@ -481,18 +485,14 @@ public class PessimisticTransaction extends BaseTransaction {
         rollbackPrimaryKeyLock();
         long rollBackStart = System.currentTimeMillis();
         Location currentLocation = MetaService.root().currentLocation();
-        CommonId jobId = CommonId.EMPTY_JOB;
+        AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         try {
-            // 1、get commit_ts
-            long rollbackTs = TransactionManager.nextTimestamp();
-            // 2、generator job、task、RollBackOperator
-            job = jobManager.createJob(startTs, rollbackTs, txnId, null);
-            jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
-            // 3、run RollBack
-            Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-            while (iterator.hasNext()){
-                iterator.next();
+            if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                LogUtils.info(log, "crossNodeRollback...");
+                crossNodeRollback(jobManager, currentLocation, jobId);
+            } else {
+                LogUtils.info(log, "parallelRollBack...");
+                parallelRollBack();
             }
             this.status = TransactionStatus.ROLLBACK;
         } catch (Throwable t) {
@@ -502,7 +502,22 @@ public class PessimisticTransaction extends BaseTransaction {
         } finally {
             LogUtils.info(log, "{} RollBack End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - rollBackStart));
-            jobManager.removeJob(jobId);
+            jobManager.removeJob(jobId.get());
+            MdcUtils.removeTxnId();
+        }
+    }
+
+    private void crossNodeRollback(JobManager jobManager, Location currentLocation, AtomicReference<CommonId> jobId) {
+        // 1、get rollback_ts
+        long rollbackTs = TransactionManager.getCacheTso();
+        // 2、generator job、task、RollBackOperator
+        job = jobManager.createJob(startTs, rollbackTs, txnId, null);
+        jobId.set(job.getJobId());
+        DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
+        // 3、run RollBack
+        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+        while (iterator.hasNext()){
+            iterator.next();
         }
     }
 

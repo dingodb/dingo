@@ -202,6 +202,10 @@ public class TransactionCache {
         return result;
     }
 
+    private static byte[] getScanCacheDataPrefix(CommonId txnId, CommonId tableId, CommonId partId) {
+        return ByteUtils.encodeCacheData(CommonId.LEN * 3, txnId.encode(), tableId.encode(), partId.encode());
+    }
+
     public boolean checkContinue() {
         Iterator<KeyValue> iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
         return iterator.hasNext();
@@ -262,6 +266,12 @@ public class TransactionCache {
             iterator = cache.scan(getScanPrefix(CommonId.CommonType.TXN_CACHE_DATA, txnId));
             return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
         }
+    }
+
+    public static Iterator<Object[]> getCacheData(CommonId txnId, CommonId tableId, CommonId partId) {
+        StoreInstance storeInstance = Services.LOCAL_STORE.getInstance(tableId, partId);
+        Iterator<KeyValue> iterator = storeInstance.scan(getScanCacheDataPrefix(txnId, tableId, partId));
+        return Iterators.transform(iterator, wrap(ByteUtils::decode)::apply);
     }
 
     public void checkCache() {

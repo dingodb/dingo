@@ -45,6 +45,7 @@ import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.impl.JobIteratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -80,6 +81,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -218,6 +220,20 @@ public class DingoMeta extends MetaImpl {
         );
     }
 
+    private void writePartData(@NonNull AvaticaStatement statement, ITransaction transaction) {
+        if (statement instanceof DingoStatement) {
+            Map<TxnPartData, Boolean> jobPartData = ((DingoStatement) statement).getJobPartData(jobManager);
+            if (jobPartData != null) {
+                transaction.getPartDataMap().putAll(jobPartData);
+            }
+        } else if (statement instanceof DingoPreparedStatement) {
+            Map<TxnPartData, Boolean> jobPartData = ((DingoPreparedStatement) statement).getJobPartData(jobManager);
+            if (jobPartData != null) {
+                transaction.getPartDataMap().putAll(jobPartData);
+            }
+        }
+    }
+
     private <E> MetaResultSet createArrayResultSet(
         Enumerable enumerable,
         Class[] classes,
@@ -255,7 +271,7 @@ public class DingoMeta extends MetaImpl {
             final StatementHandle sh = createStatement(ch);
             initProfile(sqlProfile, dingoConnection);
             DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-            long jobSeqId = TsoService.getDefault().tso();
+            long jobSeqId = TsoService.getDefault().cacheTso();
             String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
             MdcUtils.setStmtId(stmtId);
             sh.signature = parser.parseQuery(jobManager, jobSeqId, sql, true);
@@ -298,7 +314,7 @@ public class DingoMeta extends MetaImpl {
         @NonNull PrepareCallback callback
     ) {
         DingoConnection dingoConnection = (DingoConnection) connection;
-        long jobSeqId = TsoService.getDefault().tso();
+        long jobSeqId = TsoService.getDefault().cacheTso();
         String stmtId = "Stmt_" + sh + "_" + jobSeqId;
         MdcUtils.setStmtId(stmtId);
         DingoStatement statement = null;
@@ -555,7 +571,7 @@ public class DingoMeta extends MetaImpl {
                 throw new MissingResultsException(sh);
             }
             Signature signature = resultSet.getSignature();
-            if (signature instanceof  DingoSignature) {
+            if (signature instanceof DingoSignature) {
                 DingoSignature dingoSignature = (DingoSignature) signature;
                 if (dingoSignature.getJobId() != null) {
                     final long jobSeqId = dingoSignature.getJobId().seq;
@@ -664,6 +680,7 @@ public class DingoMeta extends MetaImpl {
                         signature.sql, transaction.isAutoCommit(), transaction.getType());
                 }
                 transaction.addSql(signature.sql);
+                writePartData(statement, transaction);
                 if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                     try {
                         connection.commit();
@@ -867,6 +884,7 @@ public class DingoMeta extends MetaImpl {
                 SqlProfile sqlProfile = getProfile(iterator, statement);
                 if (transaction != null) {
                     transaction.addSql(statement.getSql());
+                    writePartData(statement, transaction);
                     sqlProfile.setAutoCommit(transaction.isAutoCommit());
                     if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                         try {
@@ -935,7 +953,7 @@ public class DingoMeta extends MetaImpl {
                 } else {
                     jobManager.removeJob(statement.getJobId(jobManager));
                     DingoDriverParser parser = new DingoDriverParser(dingoConnection);
-                    long jobSeqId = TsoService.getDefault().tso();
+                    long jobSeqId = TsoService.getDefault().cacheTso();
                     String stmtId = "Stmt_" + sh + "_" + jobSeqId;
                     MdcUtils.setStmtId(stmtId);
                     sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql(), true);

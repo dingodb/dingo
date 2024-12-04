@@ -18,10 +18,12 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
+import java.util.Map;
 
 public interface JobManager {
     default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType) {
@@ -41,6 +43,8 @@ public interface JobManager {
     @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras);
 
     @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras, long takeNextTimeout);
+
+    @NonNull Map<TxnPartData, Boolean> getPartData(@NonNull Job job);
 
     void close();
 

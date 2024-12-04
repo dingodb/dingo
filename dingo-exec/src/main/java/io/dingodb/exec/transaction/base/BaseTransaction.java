@@ -32,6 +32,7 @@ import io.dingodb.exec.fin.ErrorType;
 import io.dingodb.exec.transaction.impl.TransactionCache;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.transaction.util.TwoPhaseCommitUtils;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoSchema;
@@ -56,12 +57,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,6 +100,7 @@ public abstract class BaseTransaction implements ITransaction {
     protected AtomicBoolean primaryKeyPreWrite;
     protected CommitProfile commitProfile;
     protected InfoSchema is;
+    protected Map<TxnPartData, Boolean> partDataMap;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 
@@ -111,6 +116,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
         this.transactionConfig = new TransactionConfig();
+        this.partDataMap = new ConcurrentHashMap<>();
         TransactionManager.register(txnId, this);
         commitProfile = new CommitProfile();
     }
@@ -127,6 +133,7 @@ public abstract class BaseTransaction implements ITransaction {
         this.cache = new TransactionCache(txnId);
         this.sqlList = new ArrayList<>();
         this.transactionConfig = new TransactionConfig();
+        this.partDataMap = new ConcurrentHashMap<>();
         TransactionManager.register(txnId, this);
         commitProfile = new CommitProfile();
     }
@@ -240,6 +247,14 @@ public abstract class BaseTransaction implements ITransaction {
     @Override
     public boolean getIsCrossNode() {
         return isCrossNode;
+    }
+
+    private boolean checkAsyncCommit() {
+        return transactionConfig.isAsyncCommit() && isScalaData();
+    }
+
+    private boolean isScalaData() {
+        return partDataMap.values().stream().allMatch(value -> value);
     }
 
     @Override
@@ -401,15 +416,17 @@ public abstract class BaseTransaction implements ITransaction {
                 LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}",
                     transactionOf(), Arrays.toString(primaryKey));
                 checkContinue();
-                // 2、generator job、task、PreWriteOperator
-                long jobSeqId = TransactionManager.nextTimestamp();
-                job = jobManager.createJob(startTs, jobSeqId, txnId, null);
-                jobId.set(job.getJobId());
-                DingoTransactionRenderJob.renderPreWriteJob(jobManager, job, currentLocation, this, true);
-                // 3、run PreWrite
-                Iterator<Object[]> iterator = jobManager.createIterator(job, null);
-                while (iterator.hasNext()) {
-                    iterator.next();
+                if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                    LogUtils.info(log, "crossNodePreWriteSeconds...");
+                    crossNodePreWriteSeconds(jobManager, currentLocation, jobId);
+                } else {
+                    if (checkAsyncCommit()) {
+                        // Async Commit
+
+                    } else {
+                        LogUtils.info(log, "parallelPreWrite...");
+                        parallelPreWriteSecondKeys();
+                    }
                 }
                 commitProfile.endPreWriteSecond();
                 this.status = TransactionStatus.PRE_WRITE;
@@ -486,8 +503,17 @@ public abstract class BaseTransaction implements ITransaction {
             }
             this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
             LogUtils.info(log, "{} CommitPrimaryKey end", transactionOf());
-            CompletableFuture<Void> commit_future = CompletableFuture.runAsync(() ->
-                commitJobRun(jobManager, currentLocation), Executors.executor("exec-txnCommit")
+            CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
+                () -> {
+                    if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                        LogUtils.info(log, "crossNodeCommitJobRun...");
+                        crossNodeCommitJobRun(jobManager, currentLocation);
+                    } else {
+                        LogUtils.info(log, "parallelCommitJobRun...");
+                        parallelCommitJobRun();
+                    }
+                },
+                Executors.executor("exec-txnCommit")
             ).exceptionally(
                 ex -> {
                     LogUtils.error(log, ex.toString(), ex);
@@ -495,7 +521,7 @@ public abstract class BaseTransaction implements ITransaction {
                 }
             );
             commitFuture = commit_future;
-            if (!cancel.get()) {
+            if (!cancel.get() && !isScalaData()) {
                 commit_future.get();
             }
             commitProfile.endCommitSecond();
@@ -511,10 +537,55 @@ public abstract class BaseTransaction implements ITransaction {
             LogUtils.debug(log, "{} Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(), commitTs,
                 status, (System.currentTimeMillis() - preWriteStart));
             jobManager.removeJob(jobId.get());
-            if (!cancel.get()) {
+            if (!cancel.get() && !isScalaData()) {
                 commitFuture = null;
             }
             //cleanUp();
+        }
+    }
+
+    private void parallelPreWriteSecondKeys() {
+        try {
+            TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                .primaryKey(cacheToObject.getMutation().getKey())
+                .isPessimistic(isPessimistic())
+                .isolationLevel(isolationLevel)
+                .txnId(txnId)
+                .type(getType())
+                .lockTimeOut(transactionConfig.getLockTimeOut())
+                .build();
+            Set<CompletableFuture<Boolean>> futures = new HashSet<>();
+            for (TxnPartData txnPartData: partDataMap.keySet()) {
+                CompletableFuture<Boolean> future = TwoPhaseCommitUtils.preWriteSecondKeys(txnPartData, twoPhaseCommitData);
+                futures.add(future);
+            }
+            if (!futures.isEmpty()) {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            }
+        } catch (CompletionException exception) {
+            LogUtils.error(log, exception.getCause().getMessage(), exception.getCause());
+            if (exception.getCause() instanceof WriteConflictException) {
+                throw new WriteConflictException(
+                    exception.getCause().getMessage(),
+                    ((WriteConflictException) exception.getCause()).key
+                );
+            } else if (exception.getCause() instanceof DuplicateEntryException) {
+                throw new DuplicateEntryException(exception.getCause().getMessage());
+            }
+            throw exception;
+        }
+    }
+
+    private void crossNodePreWriteSeconds(JobManager jobManager, Location currentLocation, AtomicReference<CommonId> jobId) {
+        // 2、generator job、task、PreWriteOperator
+        long jobSeqId = TransactionManager.getCacheTso();
+        job = jobManager.createJob(startTs, jobSeqId, txnId, null);
+        jobId.set(job.getJobId());
+        DingoTransactionRenderJob.renderPreWriteJob(jobManager, job, currentLocation, this, true);
+        // 3、run PreWrite
+        Iterator<Object[]> iterator = jobManager.createIterator(job, null);
+        while (iterator.hasNext()) {
+            iterator.next();
         }
     }
 
@@ -523,7 +594,7 @@ public abstract class BaseTransaction implements ITransaction {
         try {
             MdcUtils.setTxnId(txnId.toString());
             // 1、getTso
-            long cleanUpTs = TransactionManager.nextTimestamp();
+            long cleanUpTs = TransactionManager.getCacheTso();
             // 2、generator job、task、cleanCacheOperator
             Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
             jobId = job.getJobId();
@@ -550,7 +621,7 @@ public abstract class BaseTransaction implements ITransaction {
         try {
             MdcUtils.setTxnId(txnId.toString());
             // 1、getTso
-            long cleanUpTs = TransactionManager.nextTimestamp();
+            long cleanUpTs = TransactionManager.getCacheTso();
             // 2、generator job、task、cleanExtraDataCacheOperator
             Job job = jobManager.createJob(startTs, cleanUpTs, txnId, null);
             jobId = job.getJobId();
@@ -572,7 +643,7 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void commitJobRun(JobManager jobManager, Location currentLocation) {
+    private void crossNodeCommitJobRun(JobManager jobManager, Location currentLocation) {
         CommonId jobId = CommonId.EMPTY_JOB;
         try {
             MdcUtils.setTxnId(txnId.toString());
@@ -591,6 +662,28 @@ public abstract class BaseTransaction implements ITransaction {
         } finally {
             MdcUtils.removeTxnId();
             jobManager.removeJob(jobId);
+        }
+    }
+
+    private void parallelCommitJobRun() {
+        try {
+            MdcUtils.setTxnId(txnId.toString());
+            TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                .primaryKey(cacheToObject.getMutation().getKey())
+                .isPessimistic(isPessimistic())
+                .isolationLevel(isolationLevel)
+                .txnId(txnId)
+                .type(getType())
+                .lockTimeOut(transactionConfig.getLockTimeOut())
+                .commitTs(commitTs)
+                .build();
+            partDataMap.keySet().parallelStream()
+                .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
+                .forEach(future -> future.join());
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+        } finally {
+            MdcUtils.removeTxnId();
         }
     }
 
@@ -614,16 +707,15 @@ public abstract class BaseTransaction implements ITransaction {
             rollBackPrimaryKey(cacheToObject);
         }
         Location currentLocation = MetaService.root().currentLocation();
-        CommonId jobId = CommonId.EMPTY_JOB;
+        AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         try {
-            // 1、get commit_ts
-            long rollbackTs = TransactionManager.nextTimestamp();
-            // 2、generator job、task、RollBackOperator
-            job = jobManager.createJob(startTs, rollbackTs, txnId, null);
-            jobId = job.getJobId();
-            DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
-            // 3、run RollBack
-            jobManager.createIterator(job, null);
+            if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                LogUtils.info(log, "crossNodeRollback...");
+                crossNodeRollback(jobManager, currentLocation, jobId);
+            } else {
+                LogUtils.info(log, "parallelRollBack...");
+                parallelRollBack();
+            }
             this.status = TransactionStatus.ROLLBACK;
         } catch (Throwable t) {
             LogUtils.error(log, t.getMessage(), t);
@@ -632,8 +724,39 @@ public abstract class BaseTransaction implements ITransaction {
         } finally {
             LogUtils.info(log, "{} RollBack End Status:{}, Cost:{}ms", transactionOf(),
                 status, (System.currentTimeMillis() - rollBackStart));
-            jobManager.removeJob(jobId);
-            //cleanUp();
+            jobManager.removeJob(jobId.get());
+           // cleanUp();
+        }
+    }
+
+    private void crossNodeRollback(JobManager jobManager, Location currentLocation, AtomicReference<CommonId> jobId) {
+        // 1、get rollback_ts
+        long rollbackTs = TransactionManager.getCacheTso();
+        // 2、generator job、task、RollBackOperator
+        job = jobManager.createJob(startTs, rollbackTs, txnId, null);
+        jobId.set(job.getJobId());
+        DingoTransactionRenderJob.renderRollBackJob(jobManager, job, currentLocation, this, true);
+        // 3、run RollBack
+        jobManager.createIterator(job, null);
+    }
+
+    protected void parallelRollBack() {
+        try {
+            MdcUtils.setTxnId(txnId.toString());
+            TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                .primaryKey(cacheToObject.getMutation().getKey())
+                .isPessimistic(isPessimistic())
+                .isolationLevel(isolationLevel)
+                .txnId(txnId)
+                .type(getType())
+                .lockTimeOut(transactionConfig.getLockTimeOut())
+                .commitTs(commitTs)
+                .build();
+            partDataMap.keySet().parallelStream()
+                .map($ -> TwoPhaseCommitUtils.rollBackPartData($, twoPhaseCommitData))
+                .forEach(future -> future.join());
+        } finally {
+            MdcUtils.removeTxnId();
         }
     }
 

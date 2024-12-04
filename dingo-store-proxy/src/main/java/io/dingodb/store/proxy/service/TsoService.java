@@ -26,13 +26,13 @@ import io.dingodb.store.proxy.Configuration;
 import io.dingodb.tso.TsoServiceProvider;
 
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static io.dingodb.sdk.service.entity.meta.TsoOpType.OP_GEN_TSO;
 
 public class TsoService implements io.dingodb.tso.TsoService {
-
-    public static final TsoService INSTANCE = new TsoService();
-
+    private static int threshold = 20;
+    private final ConcurrentLinkedDeque<Long> cache = new ConcurrentLinkedDeque<>();
     @AutoService(TsoServiceProvider.class)
     public static class Provider implements TsoServiceProvider {
         @Override
@@ -46,6 +46,8 @@ public class TsoService implements io.dingodb.tso.TsoService {
 
     private MetaService tsoMetaService;
 
+    public static final TsoService INSTANCE = new TsoService();
+
     public TsoService() {
         String coordinators = Configuration.coordinators();
         if (coordinators == null) {
@@ -55,6 +57,7 @@ public class TsoService implements io.dingodb.tso.TsoService {
         this.tsoMetaService = Services.tsoService(
             Services.parse(coordinators)
         );
+        getCacheTso();
     }
 
     public TsoService(Set<Location> coordinators) {
@@ -80,10 +83,12 @@ public class TsoService implements io.dingodb.tso.TsoService {
 
     @Override
     public long tso() {
-        TsoTimestamp startTimestamp = tsoMetaService.tsoService(
-            trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
-        ).getStartTimestamp();
-        return (startTimestamp.getPhysical() << PHYSICAL_SHIFT) + (startTimestamp.getLogical() & MAX_LOGICAL);
+        return getLatestTso();
+    }
+
+    @Override
+    public long cacheTso() {
+        return getCacheTso();
     }
 
     @Override
@@ -102,4 +107,36 @@ public class TsoService implements io.dingodb.tso.TsoService {
     public long timestamp(long tso) {
         return tso >> PHYSICAL_SHIFT;
     }
+
+    public long getLatestTso() {
+        TsoTimestamp startTimestamp = tsoMetaService.tsoService(
+            trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
+        ).getStartTimestamp();
+        return (startTimestamp.getPhysical() << PHYSICAL_SHIFT) + (startTimestamp.getLogical() & MAX_LOGICAL);
+    }
+
+
+    public long getCacheTso() {
+        Long tso = cache.pollLast();
+        if (tso == null) {
+            synchronized (this) {
+                if (cache.isEmpty()) {
+                    loadBatchTso();
+                }
+                tso = cache.pollLast();
+            }
+        }
+        return tso;
+    }
+
+    private void loadBatchTso() {
+        TsoTimestamp startTimestamp = tsoMetaService.tsoService(
+            trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(threshold).build()
+        ).getStartTimestamp();
+        long physical = startTimestamp.getPhysical();
+        for (int i = 0; i < threshold; i++) {
+            cache.addFirst((physical << PHYSICAL_SHIFT) + ((startTimestamp.getLogical() + i) & MAX_LOGICAL));
+        }
+    }
+
 }

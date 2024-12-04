@@ -97,7 +97,7 @@ public class OptimisticTransaction extends BaseTransaction {
         try {
             this.status = TransactionStatus.ROLLBACK_OPTIMISTIC_DATA_START;
             // 1、get rollback_ts
-            long rollBackTs = TransactionManager.nextTimestamp();
+            long rollBackTs = TransactionManager.getCacheTso();
             // 2、generator job、task、rollBackOptimisticOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
@@ -139,7 +139,7 @@ public class OptimisticTransaction extends BaseTransaction {
         try {
             this.status = TransactionStatus.CLEAN_OPTIMISTIC_DATA_START;
             // 1、get rollback_ts
-            long rollBackTs = TransactionManager.nextTimestamp();
+            long rollBackTs = TransactionManager.getCacheTso();
             // 2、generator job、task、rollBackOptimisticOperator
             job = jobManager.createJob(startTs, rollBackTs, txnId, null);
             jobId = job.getJobId();
@@ -224,9 +224,11 @@ public class OptimisticTransaction extends BaseTransaction {
     @Override
     public void preWritePrimaryKey() {
         // 1、get first key from cache
-        cacheToObject = cache.getPrimaryKey();
-        byte[] key = cacheToObject.getMutation().getKey();
-        primaryKey = key;
+        if (cacheToObject == null) {
+            cacheToObject = cache.getPrimaryKey();
+            byte[] key = cacheToObject.getMutation().getKey();
+            primaryKey = key;
+        }
         txnPreWritePrimaryKey(cacheToObject);
     }
 
@@ -238,6 +240,9 @@ public class OptimisticTransaction extends BaseTransaction {
      */
     @Override
     public boolean onePcStage() {
+        if (partDataMap.size() > 1) {
+            return false;
+        }
         Iterator<Object[]> transform = cache.iterator();
         List<Mutation> mutations = new ArrayList<Mutation>();
         Set<CommonId> partIdSet = new HashSet<CommonId>();

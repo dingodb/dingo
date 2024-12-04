@@ -16,41 +16,21 @@
 
 package io.dingodb.exec.transaction.operator;
 
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
-import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.base.TxnLocalData;
-import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
-import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.IndexType;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.commit.TxnCommit;
-import io.dingodb.store.api.transaction.exception.RegionSplitException;
+import io.dingodb.exec.transaction.util.TwoPhaseCommitUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class CommitOperator extends TransactionOperator {
@@ -70,50 +50,12 @@ public class CommitOperator extends TransactionOperator {
             CommonId newPartId = txnLocalData.getPartId();
             int op = txnLocalData.getOp().getCode();
             byte[] key = txnLocalData.getKey();
-            byte[] value = txnLocalData.getValue();
             if (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0) {
                 return true;
             }
-            if (param.getTransactionType() == TransactionType.OPTIMISTIC) {
-                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-                byte[] txnIdByte = txnId.encode();
-                byte[] tableIdByte = tableId.encode();
-                byte[] partIdByte = newPartId.encode();
-                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-                byte[] checkBytes = ByteUtils.encode(
-                    CommonId.CommonType.TXN_CACHE_CHECK_DATA,
-                    key,
-                    Op.CheckNotExists.getCode(),
-                    len,
-                    txnIdByte, tableIdByte, partIdByte);
-                KeyValue keyValue = store.get(checkBytes);
-                if (keyValue != null && keyValue.getValue() != null) {
-                    switch (Op.forNumber(op)) {
-                        case PUT:
-                            op = Op.PUTIFABSENT.getCode();
-                            break;
-                        case DELETE:
-                            op = Op.CheckNotExists.getCode();
-                            break;
-                        default:
-                            break;
-                    }
-                    if (op == Op.CheckNotExists.getCode()) {
-                        return true;
-                    }
-                }
-            }
-            if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
-                if (indexTable.indexType.isVector || indexTable.indexType == IndexType.DOCUMENT) {
-                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
-                    Object[] decodeKey = codec.decodeKeyPrefix(key);
-                    TupleMapping mapping = TupleMapping.of(new int[]{0});
-                    DingoType dingoType = new LongType(false);
-                    TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                    KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
-                    key = keyValueCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
-                }
+            key = TwoPhaseCommitUtils.commitKey(txnId, tableId, newPartId, op, key, param.isPessimistic());
+            if (key == null) {
+                return true;
             }
             CommonId partId = param.getPartId();
             if (partId == null) {
@@ -124,51 +66,52 @@ public class CommitOperator extends TransactionOperator {
             } else if (partId.equals(newPartId)) {
                 param.addKey(key);
                 if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = txnCommit(param, txnId, tableId, partId);
+                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                        .primaryKey(param.getPrimaryKey())
+                        .isPessimistic(param.isPessimistic())
+                        .isolationLevel(param.getIsolationLevel())
+                        .txnId(txnId)
+                        .type(param.getTransactionType())
+                        .commitTs(param.getCommitTs())
+                        .build();
+                    boolean result = TwoPhaseCommitUtils.txnCommit(
+                        txnId,
+                        tableId,
+                        partId,
+                        param.getKeys(),
+                        twoPhaseCommitData
+                    );
                     if (!result) {
-                        throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());
+                        throw new RuntimeException(txnId + " " + partId
+                            + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());
                     }
                     param.getKeys().clear();
                     param.setPartId(null);
                 }
             } else {
-                boolean result = txnCommit(param, txnId, param.getTableId(), partId);
+                TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                    .primaryKey(param.getPrimaryKey())
+                    .isPessimistic(param.isPessimistic())
+                    .isolationLevel(param.getIsolationLevel())
+                    .txnId(txnId)
+                    .type(param.getTransactionType())
+                    .commitTs(param.getCommitTs())
+                    .build();
+                boolean result = TwoPhaseCommitUtils.txnCommit(
+                    txnId,
+                    param.getTableId(),
+                    partId,
+                    param.getKeys(),
+                    twoPhaseCommitData
+                );
                 if (!result) {
-                    throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());
+                    throw new RuntimeException(txnId + " " + partId
+                        + ",txnCommit false,PrimaryKey:" + param.getPrimaryKey().toString());
                 }
                 param.getKeys().clear();
                 param.addKey(key);
                 param.setPartId(newPartId);
                 param.setTableId(tableId);
-            }
-            return true;
-        }
-    }
-
-    private boolean txnCommit(CommitParam param, CommonId txnId, CommonId tableId, CommonId newPartId) {
-        // 1、Async call sdk TxnCommit
-        TxnCommit commitRequest = TxnCommit.builder()
-            .isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-            .startTs(param.getStartTs())
-            .commitTs(param.getCommitTs())
-            .keys(param.getKeys())
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnCommit(commitRequest);
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                commitRequest.setKeys(value);
-                boolean result = store.txnCommit(commitRequest);
-                if (!result) {
-                    return false;
-                }
             }
             return true;
         }
@@ -181,7 +124,21 @@ public class CommitOperator extends TransactionOperator {
             if (!(fin instanceof FinWithException)) {
                 if (!param.getKeys().isEmpty()) {
                     CommonId txnId = vertex.getTask().getTxnId();
-                    boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
+                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                        .primaryKey(param.getPrimaryKey())
+                        .isPessimistic(param.isPessimistic())
+                        .isolationLevel(param.getIsolationLevel())
+                        .txnId(txnId)
+                        .type(param.getTransactionType())
+                        .commitTs(param.getCommitTs())
+                        .build();
+                    boolean result = TwoPhaseCommitUtils.txnCommit(
+                        txnId,
+                        param.getTableId(),
+                        param.getPartId(),
+                        param.getKeys(),
+                        twoPhaseCommitData
+                    );
                     if (!result) {
                         throw new RuntimeException(
                             txnId + " " + param.getPartId()

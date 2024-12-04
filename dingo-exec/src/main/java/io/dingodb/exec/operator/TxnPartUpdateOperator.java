@@ -33,12 +33,15 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -97,6 +100,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             CommonId partId = context.getDistribution().getId();
             KeyValueCodec codec = param.getCodec();
             boolean calcPartId = false;
+            boolean isVector = false;
+            boolean isDocument = false;
             if (context.getIndexId() != null) {
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
@@ -151,6 +156,13 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     );
                     calcPartId = true;
                 }
+                IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                if (index.indexType.isVector) {
+                    isVector = true;
+                }
+                if (index.indexType == IndexType.DOCUMENT) {
+                    isDocument = true;
+                }
             }
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
 
@@ -184,6 +196,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                         LogUtils.debug(log, "{}, updated is false residual key is:{}",
                             txnId, Arrays.toString(rollBackKey));
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
                         localStore.put(rollBackKeyValue);
                     }
                     return true;
@@ -209,6 +225,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.delete(deleteKey);
                     localStore.delete(insertKey);
                     if (updated) {
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
                         localStore.delete(dataKey);
                         if (localStore.put(keyValue) && context.getIndexId() == null) {
                             param.inc();
@@ -220,6 +240,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     );
                     // first lock and kvGet is null
                     if (localStore.get(rollBackKey) != null) {
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
                         return true;
                     } else {
                         KeyValue kv = wrap(codec::encode).apply(newTuple2);
@@ -237,6 +261,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         localStore.put(new KeyValue(extraKey, Arrays.copyOf(kv.getValue(), kv.getValue().length)));
                         // write data
                         kv.setKey(dataKey);
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
                         if (localStore.put(kv)
                             && context.getIndexId() == null
                         ) {
@@ -285,6 +313,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             jobIdByte,
                             tableIdBytes,
                             context.getDistribution().getId().encode()
+                        );
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, context.getDistribution().getId()),
+                            (!isVector && !isDocument)
                         );
                         localStore.put(new KeyValue(extraKey,  wrap(codec::encode).apply(copyTuple).getValue()));
                         localStore.put(new KeyValue(deleteKey, wrap(codec::encode).apply(copyTuple).getValue()));
@@ -345,6 +377,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             tableIdBytes,
                             partIdBytes
                         );
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
                         localStore.put(
                             new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
                         );
@@ -389,6 +425,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
                     );
                     localStore.delete(keyValue.getKey());
+                    vertex.getTask().getPartData().put(
+                        new TxnPartData(tableId, partId),
+                        (!isVector && !isDocument)
+                    );
                     if (localStore.put(keyValue) && context.getIndexId() == null) {
                         param.inc();
                         context.addKeyState(true);

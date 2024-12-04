@@ -821,6 +821,7 @@ public class OperationServiceV2 {
                         transaction.getStartTs(),
                         pessimistic ? transaction.getForUpdateTs() : 0L,
                         transaction.getLockTimeOut(),
+                        false,
                         td,
                         false,
                         0));

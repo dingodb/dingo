@@ -30,7 +30,8 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("txn_insert")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
+@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut",
+    "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
 public class TxnPartInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("hasAutoInc")
@@ -38,6 +39,9 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("autoIncColIdx")
     private final int autoIncColIdx;
+
+    @JsonProperty("checkInPlace")
+    private final boolean checkInPlace;
 
     private List<Long> autoIncList = new ArrayList<>();
 
@@ -51,12 +55,14 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("startTs") long startTs,
         @JsonProperty("forUpdateTs") long forUpdateTs,
         @JsonProperty("lockTimeOut") long lockTimeOut,
+        @JsonProperty("checkInPlace") boolean checkInPlace,
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
         @JsonProperty("autoIncColIdx") int autoIncColIdx
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
+        this.checkInPlace = checkInPlace;
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;
     }

@@ -84,4 +84,8 @@ public class PreWriteParam extends AbstractParams {
     public void addMutation(Mutation mutation) {
         mutations.add(mutation);
     }
+
+    public boolean isPessimistic() {
+        return getTransactionType() == TransactionType.PESSIMISTIC;
+    }
 }

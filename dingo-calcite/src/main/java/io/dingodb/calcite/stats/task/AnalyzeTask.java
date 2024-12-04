@@ -220,7 +220,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         List<StatsNormal> statsNormals,
         List<Histogram> columnHistograms
     ) {
-        long scanTs = TsoService.getDefault().tso();
+        long scanTs = TsoService.getDefault().cacheTso();
 
         return rangeDistributions.stream().map(_i -> {
             Callable<TableStats> collectStatsTask = new CollectStatsTask(
@@ -331,7 +331,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
 
             Iterator<KeyValue> iterator = kvStore.txnScan(
-                TsoService.getDefault().tso(),
+                TsoService.getDefault().cacheTso(),
                 new StoreInstance.Range(startKey, endKey,
                    region.isWithStart(), region.isWithEnd()),
                 30000,

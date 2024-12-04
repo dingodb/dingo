@@ -241,7 +241,7 @@ public final class DdlHandler {
         job.setConnId(connId);
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         Long tableEntityId = coordinatorService.createIds(
-            TsoService.getDefault().tso(),
+            TsoService.getDefault().cacheTso(),
             CreateIdsRequest.builder()
                 .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
                 .build()).getIds().get(0);
@@ -384,7 +384,7 @@ public final class DdlHandler {
 
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         long tableEntityId = coordinatorService.createIds(
-            TsoService.getDefault().tso(),
+            TsoService.getDefault().cacheTso(),
             CreateIdsRequest.builder()
                 .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
                 .build()

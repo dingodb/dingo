@@ -53,7 +53,7 @@ public class TenantService implements io.dingodb.meta.TenantService {
     }
 
     public long tso() {
-        return tsoService.tso();
+        return tsoService.cacheTso();
     }
 
     @Override

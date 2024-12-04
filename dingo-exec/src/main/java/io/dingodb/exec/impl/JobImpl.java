@@ -139,7 +139,7 @@ public final class JobImpl implements Job {
     @Override
     public void setTxnId(CommonId txnId) {
         this.txnId = txnId;
-        long jobSeqId = TsoService.getDefault().tso();
+        long jobSeqId = TsoService.getDefault().cacheTso();
         this.jobId = new CommonId(CommonId.CommonType.JOB, txnId.seq, jobSeqId);
         getTasks().values().forEach( v -> v.setTxnId(txnId));
         getTasks().values().forEach( v -> v.setBathTask(true));

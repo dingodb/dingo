@@ -91,6 +91,37 @@ public final class ByteUtils {
         return result;
     }
 
+    public static byte[] encodeCacheData(int len, byte[]... bytes) {
+        byte[] result = new byte[len + CommonId.TYPE_LEN];
+        result[0] = (byte) CommonId.CommonType.TXN_CACHE_DATA.getCode();
+        int destPos = 1;
+        for (byte[] idByte : bytes) {
+            System.arraycopy(idByte, 0, result, destPos, idByte.length);
+            destPos += idByte.length;
+        }
+        return result;
+    }
+
+    public static Object[] decodeCacheData(KeyValue keyValue) {
+        byte[] bytes = keyValue.getKey();
+        Object[] result = new Object[1];
+        int from = CommonId.TYPE_LEN;
+        CommonId commonId = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        CommonId tableId = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        CommonId partId = CommonId.decode(Arrays.copyOfRange(bytes, from, from += CommonId.LEN));
+        TxnLocalData txnLocalData = TxnLocalData.builder()
+            .dataType(CommonId.CommonType.TXN_CACHE_DATA)
+            .txnId(commonId)
+            .tableId(tableId)
+            .partId(partId)
+            .op(Op.NONE)
+            .key(null)
+            .value(null)
+            .build();
+        result[0] = txnLocalData;
+        return result;
+    }
+
     public static KeyValue mapping(KeyValue keyValue) {
         byte[] bytes = keyValue.getKey();
         int from = CommonId.TYPE_LEN;

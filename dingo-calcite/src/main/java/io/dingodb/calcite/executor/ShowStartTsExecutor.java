@@ -28,7 +28,7 @@ public class ShowStartTsExecutor extends QueryExecutor {
     @Override
     Iterator<Object[]> getIterator() {
         List<Object[]> tsList = new ArrayList<>();
-        tsList.add(new Object[] {TsoService.getDefault().tso()});
+        tsList.add(new Object[] {TsoService.getDefault().cacheTso()});
         return tsList.iterator();
     }
 

@@ -85,7 +85,7 @@ public class Starter {
         TenantConstant.tenant(tenant);
         CommonId serverId = ClusterService.DEFAULT_INSTANCE.getServerId(DingoConfiguration.location());
         if (serverId == null) {
-            serverId = new CommonId(EXECUTOR, 1, TsoService.getDefault().tso());
+            serverId = new CommonId(EXECUTOR, 1, TsoService.getDefault().cacheTso());
         }
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();

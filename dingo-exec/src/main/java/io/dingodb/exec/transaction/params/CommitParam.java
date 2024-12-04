@@ -78,4 +78,7 @@ public class CommitParam extends AbstractParams {
     public void addKey(byte[] key) {
         keys.add(key);
     }
+    public boolean isPessimistic() {
+        return getTransactionType() == TransactionType.PESSIMISTIC;
+    }
 }

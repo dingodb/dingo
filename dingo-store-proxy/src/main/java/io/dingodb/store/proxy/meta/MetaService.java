@@ -202,7 +202,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     public long tso() {
-        return tsoService.tso();
+        return tsoService.cacheTso();
     }
 
     @Override

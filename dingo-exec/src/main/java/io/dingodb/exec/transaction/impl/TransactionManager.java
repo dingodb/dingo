@@ -111,6 +111,10 @@ public final class TransactionManager {
         return TsoService.getDefault().tso();
     }
 
+    public static long getCacheTso() {
+        return TsoService.getDefault().cacheTso();
+    }
+
     public static void register(@NonNull CommonId txnId, @NonNull ITransaction transaction) {
         trans.put(txnId, transaction);
     }

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.exec.transaction.base;
 
+import io.dingodb.common.CommonId;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Getter
-@NoArgsConstructor
 @AllArgsConstructor
-public class ExecuteVariables {
-    public final static int CONCURRENCY_COUNT = 5;
-    private boolean isJoinConcurrency = false;
-    private int concurrencyLevel = CONCURRENCY_COUNT;
-    private boolean isInsertCheckInplace = false;
+@Getter
+@EqualsAndHashCode
+public class TxnPartData {
+    private CommonId tableId;
+    private CommonId partId;
 }

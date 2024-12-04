@@ -22,7 +22,11 @@ public interface TsoService {
         return TsoServiceProvider.getDefault().get();
     }
 
+    // Latest TSO
     long tso();
+
+    // No guarantee of expiration
+    long cacheTso();
 
     long tso(long timestamp);
 

@@ -16,43 +16,22 @@
 
 package io.dingodb.exec.transaction.operator;
 
-import io.dingodb.codec.CodecService;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
-import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
-import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.base.TxnLocalData;
-import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.exec.transaction.util.TransactionUtil;
-import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.meta.DdlService;
-import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.store.api.StoreInstance;
-import io.dingodb.store.api.transaction.data.IsolationLevel;
-import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
-import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
-import io.dingodb.store.api.transaction.exception.RegionSplitException;
+import io.dingodb.exec.transaction.util.TwoPhaseCommitUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class RollBackOperator extends TransactionOperator {
@@ -78,71 +57,19 @@ public class RollBackOperator extends TransactionOperator {
             if (isPessimistic && (ByteArrayUtils.compare(key, param.getPrimaryKey(), 1) == 0)) {
                 return true;
             }
-            if (!isPessimistic) {
-                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-                byte[] txnIdByte = txnId.encode();
-                byte[] tableIdByte = tableId.encode();
-                byte[] partIdByte = newPartId.encode();
-                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-                byte[] checkBytes = ByteUtils.encode(
-                    CommonId.CommonType.TXN_CACHE_CHECK_DATA,
-                    key,
-                    Op.CheckNotExists.getCode(),
-                    len,
-                    txnIdByte, tableIdByte, partIdByte);
-                KeyValue keyValue = store.get(checkBytes);
-                if (keyValue != null && keyValue.getValue() != null) {
-                    switch (Op.forNumber(op)) {
-                        case PUT:
-                            op = Op.PUTIFABSENT.getCode();
-                            break;
-                        case DELETE:
-                            op = Op.CheckNotExists.getCode();
-                            break;
-                        default:
-                            break;
-                    }
-                    if (op == Op.CheckNotExists.getCode()) {
-                        return true;
-                    }
-                }
-            }
             byte[] keyBytes = Arrays.copyOf(key, key.length);
-            if (tableId.type == CommonId.CommonType.INDEX) {
-                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
-                if (indexTable == null) {
-                    indexTable = (IndexTable) DdlService.root().getTable(tableId);
-                }
-                if (indexTable.indexType.isVector) {
-                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
-                    Object[] decodeKey = codec.decodeKeyPrefix(key);
-                    TupleMapping mapping = TupleMapping.of(new int[]{0});
-                    DingoType dingoType = new LongType(false);
-                    TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(indexTable.version, tupleType, mapping);
-                    key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
-                }
+            key = TwoPhaseCommitUtils.commitKey(txnId, tableId, newPartId, op, key, isPessimistic);
+            if (key == null) {
+                return true;
             }
-            if (isPessimistic) {
-                StoreInstance store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
-                byte[] txnIdByte = txnId.encode();
-                byte[] tableIdByte = tableId.encode();
-                byte[] partIdByte = newPartId.encode();
-                int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
-                byte[] lockBytes = ByteUtils.encode(
-                    CommonId.CommonType.TXN_CACHE_LOCK,
-                    keyBytes,
-                    Op.LOCK.getCode(),
-                    len,
-                    txnIdByte,
-                    tableIdByte,
-                    partIdByte);
-                KeyValue keyValue = store.get(lockBytes);
-                if (keyValue == null) {
-                    throw new RuntimeException(txnId + " lock keyValue is null key is " + Arrays.toString(keyBytes));
-                }
-                forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
-            }
+            forUpdateTs = TwoPhaseCommitUtils.getForUpdateTs(
+                txnId,
+                tableId,
+                newPartId,
+                isPessimistic,
+                forUpdateTs,
+                keyBytes
+            );
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
@@ -154,12 +81,20 @@ public class RollBackOperator extends TransactionOperator {
                 param.addKey(key);
                 param.addForUpdateTs(forUpdateTs);
                 if (param.getKeys().size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = txnRollBack(
-                        param,
+                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                        .primaryKey(param.getPrimaryKey())
+                        .isPessimistic(param.isPessimistic())
+                        .isolationLevel(param.getIsolationLevel())
+                        .txnId(txnId)
+                        .type(param.getTransactionType())
+                        .build();
+                    boolean result = TwoPhaseCommitUtils.txnRollBack(
                         txnId,
                         tableId,
                         partId,
-                        param.getTransactionType() == TransactionType.PESSIMISTIC
+                        param.getKeys(),
+                        param.getForUpdateTsList(),
+                        twoPhaseCommitData
                     );
                     if (!result) {
                         throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
@@ -169,12 +104,20 @@ public class RollBackOperator extends TransactionOperator {
                     param.setPartId(null);
                 }
             } else {
-                boolean result = txnRollBack(
-                    param,
+                TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                    .primaryKey(param.getPrimaryKey())
+                    .isPessimistic(param.isPessimistic())
+                    .isolationLevel(param.getIsolationLevel())
+                    .txnId(txnId)
+                    .type(param.getTransactionType())
+                    .build();
+                boolean result = TwoPhaseCommitUtils.txnRollBack(
                     txnId,
                     param.getTableId(),
                     partId,
-                    param.getTransactionType() == TransactionType.PESSIMISTIC
+                    param.getKeys(),
+                    param.getForUpdateTsList(),
+                    twoPhaseCommitData
                 );
                 if (!result) {
                     throw new RuntimeException(txnId + " " + partId + ",txnBatchRollback false");
@@ -190,90 +133,6 @@ public class RollBackOperator extends TransactionOperator {
         }
     }
 
-    private boolean txnRollBack(RollBackParam param, CommonId txnId, CommonId tableId, CommonId newPartId, boolean isPessimistic) {
-        if (isPessimistic) {
-            int isolationLevel = param.getIsolationLevel();
-            long startTs = param.getStartTs();
-            // call sdk TxnPessimisticRollBack
-            // todo The preWritten key needs to call BatchRollBack
-            for (int i = 0; i < param.getKeys().size(); i++) {
-                boolean result = txnPessimisticRollBack(
-                    param.getKeys().get(i),
-                    startTs,
-                    param.getForUpdateTsList().get(i),
-                    isolationLevel,
-                    txnId,
-                    tableId,
-                    newPartId
-                );
-                if (!result) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            // 1、Async call sdk TxnRollBack
-            TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
-                isolationLevel(IsolationLevel.of(param.getIsolationLevel()))
-                .startTs(param.getStartTs())
-                .keys(param.getKeys())
-                .build();
-            try {
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-                return store.txnBatchRollback(rollBackRequest);
-            } catch (RegionSplitException e) {
-                LogUtils.error(log, e.getMessage(), e);
-                // 2、regin split
-                Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, param.getKeys());
-                for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                    CommonId regionId = entry.getKey();
-                    List<byte[]> value = entry.getValue();
-                    StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                    rollBackRequest.setKeys(value);
-                    boolean result = store.txnBatchRollback(rollBackRequest);
-                    if (!result) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-    }
-
-    private boolean txnPessimisticRollBack(byte[] key, long startTs, long forUpdateTs, int isolationLevel,
-                                           CommonId txnId, CommonId tableId, CommonId newPartId) {
-        // 1、Async call sdk TxnPessimisticRollBack
-        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .forUpdateTs(forUpdateTs)
-            .keys(Collections.singletonList(key))
-            .build();
-        try {
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnPessimisticLockRollback(pessimisticRollBack);
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
-                tableId,
-                txnId,
-                Collections.singletonList(key)
-            );
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                pessimisticRollBack.setKeys(value);
-                boolean result = store.txnPessimisticLockRollback(pessimisticRollBack);
-                if (!result) {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
-
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         synchronized (vertex) {
@@ -281,12 +140,20 @@ public class RollBackOperator extends TransactionOperator {
                 RollBackParam param = vertex.getParam();
                 if (!param.getKeys().isEmpty()) {
                     CommonId txnId = vertex.getTask().getTxnId();
-                    boolean result = txnRollBack(
-                        param,
+                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                        .primaryKey(param.getPrimaryKey())
+                        .isPessimistic(param.isPessimistic())
+                        .isolationLevel(param.getIsolationLevel())
+                        .txnId(txnId)
+                        .type(param.getTransactionType())
+                        .build();
+                    boolean result = TwoPhaseCommitUtils.txnRollBack(
                         txnId,
                         param.getTableId(),
                         param.getPartId(),
-                        param.getTransactionType() == TransactionType.PESSIMISTIC
+                        param.getKeys(),
+                        param.getForUpdateTsList(),
+                        twoPhaseCommitData
                     );
                     if (!result) {
                         throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");

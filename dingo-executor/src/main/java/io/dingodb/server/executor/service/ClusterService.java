@@ -103,7 +103,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public List<Location> getComputingLocations() {
         return coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(),
+                TsoService.getDefault().cacheTso(),
                 GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             ).getExecutormap().getExecutors().stream()
             .filter($ -> $.getState() == ExecutorState.EXECUTOR_NORMAL)
@@ -115,7 +115,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public CommonId getServerId(Location location) {
         return Optional.ofNullable(coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(),
+                TsoService.getDefault().cacheTso(),
                 GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             )).map(GetExecutorMapResponse::getExecutormap)
             .map(ExecutorMap::getExecutors)
@@ -130,7 +130,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public Location getLocation(CommonId serverId) {
         return Optional.ofNullable(coordinatorService.getExecutorMap(
-                TsoService.getDefault().tso(),
+                TsoService.getDefault().cacheTso(),
                 GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
             )).map(GetExecutorMapResponse::getExecutormap)
             .map(ExecutorMap::getExecutors)
@@ -146,7 +146,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public List<io.dingodb.common.Executor> getExecutors() {
         return coordinatorService.getExecutorMap(
-            TsoService.getDefault().tso(),
+            TsoService.getDefault().cacheTso(),
             GetExecutorMapRequest.builder().clusterName("ExecutorCluster_" + TenantConstant.TENANT_ID).build()
         ).getExecutormap().getExecutors().stream()
             .map(e -> io.dingodb.common.Executor.builder()
@@ -161,21 +161,21 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public int getStoreMap() {
         return coordinatorService.getStoreMap(
-            TsoService.getDefault().tso(), GetStoreMapRequest.builder().build()
+            TsoService.getDefault().cacheTso(), GetStoreMapRequest.builder().build()
         ).getStoremap().getStores().size();
     }
 
     @Override
     public int getLocations() {
         return coordinatorService.getStoreMap(
-            TsoService.getDefault().tso(), GetStoreMapRequest.builder().build()
+            TsoService.getDefault().cacheTso(), GetStoreMapRequest.builder().build()
         ).getStoremap().getStores().stream().map(s -> s.getRaftLocation().getHost()).collect(Collectors.toSet()).size();
     }
 
     @Override
     public void configCoordinator(boolean isReadOnly, String reason) {
         ConfigCoordinatorResponse configCoordinatorResponse = coordinatorService.configCoordinator(
-            TsoService.getDefault().tso(),
+            TsoService.getDefault().cacheTso(),
             ConfigCoordinatorRequest.builder()
                 .isForceReadOnly(isReadOnly)
                 .setForceReadOnly(true)
@@ -200,7 +200,7 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
 
     private static void executorHeartbeat() {
         try {
-            coordinatorService.executorHeartbeat(TsoService.getDefault().tso(), executorHeartbeatRequest());
+            coordinatorService.executorHeartbeat(TsoService.getDefault().cacheTso(), executorHeartbeatRequest());
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         }

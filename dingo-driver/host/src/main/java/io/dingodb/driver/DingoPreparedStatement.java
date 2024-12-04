@@ -22,8 +22,11 @@ import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.driver.type.converter.TypedValueConverter;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.exception.TaskCancelException;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.TypedValue;
@@ -35,6 +38,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class DingoPreparedStatement extends AvaticaPreparedStatement {
 
@@ -138,6 +142,23 @@ public class DingoPreparedStatement extends AvaticaPreparedStatement {
             }
         }
         throw ExceptionUtils.wrongSignatureType(this, signature);
+    }
+
+    @SneakyThrows
+    public Map<TxnPartData, Boolean> getJobPartData(@NonNull JobManager jobManager) {
+        Meta.Signature signature = getSignature();
+        if (signature instanceof DingoSignature) {
+            if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
+            Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
+            Map<TxnPartData, Boolean> partData = jobManager.getPartData(job);
+            if (cancelFlag.get()) {
+                throw new TaskCancelException("task is cancel");
+            }
+            return partData;
+        }
+        return null;
     }
 
     public Job getJob(@NonNull JobManager jobManager) {

@@ -37,6 +37,7 @@ import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
 import io.dingodb.exec.transaction.base.TxnLocalData;
+import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -602,6 +603,10 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 localStore.delete(updateKey);
                 byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
                 deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                vertex.getTask().getPartData().put(
+                    new TxnPartData(tableId, partId),
+                    (!isVector && !isDocument)
+                );
                 localStore.put(new KeyValue(deleteKey, kvKeyValue.getValue()));
             }
         }

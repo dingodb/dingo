@@ -32,7 +32,7 @@ public class TransactionConfig {
         this.sessionVariables = sessionVariables;
     }
 
-    public int getTxn_retry_limit() {
+    public int getTxnRetryLimit() {
         Optional<String> retryCountOpt = Optional.ofNullable(
             sessionVariables.getProperty("txn_retry_cnt"));
         return retryCountOpt
@@ -40,11 +40,11 @@ public class TransactionConfig {
             .orElse(0);
     }
 
-    public boolean isDisable_txn_auto_retry() {
+    public boolean isDisableTxnAutoRetry() {
         return "on".equalsIgnoreCase(sessionVariables.getProperty("txn_retry"));
     }
 
-    public boolean isConstraint_check_in_place() {
+    public boolean isConstraintCheckInPlace() {
         return "on".equalsIgnoreCase(sessionVariables.getProperty("txn_inert_check"));
     }
 
@@ -54,5 +54,13 @@ public class TransactionConfig {
         return (retryCountOpt
             .map(Integer::parseInt)
             .orElse(50)) * 1000;
+    }
+
+    public boolean isAsyncCommit() {
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("dingo_enable_async_commit"));
+    }
+
+    public boolean isCrossNodeCommit() {
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("dingo_cross_node_commit"));
     }
 }
