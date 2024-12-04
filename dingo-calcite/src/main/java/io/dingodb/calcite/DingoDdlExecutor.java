@@ -1412,7 +1412,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                             && !columnDefinition.getTypeName().equals("DOUBLE")
                             && !columnDefinition.getTypeName().equals("VARCHAR")
                             && !columnDefinition.getTypeName().equals("STRING")
-                            && !columnDefinition.getTypeName().equals("BYTES")) {
+                            && !columnDefinition.getTypeName().equals("BYTES")
+                            && !columnDefinition.getTypeName().equals("TIMESTAMP")
+                            && !columnDefinition.getTypeName().equals("BOOLEAN")) {
                             throw new RuntimeException("Invalid column type: " + columnDefinition.getTypeName());
                         }
                         primary = -1;

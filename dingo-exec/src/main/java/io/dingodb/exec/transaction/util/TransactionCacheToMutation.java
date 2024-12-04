@@ -28,8 +28,10 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -56,9 +58,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -153,6 +155,14 @@ public final class TransactionCacheToMutation {
                     } else if (type instanceof DoubleType) {
                         Double data = (Double) record[colNames.indexOf(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.DOUBLE;
+                        scalarField = new ScalarField(data);
+                    } else if (type instanceof TimestampType) {
+                        Timestamp data = (Timestamp) record[colNames.indexOf(columnDef.getName())];
+                        fieldType = DocumentValue.ScalarFieldType.DATETIME;
+                        scalarField = new ScalarField(TimeUtils.to(data));
+                    } else if (type instanceof BooleanType) {
+                        Boolean data = (Boolean) record[colNames.indexOf(columnDef.getName())];
+                        fieldType = DocumentValue.ScalarFieldType.BOOL;
                         scalarField = new ScalarField(data);
                     } else {
                         String data = (String) record[colNames.indexOf(columnDef.getName())];

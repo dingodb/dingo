@@ -97,7 +97,7 @@ public interface TxnMapper {
                 .fieldValue(scalarFieldTo(documentValue.getFieldValue()))
                 .build();
         }
-        return  res;
+        return res;
     }
 
     default io.dingodb.sdk.service.entity.common.DocumentValue documentValueTo(DocumentValue documentValue) {
@@ -125,6 +125,8 @@ public interface TxnMapper {
                 return DocumentValue.ScalarFieldType.STRING;
             case BYTES:
                 return DocumentValue.ScalarFieldType.BYTES;
+            case DATETIME:
+                return DocumentValue.ScalarFieldType.DATETIME;
             default:
                 throw new IllegalStateException("Unexpected value: " + scalarFieldType);
         }
@@ -146,6 +148,8 @@ public interface TxnMapper {
                 return ScalarFieldType.STRING;
             case BYTES:
                 return ScalarFieldType.BYTES;
+            case DATETIME:
+                return ScalarFieldType.DATETIME;
             default:
                 throw new IllegalStateException("Unexpected value: " + fieldType);
         }
@@ -183,6 +187,10 @@ public interface TxnMapper {
                 return io.dingodb.store.api.transaction.data.ScalarField.builder()
                     .data(((ScalarField.DataNest.BytesData) field.getData()).getValue())
                     .build();
+            case DATETIME_DATA:
+                return io.dingodb.store.api.transaction.data.ScalarField.builder()
+                    .data(((ScalarField.DataNest.DatetimeData) field.getData()).getValue())
+                    .build();
             default:
                 throw new IllegalStateException("Unexpected value: " + field.getData().nest());
         }
@@ -207,6 +215,8 @@ public interface TxnMapper {
                 return ScalarField.builder().data(ScalarField.DataNest.StringData.of((String) field.getData())).build();
             case BYTES:
                 return ScalarField.builder().data(ScalarField.DataNest.BytesData.of((byte[]) field.getData())).build();
+            case DATETIME:
+                return ScalarField.builder().data(ScalarField.DataNest.DatetimeData.of((String) field.getData())).build();
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }

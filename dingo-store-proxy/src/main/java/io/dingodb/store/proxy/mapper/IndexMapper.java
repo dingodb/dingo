@@ -178,6 +178,12 @@ public interface IndexMapper {
                         case "bytes":
                             scalarFieldType = ScalarFieldType.BYTES;
                             break;
+                        case "datetime":
+                            scalarFieldType = ScalarFieldType.DATETIME;
+                            break;
+                        case "bool":
+                            scalarFieldType = ScalarFieldType.BOOL;
+                            break;
                         default:
                             throw new IllegalStateException("Unsupported type: " + type);
                     }
@@ -312,6 +318,10 @@ public interface IndexMapper {
                 return tantivyType.equals("F64");
             case "BYTES":
                 return tantivyType.equals("BYTES");
+            case "TIMESTAMP":
+                return tantivyType.equals("DATETIME");
+            case "BOOLEAN":
+                return tantivyType.equals("BOOL");
             default:
                 throw new IllegalStateException("Unexpected value: " + tantivyType);
         }

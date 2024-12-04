@@ -44,7 +44,8 @@ public class DocumentValue {
         FLOAT(6),
         DOUBLE(7),
         STRING(8),
-        BYTES(9);
+        BYTES(9),
+        DATETIME(10);
 
         private final int code;
 
