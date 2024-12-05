@@ -107,7 +107,9 @@ public interface MetaService {
         createTables(tableDefinition, Collections.emptyList());
     }
 
-    default void createView(String viewName, TableDefinition tableDefinition) {}
+    default void createView(long schemaId, String viewName, TableDefinition tableDefinition) {
+
+    }
 
     default long createReplicaTable(long schemaId, Object tableDefinition, String tableName) {
         return 0L;
@@ -145,6 +147,10 @@ public interface MetaService {
     boolean dropTable(long tenantId, long schemaId, String tableName);
 
     long truncateTable(@NonNull String tableName, long tableEntityId);
+
+    default long truncateTable(long schemaId, @NonNull String tableName, long tableEntityId) {
+        return 0;
+    }
 
 
     /**

@@ -259,7 +259,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void createView(String tableName, TableDefinition tableDefinition) {
+    public void createView(long schemaId, String tableName, TableDefinition tableDefinition) {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
 
         long tableEntityId;
@@ -276,26 +276,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
         DingoCommonId tableId = DingoCommonId.builder()
             .entityType(EntityType.ENTITY_TYPE_TABLE)
-            .parentEntityId(id.getEntityId())
+            .parentEntityId(schemaId)
             .entityId(tableEntityId).build();
-//        List<DingoCommonId> tablePartIds = coordinatorService.createIds(tso(), CreateIdsRequest.builder()
-//                .idEpochType(IdEpochType.ID_NEXT_TABLE)
-//                .count(tableDefinition.getPartDefinition().getDetails().size())
-//                .build()
-//            )
-//            .getIds()
-//            .stream()
-//            .map(id -> DingoCommonId.builder()
-//                .entityType(EntityType.ENTITY_TYPE_PART)
-//                .parentEntityId(tableEntityId)
-//                .entityId(id).build())
-//            .collect(Collectors.toList());
         TableIdWithPartIds tableIdWithPartIds =
             TableIdWithPartIds.builder().tableId(tableId).build();
-        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition, TenantConstant.TENANT_ID);
+        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(
+            tableIdWithPartIds, tableDefinition, TenantConstant.TENANT_ID
+        );
         // create view
         infoSchemaService.createTableOrView(
-            id.getEntityId(),
+            schemaId,
             tableDefinitionWithId.getTableId().getEntityId(),
             tableDefinitionWithId
         );
@@ -465,7 +455,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     indexWithIds.add(indexWithId);
                     // create index
                     infoSchemaService.createIndex(
-                        id.getEntityId(),
+                        schemaId,
                         tableEntityId,
                         indexWithId
                     );
@@ -823,11 +813,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public long truncateTable(@NonNull String tableName, long tableEntityId) {
+        return truncateTable(id.getEntityId(), tableName, tableEntityId);
+    }
+
+    @Override
+    public long truncateTable(long schemaId, @NonNull String tableName, long tableEntityId) {
         // Get old table and indexes
         TableDefinitionWithId table = Optional.mapOrGet(
-            infoSchemaService.getTable(id.getEntityId(), tableName), __ -> (TableDefinitionWithId) __, () -> null);
+            infoSchemaService.getTable(schemaId, tableName), __ -> (TableDefinitionWithId) __, () -> null);
 
-        List<Object> indexList = infoSchemaService.listIndex(id.getEntityId(), table.getTableId().getEntityId());
+        List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream()
             .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
 
@@ -854,7 +849,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = table.getTableDefinition();
         DingoCommonId tableId = DingoCommonId.builder()
             .entityType(EntityType.ENTITY_TYPE_TABLE)
-            .parentEntityId(id.getEntityId())
+            .parentEntityId(schemaId)
             .entityId(tableEntityId)
             .build();
         List<DingoCommonId> tablePartIds = coordinatorService.createIds(tso(), CreateIdsRequest.builder()
@@ -874,17 +869,17 @@ public class MetaService implements io.dingodb.meta.MetaService {
         resetTableId(newTableId, table);
 
         // create table、table region
-        infoSchemaService.createTableOrView(id.getEntityId(), table.getTableId().getEntityId(), table);
+        infoSchemaService.createTableOrView(schemaId, table.getTableId().getEntityId(), table);
         for (Partition partition : tableDefinition.getTablePartition().getPartitions()) {
             CreateRegionRequest request = CreateRegionRequest.builder()
-                .regionName("T_" + id.getEntityId() + "_" + tableDefinition.getName() + "_part_"
+                .regionName("T_" + schemaId + "_" + tableDefinition.getName() + "_part_"
                     + partition.getId().getEntityId())
                 .regionType(RegionType.STORE_REGION)
                 .replicaNum(tableDefinition.getReplica())
                 .range(partition.getRange())
                 .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
                 .storeEngine(tableDefinition.getStoreEngine())
-                .schemaId(id.getEntityId())
+                .schemaId(schemaId)
                 .tableId(table.getTableId().getEntityId())
                 .partId(partition.getId().getEntityId())
                 .tenantId(table.getTenantId())
@@ -893,7 +888,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 LogUtils.info(log, "create region, range:{}", partition.getRange());
                 coordinatorService.createRegion(tso(), request);
             } catch (Exception e) {
-                LogUtils.error(log, "create region error,regionId:" + id.getEntityId() + partition.getRange(), e);
+                LogUtils.error(log, "create region error,regionId:" + partition.getRange(), e);
                 throw e;
             }
         }
@@ -949,7 +944,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
                 resetTableId(indexIdWithPartIds, indexDefinitionWithId);
                 infoSchemaService.createIndex(
-                    id.getEntityId(),
+                    schemaId,
                     tableEntityId,
                     indexDefinitionWithId
                 );
@@ -964,7 +959,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         indexParameter.setIndexType(IndexType.INDEX_TYPE_DOCUMENT);
                     }
                     CreateRegionRequest request = CreateRegionRequest.builder()
-                        .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_"
+                        .regionName("I_" + schemaId + "_" + definition.getName() + "_part_"
                             + partition.getId().getEntityId())
                         .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR
                             ? RegionType.STORE_REGION : RegionType.INDEX_REGION)
@@ -972,7 +967,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         .range(partition.getRange())
                         .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
                         .storeEngine(definition.getStoreEngine())
-                        .schemaId(id.getEntityId())
+                        .schemaId(schemaId)
                         .tableId(tableId.getEntityId())
                         .partId(partition.getId().getEntityId())
                         .tenantId(withId.getTenantId())
@@ -983,8 +978,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
                         LogUtils.info(log, "create region, range:{}", partition.getRange());
                         coordinatorService.createRegion(tso(), request);
                     } catch (Exception e) {
-                        LogUtils.error(log, "create region error,regionId:"
-                            + id.getEntityId() + partition.getRange(), e);
+                        LogUtils.error(log, "create region error,schemaId:{},regionId:{}"
+                            , schemaId, partition.getRange(), e);
                         throw e;
                     }
                 }
@@ -1292,7 +1287,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             }
             CreateRegionRequest request = CreateRegionRequest
                 .builder()
-                .regionName("I_" + id.getEntityId() + "_" + definition.getName() + "_part_"
+                .regionName("I_" + tableId.domain + "_" + definition.getName() + "_part_"
                     + partition.getId().getEntityId())
                 .regionType(definition.getIndexParameter().getIndexType() == IndexType.INDEX_TYPE_SCALAR
                     ? RegionType.STORE_REGION : RegionType.INDEX_REGION)

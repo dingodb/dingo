@@ -93,17 +93,16 @@ public final class TableUtil {
         if (tableInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
             tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             MetaService metaService = MetaService.root();
-            MetaService subMs = metaService.getSubMetaService(ddlJob.getSchemaName());
             List<IndexDefinition> indices = tableInfo.getIndices();
             if (indices != null) {
                 indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
             }
             try {
                 assert indices != null;
-                subMs.createView(tableInfo.getName(), tableInfo);
+                metaService.createView(schemaId, tableInfo.getName(), tableInfo);
                 return Pair.of(tableInfo, null);
             } catch (Exception e) {
-                subMs.rollbackCreateTable(tableInfo, indices);
+                metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
                 ddlJob.setState(JobState.jobStateCancelled);
                 if (e instanceof NullPointerException) {
