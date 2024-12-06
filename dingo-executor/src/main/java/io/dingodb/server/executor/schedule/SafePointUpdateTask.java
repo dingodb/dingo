@@ -20,13 +20,13 @@ import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.impl.TransactionManager;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.DocumentService;
@@ -115,16 +115,20 @@ public final class SafePointUpdateTask {
                 isLeader = true;
                 LogUtils.info(log, "Start safe point update task.");
                 ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
-                    lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 600, TimeUnit.SECONDS
+                    lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 300, TimeUnit.SECONDS
+                );
+                ScheduledFuture<?> regionDelFuture = Executors.scheduleWithFixedDelay(
+                    lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60, 60, TimeUnit.SECONDS
                 );
                 lock.watchDestroy().thenRun(() -> {
                     future.cancel(true);
+                    regionDelFuture.cancel(true);
                     isLeader = false;
                     lockService.cancel();
                     run();
                 });
             } catch (Exception e) {
-                lockService.cancel();
+
                 run();
             }
         });
@@ -190,11 +194,6 @@ public final class SafePointUpdateTask {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, request
                 );
-                if (TenantConstant.TENANT_ID == 0) {
-                    gcDeleteRange(request.getSafePoint());
-                } else {
-                    gcDeleteRange(request.getTenantSafePoints().get(TenantConstant.TENANT_ID));
-                }
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
@@ -204,6 +203,16 @@ public final class SafePointUpdateTask {
         } finally {
             running.set(false);
         }
+    }
+
+    private static void gcDeleteRegion() {
+        long currentTime = System.currentTimeMillis();
+        String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");
+        long gcLifeTime = Long.parseLong(gcLifeTimeStr);
+        long safePointTs = currentTime - (gcLifeTime * 1000);
+        long tso = TsoService.getDefault().tso(safePointTs);
+        LogUtils.info(log, "gcDeleteRegion tso:{}", tso);
+        gcDeleteRange(tso);
     }
 
     private static void gcDeleteRange(long startTs) {
@@ -230,14 +239,14 @@ public final class SafePointUpdateTask {
                     long ts = (long) objects[4];
                     String startKey = objects[1].toString();
                     String endKey = objects[2].toString();
-                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey)) {
+                    String eleId = (String) objects[5];
+                    String eleType = (String) objects[6];
+                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType)) {
                         LogUtils.error(log, "remove gcDeleteTask failed");
                     } else {
                         delDone.incrementAndGet();
                     }
-                    String eleType = (String) objects[6];
                     if (eleType.endsWith("auto")) {
-                        String eleId = (String) objects[5];
                         String[] eleIds = eleId.split("-");
                         DingoCommonId tableId = DingoCommonId.builder()
                             .parentEntityId(Long.parseLong(eleIds[0]))

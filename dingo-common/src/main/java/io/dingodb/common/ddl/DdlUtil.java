@@ -31,7 +31,9 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DdlUtil {
@@ -64,6 +66,7 @@ public final class DdlUtil {
     public static int errorCountLimit = 5;
 
     public static final String ddlId = String.format("%s:%d", DingoConfiguration.host(), DingoConfiguration.port());
+    public static BlockingQueue<GcDeleteRegion> gcDelRegionQueue = new LinkedBlockingDeque<>(10000);
 
     private DdlUtil() {
     }

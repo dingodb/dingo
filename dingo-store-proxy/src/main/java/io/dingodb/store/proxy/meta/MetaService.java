@@ -20,6 +20,8 @@ import com.codahale.metrics.Timer;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.GcDeleteRegion;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
@@ -29,8 +31,6 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.session.Session;
-import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -50,6 +50,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.sdk.common.serial.RecordEncoder;
+import io.dingodb.sdk.common.utils.ByteArrayUtils;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Engine;
@@ -90,10 +91,7 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -993,7 +991,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .values();
         if (ScopeVariables.getNeedGc() && jobId >= 0) {
             Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
-            insertGcDeleteRange(rangeDistributions, jobId, ts, tableId, autoInc);
+            gcDeleteRegion(rangeDistributions, jobId, ts, tableId, autoInc);
             context.stop();
         } else {
             if (autoInc) {
@@ -1296,57 +1294,46 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    public static void insertGcDeleteRange(
+    public static void gcDeleteRegion(
         Collection<RangeDistribution> rangeDistributions,
         long jobId,
         long ts,
         CommonId id,
         boolean autoInc
     ) {
-        String sql = "insert into mysql.gc_delete_range"
-            + "(job_id, region_id, start_key, end_key, ts, element_id, element_type) "
-            + "values(?, ?, ?, ?, ?, ?, ?)";
-        Session session = SessionUtil.INSTANCE.getSession();
-        PreparedStatement ps = null;
-        try {
-            String eleType = id.type.name();
-            if (autoInc) {
-                eleType = id.type + "_auto";
+        String eleType = id.type.name();
+        if (autoInc) {
+            eleType = id.type + "_auto";
+        }
+        String eleId = id.domain + "-" + id.seq;
+        int i = 0;
+        for (RangeDistribution rangeDistribution : rangeDistributions) {
+            CommonId partitionId = new CommonId(CommonId.CommonType.PARTITION, id.seq, rangeDistribution.id().domain);
+            byte[] startKey = rangeDistribution.getStartKey();
+            byte[] endKey = rangeDistribution.getEndKey();
+            startKey = io.dingodb.codec.CodecService.getDefault()
+                .setId(startKey, partitionId);
+            endKey = io.dingodb.codec.CodecService.getDefault()
+                .setId(endKey, partitionId);
+            GcDeleteRegion gcDeleteRegion = GcDeleteRegion
+                .builder()
+                .jobId(jobId)
+                .regionId(rangeDistribution.getId().seq)
+                .startTs(ts)
+                .startKey(ByteArrayUtils.toHex(startKey))
+                .endKey(ByteArrayUtils.toHex(endKey))
+                .eleId(eleId)
+                .build();
+            if (i == 0) {
+                gcDeleteRegion.setEleType(eleType);
+            } else {
+                gcDeleteRegion.setEleType(id.type.name());
             }
-            String eleId = id.domain + "-" + id.seq;
-            session.setAutoCommit(false);
-            ps = session.getPrepareStatement(sql);
-            int i = 0;
-            for (RangeDistribution rangeDistribution : rangeDistributions) {
-                ps.setLong(1, jobId);
-                ps.setLong(2, rangeDistribution.getId().seq);
-                String startKey = Base64.getEncoder().encodeToString(rangeDistribution.getStartKey());
-                String endKey = Base64.getEncoder().encodeToString(rangeDistribution.getEndKey());
-                ps.setString(3, startKey);
-                ps.setString(4, endKey);
-                ps.setLong(5, ts);
-                ps.setString(6, eleId);
-                if (i == 0) {
-                    ps.setString(7, eleType);
-                } else {
-                    ps.setString(7, id.type.name());
-                }
-                i ++;
-                ps.addBatch();
-            }
-            ps.executeBatch();
-            session.commit();
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-        } finally {
-            if (ps != null) {
-                try {
-                    ps.close();
-                } catch (SQLException e) {
-                    LogUtils.error(log, e.getMessage(), e);
-                }
-            }
-            session.destroy();
+            Utils.put(DdlUtil.gcDelRegionQueue, gcDeleteRegion);
+            LogUtils.info(log, "gcDelete put queue tableId:{}, regionId:{}, startKey:{}, endKey:{}",
+                id, gcDeleteRegion.getRegionId(), gcDeleteRegion.getStartTs(), gcDeleteRegion.getEndKey());
+            i ++;
         }
     }
+
 }

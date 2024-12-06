@@ -1,20 +1,38 @@
  [
+   {
+     "name": "region_id",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": 0,
+     "nullable": false
+   },
     {
       "name": "job_id",
       "type": "bigint",
       "scale": -2147483648,
       "precision": -1,
-      "primary": 0,
+      "primary": -1,
       "nullable": false
     },
     {
-      "name": "region_id",
-      "type": "bigint",
-      "scale": -2147483648,
-      "precision": -1,
-      "default": 0,
-      "primary": -1,
-      "nullable": false
+     "name": "element_id",
+     "type": "varchar",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": -1,
+     "nullable": true
+    },
+    {
+     "name": "element_type",
+     "type": "varchar",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": -1,
+     "nullable": true
     },
     {
       "name": "start_key",

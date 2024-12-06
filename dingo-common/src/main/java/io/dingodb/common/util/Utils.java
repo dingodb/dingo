@@ -16,7 +16,9 @@
 
 package io.dingodb.common.util;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Parameters.cleanNull;
 
+@Slf4j
 public final class Utils {
     private Utils() {
     }
@@ -295,6 +298,14 @@ public final class Utils {
                 return queue.take();
             } catch (InterruptedException ignored) {
             }
+        }
+    }
+
+    public static <T> void put(@NonNull BlockingQueue<T> queue, T element) {
+        try {
+            queue.put(element);
+        } catch (InterruptedException e) {
+            LogUtils.error(log, e.getMessage(), e);
         }
     }
 

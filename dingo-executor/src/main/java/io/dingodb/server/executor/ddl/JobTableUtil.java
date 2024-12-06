@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.GcDeleteRegion;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.session.Session;
@@ -270,13 +271,16 @@ public final class JobTableUtil {
         Object ts,
         long regionId,
         Object startKey,
-        Object endKey
+        Object endKey,
+        String eleId,
+        String eleType
     ) {
         LogUtils.info(log, "gcDeleteDone start, jobId:{}, regionId:{}", jobId, regionId);
-        String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key)"
-            + " values(%d, %d, %d, %s, %s)";
+        String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
+            + " element_id, element_type)"
+            + " values(%d, %d, %d, %s, %s, %s, %s)";
         sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
-            Utils.quoteForSql(endKey.toString()));
+            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType));
         Session session = SessionUtil.INSTANCE.getSession();
         session.setAutoCommit(false);
         session.executeUpdate(sql);
@@ -286,6 +290,24 @@ public final class JobTableUtil {
         session.commit();
         LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
         return true;
+    }
+
+    public static void insertGcDeleteRange(
+        GcDeleteRegion gcDeleteRegion
+    ) {
+        String sql = "insert into mysql.gc_delete_range"
+            + "(job_id, region_id, start_key, end_key, ts, element_id, element_type) "
+            + "values";
+        String conditionValue = "(%d, %d, %s, %s, %d, %s, %s)";
+        conditionValue = String.format(conditionValue, gcDeleteRegion.getJobId(),
+            gcDeleteRegion.getRegionId(), Utils.quoteForSql(gcDeleteRegion.getStartKey()),
+            Utils.quoteForSql(gcDeleteRegion.getEndKey()), gcDeleteRegion.getStartTs(),
+            Utils.quoteForSql(gcDeleteRegion.getEleId()), Utils.quoteForSql(gcDeleteRegion.getEleType()));
+        sql = sql + conditionValue;
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        if (error != null) {
+            LogUtils.error(log, "insert into gc delete region error,reason:{}", error);
+        }
     }
 
 }

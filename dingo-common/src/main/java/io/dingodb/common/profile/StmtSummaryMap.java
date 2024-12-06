@@ -50,7 +50,7 @@ public final class StmtSummaryMap {
         .iterator();
     }
 
-   static {
+    static {
         stmtSummaryMap = CacheBuilder.newBuilder()
             .maximumSize(4096)
             .build(new CacheLoader<String, StmtSummary>() {
@@ -63,17 +63,18 @@ public final class StmtSummaryMap {
         Executors.execute("stmtSummary", StmtSummaryMap::handleProfile);
         analyzeQueue = new LinkedBlockingDeque<>(2000);
         DingoMetrics.metricRegistry.register("profileQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
-               @Override
-               protected Integer loadValue() {
-                   return profileQueue.size();
-               }
+            @Override
+            protected Integer loadValue() {
+                return profileQueue.size();
+            }
         });
-       DingoMetrics.metricRegistry.register("analyzeTaskQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
-           @Override
-           protected Integer loadValue() {
-               return analyzeQueue.size();
-           }
-       });
+
+        DingoMetrics.metricRegistry.register("analyzeTaskQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return analyzeQueue.size();
+            }
+        });
     }
 
     private static void handleProfile() {

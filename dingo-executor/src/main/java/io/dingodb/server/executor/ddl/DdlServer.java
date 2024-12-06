@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.ddl;
 
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Timer;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.DdlJob;
@@ -23,6 +24,7 @@ import io.dingodb.common.ddl.DdlJobEvent;
 import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.DdlJobListenerImpl;
 import io.dingodb.common.ddl.DdlUtil;
+import io.dingodb.common.ddl.GcDeleteRegion;
 import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
@@ -61,6 +63,19 @@ public final class DdlServer {
         if (DdlUtil.delDiff) {
             delVerSchemaDiff();
         }
+        delRegion();
+        DingoMetrics.metricRegistry.register("delRegionQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return DdlUtil.gcDelRegionQueue.size();
+            }
+        });
+        DingoMetrics.metricRegistry.register("verDelQueue", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return verDelQueue.size();
+            }
+        });
     }
 
     public static void delVerSchemaDiff() {
@@ -81,6 +96,20 @@ public final class DdlServer {
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage());
                 }
+            }
+        }).start();
+    }
+
+    public static void delRegion() {
+        new Thread(() -> {
+            while (true) {
+                if (!ExecutionEnvironment.INSTANCE.ddlOwner.get()) {
+                    Utils.sleep(5000);
+                    continue;
+                }
+                GcDeleteRegion gcDeleteRegion = Utils.forceTake(DdlUtil.gcDelRegionQueue);
+                JobTableUtil.insertGcDeleteRange(gcDeleteRegion);
+                DingoMetrics.counter("insertGcRegionCnt").inc();
             }
         }).start();
     }
