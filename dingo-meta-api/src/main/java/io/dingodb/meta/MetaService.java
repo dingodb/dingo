@@ -118,6 +118,10 @@ public interface MetaService {
         return 0L;
     }
 
+    default void createIndexReplicaTable(long schemaId, long tableId, Object indexDefinition, String indexName) {
+
+    }
+
     long createTables(TableDefinition tableDefinition, List<IndexDefinition> indexTableDefinitions);
 
     default long createTables(
@@ -265,6 +269,10 @@ public interface MetaService {
 
     }
 
+    default void deleteRegionByTableId(CommonId tableId) {
+
+    }
+
     default void createTenant(Tenant tenant) {
 
     }
@@ -274,6 +282,10 @@ public interface MetaService {
     }
 
     default void deleteTenant(long tenantId) {
+
+    }
+
+    default void delAutoInc(Object id) {
 
     }
 

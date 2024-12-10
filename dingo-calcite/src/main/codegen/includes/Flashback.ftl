@@ -38,3 +38,18 @@ SqlFlashBack SqlFlashBack(): {
   )
 
 }
+
+SqlRecoverTable SqlRecoverTable(): {
+  final Span s;
+  final SqlRecoverTable sqlRecoverTable;
+  final SqlIdentifier tableId;
+  SqlIdentifier newTableId = null;
+} {
+  <RECOVER> { s = span(); }
+   <TABLE> tableId = CompoundIdentifier()
+    [ <TO>  newTableId = CompoundIdentifier() ]
+    {
+      return new SqlRecoverTable(s.end(this), tableId, newTableId);
+    }
+
+}

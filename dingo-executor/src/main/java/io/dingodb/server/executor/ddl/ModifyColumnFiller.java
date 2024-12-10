@@ -22,12 +22,13 @@ import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
+import io.dingodb.exec.converter.ModifyTypeConverter;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
@@ -51,12 +52,22 @@ import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
-public class AddColumnFiller extends IndexAddFiller {
-    private Object defaultVal = null;
+public class ModifyColumnFiller extends IndexAddFiller {
 
-    boolean withoutPrimary;
-
+    DingoType dingoType;
     private CommonId replicaId;
+
+    @Override
+    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList() {
+        return MetaService.root().getRangeDistribution(replicaId);
+    }
+
+    @Override
+    public void initFiller() {
+        super.initFiller();
+        replicaId = indexTable.tableId;
+        LogUtils.info(log, "replicaTableId:{}", replicaId);
+    }
 
     @Override
     public boolean preWritePrimary(ReorgBackFillTask task) {
@@ -65,25 +76,15 @@ public class AddColumnFiller extends IndexAddFiller {
         txnIdKey = txnId.encode();
         commitTs = TsoService.getDefault().tso();
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
-        withoutPrimary = table.getColumns().stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
         indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().domain, task.getTableId().seq,
-             task.getIndexId().seq);
+            task.getIndexId().seq);
+        this.dingoType = indexTable.tupleType();
         initFiller();
-        Column addColumn = indexTable.getColumns().stream()
-            .filter(column -> column.getSchemaState() == SchemaState.SCHEMA_WRITE_REORG)
-            .findFirst().orElse(null);
-        if (addColumn == null) {
-            throw new RuntimeException("new column not found");
-        }
+        LogUtils.info(log, "modify column filler dingo type:{}", dingoType);
         columnIndices = table.getColumnIndices(indexTable.columns.stream()
             .map(Column::getName)
             .collect(Collectors.toList()));
         colLen = columnIndices.size();
-        if (columnIndices.contains(-1)) {
-            defaultVal = addColumn.getDefaultVal();
-            columnIndices.removeIf(index -> index == -1);
-            colLen = columnIndices.size();
-        }
         indexCodec = CodecService.getDefault()
             .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
         ps = PartitionService.getService(
@@ -134,17 +135,7 @@ public class AddColumnFiller extends IndexAddFiller {
 
     @NonNull
     public Object[] getNewTuples(int colLen, Object[] tuples) {
-        Object[] tuplesTmp = new Object[colLen + 1];
-        for (int i = 0; i < colLen; i++) {
-            tuplesTmp[i] = tuples[columnIndices.get(i)];
-        }
-        if (withoutPrimary) {
-            tuplesTmp[colLen] = tuplesTmp[colLen - 1];
-            tuplesTmp[colLen - 1] = defaultVal;
-        } else {
-            tuplesTmp[colLen] = defaultVal;
-        }
-        return tuplesTmp;
+        return transformType(tuples);
     }
 
     @Override
@@ -166,16 +157,13 @@ public class AddColumnFiller extends IndexAddFiller {
             .build();
     }
 
-    @Override
-    public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList() {
-        return MetaService.root().getRangeDistribution(replicaId);
-    }
-
-    @Override
-    public void initFiller() {
-        super.initFiller();
-        replicaId = indexTable.tableId;
-        LogUtils.info(log, "replicaTableId:{}", replicaId);
+    public Object[] transformType(Object[] val) {
+        try {
+            return (Object[]) dingoType.convertFrom(val, new ModifyTypeConverter());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
 }

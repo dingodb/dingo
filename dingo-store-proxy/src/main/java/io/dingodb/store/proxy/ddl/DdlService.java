@@ -18,6 +18,7 @@ package io.dingodb.store.proxy.ddl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -89,6 +90,18 @@ public class DdlService implements io.dingodb.meta.DdlService {
                            Long tableId, String tableName, String column,
                            String markDel, String relatedIndex, String connId) {
         DdlHandler.dropColumn(schemaId, schemaName, tableId, tableName, column, markDel, relatedIndex, connId);
+    }
+
+    public void modifyColumn(
+        long schemaId, String schemaName, long tableId, List<ModifyingColInfo> modifyingColInfoList
+    ) {
+        DdlHandler.modifyColumn(schemaId, schemaName, tableId, modifyingColInfoList);
+    }
+
+    public void changeColumn(
+        long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
+    ) {
+        DdlHandler.changeColumn(schemaId, schemaName, tableId, modifyingColInfo);
     }
 
     @Override

@@ -43,7 +43,8 @@ public class ColumnDefinition {
 
     @JsonProperty(value = "name", required = true)
     @Getter
-    private final String name;
+    @Setter
+    private String name;
 
     @JsonProperty(value = "type", required = true)
     private final String type;

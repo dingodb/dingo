@@ -82,6 +82,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlLockBlock"
       "io.dingodb.calcite.grammar.ddl.SqlLockTable"
       "io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement"
+      "io.dingodb.calcite.grammar.ddl.SqlRecoverTable"
       "io.dingodb.calcite.grammar.ddl.SqlRevoke"
       "io.dingodb.calcite.grammar.ddl.SqlSetPassword"
       "io.dingodb.calcite.grammar.ddl.SqlTruncate"
@@ -182,6 +183,7 @@ data: {
       "PLUGINS"
       "PREPARE"
       "PROCESSLIST"
+      "RECOVER"
       "RELOAD"
       "REPLICA"
       "REQUIRE"
@@ -316,6 +318,7 @@ data: {
         "SqlCall"
         "SqlAdminRollback"
         "SqlFlashBack"
+        "SqlRecoverTable"
     ]
 
     sqlTypeNameMethods: [

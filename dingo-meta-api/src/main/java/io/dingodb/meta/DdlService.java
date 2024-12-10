@@ -17,6 +17,7 @@
 package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.sequence.SequenceDefinition;
@@ -24,6 +25,8 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
+
+import java.util.List;
 
 public interface DdlService {
     static DdlService root() {
@@ -38,7 +41,9 @@ public interface DdlService {
                              TableDefinition tableDefinition, String connId, String sql);
 
     default void createViewWithInfo(String schemaName, String tableName,
-                             TableDefinition tableDefinition, String connId, String sql) {}
+                             TableDefinition tableDefinition, String connId, String sql) {
+
+    }
 
     void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId);
 
@@ -52,6 +57,19 @@ public interface DdlService {
         long schemaId, String schemaName,
         Long tableId, String tableName, String column,
         String markDel, String relatedIndex, String connId
+    ) {
+
+    }
+
+
+    default void modifyColumn(
+        long schemaId, String schemaName, long tableId, List<ModifyingColInfo> modifyingColInfoList
+    ) {
+
+    }
+
+    default void changeColumn(
+        long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
     ) {
 
     }
@@ -81,6 +99,7 @@ public interface DdlService {
     default void flashbackSchema(RecoverInfo recoverInfo) {
 
     }
+
     void createSequence(SequenceDefinition sequenceDefinition, String connId);
 
     void dropSequence(String sequenceName, String connId);

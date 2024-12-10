@@ -54,6 +54,8 @@ public final class DdlUtil {
 
     public static final byte[] indexElementKey = "_idx_".getBytes();
     public static final byte[] addColElementKey = "_addCol_".getBytes();
+    public static final byte[] dropColElementKey = "_dropCol_".getBytes();
+    public static final byte[] modifyColElementKey = "_modifyCol_".getBytes();
     public static final String tenantPrefix = String.format("tenant:%d", TenantConstant.TENANT_ID);
     public static final String ADDING_DDL_JOB_CONCURRENT_KEY = String.format("%s:%s", tenantPrefix, ADDING_DDL_JOB_CONCURRENT);
 
@@ -62,6 +64,7 @@ public final class DdlUtil {
     public static boolean historyJobEtcd = false;
     public static boolean genSchemaVerEtcd = false;
     public static String ddlTmpTableName = "replicaTable";
+    public static String ddlTmpIndexName = "replicaIndexTable";
 
     public static int errorCountLimit = 5;
 

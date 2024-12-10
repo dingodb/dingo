@@ -121,7 +121,7 @@ public interface InfoSchemaService {
     default byte[] ReplicaTableKey(long tableId) {
         //String indexKeyStr = String.format(TEMPLATE, mReplicaTablePrefix, tableId);
         //return indexKeyStr.getBytes();
-        return "replicaTable".getBytes();
+        return DdlUtil.ddlTmpTableName.getBytes();
     }
 
     default byte[] indexKey(long indexId) {
@@ -215,6 +215,10 @@ public interface InfoSchemaService {
     Object getTable(long tableId);
 
     default Object getReplicaTable(long schemaId, long tableId, long replicaTableId) {
+        return null;
+    }
+
+    default List<Object> getReplicaIndex(long schemaId, long tableId) {
         return null;
     }
 

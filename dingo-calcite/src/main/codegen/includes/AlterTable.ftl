@@ -17,7 +17,7 @@
 
 SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlIdentifier id;
-    SqlAlterTable alterTable;
+    SqlAlterTable alterTable = null;
 } {
     <TABLE> id = CompoundIdentifier()
     (
@@ -48,7 +48,11 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
          )
         |
           <MODIFY>
-          alterTable = modifyColumn(s, scope, id)
+          alterTable = modifyColumn(s, scope, id, alterTable)
+          (
+            <COMMA>
+            <MODIFY> alterTable = modifyColumn(s, scope, id, alterTable)
+          )*
         |
           <CHANGE>
           alterTable = changeColumn(s, scope, id)
@@ -390,7 +394,7 @@ SqlAlterTable dropForeignKey(Span s, String scope, SqlIdentifier id): {
    }
 }
 
-SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id): {
+SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable alterTable): {
   DingoSqlColumn columnDec;
     final SqlDataTypeSpec type;
     boolean nullable = true;
@@ -468,7 +472,13 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id): {
         }
     )
    {
-     return new SqlAlterModifyColumn(s.end(this), id, columnDec);
+     if (alterTable == null) {
+         return new SqlAlterModifyColumn(s.end(this), id, columnDec);
+     } else {
+         SqlAlterModifyColumn alterModifyCol = (SqlAlterModifyColumn)alterTable;
+         alterModifyCol.addSqlColumn(columnDec);
+         return alterModifyCol;
+     }
    }
 }
 
@@ -484,11 +494,11 @@ SqlAlterTable alterColumn(Span s, String scope, SqlIdentifier id): {
       <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
       {
         return new SqlAlterColumn(
-            s.end(this), name, 1, e 
+            s.end(this), id, name, 1, e
         );
       }
     |
-      <DROP> <DEFAULT_> { return new SqlAlterColumn(s.end(this), name, 2, e); }
+      <DROP> <DEFAULT_> { return new SqlAlterColumn(s.end(this), id, name, 2, e); }
     )
 }
 
@@ -571,6 +581,6 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
         }
     )?
   {
-    return new SqlAlterChangeColumn(s.end(this), name, newName, columnDec);
+    return new SqlAlterChangeColumn(s.end(this), id, name, newName, columnDec);
   }
 }

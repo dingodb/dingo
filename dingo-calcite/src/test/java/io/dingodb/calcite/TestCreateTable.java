@@ -255,7 +255,7 @@ public class TestCreateTable {
 
     @Test
     public void createTableWithForeign() {
-        String sql = "create table t1(id int,age int,name int,primary key(id), constraint foreign key (id,name) references t2(id,name) "
+        String sql = "create table t1(id int,age int(10),name int, info varchar(20),primary key(id), constraint foreign key (id,name) references t2(id,name) "
             + "on update no action on delete CASCADE)";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
         SqlParser parser = SqlParser.create(sql, config);
@@ -296,6 +296,19 @@ public class TestCreateTable {
     @Test
     public void sqlAlterModifyColumn1() {
         String sql = "ALTER TABLE table_name modify column a int references t2(age)";
+        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
+        SqlParser parser = SqlParser.create(sql, config);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterModifyColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterMultyModifyColumn1() {
+        String sql = "ALTER TABLE table_name modify column a int, modify column name int";
         SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
         SqlParser parser = SqlParser.create(sql, config);
         try {

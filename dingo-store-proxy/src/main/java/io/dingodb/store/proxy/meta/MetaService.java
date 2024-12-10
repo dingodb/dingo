@@ -640,6 +640,80 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return tableEntityId;
     }
 
+    public void createIndexReplicaTable(
+        long schemaId, long originPriTableId, Object indexDefinition, String indexName
+    ) {
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) indexDefinition;
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        // Generate new table ids.
+        long tableEntityId = coordinatorService.createIds(
+            tso(),
+            CreateIdsRequest.builder()
+                .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
+                .build()
+        ).getIds().get(0);
+        DingoCommonId tableId = DingoCommonId.builder()
+            .entityType(EntityType.ENTITY_TYPE_INDEX)
+            .parentEntityId(originPriTableId)
+            .entityId(tableEntityId).build();
+        List<DingoCommonId> tablePartIds = coordinatorService.createIds(tso(), CreateIdsRequest.builder()
+                .idEpochType(IdEpochType.ID_NEXT_TABLE)
+                .count(tableDefinitionWithId.getTableDefinition().getTablePartition().getPartitions().size())
+                .build()
+            )
+            .getIds()
+            .stream()
+            .map(id -> DingoCommonId.builder()
+                .entityType(EntityType.ENTITY_TYPE_PART)
+                .parentEntityId(tableEntityId)
+                .entityId(id).build())
+            .collect(Collectors.toList());
+        tableDefinitionWithId.setTableId(tableId);
+        tableDefinitionWithId.getTableDefinition()
+            .getTablePartition().getPartitions()
+            .forEach(partition -> {
+                partition.setId(tablePartIds.remove(0));
+                byte[] startKey = MAPPER.realKey(partition.getRange().getStartKey(), partition.getId(), (byte) 't');
+                byte[] endKey = MAPPER.nextKey(partition.getId(), (byte) 't');
+                partition.getRange().setStartKey(startKey);
+                partition.getRange().setEndKey(endKey);
+            });
+        // create table
+        infoSchemaService.createReplicaTable(
+            schemaId,
+            originPriTableId,
+            tableDefinitionWithId
+        );
+
+        // table region
+        io.dingodb.sdk.service.entity.meta.TableDefinition withIdTableDefinition
+            = tableDefinitionWithId.getTableDefinition();
+        for (Partition partition : withIdTableDefinition.getTablePartition().getPartitions()) {
+            CreateRegionRequest request = CreateRegionRequest
+                .builder()
+                .regionName("T_" + schemaId + "_" + indexName + "_part_" + partition.getId().getEntityId())
+                .regionType(RegionType.STORE_REGION)
+                .replicaNum(withIdTableDefinition.getReplica())
+                .range(partition.getRange())
+                .rawEngine(getRawEngine(withIdTableDefinition.getEngine()))
+                .storeEngine(withIdTableDefinition.getStoreEngine())
+                .schemaId(schemaId)
+                .tableId(originPriTableId)
+                .indexId(tableEntityId)
+                .partId(partition.getId().getEntityId())
+                .tenantId(tableDefinitionWithId.getTenantId())
+                .build();
+            try {
+                LogUtils.info(log, "create replicate region, range:{}", partition.getRange());
+                coordinatorService.createRegion(tso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create replicate region error, range:{}", partition.getRange());
+                throw e;
+            }
+        }
+
+    }
+
     @Override
     public void rollbackCreateTable(
         long schemaId,
@@ -1009,7 +1083,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             context.stop();
         } else {
             if (autoInc) {
-                delAutoInc(MAPPER.idTo(tableId));
+                delAutoInc(tableId);
             }
             for (RangeDistribution rangeDistribution : rangeDistributions) {
                 try {
@@ -1294,9 +1368,18 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    public void delAutoInc(DingoCommonId tableId) {
+    public void delAutoInc(Object tableId) {
+        DingoCommonId commonId;
+        if (tableId instanceof DingoCommonId) {
+            commonId = (DingoCommonId) tableId;
+        } else if (tableId instanceof CommonId) {
+            commonId = MAPPER.idTo((CommonId) tableId);
+        } else {
+            return;
+        }
+
         DeleteAutoIncrementRequest req = DeleteAutoIncrementRequest.builder()
-            .tableId(tableId)
+            .tableId(commonId)
             .build();
         try {
             io.dingodb.sdk.service.MetaService metaService

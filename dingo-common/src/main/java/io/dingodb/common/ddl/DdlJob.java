@@ -23,6 +23,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.sequence.SequenceDefinition;
+import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -64,6 +65,7 @@ public class DdlJob {
     private byte[] rawArgs;
     private DdlReorgMeta reorgMeta;
     private long lockVerTs;
+    private DingoErr dingoErr;
 
     @JsonIgnore
     private List<Object> args;
@@ -88,7 +90,8 @@ public class DdlJob {
         long rowCount, ReentrantReadWriteLock lock,
         SchemaState schemaState, long snapshotVer, long realStartTs,
         long startTs, long dependencyId, String query, long version, int priority, long seqNu,
-        List<Object> args
+        List<Object> args,
+        DingoErr err
     ) {
         this.id = id;
         this.actionType = actionType;
@@ -112,6 +115,7 @@ public class DdlJob {
         this.priority = priority;
         this.seqNu = seqNu;
         this.args = args;
+        this.dingoErr = err;
     }
 
     public DdlJob() {
@@ -129,6 +133,7 @@ public class DdlJob {
         if (actionType == ActionType.ActionAddIndex
             || actionType == ActionType.ActionDropColumn
             || actionType == ActionType.ActionAddColumn
+            || actionType == ActionType.ActionModifyColumn
         ) {
             return true;
         }
@@ -248,9 +253,9 @@ public class DdlJob {
                 t = new TypeReference<List<RecoverInfo>>() {};
             } else if (actionType == ActionType.ActionCreateSequence) {
                 t = new TypeReference<List<SequenceDefinition>>() {};
-            } /*else if () {
-
-            }*/
+            } else if (actionType == ActionType.ActionModifyColumn) {
+                t = new TypeReference<List<ModifyingColInfo>>() {};
+            }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);
             return null;
@@ -297,30 +302,30 @@ public class DdlJob {
 
     @Override
     public String toString() {
-        return "DdlJob{" +
-            "id=" + id +
-            ", actionType=" + actionType +
-            ", schemaId=" + schemaId +
-            ", tableId=" + tableId +
-            ", schemaName='" + schemaName + '\'' +
-            ", tableName='" + tableName + '\'' +
-            ", state=" + state +
-            ", warning='" + warning + '\'' +
-            ", error='" + error + '\'' +
-            ", errorCount=" + errorCount +
-            ", rowCount=" + rowCount +
-            ", lock=" + lock +
-            ", schemaState=" + schemaState +
-            ", snapshotVer=" + snapshotVer +
-            ", realStartTs=" + realStartTs +
-            ", startTs=" + startTs +
-            ", dependencyId=" + dependencyId +
-            ", query='" + query + '\'' +
-            ", version=" + version +
-            ", args=" + args +
-            ", multiSchemaInfo=" + multiSchemaInfo +
-            ", priority=" + priority +
-            ", seqNu=" + seqNu +
-            '}';
+        return "DdlJob{"
+            + "id=" + id
+            + ", actionType=" + actionType
+            + ", schemaId=" + schemaId
+            + ", tableId=" + tableId
+            + ", schemaName='" + schemaName + '\''
+            + ", tableName='" + tableName + '\''
+            + ", state=" + state
+            + ", warning='" + warning + '\''
+            + ", error='" + error + '\''
+            + ", errorCount=" + errorCount
+            + ", rowCount=" + rowCount
+            + ", lock=" + lock
+            + ", schemaState=" + schemaState
+            + ", snapshotVer=" + snapshotVer
+            + ", realStartTs=" + realStartTs
+            + ", startTs=" + startTs
+            + ", dependencyId=" + dependencyId
+            + ", query='" + query + '\''
+            + ", version=" + version
+            + ", args=" + args
+            + ", multiSchemaInfo=" + multiSchemaInfo
+            + ", priority=" + priority
+            + ", seqNu=" + seqNu
+            + '}';
     }
 }

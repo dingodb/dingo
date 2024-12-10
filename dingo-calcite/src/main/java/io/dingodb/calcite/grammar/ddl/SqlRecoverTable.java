@@ -16,28 +16,41 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterColumn extends SqlAlterTable {
+import java.util.List;
 
-    public int op = 0;
-    public SqlNode defaultExpr;
-    public SqlIdentifier colName;
+public class SqlRecoverTable extends SqlDdl {
+
+    public SqlIdentifier tableId;
+    public String newTableId;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE ALTER COLUMN", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("RECOVER TABLE", SqlKind.OTHER_DDL);
 
-    public SqlAlterColumn(
-        SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlIdentifier colName, int op, SqlNode defaultExpr
-    ) {
-        super(pos, sqlIdentifier, OPERATOR);
-        this.op = op;
-        this.colName = colName;
-        this.defaultExpr = defaultExpr;
+    public SqlRecoverTable(SqlParserPos pos, SqlIdentifier tableId, SqlIdentifier newTableId) {
+        super(OPERATOR, pos);
+        this.tableId = tableId;
+        if (newTableId != null) {
+            this.newTableId = newTableId.getSimple();
+        }
+    }
+
+    @Override
+    public List<SqlNode> getOperandList() {
+        return null;
+    }
+
+    @Override
+    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("RECOVER TABLE ");
+        tableId.unparse(writer, leftPrec, rightPrec);
     }
 }

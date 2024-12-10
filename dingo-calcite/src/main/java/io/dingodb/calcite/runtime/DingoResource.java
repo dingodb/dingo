@@ -167,4 +167,10 @@ public interface DingoResource {
     @BaseMessage("Error 9006 (HY000): GC life time is shorter than transaction duration")
     ExInst<DingoSqlException> invalidAsTimestampParam();
 
+    @BaseMessage("Error 1054 (42S22): Unknown column ''{0}'' in ''{1}''")
+    ExInst<DingoSqlException> unknownColumn(String name, String tableName);
+
+    @BaseMessage("Error 8200 (HY000): Unsupported modify column: can't set auto_increment")
+    ExInst<DingoSqlException> modifyColumnError1();
+
 }

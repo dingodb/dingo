@@ -21,11 +21,14 @@ import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
+import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.DingoErr;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.SessionUtil;
@@ -33,9 +36,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
-import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
-import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -98,16 +99,12 @@ public final class DdlHandler {
         job.setState(JobState.jobStateQueueing);
         byte[] meta = job.encode(updateRawArgs);
         String jobMeta = new String(meta);
-        StringBuilder sqlBuilder = new StringBuilder(INSERT_JOB);
         String format = "(%d, %b, %s, %s, %s, %d, %b)";
-        sqlBuilder.append(
-            String.format(
+        String sql = INSERT_JOB + String.format(
                 format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
                 Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(),
                 !job.notStarted()
-            )
-        );
-        String sql = sqlBuilder.toString();
+            );
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
@@ -164,14 +161,6 @@ public final class DdlHandler {
             doDdlJob(ddlJob);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] create table error, tableName:{}", tableDefinition.getName(), e);
-            //if (e.getMessage() != null && !e.getMessage().contains("table has existed")) {
-            //    InfoSchemaService service = InfoSchemaService.root();
-            //    Object tabObj = service.getTable(ddlJob.getSchemaId(), tableDefinition.getName());
-            //    if (tabObj != null) {
-            //        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tabObj;
-            //        service.dropTable(ddlJob.getSchemaId(), tableDefinitionWithId.getTableId().getEntityId());
-            //    }
-            //}
             throw e;
         }
     }
@@ -454,6 +443,39 @@ public final class DdlHandler {
         }
     }
 
+    public static void modifyColumn(
+        long schemaId, String schemaName, long tableId, List<ModifyingColInfo> modifyingColInfoList
+    ) {
+        List<Object> args = new ArrayList<>(modifyingColInfoList);
+        DdlJob ddlJob = DdlJob.builder()
+            .schemaName(schemaName)
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .actionType(ActionType.ActionModifyColumn)
+            .args(args)
+            .state(JobState.jobStateQueueing)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        doDdlJob(ddlJob);
+    }
+
+    public static void changeColumn(
+        long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
+    ) {
+        List<Object> args = new ArrayList<>();
+        args.add(modifyingColInfo);
+        DdlJob ddlJob = DdlJob.builder()
+            .schemaName(schemaName)
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .actionType(ActionType.ActionModifyColumn)
+            .args(args)
+            .state(JobState.jobStateQueueing)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        doDdlJob(ddlJob);
+    }
+
     public static DdlJob createTableWithInfoJob(String schemaName, TableDefinition tableDefinition) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         assert infoSchemaService != null;
@@ -476,6 +498,7 @@ public final class DdlHandler {
             .state(JobState.jobStateQueueing)
             .args(args)
             .tableId(tableEntityId)
+            .err(new DingoErr(1200, "1200", "test"))
             .id(0)
             .build();
     }
@@ -516,12 +539,12 @@ public final class DdlHandler {
         // get history job from history
         long start = System.currentTimeMillis();
         while (!Thread.interrupted()) {
-            Pair<Boolean, String> res = historyJob(job.getId());
+            Pair<Boolean, DingoErr> res = historyJob(job.getId());
             if (res.getKey()) {
                 return;
             } else if (res.getValue() != null) {
                 LogUtils.error(log, "[ddl-error] doDdlJob error, reason: {}, job: {}", res.getValue(), job);
-                throw new RuntimeException(res.getValue());
+                throw DingoErrUtil.toMysqlError(res.getValue());
             }
             Utils.sleep(50);
             if (timeout == 0) {
@@ -539,13 +562,13 @@ public final class DdlHandler {
         }
     }
 
-    public static Pair<Boolean, String> historyJob(long jobId) {
+    public static Pair<Boolean, DingoErr> historyJob(long jobId) {
         DdlJob ddlJob = getHistoryJobById(jobId);
         if (ddlJob == null) {
             if (insertFailedJobIdList.containsKey(jobId)) {
                 String error = insertFailedJobIdList.get(jobId);
                 insertFailedJobIdList.remove(jobId);
-                return Pair.of(false, error);
+                return Pair.of(false, DingoErrUtil.newInternalErr(error));
             } else {
                 return Pair.of(false, null);
             }
@@ -554,8 +577,12 @@ public final class DdlHandler {
             return Pair.of(true, null);
         }
         if (ddlJob.getError() != null) {
-            String error = ddlJob.decodeError();
-            return Pair.of(false, error);
+            if (ddlJob.getDingoErr() == null || ddlJob.getDingoErr().errorCode == 0) {
+                String error = ddlJob.decodeError();
+                return Pair.of(false, DingoErrUtil.newInternalErr(error));
+            } else {
+                return Pair.of(false, ddlJob.getDingoErr());
+            }
         }
         return Pair.of(false, null);
     }

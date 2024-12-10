@@ -26,7 +26,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +36,7 @@ import static io.dingodb.common.mysql.constant.ServerConstant.ARRAY_SPLIT;
 public class ImportFileConverter implements DataConverter {
 
     private final String NULL_FLG;
+
     public ImportFileConverter(byte[] escaped) {
         byte[] nullFlgBytes = new byte[escaped.length + 1];
         System.arraycopy(escaped, 0, nullFlgBytes, 0, escaped.length);
@@ -176,14 +176,16 @@ public class ImportFileConverter implements DataConverter {
             Object[] tuples = splitArray(valStr.getBytes(), (byte) ARRAY_SPLIT);
             List<Object> res = new ArrayList<>();
             for (Object obj : tuples) {
-                 res.add(elementType.convertFrom(obj, this));
+                res.add(elementType.convertFrom(obj, this));
             }
             return res;
         }
     }
 
     @Override
-    public Map<Object, Object> convertMapFrom(@NonNull Object value, @NonNull DingoType keyType, @NonNull DingoType valueType) {
+    public Map<Object, Object> convertMapFrom(
+        @NonNull Object value, @NonNull DingoType keyType, @NonNull DingoType valueType
+    ) {
         String valStr = (String) value;
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
@@ -202,8 +204,8 @@ public class ImportFileConverter implements DataConverter {
         }
     }
 
-    public static Map<Object, Object> mapStringToMap(String str){
-        str = str.substring(1, str.length()-1);
+    public static Map<Object, Object> mapStringToMap(String str) {
+        str = str.substring(1, str.length() - 1);
         String[] strs = str.split(",");
         Map<Object, Object> map = new HashMap<>();
         for (String string : strs) {

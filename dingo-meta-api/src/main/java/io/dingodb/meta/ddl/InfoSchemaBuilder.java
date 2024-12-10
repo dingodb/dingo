@@ -190,6 +190,8 @@ public class InfoSchemaBuilder {
                 return applyCreateSequence(schemaDiff);
             case ActionDropSequence:
                 return applyDropSequence(schemaDiff);
+            case ActionModifyColumn:
+                return applyModifyColumn(schemaDiff);
             default:
                 break;
         }
@@ -440,6 +442,13 @@ public class InfoSchemaBuilder {
     public Pair<List<Long>, String> applyRecoverSchema(SchemaDiff diff) {
         String error = applyCreateSchema(diff);
         return Pair.of(null, error);
+    }
+
+    public Pair<List<Long>, String> applyModifyColumn(SchemaDiff diff) {
+        dropTable(diff.getSchemaId(), diff.getTableId());
+        MetaService.root()
+            .invalidateDistribution(new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()));
+        return applyCreateTable(diff);
     }
 
     public static int bucketIdx(long tableId) {

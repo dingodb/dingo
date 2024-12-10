@@ -20,7 +20,6 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
-import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -29,19 +28,20 @@ public class SqlAlterChangeColumn extends SqlAlterTable {
     public SqlIdentifier oldName;
     public SqlIdentifier newName;
 
-    DingoSqlColumn dingoSqlColumn;
+    public DingoSqlColumn dingoSqlColumn;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE CHANGE COLUMN", SqlKind.ALTER_TABLE);
 
     public SqlAlterChangeColumn(
         SqlParserPos pos,
-        SqlIdentifier sqlIdentifier,
+        SqlIdentifier table,
+        SqlIdentifier oldName,
         SqlIdentifier newName,
         DingoSqlColumn sqlColumn
     ) {
-        super(pos, sqlIdentifier, OPERATOR);
-        this.oldName = sqlIdentifier;
+        super(pos, table, OPERATOR);
+        this.oldName = oldName;
         this.newName = newName;
         this.dingoSqlColumn = sqlColumn;
     }

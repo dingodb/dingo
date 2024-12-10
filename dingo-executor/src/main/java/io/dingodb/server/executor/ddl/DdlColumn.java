@@ -23,6 +23,7 @@ import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Pair;
@@ -81,32 +82,25 @@ public final class DdlColumn {
             Reorg reorg = Reorg.INSTANCE;
             Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
             if (reorgInfoRes.getValue() != null) {
-                throw new RuntimeException(reorgInfoRes.getValue());
+                throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
             }
             ReorgInfo reorgInfo = reorgInfoRes.getKey();
-            //if (reorgInfo.isFirst()) {
-            //    return Pair.of(false, 0L);
-            //}
             String error = worker.runReorgJob(dc, reorgInfo,
                 p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeAddColumnWorker)
             );
             if (error != null) {
-                if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
-                    return Pair.of(false, 0L);
-                }
-                if ("ErrKeyExists".equalsIgnoreCase(error)
-                    || "ErrCancelledDDLJob".equalsIgnoreCase(error)
-                    || "ErrCantDecodeRecord".equalsIgnoreCase(error)
-                ) {
-                    LogUtils.warn(log,
-                        "[ddl] run add index job failed, convert job to rollback, jobId:{}, error:{}",
-                        job.getId(), error);
-                    //Pair<Long, String> res = RollingBackUtil.convertAddIdxJob2RollbackJob(dc, job, replicaTable);
-                    //if (res.getValue() != null) {
-                    //    error = res.getValue();
-                    //}
-                }
-                throw new RuntimeException(error);
+                //if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
+                //    return Pair.of(false, 0L);
+                //}
+                //if ("ErrKeyExists".equalsIgnoreCase(error)
+                //    || "ErrCancelledDDLJob".equalsIgnoreCase(error)
+                //    || "ErrCantDecodeRecord".equalsIgnoreCase(error)
+                //) {
+                //    LogUtils.warn(log,
+                //        "[ddl] run add index job failed, convert job to rollback, jobId:{}, error:{}",
+                //        job.getId(), error);
+                //}
+                throw DingoErrUtil.newStdErr(error);
             }
             return Pair.of(true, 0L);
         } finally {
@@ -122,8 +116,46 @@ public final class DdlColumn {
         DdlWorker worker
     ) {
         MetaElement[] elements = new MetaElement[] {
-            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.addColElementKey)
+            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.dropColElementKey)
         };
+        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeDropColumnWorker);
+    }
+
+    public static Pair<Boolean, Long> doReorgWorkForModifyCol(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker
+    ) {
+        MetaElement[] elements = new MetaElement[] {
+            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.modifyColElementKey)
+        };
+        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyColumnWorker);
+    }
+
+    public static Pair<Boolean, Long> doReorgWorkForModifyIndexCol(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker
+    ) {
+        MetaElement[] elements = new MetaElement[] {
+            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.modifyColElementKey)
+        };
+        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyIndexColumnWorker);
+    }
+
+    public static Pair<Boolean, Long> doReorgWork(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker,
+        MetaElement[] elements,
+        int reorgCode
+    ) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             // get schemaInfo
@@ -134,17 +166,14 @@ public final class DdlColumn {
             Reorg reorg = Reorg.INSTANCE;
             Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
             if (reorgInfoRes.getValue() != null) {
-                throw new RuntimeException(reorgInfoRes.getValue());
+                throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
             }
             ReorgInfo reorgInfo = reorgInfoRes.getKey();
-            //if (reorgInfo.isFirst()) {
-            //    return Pair.of(false, 0L);
-            //}
             String error = worker.runReorgJob(dc, reorgInfo,
-                p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeDropColumnWorker)
+                p -> addReplicaTable(reorgInfoRes.getKey(), reorgCode)
             );
             if (error != null) {
-                throw new RuntimeException(error);
+                throw DingoErrUtil.newStdErr(error);
             }
             return Pair.of(true, 0L);
         } finally {

@@ -19,6 +19,7 @@ package io.dingodb.common.exception;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,7 +44,7 @@ public class DingoSqlException extends RuntimeException {
     private String message;
 
     public DingoSqlException() {
-        this(null);
+        this((SQLException) null);
     }
 
     public DingoSqlException(String message) {
@@ -78,4 +79,34 @@ public class DingoSqlException extends RuntimeException {
         this.sqlCode = sqlCode;
         this.sqlState = (sqlState != null ? sqlState : Integer.toString(sqlCode));
     }
+
+    public DingoSqlException(String message, String sqlState, int sqlCode) {
+        super(message, null);
+        this.message = (message != null ? message : NULL_MESSAGE);
+        this.sqlCode = sqlCode;
+        this.sqlState = (sqlState != null ? sqlState : Integer.toString(sqlCode));
+    }
+
+    public DingoSqlException(int sqlCode, String sqlState, String message) {
+        super(message, null);
+        this.message = (message != null ? message : NULL_MESSAGE);
+        this.sqlCode = sqlCode;
+        this.sqlState = (sqlState != null ? sqlState : Integer.toString(sqlCode));
+    }
+
+    public DingoSqlException(SQLException sqlException) {
+        this(sqlException.getErrorCode(), sqlException.getSQLState(), sqlException.getMessage());
+    }
+
+    public void fillErrorByArgs(Object... param) {
+        int paramCnt = param.length;
+        if (paramCnt == 1) {
+            message = String.format(message, param[0]);
+        } else if (paramCnt == 2) {
+            message = String.format(message, param[0], param[1]);
+        } else if (paramCnt == 3) {
+            message = String.format(message, param[0], param[1], param[2]);
+        }
+    }
+
 }

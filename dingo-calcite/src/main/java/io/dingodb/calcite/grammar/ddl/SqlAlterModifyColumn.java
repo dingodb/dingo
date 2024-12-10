@@ -23,15 +23,22 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SqlAlterModifyColumn extends SqlAlterTable {
 
-    DingoSqlColumn dingoSqlColumn;
+    public List<DingoSqlColumn> dingoSqlColumnList = new ArrayList<>();
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE MODIFY COLUMN", SqlKind.ALTER_TABLE);
 
     public SqlAlterModifyColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, DingoSqlColumn sqlColumn) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.dingoSqlColumn = sqlColumn;
+        this.dingoSqlColumnList.add(sqlColumn);
+    }
+
+    public void addSqlColumn(DingoSqlColumn sqlColumn) {
+        this.dingoSqlColumnList.add(sqlColumn);
     }
 }

@@ -432,6 +432,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public List<Object> getReplicaIndex(long schemaId, long tableId) {
+        List<Object> withIdList = listIndex(schemaId, tableId);
+        return withIdList.stream()
+            .filter(obj -> {
+                TableDefinitionWithId withId = (TableDefinitionWithId) obj;
+                return withId.getTableDefinition().getName().startsWith(DdlUtil.ddlTmpIndexName);
+            }).collect(Collectors.toList());
+    }
+
+    @Override
     public Table getTableDef(long schemaId, long tableId) {
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) getTable(schemaId, tableId);
         if (tableWithId == null) {
