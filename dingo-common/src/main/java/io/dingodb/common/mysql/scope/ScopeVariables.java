@@ -131,7 +131,7 @@ public final class ScopeVariables {
 
     public static boolean getNeedGc() {
         try {
-            String jobNeedGc = executorProp.getOrDefault("job_need_gc", "on").toString();
+            String jobNeedGc = executorProp.getOrDefault("job_need_gc", "off").toString();
             return jobNeedGc.equals("on");
         } catch (Exception e) {
             return false;
