@@ -82,6 +82,9 @@ public final class DingoIndexRangeScanVisitFun {
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaService.root();
+        if (transaction != null && transaction.getPointStartTs() > 0) {
+            metaService = MetaService.snapshot(transaction.getPointStartTs());
+        }
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         CommonId idxId = rel.getIndexId();
@@ -155,7 +158,7 @@ public final class DingoIndexRangeScanVisitFun {
         task.putVertex(calcVertex);
 
         Vertex indexScanvertex = null;
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList
         );

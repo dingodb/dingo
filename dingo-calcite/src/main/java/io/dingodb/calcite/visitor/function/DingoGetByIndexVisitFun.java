@@ -78,10 +78,13 @@ public final class DingoGetByIndexVisitFun {
     ) {
         final LinkedList<Vertex> outputs = new LinkedList<>();
         MetaService metaService = MetaService.root();
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         boolean needLookup = indexSetMap.size() > 1;
+        if (transaction != null && transaction.getPointStartTs() > 0) {
+            metaService = MetaService.snapshot(transaction.getPointStartTs());
+        }
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             CommonId idxId = indexValSet.getKey();
             Table indexTd = rel.getIndexTdMap().get(idxId);

@@ -32,6 +32,7 @@ import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.transaction.api.LockType;
@@ -108,6 +109,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Getter
     private CommitProfile commitProfile;
+
+    @Getter
+    @Setter
+    private long pointTs;
 
     @Getter
     private Map<Long, Long> mdlLockJobMap = new ConcurrentHashMap<>();
@@ -244,8 +249,15 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 TransactionUtil.convertIsolationLevel(txIsolation));
             transaction.setTransactionConfig(sessionVariables);
             transaction.setAutoCommit(autoCommit);
-            InfoSchema is = getContext().getRootSchema().initTxn(transaction.getTxnId());
-            transaction.setIs(is);
+            if (pointTs > 0) {
+                InfoSchema pointIs = DdlService.root().getPointIs(pointTs);
+                getContext().getRootSchema().initTxnSnapshotMeta(transaction.getTxnId(), pointIs);
+                transaction.setIs(pointIs);
+                pointTs = 0;
+            } else {
+                InfoSchema is = getContext().getRootSchema().initTxn(transaction.getTxnId());
+                transaction.setIs(is);
+            }
         }
         return transaction;
     }

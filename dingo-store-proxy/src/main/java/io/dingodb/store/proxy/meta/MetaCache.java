@@ -90,6 +90,8 @@ public class MetaCache {
 
     private boolean isClose = false;
 
+    private static int cnt = 0;
+
     public MetaCache(Set<Location> coordinators) {
         this.metaService = Services.metaService(coordinators);
         this.infoSchemaService = InfoSchemaService.root();
@@ -104,10 +106,28 @@ public class MetaCache {
                 }
             }
         });
-        DingoMetrics.metricRegistry.register("distributionCache", new CachedGauge<Long>(1, TimeUnit.MINUTES) {
+        cnt ++;
+        DingoMetrics.metricRegistry.register("distributionCache" + cnt, new CachedGauge<Long>(1, TimeUnit.MINUTES) {
             @Override
             protected Long loadValue() {
                 return distributionCache.size();
+            }
+        });
+        DingoMetrics.counter("metaCacheInstanceCount").inc();
+    }
+
+    public MetaCache(Set<Location> coordinators, long pointTs) {
+        this.metaService = Services.metaService(coordinators);
+        this.infoSchemaService = new io.dingodb.store.service.InfoSchemaService(pointTs);
+        this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
+        this.distributionCache = buildDistributionCache();
+        Executors.execute("watch-meta", () -> {
+            while (!isClose) {
+                try {
+                    watch();
+                } catch (Exception e) {
+                    LogUtils.error(log, "Watch meta error, restart watch.", e);
+                }
             }
         });
         DingoMetrics.counter("metaCacheInstanceCount").inc();

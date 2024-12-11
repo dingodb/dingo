@@ -18,6 +18,7 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
+import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -36,6 +37,21 @@ public final class MetaServiceUtils {
 
     public static @NonNull TableInfo getTableInfo(RelOptTable table) {
         MetaService metaService = MetaService.root();
+        DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
+        CommonId tableId = dingoTable.getTable().tableId;
+        return new TableInfo(
+            tableId,
+            metaService.getRangeDistribution(tableId)
+        );
+    }
+
+    public static @NonNull TableInfo getTableInfo(ITransaction transaction, RelOptTable table) {
+        MetaService metaService;
+        if (transaction != null && transaction.getPointStartTs() > 0) {
+            metaService = MetaService.snapshot(transaction.getPointStartTs());
+        } else {
+            metaService = MetaService.root();
+        }
         DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
         CommonId tableId = dingoTable.getTable().tableId;
         return new TableInfo(

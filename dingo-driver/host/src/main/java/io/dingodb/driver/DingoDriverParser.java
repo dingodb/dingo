@@ -31,6 +31,7 @@ import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
+import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
 import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
@@ -41,6 +42,7 @@ import io.dingodb.calcite.rel.DingoDiskAnnReset;
 import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.HybridNodeUtils;
 import io.dingodb.calcite.utils.SqlUtil;
@@ -54,6 +56,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
@@ -341,15 +344,21 @@ public final class DingoDriverParser extends DingoParser {
             assert sqlNode instanceof SqlExplain;
             explain = (SqlExplain) sqlNode;
             sqlNode = explain.getExplicandum();
+        } else if (flashBackQuery(sqlNode)) {
+            handleFlashBackQuery(sqlNode);
+        } else if (needExport(sqlNode)) {
+            assert sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect;
+            io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+            pointTs = sqlSelect.getPointStartTs();
         }
 
         long startTs;
-        CommonId txn_Id;
+        CommonId txnId;
         ITransaction transaction;
         boolean newTxn = false;
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();
-            txn_Id = transaction.getTxnId();
+            txnId = transaction.getTxnId();
         } else {
             if (prepare) {
                 // prepare using optimistic transaction
@@ -364,7 +373,7 @@ public final class DingoDriverParser extends DingoParser {
                         ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
                     connection.getAutoCommit());
             }
-            txn_Id = transaction.getTxnId();
+            txnId = transaction.getTxnId();
             newTxn = true;
         }
         startTs = transaction.getStartTs();
@@ -469,14 +478,14 @@ public final class DingoDriverParser extends DingoParser {
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
         boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile, newTxn);
         transaction = connection.initTransaction(isTxn, newTxn);
-        if (pointTs > 0) {
-            transaction.setPointStartTs(pointTs);
-        }
 
         // get in transaction for mysql update/insert/delete res ok packet
         if (transaction.getType() != NONE) {
             inTransaction = true;
             if (pointTs > 0) {
+                if (!newTxn) {
+                    throw DingoResource.DINGO_RESOURCE.invalidAsTimestamp().ex();
+                }
                 LogUtils.info(log, "set point ts:{}, txnId:{}, sql statement:{}", pointTs, sql);
                 transaction.setPointStartTs(pointTs);
             }
@@ -499,7 +508,7 @@ public final class DingoDriverParser extends DingoParser {
         maxExecutionTimeStr = maxExecutionTimeStr == null ? "0" : maxExecutionTimeStr;
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
         Job job = jobManager.createJob(
-            startTs, jobSeqId, txn_Id, DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
+            startTs, jobSeqId, txnId, DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
             statementType == Meta.StatementType.SELECT
         );
         DingoJobVisitor.renderJob(
@@ -563,6 +572,32 @@ public final class DingoDriverParser extends DingoParser {
             columns,
             trace
         );
+    }
+
+    private void handleFlashBackQuery(SqlNode sqlNode) {
+        io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+        if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+            FlashBackSqlIdentifier flashBackSqlIdentifier = (FlashBackSqlIdentifier) sqlSelect.getFrom();
+            LogUtils.info(log, "flashback query str:{}", flashBackSqlIdentifier.flashBackTimeStr);
+            if (flashBackSqlIdentifier.flashBackTimeStr != null) {
+                long time = DataTimeUtils.parseDate(flashBackSqlIdentifier.flashBackTimeStr);
+                pointTs = TsoService.getDefault().tso(time);
+            } else {
+                pointTs = flashBackSqlIdentifier.tso;
+            }
+        } else if (sqlSelect.isFlashBackQuery()) {
+            if (sqlSelect.getFlashBackTimeStr() != null) {
+                long time = DataTimeUtils.parseDate(sqlSelect.getFlashBackTimeStr());
+                pointTs = TsoService.getDefault().tso(time);
+            } else {
+                pointTs = sqlSelect.getFlashBackTso();
+            }
+        }
+        if (getGcLifeTime() > pointTs) {
+            throw DingoResource.DINGO_RESOURCE.invalidAsTimestampParam().ex();
+        }
+        this.connection.setPointTs(pointTs);
+        LogUtils.info(log, "flashback query tso:{}", pointTs);
     }
 
     public int getConcurrencyLevel() {
@@ -797,10 +832,10 @@ public final class DingoDriverParser extends DingoParser {
         RelShuttleImpl relShuttle = new RelShuttleImpl() {
             @Override
             public RelNode visit(RelNode other) {
-                if (other instanceof DingoVector || other instanceof DingoDocument ||
-                    other instanceof DingoDiskAnnStatus || other instanceof DingoDiskAnnCountMemory ||
-                    other instanceof DingoDiskAnnReset || other instanceof DingoDiskAnnBuild ||
-                    other instanceof DingoDiskAnnLoad) {
+                if (other instanceof DingoVector || other instanceof DingoDocument
+                    || other instanceof DingoDiskAnnStatus || other instanceof DingoDiskAnnCountMemory
+                    || other instanceof DingoDiskAnnReset || other instanceof DingoDiskAnnBuild
+                    || other instanceof DingoDiskAnnLoad) {
                     return other;
                 }
                 if (!other.getInputs().isEmpty()) {
@@ -847,19 +882,19 @@ public final class DingoDriverParser extends DingoParser {
         } else if (relNode1 instanceof DingoDocument) {
             DingoDocument document = (DingoDocument) relNode1;
             return document.getTable();
-        } else if(relNode1 instanceof DingoDiskAnnBuild){
+        } else if (relNode1 instanceof DingoDiskAnnBuild) {
             DingoDiskAnnBuild dingoDiskAnnBuild = (DingoDiskAnnBuild) relNode1;
             return dingoDiskAnnBuild.getTable();
-        } else if(relNode1 instanceof DingoDiskAnnLoad){
+        } else if (relNode1 instanceof DingoDiskAnnLoad) {
             DingoDiskAnnLoad dingoDiskAnnLoad = (DingoDiskAnnLoad) relNode1;
             return dingoDiskAnnLoad.getTable();
-        } else if(relNode1 instanceof DingoDiskAnnStatus){
+        } else if (relNode1 instanceof DingoDiskAnnStatus) {
             DingoDiskAnnStatus diskAnnStatus = (DingoDiskAnnStatus) relNode1;
             return diskAnnStatus.getTable();
-        } else if(relNode1 instanceof DingoDiskAnnCountMemory){
+        } else if (relNode1 instanceof DingoDiskAnnCountMemory) {
             DingoDiskAnnCountMemory diskAnnCountMemory = (DingoDiskAnnCountMemory) relNode1;
             return diskAnnCountMemory.getTable();
-        } else if(relNode1 instanceof DingoDiskAnnReset){
+        } else if (relNode1 instanceof DingoDiskAnnReset) {
             DingoDiskAnnReset dingoDiskAnnReset = (DingoDiskAnnReset) relNode1;
             return dingoDiskAnnReset.getTable();
         }

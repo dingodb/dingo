@@ -16,24 +16,16 @@
 
 package io.dingodb.store.proxy.ddl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.ddl.ActionType;
-import io.dingodb.common.ddl.DdlJob;
-import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.ddl.RecoverInfo;
-import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
-import io.dingodb.common.meta.SchemaState;
-import io.dingodb.common.session.Session;
-import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.ddl.InfoSchemaBuilder;
 import io.dingodb.meta.entity.InfoCache;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
@@ -111,6 +103,15 @@ public class DdlService implements io.dingodb.meta.DdlService {
     @Override
     public InfoSchema getIsLatest() {
         return InfoCache.infoCache.getLatest();
+    }
+
+    public InfoSchema getPointIs(long pointTs) {
+        InfoSchemaService infoSchemaService = new io.dingodb.store.service.InfoSchemaService(pointTs);
+        List<SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
+
+        InfoSchemaBuilder builder = new InfoSchemaBuilder();
+        builder.initWithSchemaInfos(schemaInfoList, 0, infoSchemaService);
+        return builder.build();
     }
 
     @Override

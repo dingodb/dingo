@@ -161,14 +161,15 @@ public class RootCalciteSchema extends CalciteSchema {
         return is;
     }
 
+    public InfoSchema initTxnSnapshotMeta(CommonId txnId, InfoSchema is) {
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) schema;
+        rootSnapshotSchema.initTxn(is, txnId);
+        return is;
+    }
+
     public void closeTxn() {
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) schema;
         rootSnapshotSchema.destoryTxn();
-        //StringBuilder stringBuilder = new StringBuilder();
-        //this.relatedTableForMdl.keySet().forEach(id -> {
-        //    stringBuilder.append(id).append(",");
-        //});
-        //LogUtils.info(log, "[ddl] mdl table will remove, tableId:{}", stringBuilder.toString());
         this.relatedTableForMdl.clear();
     }
 

@@ -63,7 +63,7 @@ public final class DingoGetByKeysFun {
         Job job, IdGenerator idGenerator, Location currentLocation, DingoJobVisitor visitor,
         ITransaction transaction, @NonNull DingoGetByKeys rel
     ) {
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
         final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
             = tableInfo.getRangeDistributions();
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();

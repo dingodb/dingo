@@ -68,7 +68,7 @@ public final class DingoTableScanVisitFun {
         Job job, IdGenerator idGenerator, Location currentLocation,
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();

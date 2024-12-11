@@ -78,7 +78,7 @@ public final class DingoScanWithRelOpVisitFun {
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoScanWithRelOp rel
     ) {
         Task task;
-        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
+        final TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
         Supplier<Vertex> scanVertexCreator;
         if (transaction != null) {
             task = job.getOrCreate(

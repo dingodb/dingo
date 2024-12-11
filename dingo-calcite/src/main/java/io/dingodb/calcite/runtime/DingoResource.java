@@ -159,4 +159,10 @@ public interface DingoResource {
     @BaseMessage("Error 1410 (42000): You are not allowed to create a user with GRANT")
     ExInst<DingoSqlException> grantError();
 
+    @BaseMessage("Error 8135 (HY000): invalid as of timestamp: as of timestamp can't be set in transaction.")
+    ExInst<DingoSqlException> invalidAsTimestamp();
+
+    @BaseMessage("Error 9006 (HY000): GC life time is shorter than transaction duration")
+    ExInst<DingoSqlException> invalidAsTimestampParam();
+
 }

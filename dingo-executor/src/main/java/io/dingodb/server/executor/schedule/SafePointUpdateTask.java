@@ -20,7 +20,9 @@ import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -206,11 +208,15 @@ public final class SafePointUpdateTask {
     }
 
     private static void gcDeleteRegion() {
+        if (!ScopeVariables.getNeedGc()) {
+            return;
+        }
         long currentTime = System.currentTimeMillis();
         String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");
         long gcLifeTime = Long.parseLong(gcLifeTimeStr);
         long safePointTs = currentTime - (gcLifeTime * 1000);
         long tso = TsoService.getDefault().tso(safePointTs);
+        DdlUtil.gcLifeTimeTso = tso;
         LogUtils.info(log, "gcDeleteRegion tso:{}", tso);
         gcDeleteRange(tso);
     }

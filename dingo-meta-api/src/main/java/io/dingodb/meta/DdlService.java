@@ -67,6 +67,10 @@ public interface DdlService {
 
     InfoSchema getIsLatest();
 
+    default InfoSchema getPointIs(long pointTs) {
+        return new InfoSchema();
+    }
+
     Table getTable(String schemaName, String tableName);
 
     Table getTable(CommonId id);

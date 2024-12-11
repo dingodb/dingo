@@ -68,6 +68,8 @@ public final class DdlUtil {
     public static final String ddlId = String.format("%s:%d", DingoConfiguration.host(), DingoConfiguration.port());
     public static BlockingQueue<GcDeleteRegion> gcDelRegionQueue = new LinkedBlockingDeque<>(10000);
 
+    public static volatile long gcLifeTimeTso = 0;
+
     private DdlUtil() {
     }
 

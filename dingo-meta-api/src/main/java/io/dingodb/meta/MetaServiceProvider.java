@@ -41,6 +41,10 @@ public interface MetaServiceProvider {
 
     MetaService root();
 
+    default MetaService snapshot(long ts) {
+        return null;
+    }
+
     static MetaServiceProvider getDefault() {
         return Impl.INSTANCE.serviceProvider;
     }

@@ -61,6 +61,7 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.utils.SqlUtil;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
@@ -70,6 +71,7 @@ import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -277,34 +279,13 @@ public class DingoParser {
                     sqlSelect.getLineStarting(),
                     context.getTimeZone()
                 );
-                pointTs = sqlSelect.getPointStartTs();
-            } else if (flashBackQuery(sqlNode)) {
-                io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
-                if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
-                    FlashBackSqlIdentifier flashBackSqlIdentifier = (FlashBackSqlIdentifier) sqlSelect.getFrom();
-                    LogUtils.info(log, "flashback query str:{}", flashBackSqlIdentifier.flashBackTimeStr);
-                    if (flashBackSqlIdentifier.flashBackTimeStr != null) {
-                        long time = DataTimeUtils.parseDate(flashBackSqlIdentifier.flashBackTimeStr);
-                        pointTs = TsoService.getDefault().tso(time);
-                    } else {
-                        pointTs = flashBackSqlIdentifier.tso;
-                    }
-                } else if (sqlSelect.isFlashBackQuery()) {
-                    if (sqlSelect.getFlashBackTimeStr() != null) {
-                        long time = DataTimeUtils.parseDate(sqlSelect.getFlashBackTimeStr());
-                        pointTs = TsoService.getDefault().tso(time);
-                    } else {
-                        pointTs = sqlSelect.getFlashBackTso();
-                    }
-                }
-                LogUtils.info(log, "flashback query tso:{}", pointTs);
             }
         }
         // Insert a `DingoRoot` to collect the results.
         return relRoot.withRel(new LogicalDingoRoot(cluster, planner.emptyTraitSet(), relNode, selection));
     }
 
-    private static boolean needExport(@NonNull SqlNode sqlNode) {
+    public static boolean needExport(@NonNull SqlNode sqlNode) {
         if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
             io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
             return sqlSelect.isExport();
@@ -312,7 +293,7 @@ public class DingoParser {
         return false;
     }
 
-    private static boolean flashBackQuery(@NonNull SqlNode sqlNode) {
+    public static boolean flashBackQuery(@NonNull SqlNode sqlNode) {
         if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
             io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
             if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
@@ -461,6 +442,18 @@ public class DingoParser {
             || sqlNode instanceof SqlAlterDropColumn || sqlNode instanceof SqlAlterAddIndex
             || sqlNode instanceof SqlAlterDropIndex || sqlNode instanceof SqlCreateUser
             || sqlNode instanceof SqlDropUser || sqlNode instanceof SqlGrant;
+    }
+
+    public long getGcLifeTime() {
+        if (DdlUtil.gcLifeTimeTso > 0) {
+            return DdlUtil.gcLifeTimeTso;
+        } else {
+            long currentTime = System.currentTimeMillis();
+            String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");
+            long gcLifeTime = Long.parseLong(gcLifeTimeStr);
+            long safePointTs = currentTime - (gcLifeTime * 1000);
+            return TsoService.getDefault().tso(safePointTs);
+        }
     }
 
 }
