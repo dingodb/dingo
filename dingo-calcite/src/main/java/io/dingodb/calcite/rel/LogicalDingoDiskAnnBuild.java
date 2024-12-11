@@ -61,7 +61,7 @@ public class LogicalDingoDiskAnnBuild extends LogicalDingoDiskAnn {
                                     TupleMapping selection,
                                     RexNode filter,
                                     List<RelHint> hints
-                              ) {
+    ) {
         super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection, filter, hints);
     }
 

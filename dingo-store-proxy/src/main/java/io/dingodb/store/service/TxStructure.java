@@ -59,22 +59,6 @@ public class TxStructure {
         return txn.mRange(dataPrefix, end, realStartTs);
     }
 
-    public synchronized Long inc(byte[] key, long step) {
-        byte[] ek = CodecKvUtil.encodeStringDataKey(key);
-        long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
-        byte[] val = txn.mGet(ek, realStartTs);
-        long id = 0L;
-        if (val != null) {
-            id = Long.parseLong(new String(val));;
-        }
-        id += step;
-
-        String idStr = String.valueOf(id);
-        realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
-        txn.put(ek, idStr.getBytes(), realStartTs);
-        return id;
-    }
-
     public void put(byte[] key, byte[] value) {
         byte[] ek = CodecKvUtil.encodeStringDataKey(key);
         long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();

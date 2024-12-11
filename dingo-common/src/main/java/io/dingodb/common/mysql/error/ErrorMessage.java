@@ -26,13 +26,16 @@ public final class ErrorMessage {
 
     static {
         errorMap.put(WarnDataTruncated, "Data truncated for column '%s' at row %d");
-        errorMap.put(ErrDBDropExists, "Can't drop database '%s'; database doesn't exist");
-        errorMap.put(ErrDBCreateExists, "Can't create database '%s'; database exists");
+        errorMap.put(ErrDBDropExists, "Can not drop database '%s'; database doesn't exist");
+        errorMap.put(ErrDBCreateExists, "Can not create database '%s'; database exists");
         errorMap.put(ErrDupFieldName, "Duplicate column name '%s'");
         errorMap.put(ErrInvalidDDLState, "Invalid %s state: %s");
-        errorMap.put(ErrNoSuchTable, "Table '%s' doesn't exist");
+        errorMap.put(ErrNoSuchTable, "Table '%s' do not exist");
         errorMap.put(ErrCancelledDDLJob, "Cancelled DDL job");
-        errorMap.put(ErrCantDropFieldOrKey, "Can't DROP '%s'; check that column/key exists");
+        errorMap.put(ErrCantDropFieldOrKey, "Can not DROP '%s'; check that column/key exists");
+        errorMap.put(ErrTooManyFields, "Too many columns");
+        errorMap.put(ErrCantCreateFile, "Can not create file '%s'");
+        errorMap.put(ErrTableMustHaveColumns, "A table must have at least 1 column");
     }
 
     private ErrorMessage() {

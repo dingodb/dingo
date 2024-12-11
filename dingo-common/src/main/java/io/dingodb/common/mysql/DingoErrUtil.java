@@ -26,7 +26,16 @@ public final class DingoErrUtil {
 
     public static DingoSqlException newStdErr(int errCode, Object... param) {
         DingoSqlException dingoErr = new DingoSqlException(
-            errCode, State.mysqlState.getOrDefault(errCode, "HY000"), ErrorMessage.errorMap.get(errCode)
+            errCode, State.mysqlState.getOrDefault(errCode, "HY000"),
+            ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
+        );
+        dingoErr.fillErrorByArgs(param);
+        return dingoErr;
+    }
+
+    public static DingoSqlException newStdErr(String state, int errCode, Object... param) {
+        DingoSqlException dingoErr = new DingoSqlException(
+            errCode, state, ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
         );
         dingoErr.fillErrorByArgs(param);
         return dingoErr;
@@ -47,7 +56,16 @@ public final class DingoErrUtil {
 
     public static DingoErr newInternalErr(int errCode, Object... param) {
         DingoErr dingoErr = new DingoErr(
-            errCode, State.mysqlState.getOrDefault(errCode, "HY000"), ErrorMessage.errorMap.get(errCode)
+            errCode, State.mysqlState.getOrDefault(errCode, "HY000"),
+            ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
+        );
+        dingoErr.fillErrorByArgs(param);
+        return dingoErr;
+    }
+
+    public static DingoErr newInternalErr(String state, int errCode, Object... param) {
+        DingoErr dingoErr = new DingoErr(
+            errCode, state, ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
         );
         dingoErr.fillErrorByArgs(param);
         return dingoErr;
@@ -55,7 +73,8 @@ public final class DingoErrUtil {
 
     public static DingoErr newInternalErr(int errCode) {
         return new DingoErr(
-            errCode, State.mysqlState.getOrDefault(errCode, "HY000"), ErrorMessage.errorMap.get(errCode)
+            errCode, State.mysqlState.getOrDefault(errCode, "HY000"),
+            ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
         );
     }
 

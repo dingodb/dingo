@@ -218,12 +218,10 @@ public final class PrepareMeta {
     }
 
     public static void initGlobalVariables(String coordinators) {
-        VersionService versionService = io.dingodb.sdk.service.Services.versionService(
-            io.dingodb.sdk.service.Services.parse(coordinators)
-        );
+        InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         List<Object[]> globalVariablesList = getGlobalVariablesList();
         for (Object[] objects : globalVariablesList) {
-            versionService.kvPut(putRequest(objects[0], objects[1]));
+            infoSchemaService.putGlobalVariable(objects[0].toString(), objects[1]);
         }
         LogUtils.info(log, "INIT GLOBAL VARIABLE VALUES");
     }

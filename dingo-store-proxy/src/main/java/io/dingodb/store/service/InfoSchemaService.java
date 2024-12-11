@@ -28,6 +28,7 @@ import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.common.mysql.scope.GlobalVariable;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.meta.InfoSchemaServiceProvider;
 import io.dingodb.meta.ddl.InfoSchemaBuilder;
@@ -112,27 +113,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Map<String, String> getGlobalVariables() {
-        RangeRequest rangeRequest = rangeRequest();
-        RangeResponse response = versionService.kvRange(System.identityHashCode(rangeRequest), rangeRequest);
-        List<KeyValue> res = response.getKvs()
-            .stream().filter(Objects::nonNull).map(Kv::getKv)
-            .collect(Collectors.toList());
+        byte[] startKey = GLOBAL_VAR_PREFIX_BEGIN.getBytes(UTF_8);
+        byte[] endKey = GLOBAL_VAR_PREFIX_END.getBytes(UTF_8);
+        startKey = CodecKvUtil.encodeStringDataKey(startKey);
+        endKey = CodecKvUtil.encodeStringDataKey(endKey);
+        List<byte[]> varList = this.txn.mRange(startKey, endKey);
         Map<String, String> variableMap = new LinkedHashMap<>();
-        try {
-            for (KeyValue keyValue : res) {
-                String value = "";
-                if (keyValue.getValue() != null) {
-                    value = new String(keyValue.getValue(), UTF_8);
-                }
-                String fullKey = new String(keyValue.getKey(), UTF_8);
-                variableMap.put(
-                    fullKey.substring(GLOBAL_VAR_PREFIX_BEGIN.length()),
-                    value
-                );
-            }
-            return variableMap;
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
+        for (byte[] bytes : varList) {
+            GlobalVariable globalVariable = (GlobalVariable) getObjFromBytes(bytes, GlobalVariable.class);
+            variableMap.put(globalVariable.getKey(), globalVariable.getValue());
         }
         return variableMap;
     }
@@ -141,8 +130,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     @Override
     public void putGlobalVariable(String key, Object val) {
         String resourceKey = GLOBAL_VAR_PREFIX_BEGIN + key;
-        PutRequest putRequest = putRequest(resourceKey, val.toString());
-        versionService.kvPut(System.identityHashCode(putRequest), putRequest);
+        GlobalVariable globalVariable = GlobalVariable
+            .builder()
+            .key(key)
+            .value(val.toString())
+            .build();
+        byte[] valBytes = getBytesFromObj(globalVariable);
+        this.txn.put(resourceKey.getBytes(UTF_8), valBytes);
     }
 
     @Override
@@ -770,33 +764,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     public synchronized Long genSchemaVersion(long step) {
         byte[] ek = genSchemaVerKey;
         long id = 0L;
-        if (DdlUtil.genSchemaVerEtcd) {
-            RangeRequest rangeRequest = RangeRequest.builder()
-                .key(ek)
-                .build();
-            RangeResponse response = versionService
-                .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
-            if (response.getKvs() != null && !response.getKvs().isEmpty()) {
-                byte[] val = response.getKvs().get(0).getKv().getValue();
-                id = Long.parseLong(new String(val));
-            }
-        } else {
-            byte[] val = txn.ddlGet(ek);
-            if (val != null) {
-                id = Long.parseLong(new String(val));
-            }
+
+        byte[] val = txn.ddlGet(ek);
+        if (val != null) {
+            id = Long.parseLong(new String(val));
         }
 
         id += step;
         byte[] valBytes = String.valueOf(id).getBytes();
 
-        if (DdlUtil.genSchemaVerEtcd) {
-            KeyValue keyValue = KeyValue.builder().key(ek).value(valBytes).build();
-            PutRequest putRequest = PutRequest.builder().keyValue(keyValue).build();
-            versionService.kvPut(System.identityHashCode(putRequest), putRequest);
-        } else {
-            txn.ddlPut(ek, valBytes);
-        }
+        txn.ddlPut(ek, valBytes);
 
         return id;
     }
@@ -863,14 +840,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public void delHistoryDDLJob(long jobId) {
-        if (DdlUtil.historyJobEtcd) {
-            byte[] key = historyJobIdKey(jobId);
-            DeleteRangeRequest deleteRangeRequest
-                = DeleteRangeRequest.builder().key(key).build();
-            this.versionService.kvDeleteRange(System.identityHashCode(deleteRangeRequest), deleteRangeRequest);
-        } else {
-            this.txn.ddlHDel(mHistoryJobPrefixKeys, jobIdKey(jobId));
-        }
+        this.txn.ddlHDel(mHistoryJobPrefixKeys, jobIdKey(jobId));
     }
 
     @Override
@@ -1006,22 +976,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     public long getSchemaVer() {
         long id = 0L;
-        if (DdlUtil.genSchemaVerEtcd) {
-            RangeRequest rangeRequest = RangeRequest.builder()
-                .key(genSchemaVerKey)
-                .build();
-            RangeResponse response = versionService
-                .kvRange(System.identityHashCode(rangeRequest), rangeRequest);
-
-            if (response.getKvs() != null && !response.getKvs().isEmpty()) {
-                byte[] val = response.getKvs().get(0).getKv().getValue();
-                id = Long.parseLong(new String(val));
-            }
-        } else {
-            byte[] valBytes = txn.ddlGet(genSchemaVerKey);
-            if (valBytes != null) {
-                id = Long.parseLong(new String(valBytes));
-            }
+        byte[] valBytes = txn.ddlGet(genSchemaVerKey);
+        if (valBytes != null) {
+            id = Long.parseLong(new String(valBytes));
         }
         return id;
     }
