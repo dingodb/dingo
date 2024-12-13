@@ -16,12 +16,12 @@
 
 package io.dingodb.exec.expr;
 
+import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.TupleCompileContext;
 import io.dingodb.expr.rel.TupleCompileContextImpl;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.Exprs;
-import io.dingodb.expr.runtime.type.TupleType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

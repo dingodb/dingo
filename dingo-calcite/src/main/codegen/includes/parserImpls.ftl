@@ -33,6 +33,15 @@ boolean IfExistsOpt() :
     { return false; }
 }
 
+boolean IfCycleOpt() :
+{
+}
+{
+    <CYCLE> { return true; }
+|
+    { return false; }
+}
+
 SqlCreate SqlCreateSchema(Span s, boolean replace) :
 {
     final boolean ifNotExists;
@@ -749,6 +758,53 @@ SqlCreate SqlCreateDocumentIndex(Span s, boolean replace) :
        return new SqlCreateVectorIndex(s.end(this), replace, ifNotExists, index, table, columns, withColumnList, engine, replica, properties, partitionDefinition);
     }
 }
+
+SqlCreate SqlCreateSequence(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final String name;
+    SqlLiteral increment = null;
+    SqlLiteral minvalue = null;
+    SqlLiteral maxvalue = null;
+    SqlLiteral start = null;
+    SqlLiteral cache = null;
+    boolean cycle = false;
+}
+{
+    <SEQUENCE> ifNotExists = IfNotExistsOpt()
+    { name = getNextToken().image; }
+    (
+        <INCREMENT> { increment = NumericLiteral(); }
+    |
+        <MINVALUE> { minvalue = NumericLiteral(); }
+    |
+        <MAXVALUE> { maxvalue = NumericLiteral(); }
+    |
+        <START> <WITH> { start = NumericLiteral(); }
+    |
+        <CACHE> { cache = NumericLiteral(); }
+    )*
+    cycle = IfCycleOpt()
+    {
+        return new SqlCreateSequence(s.end(this), replace, ifNotExists, name, increment, minvalue, maxvalue, start, cache, cycle);
+    }
+}
+
+SqlDrop SqlDropSequence(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier name;
+    String sequence;
+}
+{
+    <SEQUENCE> ifExists = IfExistsOpt()
+    ( <QUOTED_STRING> | <IDENTIFIER> )
+    { sequence = token.image; }
+    {
+        return new SqlDropSequence(s.end(this), ifExists, sequence);
+    }
+}
+
 
 
 SqlDrop SqlDropSchema(Span s, boolean replace) :

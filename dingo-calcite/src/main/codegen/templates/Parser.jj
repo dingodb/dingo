@@ -1418,7 +1418,7 @@ SqlNode SqlSelect() :
          (
            <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
            |
-           <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; } 
+           <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
          ) ]
     |
         E() {

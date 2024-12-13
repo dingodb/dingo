@@ -32,7 +32,7 @@ import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.CompileContext;
-import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.serial.schema.DingoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -60,6 +60,8 @@ import java.util.List;
     @JsonSubTypes.Type(MapType.class),
     @JsonSubTypes.Type(NullType.class),
     @JsonSubTypes.Type(TupleType.class),
+    @JsonSubTypes.Type(IntervalYearType.class),
+    @JsonSubTypes.Type(IntervalMonthType.class),
 })
 public interface DingoType extends CompileContext {
     void setId(Integer id);

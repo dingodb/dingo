@@ -18,14 +18,13 @@ package io.dingodb.proxy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.op.OpType;
-import io.dingodb.expr.runtime.type.Type;
+import io.dingodb.proxy.handler.DataNestSerializer;
 import io.dingodb.proxy.handler.ExprOpDeserializer;
 import io.dingodb.proxy.handler.ExprTypeDeserializer;
 import io.dingodb.proxy.handler.ScalarValueDeserializer;
-import io.dingodb.proxy.handler.DataNestSerializer;
 import io.dingodb.proxy.handler.VectorIndexParameterDeserializer;
-import io.dingodb.sdk.service.entity.common.ScalarField;
 import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BoolData;
 import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.BytesData;
 import io.dingodb.sdk.service.entity.common.ScalarField.DataNest.DoubleData;

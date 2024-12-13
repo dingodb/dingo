@@ -1,0 +1,63 @@
+  [{
+      "name": "NAME",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+      "name": "INCREMENT",
+      "type": "int",
+      "default": 1,
+      "scale": -2147483648,
+      "primary": -1,
+      "precision": -1,
+      "nullable": false
+    },
+    {
+      "name": "MINVALUE",
+      "type": "bigint",
+      "default": 1,
+      "scale": -2147483648,
+      "primary": -1,
+      "precision": -1,
+      "nullable": false
+    },
+    {
+      "name": "MAXVALUE",
+      "type": "bigint",
+      "default": 9223372036854775806,
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "START",
+      "type": "bigint",
+      "default": 1,
+      "precision": -1,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "CACHE",
+      "type": "int",
+      "default": 1000,
+      "precision": -1,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "CYCLE",
+      "type": "boolean",
+      "default": false,
+      "precision": -1,
+      "scale": -1,
+      "primary": -1,
+      "nullable": true
+    }
+  ]
+

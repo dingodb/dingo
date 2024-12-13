@@ -17,6 +17,8 @@
 package io.dingodb.exec.codec;
 
 import io.dingodb.common.type.DingoTypeVisitorBase;
+import io.dingodb.common.type.IntervalDayType;
+import io.dingodb.common.type.IntervalMonthType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.NullType;
@@ -28,6 +30,7 @@ import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.IntervalYearType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
@@ -137,5 +140,20 @@ public class AvroSchemaConverter extends DingoTypeVisitorBase<Schema, Void> {
                 .mapToObj(i -> new Schema.Field("_" + i, visit(type.getChild(i))))
                 .collect(Collectors.toList())
         );
+    }
+
+    @Override
+    public Schema visitIntervalYearType(@NonNull IntervalYearType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalMonthType(@NonNull IntervalMonthType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalDayType(@NonNull IntervalDayType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
     }
 }

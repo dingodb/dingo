@@ -28,6 +28,8 @@ import io.dingodb.exec.fun.mysql.ScopeVarFun;
 import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
+import io.dingodb.exec.fun.sequence.CurrValFun;
+import io.dingodb.exec.fun.sequence.NextValFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
 import io.dingodb.exec.fun.vector.VectorDistanceFun;
@@ -372,6 +374,20 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DingoInferTypes.VARCHAR,
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            NextValFun.NAME,
+            ReturnTypes.BIGINT,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            CurrValFun.NAME,
+            ReturnTypes.BIGINT,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.NUMERIC
         );
     }
 

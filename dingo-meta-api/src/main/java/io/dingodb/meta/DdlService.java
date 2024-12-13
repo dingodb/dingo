@@ -19,12 +19,11 @@ package io.dingodb.meta;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface DdlService {
     static DdlService root() {
@@ -82,4 +81,7 @@ public interface DdlService {
     default void flashbackSchema(RecoverInfo recoverInfo) {
 
     }
+    void createSequence(SequenceDefinition sequenceDefinition, String connId);
+
+    void dropSequence(String sequenceName, String connId);
 }

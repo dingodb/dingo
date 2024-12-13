@@ -18,8 +18,8 @@ package io.dingodb.proxy.expr.langchain;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.op.OpType;
-import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.sdk.service.entity.common.Schema;
 
 import java.util.Iterator;

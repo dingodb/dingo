@@ -26,6 +26,8 @@ public enum ActionType {
     ActionDropColumn(6),
     ActionAddIndex(7),
     ActionDropIndex(8),
+    ActionCreateSequence(9),
+    ActionDropSequence(10),
     ActionTruncateTable(11),
     ActionModifyColumn(12),
     ActionCreateView(21),

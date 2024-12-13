@@ -24,10 +24,12 @@ import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.SequenceService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
@@ -184,6 +186,10 @@ public class InfoSchemaBuilder {
                 return applyRecoverTable(schemaDiff);
             case ActionRecoverSchema:
                 return applyRecoverSchema(schemaDiff);
+            case ActionCreateSequence:
+                return applyCreateSequence(schemaDiff);
+            case ActionDropSequence:
+                return applyDropSequence(schemaDiff);
             default:
                 break;
         }
@@ -225,6 +231,50 @@ public class InfoSchemaBuilder {
             tableIdList.addAll(optTableIds.getKey());
         }
         return Pair.of(tableIdList, null);
+    }
+
+    public Pair<List<Long>, String> applyCreateSequence(SchemaDiff diff) {
+        try {
+            InfoSchemaService schemaService = InfoSchemaService.root();
+            SequenceService sequenceService = SequenceService.getDefault();
+            Table tableDef = null;
+            if (diff.getTableId() != 0) {
+                tableDef = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
+            }
+            if (tableDef == null) {
+                LogUtils.error(log, "applyCreateSequence error, table is null, diff: {}", diff);
+                return Pair.of(new ArrayList<>(), null);
+            }
+            SequenceDefinition definition = sequenceService.getSequence(diff.getSequence());
+            SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
+            this.is.putSequence(schemaInfo.getName(), definition.getName(), definition);
+            return Pair.of(null, null);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return Pair.of(null, e.getMessage());
+        }
+    }
+
+    public Pair<List<Long>, String> applyDropSequence(SchemaDiff diff) {
+        try {
+            InfoSchemaService schemaService = InfoSchemaService.root();
+            SequenceService sequenceService = SequenceService.getDefault();
+            Table tableDef = null;
+            if (diff.getTableId() != 0) {
+                tableDef = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
+            }
+            if (tableDef == null) {
+                LogUtils.error(log, "applyDropSequence error, table is null, diff: {}", diff);
+                return Pair.of(new ArrayList<>(), null);
+            }
+            SequenceDefinition definition = sequenceService.getSequence(diff.getSequence());
+            SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
+            this.is.dropSequence(schemaInfo.getName(), definition.getName());
+            return Pair.of(null, null);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return Pair.of(null, e.getMessage());
+        }
     }
 
     public Pair<List<Long>, String> applyCreateTable(SchemaDiff diff) {

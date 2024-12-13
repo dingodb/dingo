@@ -18,6 +18,11 @@ package io.dingodb.calcite.type.converter;
 
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.type.IntervalDayTimeType;
+import io.dingodb.expr.common.type.IntervalDayType;
+import io.dingodb.expr.common.type.IntervalMonthType;
+import io.dingodb.expr.common.type.IntervalYearType;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Exprs;
 import org.apache.calcite.avatica.util.ByteString;
@@ -109,5 +114,29 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public byte[] convertBinaryFrom(@NonNull Object value) {
         return ((ByteString) value).getBytes();
+    }
+
+    @Override
+    public Type convertIntervalFrom(@NonNull Object value, @NonNull Type type, Type element) {
+        return classType(convertDecimalFrom(value), type, element);
+    }
+
+    private static Type classType(BigDecimal value, Type type, Type element) {
+        if (IntervalYearType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalMonthType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalYearType.IntervalYear(value, element);
+            } else {
+                return new IntervalYearType.IntervalYear(value, type);
+            }
+        } else if (IntervalMonthType.class.isAssignableFrom(type.getClass())) {
+            return new IntervalMonthType.IntervalMonth(value);
+        } else if (IntervalDayType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalDayType.IntervalDay(value, element);
+            } else {
+                return new IntervalDayType.IntervalDay(value, type);
+            }
+        }
+        return null;
     }
 }

@@ -19,6 +19,7 @@ package io.dingodb.meta.entity;
 import io.dingodb.common.ddl.TableInfoCache;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.sequence.SequenceDefinition;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -84,6 +85,23 @@ public class InfoSchema {
             SchemaTables schemaTables = schemaMap.get(schemaName);
             schemaTables.putTable(tableName, table);
             return true;
+        }
+        return false;
+    }
+
+    public boolean putSequence(String schema, String sequence, SequenceDefinition definition) {
+        if (getSchemaMap().containsKey(schema)) {
+            SchemaTables schemaTables = schemaMap.get(schema);
+            schemaTables.putSequence(sequence, definition);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean dropSequence(String schema, String sequence) {
+        if (getSchemaMap().containsKey(schema)) {
+            SchemaTables schemaTables = getSchemaMap().get(schema);
+            return schemaTables.dropSequence(sequence);
         }
         return false;
     }

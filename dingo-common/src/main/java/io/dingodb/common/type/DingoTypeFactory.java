@@ -29,6 +29,7 @@ import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.expr.common.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -36,6 +37,7 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @Slf4j
@@ -43,9 +45,11 @@ public final class DingoTypeFactory {
     public static final DingoTypeFactory INSTANCE = new DingoTypeFactory();
 
     private final Map<String, Function<@NonNull Boolean, AbstractScalarType>> scalarGenerators;
+    private final Map<String, BiFunction<@NonNull Boolean, Type, NullableType>> intervalGenerators;
 
     private DingoTypeFactory() {
         scalarGenerators = new TreeMap<>(String::compareToIgnoreCase);
+        intervalGenerators = new TreeMap<>(String::compareToIgnoreCase);
         scalarGenerators.put("TINYINT", IntegerType::new);
         scalarGenerators.put("INT", IntegerType::new);
         scalarGenerators.put("INTEGER", IntegerType::new);
@@ -67,6 +71,11 @@ public final class DingoTypeFactory {
         scalarGenerators.put("VARBINARY", BinaryType::new);
         scalarGenerators.put("OBJECT", ObjectType::new);
         scalarGenerators.put("ANY", ObjectType::new);
+
+        // interval
+        intervalGenerators.put("INTERVAL_YEAR", IntervalYearType::new);
+        intervalGenerators.put("INTERVAL_MONTH", IntervalMonthType::new);
+        intervalGenerators.put("INTERVAL_DAY", IntervalDayType::new);
     }
 
     public static @NonNull TupleType tuple(DingoType[] fields) {
@@ -149,6 +158,20 @@ public final class DingoTypeFactory {
                 .map(this::scalar)
                 .toArray(DingoType[]::new)
         );
+    }
+
+    public @NonNull NullableType interval(String typeName, String elementType, boolean nullable) {
+        BiFunction<@NonNull Boolean, Type, NullableType> fun = intervalGenerators.get(typeName);
+        if (fun != null) {
+            if (elementType != null && elementType.equals("INTERVAL_YEAR_MONTH")) {
+                return fun.apply(nullable, io.dingodb.expr.common.type.Types.INTERVAL_MONTH);
+            }
+            if (elementType != null && elementType.equals("INTERVAL_DAY_TIME")) {
+                return fun.apply(nullable, io.dingodb.expr.common.type.Types.INTERVAL_DAY_TIME);
+            }
+            return fun.apply(nullable, null);
+        }
+        throw new IllegalArgumentException("Unknown type name \"" + typeName + "\".");
     }
 
     public @NonNull AbstractScalarType scalar(String typeName, boolean nullable) {

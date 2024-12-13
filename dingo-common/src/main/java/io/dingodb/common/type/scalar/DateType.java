@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.runtime.type.Types;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;

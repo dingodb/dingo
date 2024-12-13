@@ -20,6 +20,7 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.DdlServiceProvider;
@@ -99,4 +100,13 @@ public class LocalDdlService implements DdlService {
         return null;
     }
 
+    @Override
+    public void createSequence(@NonNull SequenceDefinition sequenceDefinition, String connId) {
+
+    }
+
+    @Override
+    public void dropSequence(String sequenceName, String connId) {
+
+    }
 }

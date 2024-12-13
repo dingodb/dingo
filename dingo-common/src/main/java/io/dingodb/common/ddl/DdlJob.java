@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -245,7 +246,11 @@ public class DdlJob {
                 t = new TypeReference<List<ColumnDefinition>>() {};
             } else if (actionType == ActionType.ActionRecoverTable || actionType == ActionType.ActionRecoverSchema) {
                 t = new TypeReference<List<RecoverInfo>>() {};
-            }
+            } else if (actionType == ActionType.ActionCreateSequence) {
+                t = new TypeReference<List<SequenceDefinition>>() {};
+            } /*else if () {
+
+            }*/
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);
             return null;

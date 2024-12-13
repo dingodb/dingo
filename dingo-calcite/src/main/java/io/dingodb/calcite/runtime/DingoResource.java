@@ -158,6 +158,8 @@ public interface DingoResource {
 
     @BaseMessage("Error 1410 (42000): You are not allowed to create a user with GRANT")
     ExInst<DingoSqlException> grantError();
+    @BaseMessage("Sequence ''{0}'' already exists")
+    ExInst<DingoSqlException> sequenceExists(String name);
 
     @BaseMessage("Error 8135 (HY000): invalid as of timestamp: as of timestamp can't be set in transaction.")
     ExInst<DingoSqlException> invalidAsTimestamp();

@@ -118,4 +118,19 @@ public abstract class DingoTypeVisitorBase<R, T> implements DingoTypeVisitor<R, 
     public R visitTupleType(@NonNull TupleType type, T obj) {
         return null;
     }
+
+    @Override
+    public R visitIntervalYearType(@NonNull IntervalYearType type, T obj) {
+        return null;
+    }
+
+    @Override
+    public R visitIntervalMonthType(@NonNull IntervalMonthType type, T obj) {
+        return null;
+    }
+
+    @Override
+    public R visitIntervalDayType(@NonNull IntervalDayType type, T obj) {
+        return null;
+    }
 }

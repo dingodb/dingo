@@ -30,6 +30,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -38,6 +39,7 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.SequenceService;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -267,6 +269,12 @@ public class DdlWorker {
             case ActionRecoverSchema:
                 res = onRecoverSchema(dc, job);
                 break;
+            case ActionCreateSequence:
+                res = onCreateSequence(dc, job);
+                break;
+            case ActionDropSequence:
+                res = onDropSequence(dc, job);
+                break;
             default:
                 job.setState(JobState.jobStateCancelled);
                 break;
@@ -376,6 +384,48 @@ public class DdlWorker {
         }
         ddlJob.setSchemaState(schemaInfo.getSchemaState());
         return Pair.of(res.getKey(), null);
+    }
+
+    public static Pair<Long, String> onCreateSequence(DdlContext dc, DdlJob job) {
+        String err = job.decodeArgs();
+        if (err != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, err);
+        }
+        Table tableDef = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+        if (tableDef == null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, "table not exists");
+        }
+        SequenceDefinition sequenceDefinition = (SequenceDefinition) job.getArgs().get(0);
+        SequenceService sequenceService = SequenceService.getDefault();
+        sequenceService.createSequence(sequenceDefinition);
+        job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+
+        Pair<Long, String> res = updateSchemaVersion(dc, job);
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return res;
+    }
+
+    public static Pair<Long, String> onDropSequence(DdlContext dc, DdlJob job) {
+        String err = job.decodeArgs();
+        if (err != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, err);
+        }
+        Table tableDef = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+        if (tableDef == null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, "table not exists");
+        }
+        String sequence = (String) job.getArgs().get(0);
+        SequenceService sequenceService = SequenceService.getDefault();
+        sequenceService.dropSequence(sequence);
+        job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+
+        Pair<Long, String> res = updateSchemaVersion(dc, job);
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return res;
     }
 
     public static Pair<Long, String> onCreateTable(DdlContext dc, DdlJob ddlJob) {

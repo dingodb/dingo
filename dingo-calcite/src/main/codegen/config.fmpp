@@ -51,11 +51,13 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
       "io.dingodb.calcite.grammar.ddl.SqlCreateVectorIndex"
       "io.dingodb.calcite.grammar.ddl.SqlCreateDocumentIndex"
+      "io.dingodb.calcite.grammar.ddl.SqlCreateSequence"
       "io.dingodb.calcite.grammar.dql.SqlDesc"
       "io.dingodb.calcite.grammar.dql.SqlDescTable"
       "io.dingodb.calcite.grammar.ddl.SqlDropUser"
       "io.dingodb.calcite.grammar.ddl.SqlDropIndex"
       "io.dingodb.calcite.grammar.ddl.SqlDropTenant"
+      "io.dingodb.calcite.grammar.ddl.SqlDropSequence"
       "io.dingodb.calcite.grammar.ddl.SqlEnd"
       "io.dingodb.calcite.grammar.ddl.SqlFlashBack"
       "io.dingodb.calcite.grammar.ddl.SqlFlashBackTable"
@@ -221,6 +223,7 @@ data: {
       "DISK_ANN_STATUS"
       "DISK_ANN_RESET"
       "DISK_ANN_COUNT_MEMORY"
+      "CACHE"
     ]
 
     # List of non-reserved keywords to add;
@@ -251,6 +254,7 @@ data: {
       "SqlCreateTenant"
       "SqlCreateVectorIndex"
       "SqlCreateDocumentIndex"
+      "SqlCreateSequence"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
@@ -266,6 +270,7 @@ data: {
       "SqlDropUser"
       "SqlDropIndex"
       "SqlDropTenant"
+      "SqlDropSequence"
     ]
 
     alterStatementParserMethods: [

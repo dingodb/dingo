@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor;
 
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.RexLiteralUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.fun.DingoFunFactory;
 import io.dingodb.expr.runtime.ExprConfig;
@@ -33,6 +34,7 @@ import io.dingodb.expr.runtime.op.VariadicOp;
 import io.dingodb.expr.runtime.op.time.DateFormat2FunFactory;
 import io.dingodb.expr.runtime.op.time.TimeFormat2FunFactory;
 import io.dingodb.expr.runtime.op.time.TimestampFormat2FunFactory;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
@@ -51,6 +53,7 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
+import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -103,12 +106,28 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                     call.getOperands().get(0).accept(this)
                 );
             case PLUS:
+                RexNode plusNode = call.getOperands().get(1);
+                if (plusNode.getType() instanceof IntervalSqlType) {
+                    return Exprs.op(
+                        Exprs.INTERVAL_ADD,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                }
                 return Exprs.op(
                     Exprs.ADD,
                     call.getOperands().get(0).accept(this),
                     call.getOperands().get(1).accept(this)
                 );
             case MINUS:
+                RexNode minusNode = call.getOperands().get(1);
+                if (minusNode.getType() instanceof IntervalSqlType) {
+                    return Exprs.op(
+                        Exprs.INTERVAL_SUB,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                }
                 return Exprs.op(
                     Exprs.SUB,
                     call.getOperands().get(0).accept(this),
@@ -236,6 +255,96 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                                     call.getOperands().get(2).accept(this),
                                     call.getOperands().get(1).accept(this)
                                 );
+                        }
+                    }
+                }
+                break;
+            case EXTRACT:
+                RexNode node = call.getOperands().get(0);
+                if (node.getKind() == SqlKind.LITERAL && ((RexLiteral) node).getTypeName() == SqlTypeName.SYMBOL) {
+                    TimeUnitRange unitRange = Optional.mapOrGet(
+                        ((RexLiteral) node).getValue(),
+                        __ -> (TimeUnitRange) __,
+                        () -> null
+                    );
+                    if (unitRange != null) {
+                        switch (unitRange) {
+                            case YEAR:
+                                return Exprs.op(
+                                    Exprs.YEAR,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case YEAR_TO_MONTH:
+
+                            case MONTH:
+                                return Exprs.op(
+                                    Exprs.MONTH,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case DAY:
+                                return Exprs.op(
+                                    Exprs.DAY,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case DAY_TO_HOUR:
+                                return Exprs.op(
+                                    Exprs.DAY_HOUR,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case DAY_TO_MINUTE:
+                                return Exprs.op(
+                                    Exprs.DAY_MINUTE,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case DAY_TO_SECOND:
+                                return Exprs.op(
+                                    Exprs.DAY_SECOND,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case HOUR:
+                                return Exprs.op(
+                                    Exprs.HOUR,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case HOUR_TO_MINUTE:
+                                return Exprs.op(
+                                    Exprs.HOUR_MINUTE,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case HOUR_TO_SECOND:
+                                return Exprs.op(
+                                    Exprs.HOUR_SECOND,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case MINUTE:
+                                return Exprs.op(
+                                    Exprs.MINUTE,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case MINUTE_TO_SECOND:
+                                return Exprs.op(
+                                    Exprs.MINUTE_SECOND,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case SECOND:
+                                return Exprs.op(
+                                    Exprs.SECOND,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case QUARTER:
+                                break;
+                            case WEEK:
+                                return Exprs.op(
+                                    Exprs.WEEK,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            case MILLISECOND:
+                                return Exprs.op(
+                                    Exprs.MILLISECOND,
+                                    call.getOperands().get(1).accept(this)
+                                );
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + unitRange);
                         }
                     }
                 }

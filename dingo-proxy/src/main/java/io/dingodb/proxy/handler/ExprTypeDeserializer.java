@@ -21,8 +21,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.dingodb.expr.runtime.type.Type;
-import io.dingodb.expr.runtime.type.Types;
+import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.sdk.service.entity.common.ScalarFieldType;
 
 import java.io.IOException;

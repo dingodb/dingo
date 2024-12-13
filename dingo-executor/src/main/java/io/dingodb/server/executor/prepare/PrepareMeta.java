@@ -185,6 +185,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "DINGO_DDL_JOB", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_DDL_HISTORY", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, "SEQUENCE", BASE_TABLE, TXN_LSM, DYNAMIC);
         LogUtils.info(log, "prepare mysql meta table done");
     }
 
@@ -587,6 +588,9 @@ public final class PrepareMeta {
                 break;
             case "GC_DELETE_RANGE_DONE":
                 jsonFile = "/mysql-gcDeleteRangeDone.json";
+                break;
+            case "SEQUENCE":
+                jsonFile = "/mysql-sequence.json";
                 break;
             default:
                 throw new RuntimeException("table not found");

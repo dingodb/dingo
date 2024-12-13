@@ -16,10 +16,10 @@
 
 package io.dingodb.exec.fun.mysql;
 
+import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
-import io.dingodb.expr.runtime.type.Type;
-import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class JsonExtractFun extends BinaryOp {

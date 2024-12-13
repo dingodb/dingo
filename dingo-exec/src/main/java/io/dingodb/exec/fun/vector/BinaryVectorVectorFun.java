@@ -16,10 +16,10 @@
 
 package io.dingodb.exec.fun.vector;
 
+import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
-import io.dingodb.expr.runtime.type.Type;
-import io.dingodb.expr.runtime.type.Types;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public abstract class BinaryVectorVectorFun extends BinaryOp {

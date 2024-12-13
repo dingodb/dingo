@@ -18,9 +18,9 @@ package io.dingodb.proxy.expr.langchain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.expr.Exprs;
 import io.dingodb.expr.runtime.op.OpType;
-import io.dingodb.expr.runtime.type.Type;
 import io.dingodb.sdk.service.entity.common.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;

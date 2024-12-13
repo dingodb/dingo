@@ -119,6 +119,19 @@ public final class DefinitionMapper {
                     DingoType keyType = mapToDingoType(Objects.requireNonNull(relDataType.getKeyType()));
                     DingoType valueType = mapToDingoType(Objects.requireNonNull(relDataType.getValueType()));
                     return map(keyType, valueType, relDataType.isNullable());
+                case INTERVAL_YEAR:
+                case INTERVAL_MONTH:
+                case INTERVAL_DAY:
+                case INTERVAL_HOUR:
+                case INTERVAL_MINUTE:
+                case INTERVAL_SECOND:
+                case INTERVAL_YEAR_MONTH:
+                case INTERVAL_DAY_HOUR:
+                    return DingoTypeFactory.INSTANCE.interval(
+                        relDataType.getSqlTypeName().getName(),
+                        relDataType.getSqlTypeName().getFamily().name(),
+                        relDataType.isNullable()
+                    );
                 default:
                     return DingoTypeFactory.INSTANCE.scalar(
                         relDataType.getSqlTypeName().getName(),

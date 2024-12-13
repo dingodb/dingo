@@ -17,6 +17,7 @@
 package io.dingodb.common.type.converter;
 
 import io.dingodb.common.type.DingoType;
+import io.dingodb.expr.common.type.Type;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -179,6 +180,10 @@ public interface DataConverter {
             );
         }
         return result;
+    }
+
+    default Object convertIntervalFrom(@NonNull Object value, @NonNull Type type, Type element) {
+        return null;
     }
 
     default Object collectTuple(@NonNull Stream<Object> stream) {

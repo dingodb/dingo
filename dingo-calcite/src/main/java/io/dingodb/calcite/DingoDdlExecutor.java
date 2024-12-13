@@ -31,9 +31,11 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
+import io.dingodb.calcite.grammar.ddl.SqlCreateSequence;
 import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
+import io.dingodb.calcite.grammar.ddl.SqlDropSequence;
 import io.dingodb.calcite.grammar.ddl.SqlDropTenant;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
@@ -70,6 +72,7 @@ import io.dingodb.common.privilege.TablePrivDefinition;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -95,6 +98,8 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.SequenceService;
+import io.dingodb.meta.SequenceServiceProvider;
 import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -847,6 +852,57 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw DINGO_RESOURCE.noMatchingRowForUser().ex();
         }
+    }
+
+    public void execute(@NonNull SqlCreateSequence createS, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", createS);
+        SequenceService sequenceService = SequenceService.getDefault();
+        if (sequenceService.existsSequence(createS.name)) {
+            throw DINGO_RESOURCE.sequenceExists(createS.name).ex();
+        }
+        SequenceDefinition sequenceDefinition = new SequenceDefinition(
+            createS.name,
+            createS.increment,
+            createS.minvalue,
+            createS.maxvalue,
+            createS.start,
+            createS.cache,
+            createS.cycle);
+        String connId = (String) context.getDataContext().get("connId");
+        DdlService ddlService = DdlService.root();
+        ddlService.createSequence(sequenceDefinition, connId);
+
+        InfoSchemaService service = InfoSchemaService.root();
+        long schemaId = service.getSchema("MYSQL").getSchemaId();
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder()
+            .schemaId(schemaId)
+            .tableId(service.getTableDef(schemaId, "SEQUENCE").tableId.seq)
+            .type(ActionType.ActionCreateSequence)
+            .build();
+        diff.setSequence(createS.name);
+        rootSnapshotSchema.applyDiff(diff);
+
+    }
+
+    public void execute(@NonNull SqlDropSequence sqlDropSequence, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", sqlDropSequence);
+        String connId = (String) context.getDataContext().get("connId");
+        DdlService ddlService = DdlService.root();
+        ddlService.dropSequence(sqlDropSequence.sequence, connId);
+
+        InfoSchemaService service = InfoSchemaService.root();
+        long schemaId = service.getSchema("MYSQL").getSchemaId();
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder()
+            .schemaId(schemaId)
+            .tableId(service.getTableDef(schemaId, "SEQUENCE").tableId.seq)
+            .type(ActionType.ActionDropSequence)
+            .build();
+        diff.setSequence(sqlDropSequence.sequence);
+        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {

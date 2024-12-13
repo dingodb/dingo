@@ -27,6 +27,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -205,6 +206,65 @@ public final class DdlHandler {
             doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef" + tableName, e);
+            throw e;
+        }
+    }
+
+    public static void createSequence(String schema, String table, SequenceDefinition definition, String connId) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schema);
+        if (schemaInfo == null) {
+            throw new RuntimeException("schema not exists");
+        }
+        long schemaId = schemaInfo.getSchemaId();
+        TableDefinitionWithId tableInfo = (TableDefinitionWithId) InfoSchemaService.root().getTable(schemaId, table);
+        if (tableInfo == null) {
+            throw new RuntimeException("table not exists");
+        }
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableInfo.getTableId().getEntityId())
+            .schemaName(schema)
+            .tableName(table)
+            .actionType(ActionType.ActionCreateSequence)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(definition);
+        job.setArgs(args);
+        job.setConnId(connId);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] create sequence error, reason:" + e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    public static void dropSequence(String schema, String table, String sequenceName, String connId) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schema);
+        if (schemaInfo == null) {
+            throw new RuntimeException("schema not exists");
+        }
+        long schemaId = schemaInfo.getSchemaId();
+        Table tableInfo = InfoSchemaService.root().getTableDef(schemaId, table);
+        if (table == null) {
+            throw new RuntimeException("table not exists");
+        }
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableInfo.getTableId().seq)
+            .schemaName(schema)
+            .tableName(table)
+            .actionType(ActionType.ActionDropSequence)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(sequenceName);
+        job.setArgs(args);
+        job.setConnId(connId);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] drop sequence error, schema name:{}, sequence name:{}", schema, sequenceName, e);
             throw e;
         }
     }

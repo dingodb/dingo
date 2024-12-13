@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlServiceProvider;
@@ -98,6 +99,16 @@ public class DdlService implements io.dingodb.meta.DdlService {
     @Override
     public void dropIndex(String schemaName, String tableName, String indexName) {
         DdlHandler.dropIndex(schemaName, tableName, indexName);
+    }
+
+    @Override
+    public void createSequence(SequenceDefinition sequenceDefinition, String connId) {
+        DdlHandler.createSequence("MYSQL", "SEQUENCE", sequenceDefinition, connId);
+    }
+
+    @Override
+    public void dropSequence(String sequenceName, String connId) {
+        DdlHandler.dropSequence("MYSQL", "SEQUENCE", sequenceName, connId);
     }
 
     @Override

@@ -62,4 +62,10 @@ public interface DingoTypeVisitor<R, T> {
     R visitMapType(@NonNull MapType type, T obj);
 
     R visitTupleType(@NonNull TupleType type, T obj);
+
+    R visitIntervalYearType(@NonNull IntervalYearType type, T obj);
+
+    R visitIntervalMonthType(@NonNull IntervalMonthType type, T obj);
+
+    R visitIntervalDayType(@NonNull IntervalDayType type, T obj);
 }

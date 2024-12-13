@@ -30,8 +30,8 @@ import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
+import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
-import io.dingodb.expr.runtime.type.TupleType;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
