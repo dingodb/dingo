@@ -158,12 +158,7 @@ public class ModifyColumnFiller extends IndexAddFiller {
     }
 
     public Object[] transformType(Object[] val) {
-        try {
-            return (Object[]) dingoType.convertFrom(val, new ModifyTypeConverter());
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+        return (Object[]) dingoType.convertFrom(val, new ModifyTypeConverter());
     }
 
 }

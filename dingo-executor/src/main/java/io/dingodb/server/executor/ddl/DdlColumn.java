@@ -23,6 +23,7 @@ import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
@@ -72,40 +73,7 @@ public final class DdlColumn {
         MetaElement[] elements = new MetaElement[] {
             new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.addColElementKey)
         };
-        Session session = SessionUtil.INSTANCE.getSession();
-        try {
-            // get schemaInfo
-            SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
-            if (schemaInfo == null) {
-                return Pair.of(false, 0L);
-            }
-            Reorg reorg = Reorg.INSTANCE;
-            Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
-            if (reorgInfoRes.getValue() != null) {
-                throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
-            }
-            ReorgInfo reorgInfo = reorgInfoRes.getKey();
-            String error = worker.runReorgJob(dc, reorgInfo,
-                p -> addReplicaTable(reorgInfoRes.getKey(), BackFilling.typeAddColumnWorker)
-            );
-            if (error != null) {
-                //if ("ErrWaitReorgTimeout".equalsIgnoreCase(error)) {
-                //    return Pair.of(false, 0L);
-                //}
-                //if ("ErrKeyExists".equalsIgnoreCase(error)
-                //    || "ErrCancelledDDLJob".equalsIgnoreCase(error)
-                //    || "ErrCantDecodeRecord".equalsIgnoreCase(error)
-                //) {
-                //    LogUtils.warn(log,
-                //        "[ddl] run add index job failed, convert job to rollback, jobId:{}, error:{}",
-                //        job.getId(), error);
-                //}
-                throw DingoErrUtil.newStdErr(error);
-            }
-            return Pair.of(true, 0L);
-        } finally {
-            SessionUtil.INSTANCE.closeSession(session);
-        }
+        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeAddColumnWorker);
     }
 
     public static Pair<Boolean, Long> doReorgWorkForDropCol(
@@ -121,7 +89,7 @@ public final class DdlColumn {
         return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeDropColumnWorker);
     }
 
-    public static Pair<Boolean, Long> doReorgWorkForModifyCol(
+    public static DingoErr doReorgWorkForModifyCol(
         DdlContext dc,
         DdlJob job,
         CommonId tableId,
@@ -131,10 +99,11 @@ public final class DdlColumn {
         MetaElement[] elements = new MetaElement[] {
             new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.modifyColElementKey)
         };
-        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyColumnWorker);
+        return doReorgWorkWithStdErr(
+            dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyColumnWorker);
     }
 
-    public static Pair<Boolean, Long> doReorgWorkForModifyIndexCol(
+    public static DingoErr doReorgWorkForModifyIndexCol(
         DdlContext dc,
         DdlJob job,
         CommonId tableId,
@@ -144,7 +113,8 @@ public final class DdlColumn {
         MetaElement[] elements = new MetaElement[] {
             new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.modifyColElementKey)
         };
-        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyIndexColumnWorker);
+        return doReorgWorkWithStdErr(
+            dc, job, tableId, replicaTable, worker, elements, BackFilling.typeModifyIndexColumnWorker);
     }
 
     public static Pair<Boolean, Long> doReorgWork(
@@ -156,29 +126,47 @@ public final class DdlColumn {
         MetaElement[] elements,
         int reorgCode
     ) {
-        Session session = SessionUtil.INSTANCE.getSession();
-        try {
-            // get schemaInfo
-            SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
-            if (schemaInfo == null) {
-                return Pair.of(false, 0L);
-            }
-            Reorg reorg = Reorg.INSTANCE;
-            Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
-            if (reorgInfoRes.getValue() != null) {
-                throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
-            }
-            ReorgInfo reorgInfo = reorgInfoRes.getKey();
-            String error = worker.runReorgJob(dc, reorgInfo,
-                p -> addReplicaTable(reorgInfoRes.getKey(), reorgCode)
-            );
-            if (error != null) {
-                throw DingoErrUtil.newStdErr(error);
-            }
-            return Pair.of(true, 0L);
-        } finally {
-            SessionUtil.INSTANCE.closeSession(session);
+        // get schemaInfo
+        SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
+        Reorg reorg = Reorg.INSTANCE;
+        Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
+        if (reorgInfoRes.getValue() != null) {
+            throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
         }
+        ReorgInfo reorgInfo = reorgInfoRes.getKey();
+        String error = worker.runReorgJob(dc, reorgInfo,
+            p -> addReplicaTable(reorgInfoRes.getKey(), reorgCode)
+        );
+        if (error != null) {
+            throw DingoErrUtil.newStdErr(error);
+        }
+        return Pair.of(true, 0L);
+    }
+
+    public static DingoErr doReorgWorkWithStdErr(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker,
+        MetaElement[] elements,
+        int reorgCode
+    ) {
+        // get schemaInfo
+        SchemaInfo schemaInfo = (SchemaInfo) InfoSchemaService.root().getSchema(job.getSchemaId());
+        Reorg reorg = Reorg.INSTANCE;
+        Pair<ReorgInfo, String> reorgInfoRes = reorg.getReorgInfo(job, schemaInfo, tableId, elements, replicaTable);
+        if (reorgInfoRes.getValue() != null) {
+            throw DingoErrUtil.newStdErr(reorgInfoRes.getValue());
+        }
+        ReorgInfo reorgInfo = reorgInfoRes.getKey();
+        DingoErr error = worker.runReorgJobWithStdErr(dc, reorgInfo,
+            p -> addReplicaTableWithEx(reorgInfoRes.getKey(), reorgCode)
+        );
+        if (error != null) {
+            return error;
+        }
+        return DingoErrUtil.normal();
     }
 
     public static String addReplicaTable(ReorgInfo reorgInfo, int fillType) {
@@ -186,8 +174,12 @@ public final class DdlColumn {
             return BackFilling.writePhysicalTableRecord(fillType, reorgInfo);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            return "reorgAddColumnError:" + e.getMessage();
+            return e.getMessage();
         }
+    }
+
+    public static String addReplicaTableWithEx(ReorgInfo reorgInfo, int fillType) {
+        return BackFilling.writePhysicalTableRecord(fillType, reorgInfo);
     }
 
 }

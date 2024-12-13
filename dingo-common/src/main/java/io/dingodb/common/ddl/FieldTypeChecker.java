@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import static io.dingodb.common.mysql.DingoErrUtil.newStdErr;
+import static io.dingodb.common.mysql.DingoErrUtil.newStdErrWithMsg;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
 import static io.dingodb.common.mysql.error.ErrorCode.WarnDataTruncated;
 
@@ -45,8 +46,12 @@ public final class FieldTypeChecker {
         // if old col not has autoincrement and new col has autoincrement
         // unsupported
         if (!originColDef.isAutoIncrement() && toColDef.isAutoIncrement()) {
-            return newStdErr(
-                ErrUnsupportedDDLOperation, "Unsupported modify column: can't set auto_increment");
+            return newStdErrWithMsg(
+                "Unsupported modify column: can't set auto_increment", ErrUnsupportedDDLOperation);
+        }
+        if (originColDef.getTypeName().equalsIgnoreCase("ARRAY")
+            || toColDef.getTypeName().equalsIgnoreCase("ARRAY")) {
+            return newStdErr("Unsupported modify column: can't set array", ErrUnsupportedDDLOperation);
         }
         if (originColDef.getTypeName().equalsIgnoreCase(toColDef.getTypeName())) {
             if (originColDef.isNullable() && !toColDef.isNullable()) {
@@ -63,9 +68,9 @@ public final class FieldTypeChecker {
             if ((originTypeName.equalsIgnoreCase("float")
                 || originTypeName.equalsIgnoreCase("double")
                 || originTypeName.equalsIgnoreCase("decimal")) && isTime) {
-                return newStdErr(ErrUnsupportedDDLOperation,
+                return newStdErrWithMsg(
                 "Unsupported modify column: change from original type %s to %s is currently unsupported yet",
-                    originTypeName, toColDef.getTypeName());
+                    ErrUnsupportedDDLOperation, originTypeName, toColDef.getTypeName());
             }
         }
         return null;

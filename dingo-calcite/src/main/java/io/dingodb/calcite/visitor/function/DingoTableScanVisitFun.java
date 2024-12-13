@@ -68,7 +68,7 @@ public final class DingoTableScanVisitFun {
         Job job, IdGenerator idGenerator, Location currentLocation,
         ITransaction transaction, DingoJobVisitor visitor, @NonNull DingoTableScan rel
     ) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(visitor.getPointTs(), rel.getTable());
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
 
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -120,7 +120,7 @@ public final class DingoTableScanVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
         for (int i = 0; i < Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {

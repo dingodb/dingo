@@ -183,15 +183,16 @@ public final class DingoVectorVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
-            MetaService.root().getRangeDistribution(rel.getIndexTableId());
+            MetaService.root(visitor.getPointTs()).getRangeDistribution(rel.getIndexTableId());
         Table td = dingoTable.getTable();
         CommonId tableId = dingoTable.getTableId();
-        NavigableMap<ComparableByteArray, RangeDistribution> ranges = MetaService.root().getRangeDistribution(tableId);
+        NavigableMap<ComparableByteArray, RangeDistribution> ranges = MetaService.root(visitor.getPointTs())
+            .getRangeDistribution(tableId);
         Float[] floatArray = getVectorFloats(operandsList);
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
         List<Vertex> outputs = new ArrayList<>();

@@ -110,10 +110,6 @@ public interface ITransaction {
 
     CommitProfile getCommitProfile();
 
-    void setPointStartTs(long startTs);
-
-    long getPointStartTs();
-
     long getJobSeqId();
 
     void setIs(InfoSchema is);

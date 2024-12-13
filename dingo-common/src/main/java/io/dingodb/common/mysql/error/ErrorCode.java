@@ -966,6 +966,10 @@ public class ErrorCode {
     public static int ErrWarnOptimizerHintInvalidInteger  = 8065;
 
     public static int ErrUnsupportedDDLOperation = 8200;
+    public static int ErrUnsupportedModifyVec = 8201;
+    public static int ErrModifyColumnNotTran = 8202;
+    public static int ErrNotFoundDropTable = 8203;
+    public static int ErrNotFoundDropSchema = 8204;
 
     public static int ErrWaitReorgTimeout = 8206;
     public static int ErrInvalidDDLState = 8210;

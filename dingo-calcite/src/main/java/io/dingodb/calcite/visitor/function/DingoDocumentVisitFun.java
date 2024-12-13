@@ -180,11 +180,11 @@ public final class DingoDocumentVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
 
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =
-            MetaService.root().getRangeDistribution(rel.getIndexTableId());
+            MetaService.root(visitor.getPointTs()).getRangeDistribution(rel.getIndexTableId());
 
         Table td = dingoTable.getTable();
         CommonId tableId = dingoTable.getTableId();

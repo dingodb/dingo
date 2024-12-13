@@ -56,7 +56,7 @@ public final class DingoRangeDeleteVisitFun {
         Job job, IdGenerator idGenerator, Location currentLocation,
         ITransaction transaction, DingoJobVisitor visitor, DingoPartRangeDelete rel
     ) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(visitor.getPointTs(), rel.getTable());
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         DistributionSourceParam distributionParam = new DistributionSourceParam(

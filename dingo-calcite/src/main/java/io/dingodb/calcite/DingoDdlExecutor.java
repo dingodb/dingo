@@ -64,6 +64,7 @@ import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
+import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.SchemaDiff;
@@ -115,6 +116,7 @@ import io.dingodb.meta.SequenceServiceProvider;
 import io.dingodb.meta.TenantService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
@@ -177,6 +179,10 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedModifyVec;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -1188,13 +1194,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
         if (schemaInfo == null) {
-            throw DingoErrUtil.newStdErr("Can't find dropped/truncated table " + tableName);
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
 
         String schemaName = schema.getSchemaName();
         DdlJob job = getRecoverWithoutTrunJob(schemaName, tableName);
         if (job == null) {
-            throw DingoErrUtil.newStdErr("Can't find dropped/truncated table " + tableName);
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
         InfoSchema is = DdlService.root().getIsLatest();
         String validateTableName;
@@ -1234,13 +1240,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
         if (schemaInfo == null) {
-            throw DingoErrUtil.newStdErr("Can't find dropped/truncated table " + tableName);
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
 
         String schemaName = schema.getSchemaName();
         DdlJob job = getRecoverJob(schemaName, tableName);
         if (job == null) {
-            throw DingoErrUtil.newStdErr("Can't find dropped/truncated table " + tableName);
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
         InfoSchema is = DdlService.root().getIsLatest();
         String validateTableName;
@@ -1279,7 +1285,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = sqlFlashBackSchema.schemaId.names.get(0).toUpperCase();
-        ;
 
         SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);
         if (subSchema != null) {
@@ -1290,7 +1295,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlJob job = getRecoverJob(schemaName);
         if (job == null) {
-            throw new RuntimeException("Can't find dropped schema " + schemaName);
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropSchema, schemaName);
         }
         RecoverInfo recoverInfo = new RecoverInfo();
         recoverInfo.setDropJobId(job.getId());
@@ -1341,12 +1346,33 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         } else {
             if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("modify column, the engine must be transactional.");
+                throw DingoErrUtil.newStdErr(ErrModifyColumnNotTran);
             }
         }
         List<ModifyingColInfo> modifyingColInfoList = new ArrayList<>();
+        if (sqlAlterModifyColumn.dingoSqlColumnList.size() > 1) {
+            throw DingoErrUtil.newStdErr("not support");
+        }
         for (DingoSqlColumn dingoSqlColumn : sqlAlterModifyColumn.dingoSqlColumnList) {
             String name = dingoSqlColumn.name.getSimple();
+            boolean indexMatch = table.getIndexes().stream().anyMatch(indexTable -> {
+                if (indexTable.getName().startsWith(DdlUtil.ddlTmpTableName)) {
+                    return false;
+                }
+                if (indexTable.getIndexType() == IndexType.SCALAR) {
+                    return false;
+                }
+                for (int i = 0; i < indexTable.getColumns().size(); i++) {
+                    Column col = indexTable.getColumns().get(i);
+                    if (col.getName().equalsIgnoreCase(name)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            if (indexMatch) {
+                throw DingoErrUtil.newStdErr(ErrUnsupportedModifyVec);
+            }
             Column column = table.getColumns().stream()
                 .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
                     && col.getName().equalsIgnoreCase(name)).findFirst().orElse(null);

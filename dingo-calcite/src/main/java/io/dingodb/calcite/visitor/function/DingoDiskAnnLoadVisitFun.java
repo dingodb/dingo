@@ -71,7 +71,7 @@ public final class DingoDiskAnnLoadVisitFun {
         DingoRelOptTable relTable = rel.getTable();
         DingoTable dingoTable = relTable.unwrap(DingoTable.class);
 
-        MetaService metaService = MetaService.root();
+        MetaService metaService = MetaService.root(visitor.getPointTs());
         assert dingoTable != null;
         CommonId tableId = dingoTable.getTableId();
         Table td = dingoTable.getTable();
@@ -80,7 +80,7 @@ public final class DingoDiskAnnLoadVisitFun {
         List<Object> operandsList = rel.getOperands();
         String indexName = Objects.requireNonNull((SqlIdentifier) operandsList.get(1)).toString();
         String indexTableName = rel.getIndexTable().getName();
-        if(!indexTableName.equalsIgnoreCase(indexName)){
+        if (!indexTableName.equalsIgnoreCase(indexName)) {
             throw new IllegalArgumentException("Can not find the text index with name: " + indexName);
         }
         int nodesCacheNum = 0;
@@ -102,7 +102,7 @@ public final class DingoDiskAnnLoadVisitFun {
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         RexNode rexFilter = rel.getFilter();
         TupleMapping resultSelection = rel.getSelection();
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
 
         SqlExpr filter = null;
         if (rexFilter != null) {

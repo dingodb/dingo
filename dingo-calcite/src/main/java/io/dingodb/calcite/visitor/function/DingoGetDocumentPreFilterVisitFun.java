@@ -81,6 +81,9 @@ public final class DingoGetDocumentPreFilterVisitFun {
             Table table = getTable(dingoRelOptTable);
             String indexName = getIndexName(rel.getOperands());
             IndexTable indexTable = getDocumentIndexTable(dingoRelOptTable);
+            if (indexTable == null) {
+                throw new RuntimeException("not found document index");
+            }
             List<Column> columnNames = indexTable.getColumns();
             for (Column columnName : columnNames) {
                 queryString = queryString.replaceAll(
@@ -88,11 +91,9 @@ public final class DingoGetDocumentPreFilterVisitFun {
                     columnName.getName().toUpperCase() + ":"
                 );
             }
-            if (indexTable == null) {
-                throw new RuntimeException("not found document index");
-            }
-            long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
-            MetaService metaService = MetaService.root().getSubMetaService(dingoRelOptTable.getSchemaName());
+            long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+            MetaService metaService = MetaService.root(visitor.getPointTs())
+                .getSubMetaService(dingoRelOptTable.getSchemaName());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = metaService.getRangeDistribution(rel.getIndexTableId());
 

@@ -57,7 +57,7 @@ public final class DingoLikeScanVisitFun {
         Job job, IdGenerator idGenerator, Location currentLocation,
         ITransaction transaction, DingoJobVisitor visitor, DingoLikeScan rel
     ) {
-        TableInfo tableInfo = MetaServiceUtils.getTableInfo(transaction, rel.getTable());
+        TableInfo tableInfo = MetaServiceUtils.getTableInfo(visitor.getPointTs(), rel.getTable());
         SqlExpr filter = null;
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());

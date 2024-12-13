@@ -41,7 +41,7 @@ public final class DingoErrUtil {
         return dingoErr;
     }
 
-    public static DingoSqlException newStdErr(int errCode, String error) {
+    public static DingoSqlException newStdErr(String error, int errCode) {
         return new DingoSqlException(
             errCode, State.mysqlState.getOrDefault(errCode, "HY000"), error
         );
@@ -51,6 +51,15 @@ public final class DingoErrUtil {
         return new DingoSqlException(
             1105, "HY000", error
         );
+    }
+
+    public static DingoSqlException newStdErrWithMsg(String msg, int errCode, Object... param) {
+        DingoSqlException dingoErr = new DingoSqlException(
+            errCode, State.mysqlState.getOrDefault(errCode, "HY000"),
+            msg
+        );
+        dingoErr.fillErrorByArgs(param);
+        return dingoErr;
     }
 
 
@@ -92,5 +101,23 @@ public final class DingoErrUtil {
 
     public static DingoSqlException toMysqlError(DingoErr err) {
         return new DingoSqlException(err.errorCode, err.state, err.errorMsg);
+    }
+
+    public static DingoErr fromException(Exception exception) {
+        int code = 1105;
+        String state = "HY000";
+        String error;
+        if (exception instanceof NullPointerException || exception.getMessage() == null) {
+            error = "null point";
+        } else if (exception instanceof DingoSqlException) {
+            DingoSqlException sqlException = (DingoSqlException) exception;
+            return new DingoErr(sqlException.getSqlCode(), sqlException.getSqlState(), sqlException.getMessage());
+        } else {
+            error = exception.getMessage();
+            if (error != null && error.length() > 20) {
+                error = error.substring(0, 20);
+            }
+        }
+        return new DingoErr(code, state, error);
     }
 }

@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.converter;
 
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
@@ -28,6 +29,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
+
 public class ModifyTypeConverter implements DataConverter {
 
     @Override
@@ -37,9 +40,9 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                return Integer.parseInt(valStr);
-            } catch (Exception e) {
                 return new BigDecimal(valStr).intValue();
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "int", valStr);
             }
         }
     }
@@ -53,7 +56,11 @@ public class ModifyTypeConverter implements DataConverter {
             try {
                 return Long.parseLong(valStr);
             } catch (Exception e) {
-                return new BigDecimal(valStr).longValue();
+                try {
+                    return new BigDecimal(valStr).longValue();
+                } catch (Exception e1) {
+                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "long", valStr);
+                }
             }
         }
     }
@@ -64,7 +71,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return Float.parseFloat(valStr);
+            try {
+                return new BigDecimal(valStr).floatValue();
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "float", valStr);
+            }
         }
     }
 
@@ -74,7 +85,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return Double.parseDouble(valStr);
+            try {
+                return new BigDecimal(valStr).doubleValue();
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "double", valStr);
+            }
         }
     }
 
@@ -96,7 +111,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return new BigDecimal(valStr);
+            try {
+                return new BigDecimal(valStr);
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "decimal", valStr);
+            }
         }
     }
 
@@ -106,7 +125,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return DateTimeUtils.parseDate(valStr);
+            try {
+                return DateTimeUtils.parseDate(valStr);
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", valStr);
+            }
         }
     }
 
@@ -116,7 +139,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return DateTimeUtils.parseTime(valStr);
+            try {
+                return DateTimeUtils.parseTime(valStr);
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "time", valStr);
+            }
         }
     }
 
@@ -126,7 +153,11 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            return DateTimeUtils.parseTimestamp(valStr);
+            try {
+                return DateTimeUtils.parseTimestamp(valStr);
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", valStr);
+            }
         }
     }
 
@@ -141,7 +172,7 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            throw new RuntimeException("xx");
+            throw new RuntimeException("not supported");
         }
     }
 
@@ -151,7 +182,7 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            throw new RuntimeException("xx");
+            throw new RuntimeException("not supported");
         }
     }
 
@@ -163,7 +194,7 @@ public class ModifyTypeConverter implements DataConverter {
         if (valStr == null) {
             return null;
         } else {
-            throw new RuntimeException("xx");
+            throw new RuntimeException("not supported");
         }
     }
 

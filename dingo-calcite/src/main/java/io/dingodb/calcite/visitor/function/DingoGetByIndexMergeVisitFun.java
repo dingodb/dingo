@@ -80,7 +80,7 @@ public final class DingoGetByIndexMergeVisitFun {
         //List<Output> inputs = DingoCoalesce.coalesce(idGenerator, outputs);
         //return DingoBridge.bridge(idGenerator, inputs, new DingoGetByIndexMergeVisitFun.OperatorSupplier(rel));
         final LinkedList<Vertex> outputs = new LinkedList<>();
-        MetaService metaService = MetaService.root();
+        MetaService metaService = MetaService.root(visitor.getPointTs());
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(rel.getTable());
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         TupleMapping lookupKeyMapping = null;
@@ -136,7 +136,7 @@ public final class DingoGetByIndexMergeVisitFun {
                 );
                 lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
-                long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+                long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
 
                 Vertex vertex;
                 if (transaction != null) {

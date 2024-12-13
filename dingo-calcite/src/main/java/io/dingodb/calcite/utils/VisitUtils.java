@@ -27,13 +27,11 @@ public final class VisitUtils {
     private VisitUtils() {
     }
 
-    public static long getScanTs(ITransaction transaction, SqlKind kind) {
+    public static long getScanTs(ITransaction transaction, SqlKind kind, long pointStartTs) {
         if (transaction == null) {
             return 0;
         }
-        long pointStartTs = transaction.getPointStartTs();
         if (pointStartTs > 0) {
-            transaction.setPointStartTs(0);
             return pointStartTs;
         }
         long scanTs = Optional.ofNullable(transaction).map(ITransaction::getStartTs).orElse(0L);

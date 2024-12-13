@@ -80,6 +80,9 @@ public final class BackFilling {
     ) {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> regionMap
             = MetaService.root().getRangeDistribution(reorgInfo.getTableId());
+        if (regionMap.isEmpty()) {
+            LogUtils.error(log, "region is empty, id:{}", reorgInfo.getTableId());
+        }
         Set<RangeDistribution> distributions = ps.calcPartitionRange(null, null, true, true, regionMap);
         BackFiller filler;
         if (bfWorkerType == typeAddIndexWorker) {

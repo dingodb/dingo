@@ -36,6 +36,11 @@ public final class ErrorMessage {
         errorMap.put(ErrTooManyFields, "Too many columns");
         errorMap.put(ErrCantCreateFile, "Can not create file '%s'");
         errorMap.put(ErrTableMustHaveColumns, "A table must have at least 1 column");
+        errorMap.put(ErrUnsupportedModifyVec, "Can not modify vector/document index column");
+        errorMap.put(ErrModifyColumnNotTran, "modify column, the engine must be transactional");
+        errorMap.put(ErrNotFoundDropTable, "Can't find dropped/truncated table '%s'");
+        errorMap.put(ErrNotFoundDropSchema, "Can't find dropped schema '%s'");
+        errorMap.put(ErrTruncatedWrongValue, "Incorrect %s value: '%s'");
     }
 
     private ErrorMessage() {

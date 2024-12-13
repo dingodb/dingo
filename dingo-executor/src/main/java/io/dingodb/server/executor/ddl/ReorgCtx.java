@@ -23,14 +23,14 @@ import java.util.concurrent.CompletableFuture;
 
 @Data
 public class ReorgCtx {
-    private CompletableFuture<String> done;
+    private CompletableFuture<Object> done;
     //private boolean done;
     private long rowCount;
     private long notifyCancelReorgJob;
     private Object doneKey;
 
     @Builder
-    public ReorgCtx(CompletableFuture<String> done, long rowCount, long notifyCancelReorgJob, Object doneKey) {
+    public ReorgCtx(CompletableFuture<Object> done, long rowCount, long notifyCancelReorgJob, Object doneKey) {
         this.done = done;
         this.rowCount = rowCount;
         this.notifyCancelReorgJob = notifyCancelReorgJob;

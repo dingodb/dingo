@@ -281,7 +281,6 @@ public final class DingoDriverParser extends DingoParser {
             throw ExceptionUtils.toRuntime(e);
         }
         syntacticSugar(sqlNode);
-        boolean trace = trace(sqlNode);
         planProfile.endParse();
         JavaTypeFactory typeFactory = connection.getTypeFactory();
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
@@ -359,6 +358,9 @@ public final class DingoDriverParser extends DingoParser {
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();
             txnId = transaction.getTxnId();
+            if (pointTs > 0) {
+                throw DingoResource.DINGO_RESOURCE.invalidAsTimestamp().ex();
+            }
         } else {
             if (prepare) {
                 // prepare using optimistic transaction
@@ -451,6 +453,7 @@ public final class DingoDriverParser extends DingoParser {
 
         List<ColumnMetaData> columns;
         List<ColumnMetaData> enableColumnMetas;
+        boolean trace = trace(sqlNode);
         if (!trace) {
             RelDataType jdbcType = makeStruct(typeFactory, type);
             List<List<String>> originList = validator.getFieldOrigins(sqlNode);
@@ -482,13 +485,6 @@ public final class DingoDriverParser extends DingoParser {
         // get in transaction for mysql update/insert/delete res ok packet
         if (transaction.getType() != NONE) {
             inTransaction = true;
-            if (pointTs > 0) {
-                if (!newTxn) {
-                    throw DingoResource.DINGO_RESOURCE.invalidAsTimestamp().ex();
-                }
-                LogUtils.info(log, "set point ts:{}, txnId:{}, sql statement:{}", pointTs, sql);
-                transaction.setPointStartTs(pointTs);
-            }
         }
         // mysql protocol dml response ok need in transaction flag
 
@@ -519,7 +515,8 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace())
+            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
+            pointTs
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;

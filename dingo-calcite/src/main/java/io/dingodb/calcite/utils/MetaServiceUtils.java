@@ -45,10 +45,10 @@ public final class MetaServiceUtils {
         );
     }
 
-    public static @NonNull TableInfo getTableInfo(ITransaction transaction, RelOptTable table) {
+    public static @NonNull TableInfo getTableInfo(long pointTs, RelOptTable table) {
         MetaService metaService;
-        if (transaction != null && transaction.getPointStartTs() > 0) {
-            metaService = MetaService.snapshot(transaction.getPointStartTs());
+        if (pointTs > 0) {
+            metaService = MetaService.snapshot(pointTs);
         } else {
             metaService = MetaService.root();
         }

@@ -49,7 +49,6 @@ public class InfoSchemaBuilder {
     private static final int bucketCount = 100;
 
     public InfoSchemaBuilder() {
-        //is = new InfoSchema();
     }
 
     public void initWithOldInfoSchema(InfoSchema oldSchema) {

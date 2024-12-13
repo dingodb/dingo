@@ -5953,7 +5953,7 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
         <FLOAT> { s.add(this); sqlTypeName = SqlTypeName.FLOAT; }
     )
     {
-        return new SqlBasicTypeNameSpec(sqlTypeName, precision, scale, null, s.end(this));
+        return new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));
     }
 }
 

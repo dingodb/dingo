@@ -52,7 +52,7 @@ public final class RootOperator extends SinkOperator {
             OperatorProfile profile = param.getProfile("root");
             long start = System.currentTimeMillis();
             LogUtils.debug(log, "task status: {}", vertex.getTask().getStatus());
-            if(vertex.getTask().getStatus() == Status.CANCEL) {
+            if (vertex.getTask().getStatus() == Status.CANCEL) {
                 throw new TaskCancelException("task is cancel");
             }
             if (vertex.getTask().getStatus() != Status.RUNNING) {

@@ -79,7 +79,6 @@ public abstract class BaseTransaction implements ITransaction {
 
     protected int isolationLevel;
     protected long startTs;
-    protected long pointStartTs;
     protected CommonId txnId;
     protected CommonId txnInstanceId;
     protected boolean closed = false;

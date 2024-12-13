@@ -131,27 +131,39 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Getter
     private ExecuteVariables executeVariables;
 
+    @Getter
+    private long pointTs;
+
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation,
-                            ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables) {
+                            ITransaction transaction, SqlKind kind, ExecuteVariables executeVariables, long pointTs) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.transaction = transaction;
         this.kind = kind;
         this.executeVariables = executeVariables;
+        this.pointTs = pointTs;
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation) {
-        renderJob(jobManager, job, input, currentLocation, false, null, null, new ExecuteVariables());
+        renderJob(jobManager, job, input, currentLocation, false, null, null,
+            new ExecuteVariables());
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
                                  ExecuteVariables executeVariables) {
+        renderJob(jobManager, job, input, currentLocation, checkRoot, transaction, kind,
+            executeVariables, 0);
+    }
+
+    public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind,
+                                 ExecuteVariables executeVariables, long pointTs) {
         try {
             IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
             DingoJobVisitor visitor = new DingoJobVisitor(
-                job, idGenerator, currentLocation, transaction, kind, executeVariables
+                job, idGenerator, currentLocation, transaction, kind, executeVariables, pointTs
             );
             Collection<Vertex> outputs = dingo(input).accept(visitor);
             if (checkRoot && !outputs.isEmpty()) {

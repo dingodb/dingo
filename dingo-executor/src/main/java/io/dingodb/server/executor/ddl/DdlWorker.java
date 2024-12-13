@@ -172,39 +172,10 @@ public class DdlWorker {
         if (ver == 0) {
             return null;
         }
-        //List<Object[]> rows;
-        //try {
-        //    rows = this.session.executeQuery("select table_ids from mysql.dingo_ddl_job where job_id
-        //    = " + job.getId());
-        //} catch (Exception e) {
-        //    LogUtils.error(log, e.getMessage(), e);
-        //    return e.getMessage();
-        //}
-        //if (rows.isEmpty()) {
-        //    return "can't find ddl job " + job.getId();
-        //}
-        //String ids = (String) rows.get(0)[0];
         String ids = job.job2TableIDs();
-        boolean duplicate = false;
-        //try {
-        //    List<Object[]> res = session.executeQuery("select job_id from mysql.dingo_mdl_info where
-        //    job_id=" + job.getId());
-        //    if (!res.isEmpty()) {
-        //        duplicate = true;
-        //    }
-        //} catch (Exception e) {
-        //    LogUtils.error(log, e.getMessage(), e);
-        //}
-        String sql;
-        if (duplicate) {
-            DingoMetrics.counter("registerMDLInfoDuplicate").inc();
-            sql = "update mysql.dingo_mdl_info set version=%d and table_ids=%s where job_id=%d";
-            sql = String.format(sql, ver, Utils.quoteForSql(ids), job.getId());
-        } else {
-            DingoMetrics.counter("registerMDLInfoNone").inc();
-            sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
-            sql = String.format(sql, job.getId(), ver, Utils.quoteForSql(ids));
-        }
+        DingoMetrics.counter("registerMDLInfoNone").inc();
+        String sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
+        sql = String.format(sql, job.getId(), ver, Utils.quoteForSql(ids));
         return session.executeUpdate(sql);
     }
 
@@ -807,11 +778,12 @@ public class DdlWorker {
                     DdlColumn.doReorgWorkForDropCol(dc, job, tableId, withId, this);
                 } catch (Exception e) {
                     job.setState(JobState.jobStateCancelled);
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     MetaService.root().dropRegionByTable(
                         Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
                     );
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     LogUtils.error(log, e.getMessage(), e);
+                    updateSchemaVersion(dc, job);
                     return Pair.of(0L, e.getMessage());
                 }
                 withId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
@@ -950,11 +922,12 @@ public class DdlWorker {
                     DdlColumn.doReorgWorkForAddCol(dc, job, tableId, withId, this);
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     MetaService.root().dropRegionByTable(
                         Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
                     );
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     job.setState(JobState.jobStateCancelled);
+                    updateSchemaVersion(dc, job);
                     return Pair.of(0L, e.getMessage());
                 }
                 withId.getTableDefinition()
@@ -1175,7 +1148,7 @@ public class DdlWorker {
                 return job.getDingoErr().errorMsg;
             }
             rc = newReorgCtx(reorgInfo);
-            CompletableFuture<String> done = rc.getDone();
+            CompletableFuture<Object> done = rc.getDone();
             Executors.execute("reorg", () -> {
                 String error;
                 try {
@@ -1193,22 +1166,15 @@ public class DdlWorker {
         }
 
         try {
-            String error = rc.getDone().get();
-            if (rc.isReorgCanceled() || "ErrCancelledDDLJob".equalsIgnoreCase(error)) {
-                dc.removeReorgCtx(job.getId());
-                job.setDingoErr(DingoErrUtil.newInternalErr(ErrCancelledDDLJob));
-                return job.getDingoErr().errorMsg;
-            }
+            Object error = rc.getDone().get();
             long rowCount = rc.getRowCount();
-            if (error != null) {
-                LogUtils.error(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
-            } else {
-                LogUtils.debug(log, "[ddl] run reorg job done, rows:{}", rowCount);
-            }
             job.setRowCount(rowCount);
             dc.removeReorgCtx(job.getId());
             if (error != null) {
-                return error;
+                LogUtils.error(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
+                return error.toString();
+            } else {
+                LogUtils.debug(log, "[ddl] run reorg job done, rows:{}", rowCount);
             }
         } catch (ExecutionException e) {
             long rowCount = rc.getRowCount();
@@ -1219,6 +1185,56 @@ public class DdlWorker {
             throw new RuntimeException(e);
         }
         return null;
+    }
+
+    public DingoErr runReorgJobWithStdErr(
+        DdlContext dc,
+        ReorgInfo reorgInfo,
+        Function<Void, String> function
+    ) {
+        DdlJob job = reorgInfo.getDdlJob();
+        ReorgCtx rc = dc.getReorgCtx1(job.getId());
+        if (rc == null) {
+            if (job.isCancelling()) {
+                job.setDingoErr(DingoErrUtil.newInternalErr(ErrCancelledDDLJob));
+                return job.getDingoErr();
+            }
+            rc = newReorgCtx(reorgInfo);
+            CompletableFuture<Object> done = rc.getDone();
+            Executors.execute("reorg", () -> {
+                DingoErr dingoErr = null;
+                try {
+                    function.apply(null);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    dingoErr = DingoErrUtil.fromException(e);
+                }
+                done.complete(dingoErr);
+            });
+        }
+
+        try {
+            Object error = rc.getDone().get();
+            long rowCount = rc.getRowCount();
+            job.setRowCount(rowCount);
+            dc.removeReorgCtx(job.getId());
+            if (error != null) {
+                LogUtils.error(log, "[ddl] run reorg job done, rows:{}, error:{}", rowCount, error);
+                DingoErr err = (DingoErr) error;
+                job.setDingoErr(err);
+                return err;
+            } else {
+                LogUtils.debug(log, "[ddl] run reorg job done, rows:{}", rowCount);
+            }
+        } catch (ExecutionException e) {
+            long rowCount = rc.getRowCount();
+            job.setRowCount(rowCount);
+            LogUtils.error(log, "run reorg job execution error, addCount:{}", rowCount);
+            return DingoErrUtil.fromException(e);
+        } catch (InterruptedException e) {
+            return DingoErrUtil.fromException(e);
+        }
+        return DingoErrUtil.normal();
     }
 
     public ReorgCtx newReorgCtx(ReorgInfo reorgInfo) {
@@ -1528,30 +1544,25 @@ public class DdlWorker {
                 withId = (TableDefinitionWithId) InfoSchemaService.root()
                     .getReplicaTable(job.getSchemaId(), job.getTableId(), 0);
                 DingoCommonId replicaTableId = withId.getTableId();
-                try {
-                    DdlColumn.doReorgWorkForModifyCol(dc, job, tableId, withId, this);
-                } catch (Exception e) {
-                    LogUtils.error(log, e.getMessage(), e);
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                DingoErr dingoErr = DdlColumn.doReorgWorkForModifyCol(dc, job, tableId, withId, this);
+                if (dingoErr.errorCode > 0) {
                     MetaService.root().dropRegionByTable(
                         Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
                     );
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    LogUtils.info(log, "rollback drop replica table, priId:{}, replica id:{}",
+                        tableId.seq, replicaTableId);
                     job.setState(JobState.jobStateCancelled);
-                    return Pair.of(0L, e.getMessage());
+                    job.setDingoErr(dingoErr);
+                    updateSchemaVersion(dc, job);
+                    return Pair.of(0L, dingoErr.errorMsg);
                 }
+
                 withId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
                 TableUtil.updateReplicaTable(job.getSchemaId(), job.getTableId(), withId);
                 withId.setTableId(tableRes.getKey().getTableId());
                 withId.getTableDefinition().setName(tableRes.getKey().getTableDefinition().getName());
-                // replace replicaTable to table
-                try {
-                    // to remove origin replica table definition
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
-                    // remove old region
-                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs(), false);
-                } catch (Exception e) {
-                    LogUtils.error(log, "drop replicaTable error", e);
-                }
+
                 // do handle index
                 indexWithIdList = InfoSchemaService.root().getReplicaIndex(job.getSchemaId(), job.getTableId());
                 for (Object indexObj : indexWithIdList) {
@@ -1561,6 +1572,15 @@ public class DdlWorker {
                         job.setDingoErr(err);
                         return Pair.of(0L, err.errorMsg);
                     }
+                }
+                // replace replicaTable to table
+                try {
+                    // to remove origin replica table definition
+                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    // remove old region
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs(), false);
+                } catch (Exception e) {
+                    LogUtils.error(log, "drop replicaTable error", e);
                 }
 
                 if (job.isRollingback()) {
@@ -1632,11 +1652,11 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition newColDef
     ) {
         if (newColDef.getTypeName().equals(oldColDef.getTypeName())) {
-            if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
+            //if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
                 // add signed
-                return oldColDef.getPrecision() != newColDef.getPrecision()
-                    || oldColDef.getScale() != newColDef.getScale();
-            }
+            //    return oldColDef.getPrecision() != newColDef.getPrecision()
+            //        || oldColDef.getScale() != newColDef.getScale();
+            //}
             // if type is tiny/short/int/bigint -> = toUnsigned == originUnsigned
             //return oldColDef.getPrecision();
             return oldColDef.isNullable() != newColDef.isNullable();
@@ -1649,17 +1669,18 @@ public class DdlWorker {
         TableDefinitionWithId withId, DdlJob job, CommonId tableId
     ) {
         DingoCommonId replicaTableId = withId.getTableId();
-        try {
-            DdlColumn.doReorgWorkForModifyIndexCol(DdlContext.INSTANCE, job, tableId, withId, this);
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
+        LogUtils.info(log, "doModifyColumnIndex replicaId:{}, tableId:{}", replicaTableId, tableId);
+        DingoErr dingoErr = DdlColumn.doReorgWorkForModifyIndexCol(
+            DdlContext.INSTANCE, job, tableId, withId, this);
+        if (dingoErr.errorCode > 0) {
             MetaService.root().dropRegionByTable(
                 Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
             );
             InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
             job.setState(JobState.jobStateCancelled);
-            return DingoErrUtil.newInternalErr(e.getMessage());
+            return dingoErr;
         }
+
         withId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
         String toIndexName = withId.getTableDefinition().getName();
         String originIndexName = toIndexName.substring(18);
@@ -1677,12 +1698,12 @@ public class DdlWorker {
         withId.getTableDefinition().setName(originIndexName);
         // replace replicaTable to table
         try {
-            // to remove origin definition
-            InfoSchemaService.root().dropIndex(tableId.seq, originIndexId.getEntityId());
             // remove old region
             MetaService.root().dropRegionByTable(
                 MapperImpl.MAPPER.idFrom(originIndexId), job.getId(), job.getRealStartTs(), false
             );
+            // to remove origin definition
+            InfoSchemaService.root().dropIndex(tableId.seq, originIndexId.getEntityId());
             TableUtil.updateVersionAndIndexInfos(DdlContext.INSTANCE, job, withId, false);
             return DingoErrUtil.normal();
         } catch (Exception e) {

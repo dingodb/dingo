@@ -164,13 +164,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         this.cache = new MetaCache(coordinators, pointTs);
     }
 
-    public MetaService(Set<Location> coordinators) {
-        this.service = Services.metaService(coordinators);
-        this.id = ROOT_SCHEMA_ID;
-        this.name = ROOT_NAME;
-        this.cache = new MetaCache(coordinators);
-    }
-
     protected MetaService(DingoCommonId id, String name, io.dingodb.sdk.service.MetaService service, MetaCache cache) {
         this.service = service;
         this.id = id;
@@ -1077,6 +1070,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
+        LogUtils.info(log, "dropRegion size:{}, tableId:{}", rangeDistributions.size(), tableId);
         if (ScopeVariables.getNeedGc() && jobId >= 0) {
             Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
             gcDeleteRegion(rangeDistributions, jobId, ts, tableId, autoInc);
@@ -1086,6 +1080,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 delAutoInc(tableId);
             }
             for (RangeDistribution rangeDistribution : rangeDistributions) {
+                LogUtils.info(log, "dropRegion id:{}, tableId:{}", rangeDistribution.getId(), tableId);
                 try {
                     DropRegionRequest r = DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build();
                     coordinatorService.dropRegion(tso(), r);

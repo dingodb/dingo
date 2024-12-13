@@ -84,7 +84,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 transaction.getType(),
                 IsolationLevel.of(transaction.getIsolationLevel())
             );
-            final long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind());
+            final long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
             scanVertexCreator = () -> createTxnScanVertex(rel, transaction, scanTs);
         } else {
             task = job.getOrCreate(currentLocation, idGenerator);
@@ -245,7 +245,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
         boolean withEnd,
         DingoJobVisitor visitor
     ) {
-        MetaService metaService = MetaService.root();
+        MetaService metaService = MetaService.root(visitor.getPointTs());
         final IndexTable td = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = metaService
             .getRangeDistribution(td.tableId);
@@ -281,7 +281,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
         boolean withEnd,
         DingoJobVisitor visitor
     ) {
-        MetaService metaService = MetaService.root();
+        MetaService metaService = MetaService.root(visitor.getPointTs());
         final IndexTable td = rel.getIndexTable();
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges = metaService
             .getRangeDistribution(td.tableId);

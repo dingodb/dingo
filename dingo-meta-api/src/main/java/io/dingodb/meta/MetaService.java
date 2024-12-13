@@ -41,6 +41,14 @@ public interface MetaService {
         return MetaServiceProvider.getDefault().root();
     }
 
+    static MetaService root(long ts) {
+        if (ts > 0) {
+            return snapshot(ts);
+        } else {
+            return root();
+        }
+    }
+
     static MetaService snapshot(long ts) {
         return MetaServiceProvider.getDefault().snapshot(ts);
     }
