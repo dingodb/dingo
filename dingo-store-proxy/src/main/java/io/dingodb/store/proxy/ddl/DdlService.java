@@ -18,6 +18,8 @@ package io.dingodb.store.proxy.ddl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.table.ColumnDefinition;
@@ -29,6 +31,9 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 public class DdlService implements io.dingodb.meta.DdlService {
@@ -90,6 +95,31 @@ public class DdlService implements io.dingodb.meta.DdlService {
     @Override
     public void dropIndex(String schemaName, String tableName, String indexName) {
         DdlHandler.dropIndex(schemaName, tableName, indexName);
+    }
+
+    @Override
+    public void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
+        long schemaId = schemaInfo.getSchemaId();
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionRebaseAuto)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(autoInc);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    @Override
+    public void resetAutoInc() {
+        DdlJob job = DdlJob.builder()
+            .actionType(ActionType.ActionResetAutoInc)
+            .build();
+        DdlHandler.doDdlJob(job);
     }
 
     @Override

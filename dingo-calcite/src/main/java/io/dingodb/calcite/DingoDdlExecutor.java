@@ -18,8 +18,10 @@ package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
@@ -963,6 +965,33 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(@NonNull SqlUseSchema sqlUseSchema, CalcitePrepare.Context context) {
         // for example use mysql
+    }
+
+    public void execute(SqlAlterAutoIncrement alterAutoIncrement, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", alterAutoIncrement);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(alterAutoIncrement.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            if (isNotTxnEngine(table.getEngine())) {
+                throw new IllegalArgumentException("Drop column, the engine must be transactional.");
+            }
+        }
+        boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
+        if (hasInc) {
+            DdlService.root().rebaseAutoInc(
+                schema.getSchemaName(), tableName, table.getTableId().seq, alterAutoIncrement.autoInc
+            );
+        }
+    }
+
+    public void execute(SqlAdminResetAutoInc sqlAdminResetAutoInc, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", sqlAdminResetAutoInc);
+        DdlService.root().resetAutoInc();
     }
 
     public static void validatePartitionBy(

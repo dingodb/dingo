@@ -39,6 +39,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
            alterTable = dropColumn(s, scope, id)
          )
         |
+         <AUTO_INCREMENT> alterTable = alterAutoInc(s, scope, id)
+        |
         <ALTER>
         alterTable = alterIndex(s, scope, id)
 	    <CONVERT> <TO>
@@ -235,6 +237,14 @@ SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
             s.end(this), id, index, properties
         );
     }
+}
+
+SqlAlterTable alterAutoInc(Span s, String scope, SqlIdentifier id): {
+    String auto = null;
+}
+{
+    <EQ> { s.add(this); }
+    <UNSIGNED_INTEGER_LITERAL> { auto = token.image; return new SqlAlterAutoIncrement(s.end(this), id, auto); }
 }
 
 SqlAlterTable convertCharset(Span s, SqlIdentifier id): {

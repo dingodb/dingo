@@ -240,6 +240,8 @@ public class DdlJob {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionAddColumn) {
                 t = new TypeReference<List<ColumnDefinition>>() {};
+            } else if (actionType == ActionType.ActionRebaseAuto) {
+                t = new TypeReference<List<Long>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

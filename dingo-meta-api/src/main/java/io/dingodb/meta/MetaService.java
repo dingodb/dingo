@@ -242,15 +242,33 @@ public interface MetaService {
 
     long getLastId(CommonId tableId);
 
-    default void invalidateDistribution(CommonId tableId) {}
+    default void rebaseAutoInc(CommonId tableId) {
 
-    default void deleteRegionByTableId(CommonId tableId) {}
+    }
 
-    default void createTenant(Tenant tenant) {};
+    default void resetAutoInc() {
 
-    default void updateTenant(Tenant tenant) {};
+    }
 
-    default void deleteTenant(long tenantId) {};
+    default void invalidateDistribution(CommonId tableId) {
+
+    }
+
+    default void deleteRegionByTableId(CommonId tableId) {
+
+    }
+
+    default void createTenant(Tenant tenant) {
+
+    }
+
+    default void updateTenant(Tenant tenant) {
+
+    }
+
+    default void deleteTenant(long tenantId) {
+
+    }
 
     void close();
 }

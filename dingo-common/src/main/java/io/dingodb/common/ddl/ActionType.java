@@ -28,8 +28,10 @@ public enum ActionType {
     ActionDropIndex(8),
     ActionTruncateTable(11),
     ActionModifyColumn(12),
+    ActionRebaseAuto(13),
     ActionAddPrimaryKey(32),
     ActionCreateTables(60),
+    ActionResetAutoInc(61),
     ;
     private final int code;
 

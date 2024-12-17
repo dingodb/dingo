@@ -12,3 +12,5 @@ do
             bash import-schema.sh $i
           echo "import $i end"
 done
+
+mysql -u$dstUser -p$dstPwd -h $dstHost -P$dstPort --ssl-mode=disabled -e "admin reset auto_increment"
