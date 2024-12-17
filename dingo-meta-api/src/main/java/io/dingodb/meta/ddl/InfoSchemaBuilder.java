@@ -191,6 +191,13 @@ public class InfoSchemaBuilder {
                 return applyDropSequence(schemaDiff);
             case ActionModifyColumn:
                 return applyModifyColumn(schemaDiff);
+            case ActionRebaseAuto:
+                return applyRebaseAuto(schemaDiff);
+            case ActionResetAutoInc:
+                return applyResetAutoInc(schemaDiff);
+            case ActionRenameTable:
+            case ActionRenameIndex:
+                return applyRenameTable(schemaDiff);
             default:
                 break;
         }
@@ -448,6 +455,26 @@ public class InfoSchemaBuilder {
         MetaService.root()
             .invalidateDistribution(new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()));
         return applyCreateTable(diff);
+    }
+
+    public Pair<List<Long>, String> applyRebaseAuto(SchemaDiff diff) {
+        MetaService.root().rebaseAutoInc(
+            new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId())
+        );
+        List<Long> tableIdList = new ArrayList<>();
+        tableIdList.add(diff.getTableId());
+        return Pair.of(tableIdList, null);
+    }
+
+    public Pair<List<Long>, String> applyResetAutoInc(SchemaDiff diff) {
+        MetaService.root().resetAutoInc();
+        return Pair.of(new ArrayList<>(), null);
+    }
+
+    public Pair<List<Long>, String> applyRenameTable(SchemaDiff diff) {
+        applyDropTable(diff);
+        applyCreateTable(diff);
+        return Pair.of(new ArrayList<>(), null);
     }
 
     public static int bucketIdx(long tableId) {

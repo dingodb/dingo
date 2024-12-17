@@ -18,6 +18,8 @@ package io.dingodb.store.proxy.ddl;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.log.LogUtils;
@@ -33,12 +35,16 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 public class DdlService implements io.dingodb.meta.DdlService {
 
     public static final DdlService ROOT = new DdlService();
+
+    @Deprecated
+    public DdlHandler ddlHandler = DdlHandler.INSTANCE;
 
     @AutoService(DdlServiceProvider.class)
     public static class Provider implements DdlServiceProvider {
@@ -102,6 +108,36 @@ public class DdlService implements io.dingodb.meta.DdlService {
         long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
     ) {
         DdlHandler.changeColumn(schemaId, schemaName, tableId, modifyingColInfo);
+    }
+
+    public void renameTable(long schemaId, String schemaName, long tableId, String tableName, String toName) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .schemaName(schemaName)
+            .tableId(tableId)
+            .tableName(tableName)
+            .actionType(ActionType.ActionRenameTable)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(toName);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void renameIndex(long schemaId, String schemaName, long tableId, String tableName,
+        String originIndexName, String toIndexName) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .schemaName(schemaName)
+            .tableId(tableId)
+            .tableName(tableName)
+            .actionType(ActionType.ActionRenameIndex)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(originIndexName);
+        args.add(toIndexName);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
     }
 
     @Override
@@ -190,6 +226,31 @@ public class DdlService implements io.dingodb.meta.DdlService {
 
     public void flashbackSchema(RecoverInfo recoverInfo) {
         DdlHandler.recoverSchema(recoverInfo);
+    }
+
+    @Override
+    public void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
+        SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
+        long schemaId = schemaInfo.getSchemaId();
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionRebaseAuto)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(autoInc);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    @Override
+    public void resetAutoInc() {
+        DdlJob job = DdlJob.builder()
+            .actionType(ActionType.ActionResetAutoInc)
+            .build();
+        DdlHandler.doDdlJob(job);
     }
 
 }

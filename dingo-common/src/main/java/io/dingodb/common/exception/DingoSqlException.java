@@ -44,7 +44,7 @@ public class DingoSqlException extends RuntimeException {
     private String message;
 
     public DingoSqlException() {
-        this((SQLException) null);
+        this("");
     }
 
     public DingoSqlException(String message) {

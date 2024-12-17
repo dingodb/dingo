@@ -30,11 +30,16 @@ public enum ActionType {
     ActionDropSequence(10),
     ActionTruncateTable(11),
     ActionModifyColumn(12),
+    ActionRebaseAuto(13),
+    ActionRenameTable(14),
+    ActionModifyTableComment(17),
+    ActionRenameIndex(17),
     ActionCreateView(21),
     ActionDropView(24),
     ActionRecoverTable(25),
     ActionAddPrimaryKey(32),
     ActionCreateTables(60),
+    ActionResetAutoInc(61),
     ActionRecoverSchema(63),
     ;
     private final int code;

@@ -41,6 +41,7 @@ public final class ErrorMessage {
         errorMap.put(ErrNotFoundDropTable, "Can't find dropped/truncated table '%s'");
         errorMap.put(ErrNotFoundDropSchema, "Can't find dropped schema '%s'");
         errorMap.put(ErrTruncatedWrongValue, "Incorrect %s value: '%s'");
+        errorMap.put(ErrKeyDoesNotExist, "Key '%s' doesn't exist in table '%s'");
     }
 
     private ErrorMessage() {

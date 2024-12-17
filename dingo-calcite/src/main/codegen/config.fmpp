@@ -32,8 +32,11 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlBeginTx"
       "io.dingodb.calcite.grammar.ddl.SqlBlock"
       "io.dingodb.calcite.grammar.ddl.SqlCommit"
+      "io.dingodb.calcite.grammar.ddl.SqlAdmin"
       "io.dingodb.calcite.grammar.ddl.SqlRollback"
       "io.dingodb.calcite.grammar.ddl.SqlAdminRollback"
+      "io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint"
@@ -44,6 +47,8 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign"
       "io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterConvertCharset"
@@ -316,9 +321,10 @@ data: {
         "SqlKill"
         "SqlLoadData"
         "SqlCall"
-        "SqlAdminRollback"
+        "SqlAdmin"
         "SqlFlashBack"
         "SqlRecoverTable"
+        "SqlRenameTable"
     ]
 
     sqlTypeNameMethods: [

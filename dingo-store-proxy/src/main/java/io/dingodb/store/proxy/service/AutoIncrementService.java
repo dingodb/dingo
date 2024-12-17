@@ -22,6 +22,7 @@ import io.dingodb.common.config.VariableConfiguration;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.store.proxy.Configuration;
 import lombok.experimental.Delegate;
 
@@ -37,6 +38,12 @@ public class AutoIncrementService {
         new io.dingodb.sdk.service.meta.AutoIncrementService(Configuration.coordinators());
 
     private AutoIncrementService() {
+    }
+
+    public void resetAutoIncrement(CommonId tableId) {
+        SDKCommonId tabId = new SDKCommonId(
+            io.dingodb.sdk.common.DingoCommonId.Type.ENTITY_TYPE_TABLE, tableId.domain, tableId.seq);
+        autoIncrementService.reset(tabId);
     }
 
     public void resetAutoIncrement() {

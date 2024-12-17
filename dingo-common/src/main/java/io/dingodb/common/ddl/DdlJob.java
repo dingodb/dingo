@@ -255,6 +255,10 @@ public class DdlJob {
                 t = new TypeReference<List<SequenceDefinition>>() {};
             } else if (actionType == ActionType.ActionModifyColumn) {
                 t = new TypeReference<List<ModifyingColInfo>>() {};
+            } else if (actionType == ActionType.ActionRebaseAuto) {
+                t = new TypeReference<List<Long>>() {};
+            } else if (actionType == ActionType.ActionRenameTable || actionType == ActionType.ActionRenameIndex) {
+                t = new TypeReference<List<String>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

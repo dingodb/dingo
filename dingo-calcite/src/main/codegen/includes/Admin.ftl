@@ -16,13 +16,17 @@
 -->
 
 
-SqlAdminRollback SqlAdminRollback(): {
+SqlAdmin SqlAdmin(): {
   BigInteger txnId;
   final Span s;
 } {
   <ADMIN> { s = span(); }
+  (
   <ROLLBACK>
   <UNSIGNED_INTEGER_LITERAL>
   { txnId = new BigInteger(token.image); }
   { return new SqlAdminRollback(s.end(this), txnId); }
+  |
+   <RESET> <AUTO_INCREMENT> { return new SqlAdminResetAutoInc(s.end(this)); } 
+  )
 }

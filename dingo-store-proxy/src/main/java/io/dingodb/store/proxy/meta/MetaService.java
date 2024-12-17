@@ -1275,6 +1275,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
+    public void rebaseAutoInc(CommonId tableId) {
+        AutoIncrementService.INSTANCE.resetAutoIncrement(tableId);
+    }
+
+    @Override
+    public void resetAutoInc() {
+        AutoIncrementService.INSTANCE.resetAutoIncrement();
+    }
+
+    @Override
     public void invalidateDistribution(CommonId tableId) {
         this.cache.invalidateDistribution(tableId);
     }

@@ -265,6 +265,14 @@ public interface MetaService {
 
     long getLastId(CommonId tableId);
 
+    default void rebaseAutoInc(CommonId tableId) {
+
+    }
+
+    default void resetAutoInc() {
+
+    }
+
     default void invalidateDistribution(CommonId tableId) {
 
     }

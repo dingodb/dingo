@@ -74,6 +74,15 @@ public interface DdlService {
 
     }
 
+    default void renameTable(long schemaId, String schemaName, long tableId, String tableName, String toName) {
+
+    }
+
+    default void renameIndex(long schemaId, String schemaName, long tableId, String tableName,
+        String originIndexName, String toIndexName) {
+
+    }
+
     default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
 
     }
@@ -103,4 +112,12 @@ public interface DdlService {
     void createSequence(SequenceDefinition sequenceDefinition, String connId);
 
     void dropSequence(String sequenceName, String connId);
+
+    default void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
+
+    }
+
+    default void resetAutoInc() {
+
+    }
 }

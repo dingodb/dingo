@@ -50,6 +50,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
+import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -69,6 +70,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrDBCreateExists;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDBDropExists;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDupFieldName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrInvalidDDLState;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_REORG;
@@ -260,6 +262,18 @@ public class DdlWorker {
                 break;
             case ActionModifyColumn:
                 res = onModifyColumn(dc, job);
+                break;
+            case ActionRebaseAuto:
+                res = onRebaseAuto(dc, job);
+                break;
+            case ActionResetAutoInc:
+                res = onResetAutoInc(dc, job);
+                break;
+            case ActionRenameTable:
+                res = onRenameTable(dc, job);
+                break;
+            case ActionRenameIndex:
+                res = onRenameIndex(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -1711,4 +1725,80 @@ public class DdlWorker {
             return DingoErrUtil.newInternalErr(e.getMessage());
         }
     }
+
+    public Pair<Long, String> onRebaseAuto(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        long autoInc = (long) job.getArgs().get(0);
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+
+        AutoIncrementService autoIncrementService = AutoIncrementService.INSTANCE;
+        io.dingodb.server.executor.common.DingoCommonId dingoCommonId
+            = new io.dingodb.server.executor.common.DingoCommonId(
+            new CommonId(CommonId.CommonType.TABLE, job.getSchemaId(), job.getTableId())
+        );
+        long current = autoIncrementService.current(dingoCommonId);
+        if (autoInc > current) {
+            autoIncrementService.updateIncrement(dingoCommonId, autoInc);
+        }
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return updateSchemaVersion(dc, job);
+    }
+
+    public Pair<Long, String> onResetAutoInc(DdlContext dc, DdlJob job) {
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return updateSchemaVersion(dc, job);
+    }
+
+    public Pair<Long, String> onRenameTable(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        String toName = job.getArgs().get(0).toString();
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        tableRes.getKey().getTableDefinition().setName(toName);
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndTableInfos(dc, job, tableRes.getKey(), true);
+    }
+
+    public Pair<Long, String> onRenameIndex(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        String toName = job.getArgs().get(1).toString();
+        String originName = job.getArgs().get(0).toString();
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+        TableDefinitionWithId indexWithId = indexList.stream()
+            .map(idxTable -> (TableDefinitionWithId)idxTable)
+            .filter(idxTable ->
+            idxTable.getTableDefinition().getName().endsWith(originName)
+            || idxTable.getTableDefinition().getName().endsWith(originName.toUpperCase())).findFirst().orElse(null);
+        if (indexWithId == null) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, originName, job.getTableName()));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        toName = job.getTableName() + "." + toName;
+        indexWithId.getTableDefinition().setName(toName);
+
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+    }
+
 }

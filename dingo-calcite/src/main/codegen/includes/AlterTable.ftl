@@ -15,6 +15,37 @@
 // limitations under the License.
 -->
 
+SqlAlter SqlRenameTable(): {
+  Span s;
+  SqlIdentifier id = null;
+  SqlIdentifier toId = null;
+  List<SqlIdentifier> originIdList = new ArrayList<>();
+  List<SqlIdentifier> toIdList = new ArrayList<>();
+} {
+   <RENAME> { s = span(); }
+   <TABLE> { s.add(this); }
+   id = CompoundIdentifier()
+   <TO>
+   toId = CompoundIdentifier()
+   {
+     originIdList.add(id);
+     toIdList.add(toId);
+   }
+   (
+     <COMMA>
+     id = CompoundIdentifier()
+     <TO>
+     toId = CompoundIdentifier()
+     {
+       originIdList.add(id);
+       toIdList.add(toId);
+     }
+   )*
+   {
+     return new SqlAlterRenameTable(s.end(this), originIdList, toIdList);
+   }
+}
+
 SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlIdentifier id;
     SqlAlterTable alterTable = null;
@@ -56,6 +87,10 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
         |
           <CHANGE>
           alterTable = changeColumn(s, scope, id)
+        |
+         <AUTO_INCREMENT> alterTable = alterAutoInc(s, scope, id)
+        |
+         <RENAME> alterTable = alterRenameIndex(s, scope, id)
         |
         <ALTER>
          (
@@ -584,3 +619,23 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
     return new SqlAlterChangeColumn(s.end(this), id, name, newName, columnDec);
   }
 }
+
+SqlAlterTable alterAutoInc(Span s, String scope, SqlIdentifier id): {
+    String auto = null;
+}
+{
+    <EQ> { s.add(this); }
+    <UNSIGNED_INTEGER_LITERAL> { auto = token.image; return new SqlAlterAutoIncrement(s.end(this), id, auto); }
+}
+
+SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
+    String index = null;
+    String toIndexName = null;
+}
+{
+    <INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    <TO>
+    { toIndexName = getNextToken().image; return new SqlAlterRenameIndex(s.end(this), id, index, toIndexName);  }
+}
+
