@@ -43,6 +43,7 @@ import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
+import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -253,6 +254,12 @@ public class DdlWorker {
                 break;
             case ActionAddColumn:
                 res = onAddColumn(dc, job);
+                break;
+            case ActionRebaseAuto:
+                res = onRebaseAuto(dc, job);
+                break;
+            case ActionResetAutoInc:
+                res = onResetAutoInc(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -896,6 +903,36 @@ public class DdlWorker {
                 error = "ErrInvalidDDLJob";
         }
         return Pair.of(0L, error);
+    }
+
+    public Pair<Long, String> onRebaseAuto(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        long autoInc = (long) job.getArgs().get(0);
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+
+        AutoIncrementService autoIncrementService = AutoIncrementService.INSTANCE;
+        io.dingodb.server.executor.common.DingoCommonId dingoCommonId
+            = new io.dingodb.server.executor.common.DingoCommonId(
+                new CommonId(CommonId.CommonType.TABLE, job.getSchemaId(), job.getTableId())
+                );
+        long current = autoIncrementService.current(dingoCommonId);
+        if (autoInc > current) {
+            autoIncrementService.updateIncrement(dingoCommonId, autoInc);
+        }
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return updateSchemaVersion(dc, job);
+    }
+
+    public Pair<Long, String> onResetAutoInc(DdlContext dc, DdlJob job) {
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return updateSchemaVersion(dc, job);
     }
 
     public static Pair<SchemaInfo, String> checkSchemaExistAndCancelNotExistJob(DdlJob job) {

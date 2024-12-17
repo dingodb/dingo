@@ -45,6 +45,7 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.sdk.common.SDKCommonId;
 import io.dingodb.sdk.common.serial.RecordEncoder;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
@@ -1187,6 +1188,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public long getLastId(CommonId tableId) {
         return AutoIncrementService.INSTANCE.getLastId(tableId);
+    }
+
+    @Override
+    public void rebaseAutoInc(CommonId tableId) {
+        AutoIncrementService.INSTANCE.resetAutoIncrement(tableId);
+    }
+
+    @Override
+    public void resetAutoInc() {
+        AutoIncrementService.INSTANCE.resetAutoIncrement();
     }
 
     @Override

@@ -33,7 +33,10 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlBlock"
       "io.dingodb.calcite.grammar.ddl.SqlCommit"
       "io.dingodb.calcite.grammar.ddl.SqlRollback"
+      "io.dingodb.calcite.grammar.ddl.SqlAdmin"
       "io.dingodb.calcite.grammar.ddl.SqlAdminRollback"
+      "io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex"
@@ -286,7 +289,7 @@ data: {
         "SqlKill"
         "SqlLoadData"
         "SqlCall"
-        "SqlAdminRollback"
+        "SqlAdmin"
     ]
 
     sqlTypeNameMethods: [
