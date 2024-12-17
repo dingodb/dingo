@@ -119,7 +119,6 @@ public final class DingoDiskAnnCountMemoryVisitFun {
             task.putVertex(vertex);
             outputs.add(vertex);
         }
-        visitor.setScan(true);
         return outputs;
     }
 

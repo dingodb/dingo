@@ -14,26 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.tso;
+package io.dingodb.store.api.transaction.exception;
 
-public interface TsoService {
-
-    static TsoService getDefault() {
-        return TsoServiceProvider.getDefault().get();
+public class NonAsyncCommitLockException extends RuntimeException {
+    public NonAsyncCommitLockException(String message) {
+        super(message);
     }
-
-    // Latest TSO
-    long tso();
-
-    // No guarantee of expiration
-    long cacheTso();
-
-    long tso(long timestamp);
-
-    long timestamp();
-
-    long timestamp(long tso);
-
-    boolean IsExpired(long ttl);
-
 }

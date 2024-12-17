@@ -21,6 +21,7 @@ import io.dingodb.common.Location;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.meta.entity.InfoSchema;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,7 +53,7 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
-    public void preWritePrimaryKey() {
+    public void preWritePrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
         throw new UnsupportedOperationException();
     }
 

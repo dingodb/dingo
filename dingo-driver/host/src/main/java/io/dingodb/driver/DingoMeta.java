@@ -537,6 +537,7 @@ public class DingoMeta extends MetaImpl {
         }
         if (transaction != null) {
             transaction.addSql(statement.getSql());
+            writePartData(statement, transaction);
             if (transaction.getType() == TransactionType.NONE || transaction.isAutoCommit()) {
                 try {
                     connection.commit();

@@ -55,6 +55,12 @@ public class TxnPreWrite {
     private long maxCommitTs = 0L;  // NOT IMPLEMENTED
     @Builder.Default
     private long minCommitTs = 0L;
+    // When async commit is enabled, `secondaries` should be set as the key list of all secondary
+    // locks if the request prewrites the primary lock.
+    @Builder.Default
+    private boolean useAsyncCommit = false;
+    @Builder.Default
+    private List<byte[]> secondaries = Collections.emptyList();
     // for pessimistic transaction
     // check if the keys is locked by pessimistic transaction
     @Builder.Default

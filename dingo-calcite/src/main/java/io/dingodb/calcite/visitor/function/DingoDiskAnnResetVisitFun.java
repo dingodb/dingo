@@ -127,7 +127,6 @@ public final class DingoDiskAnnResetVisitFun {
             task.putVertex(vertex);
             outputs.add(vertex);
         }
-        visitor.setScan(true);
         return outputs;
     }
 

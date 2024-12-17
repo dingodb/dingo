@@ -21,23 +21,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
-public class TxnCheckStatus {
+public class TxnCheckSecondaryLocks {
     private IsolationLevel isolationLevel;
-    // Primary key and lock ts together to locate the primary lock of a transaction.
-    private byte[] primaryKey;
-    // Starting timestamp oracle of the transaction being checked.
-    private long lockTs;
-    // The start timestamp oracle of the transaction which this request is part of.
-    private long callerStartTs;
-    // The client must specify the current time to dingo-store using this timestamp oracle.
-    // It is used to check TTL timeouts. It may be inaccurate.
-    private long currentTs;
-    // This field is set to true only if the transaction is known to fall back from async commit.
-    // Then, CheckTxnStatus treats the transaction as non-async-commit even if the use_async_commit
-    // field in the primary lock is true.
-    @Builder.Default
-    private boolean forceSyncCommit = false;
+    private List<byte[]> keys;
+    // Identifies the transaction we are investigating.
+    private long startTs;
 }

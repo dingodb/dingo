@@ -23,6 +23,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Job;
@@ -206,7 +207,7 @@ public abstract class BaseTransaction implements ITransaction {
         JobManager jobManager, Location currentLocation, RuntimeException exception
     );
 
-    public abstract void preWritePrimaryKey();
+    public abstract void preWritePrimaryKey(TwoPhaseCommitData twoPhaseCommitData);
 
     public abstract boolean onePcStage();
 
@@ -248,7 +249,7 @@ public abstract class BaseTransaction implements ITransaction {
         return isCrossNode;
     }
 
-    private boolean checkAsyncCommit() {
+    protected boolean checkAsyncCommit() {
         return transactionConfig.isAsyncCommit() && isScalaData();
     }
 
@@ -358,6 +359,13 @@ public abstract class BaseTransaction implements ITransaction {
         Location currentLocation = MetaService.root().currentLocation();
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         boolean only2PcCommit = false;
+        TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+            .isPessimistic(isPessimistic())
+            .isolationLevel(isolationLevel)
+            .txnId(txnId)
+            .type(getType())
+            .lockTimeOut(transactionConfig.getLockTimeOut())
+            .build();
         try {
             checkContinue();
 
@@ -404,7 +412,7 @@ public abstract class BaseTransaction implements ITransaction {
                 LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
 
                 // 1、PreWritePrimaryKey 、heartBeat
-                preWritePrimaryKey();
+                preWritePrimaryKey(twoPhaseCommitData);
                 this.primaryKeyPreWrite.compareAndSet(false, true);
                 this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
                 commitProfile.endPreWritePrimary();
@@ -415,16 +423,23 @@ public abstract class BaseTransaction implements ITransaction {
                 LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}",
                     transactionOf(), Arrays.toString(primaryKey));
                 checkContinue();
+                twoPhaseCommitData.setPrimaryKey(primaryKey);
                 if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
-                    LogUtils.info(log, "crossNodePreWriteSeconds...");
+                    LogUtils.info(log, "{} crossNodePreWriteSeconds", transactionOf());
                     crossNodePreWriteSeconds(jobManager, currentLocation, jobId);
                 } else {
-                    if (checkAsyncCommit()) {
-                        // Async Commit
-
+                    if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                        // Async Commit PreWriteSecondKeys
+                        LogUtils.info(log, "{} Async Commit PreWriteSecondKeys", transactionOf());
+                        parallelPreWriteSecondKeys(twoPhaseCommitData);
+                        if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                            commitTs = twoPhaseCommitData.getMinCommitTs().get();
+                            // todo calculateMaxCommitTS and checkSchemaValid
+                        }
                     } else {
-                        LogUtils.info(log, "parallelPreWrite...");
-                        parallelPreWriteSecondKeys();
+                        LogUtils.info(log, "{} parallelPreWrite", transactionOf());
+                        twoPhaseCommitData.getUseAsyncCommit().set(false);
+                        parallelPreWriteSecondKeys(twoPhaseCommitData);
                     }
                 }
                 commitProfile.endPreWriteSecond();
@@ -481,78 +496,130 @@ public abstract class BaseTransaction implements ITransaction {
             rollBackResidualPessimisticLock(jobManager);
         }
 
-        try {
-            if (cancel.get()) {
-                LogUtils.info(log, "The current {} has been canceled", transactionOf());
-                rollback(jobManager);
-                throw new RuntimeException(txnId + "The transaction has been canceled");
-            }
-            LogUtils.debug(log, "{} Start CommitPrimaryKey", transactionOf());
-            // 4、get commit_ts 、CommitPrimaryKey
-            this.commitTs = TransactionManager.getCommitTs();
-            boolean result = commitPrimaryKey(cacheToObject);
-            commitProfile.endCommitPrimary();
-            if (!result) {
-                LogUtils.error(log, "CommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
-                    Arrays.toString(primaryKey));
-                rollback(jobManager);
-                throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                    + ",txnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
-                    + Arrays.toString(primaryKey));
-            }
-            this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
-            LogUtils.info(log, "{} CommitPrimaryKey end", transactionOf());
-            CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
-                () -> {
-                    if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
-                        LogUtils.info(log, "crossNodeCommitJobRun...");
-                        crossNodeCommitJobRun(jobManager, currentLocation);
-                    } else {
-                        LogUtils.info(log, "parallelCommitJobRun...");
-                        parallelCommitJobRun();
+        if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+            try {
+                CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
+                    () -> {
+                        LogUtils.info(log, "{} asyncCommitJobRun", transactionOf());
+                        asyncCommitJobRun(twoPhaseCommitData);
+                    },
+                    Executors.executor("exec-asyncTxnCommit")
+                ).exceptionally(
+                    ex -> {
+                        LogUtils.error(log, ex.toString(), ex);
+                        this.status = TransactionStatus.COMMIT_FAIL;
+                        return null;
                     }
-                },
-                Executors.executor("exec-txnCommit")
-            ).exceptionally(
-                ex -> {
-                    LogUtils.error(log, ex.toString(), ex);
-                    return null;
+                );
+                commitFuture = commit_future;
+            } finally {
+                LogUtils.info(log, "{} Async Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(),
+                    commitTs, status, (System.currentTimeMillis() - preWriteStart));
+            }
+        } else {
+            try {
+                if (cancel.get()) {
+                    LogUtils.info(log, "The current {} has been canceled", transactionOf());
+                    rollback(jobManager);
+                    throw new RuntimeException(txnId + "The transaction has been canceled");
                 }
+                LogUtils.debug(log, "{} Start CommitPrimaryKey", transactionOf());
+                // 4、get commit_ts 、CommitPrimaryKey
+                this.commitTs = TransactionManager.getCommitTs();
+                boolean result = commitPrimaryKey(cacheToObject);
+                commitProfile.endCommitPrimary();
+                if (!result) {
+                    LogUtils.error(log, "CommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
+                        Arrays.toString(primaryKey));
+                    rollback(jobManager);
+                    throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
+                        + ",txnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
+                        + Arrays.toString(primaryKey));
+                }
+                this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
+                LogUtils.info(log, "{} CommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
+                CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
+                    () -> {
+                        if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                            LogUtils.info(log, "{} crossNodeCommitJobRun", transactionOf());
+                            crossNodeCommitJobRun(jobManager, currentLocation);
+                        } else {
+                            LogUtils.info(log, "{} parallelCommitJobRun", transactionOf());
+                            twoPhaseCommitData.setPrimaryKey(cacheToObject.getMutation().getKey());
+                            twoPhaseCommitData.setCommitTs(commitTs);
+                            parallelCommitJobRun(twoPhaseCommitData);
+                        }
+                    },
+                    Executors.executor("exec-txnCommit")
+                ).exceptionally(
+                    ex -> {
+                        LogUtils.error(log, ex.toString(), ex);
+                        this.status = TransactionStatus.COMMIT_FAIL;
+                        return null;
+                    }
+                );
+                commitFuture = commit_future;
+                if (!cancel.get() && !isScalaData()) {
+                    commit_future.get();
+                }
+                commitProfile.endCommitSecond();
+                this.status = TransactionStatus.COMMIT;
+            } catch (Throwable t) {
+                LogUtils.error(log, t.getMessage(), t);
+                this.status = TransactionStatus.COMMIT_FAIL;
+                throw new RuntimeException(t);
+            } finally {
+                if (cancel.get()) {
+                    this.status = TransactionStatus.CANCEL;
+                }
+                LogUtils.debug(log, "{} Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(),
+                    commitTs, status, (System.currentTimeMillis() - preWriteStart));
+                jobManager.removeJob(jobId.get());
+                if (!cancel.get() && !isScalaData()) {
+                    commitFuture = null;
+                }
+            }
+        }
+
+    }
+
+    protected void checkAsyncCommit(TwoPhaseCommitData twoPhaseCommitData) {
+        long minCommitTs = TransactionManager.nextTimestamp();
+        twoPhaseCommitData.getUseAsyncCommit().set(true);
+        twoPhaseCommitData.getMinCommitTs().set(minCommitTs);
+        int maxAsyncCommitCount = 1;
+        int maxAsyncCommitSize = twoPhaseCommitData.getPrimaryKey().length;
+        outerLoop :
+        for (TxnPartData txnPartData: partDataMap.keySet()) {
+            CommonId tableId = txnPartData.getTableId();
+            CommonId newPartId = txnPartData.getPartId();
+            Iterator<Object[]> cacheData = TransactionCache.getCacheData(
+                twoPhaseCommitData.getTxnId(),
+                tableId,
+                newPartId
             );
-            commitFuture = commit_future;
-            if (!cancel.get() && !isScalaData()) {
-                commit_future.get();
+            while (cacheData.hasNext()) {
+                Object[] tuple = cacheData.next();
+                TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
+                if (ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                    continue;
+                }
+                maxAsyncCommitSize += txnLocalData.getKey().length;
+                maxAsyncCommitCount++;
+                if (maxAsyncCommitSize > TransactionUtil.max_async_commit_size ||
+                    maxAsyncCommitCount > TransactionUtil.max_async_commit_count) {
+                    twoPhaseCommitData.getUseAsyncCommit().set(false);
+                    LogUtils.info(log, "{} Async Commit Set False, maxAsyncCommitCount:{}, " +
+                        "maxAsyncCommitSize:{}", transactionOf(), maxAsyncCommitCount, maxAsyncCommitSize);
+                    break outerLoop;
+                }
+                twoPhaseCommitData.getSecondaries().add(txnLocalData.getKey());
             }
-            commitProfile.endCommitSecond();
-            this.status = TransactionStatus.COMMIT;
-        } catch (Throwable t) {
-            LogUtils.error(log, t.getMessage(), t);
-            this.status = TransactionStatus.COMMIT_FAIL;
-            throw new RuntimeException(t);
-        } finally {
-            if (cancel.get()) {
-                this.status = TransactionStatus.CANCEL;
-            }
-            LogUtils.debug(log, "{} Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(), commitTs,
-                status, (System.currentTimeMillis() - preWriteStart));
-            jobManager.removeJob(jobId.get());
-            if (!cancel.get() && !isScalaData()) {
-                commitFuture = null;
-            }
-            //cleanUp();
         }
     }
 
-    private void parallelPreWriteSecondKeys() {
+    private void parallelPreWriteSecondKeys(TwoPhaseCommitData twoPhaseCommitData) {
         try {
-            TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
-                .primaryKey(cacheToObject.getMutation().getKey())
-                .isPessimistic(isPessimistic())
-                .isolationLevel(isolationLevel)
-                .txnId(txnId)
-                .type(getType())
-                .lockTimeOut(transactionConfig.getLockTimeOut())
-                .build();
             Set<CompletableFuture<Boolean>> futures = new HashSet<>();
             for (TxnPartData txnPartData: partDataMap.keySet()) {
                 CompletableFuture<Boolean> future = TwoPhaseCommitUtils.preWriteSecondKeys(txnPartData, twoPhaseCommitData);
@@ -610,7 +677,7 @@ public abstract class BaseTransaction implements ITransaction {
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {
-            MdcUtils.setTxnId(txnId.toString());
+            MdcUtils.removeTxnId();
             jobManager.removeJob(jobId);
         }
     }
@@ -637,7 +704,7 @@ public abstract class BaseTransaction implements ITransaction {
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {
-            MdcUtils.setTxnId(txnId.toString());
+            MdcUtils.removeTxnId();
             jobManager.removeJob(jobId);
         }
     }
@@ -664,18 +731,38 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void parallelCommitJobRun() {
+    private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData) {
         try {
             MdcUtils.setTxnId(txnId.toString());
-            TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
-                .primaryKey(cacheToObject.getMutation().getKey())
-                .isPessimistic(isPessimistic())
-                .isolationLevel(isolationLevel)
-                .txnId(txnId)
-                .type(getType())
-                .lockTimeOut(transactionConfig.getLockTimeOut())
-                .commitTs(commitTs)
-                .build();
+            LogUtils.info(log, "{} Start AsyncCommitPrimaryKey, commitTs:{}", transactionOf(), commitTs);
+            // CommitPrimaryKey
+            boolean result = commitPrimaryKey(cacheToObject);
+            commitProfile.endCommitPrimary();
+            if (!result) {
+                LogUtils.error(log, "AsyncCommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
+                    Arrays.toString(primaryKey));
+                throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
+                    + ",asyncTxnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
+                    + Arrays.toString(primaryKey));
+            }
+            this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
+            twoPhaseCommitData.setPrimaryKey(primaryKey);
+            twoPhaseCommitData.setCommitTs(commitTs);
+            partDataMap.keySet().parallelStream()
+                .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
+                .forEach(future -> future.join());
+            commitProfile.endCommitSecond();
+            this.status = TransactionStatus.COMMIT;
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+        } finally {
+            MdcUtils.removeTxnId();
+        }
+    }
+
+    private void parallelCommitJobRun(TwoPhaseCommitData twoPhaseCommitData) {
+        try {
+            MdcUtils.setTxnId(txnId.toString());
             partDataMap.keySet().parallelStream()
                 .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
                 .forEach(future -> future.join());
@@ -709,10 +796,10 @@ public abstract class BaseTransaction implements ITransaction {
         AtomicReference<CommonId> jobId = new AtomicReference<>(CommonId.EMPTY_JOB);
         try {
             if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
-                LogUtils.info(log, "crossNodeRollback...");
+                LogUtils.info(log, "{} crossNodeRollBack", transactionOf());
                 crossNodeRollback(jobManager, currentLocation, jobId);
             } else {
-                LogUtils.info(log, "parallelRollBack...");
+                LogUtils.info(log, "{} parallelRollBack", transactionOf());
                 parallelRollBack();
             }
             this.status = TransactionStatus.ROLLBACK;
@@ -754,6 +841,10 @@ public abstract class BaseTransaction implements ITransaction {
             partDataMap.keySet().parallelStream()
                 .map($ -> TwoPhaseCommitUtils.rollBackPartData($, twoPhaseCommitData))
                 .forEach(future -> future.join());
+        } catch (Exception e) {
+            if (isPessimistic()) {
+                throw e;
+            }
         } finally {
             MdcUtils.removeTxnId();
         }

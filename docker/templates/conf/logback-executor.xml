@@ -672,6 +672,9 @@
     <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnGet"  level="${rpcLog.level}" additivity="false">
         <appender-ref ref="ASYNC-TXN_RPC"/>
     </logger>
+    <logger name ="io.dingodb.sdk.service.desc.store.StoreServiceDescriptors$TxnCheckSecondaryLocks"  level="${rpcLog.level}" additivity="false">
+        <appender-ref ref="ASYNC-TXN_RPC"/>
+    </logger>
 
     <!-- Frequently printed logs need to be turned off -->
     <logger name="io.grpc.netty.shaded.io.grpc.netty.NettyClientHandler" additivity="false">

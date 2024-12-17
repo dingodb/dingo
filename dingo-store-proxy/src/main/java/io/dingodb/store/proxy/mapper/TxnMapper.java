@@ -22,6 +22,7 @@ import io.dingodb.sdk.service.entity.common.ScalarFieldType;
 import io.dingodb.sdk.service.entity.store.Op;
 import io.dingodb.sdk.service.entity.store.TxnBatchGetRequest;
 import io.dingodb.sdk.service.entity.store.TxnBatchRollbackRequest;
+import io.dingodb.sdk.service.entity.store.TxnCheckSecondaryLocksRequest;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusRequest;
 import io.dingodb.sdk.service.entity.store.TxnCommitRequest;
 import io.dingodb.sdk.service.entity.store.TxnPessimisticLockRequest;
@@ -33,6 +34,7 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.DocumentValue;
 import io.dingodb.store.api.transaction.data.DocumentWithScore;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckSecondaryLocks;
 import io.dingodb.store.api.transaction.data.checkstatus.TxnCheckStatus;
 import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
@@ -78,6 +80,8 @@ public interface TxnMapper {
 
     @Mapping(source = "isolationLevel", target = "context.isolationLevel")
     TxnResolveLockRequest resolveTxnTo(TxnResolveLock txnResolve);
+
+    TxnCheckSecondaryLocksRequest checkTxnSecondaryLocksTo(TxnCheckSecondaryLocks txnCheckSecondaryLocks);
 
     default Op opTo(io.dingodb.store.api.transaction.data.Op op) {
         return Op.forNumber(op.getCode());

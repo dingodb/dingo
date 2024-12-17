@@ -22,6 +22,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 @Builder
 @Getter
 @Setter
@@ -29,17 +34,23 @@ import lombok.ToString;
 public class TwoPhaseCommitData {
     private final CommonId txnId;
 
-    private final byte[] primaryKey;
+    private byte[] primaryKey;
 
     private final boolean isPessimistic;
 
     private final int isolationLevel;
     @Builder.Default
-    private final long commitTs = 0L;
+    private long commitTs = 0L;
 
     private final TransactionType type;
     @Builder.Default
     private final long lockTimeOut = 50 * 1000L;
+    @Builder.Default
+    private AtomicBoolean useAsyncCommit = new AtomicBoolean(false);
+    @Builder.Default
+    private AtomicLong minCommitTs = new AtomicLong(0L);
+    @Builder.Default
+    private final List<byte[]> secondaries = new ArrayList<>();
 
     public boolean isPessimistic() {
         return type == TransactionType.PESSIMISTIC;

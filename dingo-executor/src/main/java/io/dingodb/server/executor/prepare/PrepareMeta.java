@@ -294,8 +294,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"dingo_join_concurrency_enable", "off"});
         values.add(new Object[]{"dingo_partition_execute_concurrency", "5"});
         values.add(new Object[]{"dingo_constraint_check_in_place", "off"});
-        values.add(new Object[]{"dingo_enable_async_commit", "off"});
-        values.add(new Object[]{"dingo_cross_node_commit", "off"});
+        values.add(new Object[]{"dingo_enable_async_commit", "on"});
+        values.add(new Object[]{"enable_use_cross_node_commit", "off"});
         return values;
     }
 

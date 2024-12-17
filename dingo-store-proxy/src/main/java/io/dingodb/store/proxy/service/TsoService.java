@@ -109,6 +109,11 @@ public class TsoService implements io.dingodb.tso.TsoService {
         return tso >> PHYSICAL_SHIFT;
     }
 
+    @Override
+    public boolean IsExpired(long ttl) {
+        return timestamp(getLatestTso()) > ttl;
+    }
+
     public long getLatestTso() {
         TsoTimestamp startTimestamp = tsoMetaService.tsoService(
             trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
@@ -118,14 +123,18 @@ public class TsoService implements io.dingodb.tso.TsoService {
 
 
     public long getCacheTso() {
-        Long tso = cache.pollLast();
-        if (tso == null) {
+        Long tso;
+        while ((tso = cache.pollLast()) == null) {
             synchronized (this) {
                 if (cache.isEmpty()) {
                     loadBatchTso();
+                    if (cache.isEmpty()) {
+                        throw new IllegalStateException("Failed to load TSO batch");
+                    }
                 }
                 tso = cache.pollLast();
             }
+            if (tso != null) break;
         }
         return tso;
     }

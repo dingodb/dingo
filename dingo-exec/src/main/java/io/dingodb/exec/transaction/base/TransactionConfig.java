@@ -53,7 +53,7 @@ public class TransactionConfig {
             sessionVariables.getProperty("lock_wait_timeout"));
         return (retryCountOpt
             .map(Integer::parseInt)
-            .orElse(50)) * 1000;
+            .orElse(50)) * 1000L;
     }
 
     public boolean isAsyncCommit() {
@@ -61,6 +61,6 @@ public class TransactionConfig {
     }
 
     public boolean isCrossNodeCommit() {
-        return "on".equalsIgnoreCase(sessionVariables.getProperty("dingo_cross_node_commit"));
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_use_cross_node_commit"));
     }
 }

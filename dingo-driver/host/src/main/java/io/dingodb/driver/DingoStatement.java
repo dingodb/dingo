@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.executor.DmlExecutor;
 import io.dingodb.calcite.executor.Executor;
 import io.dingodb.calcite.executor.QueryExecutor;
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.constant.ServerStatus;
@@ -27,6 +28,7 @@ import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.transaction.base.TxnPartData;
 import lombok.Getter;
@@ -42,6 +44,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class DingoStatement extends AvaticaStatement {
@@ -139,8 +142,30 @@ public class DingoStatement extends AvaticaStatement {
         //LogUtils.info(log, "dingo statement cancel," + this.handle.id);
         super.cancel();
         if (jobManager != null && job != null) {
-            //LogUtils.info(log, "dingo statement cancel job:{}", job);
-            jobManager.cancel(job.getJobId());
+            if (job.getStatus() == Status.RUNNING) {
+                LogUtils.trace(log, "dingo statement cancel jobId:{}, job:{}", job.getJobId(), job);
+                CompletableFuture.runAsync(
+                    () -> {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        LogUtils.info(log, "dingo statement cancel, jobId:{}, status:{}",
+                            job.getJobId(), job.getStatus());
+                        jobManager.cancel(job.getJobId());
+                    },
+                    Executors.executor("exec-asyncCancel")
+                ).exceptionally(
+                    ex -> {
+                        LogUtils.error(log, ex.toString(), ex);
+                        return null;
+                    }
+                );
+            } else {
+                LogUtils.trace(log, "dingo statement cancel job:{}, status:{}", job, job.getStatus());
+                jobManager.cancel(job.getJobId());
+            }
         }
     }
 

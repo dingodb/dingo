@@ -30,6 +30,7 @@ import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -222,14 +223,22 @@ public class OptimisticTransaction extends BaseTransaction {
     }
 
     @Override
-    public void preWritePrimaryKey() {
+    public void preWritePrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
         // 1、get first key from cache
         if (cacheToObject == null) {
             cacheToObject = cache.getPrimaryKey();
             byte[] key = cacheToObject.getMutation().getKey();
             primaryKey = key;
         }
-        txnPreWritePrimaryKey(cacheToObject);
+        if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+            txnPreWritePrimaryKey(cacheToObject, twoPhaseCommitData);
+        } else {
+            if (checkAsyncCommit()) {
+                twoPhaseCommitData.setPrimaryKey(primaryKey);
+                checkAsyncCommit(twoPhaseCommitData);
+            }
+            txnPreWritePrimaryKey(cacheToObject, twoPhaseCommitData);
+        }
     }
 
     /**
@@ -311,7 +320,7 @@ public class OptimisticTransaction extends BaseTransaction {
         return true;
     }
 
-    private void txnPreWritePrimaryKey(CacheToObject cacheToObject) {
+    private void txnPreWritePrimaryKey(CacheToObject cacheToObject, TwoPhaseCommitData twoPhaseCommitData) {
         Future future = null;
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
@@ -330,6 +339,12 @@ public class OptimisticTransaction extends BaseTransaction {
                 .lockExtraDatas(TransactionUtil.toLockExtraDataList(cacheToObject.getTableId(), cacheToObject.getPartId(), txnId,
                     TransactionType.OPTIMISTIC.getCode(), 1))
                 .build();
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                txnPreWrite.setMinCommitTs(twoPhaseCommitData.getMinCommitTs().get());
+                txnPreWrite.setUseAsyncCommit(true);
+                txnPreWrite.setSecondaries(twoPhaseCommitData.getSecondaries());
+                LogUtils.info(log, "{} Async Commit PreWritePrimaryKey, minCommitTs:{}", transactionOf(), txnPreWrite.getMinCommitTs());
+            }
             try {
                 StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
                 future = store.txnPreWritePrimaryKey(txnPreWrite, getLockTimeOut());
@@ -339,6 +354,15 @@ public class OptimisticTransaction extends BaseTransaction {
                 CommonId regionId = TransactionUtil.singleKeySplitRegionId(cacheToObject.getTableId(), txnId, cacheToObject.getMutation().getKey());
                 cacheToObject.setPartId(regionId);
                 Utils.sleep(100);
+            } finally {
+                if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                    if (txnPreWrite.getMinCommitTs() == 0) {
+                        LogUtils.info(log, "Async Commit Set False, txnPreWrite minCommitTs:{}", txnPreWrite.getMinCommitTs());
+                        twoPhaseCommitData.getUseAsyncCommit().set(false);
+                    } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                        twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                    }
+                }
             }
         }
         if (future == null) {

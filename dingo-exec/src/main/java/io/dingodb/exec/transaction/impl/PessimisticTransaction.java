@@ -31,6 +31,7 @@ import io.dingodb.exec.transaction.base.BaseTransaction;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TransactionStatus;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -325,12 +326,18 @@ public class PessimisticTransaction extends BaseTransaction {
         }
     }
     @Override
-    public void preWritePrimaryKey() {
+    public void preWritePrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
         // 1、get first key from cache
 	    if (cacheToObject == null) {
         	cacheToObject = primaryLockTo();
         	primaryKey = cacheToObject.getMutation().getKey();
 	    }
+        if (!isCrossNode && !transactionConfig.isCrossNodeCommit()) {
+            if (checkAsyncCommit()) {
+                twoPhaseCommitData.setPrimaryKey(primaryKey);
+                checkAsyncCommit(twoPhaseCommitData);
+            }
+        }
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             // 2、call sdk preWritePrimaryKey
@@ -357,6 +364,12 @@ public class PessimisticTransaction extends BaseTransaction {
                         TransactionType.PESSIMISTIC.getCode(),
                         1))
                 .build();
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                txnPreWrite.setMinCommitTs(twoPhaseCommitData.getMinCommitTs().get());
+                txnPreWrite.setUseAsyncCommit(true);
+                txnPreWrite.setSecondaries(twoPhaseCommitData.getSecondaries());
+                LogUtils.info(log, "{} Async Commit PreWritePrimaryKey", transactionOf());
+            }
             try {
                 StoreInstance store = Services.KV_STORE.getInstance(
                     cacheToObject.getTableId(),

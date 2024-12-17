@@ -152,8 +152,8 @@ public final class JobManagerImpl implements JobManager {
     public void cancel(CommonId jobId) {
         Job job = jobMap.get(jobId);
         if (job != null) {
-            if (job.getStatus() == Status.BORN || job.getStatus() == Status.STOPPED
-            || job.getStatus() ==  Status.CANCEL) {
+            if (job.getStatus() == Status.BORN || job.getStatus() == Status.READY ||
+                job.getStatus() == Status.STOPPED || job.getStatus() ==  Status.CANCEL) {
                 return;
             }
             cancel(job);

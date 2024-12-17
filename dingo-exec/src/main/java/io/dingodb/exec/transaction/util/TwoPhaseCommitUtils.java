@@ -236,6 +236,7 @@ public final class TwoPhaseCommitUtils {
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
         Supplier<Boolean> supplier = () -> {
+            MdcUtils.setTxnId(txnId.toString());
             List<byte[]> keys = new ArrayList<>();
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
@@ -292,6 +293,7 @@ public final class TwoPhaseCommitUtils {
                                       @Nullable TwoPhaseCommitData twoPhaseCommitData) {
         // 1、call sdk TxnPreWrite
         TxnPreWrite txnPreWrite;
+        boolean isAsyncCommit = twoPhaseCommitData.getUseAsyncCommit().get();
         if (!twoPhaseCommitData.isPessimistic()) {
             txnPreWrite = TxnPreWrite.builder()
                 .isolationLevel(IsolationLevel.of(twoPhaseCommitData.getIsolationLevel()))
@@ -302,6 +304,9 @@ public final class TwoPhaseCommitUtils {
                 .txnSize(mutations.size())
                 .tryOnePc(false)
                 .maxCommitTs(0L)
+                .useAsyncCommit(isAsyncCommit)
+                .secondaries(isAsyncCommit ? twoPhaseCommitData.getSecondaries() : Collections.emptyList())
+                .minCommitTs(twoPhaseCommitData.getMinCommitTs().get())
                 .lockExtraDatas(toLockExtraDataList(
                     tableId,
                     newPartId,
@@ -321,6 +326,9 @@ public final class TwoPhaseCommitUtils {
                 .txnSize(mutations.size())
                 .tryOnePc(false)
                 .maxCommitTs(0L)
+                .useAsyncCommit(isAsyncCommit)
+                .secondaries(isAsyncCommit ? twoPhaseCommitData.getSecondaries() : Collections.emptyList())
+                .minCommitTs(twoPhaseCommitData.getMinCommitTs().get())
                 .pessimisticChecks(toPessimisticCheck(mutations.size()))
                 .forUpdateTsChecks(toForUpdateTsChecks(mutations))
                 .lockExtraDatas(toLockExtraDataList(
@@ -355,6 +363,15 @@ public final class TwoPhaseCommitUtils {
                 }
             }
             return true;
+        } finally {
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                if (txnPreWrite.getMinCommitTs() == 0) {
+                    LogUtils.info(log, "Async Commit Set False");
+                    twoPhaseCommitData.getUseAsyncCommit().set(false);
+                } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                    twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                }
+            }
         }
     }
 

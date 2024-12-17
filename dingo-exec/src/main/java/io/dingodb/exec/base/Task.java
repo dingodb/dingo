@@ -73,7 +73,7 @@ public interface Task {
     boolean cancel();
 
     default void destroy() {
-        cancel(); // stop the task.
+//        cancel(); // stop the task.
         getVertexes().values().forEach(Vertex::destroy);
     }
 
