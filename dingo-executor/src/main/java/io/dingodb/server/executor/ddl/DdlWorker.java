@@ -275,6 +275,12 @@ public class DdlWorker {
             case ActionRenameIndex:
                 res = onRenameIndex(dc, job);
                 break;
+            case ActionModifyTableComment:
+                res = onModifyComment(dc, job);
+                break;
+            case ActionAlterIndexVisibility:
+                res = onAlterIndexVisible(dc, job);
+                break;
             default:
                 job.setState(JobState.jobStateCancelled);
                 break;
@@ -1667,7 +1673,7 @@ public class DdlWorker {
     ) {
         if (newColDef.getTypeName().equals(oldColDef.getTypeName())) {
             //if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
-                // add signed
+            // add signed
             //    return oldColDef.getPrecision() != newColDef.getPrecision()
             //        || oldColDef.getScale() != newColDef.getScale();
             //}
@@ -1741,7 +1747,7 @@ public class DdlWorker {
         AutoIncrementService autoIncrementService = AutoIncrementService.INSTANCE;
         io.dingodb.server.executor.common.DingoCommonId dingoCommonId
             = new io.dingodb.server.executor.common.DingoCommonId(
-            new CommonId(CommonId.CommonType.TABLE, job.getSchemaId(), job.getTableId())
+                new CommonId(CommonId.CommonType.TABLE, job.getSchemaId(), job.getTableId())
         );
         long current = autoIncrementService.current(dingoCommonId);
         if (autoInc > current) {
@@ -1797,6 +1803,52 @@ public class DdlWorker {
         toName = job.getTableName() + "." + toName;
         indexWithId.getTableDefinition().setName(toName);
 
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+    }
+
+    public Pair<Long, String> onModifyComment(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        String comment = job.getArgs().get(0).toString();
+        Object objWithId = InfoSchemaService.root().getTable(job.getSchemaId(), job.getTableId());
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) objWithId;
+        tableWithId.getTableDefinition().setComment(comment);
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);
+    }
+
+    public Pair<Long, String> onAlterIndexVisible(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        String indexName = job.getArgs().get(0).toString();
+        String visibleStr = job.getArgs().get(1).toString();
+        Boolean visible = Boolean.parseBoolean(visibleStr);
+        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+        TableDefinitionWithId indexWithId = indexList.stream()
+            .map(idxTable -> (TableDefinitionWithId)idxTable)
+            .filter(idxTable ->
+                idxTable.getTableDefinition().getName().endsWith(indexName)
+                    || idxTable.getTableDefinition().getName().endsWith(indexName.toUpperCase())).findFirst()
+                    .orElse(null);
+        if (indexWithId == null) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, indexName, job.getTableName()));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
         return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
     }

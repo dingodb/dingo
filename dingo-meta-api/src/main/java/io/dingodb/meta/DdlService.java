@@ -83,6 +83,10 @@ public interface DdlService {
 
     }
 
+    default void alterModifyComment(long schemaId, String schemaName, long tableId, String tableName, String comment) {
+
+    }
+
     default void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
 
     }
@@ -118,6 +122,12 @@ public interface DdlService {
     }
 
     default void resetAutoInc() {
+
+    }
+
+    default void alterIndexVisible(
+        long schemaId, String schemaName, long tableId, String tableName, String index, boolean invisible
+    ) {
 
     }
 }

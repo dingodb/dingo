@@ -197,6 +197,7 @@ public class InfoSchemaBuilder {
                 return applyResetAutoInc(schemaDiff);
             case ActionRenameTable:
             case ActionRenameIndex:
+            case ActionModifyTableComment:
                 return applyRenameTable(schemaDiff);
             default:
                 break;

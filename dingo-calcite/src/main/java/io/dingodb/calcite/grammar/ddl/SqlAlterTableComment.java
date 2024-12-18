@@ -23,25 +23,27 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterAutoIncrement extends SqlAlterTable {
+public class SqlAlterTableComment extends SqlAlterTable {
 
-    public Long autoInc;
+    public String comment;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE INCREMENT", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("ALTER TABLE COMMENT", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAutoIncrement(SqlParserPos pos, SqlIdentifier sqlIdentifier, String autoInc) {
+    public SqlAlterTableComment(SqlParserPos pos, SqlIdentifier sqlIdentifier, String comment) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.autoInc = Long.parseLong(autoInc);
+        if (comment != null) {
+            this.comment = comment.startsWith("'") && comment.endsWith("'")
+                ? comment.replace("'", "") : comment;
+        }
     }
 
     @Override
     public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("ALTER TABLE ");
         table.unparse(writer, leftPrec, rightPrec);
-        writer.keyword("AUTO_INCREMENT");
+        writer.keyword("COMMENT");
         writer.keyword("=");
-        writer.keyword(autoInc.toString());
+        writer.keyword(comment);
     }
-
 }

@@ -257,7 +257,11 @@ public class DdlJob {
                 t = new TypeReference<List<ModifyingColInfo>>() {};
             } else if (actionType == ActionType.ActionRebaseAuto) {
                 t = new TypeReference<List<Long>>() {};
-            } else if (actionType == ActionType.ActionRenameTable || actionType == ActionType.ActionRenameIndex) {
+            } else if (actionType == ActionType.ActionRenameTable
+                || actionType == ActionType.ActionRenameIndex
+                || actionType == ActionType.ActionAlterIndexVisibility
+                || actionType == ActionType.ActionModifyTableComment
+            ) {
                 t = new TypeReference<List<String>>() {};
             }
 

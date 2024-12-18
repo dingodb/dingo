@@ -35,9 +35,11 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterIndexVisible;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
@@ -1011,6 +1013,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTable.getProperties().putAll(sqlAlterIndex.getProperties());
     }
 
+    public void execute(@NonNull SqlAlterIndexVisible sqlAlterIndexVisible, CalcitePrepare.Context context) {
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterIndexVisible.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        DingoTable table = schema.getTable(tableName);
+        assert table != null;
+        IndexTable indexTable = table.getIndexDefinition(sqlAlterIndexVisible.getIndex());
+        if (indexTable == null) {
+            throw DingoErrUtil.newStdErr(ErrKeyDoesNotExist, sqlAlterIndexVisible.getIndex(), tableName);
+        }
+
+    }
+
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(sqlCreateIndex.table, context);
@@ -1615,6 +1631,34 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .schemaId(schema.getSchemaId())
             .tableId(table.getTableId().seq)
             .type(ActionType.ActionRenameIndex)
+            .build();
+        diff.setTableName(tableName);
+        rootSnapshotSchema.applyDiff(diff);
+    }
+
+    public void execute(SqlAlterTableComment sqlAlterTableComment, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterTableComment);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterTableComment.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            if (isNotTxnEngine(table.getEngine())) {
+                throw new IllegalArgumentException("modify column, the engine must be transactional.");
+            }
+        }
+        DdlService.root().alterModifyComment(
+            schema.getSchemaId(), schema.getSchemaName(), table.tableId.seq, tableName,
+            sqlAlterTableComment.comment);
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder()
+            .schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionModifyTableComment)
             .build();
         diff.setTableName(tableName);
         rootSnapshotSchema.applyDiff(diff);

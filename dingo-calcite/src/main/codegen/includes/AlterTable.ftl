@@ -46,6 +46,24 @@ SqlAlter SqlRenameTable(): {
    }
 }
 
+SqlAlterSchema SqlAlterSchema(Span s, String scope): {
+  SqlIdentifier id = null;
+  String charset = null;
+  String collate = null;
+} {
+   (<SCHEMA>|<DATABASE>) { s.add(this); } id = CompoundIdentifier()
+   (
+    <DEFAULT_>
+    |
+    <CHARACTER> <SET> <EQ> { charset = getNextToken().image; }
+    |
+    <COLLATE> <EQ> { collate = getNextToken().image; }
+   )*
+   {
+     return new SqlAlterSchema(s.end(this), id, charset, collate);
+   }
+}
+
 SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlIdentifier id;
     SqlAlterTable alterTable = null;
@@ -91,6 +109,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
          <AUTO_INCREMENT> alterTable = alterAutoInc(s, scope, id)
         |
          <RENAME> alterTable = alterRenameIndex(s, scope, id)
+        |
+         <COMMENT> alterTable = alterTableComment(s, scope, id)
         |
         <ALTER>
          (
@@ -276,10 +296,12 @@ SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
     final String index;
     Properties properties = new Properties();
     String key;
+    boolean visible = true;
 }
 {
     <INDEX> { s.add(this); }
     { index = getNextToken().image; }
+    (
     <SET>
     readProperty(properties)
     (
@@ -295,6 +317,11 @@ SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
             s.end(this), id, index, properties
         );
     }
+    |
+     <INVISIBLE> { visible = false; return new SqlAlterIndexVisible(s.end(this), id, index, visible); }
+    |
+     <VISIBLE> { visible = true; return new SqlAlterIndexVisible(s.end(this), id, index, visible); }
+    )
 }
 
 SqlAlterTable convertCharset(Span s, SqlIdentifier id): {
@@ -639,3 +666,11 @@ SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
     { toIndexName = getNextToken().image; return new SqlAlterRenameIndex(s.end(this), id, index, toIndexName);  }
 }
 
+SqlAlterTable alterTableComment(Span s, String scope, SqlIdentifier id): {
+  String comment = null;
+} {
+   <EQ> { s.add(this); } (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+   {
+     return new SqlAlterTableComment(s.end(this), id, comment);
+   }
+}

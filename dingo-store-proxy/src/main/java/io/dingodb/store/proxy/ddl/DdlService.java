@@ -43,9 +43,6 @@ public class DdlService implements io.dingodb.meta.DdlService {
 
     public static final DdlService ROOT = new DdlService();
 
-    @Deprecated
-    public DdlHandler ddlHandler = DdlHandler.INSTANCE;
-
     @AutoService(DdlServiceProvider.class)
     public static class Provider implements DdlServiceProvider {
         @Override
@@ -136,6 +133,20 @@ public class DdlService implements io.dingodb.meta.DdlService {
         List<Object> args = new ArrayList<>();
         args.add(originIndexName);
         args.add(toIndexName);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void alterModifyComment(long schemaId, String schemaName, long tableId, String tableName, String comment) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .schemaName(schemaName)
+            .tableId(tableId)
+            .tableName(tableName)
+            .actionType(ActionType.ActionModifyTableComment)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(comment);
         job.setArgs(args);
         DdlHandler.doDdlJob(job);
     }
@@ -250,6 +261,23 @@ public class DdlService implements io.dingodb.meta.DdlService {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionResetAutoInc)
             .build();
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void alterIndexVisible(
+        long schemaId, String schemaName, long tableId, String tableName, String index, boolean invisible
+    ) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionAlterIndexVisibility)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(index);
+        args.add(invisible);
+        job.setArgs(args);
         DdlHandler.doDdlJob(job);
     }
 

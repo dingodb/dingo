@@ -16,32 +16,24 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import lombok.Getter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
-import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterAutoIncrement extends SqlAlterTable {
-
-    public Long autoInc;
+public class SqlAlterIndexVisible extends SqlAlterTable {
+    @Getter
+    public String index;
+    public boolean invisible;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE INCREMENT", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("ALTER TABLE ALTER INDEX VISIBLE", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAutoIncrement(SqlParserPos pos, SqlIdentifier sqlIdentifier, String autoInc) {
+    public SqlAlterIndexVisible(SqlParserPos pos, SqlIdentifier sqlIdentifier, String indexName, boolean invisible) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.autoInc = Long.parseLong(autoInc);
+        this.index = indexName;
+        this.invisible = invisible;
     }
-
-    @Override
-    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("ALTER TABLE ");
-        table.unparse(writer, leftPrec, rightPrec);
-        writer.keyword("AUTO_INCREMENT");
-        writer.keyword("=");
-        writer.keyword(autoInc.toString());
-    }
-
 }
