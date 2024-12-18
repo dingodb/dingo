@@ -280,7 +280,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                     StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
                     KeyValue kvKeyValue = kvStore.txnGet(
-                        TsoService.getDefault().tso(),
+                        txnId.seq,
                         originalKey,
                         param.getLockTimeOut()
                     );
