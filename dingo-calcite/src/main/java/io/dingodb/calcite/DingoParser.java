@@ -48,8 +48,11 @@ import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
+import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
+import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShow;
+import io.dingodb.calcite.grammar.dql.SqlStartGc;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.program.DecorrelateProgram;
 import io.dingodb.calcite.rel.DingoCost;
@@ -378,7 +381,10 @@ public class DingoParser {
                 || sqlNode instanceof SqlKillConnection
                 || sqlNode instanceof SqlLoadData
                 || sqlNode instanceof SqlCall
-                || sqlNode instanceof SqlAdminRollback;
+                || sqlNode instanceof SqlAdminRollback
+                || sqlNode instanceof SqlStartGc
+                || sqlNode instanceof SqlBackUpTimePoint
+                || sqlNode instanceof SqlBackUpTsoPoint;
         }
     }
 

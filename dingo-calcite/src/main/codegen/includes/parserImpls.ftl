@@ -192,7 +192,7 @@ void TableElement(List<SqlNode> list) :
          |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>] 
+                    <RPAREN> [<NOT>] [<ENFORCED>]
         )*
         {
             if (e == null) {

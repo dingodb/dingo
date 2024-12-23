@@ -197,6 +197,10 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     return true;
                 } else {
                     KeyValue kv = wrap(codec::encode).apply(tuple);
+                    if (kv == null) {
+                        // Delete non-existent keys
+                        kv = new KeyValue(keys, new byte[]{});
+                    }
                     CodecService.getDefault().setId(kv.getKey(), partId.domain);
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(

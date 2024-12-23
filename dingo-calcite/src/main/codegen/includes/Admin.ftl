@@ -18,6 +18,8 @@
 
 SqlAdmin SqlAdmin(): {
   BigInteger txnId;
+  BigInteger point;
+  String timeStr = null;
   final Span s;
 } {
   <ADMIN> { s = span(); }
@@ -27,6 +29,15 @@ SqlAdmin SqlAdmin(): {
   { txnId = new BigInteger(token.image); }
   { return new SqlAdminRollback(s.end(this), txnId); }
   |
-   <RESET> <AUTO_INCREMENT> { return new SqlAdminResetAutoInc(s.end(this)); } 
+   <RESET> <AUTO_INCREMENT> { return new SqlAdminResetAutoInc(s.end(this)); }
+  |
+   <BACK_UP_TSO_POINT> { point = new BigInteger(getNextToken().image); }
+   { return new SqlBackUpTsoPoint(s.end(this), point); }
+  |
+   <BACK_UP_TIME_POINT> { timeStr = getNextToken().image.toUpperCase().replace("'", ""); }
+   { return new SqlBackUpTimePoint(s.end(this), timeStr); }
+  |
+   <START_GC>
+   { return new SqlStartGc(s.end(this)); }
   )
 }

@@ -30,6 +30,8 @@ import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
+import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
+import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
@@ -56,6 +58,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowTenants;
 import io.dingodb.calcite.grammar.dql.SqlShowTriggers;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
+import io.dingodb.calcite.grammar.dql.SqlStartGc;
 import io.dingodb.exec.transaction.base.TransactionType;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSetOption;
@@ -247,6 +250,14 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlAdminRollback) {
             SqlAdminRollback sqlAdminRollback = (SqlAdminRollback) sqlNode;
             return Optional.of(new AdminRollbackExecutor(sqlAdminRollback.txnId));
+        } else if (sqlNode instanceof SqlStartGc) {
+            return Optional.of(new AdminStartGcExecutor());
+        } else if (sqlNode instanceof SqlBackUpTimePoint) {
+            SqlBackUpTimePoint sqlBackUpTimePoint = (SqlBackUpTimePoint) sqlNode;
+            return Optional.of(new AdminBackUpTimePointExecutor(sqlBackUpTimePoint.timeStr));
+        } else if (sqlNode instanceof SqlBackUpTsoPoint) {
+            SqlBackUpTsoPoint sqlBackUpTsoPoint = (SqlBackUpTsoPoint) sqlNode;
+            return Optional.of(new AdminBackUpTsoPointExecutor(sqlBackUpTsoPoint.point));
         } else {
             return Optional.empty();
         }

@@ -78,7 +78,7 @@ public final class ResolveLockUtil {
     }
 
     public static void checkSecondaryAllLocks(int isolationLevel, long startTs, LockInfo lockInfo,
-                                              TxnCheckTxnStatusResponse statusResponse, List<byte[]> secondaries,
+                                              List<byte[]> secondaries,
                                               AsyncResolveData asyncResolveData) {
         Integer retry = Optional.mapOrGet(
             DingoConfiguration.instance().find("retry", int.class),
@@ -97,7 +97,6 @@ public final class ResolveLockUtil {
                 isolationLevel,
                 startTs,
                 lockInfo,
-                statusResponse,
                 asyncResolveData,
                 regionId,
                 secondKeys,
@@ -107,7 +106,7 @@ public final class ResolveLockUtil {
     }
 
     private static void checkSecondaries(int isolationLevel, long startTs, LockInfo lockInfo,
-                                         TxnCheckTxnStatusResponse statusResponse, AsyncResolveData asyncResolveData,
+                                         AsyncResolveData asyncResolveData,
                                          Long regionId, List<byte[]> secondKeys, int retry) {
         retry--;
         TxnCheckSecondaryLocksResponse txnCheckSecondaryLocksResponse;
@@ -116,7 +115,6 @@ public final class ResolveLockUtil {
                 checkSecondaryLocks(
                     isolationLevel,
                     startTs,
-                    statusResponse,
                     regionId,
                     secondKeys,
                     lockInfo
@@ -138,7 +136,6 @@ public final class ResolveLockUtil {
                     isolationLevel,
                     startTs,
                     lockInfo,
-                    statusResponse,
                     asyncResolveData,
                     newRegionId,
                     newSecondKeys,
@@ -190,7 +187,6 @@ public final class ResolveLockUtil {
     }
 
     public static TxnCheckSecondaryLocksResponse checkSecondaryLocks(int isolationLevel, long startTs,
-                                                                     TxnCheckTxnStatusResponse statusResponse,
                                                                      Long regionId, List<byte[]> secondKeys,
                                                                      LockInfo lockInfo) {
         StoreService storeService = Services.storeRegionService(
@@ -213,7 +209,6 @@ public final class ResolveLockUtil {
     }
 
     public static ResolveLockStatus resolveAsyncResolveData(int isolationLevel, long startTs, String funName,
-                                                            TxnCheckTxnStatusResponse statusResponse,
                                                             AsyncResolveData asyncResolveData, int retry,
                                                             LockInfo lockInfo) {
         retry--;
@@ -228,7 +223,6 @@ public final class ResolveLockUtil {
             try {
                 TxnResolveLockResponse txnResolveLockRes = resolveRegionLocks(
                     isolationLevel,
-                    statusResponse,
                     asyncResolveData,
                     regionId,
                     keys,
@@ -245,7 +239,6 @@ public final class ResolveLockUtil {
                     isolationLevel,
                     startTs,
                     funName,
-                    statusResponse,
                     asyncResolveData,
                     retry,
                     lockInfo
@@ -262,7 +255,6 @@ public final class ResolveLockUtil {
     }
 
     public static TxnResolveLockResponse resolveRegionLocks(int isolationLevel,
-                                                            TxnCheckTxnStatusResponse statusResponse,
                                                             AsyncResolveData asyncResolveData,
                                                             Long regionId,
                                                             List<byte[]> keys,

@@ -779,7 +779,6 @@ public class TransactionStoreInstance {
                         isolationLevel,
                         startTs,
                         lockInfo,
-                        statusResponse,
                         secondaries,
                         asyncResolveData
                     );
@@ -794,7 +793,6 @@ public class TransactionStoreInstance {
                         isolationLevel,
                         startTs,
                         funName,
-                        statusResponse,
                         asyncResolveData,
                         retry,
                         lockInfo
@@ -881,7 +879,6 @@ public class TransactionStoreInstance {
                             isolationLevel,
                             startTs,
                             lockInfo,
-                            statusResponse,
                             secondaries,
                             asyncResolveData
                         );
@@ -897,7 +894,6 @@ public class TransactionStoreInstance {
                             isolationLevel,
                             startTs,
                             funName,
-                            statusResponse,
                             asyncResolveData,
                             retry,
                             lockInfo
