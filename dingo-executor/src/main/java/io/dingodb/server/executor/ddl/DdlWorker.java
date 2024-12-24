@@ -1952,6 +1952,15 @@ public class DdlWorker {
                     .collect(Collectors.toList());
                 LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
                 MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                // disable index
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    MetaService.root().dropIndex(
+                        tableId, Mapper.MAPPER.idFrom(indexWithId.getTableId()),
+                        job.getId(), job.getRealStartTs()
+                    );
+                });
+
                 tableWithId.getTableDefinition().getTablePartition().setPartitions(partitionList);
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);
@@ -2025,6 +2034,15 @@ public class DdlWorker {
                     .collect(Collectors.toList());
                 LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
                 MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    MetaService.root().dropIndex(
+                        tableId, Mapper.MAPPER.idFrom(indexWithId.getTableId()),
+                        job.getId(), job.getRealStartTs()
+                    );
+                });
+
                 tableWithId.getTableDefinition().getTablePartition().setPartitions(partitionList);
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);

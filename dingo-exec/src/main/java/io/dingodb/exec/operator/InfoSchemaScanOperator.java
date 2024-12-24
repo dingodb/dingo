@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.operator;
 
-import io.dingodb.common.profile.StmtSummaryMap;
+import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.annotation.ApiDeclaration;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.Location;
+import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.DdlService;
@@ -28,13 +30,10 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.cluster.ClusterService;
-import io.dingodb.common.annotation.ApiDeclaration;
-import io.dingodb.common.config.DingoConfiguration;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
