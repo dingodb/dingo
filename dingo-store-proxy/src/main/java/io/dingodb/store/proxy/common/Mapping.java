@@ -103,7 +103,8 @@ public final class Mapping {
             table.getUpdateTime(),
             null,
             null,
-            0);
+            0,
+            true);
     }
 
     public static io.dingodb.store.proxy.common.TableDefinition mapping(TableDefinition tableDefinition) {

@@ -20,6 +20,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -37,10 +38,10 @@ public interface DdlService {
 
     void dropSchema(SchemaInfo schemaInfo, String connId);
 
-    void createTableWithInfo(String schemaName, String tableName,
+    void createTableWithInfo(String schemaName,
                              TableDefinition tableDefinition, String connId, String sql);
 
-    default void createViewWithInfo(String schemaName, String tableName,
+    default void createViewWithInfo(String schemaName,
                              TableDefinition tableDefinition, String connId, String sql) {
 
     }
@@ -105,11 +106,11 @@ public interface DdlService {
 
     Table getTable(CommonId id);
 
-    default void flashbackTable(RecoverInfo recoverInfo) {
+    default void recoverTable(RecoverInfo recoverInfo) {
 
     }
 
-    default void flashbackSchema(RecoverInfo recoverInfo) {
+    default void recoverSchema(RecoverInfo recoverInfo) {
 
     }
 
@@ -128,6 +129,20 @@ public interface DdlService {
     default void alterIndexVisible(
         long schemaId, String schemaName, long tableId, String tableName, String index, boolean invisible
     ) {
+
+    }
+
+    default void alterTableAddPart(
+        long schemaId, String schemaName, long tableId, String tableName, PartitionDetailDefinition part
+    ) {
+
+    }
+
+    default void alterTableDropPart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+
+    }
+
+    default void alterTableTruncatePart(long schemaId, String schemaName, long tableId, String tableName, String part) {
 
     }
 }

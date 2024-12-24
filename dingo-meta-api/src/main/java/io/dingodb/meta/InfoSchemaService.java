@@ -246,6 +246,14 @@ public interface InfoSchemaService {
 
     List<Object> listIndex(long schemaId, long tableId, long tenantId);
 
+    default List<Object> allIndex(long schemaId, long tableId) {
+        return null;
+    }
+
+    default boolean hasIndex(long schemaId, long tableId, String indexName) {
+        return false;
+    }
+
     Object getIndex(long tableId, long indexId);
 
     void dropTenant(long tenantId);

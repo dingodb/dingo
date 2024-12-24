@@ -233,7 +233,6 @@ void TableElement(List<SqlNode> list) :
            {
                partitionDefinition = new PartitionDefinition();
                partitionDefinition.setFuncName(getNextToken().image);
-               partitionDefinition.setColumns(readNames());
                partitionDefinition.setDetails(readPartitionDetails());
            }
          |
@@ -407,7 +406,6 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
        {
            partitionDefinition = new PartitionDefinition();
            partitionDefinition.setFuncName(getNextToken().image);
-           partitionDefinition.setColumns(readNames());
            partitionDefinition.setDetails(readPartitionDetails());
        }
     |
@@ -437,6 +435,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
 
 List<PartitionDetailDefinition> readPartitionDetails() : {
     List<PartitionDetailDefinition> partitionDetailDefinitions = new ArrayList<PartitionDetailDefinition>();
+    String pName = null;
 }{
     (
         <PARTITIONS>
@@ -459,6 +458,24 @@ List<PartitionDetailDefinition> readPartitionDetails() : {
             <RPAREN>
         )*
         { return partitionDetailDefinitions; }
+    |
+      readNames()
+     <LPAREN>
+      <PARTITION> pName=dingoIdentifier() <VALUES> <LESS> <THAN>
+      <LPAREN>
+       { partitionDetailDefinitions.add(new PartitionDetailDefinition(pName, null, readValues())); }
+      <RPAREN>
+      (
+        <COMMA>
+        <PARTITION> pName=dingoIdentifier() <VALUES> <LESS> <THAN>
+        <LPAREN>
+         { partitionDetailDefinitions.add(new PartitionDetailDefinition(pName, null, readValues())); }
+        <RPAREN>
+      )*
+     <RPAREN>
+     {
+        return partitionDetailDefinitions;
+     }
     )
 }
 
@@ -476,7 +493,6 @@ Object[] readValues() : {
 List<String> readNames()  : {
 	List<String> names = new ArrayList<String>();
 } {
-      [
 	  <LPAREN>
         {names.add(getNextToken().image);}
 	    (
@@ -484,7 +500,6 @@ List<String> readNames()  : {
           {names.add(getNextToken().image);}
 	    )*
 	  <RPAREN>
-      ]
 	{ return names; }
 }
 
@@ -729,7 +744,6 @@ SqlCreate SqlCreateVectorIndex(Span s, boolean replace) :
             {
                 partitionDefinition = new PartitionDefinition();
                 partitionDefinition.setFuncName(getNextToken().image);
-                partitionDefinition.setColumns(readNames());
                 partitionDefinition.setDetails(readPartitionDetails());
             }
     ]
@@ -774,7 +788,6 @@ SqlCreate SqlCreateDocumentIndex(Span s, boolean replace) :
             {
                 partitionDefinition = new PartitionDefinition();
                 partitionDefinition.setFuncName(getNextToken().image);
-                partitionDefinition.setColumns(readNames());
                 partitionDefinition.setDetails(readPartitionDetails());
             }
     ]

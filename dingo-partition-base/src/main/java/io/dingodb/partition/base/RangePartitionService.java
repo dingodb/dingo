@@ -61,6 +61,7 @@ public class RangePartitionService implements PartitionService {
             .withEnd(withEnd)
             .build();
         NavigableSet<RangeDistribution> subRanges = RangeUtils.getSubRangeDistribution(ranges.values(), range, 1);
+        //If there are multiple regions within a partition, the number of sub ranges will be greater than 1
         subRanges.descendingSet().stream().skip(1).forEach(rd -> {
             if (Arrays.equals(rd.getEndKey(), ranges.firstKey().getBytes())) {
                 rd.setWithEnd(true);

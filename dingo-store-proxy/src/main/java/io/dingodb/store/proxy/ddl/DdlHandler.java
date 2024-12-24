@@ -55,7 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
 @Slf4j
-public final class DdlHandler {
+public class DdlHandler {
 
     public static final DdlHandler INSTANCE = new DdlHandler();
     private static final Map<Long, String> insertFailedJobIdList = new ConcurrentHashMap<>();
@@ -64,7 +64,7 @@ public final class DdlHandler {
     private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids,"
         + " job_meta, type, processing) values";
 
-    private DdlHandler() {
+    public DdlHandler() {
         start();
     }
 
@@ -148,7 +148,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void createTableWithInfo(
+    public void createTableWithInfo(
         String schemaName,
         TableDefinition tableDefinition,
         String connId,
@@ -157,15 +157,10 @@ public final class DdlHandler {
         DdlJob ddlJob = createTableWithInfoJob(schemaName, tableDefinition);
         ddlJob.setConnId(connId);
         //ddlJob.setQuery(sql);
-        try {
-            doDdlJob(ddlJob);
-        } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] create table error, tableName:{}", tableDefinition.getName(), e);
-            throw e;
-        }
+        doDdlJob(ddlJob);
     }
 
-    public static void createViewWithInfo(
+    public void createViewWithInfo(
         String schemaName,
         TableDefinition tableDefinition,
         String connId,
@@ -181,7 +176,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
+    public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionDropTable)
             .tableName(tableName)
@@ -258,7 +253,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void createSchema(String schemaName, long schemaId, String connId) {
+    public void createSchema(String schemaName, long schemaId, String connId) {
         SchemaInfo schemaInfo = SchemaInfo.builder()
             .name(schemaName)
             .build();
@@ -282,7 +277,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void dropSchema(SchemaInfo schemaInfo, String connId) {
+    public void dropSchema(SchemaInfo schemaInfo, String connId) {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionDropSchema)
             .schemaState(schemaInfo.getSchemaState())
@@ -297,7 +292,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
+    public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionTruncateTable)
             .schemaName(schemaInfo.getName())
@@ -324,7 +319,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
+    public void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
         SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
         if (schemaInfo == null) {
             throw new RuntimeException("schema not exists");
@@ -355,7 +350,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void dropIndex(String schemaName, String tableName, String indexName) {
+    public void dropIndex(String schemaName, String tableName, String indexName) {
         SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
         if (schemaInfo == null) {
             throw new RuntimeException("schema not exists");
@@ -383,15 +378,10 @@ public final class DdlHandler {
         List<Object> args = new ArrayList<>();
         args.add(indexName);
         job.setArgs(args);
-        try {
-            doDdlJob(job);
-        } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] dropIndex error, tableName:" + tableName + ", indexName:" + indexName, e);
-            throw e;
-        }
+        doDdlJob(job);
     }
 
-    public static void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
+    public void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaInfo.getSchemaId())
             .tableId(table.tableId.seq)
@@ -403,16 +393,10 @@ public final class DdlHandler {
         List<Object> args = new ArrayList<>();
         args.add(column);
         job.setArgs(args);
-        try {
-            doDdlJob(job);
-        } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] add column error, tableName:{}, column:{}",
-                table.getName(), column.getName(), e);
-            throw e;
-        }
+        doDdlJob(job);
     }
 
-    public static void dropColumn(
+    public void dropColumn(
         long schemaId,
         String schemaName,
         Long tableId,
@@ -443,7 +427,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void modifyColumn(
+    public void modifyColumn(
         long schemaId, String schemaName, long tableId, List<ModifyingColInfo> modifyingColInfoList
     ) {
         List<Object> args = new ArrayList<>(modifyingColInfoList);
@@ -459,7 +443,7 @@ public final class DdlHandler {
         doDdlJob(ddlJob);
     }
 
-    public static void changeColumn(
+    public void changeColumn(
         long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
     ) {
         List<Object> args = new ArrayList<>();
@@ -498,7 +482,6 @@ public final class DdlHandler {
             .state(JobState.jobStateQueueing)
             .args(args)
             .tableId(tableEntityId)
-            .err(new DingoErr(1200, "1200", "test"))
             .id(0)
             .build();
     }
@@ -592,7 +575,7 @@ public final class DdlHandler {
         return infoSchemaService.getHistoryDDLJob(jobId);
     }
 
-    public static void recoverTable(RecoverInfo recoverInfo) {
+    public void recoverTable(RecoverInfo recoverInfo) {
         DdlJob ddlJob = DdlJob.builder()
             .schemaState(SchemaState.SCHEMA_NONE)
             .actionType(ActionType.ActionRecoverTable)
@@ -612,7 +595,7 @@ public final class DdlHandler {
         }
     }
 
-    public static void recoverSchema(RecoverInfo recoverInfo) {
+    public void recoverSchema(RecoverInfo recoverInfo) {
         DdlJob ddlJob = DdlJob.builder()
             .schemaState(SchemaState.SCHEMA_NONE)
             .actionType(ActionType.ActionRecoverSchema)

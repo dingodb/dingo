@@ -138,6 +138,10 @@ public class TableDefinition {
     @Setter
     private long prepareTableId;
 
+    @Getter
+    @Setter
+    private boolean visible;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
@@ -353,7 +357,8 @@ public class TableDefinition {
             this.updateTime,
             this.schemaState,
             this.indices,
-            prepareTableId
+            prepareTableId,
+            this.visible
         );
     }
 

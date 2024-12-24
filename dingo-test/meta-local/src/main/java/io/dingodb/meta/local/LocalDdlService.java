@@ -57,10 +57,9 @@ public class LocalDdlService implements DdlService {
     }
 
     @Override
-    public void createTableWithInfo(String schemaName, String tableName, @NonNull TableDefinition tableDefinition, String connId, String sql) {
+    public void createTableWithInfo(String schemaName, @NonNull TableDefinition tableDefinition, String connId, String sql) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaName);
         ms.createTables(tableDefinition, tableDefinition.getIndices());
-        System.out.println("--->createTableInfo" + tableName);
     }
 
     @Override

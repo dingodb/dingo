@@ -53,6 +53,13 @@ public final class DingoErrUtil {
         );
     }
 
+    public static DingoSqlException newStdErr(int errCode) {
+        return new DingoSqlException(
+            errCode, State.mysqlState.getOrDefault(errCode, "HY000"),
+            ErrorMessage.errorMap.getOrDefault(errCode, "Unknown error")
+        );
+    }
+
     public static DingoSqlException newStdErrWithMsg(String msg, int errCode, Object... param) {
         DingoSqlException dingoErr = new DingoSqlException(
             errCode, State.mysqlState.getOrDefault(errCode, "HY000"),

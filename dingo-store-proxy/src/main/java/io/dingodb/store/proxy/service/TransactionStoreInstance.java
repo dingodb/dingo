@@ -32,6 +32,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.common.DingoClientException.RequestErrorException;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
@@ -1370,6 +1371,9 @@ public class TransactionStoreInstance {
                     } else {
                         throw e;
                     }
+                } catch (DingoClientException.InvalidRouteTableException e) {
+                    LogUtils.error(log, e.getMessage() ,e);
+                    throw e;
                 }
                 break;
             }

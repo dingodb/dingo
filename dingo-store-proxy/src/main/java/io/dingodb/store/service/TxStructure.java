@@ -71,6 +71,11 @@ public class TxStructure {
         ddlTxn.put(ek, value, realStartTs);
     }
 
+    public List<byte[]> ddlRange(byte[] start, byte[] end) {
+        long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();
+        return ddlTxn.mRange(start, end, realStartTs);
+    }
+
     public void ddlDel(byte[] key) {
         byte[] ek = CodecKvUtil.encodeStringDataKey(key);
         long realStartTs = startTs != 0L ? startTs : TsoService.getDefault().tso();

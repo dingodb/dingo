@@ -42,6 +42,8 @@ public final class ErrorMessage {
         errorMap.put(ErrNotFoundDropSchema, "Can't find dropped schema '%s'");
         errorMap.put(ErrTruncatedWrongValue, "Incorrect %s value: '%s'");
         errorMap.put(ErrKeyDoesNotExist, "Key '%s' doesn't exist in table '%s'");
+        errorMap.put(ErrPartitionMgmtOnNonpartitioned, "Partition management on a not partitioned table is not possible");
+        errorMap.put(ErrDropPartitionNonExistent, "Error in list of partitions to DROP");
     }
 
     private ErrorMessage() {

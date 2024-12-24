@@ -117,7 +117,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] endKey = GLOBAL_VAR_PREFIX_END.getBytes(UTF_8);
         startKey = CodecKvUtil.encodeStringDataKey(startKey);
         endKey = CodecKvUtil.encodeStringDataKey(endKey);
-        List<byte[]> varList = this.txn.mRange(startKey, endKey);
+        List<byte[]> varList = this.txn.ddlRange(startKey, endKey);
         Map<String, String> variableMap = new LinkedHashMap<>();
         for (byte[] bytes : varList) {
             GlobalVariable globalVariable = (GlobalVariable) getObjFromBytes(bytes, GlobalVariable.class);
@@ -136,7 +136,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .value(val.toString())
             .build();
         byte[] valBytes = getBytesFromObj(globalVariable);
-        this.txn.put(resourceKey.getBytes(UTF_8), valBytes);
+        this.txn.ddlPut(resourceKey.getBytes(UTF_8), valBytes);
     }
 
     @Override
@@ -539,6 +539,18 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public List<Object> listIndex(long schemaId, long tableId, long tenantId) {
+        List<byte[]> valueList = getListIndex(schemaId, tableId, tenantId);
+        if (!valueList.isEmpty()) {
+            return valueList.stream()
+                .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
+                .map(objWithId -> (TableDefinitionWithId)objWithId)
+                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
+                .collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    public List<byte[]> getListIndex(long schemaId, long tableId, long tenantId) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
         if (!checkDBExists(tenantKey, schemaKey)) {
@@ -547,12 +559,34 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] tableKey = tableKey(tableId);
         byte[] dataPrefix = CodecKvUtil.hashDataKeyPrefix(tableKey);
         byte[] end = CodecKvUtil.hashDataKeyPrefixUpperBound(dataPrefix);
-        List<byte[]> valueList = txn.mRange(dataPrefix, end);
+        return txn.mRange(dataPrefix, end);
+    }
+
+    @Override
+    public List<Object> allIndex(long schemaId, long tableId) {
+        List<byte[]> valueList = getListIndex(schemaId, tableId, tenantId);
         if (!valueList.isEmpty()) {
-            return valueList.stream().map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
+            return valueList.stream()
+                .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
+                .map(objWithId -> (TableDefinitionWithId)objWithId)
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    @Override
+    public boolean hasIndex(long schemaId, long tableId, String indexName) {
+        List<byte[]> valueList = getListIndex(schemaId, tableId, tenantId);
+        if (!valueList.isEmpty()) {
+            return valueList.stream()
+                .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
+                .map(objWithId -> (TableDefinitionWithId)objWithId)
+                .anyMatch(indexWithId -> {
+                    String ixName = indexWithId.getTableDefinition().getName();
+                    return ixName.endsWith(indexName) || ixName.endsWith(indexName.toUpperCase());
+                });
+        }
+        return false;
     }
 
     @Override
@@ -955,6 +989,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .listIndex(tableId.getParentEntityId(), tableId.getEntityId(), tenantId);
             return indexList.stream()
                 .map(object -> (TableDefinitionWithId) object)
+                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
                 .peek(indexWithId -> {
                     String name1 = indexWithId.getTableDefinition().getName();
                     String[] split = name1.split("\\.");

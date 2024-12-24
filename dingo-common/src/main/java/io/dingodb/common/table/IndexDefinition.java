@@ -64,7 +64,7 @@ public class IndexDefinition extends TableDefinition {
     ) {
         super(name, columns, version, ttl, partDefinition, engine, properties, autoIncrement, replica, createSql,
             comment, charset, collate, tableType, rowFormat, createTime, updateTime, schemaState,
-            indices, prepareTableId);
+            indices, prepareTableId, true);
         this.unique = unique;
         this.originKeyList = originKeyList;
         this.originWithKeyList = originWithKeyList;

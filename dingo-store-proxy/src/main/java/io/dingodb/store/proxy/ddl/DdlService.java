@@ -20,13 +20,11 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
-import io.dingodb.common.ddl.ModifyingColInfo;
-import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
-import io.dingodb.common.table.ColumnDefinition;
-import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlServiceProvider;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.ddl.InfoSchemaBuilder;
@@ -39,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class DdlService implements io.dingodb.meta.DdlService {
+public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService {
 
     public static final DdlService ROOT = new DdlService();
 
@@ -49,62 +47,6 @@ public class DdlService implements io.dingodb.meta.DdlService {
         public io.dingodb.meta.DdlService root() {
             return ROOT;
         }
-    }
-
-    @Override
-    public void createSchema(String schemaName, long schemaId, String connId) {
-        DdlHandler.createSchema(schemaName, schemaId, connId);
-    }
-
-    @Override
-    public void dropSchema(SchemaInfo schemaInfo, String connId) {
-        DdlHandler.dropSchema(schemaInfo, connId);
-    }
-
-    @Override
-    public void createTableWithInfo(String schemaName, String tableName,
-        TableDefinition tableDefinition, String connId, String sql) {
-        DdlHandler.createTableWithInfo(schemaName, tableDefinition, connId, sql);
-    }
-
-    @Override
-    public void createViewWithInfo(String schemaName, String tableName,
-        TableDefinition tableDefinition, String connId, String sql) {
-        DdlHandler.createViewWithInfo(schemaName, tableDefinition, connId, sql);
-    }
-
-    @Override
-    public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
-        DdlHandler.dropTable(schemaInfo, tableId, tableName, connId);
-    }
-
-    @Override
-    public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
-        DdlHandler.truncateTable(schemaInfo, table, connId);
-    }
-
-    @Override
-    public void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
-        DdlHandler.addColumn(schemaInfo, table, column, connId);
-    }
-
-    @Override
-    public void dropColumn(long schemaId, String schemaName,
-                           Long tableId, String tableName, String column,
-                           String markDel, String relatedIndex, String connId) {
-        DdlHandler.dropColumn(schemaId, schemaName, tableId, tableName, column, markDel, relatedIndex, connId);
-    }
-
-    public void modifyColumn(
-        long schemaId, String schemaName, long tableId, List<ModifyingColInfo> modifyingColInfoList
-    ) {
-        DdlHandler.modifyColumn(schemaId, schemaName, tableId, modifyingColInfoList);
-    }
-
-    public void changeColumn(
-        long schemaId, String schemaName, long tableId, ModifyingColInfo modifyingColInfo
-    ) {
-        DdlHandler.changeColumn(schemaId, schemaName, tableId, modifyingColInfo);
     }
 
     public void renameTable(long schemaId, String schemaName, long tableId, String tableName, String toName) {
@@ -149,16 +91,6 @@ public class DdlService implements io.dingodb.meta.DdlService {
         args.add(comment);
         job.setArgs(args);
         DdlHandler.doDdlJob(job);
-    }
-
-    @Override
-    public void createIndex(String schemaName, String tableName, TableDefinition indexDef) {
-        DdlHandler.createIndex(schemaName, tableName, indexDef);
-    }
-
-    @Override
-    public void dropIndex(String schemaName, String tableName, String indexName) {
-        DdlHandler.dropIndex(schemaName, tableName, indexName);
     }
 
     @Override
@@ -231,14 +163,6 @@ public class DdlService implements io.dingodb.meta.DdlService {
         }
     }
 
-    public void flashbackTable(RecoverInfo recoverInfo) {
-        DdlHandler.recoverTable(recoverInfo);
-    }
-
-    public void flashbackSchema(RecoverInfo recoverInfo) {
-        DdlHandler.recoverSchema(recoverInfo);
-    }
-
     @Override
     public void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
         SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
@@ -277,6 +201,51 @@ public class DdlService implements io.dingodb.meta.DdlService {
         List<Object> args = new ArrayList<>();
         args.add(index);
         args.add(invisible);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void alterTableAddPart(
+        long schemaId, String schemaName, long tableId, String tableName, PartitionDetailDefinition part
+    ) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionAddTablePartition)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(part);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void alterTableDropPart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .schemaState(SchemaState.SCHEMA_PUBLIC)
+            .actionType(ActionType.ActionDropTablePartition)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(part);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
+    public void alterTableTruncatePart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaId)
+            .tableId(tableId)
+            .schemaName(schemaName)
+            .tableName(tableName)
+            .actionType(ActionType.ActionTruncateTablePartition)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.add(part);
         job.setArgs(args);
         DdlHandler.doDdlJob(job);
     }

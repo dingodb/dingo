@@ -17,6 +17,7 @@
 package io.dingodb.common.partition;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.meta.SchemaState;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,6 +42,10 @@ public class PartitionDetailDefinition implements Serializable {
     @JsonProperty("operand")
     @EqualsAndHashCode.Include
     Object[] operand = null;
+
+    byte[] keys;
+
+    SchemaState schemaState;
 
     public PartitionDetailDefinition() {
     }

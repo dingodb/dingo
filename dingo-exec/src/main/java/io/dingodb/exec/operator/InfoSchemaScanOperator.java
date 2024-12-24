@@ -38,6 +38,7 @@ import io.dingodb.common.config.DingoConfiguration;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -167,23 +168,29 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 .flatMap(table -> {
                     if (table.partitions == null || table.getPartitions().isEmpty()) {
                         LogUtils.warn(log, "The table {} not have partition, please check meta.", table.name);
-                        return Stream.<Object[]>of(getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, null));
+                        return Stream.<Object[]>of(
+                            getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, null));
                     } else {
                         return table.getPartitions()
                             .stream()
-                            .map(partition -> getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, partition));
+                            .map(partition -> getPartitionDetail(
+                                schemaTables.getSchemaInfo().getName(), table, partition));
                     }
                 }))
             .iterator();
     }
 
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
+        String operand = null;
+        if (partition.getOperand() != null) {
+            operand = Arrays.toString(partition.getOperand());
+        }
         return new Object[]{
             "def",
             schemaName,
             td.getName(),
             // part name
-            null,
+            partition.getName(),
             // sub part name
             null,
             // part ordinal position
@@ -199,7 +206,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             // sub part expr
             null,
             // part desc
-            partition.operand,
+            operand,
             // table rows
             null,
             // avg row length

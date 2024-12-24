@@ -27,6 +27,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
@@ -57,6 +58,7 @@ import io.dingodb.sdk.service.entity.common.Engine;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.Location;
+import io.dingodb.sdk.service.entity.common.Range;
 import io.dingodb.sdk.service.entity.common.RawEngine;
 import io.dingodb.sdk.service.entity.common.Region;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
@@ -109,6 +111,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
@@ -1071,14 +1074,24 @@ public class MetaService implements io.dingodb.meta.MetaService {
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
         LogUtils.info(log, "dropRegion size:{}, tableId:{}", rangeDistributions.size(), tableId);
+        deleteRegion(tableId, jobId, ts, autoInc, rangeDistributions);
+        invalidateDistribution(tableId);
+    }
+
+    public void deleteRegion(
+        CommonId tableId,
+        long jobId, long startTs, boolean autoInc,
+        Collection<RangeDistribution> rangeDistributions
+    ) {
         if (ScopeVariables.getNeedGc() && jobId >= 0) {
             Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
-            gcDeleteRegion(rangeDistributions, jobId, ts, tableId, autoInc);
+            gcDeleteRegion(rangeDistributions, jobId, startTs, tableId, autoInc);
             context.stop();
         } else {
             if (autoInc) {
                 delAutoInc(tableId);
             }
+            CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
             for (RangeDistribution rangeDistribution : rangeDistributions) {
                 LogUtils.info(log, "dropRegion id:{}, tableId:{}", rangeDistribution.getId(), tableId);
                 try {
@@ -1089,7 +1102,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 }
             }
         }
-        invalidateDistribution(tableId);
     }
 
     private static void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
@@ -1213,7 +1225,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public void addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
+    public long addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
         tableName = cleanTableName(tableName);
         Table table = DdlService.root().getTable(schemaName, tableName);
         if (table == null) {
@@ -1243,15 +1255,67 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 60);
         if (checkSplitFinish(comparableKey, table)) {
-            return;
+            return commonId.domain;
         }
         LogUtils.warn(log, "Add distribution wait timeout, refresh distributions run in the background.");
         Executors.execute("wait-split", () -> Utils.loop(() -> !checkSplitFinish(comparableKey, table),
             TimeUnit.SECONDS.toNanos(1)));
+        return commonId.domain;
     }
 
     private boolean checkSplitFinish(ComparableByteArray comparableKey, Table table) {
         return comparableKey.compareTo(cache.getRangeDistribution(table.tableId).floorKey(comparableKey)) == 0;
+    }
+
+    @Override
+    public Object addPart(
+        String schemaName, String tableName,
+        PartitionDetailDefinition detail,
+        long partEntityId,
+        Object objWithId
+    ) {
+        Table table = DdlService.root().getTable(schemaName, tableName);
+        if (table == null) {
+            throw new RuntimeException("Table not found.");
+        }
+        TupleType keyType = (TupleType) table.onlyKeyType();
+        TupleMapping keyMapping = TupleMapping.of(IntStream.range(0, keyType.fieldCount()).toArray());
+        RecordEncoder encoder = new RecordEncoder(
+            1, CodecService.createSchemasForType(keyType, keyMapping), 0
+        );
+        byte[] key = encoder.encodeKeyPrefix(detail.getOperand(), detail.getOperand().length);
+
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) objWithId;
+        List<Partition> partList = tableWithId.getTableDefinition().getTablePartition().getPartitions();
+        Partition originPart = partList
+            .stream().filter(partition -> partition.getId().getEntityId() == partEntityId)
+            .findFirst().orElse(null);
+
+        if (originPart == null) {
+            throw DingoErrUtil.newStdErr(ErrUnknown);
+        }
+
+        DingoCommonId partId = DingoCommonId.builder()
+            .entityType(EntityType.ENTITY_TYPE_PART)
+            .parentEntityId(table.tableId.seq)
+            .entityId(partEntityId).build();
+        byte[] realKey = MAPPER.realKey(key, partId, (byte)'t');
+        originPart.getRange().setEndKey(realKey);
+
+        Partition newPart = Partition.builder()
+            .range(Range.builder()
+                .startKey(realKey)
+                .endKey(MAPPER.nextKey(partId, (byte)'t')).build())
+            .name(detail.getPartName())
+            .id(partId)
+            .schemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC)
+            .build();
+        partList.add(newPart);
+        List<Partition> newPartList = partList.stream()
+            .sorted((p1, p2) -> ByteArrayUtils.compare(p1.getRange().getStartKey(), p2.getRange().getStartKey(), 9))
+            .collect(Collectors.toList());
+        tableWithId.getTableDefinition().getTablePartition().setPartitions(newPartList);
+        return tableWithId;
     }
 
     @Override

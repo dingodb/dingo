@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.table.ColumnDefinition;
@@ -257,10 +258,14 @@ public class DdlJob {
                 t = new TypeReference<List<ModifyingColInfo>>() {};
             } else if (actionType == ActionType.ActionRebaseAuto) {
                 t = new TypeReference<List<Long>>() {};
+            } else if (actionType == ActionType.ActionAddTablePartition) {
+                t = new TypeReference<List<PartitionDetailDefinition>>() {};
             } else if (actionType == ActionType.ActionRenameTable
                 || actionType == ActionType.ActionRenameIndex
                 || actionType == ActionType.ActionAlterIndexVisibility
                 || actionType == ActionType.ActionModifyTableComment
+                || actionType == ActionType.ActionDropTablePartition
+                || actionType == ActionType.ActionTruncateTablePartition
             ) {
                 t = new TypeReference<List<String>>() {};
             }

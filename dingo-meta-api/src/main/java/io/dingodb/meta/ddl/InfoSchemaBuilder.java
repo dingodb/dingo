@@ -198,6 +198,10 @@ public class InfoSchemaBuilder {
             case ActionRenameTable:
             case ActionRenameIndex:
             case ActionModifyTableComment:
+            case ActionAlterIndexVisibility:
+            case ActionAddTablePartition:
+            case ActionDropTablePartition:
+            case ActionTruncateTablePartition:
                 return applyRenameTable(schemaDiff);
             default:
                 break;
@@ -474,6 +478,8 @@ public class InfoSchemaBuilder {
 
     public Pair<List<Long>, String> applyRenameTable(SchemaDiff diff) {
         applyDropTable(diff);
+        MetaService.root()
+            .invalidateDistribution(new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()));
         applyCreateTable(diff);
         return Pair.of(new ArrayList<>(), null);
     }

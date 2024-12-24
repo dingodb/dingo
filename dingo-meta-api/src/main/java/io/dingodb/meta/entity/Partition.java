@@ -43,5 +43,7 @@ public class Partition {
     public final byte[] start;
     @JsonProperty
     public final byte[] end;
+    @JsonProperty
+    public final String name;
 
 }

@@ -122,7 +122,7 @@ public final class LoadInfoSchemaTask {
         try {
             long startTs = TsoService.getDefault().tso();
             InfoSchemaService infoSchemaService = new InfoSchemaService();
-            LoadIsResponse response = loadInfoSchema(infoSchemaService, startTs);
+            loadInfoSchema(infoSchemaService, startTs);
             long end = System.currentTimeMillis();
             long sub = end - start;
             long lease = DdlContext.INSTANCE.getLease();

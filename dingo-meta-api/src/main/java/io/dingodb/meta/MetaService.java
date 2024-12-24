@@ -29,6 +29,7 @@ import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +187,14 @@ public interface MetaService {
      */
     Set<Table> getTables();
 
-    default void addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
+    default long addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
+        return 0;
+    }
+
+    default Object addPart(
+        String schemaName, String tableName, PartitionDetailDefinition detail, long partId, Object objWithId
+    ) {
+        return null;
     }
 
     default Map<CommonId, Long> getTableCommitCount() {
@@ -285,7 +293,9 @@ public interface MetaService {
 
     }
 
-    default void deleteRegionByTableId(CommonId tableId) {
+    default void deleteRegion(
+        CommonId tableId, long jobId, long startTs, boolean autoInc, Collection<RangeDistribution> rangeDistributions
+    ) {
 
     }
 

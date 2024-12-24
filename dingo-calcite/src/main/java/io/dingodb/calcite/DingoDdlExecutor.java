@@ -34,14 +34,18 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropPart;
+import io.dingodb.calcite.grammar.ddl.SqlAlterExchangePart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterIndexVisible;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableAddPart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
@@ -71,8 +75,8 @@ import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
-import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.ModifyingColInfo;
+import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
@@ -184,10 +188,12 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedModifyVec;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
@@ -496,6 +502,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .rowFormat("Dynamic")
             .createTime(System.currentTimeMillis())
             .updateTime(0)
+            .visible(true)
             .build();
 
         List<IndexDefinition> indexTableDefinitions = getIndexDefinitions(create, tableDefinition);
@@ -508,7 +515,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
         String connId = (String) context.getDataContext().get("connId");
-        ddlService.createTableWithInfo(schema.getSchemaName(), tableName, tableDefinition,
+        ddlService.createTableWithInfo(schema.getSchemaName(), tableDefinition,
             connId, create.getOriginalCreateSql());
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
@@ -828,7 +835,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .updateTime(0)
             .build();
         DdlService ddlService = DdlService.root();
-        ddlService.createViewWithInfo(schemaName, tableName, tableDefinition, connId, null);
+        ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null);
     }
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
@@ -967,6 +974,50 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         timeCtx.stop();
     }
 
+    public void execute(@NonNull SqlAlterTableAddPart sqlAlterTableAddPart, CalcitePrepare.Context context) {
+        final Timer.Context timeCtx = DingoMetrics.getTimeContext("alter_table_distribution");
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterTableAddPart.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        PartitionDetailDefinition detail = sqlAlterTableAddPart.part;
+
+        Table table = schema.getTableInfo(tableName);
+
+        //If the table does not exist, raise an exception.
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+
+        List<Column> keyColumns = table.columns.stream()
+            .filter(Column::isPrimary)
+            .sorted(Comparator.comparingInt(Column::getPrimaryKeyIndex))
+            .collect(Collectors.toList());
+        try {
+            DefinitionUtils.checkAndConvertRangePartition(
+                keyColumns.stream().map(Column::getName).collect(Collectors.toList()),
+                Collections.emptyList(),
+                keyColumns.stream().map(Column::getType).collect(Collectors.toList()),
+                Collections.singletonList(detail.getOperand())
+            );
+        } catch (Exception e) {
+            throw DINGO_RESOURCE.illegalArgumentException().ex();
+        }
+        LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}",
+            tableName, detail);
+        boolean duplicatePart = table.getPartitions().stream()
+            .anyMatch(partition -> detail.getPartName().equalsIgnoreCase(partition.getName()));
+        if (duplicatePart) {
+            
+        }
+
+        DdlService.root().alterTableAddPart(
+            schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, tableName, detail
+        );
+
+        timeCtx.stop();
+    }
+
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddIndex.table, context);
@@ -1002,7 +1053,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
-        assert table != null;
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
         IndexTable indexTable = table.getIndexDefinition(sqlAlterIndex.getIndex());
         if (indexTable == null) {
             throw new RuntimeException("The index " + sqlAlterIndex.getIndex() + " not exist.");
@@ -1019,12 +1072,27 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
         DingoTable table = schema.getTable(tableName);
-        assert table != null;
-        IndexTable indexTable = table.getIndexDefinition(sqlAlterIndexVisible.getIndex());
-        if (indexTable == null) {
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        boolean hasIndex = InfoSchemaService.root().hasIndex(
+            schema.getSchemaId(), table.getTableId().seq, sqlAlterIndexVisible.index);
+        if (!hasIndex) {
             throw DingoErrUtil.newStdErr(ErrKeyDoesNotExist, sqlAlterIndexVisible.getIndex(), tableName);
         }
-
+        DdlService.root().alterIndexVisible(
+            schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, tableName,
+            sqlAlterIndexVisible.index, sqlAlterIndexVisible.invisible
+        );
+        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .type(ActionType.ActionAlterIndexVisibility)
+            .build();
+        rootSnapshotSchema.applyDiff(diff);
+        LogUtils.info(log, "alter index visible done, "
+            + "tableName:{}, index:{}", tableName, sqlAlterIndexVisible.invisible);
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
@@ -1241,7 +1309,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         recoverInfo.setOldSchemaName(job.getSchemaName());
         recoverInfo.setOldTableName(job.getTableName());
         recoverInfo.setNewTableName(sqlRecoverTable.newTableId);
-        DdlService.root().flashbackTable(recoverInfo);
+        DdlService.root().recoverTable(recoverInfo);
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -1287,7 +1355,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         recoverInfo.setOldSchemaName(job.getSchemaName());
         recoverInfo.setOldTableName(job.getTableName());
         recoverInfo.setNewTableName(sqlFlashBackTable.newTableName);
-        DdlService.root().flashbackTable(recoverInfo);
+        DdlService.root().recoverTable(recoverInfo);
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -1324,7 +1392,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         recoverInfo.setSnapshotTs(job.getRealStartTs());
         recoverInfo.setOldSchemaName(job.getSchemaName());
         recoverInfo.setOldTableName(job.getTableName());
-        DdlService.root().flashbackSchema(recoverInfo);
+        DdlService.root().recoverSchema(recoverInfo);
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -1555,10 +1623,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        } else {
-            if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("Drop column, the engine must be transactional.");
-            }
         }
         boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
         if (hasInc) {
@@ -1582,10 +1646,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        } else {
-            if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("modify column, the engine must be transactional.");
-            }
         }
         DdlService.root().renameTable(
             schema.getSchemaId(), schema.getSchemaName(), table.tableId.seq, tableName,
@@ -1610,10 +1670,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        } else {
-            if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("modify column, the engine must be transactional.");
-            }
         }
         String originIndexName = sqlAlterRenameIndex.originIndexName;
         boolean hasIndex = table.getIndexes().stream()
@@ -1645,10 +1701,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        } else {
-            if (isNotTxnEngine(table.getEngine())) {
-                throw new IllegalArgumentException("modify column, the engine must be transactional.");
-            }
         }
         DdlService.root().alterModifyComment(
             schema.getSchemaId(), schema.getSchemaName(), table.tableId.seq, tableName,
@@ -1662,6 +1714,75 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .build();
         diff.setTableName(tableName);
         rootSnapshotSchema.applyDiff(diff);
+    }
+
+    public void execute(SqlAlterDropPart sqlAlterDropPart, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterDropPart);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterDropPart.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        if (table.getPartitions().size() == 1) {
+            throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
+        }
+        String part = sqlAlterDropPart.part.getSimple();
+        boolean noneMatch = table.getPartitions()
+            .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
+        if (noneMatch) {
+            throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        }
+        DdlService.root().alterTableDropPart(
+            schema.getSchemaId(), schema.getSchemaName(),
+            table.tableId.seq, tableName, part);
+
+    }
+
+    public void execute(SqlAlterTruncatePart sqlAlterTruncatePart, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterTruncatePart);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterTruncatePart.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+
+        if (table.getPartitions().size() == 1) {
+            throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
+        }
+        String part = sqlAlterTruncatePart.part.getSimple();
+        boolean noneMatch = table.getPartitions()
+            .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
+        if (noneMatch) {
+            throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        }
+    }
+
+    public void execute(SqlAlterExchangePart sqlAlterExchangePart, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterExchangePart);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterExchangePart.table, context);
+        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+
+        if (table.getPartitions().size() == 1) {
+            throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
+        }
+        String part = sqlAlterExchangePart.partName.getSimple();
+        boolean noneMatch = table.getPartitions()
+            .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
+        if (noneMatch) {
+            throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        }
     }
 
     public static void validatePartitionBy(
@@ -2001,6 +2122,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             indexTableDefinition,
             indexTableDefinition.getPartDefinition()
         );
+        indexTableDefinition.setVisible(true);
 
         return indexTableDefinition;
     }
@@ -2018,6 +2140,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         // Primary key list
         List<String> columns = indexDeclaration.columnList;
+        List<String> originKeyList = new ArrayList<>();
+        for (String col : columns) {
+            originKeyList.add(col);
+        }
 
         int keySize = columns.size();
         List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
@@ -2221,7 +2347,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 indexColumnDefinitions.add(indexColumnDefinition);
             }
         }
-        List<String> originKeyList = new ArrayList<>(columns);
+
         IndexDefinition indexTableDefinition = IndexDefinition.createIndexDefinition(
             indexDeclaration.index, tableDefinition,
             indexDeclaration.unique, originKeyList, indexDeclaration.withColumnList
@@ -2242,6 +2368,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             indexTableDefinition,
             indexTableDefinition.getPartDefinition()
         );
+        indexTableDefinition.setVisible(true);
 
         return indexTableDefinition;
     }
@@ -2487,19 +2614,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return getRecoverJobBySql(sql, true);
     }
 
+    public static DdlJob getRecoverJob(String schemaName) {
+        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s "
+            + "and type = 2 order by create_time desc limit 10";
+        sql = String.format(sql, Utils.quoteForSql(schemaName));
+        return getRecoverJobBySql(sql, false);
+    }
+
     public static DdlJob getRecoverWithoutTrunJob(String schemaName, String tableName) {
         String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s and table_name= %s "
             + "and type=4 order by create_time desc limit 10";
         sql = String.format(sql, Utils.quoteForSql(schemaName),
             Utils.quoteForSql(tableName));
         return getRecoverJobBySql(sql, true);
-    }
-
-    public static DdlJob getRecoverJob(String schemaName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s "
-            + "and type = 2 order by create_time desc limit 10";
-        sql = String.format(sql, Utils.quoteForSql(schemaName));
-        return getRecoverJobBySql(sql, false);
     }
 
     public static DdlJob getRecoverJobBySql(String querySql, boolean table) {
@@ -2530,7 +2657,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return ddlJob;
     }
 
-    public void checkModifyTypes(
+    public static void checkModifyTypes(
         String schemaName,
         String tableName,
         ColumnDefinition originColDef,

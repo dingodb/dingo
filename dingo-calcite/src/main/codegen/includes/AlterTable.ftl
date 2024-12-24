@@ -94,7 +94,12 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
            alterTable = dropCheck(s, scope, id)
            |
            alterTable = dropForeignKey(s, scope, id)
+           |
+           alterTable = dropPartition(s, scope, id)
          )
+        |
+         <TRUNCATE>
+          alterTable = alterTableTruncatePart(s, scope, id)
         |
           <MODIFY>
           alterTable = modifyColumn(s, scope, id, alterTable)
@@ -105,6 +110,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
         |
           <CHANGE>
           alterTable = changeColumn(s, scope, id)
+        |
+         <EXCHANGE> alterTable = alterExchange(s, scope, id)
         |
          <AUTO_INCREMENT> alterTable = alterAutoInc(s, scope, id)
         |
@@ -128,11 +135,25 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
 }
 
 SqlAlterTable addPartition(Span s, String scope, SqlIdentifier id): {
+   String pName = null;
+   Object[] values = null;
 } {
+    (
     <DISTRIBUTION> <BY>
     {
         return new SqlAlterTableDistribution(s.end(this), id, readPartitionDetails().get(0));
     }
+    |
+    <PARTITION> pName=dingoIdentifier()
+    <VALUES> <LESS> <THAN>
+    <LPAREN>
+     values = readValues()
+    <RPAREN>
+    {
+      PartitionDetailDefinition newPart = new PartitionDetailDefinition(pName, null, values);
+      return new SqlAlterTableAddPart(s.end(this), id, newPart);
+    }
+    )
 }
 
 SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
@@ -233,7 +254,6 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
             {
                 partitionDefinition = new PartitionDefinition();
                 partitionDefinition.setFuncName(getNextToken().image);
-                partitionDefinition.setColumns(readNames());
                 partitionDefinition.setDetails(readPartitionDetails());
             }
      |
@@ -274,7 +294,6 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
             {
                 partitionDefinition = new PartitionDefinition();
                 partitionDefinition.setFuncName(getNextToken().image);
-                partitionDefinition.setColumns(readNames());
                 partitionDefinition.setDetails(readPartitionDetails());
             }
      |
@@ -454,6 +473,15 @@ SqlAlterTable dropForeignKey(Span s, String scope, SqlIdentifier id): {
    {
      return new SqlAlterDropForeign(s.end(this), name);
    }
+}
+
+SqlAlterTable dropPartition(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+} {
+  <PARTITION> { s.add(this); } name = SimpleIdentifier()
+  {
+    return new SqlAlterDropPart(s.end(this), id, name);
+  }
 }
 
 SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable alterTable): {
@@ -673,4 +701,24 @@ SqlAlterTable alterTableComment(Span s, String scope, SqlIdentifier id): {
    {
      return new SqlAlterTableComment(s.end(this), id, comment);
    }
+}
+
+SqlAlterTable alterTableTruncatePart(Span s, String scope, SqlIdentifier id): {
+  SqlIdentifier name = null;
+} {
+  <PARTITION> { s.add(this); } name = SimpleIdentifier()
+  {
+    return new SqlAlterTruncatePart(s.end(this), id, name);
+  }
+}
+
+SqlAlterTable alterExchange(Span s, String scope, SqlIdentifier id): {
+ SqlIdentifier pName = null;
+ SqlIdentifier withTableId = null;
+} {
+ <PARTITION> { s.add(this); } pName=SimpleIdentifier()
+ <WITH> <TABLE> withTableId = CompoundIdentifier()
+ {
+   return new SqlAlterExchangePart(s.end(this), id, pName, withTableId);
+ }
 }

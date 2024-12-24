@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -33,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.util.Utils.buildKeyStr;
 
 public class ShowTableDistributionExecutor extends QueryExecutor {
@@ -54,7 +56,7 @@ public class ShowTableDistributionExecutor extends QueryExecutor {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         List<Object[]> tuples = new ArrayList<>();
         List<List<String>> distributions = getDistributions();
         for (List<String> values : distributions) {
@@ -77,7 +79,7 @@ public class ShowTableDistributionExecutor extends QueryExecutor {
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(usedSchemaName, tableName);
         if (table == null) {
-            throw new RuntimeException("Table " + tableName + " doesn't exist");
+            throw DingoErrUtil.newStdErr(ErrNoSuchTable, tableName);
         }
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
             = metaService.getRangeDistribution(table.tableId);

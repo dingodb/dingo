@@ -33,11 +33,14 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.partition.PartitionDetailDefinition;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.InfoSchemaService;
@@ -47,6 +50,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
@@ -58,20 +62,24 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.dingodb.common.mysql.error.ErrorCode.ErrCancelledDDLJob;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrCantDropFieldOrKey;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDBCreateExists;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDBDropExists;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDupFieldName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrInvalidDDLState;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_REORG;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_NONE;
@@ -280,6 +288,15 @@ public class DdlWorker {
                 break;
             case ActionAlterIndexVisibility:
                 res = onAlterIndexVisible(dc, job);
+                break;
+            case ActionAddTablePartition:
+                res = onAddPart(dc, job);
+                break;
+            case ActionDropTablePartition:
+                res = onDropPart(dc, job);
+                break;
+            case ActionTruncateTablePartition:
+                res = onTruncatePart(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -998,7 +1015,7 @@ public class DdlWorker {
         }
         ModifyingColInfo modifyingColInfo = (ModifyingColInfo) job.getArgs().get(0);
         // check tableInfo schemaState is public
-        // check oldCol schemaState is null
+        TableDefinitionWithId tableWithId = tableRes.getKey();
 
         // if job rolling back -> rollbackModifyColumnJob/rollbackModifyColumnJobWithData
 
@@ -1006,7 +1023,6 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition newColDef = modifyingColInfo.getNewCol();
         // If we want to rename the column name, we need to check whether it already exists.
         if (oldColDef != null && !oldColDef.getName().equals(newColDef.getName())) {
-            TableDefinitionWithId tableWithId = tableRes.getKey();
             boolean dupColName = tableWithId.getTableDefinition().getColumns()
                 .stream().anyMatch(columnDefinition -> columnDefinition.getName().equals(newColDef.getName()));
             if (dupColName) {
@@ -1837,8 +1853,8 @@ public class DdlWorker {
         }
         String indexName = job.getArgs().get(0).toString();
         String visibleStr = job.getArgs().get(1).toString();
-        Boolean visible = Boolean.parseBoolean(visibleStr);
-        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+        boolean visible = Boolean.parseBoolean(visibleStr);
+        List<Object> indexList = InfoSchemaService.root().allIndex(job.getSchemaId(), job.getTableId());
         TableDefinitionWithId indexWithId = indexList.stream()
             .map(idxTable -> (TableDefinitionWithId)idxTable)
             .filter(idxTable ->
@@ -1849,8 +1865,174 @@ public class DdlWorker {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, indexName, job.getTableName()));
             return Pair.of(0L, job.getDingoErr().errorMsg);
         }
+        indexWithId.getTableDefinition().setVisible(visible);
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
         return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
     }
 
+    public Pair<Long, String> onAddPart(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        TableDefinitionWithId tableWithId = tableRes.getKey();
+        PartitionDetailDefinition part = (PartitionDetailDefinition) job.getArgs().get(0);
+        long partId = MetaService.root().addDistribution(job.getSchemaName(), job.getTableName(), part);
+
+        TableDefinitionWithId newTableWithId = (TableDefinitionWithId) MetaService.root().addPart(
+            job.getSchemaName(), job.getTableName(), part, partId, tableWithId);
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndTableInfos(dc, job, newTableWithId, true);
+    }
+
+    public Pair<Long, String> onDropPart(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+
+        TableDefinitionWithId tableWithId = tableRes.getKey();
+        List<Partition> partitionList = tableWithId.getTableDefinition().getTablePartition().getPartitions();
+        if (partitionList.size() == 1) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrPartitionMgmtOnNonpartitioned));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        String part = job.getArgs().get(0).toString();
+        Partition matchPart = partitionList
+            .stream().filter(partition -> part.equalsIgnoreCase(partition.getName()))
+            .findFirst().orElse(null);
+        if (matchPart == null) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrDropPartitionNonExistent));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+
+        switch (job.getSchemaState()) {
+            case SCHEMA_PUBLIC:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_ONLY:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_ONLY:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_REORG);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_REORG:
+                partitionList.remove(matchPart);
+                CommonId tableId = Mapper.MAPPER.idFrom(tableWithId.getTableId());
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
+                     MetaService.root().getRangeDistribution(Mapper.MAPPER.idFrom(tableWithId.getTableId()));
+                List<RangeDistribution> regionList = ranges.values().stream()
+                    .filter(region -> region.getId().domain == matchPart.getId().getEntityId())
+                    .collect(Collectors.toList());
+                LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
+                MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                tableWithId.getTableDefinition().getTablePartition().setPartitions(partitionList);
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);
+            default:
+                job.setDingoErr(DingoErrUtil.newInternalErr(
+                    ErrInvalidDDLState, "partition", job.getSchemaState().toString()));
+                error = job.getDingoErr().errorMsg;
+        }
+        return Pair.of(0L, error);
+    }
+
+    public Pair<Long, String> onTruncatePart(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+
+        TableDefinitionWithId tableWithId = tableRes.getKey();
+        List<Partition> partitionList = tableWithId.getTableDefinition().getTablePartition().getPartitions();
+        if (partitionList.size() == 1) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrPartitionMgmtOnNonpartitioned));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        String part = job.getArgs().get(0).toString();
+        Partition matchPart = partitionList
+            .stream().filter(partition -> part.equalsIgnoreCase(partition.getName()))
+            .findFirst().orElse(null);
+        if (matchPart == null) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrDropPartitionNonExistent));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+
+        switch (job.getSchemaState()) {
+            case SCHEMA_PUBLIC:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_ONLY:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_ONLY:
+                indexList.forEach(obj -> {
+                    TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
+                    indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_REORG);
+                    InfoSchemaService.root().updateIndex(job.getTableId(), indexWithId);
+                });
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_REORG:
+                partitionList.remove(matchPart);
+                CommonId tableId = Mapper.MAPPER.idFrom(tableWithId.getTableId());
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
+                    MetaService.root().getRangeDistribution(Mapper.MAPPER.idFrom(tableWithId.getTableId()));
+                List<RangeDistribution> regionList = ranges.values().stream()
+                    .filter(region -> region.getId().domain == matchPart.getId().getEntityId())
+                    .collect(Collectors.toList());
+                LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
+                MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                tableWithId.getTableDefinition().getTablePartition().setPartitions(partitionList);
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);
+            default:
+                job.setDingoErr(DingoErrUtil.newInternalErr(
+                    ErrInvalidDDLState, "partition", job.getSchemaState().toString()));
+                error = job.getDingoErr().errorMsg;
+        }
+        return Pair.of(0L, error);
+    }
 }

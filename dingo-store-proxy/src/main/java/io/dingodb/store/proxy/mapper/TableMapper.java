@@ -120,14 +120,17 @@ public interface TableMapper {
     ) {
         List<DingoCommonId> ids = new ArrayList<>(partIds);
         return details.stream()
-            .map(PartitionDetailDefinition::getOperand)
-            .map(key -> encoder.encodeKeyPrefix(key, key.length))
-            .sorted(ByteArrayUtils::compare)
-            .map(k -> Partition.builder()
+            .peek(partDef -> {
+                byte[] keys = encoder.encodeKeyPrefix(partDef.getOperand(), partDef.getOperand().length);
+                partDef.setKeys(keys);
+            })
+            .sorted((c1, c2) -> ByteArrayUtils.compare(c1.getKeys(), c2.getKeys()))
+            .map(partDef -> Partition.builder()
                 .range(Range.builder()
-                    .startKey(realKey(k, ids.get(0), namespace))
+                    .startKey(realKey(partDef.getKeys(), ids.get(0), namespace))
                     .endKey(nextKey(ids.get(0), namespace)).build()
                 ).id(ids.remove(0))
+                .name(partDef.getPartName())
                 .build()
             ).collect(Collectors.toList());
     }
@@ -163,6 +166,7 @@ public interface TableMapper {
             .operand(operandFrom(partition.getRange(), codec))
             .start(start)
             .end(end)
+            .name(partition.getName())
             .build();
     }
 
