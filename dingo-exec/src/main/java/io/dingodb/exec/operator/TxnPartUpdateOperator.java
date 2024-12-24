@@ -91,9 +91,11 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 }
             }
             if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
-                long autoIncVal = Long.parseLong(newTuple[param.getAutoIncColIdx()].toString());
-                MetaService metaService = MetaService.root();
-                metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+                if (newTuple[param.getAutoIncColIdx()] != null) {
+                    long autoIncVal = Long.parseLong(newTuple[param.getAutoIncColIdx()].toString());
+                    MetaService metaService = MetaService.root();
+                    metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+                }
             }
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();

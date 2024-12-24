@@ -43,6 +43,9 @@ public class HashRangePartitionService implements PartitionService {
 
     @Override
     public CommonId calcPartId(byte[] key, NavigableMap<ComparableByteArray, RangeDistribution> ranges) {
+        if (key == null) {
+            throw new RuntimeException("key does not allow NULLs");
+        }
         ConsistentHashing<Long> hashRing = new ConsistentHashing<>(3);
         NavigableMap<ComparableByteArray, RangeDistribution> partRanges = new TreeMap<>();
         for (Map.Entry<ComparableByteArray, RangeDistribution> entry : ranges.entrySet()) {
