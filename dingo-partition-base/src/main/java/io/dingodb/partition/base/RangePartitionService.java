@@ -35,6 +35,9 @@ public class RangePartitionService implements PartitionService {
 
     @Override
     public CommonId calcPartId(byte [] key, NavigableMap<ComparableByteArray, RangeDistribution> ranges) {
+        if (key == null) {
+            throw new RuntimeException("key does not allow NULLs");
+        }
         return ranges.floorEntry(new ComparableByteArray(key, 1)).getValue().id();
     }
 
