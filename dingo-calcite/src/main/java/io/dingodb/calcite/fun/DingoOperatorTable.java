@@ -37,6 +37,7 @@ import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
+import io.dingodb.expr.runtime.op.special.IfNullFunFactory;
 import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
 import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.LeftFunFactory;
@@ -47,6 +48,7 @@ import io.dingodb.expr.runtime.op.string.RTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.RepeatFunFactory;
 import io.dingodb.expr.runtime.op.string.ReverseFunFactory;
 import io.dingodb.expr.runtime.op.string.RightFunFactory;
+import io.dingodb.expr.runtime.op.string.SubStringIndexFunFactory;
 import io.dingodb.expr.runtime.op.time.DateDiffFunFactory;
 import io.dingodb.expr.runtime.op.time.DateFormat1FunFactory;
 import io.dingodb.expr.runtime.op.time.FromUnixTimeFunFactory;
@@ -132,6 +134,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             OperandTypes.NUMERIC_NUMERIC,
             SqlFunctionCategory.STRING
         );
+        registerFunction(
+            IfNullFunFactory.NAME,
+            ReturnTypes.explicit(SqlTypeName.ANY),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.ANY_ANY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
 
         // string
         registerFunction(
@@ -198,6 +207,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
+            SqlFunctionCategory.STRING
+        );
+
+        registerFunction(
+            SubStringIndexFunFactory.NAME,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );
 

@@ -51,6 +51,8 @@ public final class DingoRules {
         = DingoScanProjectRule.Config.DEFAULT.toRule();
     public static final DingoTableModifyRule DINGO_TABLE_MODIFY_RULE
         = DingoTableModifyRule.DEFAULT.toRule(DingoTableModifyRule.class);
+    public static final DingoSpecialInsertRule DINGO_SPECIAL_INSERT_RULE
+        = DingoSpecialInsertRule.DEFAULT.toRule(DingoSpecialInsertRule.class);
     public static final DingoTableScanRule DINGO_TABLE_SCAN_RULE
         = DingoTableScanRule.DEFAULT.toRule(DingoTableScanRule.class);
     public static final DingoUnionRule DINGO_UNION_RULE
@@ -204,6 +206,7 @@ public final class DingoRules {
         DINGO_SCAN_FILTER_RULE,
         DINGO_SCAN_PROJECT_RULE,
         DINGO_TABLE_MODIFY_RULE,
+        DINGO_SPECIAL_INSERT_RULE,
         DINGO_TABLE_SCAN_RULE,
         DINGO_UNION_RULE,
         DINGO_VALUES_COLLECT_RULE,

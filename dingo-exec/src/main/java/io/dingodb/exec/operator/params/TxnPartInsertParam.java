@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -44,6 +46,8 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     private final boolean checkInPlace;
 
     private List<Long> autoIncList = new ArrayList<>();
+    private TupleMapping updateMapping;
+    private List<SqlExpr> updates;
 
     public TxnPartInsertParam(
         @JsonProperty("table") CommonId tableId,
@@ -58,13 +62,25 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("checkInPlace") boolean checkInPlace,
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
-        @JsonProperty("autoIncColIdx") int autoIncColIdx
+        @JsonProperty("autoIncColIdx") int autoIncColIdx,
+        TupleMapping updateMapping,
+        List<SqlExpr> updates
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.checkInPlace = checkInPlace;
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;
+        this.updateMapping = updateMapping;
+        this.updates = updates;
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        if (updates != null) {
+            updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
     }
 
     public void inc() {

@@ -16,14 +16,10 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
-import io.dingodb.calcite.traits.DingoConvention;
-import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.checkerframework.checker.nullness.qual.NonNull;

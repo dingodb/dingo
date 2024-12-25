@@ -16,8 +16,8 @@
 
 package io.dingodb.calcite;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoFunctionScan;
-import io.dingodb.calcite.rel.LogicalDingoDiskAnn;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnLoad;
@@ -25,6 +25,7 @@ import io.dingodb.calcite.rel.LogicalDingoDiskAnnReset;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rel.logical.LogicalTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.common.table.DiskAnnTable;
 import org.apache.calcite.plan.RelOptCluster;
@@ -32,16 +33,28 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.schema.ModifiableTable;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
@@ -56,7 +69,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 class DingoSqlToRelConverter extends SqlToRelConverter {
@@ -111,6 +127,93 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             return;
         }
         super.convertFrom(bb, from);
+    }
+
+    @Override
+    protected RelNode convertInsert(SqlInsert call) {
+        RelOptTable targetTable = getTargetTable(call);
+
+        final RelDataType targetRowType =
+            Objects.requireNonNull(validator, "validator").getValidatedNodeType(call);
+        assert targetRowType != null;
+        RelNode sourceRel = convertQueryRecursive(call.getSource(), true, targetRowType).project();
+        RelNode messageRel = convertColumnList(call, sourceRel);
+        final List<String> targetColumnNames = new ArrayList<>();
+        ImmutableList.Builder<RexNode> rexNodeSourceExpressionListBuilder = null;
+        if (call instanceof io.dingodb.calcite.grammar.dml.SqlInsert) {
+            io.dingodb.calcite.grammar.dml.SqlInsert sqlInsert = (io.dingodb.calcite.grammar.dml.SqlInsert) call;
+            SqlNodeList targetColumnList = sqlInsert.getTargetColumnList2();
+            if (targetColumnList != null && !targetColumnList.isEmpty()) {
+                for (SqlNode sqlNode : targetColumnList) {
+                    SqlIdentifier id = (SqlIdentifier) sqlNode;
+                    RelDataTypeField field = SqlValidatorUtil.getTargetField(
+                        targetTable.getRowType(), typeFactory, id, catalogReader, targetTable);
+                    assert field != null : "column " + id.toString() + " not found";
+                    targetColumnNames.add(field.getName());
+                }
+            } else {
+                return super.convertInsert(call);
+            }
+            RelDataType sourceRowType = sourceRel.getRowType();
+            final RexRangeRef sourceRef = rexBuilder.makeRangeReference(sourceRowType, 0, false);
+            final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, targetColumnNames);
+            rexNodeSourceExpressionListBuilder = ImmutableList.builder();
+            for (SqlNode n : sqlInsert.getSourceExpressionList()) {
+                RexNode rn = bb.convertExpression(n);
+                rexNodeSourceExpressionListBuilder.add(rn);
+            }
+
+        }
+
+        return createModify(targetTable, messageRel, targetColumnNames, rexNodeSourceExpressionListBuilder.build());
+    }
+
+    private RelNode createModify(RelOptTable targetTable,
+                                 RelNode source,
+                                 List<String> targetColumnNames,
+                                 List<RexNode> sourceExpressionList) {
+        final ModifiableTable modifiableTable =
+            targetTable.unwrap(ModifiableTable.class);
+        if (modifiableTable != null
+            && modifiableTable == targetTable.unwrap(Table.class)) {
+            return modifiableTable.toModificationRel(cluster, targetTable,
+                catalogReader, source, LogicalTableModify.Operation.INSERT, null,
+                null, false);
+        }
+        return LogicalTableModify.create(
+            targetTable,
+            catalogReader,
+            source,
+            TableModify.Operation.INSERT,
+            null,
+            null,
+            false,
+            targetColumnNames,
+            sourceExpressionList);
+    }
+
+    private Blackboard createInsertBlackboard(
+        RelOptTable targetTable,
+        RexNode sourceRef,
+        List<String> targetColumnNames
+    ) {
+        final Map<String, RexNode> nameToNameMap = new HashMap<>();
+        int j = 0;
+
+        final List<ColumnStrategy> strategies = targetTable.getColumnStrategies();
+        final List<String> targetFields = targetTable.getRowType().getFieldNames();
+        for (String targetColumnName : targetColumnNames) {
+            final int i = targetFields.indexOf(targetColumnName);
+            switch (strategies.get(i)) {
+                case STORED:
+                case VIRTUAL:
+                    break;
+                default:
+                    nameToNameMap.put(targetColumnName,
+                        rexBuilder.makeFieldAccess(sourceRef, j++));
+            }
+        }
+        return createBlackboard(null, nameToNameMap, false);
     }
 
     @Override

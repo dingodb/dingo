@@ -24,6 +24,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.converter.ValueConverter;
@@ -48,6 +49,7 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -239,19 +241,25 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
                 if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                    TransactionUtil.resolvePessimisticLock(
-                        param.getIsolationLevel(),
-                        txnId,
-                        tableId,
-                        partId,
-                        deadLockKeyBytes,
-                        key,
-                        param.getStartTs(),
-                        forUpdateTs,
-                        true,
-                        new DuplicateEntryException("Duplicate entry " +
-                            TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
-                    );
+                    if (param.isDuplicateUpdate()) {
+                        context.setDuplicateKey(true);
+                    } else {
+                        TransactionUtil.resolvePessimisticLock(
+                            param.getIsolationLevel(),
+                            txnId,
+                            tableId,
+                            partId,
+                            deadLockKeyBytes,
+                            key,
+                            param.getStartTs(),
+                            forUpdateTs,
+                            true,
+                            new DuplicateEntryException("Duplicate entry " +
+                                TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
+                        );
+                    }
+                } else {
+                    context.setDuplicateKey(false);
                 }
                 byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
                 // lockKeyValue
@@ -272,6 +280,27 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 localStore.put(extraKeyValue);
                 vertex.getOutList().forEach(o -> o.transformToNext(context, newTuple));
             } else {
+                if (param.isDuplicateUpdate() && ByteArrayUtils.compare(key, decodePessimisticKey(primaryLockKey)) == 0) {
+                    byte[] dataKey = ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_DATA,
+                        key,
+                        Op.PUTIFABSENT.getCode(),
+                        len,
+                        txnIdByte, tableIdByte, partIdByte);
+                    byte[] deleteKey = Arrays.copyOf(dataKey, dataKey.length);
+                    deleteKey[deleteKey.length - 2] = (byte) Op.DELETE.getCode();
+                    byte[] updateKey = Arrays.copyOf(dataKey, dataKey.length);
+                    updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
+                    List<byte[]> bytes = new ArrayList<>(3);
+                    bytes.add(dataKey);
+                    bytes.add(deleteKey);
+                    bytes.add(updateKey);
+                    List<KeyValue> keyValues = localStore.get(bytes);
+                    if (keyValues == null || keyValues.isEmpty()) {
+                        KeyValue getKv = kvStore.txnGet(TsoService.getDefault().tso(), key, param.getLockTimeOut());
+                        context.setDuplicateKey(getKv != null && getKv.getValue() != null);
+                    }
+                }
                 @Nullable Object[] finalTuple1 = tuple;
                 vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
             }

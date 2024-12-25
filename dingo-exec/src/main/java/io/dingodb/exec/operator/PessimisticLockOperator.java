@@ -242,22 +242,24 @@ public class PessimisticLockOperator extends SoleOutOperator {
 
                 if (param.isInsert()) {
                     if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
-                        if (future != null) {
-                            future.cancel(true);
+                        if (!param.isDuplicateUpdate()) {
+                            if (future != null) {
+                                future.cancel(true);
+                            }
+                            TransactionUtil.resolvePessimisticLock(
+                                param.getIsolationLevel(),
+                                txnId,
+                                tableId,
+                                partId,
+                                deadLockKeyBytes,
+                                primaryKey,
+                                startTs,
+                                txnPessimisticLock.getForUpdateTs(),
+                                true,
+                                new DuplicateEntryException("Duplicate entry " +
+                                    TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), primaryKey, txnId) + " for key 'PRIMARY'")
+                            );
                         }
-                        TransactionUtil.resolvePessimisticLock(
-                            param.getIsolationLevel(),
-                            txnId,
-                            tableId,
-                            partId,
-                            deadLockKeyBytes,
-                            primaryKey,
-                            startTs,
-                            txnPessimisticLock.getForUpdateTs(),
-                            true,
-                            new DuplicateEntryException("Duplicate entry " +
-                                TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), primaryKey, txnId) + " for key 'PRIMARY'")
-                        );
                     }
                 }
                 long forUpdateTs = txnPessimisticLock.getForUpdateTs();

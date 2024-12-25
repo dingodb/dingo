@@ -42,6 +42,12 @@ public final class DingoTableModify extends TableModify implements DingoRel {
     @Getter
     @Setter
     private int autoIncrementColIndex;
+    @Getter
+    @Setter
+    private List<String> targetColumnNames;
+    @Getter
+    @Setter
+    private List<RexNode> sourceExpressionList2;
 
     public DingoTableModify(
         RelOptCluster cluster,
@@ -67,6 +73,34 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         );
     }
 
+    public DingoTableModify(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelOptTable table,
+        Prepare.CatalogReader catalogReader,
+        RelNode input,
+        Operation operation,
+        @Nullable List<String> updateColumnList,
+        @Nullable List<RexNode> sourceExpressionList,
+        boolean flattened,
+        List<String> targetColumnNames,
+        @Nullable List<RexNode> sourceExpressionList2
+    ) {
+        super(
+            cluster,
+            traitSet,
+            table,
+            catalogReader,
+            input,
+            operation,
+            updateColumnList,
+            sourceExpressionList,
+            flattened
+        );
+        this.targetColumnNames = targetColumnNames;
+        this.sourceExpressionList2 = sourceExpressionList2;
+    }
+
     @Override
     public <T> T accept(@NonNull DingoRelVisitor<T> visitor) {
         return visitor.visit(this);
@@ -83,7 +117,9 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             getOperation(),
             getUpdateColumnList(),
             getSourceExpressionList(),
-            isFlattened()
+            isFlattened(),
+            getTargetColumnNames(),
+            getSourceExpressionList2()
         );
     }
 

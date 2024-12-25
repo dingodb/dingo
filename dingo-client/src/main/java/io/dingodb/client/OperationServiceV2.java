@@ -824,7 +824,9 @@ public class OperationServiceV2 {
                         false,
                         td,
                         false,
-                        0));
+                        0,
+                        null,
+                        null));
 
             } else {
                 vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, false, 0));

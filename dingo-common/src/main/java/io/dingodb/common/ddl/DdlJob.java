@@ -268,6 +268,8 @@ public class DdlJob {
                 || actionType == ActionType.ActionTruncateTablePartition
             ) {
                 t = new TypeReference<List<String>>() {};
+            } else if (actionType == ActionType.ActionDropSequence) {
+                t = new TypeReference<List<String>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);

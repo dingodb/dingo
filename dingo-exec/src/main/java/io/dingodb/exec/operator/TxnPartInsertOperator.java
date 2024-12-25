@@ -24,10 +24,12 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
@@ -46,7 +48,6 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -166,9 +167,63 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 byte[] oldKey = value.getKey();
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                    throw new DuplicateEntryException("Duplicate entry "
-                        + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                    if (context.isDuplicateKey()) {
+                        // insert into ... on duplicate key update ...
+                        KeyValue insertUpKv = generateNewKv(
+                            tuple,
+                            param,
+                            partId,
+                            codec,
+                            newTuple,
+                            txnIdByte,
+                            tableIdByte,
+                            partIdByte,
+                            len);
+                        byte[] extraKey = ByteUtils.encode(
+                            CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                            key,
+                            oldKey[oldKey.length - 2],
+                            len,
+                            jobIdByte,
+                            tableIdByte,
+                            partIdByte
+                        );
+                        KeyValue extraKeyValue;
+                        if (value.getValue() == null) {
+                            // delete
+                            extraKeyValue = new KeyValue(extraKey, null);
+                        } else {
+                            extraKeyValue = new KeyValue(
+                                extraKey, Arrays.copyOf(value.getValue(), value.getValue().length)
+                            );
+                        }
+                        localStore.put(extraKeyValue);
+                        localStore.delete(deleteKey);
+                        vertex.getTask().getPartData().put(
+                            new TxnPartData(tableId, partId),
+                            (!isVector && !isDocument)
+                        );
+                        if (localStore.put(insertUpKv) && context.getIndexId() == null) {
+                            param.inc();
+                        }
+                    } else {
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                    }
                 } else {
+                    KeyValue insertUpKv = null;
+                    if (context.isDuplicateKey()) {
+                        insertUpKv = generateNewKv(
+                            tuple,
+                            param,
+                            partId,
+                            codec,
+                            newTuple,
+                            txnIdByte,
+                            tableIdByte,
+                            partIdByte,
+                            len);
+                    }
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
                     byte[] extraKey = ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
@@ -192,7 +247,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     // delete  ->  insert  convert --> put
                     dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
                     // write data
-                    keyValue.setKey(dataKey);
+                    if (insertUpKv != null && insertUpKv.getValue() != null) {
+                        keyValue.setKey(insertUpKv.getKey());
+                        keyValue.setValue(insertUpKv.getValue());
+                    } else {
+                        keyValue.setKey(dataKey);
+                    }
                     localStore.delete(deleteKey);
                     vertex.getTask().getPartData().put(
                         new TxnPartData(tableId, partId),
@@ -203,6 +263,19 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                 }
             } else {
+                KeyValue insertUpKv = null;
+                if (context.isDuplicateKey()) {
+                    insertUpKv = generateNewKv(
+                        tuple,
+                        param,
+                        partId,
+                        codec,
+                        newTuple,
+                        txnIdByte,
+                        tableIdByte,
+                        partIdByte,
+                        len);
+                }
                 byte[] rollBackKey = ByteUtils.getKeyByOp(
                     CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
                 );
@@ -221,14 +294,17 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 );
                 localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
                 // write data
-                keyValue.setKey(dataKey);
+                if (insertUpKv != null && insertUpKv.getValue() != null) {
+                    keyValue.setKey(insertUpKv.getKey());
+                    keyValue.setValue(insertUpKv.getValue());
+                } else {
+                    keyValue.setKey(dataKey);
+                }
                 vertex.getTask().getPartData().put(
                     new TxnPartData(tableId, partId),
                     (!isVector && !isDocument)
                 );
-                if ( localStore.put(keyValue)
-                    && context.getIndexId() == null
-                ) {
+                if (localStore.put(keyValue) && context.getIndexId() == null) {
                     param.inc();
                 }
             }
@@ -251,6 +327,14 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
             Op op = Op.NONE;
+            KeyValue insertUpKv = null;
+            if (param.getUpdateMapping() != null && param.getUpdates() != null) {
+                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+                KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
+                if (oldKv != null && oldKv.getValue() != null) {
+                    context.setDuplicateKey(true);
+                }
+            }
             if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " Key is not existed than two in local store");
@@ -259,15 +343,29 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 byte[] oldKey = value.getKey();
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                    throw new DuplicateEntryException("Duplicate entry "
-                        + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                    if (param.getUpdateMapping() != null && param.getUpdates() != null) {
+                        insertUpKv = generateNewKv(
+                            tuple,
+                            param,
+                            partId,
+                            codec,
+                            newTuple,
+                            txnIdByte,
+                            tableIdByte,
+                            partIdByte,
+                            len);
+                        op = Op.PUT;
+                    } else {
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                    }
                 } else {
                     // delete  ->  insert  convert --> put
                     insertKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
                     op = Op.DELETE;
                 }
             } else {
-                if (param.isCheckInPlace()) {
+                if (!context.isDuplicateKey() && param.isCheckInPlace()) {
                     byte[] originalKey;
                     if (isVector) {
                         originalKey = codec.encodeKeyPrefix(newTuple, 1);
@@ -289,14 +387,30 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                     }
                 }
-                keyValue.setKey(
-                    ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
-                );
-                localStore.put(keyValue);
+                if (context.isDuplicateKey()) {
+                    insertUpKv = generateNewKv(
+                        tuple,
+                        param,
+                        partId,
+                        codec,
+                        newTuple,
+                        txnIdByte,
+                        tableIdByte,
+                        partIdByte,
+                        len);
+                } else {
+                    keyValue.setKey(
+                        ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
+                    );
+                    localStore.put(keyValue);
+                }
             }
-            keyValue.setKey(
-                insertKey
-            );
+            if (insertUpKv != null && insertUpKv.getValue() != null) {
+                keyValue.setKey(insertUpKv.getKey());
+                keyValue.setValue(insertUpKv.getValue());
+            } else {
+                keyValue.setKey(insertKey);
+            }
             localStore.delete(deleteKey);
             // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
             byte[] extraKey = ByteUtils.encode(
@@ -320,6 +434,42 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         }
         profile.time(start - System.currentTimeMillis());
         return true;
+    }
+
+    private static KeyValue generateNewKv(Object[] tuple,
+                                          TxnPartInsertParam param,
+                                          CommonId partId,
+                                          KeyValueCodec codec,
+                                          Object[] newTuple,
+                                          byte[] txnIdByte,
+                                          byte[] tableIdByte,
+                                          byte[] partIdByte,
+                                          int len) {
+        KeyValue insertUpKv;
+        TupleMapping mapping = param.getUpdateMapping();
+        List<SqlExpr> updates = param.getUpdates();
+        for (int i = 0; i < mapping.size(); i++) {
+            Object newValue = updates.get(i).eval(tuple);
+            int index = mapping.get(i);
+            if ((newTuple[index] == null && newValue != null)
+                || (newTuple[index] != null && !newTuple[index].equals(newValue))) {
+                newTuple[index] = newValue;
+            }
+        }
+        KeyValue updateKv = wrap(codec::encode).apply(newTuple);
+        CodecService.getDefault().setId(updateKv.getKey(), partId.domain);
+        byte[] insertKey = ByteUtils.encode(
+            CommonId.CommonType.TXN_CACHE_DATA,
+            updateKv.getKey(),
+            Op.PUT.getCode(),
+            len,
+            txnIdByte,
+            tableIdByte,
+            partIdByte
+        );
+        insertUpKv = new KeyValue(
+            insertKey, Arrays.copyOf(updateKv.getValue(), updateKv.getValue().length));
+        return insertUpKv;
     }
 
 

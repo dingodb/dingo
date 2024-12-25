@@ -1902,6 +1902,9 @@ SqlNode SqlInsert() :
     final SqlNodeList columnList;
     final Span s;
     final Pair<SqlNodeList, SqlNodeList> p;
+    SqlNodeList sourceExpressionList;
+    SqlNodeList targetColumnList;
+    SqlIdentifier id;
 }
 {
     (
@@ -1909,7 +1912,11 @@ SqlNode SqlInsert() :
     |
         <UPSERT> { keywords.add(SqlInsertKeyword.UPSERT.symbol(getPos())); }
     )
-    { s = span(); }
+    {
+        s = span();
+        targetColumnList = new SqlNodeList(s.pos());
+        sourceExpressionList = new SqlNodeList(s.pos());
+    }
     SqlInsertKeywords(keywords) {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
@@ -1930,9 +1937,22 @@ SqlNode SqlInsert() :
         }
     |   { columnList = null; }
     )
-    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList);
+    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [
+        <ON> <DUPLICATE> <KEY> <UPDATE>
+            id = SimpleIdentifier() {
+                targetColumnList.add(id);
+            }
+            <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
+            (
+                <COMMA>
+                id = SimpleIdentifier() { targetColumnList.add(id); }
+                <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
+            )*
+    ]
+    {
+        return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
+            columnList, sourceExpressionList, targetColumnList);
     }
 }
 
@@ -7523,6 +7543,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <CURRENT_TIME>
     |   <CURRENT_TIMESTAMP>
     |   <DENSE_RANK>
+    |   <DUPLICATE>
     |   <ELEMENT>
     |   <EVERY>
     |   <EXP>
@@ -7530,6 +7551,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FLOOR>
     |   <FUSION>
     |   <INTERSECTION>
+    |   <IFNULL>
     |   <GROUPING>
     |   <HOUR>
     |   <LAG>
@@ -7549,6 +7571,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <NTILE>
     |   <NULLIF>
     |   <OCTET_LENGTH>
+    |   <ON>
     |   <PERCENT_RANK>
     |   <PERCENTILE_CONT>
     |   <PERCENTILE_DISC>
@@ -7564,6 +7587,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <SQRT>
     |   <STDDEV_POP>
     |   <STDDEV_SAMP>
+    |   <SUBSTRING_INDEX>
     |   <SUM>
     |   <UPPER>
     |   <USER>
@@ -8067,6 +8091,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DOUBLE: "DOUBLE" >
 |   < DOW: "DOW" >
 |   < DOY: "DOY" >
+|   < DUPLICATE: "DUPLICATE">
 |   < DROP: "DROP" >
 |   < DYNAMIC: "DYNAMIC" >
 |   < DYNAMIC_FUNCTION: "DYNAMIC_FUNCTION" >
@@ -8140,6 +8165,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < HOUR: "HOUR" >
 |   < HOURS: "HOURS" >
 |   < IDENTITY: "IDENTITY" >
+|   < IFNULL: "IFNULL">
 |   < IGNORE: "IGNORE" >
 |   < ILIKE: "ILIKE" >
 |   < IMMEDIATE: "IMMEDIATE" >
@@ -8494,6 +8520,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SUBSTITUTE: "SUBSTITUTE" >
 |   < SUBSTRING: "SUBSTRING" >
 |   < SUBSTRING_REGEX: "SUBSTRING_REGEX" >
+|   < SUBSTRING_INDEX: "SUBSTRING_INDEX" >
 |   < SUCCEEDS: "SUCCEEDS" >
 |   < SUM: "SUM" >
 |   < SUNDAY: "SUNDAY" >

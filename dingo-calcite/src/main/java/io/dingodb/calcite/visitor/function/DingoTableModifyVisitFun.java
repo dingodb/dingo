@@ -30,6 +30,7 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.PartDeleteParam;
 import io.dingodb.exec.operator.params.PartInsertParam;
 import io.dingodb.exec.operator.params.PartUpdateParam;
@@ -82,6 +83,20 @@ public final class DingoTableModifyVisitFun {
                 case INSERT:
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
+                        TupleMapping updateMapping = null;
+                        List<SqlExpr> updates = null;
+                        boolean isUpdate = false;
+                        if ((rel.getTargetColumnNames() != null && !rel.getTargetColumnNames().isEmpty())
+                            && !rel.getSourceExpressionList2().isEmpty()
+                        ) {
+                            List<String> colNames = td.getColumns()
+                                .stream().map(Column::getName).collect(Collectors.toList());
+                            updateMapping = TupleMapping.of(rel.getTargetColumnNames()
+                                .stream().map(colNames::indexOf).collect(Collectors.toList()));
+                            updates = rel.getSourceExpressionList2()
+                                .stream().map(SqlExprUtils::toSqlExpr).collect(Collectors.toList());
+                            isUpdate = true;
+                        }
                         if (pessimisticTxn) {
                             Vertex lockVertex ;
                             if (transaction.getPrimaryKeyLock() == null) {
@@ -98,7 +113,8 @@ public final class DingoTableModifyVisitFun {
                                     true,
                                     isScan,
                                     "insert",
-                                    td
+                                    td,
+                                    isUpdate
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -113,7 +129,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     isScan,
-                                    td
+                                    td,
+                                    isUpdate
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
                             }
@@ -137,7 +154,9 @@ public final class DingoTableModifyVisitFun {
                                     visitor.getExecuteVariables().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()));
+                                    rel.getAutoIncrementColIndex(),
+                                    updateMapping,
+                                    updates));
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge lockEdge = new Edge(lockVertex, insertVertex);
                             lockVertex.addEdge(lockEdge);
@@ -162,7 +181,9 @@ public final class DingoTableModifyVisitFun {
                                     visitor.getExecuteVariables().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()));
+                                    rel.getAutoIncrementColIndex(),
+                                    updateMapping,
+                                    updates));
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
                             task.putVertex(vertex);
                             input.setPin(0);
@@ -216,7 +237,8 @@ public final class DingoTableModifyVisitFun {
                                     false,
                                     isScan,
                                     "update",
-                                    td
+                                    td,
+                                    false
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -352,7 +374,8 @@ public final class DingoTableModifyVisitFun {
                                     false,
                                     isScan,
                                     "delete",
-                                    td
+                                    td,
+                                    false
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {

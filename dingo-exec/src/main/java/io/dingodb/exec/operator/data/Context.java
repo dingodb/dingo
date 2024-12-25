@@ -35,6 +35,8 @@ public class Context {
     private RangeDistribution distribution;
     private List<Boolean> keyState;
 
+    private boolean isDuplicateKey;
+
     public Context setPin(int pin) {
         this.pin = pin;
         return this;
