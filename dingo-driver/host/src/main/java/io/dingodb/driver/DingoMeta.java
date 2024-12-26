@@ -36,6 +36,7 @@ import io.dingodb.common.table.IndexScan;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
+import io.dingodb.driver.plancache.LRUPlanCache;
 import io.dingodb.driver.type.converter.AvaticaResultSetConverter;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;

@@ -162,6 +162,29 @@ public final class ScopeVariables {
             return 3;
         }
     }
+    /* Plan cache related vars */
+
+    public static boolean enablePlanCache() {
+        String enablePlanCache = executorProp.getOrDefault("enable_plan_cache", "on").toString();
+        return enablePlanCache.equalsIgnoreCase("on");
+    }
+
+    public static long getPlanCacheExpiration() {
+        try {
+            String planCacheExpr = executorProp.getOrDefault("plan_cache_expiration", "3600000").toString();
+            return Long.parseLong(planCacheExpr);
+        } catch (Exception e) {
+            return 3600000;
+        }
+    }
+    public static long gePlanCacheSize() {
+        try {
+            String planCacheSize = executorProp.getOrDefault("plan_cache_size", "20480000").toString();
+            return Long.parseLong(planCacheSize);
+        } catch (Exception e) {
+            return 20480000;
+        }
+    }
 
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {

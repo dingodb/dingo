@@ -63,7 +63,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         String distanceType = param.getDistanceType();
         KeyValueCodec tableCodec;
         tableCodec = CodecService.getDefault().createKeyValueCodec(
-            param.getTable().version, param.getTableDataSchema(), param.tableDataKeyMapping()
+            param.getIndexTable().version, param.getIndexTable().tupleType(), param.getIndexTable().keyMapping()
         );
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         List<VectorSearchResponse> searchResponseList = instance.vectorSearch(
@@ -136,7 +136,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 decode[decode.length - 1] = response.getDistance();
                 decode[vecIdx] = response.getFloatValues();
 
-                vecPriIdxMapping.forEach((key, value) -> decode[value] = vecTuples[key]);
+                //vecPriIdxMapping.forEach((key, value) -> decode[value] = vecTuples[key]);
                 results.add(decode);
             }
         } else {
