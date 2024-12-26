@@ -296,6 +296,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"dingo_constraint_check_in_place", "off"});
         values.add(new Object[]{"dingo_enable_async_commit", "on"});
         values.add(new Object[]{"enable_use_cross_node_commit", "off"});
+        values.add(new Object[]{"enable_async_commit_sleep", "off"});
+        values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         return values;
     }
 

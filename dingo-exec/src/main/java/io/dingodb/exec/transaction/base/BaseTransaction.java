@@ -429,17 +429,26 @@ public abstract class BaseTransaction implements ITransaction {
                     crossNodePreWriteSeconds(jobManager, currentLocation, jobId);
                 } else {
                     if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                        if (transactionConfig.isAsyncCommitSleep()) {
+                            try {
+                                Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                         // Async Commit PreWriteSecondKeys
-                        LogUtils.info(log, "{} Async Commit PreWriteSecondKeys", transactionOf());
+                        LogUtils.info(log, "{} Async Commit Start PreWriteSecondKeys", transactionOf());
                         parallelPreWriteSecondKeys(twoPhaseCommitData);
                         if (twoPhaseCommitData.getUseAsyncCommit().get()) {
                             commitTs = twoPhaseCommitData.getMinCommitTs().get();
                             // todo calculateMaxCommitTS and checkSchemaValid
                         }
+                        LogUtils.info(log, "{} Async Commit PreWriteSecondKeys End", transactionOf());
                     } else {
-                        LogUtils.info(log, "{} parallelPreWrite", transactionOf());
+                        LogUtils.info(log, "{} start parallelPreWrite", transactionOf());
                         twoPhaseCommitData.getUseAsyncCommit().set(false);
                         parallelPreWriteSecondKeys(twoPhaseCommitData);
+                        LogUtils.info(log, "{} parallelPreWrite end", transactionOf());
                     }
                 }
                 commitProfile.endPreWriteSecond();
@@ -497,25 +506,27 @@ public abstract class BaseTransaction implements ITransaction {
         }
 
         if (twoPhaseCommitData.getUseAsyncCommit().get()) {
-            try {
-                CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
-                    () -> {
-                        LogUtils.info(log, "{} asyncCommitJobRun", transactionOf());
-                        asyncCommitJobRun(twoPhaseCommitData);
-                    },
-                    Executors.executor("exec-asyncTxnCommit")
-                ).exceptionally(
-                    ex -> {
-                        LogUtils.error(log, ex.toString(), ex);
-                        this.status = TransactionStatus.COMMIT_FAIL;
-                        return null;
-                    }
-                );
-                commitFuture = commit_future;
-            } finally {
-                LogUtils.info(log, "{} Async Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(),
-                    commitTs, status, (System.currentTimeMillis() - preWriteStart));
+            if (transactionConfig.isAsyncCommitSleep()) {
+                try {
+                    Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
+                () -> {
+//                    LogUtils.info(log, "{} start asyncCommitJobRun", transactionOf());
+                    asyncCommitJobRun(twoPhaseCommitData, preWriteStart);
+                },
+                Executors.executor("exec-asyncTxnCommit")
+            ).exceptionally(
+                ex -> {
+                    LogUtils.error(log, ex.toString(), ex);
+                    this.status = TransactionStatus.COMMIT_FAIL;
+                    return null;
+                }
+            );
+            commitFuture = commit_future;
         } else {
             try {
                 if (cancel.get()) {
@@ -722,7 +733,7 @@ public abstract class BaseTransaction implements ITransaction {
             while (iterator.hasNext()) {
                 iterator.next();
             }
-            LogUtils.info(log, "{} commitJobRun end", transactionOf());
+            LogUtils.info(log, "{} crossNode commitJobRun end", transactionOf());
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {
@@ -731,7 +742,7 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData) {
+    private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData, long preWriteStart) {
         try {
             MdcUtils.setTxnId(txnId.toString());
             LogUtils.info(log, "{} Start AsyncCommitPrimaryKey, commitTs:{}", transactionOf(), commitTs);
@@ -748,6 +759,14 @@ public abstract class BaseTransaction implements ITransaction {
             this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
             twoPhaseCommitData.setPrimaryKey(primaryKey);
             twoPhaseCommitData.setCommitTs(commitTs);
+            LogUtils.info(log, "{} AsyncCommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
+            if (transactionConfig.isAsyncCommitSleep()) {
+                try {
+                    Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
             partDataMap.keySet().parallelStream()
                 .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
                 .forEach(future -> future.join());
@@ -756,6 +775,8 @@ public abstract class BaseTransaction implements ITransaction {
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {
+            LogUtils.info(log, "{} Async Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(),
+                commitTs, status, (System.currentTimeMillis() - preWriteStart));
             MdcUtils.removeTxnId();
         }
     }

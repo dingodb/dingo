@@ -24,6 +24,7 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Setter
 @Getter
@@ -34,6 +35,8 @@ public class Context {
     private CommonId indexId;
     private RangeDistribution distribution;
     private List<Boolean> keyState;
+    @Builder.Default
+    private AtomicBoolean updateResidualDeleteKey = new AtomicBoolean(false);
 
     private boolean isDuplicateKey;
 

@@ -147,7 +147,7 @@ public final class ResolveLockUtil {
         long asyncCommitTs = txnCheckSecondaryLocksResponse.getCommitTs();
         List<LockInfo> locks = txnCheckSecondaryLocksResponse.getLocks();
         // Check locks to see if any have been committed or rolled back.
-        if (locks.size() < secondKeys.size()) {
+        if (locks == null || locks.size() < secondKeys.size()) {
             // A lock is missing - the transaction must either have been rolled back or committed.
             if (!asyncResolveData.isMissingLock()) {
                 // commitTS == 0 => lock has been rolled back.

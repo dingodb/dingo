@@ -187,15 +187,21 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                     Op.DELETE,
                     dataKey
                 );
-                vertex.getTask().getPartData().put(
-                    new TxnPartData(tableId, partId),
-                    (!isVector && !isDocument)
-                );
                 // first lock and kvGet is null
                 if (localStore.get(rollBackKey) != null) {
+                    vertex.getTask().getPartData().put(
+                        new TxnPartData(tableId, partId),
+                        (!isVector && !isDocument)
+                    );
                     profile.time(start);
                     return true;
                 } else {
+                    rollBackKey = ByteUtils.getKeyByOp(
+                        CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.PUT, dataKey
+                    );
+                    if (localStore.get(rollBackKey) != null) {
+                        localStore.delete(rollBackKey);
+                    }
                     KeyValue kv = wrap(codec::encode).apply(tuple);
                     if (kv == null) {
                         // Delete non-existent keys

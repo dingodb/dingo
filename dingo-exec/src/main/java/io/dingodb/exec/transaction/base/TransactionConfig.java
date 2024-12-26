@@ -63,4 +63,16 @@ public class TransactionConfig {
     public boolean isCrossNodeCommit() {
         return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_use_cross_node_commit"));
     }
+
+    public boolean isAsyncCommitSleep() {
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_async_commit_sleep"));
+    }
+
+    public long getAsyncCommitSleepTime() {
+        Optional<String> retryCountOpt = Optional.ofNullable(
+            sessionVariables.getProperty("async_commit_sleep_time"));
+        return (retryCountOpt
+            .map(Long::parseLong)
+            .orElse(5000L));
+    }
 }

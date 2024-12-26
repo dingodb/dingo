@@ -443,6 +443,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         LogUtils.debug(log,
                             "{}, repeat primary key :{} keyValue is null", txnId,
                             Arrays.toString(primaryLockKeyBytes));
+                        context.getUpdateResidualDeleteKey().set(true);
                         @Nullable Object[] finalTuple1 = tuple;
                         vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
                         return true;

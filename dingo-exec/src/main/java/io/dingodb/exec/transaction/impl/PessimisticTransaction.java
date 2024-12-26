@@ -268,13 +268,16 @@ public class PessimisticTransaction extends BaseTransaction {
         byte[] updateKey = Arrays.copyOf(insertKey, insertKey.length);
         updateKey[updateKey.length - 2] = (byte) Op.PUT.getCode();
         byte[] noneKey  = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, updateKey);
-        List<byte[]> bytes = new ArrayList<>(4);
+        byte[] nonePutKey  = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.PUT, updateKey);
+        List<byte[]> bytes = new ArrayList<>(5);
         bytes.add(insertKey);
         bytes.add(deleteKey);
         bytes.add(updateKey);
         bytes.add(noneKey);
+        bytes.add(nonePutKey);
         List<KeyValue> keyValues = cache.getKeys(bytes);
         cache.deleteKey(noneKey);
+        cache.deleteKey(nonePutKey);
         if (keyValues != null && keyValues.size() > 0) {
             if (keyValues.size() > 1) {
                 throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");

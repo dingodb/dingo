@@ -192,8 +192,12 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     LogUtils.warn(log, "{} updated is false key is {}", txnId, Arrays.toString(key));
                     // data is not exist local store
                     if (oldKeyValue == null) {
+                        Op op = Op.PUT;
+                        if (context.getUpdateResidualDeleteKey().get()) {
+                            op = Op.DELETE;
+                        }
                         byte[] rollBackKey = ByteUtils.getKeyByOp(
-                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
+                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, op, dataKey
                         );
                         KeyValue rollBackKeyValue = new KeyValue(rollBackKey, null);
                         LogUtils.debug(log, "{}, updated is false residual key is:{}",
@@ -248,6 +252,12 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         );
                         return true;
                     } else {
+                        rollBackKey = ByteUtils.getKeyByOp(
+                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.PUT, dataKey
+                        );
+                        if (localStore.get(rollBackKey) != null) {
+                            localStore.delete(rollBackKey);
+                        }
                         KeyValue kv = wrap(codec::encode).apply(newTuple2);
                         CodecService.getDefault().setId(kv.getKey(), partId.domain);
                         // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
