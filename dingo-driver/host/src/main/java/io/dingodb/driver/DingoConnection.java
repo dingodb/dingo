@@ -17,6 +17,7 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
@@ -28,6 +29,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
+import io.dingodb.driver.plancache.LRUPlanCache;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
@@ -117,6 +119,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Getter
     private Map<Long, Long> mdlLockJobMap = new ConcurrentHashMap<>();
 
+    @Getter
+    @Setter
+    private LRUPlanCache planCache;
+
     protected DingoConnection(
         DingoDriver driver,
         AvaticaFactory factory,
@@ -134,11 +140,31 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
         String user = info.getProperty("user");
-        String host  = info.getProperty("host");
+        String host = info.getProperty("host");
         if (user != null && host != null) {
             sessionVariables.setProperty("@user", user);
             sessionVariables.setProperty("@host", host);
         }
+
+        String enablePreparePlanCache = info.getProperty("enablePreparePlanCache");
+        String enableNonpreparePlanCache = info.getProperty("enableNonPreparedPlanCache");
+        String enableDMLPlanCache = info.getProperty("enableDMLPlanCache");
+        String planCacheCapacity = info.getProperty("planCacheCapacity");
+        if (enableNonpreparePlanCache != null) {
+            sessionVariables.setProperty("@enableNonpreparePlanCache", enableNonpreparePlanCache);
+        }
+        if (enablePreparePlanCache != null) {
+            sessionVariables.setProperty("@enablePreparePlanCache", enablePreparePlanCache);
+        }
+        if (enableDMLPlanCache != null) {
+            sessionVariables.setProperty("@enableDMLPlanCache", enableDMLPlanCache);
+        }
+        if (planCacheCapacity != null) {
+            sessionVariables.setProperty("@planCacheCapacity", planCacheCapacity);
+        }
+
+
+
         try {
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
             Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
@@ -227,6 +253,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         unlockFuture = null;
         lockTables = null;
     }
+
 
     public synchronized ITransaction createTransaction(TransactionType type, boolean autoCommit) {
         if (transaction == null) {
@@ -349,6 +376,11 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             if (transaction != null) {
                 LogUtils.info(log, "call dingoConnection close..., txnId:" + transaction.getTxnId());
                 transaction.cancel();
+            }
+
+            if (planCache != null) {
+                LogUtils.info(log, "call dingoConnection close, clean up session plan cache");
+                planCache.close();
             }
         } finally {
             getMeta().cleanTransaction();
@@ -616,5 +648,24 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             res.put(Long.parseLong(str), 0L);
         }
         return res;
+    }
+
+    public LRUPlanCache createPlanCache() {
+        int capacity = 1000;
+        if (sessionVariables.getProperty("planCacheCapacity") != null) {
+            String cap = sessionVariables.getProperty("planCacheCapacity");
+            if (cap != null) {
+                capacity = Integer.parseInt(cap);
+            }
+        }
+
+//            String txIsolation;
+//            if (oneTimeTxIsolation != null) {
+//                txIsolation = oneTimeTxIsolation;
+//            } else {
+//                txIsolation = getClientInfo("transaction_isolation");
+//            }
+        LRUPlanCache lruPlanCache = LRUPlanCache.newLRUPlanCache(capacity, 0.75, 200000, context, false);
+        return lruPlanCache;
     }
 }

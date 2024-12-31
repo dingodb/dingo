@@ -41,6 +41,4 @@ public class MysqlHandler extends SimpleChannelInboundHandler<ByteBuf> {
         );
         MessageProcess.process(msg, mysqlConnection);
     }
-
-
 }

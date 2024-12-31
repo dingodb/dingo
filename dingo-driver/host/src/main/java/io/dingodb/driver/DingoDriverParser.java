@@ -32,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
+import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
 import io.dingodb.calcite.rel.DingoBasicCall;
@@ -62,6 +63,9 @@ import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.Optional;
+import io.dingodb.driver.plancache.LRUPlanCache;
+import io.dingodb.driver.plancache.PlanCacheKey;
+import io.dingodb.driver.plancache.PlanCacheValue;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.exception.TaskFinException;
@@ -76,6 +80,7 @@ import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -102,23 +107,38 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlJoin;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -145,7 +165,7 @@ public final class DingoDriverParser extends DingoParser {
         super(connection.getContext());
         this.connection = connection;
         this.planProfile = new PlanProfile();
-        this.dingoAudit = new DingoAudit(IsolationLevel.InvalidIsolationLevel.name(), TransactionType.NONE.name());
+        this.dingoAudit = new DingoAudit(IsolationLevel.InvalidIsolationLevel.name(), NONE.name());
     }
 
     private static RelDataType makeStruct(RelDataTypeFactory typeFactory, @NonNull RelDataType type) {
@@ -156,11 +176,7 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @NonNull
-    private List<ColumnMetaData> getColumnMetaDataList(
-        JavaTypeFactory typeFactory,
-        @NonNull RelDataType jdbcType,
-        List<? extends @Nullable List<String>> originList
-    ) {
+    private List<ColumnMetaData> getColumnMetaDataList(JavaTypeFactory typeFactory, @NonNull RelDataType jdbcType, List<? extends @Nullable List<String>> originList) {
         List<RelDataTypeField> fieldList = jdbcType.getFieldList();
         final List<ColumnMetaData> columns = new ArrayList<>(fieldList.size());
         for (int i = 0; i < fieldList.size(); ++i) {
@@ -168,78 +184,30 @@ public final class DingoDriverParser extends DingoParser {
             List<String> colList = originList.get(i);
             boolean hidden = SchemaStateUtils.columnHidden(connection, colList);
             //continue;
-            columns.add(metaData(
-                typeFactory,
-                columns.size(),
-                field.getName(),
-                field.getType(),
-                originList.get(i),
-                hidden
-            ));
+            columns.add(metaData(typeFactory, columns.size(), field.getName(), field.getType(), originList.get(i), hidden));
         }
         return columns;
     }
 
-    public static ColumnMetaData.AvaticaType avaticaType(
-        @NonNull JavaTypeFactory typeFactory,
-        @NonNull RelDataType type
-    ) {
+    public static ColumnMetaData.AvaticaType avaticaType(@NonNull JavaTypeFactory typeFactory, @NonNull RelDataType type) {
         SqlTypeName typeName = type.getSqlTypeName();
         switch (typeName) {
             case ARRAY:
             case MULTISET:
-                return ColumnMetaData.array(
-                    avaticaType(typeFactory, Objects.requireNonNull(type.getComponentType())),
-                    type.getSqlTypeName().getName(),
-                    ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
-                );
+                return ColumnMetaData.array(avaticaType(typeFactory, Objects.requireNonNull(type.getComponentType())), type.getSqlTypeName().getName(), ColumnMetaData.Rep.of(typeFactory.getJavaClass(type)));
             default:
-                return ColumnMetaData.scalar(
-                    type.getSqlTypeName().getJdbcOrdinal(),
-                    type.getSqlTypeName().getName(),
-                    ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
-                );
+                return ColumnMetaData.scalar(type.getSqlTypeName().getJdbcOrdinal(), type.getSqlTypeName().getName(), ColumnMetaData.Rep.of(typeFactory.getJavaClass(type)));
         }
     }
 
     @NonNull
-    private static ColumnMetaData metaData(
-        @NonNull JavaTypeFactory typeFactory,
-        int ordinal,
-        String fieldName,
-        @NonNull RelDataType type,
-        @Nullable List<String> origins,
-        boolean hidden
-    ) {
+    private static ColumnMetaData metaData(@NonNull JavaTypeFactory typeFactory, int ordinal, String fieldName, @NonNull RelDataType type, @Nullable List<String> origins, boolean hidden) {
         ColumnMetaData.AvaticaType avaticaType = avaticaType(typeFactory, type);
-        return new DingoColumnMetaData(
-            ordinal,
-            false,
-            true,
-            false,
-            false,
-            type.isNullable() ? DatabaseMetaData.columnNullable : DatabaseMetaData.columnNoNulls,
-            true,
-            type.getPrecision(),
-            fieldName,
-            origin(origins, 0),
-            origin(origins, 2),
-            type.getPrecision(),
-            type.getScale(),
-            origin(origins, 1),
-            null,
-            avaticaType,
-            true,
-            false,
-            false,
-            avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName(),
-            hidden
-        );
+        return new DingoColumnMetaData(ordinal, false, true, false, false, type.isNullable() ? DatabaseMetaData.columnNullable : DatabaseMetaData.columnNoNulls, true, type.getPrecision(), fieldName, origin(origins, 0), origin(origins, 2), type.getPrecision(), type.getScale(), origin(origins, 1), null, avaticaType, true, false, false, avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName(), hidden);
     }
 
     private static @Nullable String origin(@Nullable List<String> origins, int offsetFromEnd) {
-        return origins == null || offsetFromEnd >= origins.size()
-            ? null : origins.get(origins.size() - 1 - offsetFromEnd);
+        return origins == null || offsetFromEnd >= origins.size() ? null : origins.get(origins.size() - 1 - offsetFromEnd);
     }
 
     @NonNull
@@ -248,26 +216,14 @@ public final class DingoDriverParser extends DingoParser {
         final List<AvaticaParameter> parameters = new ArrayList<>(fieldList.size());
         for (RelDataTypeField field : fieldList) {
             RelDataType type = field.getType();
-            parameters.add(
-                new AvaticaParameter(
-                    false,
-                    type.getPrecision(),
-                    type.getScale(),
-                    type.getSqlTypeName().getJdbcOrdinal(),
-                    type.getSqlTypeName().toString(),
-                    Object.class.getName(),
-                    field.getName()));
+            parameters.add(new AvaticaParameter(false, type.getPrecision(), type.getScale(), type.getSqlTypeName().getJdbcOrdinal(), type.getSqlTypeName().toString(), Object.class.getName(), field.getName()));
         }
         return parameters;
     }
 
+
     @Nonnull
-    public Meta.Signature parseQuery(
-        JobManager jobManager,
-        long jobSeqId,
-        String sql,
-        boolean prepare
-    ) {
+    public Meta.Signature parseQuery(JobManager jobManager, long jobSeqId, String sql, boolean prepare) {
         SqlNode sqlNode;
         try {
             long start = System.currentTimeMillis();
@@ -287,20 +243,17 @@ public final class DingoDriverParser extends DingoParser {
         planProfile.setStmtType(sqlNode.getKind().lowerName);
 
         // for compatible mysql protocol
-        MysqlSignature mysqlSignature = getMysqlSignature(
-            SqlUtil.checkSql(sqlNode, sql), sqlNode, typeFactory, cursorFactory
-        );
+        MysqlSignature mysqlSignature = getMysqlSignature(SqlUtil.checkSql(sqlNode, sql), sqlNode, typeFactory, cursorFactory);
         if (mysqlSignature != null) {
             return mysqlSignature;
         }
+
 
         if (sqlNode.getKind().belongsTo(SqlKind.DDL)) {
             planProfile.end();
             DingoDdlVerify.verify(sqlNode, connection);
             execProfile = new ExecProfile("DDL");
-            Integer retry = Optional.mapOrGet(
-                DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30
-            );
+            Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
             while (retry-- > 0) {
                 try {
                     beforeDdl(connection, sqlNode);
@@ -320,22 +273,13 @@ public final class DingoDriverParser extends DingoParser {
                     // While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute
                     // (org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
                     LogUtils.error(log, e.getMessage(), e);
-                    if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0
-                        || !e.getMessage().startsWith("While invoking method")) {
+                    if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0 || !e.getMessage().startsWith("While invoking method")) {
                         throw e;
                     }
                 }
             }
             execProfile.end();
-            return new DingoSignature(
-                ImmutableList.of(),
-                SqlUtil.checkSql(sqlNode, sql),
-                Meta.CursorFactory.OBJECT,
-                Meta.StatementType.OTHER_DDL,
-                null,
-                null,
-                ImmutableList.of()
-            );
+            return new DingoSignature(ImmutableList.of(), SqlUtil.checkSql(sqlNode, sql), Meta.CursorFactory.OBJECT, Meta.StatementType.OTHER_DDL, null, null, ImmutableList.of());
         }
 
         SqlExplain explain = null;
@@ -364,23 +308,27 @@ public final class DingoDriverParser extends DingoParser {
         } else {
             if (prepare) {
                 // prepare using optimistic transaction
-                transaction = connection.createTransaction(
-                    TransactionType.OPTIMISTIC,
-                    connection.getAutoCommit()
-                );
+                transaction = connection.createTransaction(TransactionType.OPTIMISTIC, connection.getAutoCommit());
             } else {
                 // autocommit is true use current txn mode
-                transaction = connection.createTransaction(
-                    "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"))
-                        ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
-                    connection.getAutoCommit());
+                transaction = connection.createTransaction("pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode")) ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, connection.getAutoCommit());
             }
             txnId = transaction.getTxnId();
             newTxn = true;
         }
         startTs = transaction.getStartTs();
+        String enablePreparePlanCache = connection.getClientInfo("enablePreparePlanCache");
+        String enableNonPreparePlanCache =  connection.getClientInfo("enableNonPreparePlanCache");
+        String enableDMLPlanCache = connection.getClientInfo("enableDMLPlanCache");
+
+        boolean enableCachePlan = true;
+        boolean usePlanCache = canUsePlanCache(sqlNode, newTxn);
+        RelNode relNode = null;
+        LRUPlanCache lruPlanCache = null;
+        long start = System.currentTimeMillis();
+
         Meta.StatementType statementType;
-        RelDataType type;
+        RelDataType type = null;
         DingoSqlValidator validator = getSqlValidator();
         try {
             sqlNode = validator.validate(sqlNode);
@@ -458,21 +406,34 @@ public final class DingoDriverParser extends DingoParser {
             RelDataType jdbcType = makeStruct(typeFactory, type);
             List<List<String>> originList = validator.getFieldOrigins(sqlNode);
             columns = getColumnMetaDataList(typeFactory, jdbcType, originList);
-            enableColumnMetas = columns
-                .stream()
-                .filter(columnMetaData -> {
-                        DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
-                        return !columnMetaData1.hidden;
-                }
-                ).collect(Collectors.toList());
+            enableColumnMetas = columns.stream().filter(columnMetaData -> {
+                DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
+                return !columnMetaData1.hidden;
+            }).collect(Collectors.toList());
         } else {
             columns = getTraceColMeta(typeFactory);
             enableColumnMetas = columns;
         }
 
-        long start = System.currentTimeMillis();
-        final RelRoot relRoot = convert(sqlNode, false);
-        RelNode relNode = optimize(relRoot.rel);
+        if (enableCachePlan) {
+            lruPlanCache = connection.getPlanCache();
+            if (lruPlanCache == null) {
+                lruPlanCache = connection.createPlanCache();
+            }
+            if (usePlanCache) {
+                PlanCacheKey pcKey = makePlanCacheKey(connection, sqlNode, true);
+                PlanCacheValue pcValue = findPlanCacheValue(pcKey, lruPlanCache);
+                if (pcValue != null) {
+                    relNode = pcValue.getPlan();
+
+                } else {
+                    relNode = generateRelNode(sqlNode);
+                    pcValue = makePlanCacheValue(relNode);
+                    lruPlanCache.put(pcKey, pcValue);
+                }
+            }
+        }
+
         long sub = System.currentTimeMillis() - start;
         DingoMetrics.timer("relOptimize").update(sub, TimeUnit.MILLISECONDS);
         planProfile.endOptimize();
@@ -481,7 +442,6 @@ public final class DingoDriverParser extends DingoParser {
         Set<RelOptTable> tables = useTables(relNode, sqlNode);
         boolean isTxn = checkEngine(sqlNode, tables, connection.getTransaction(), planProfile, newTxn);
         transaction = connection.initTransaction(isTxn, newTxn);
-
         // get in transaction for mysql update/insert/delete res ok packet
         if (transaction.getType() != NONE) {
             inTransaction = true;
@@ -520,55 +480,35 @@ public final class DingoDriverParser extends DingoParser {
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
-            String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT,
-                SqlExplainLevel.ALL_ATTRIBUTES);
+            String logicalPlan = RelOptUtil.dumpPlan("", relNode, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES);
             if (explain.getDetailLevel() == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
-                return new DingoExplainSignature(
-                    new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
-                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))),
-                    sql,
-                    createParameterList(parasType),
-                    null,
-                    cursorFactory,
-                    statementType,
-                    sqlNode.toString(),
-                    logicalPlan,
-                    job,
-                    explain.getDetailLevel()
-                );
+                return new DingoExplainSignature(new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))), sql, createParameterList(parasType), null, cursorFactory, statementType, sqlNode.toString(), logicalPlan, job, explain.getDetailLevel());
             } else {
                 List<ColumnMetaData> metaDataList = getExplainColMeta(typeFactory);
-                return new ExplainSignature(
-                    metaDataList,
-                    sql,
-                    createParameterList(parasType),
-                    null,
-                    cursorFactory,
-                    statementType,
-                    relNode,
-                    job.getJobId()
-                );
+                return new ExplainSignature(metaDataList, sql, createParameterList(parasType), null, cursorFactory, statementType, relNode, job.getJobId());
             }
         }
         if (trace && statementType == Meta.StatementType.IS_DML) {
             statementType = Meta.StatementType.CALL;
         }
         planProfile.endLock();
-        return new DingoSignature(
-            enableColumnMetas,
-            sql,
-            createParameterList(parasType),
-            null,
-            cursorFactory,
-            statementType,
-            job.getJobId(),
-            sqlNode,
-            relNode,
-            parasType,
-            planProfile.getTableList(),
-            columns,
-            trace
-        );
+        return new DingoSignature(enableColumnMetas, sql, createParameterList(parasType), null, cursorFactory, statementType, job.getJobId(), sqlNode, relNode, parasType, planProfile.getTableList(), columns, trace);
+    }
+
+    private RelNode generateRelNode(SqlNode sqlNode) {
+        final RelRoot relRoot = convert(sqlNode, false);
+        RelNode relNode = optimize(relRoot.rel);
+        return relNode;
+    }
+
+    private PlanCacheValue makePlanCacheValue(RelNode relNode) {
+        long lastVisit = System.currentTimeMillis();
+
+        LocalDateTime currentDateTime = LocalDateTime.now();
+        Timestamp loadTime = Timestamp.valueOf(currentDateTime);
+        String digest = relNode.getDigest();
+//        String sqlText
+        return PlanCacheValue.builder().plan(relNode).loadTime(loadTime).lastUsedTimeInUnix(lastVisit).build();
     }
 
     private void handleFlashBackQuery(SqlNode sqlNode) {
@@ -598,13 +538,13 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     public int getConcurrencyLevel() {
-        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
-            connection.getClientInfo("dingo_partition_execute_concurrency"));
-        return concurrencyLevelOpt
-            .map(Integer::parseInt)
-            .orElse(5);
+        Optional<String> concurrencyLevelOpt = Optional.ofNullable(connection.getClientInfo("dingo_partition_execute_concurrency"));
+        return concurrencyLevelOpt.map(Integer::parseInt).orElse(5);
     }
 
+    //    private boolean canUsePlanCache(SqlNode sqlNode, RelNode relNode, ) {
+//
+//    }
     public boolean isJoinConcurrency() {
         return "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"));
     }
@@ -614,9 +554,7 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @Nullable
-    private MysqlSignature getMysqlSignature(String sql,
-            SqlNode sqlNode,
-            JavaTypeFactory typeFactory, Meta.CursorFactory cursorFactory) {
+    private MysqlSignature getMysqlSignature(String sql, SqlNode sqlNode, JavaTypeFactory typeFactory, Meta.CursorFactory cursorFactory) {
         if (compatibleMysql(sqlNode, planProfile)) {
             planProfile.end();
             DingoDdlVerify.verify(sqlNode, connection);
@@ -627,33 +565,27 @@ public final class DingoDriverParser extends DingoParser {
                 this.execProfile = new ExecProfile("exec");
                 QueryExecutor queryOperation = (QueryExecutor) operation;
                 queryOperation.initExecProfile(execProfile);
-                columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))
-                    .collect(Collectors.toList());
+                columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column, new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false)).collect(Collectors.toList());
                 statementType = Meta.StatementType.SELECT;
                 if (queryOperation instanceof ShowProcessListExecutor) {
                     ShowProcessListExecutor processListOperation = (ShowProcessListExecutor) queryOperation;
-                    List<ProcessInfo> processInfoList
-                        = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap);
+                    List<ProcessInfo> processInfoList = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap);
                     processListOperation.init(processInfoList);
                 }
             } else if (sqlNode.getKind() == SqlKind.INSERT) {
-                columns = ((DmlExecutor)operation).columns(typeFactory);
+                columns = ((DmlExecutor) operation).columns(typeFactory);
                 statementType = Meta.StatementType.IS_DML;
                 this.execProfile = new ExecProfile("dml");
                 ((DmlExecutor) operation).doExecute(execProfile);
             } else {
-                Map<String, Connection> connectionMap
-                    = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
+                Map<String, Connection> connectionMap = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
                 if (operation instanceof KillConnection) {
                     KillConnection killConnection = (KillConnection) operation;
                     String threadId = killConnection.getThreadId();
                     if (connectionMap.containsKey(threadId)) {
                         killConnection.initConnection(connectionMap.get(threadId));
                     } else if (connectionMap.containsKey(killConnection.getMysqlThreadId())) {
-                        killConnection.initConnection(
-                            connectionMap.get(killConnection.getMysqlThreadId())
-                        );
+                        killConnection.initConnection(connectionMap.get(killConnection.getMysqlThreadId()));
                     }
                 } else if (operation instanceof KillQuery) {
                     KillQuery killQuery = (KillQuery) operation;
@@ -663,27 +595,21 @@ public final class DingoDriverParser extends DingoParser {
                     if (connection.getTransaction() != null) {
                         dingoAudit(connection.getTransaction());
                     }
-                    ((io.dingodb.calcite.executor.DdlExecutor)operation).execute();
+                    ((io.dingodb.calcite.executor.DdlExecutor) operation).execute();
                     this.commitProfile = connection.getCommitProfile();
-                }  else if (sqlNode instanceof SqlRollback) {
+                } else if (sqlNode instanceof SqlRollback) {
                     if (connection.getTransaction() != null) {
                         dingoAudit(connection.getTransaction());
                     }
                     this.execProfile = new ExecProfile("other_ddl");
-                    ((io.dingodb.calcite.executor.DdlExecutor)operation).doExecute(this.execProfile);
+                    ((io.dingodb.calcite.executor.DdlExecutor) operation).doExecute(this.execProfile);
                 } else {
                     this.execProfile = new ExecProfile("other_ddl");
-                    ((io.dingodb.calcite.executor.DdlExecutor)operation).doExecute(this.execProfile);
+                    ((io.dingodb.calcite.executor.DdlExecutor) operation).doExecute(this.execProfile);
                 }
                 statementType = Meta.StatementType.OTHER_DDL;
             }
-            return new MysqlSignature(columns,
-                sql,
-                new ArrayList<>(),
-                null,
-                cursorFactory,
-                statementType,
-                operation);
+            return new MysqlSignature(columns, sql, new ArrayList<>(), null, cursorFactory, statementType, operation);
         }
         return null;
     }
@@ -697,16 +623,7 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     @Nonnull
-    public Meta.Signature retryQuery(
-        JobManager jobManager,
-        String sql,
-        SqlNode sqlNode,
-        RelNode relNode,
-        RelDataType parasType,
-        List<ColumnMetaData> columns,
-        boolean lockTable,
-        List<ColumnMetaData> visitColumns
-    ) {
+    public Meta.Signature retryQuery(JobManager jobManager, String sql, SqlNode sqlNode, RelNode relNode, RelDataType parasType, List<ColumnMetaData> columns, boolean lockTable, List<ColumnMetaData> visitColumns) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
         markAutoIncForDml(relNode);
@@ -722,10 +639,7 @@ public final class DingoDriverParser extends DingoParser {
                 break;
         }
 
-        ITransaction transaction = connection.createTransaction(
-            TransactionType.OPTIMISTIC,
-            connection.getAutoCommit()
-        );
+        ITransaction transaction = connection.createTransaction(TransactionType.OPTIMISTIC, connection.getAutoCommit());
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().cacheTso();
         if (transaction.isPessimistic() && transaction.getPrimaryKeyLock() == null) {
@@ -769,23 +683,11 @@ public final class DingoDriverParser extends DingoParser {
         );
     }
 
-    private static void runPessimisticPrimaryKeyJob(
-        long jobSeqId,
-        JobManager jobManager,
-        ITransaction transaction,
-        SqlNode sqlNode,
-        RelNode relNode,
-        Location currentLocation,
-        DingoType dingoType,
-        ExecuteVariables executeVariables
-    ) {
+    private static void runPessimisticPrimaryKeyJob(long jobSeqId, JobManager jobManager, ITransaction transaction, SqlNode sqlNode, RelNode relNode, Location currentLocation, DingoType dingoType, ExecuteVariables executeVariables) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
-            DingoJobVisitor.renderJob(
-                jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables
-            );
+            DingoJobVisitor.renderJob(jobManager, job, relNode, currentLocation, true, transaction, sqlNode.getKind(), executeVariables);
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
                 while (iterator.hasNext()) {
@@ -898,11 +800,7 @@ public final class DingoDriverParser extends DingoParser {
         return null;
     }
 
-    private static boolean checkEngine(SqlNode sqlNode,
-                                       Set<RelOptTable> tables,
-                                       ITransaction transaction,
-                                       PlanProfile planProfile,
-                                       boolean isNewTxn) {
+    private static boolean checkEngine(SqlNode sqlNode, Set<RelOptTable> tables, ITransaction transaction, PlanProfile planProfile, boolean isNewTxn) {
         boolean isTxn = false;
         boolean isNotTransactionTable = false;
         // for UT test
@@ -942,9 +840,7 @@ public final class DingoDriverParser extends DingoParser {
                 throw new RuntimeException("Transactional tables cannot be mixed with non-transactional tables");
             }
 
-            if (transaction != null && transaction.getType() != NONE
-                && (!isNewTxn && engine != null && !engine.contains("TXN"))
-            ) {
+            if (transaction != null && transaction.getType() != NONE && (!isNewTxn && engine != null && !engine.contains("TXN"))) {
                 LogUtils.info(log, "transaction txnId is {}, table name is {}", transaction.getTxnId(), name);
                 throw new RuntimeException("Non-transaction tables cannot be used in transactions");
             }
@@ -961,50 +857,46 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     private static List<ProcessInfo> getProcessInfoList(Map<String, Connection> connectionMap) {
-        return connectionMap
-            .entrySet()
-            .stream()
-            .map(entry -> {
-                String type = "DINGO";
-                String id = entry.getKey();
-                if (id.startsWith("mysql:")) {
-                    type = "MYSQL";
-                    id = id.substring(6);
-                }
-                DingoConnection dingoConn = (DingoConnection) entry.getValue();
-                String txnIdStr = "";
-                if (dingoConn.getTransaction() != null && dingoConn.getTransaction().getTxnId() != null) {
-                    txnIdStr = dingoConn.getTransaction().getTxnId().toString();
-                }
-                long commandStartTime = dingoConn.getCommandStartTime();
-                String costTimeStr = null;
-                String command = "query";
-                if (commandStartTime == 0) {
-                    command = "sleep";
-                } else {
-                    costTimeStr = String.valueOf(System.currentTimeMillis() - commandStartTime);
-                }
-                DingoParserContext context = dingoConn.getContext();
-                ProcessInfo processInfo = new ProcessInfo();
-                processInfo.setId(id);
-                processInfo.setUser(context.getOption("user"));
-                processInfo.setHost(context.getOption("host"));
-                processInfo.setClient(context.getOption("client"));
-                processInfo.setDb(context.getUsedSchema().getName());
-                processInfo.setType(type);
-                processInfo.setCommand(command);
-                processInfo.setTime(costTimeStr);
-                processInfo.setTxnIdStr(txnIdStr);
-                try {
-                    processInfo.setState(dingoConn.isClosed() ? "closed" : "open");
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                String info = dingoConn.getCommand();
-                processInfo.setInfo(info);
-                return processInfo;
-            })
-            .collect(Collectors.toList());
+        return connectionMap.entrySet().stream().map(entry -> {
+            String type = "DINGO";
+            String id = entry.getKey();
+            if (id.startsWith("mysql:")) {
+                type = "MYSQL";
+                id = id.substring(6);
+            }
+            DingoConnection dingoConn = (DingoConnection) entry.getValue();
+            String txnIdStr = "";
+            if (dingoConn.getTransaction() != null && dingoConn.getTransaction().getTxnId() != null) {
+                txnIdStr = dingoConn.getTransaction().getTxnId().toString();
+            }
+            long commandStartTime = dingoConn.getCommandStartTime();
+            String costTimeStr = null;
+            String command = "query";
+            if (commandStartTime == 0) {
+                command = "sleep";
+            } else {
+                costTimeStr = String.valueOf(System.currentTimeMillis() - commandStartTime);
+            }
+            DingoParserContext context = dingoConn.getContext();
+            ProcessInfo processInfo = new ProcessInfo();
+            processInfo.setId(id);
+            processInfo.setUser(context.getOption("user"));
+            processInfo.setHost(context.getOption("host"));
+            processInfo.setClient(context.getOption("client"));
+            processInfo.setDb(context.getUsedSchema().getName());
+            processInfo.setType(type);
+            processInfo.setCommand(command);
+            processInfo.setTime(costTimeStr);
+            processInfo.setTxnIdStr(txnIdStr);
+            try {
+                processInfo.setState(dingoConn.isClosed() ? "closed" : "open");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            String info = dingoConn.getCommand();
+            processInfo.setInfo(info);
+            return processInfo;
+        }).collect(Collectors.toList());
     }
 
     private void syntacticSugar(SqlNode sqlNode) {
@@ -1024,15 +916,13 @@ public final class DingoDriverParser extends DingoParser {
         if (sqlNodes == null) {
             return;
         }
-        for (int i = 0; i < sqlNodes.size(); i ++) {
+        for (int i = 0; i < sqlNodes.size(); i++) {
             SqlNode sqlNode1 = sqlNodes.get(i);
             if (sqlNode1 instanceof SqlBasicCall) {
                 SqlBasicCall call = (SqlBasicCall) sqlNode1;
                 String opName = call.getOperator().getName();
                 List<SqlNode> nodes = new ArrayList<>();
-                if (opName.equalsIgnoreCase("database")
-                    || opName.equalsIgnoreCase("schema")
-                    || opName.equalsIgnoreCase("user")) {
+                if (opName.equalsIgnoreCase("database") || opName.equalsIgnoreCase("schema") || opName.equalsIgnoreCase("user")) {
                     sqlNodes.remove(i);
                     nodes.add(SqlLiteral.createCharString("DINGO", call.getParserPosition()));
                 } else if (opName.equals("@") || opName.equals("@@")) {
@@ -1057,21 +947,17 @@ public final class DingoDriverParser extends DingoParser {
     private static boolean trace(SqlNode sqlNode) {
         if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
             return ((io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode).isTrace();
-        } else if (sqlNode instanceof io.dingodb.calcite.grammar.dml.SqlInsert) {
-            return ((io.dingodb.calcite.grammar.dml.SqlInsert) sqlNode).isTrace();
+        } else if (sqlNode instanceof SqlInsert) {
+            return ((SqlInsert) sqlNode).isTrace();
         }
         return false;
     }
 
     private static List<ColumnMetaData> getTraceColMeta(JavaTypeFactory typeFactory) {
-        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "operation",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "startTs",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta3 = metaData(typeFactory, 2, "duration",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta4 = metaData(typeFactory, 3, "rowcount",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.BIGINT), null, true);
+        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "operation", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "startTs", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta3 = metaData(typeFactory, 2, "duration", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta4 = metaData(typeFactory, 3, "rowcount", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.BIGINT), null, true);
 
         List<ColumnMetaData> metaDataList = new ArrayList<>();
         metaDataList.add(colMeta1);
@@ -1082,16 +968,11 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     private static List<ColumnMetaData> getExplainColMeta(JavaTypeFactory typeFactory) {
-        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
-        ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
-        ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
+        ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+        ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info", new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
         List<ColumnMetaData> metaDataList = new ArrayList<>();
         metaDataList.add(colMeta1);
         metaDataList.add(colMeta2);
@@ -1128,4 +1009,201 @@ public final class DingoDriverParser extends DingoParser {
     //    }
     //}
 
+    private boolean checkSelect(SqlNode sqlNode) {
+        if (sqlNode instanceof SqlSelect) {
+            if (((SqlSelect) sqlNode).getHaving() == null) {
+                return false;
+            }
+            if (((SqlSelect) sqlNode).getGroup() == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean canUsePlanCache(SqlNode sqlNode, boolean newTxn) {
+        if (!newTxn) {
+            return false;
+        }
+        boolean enableDMLPlanCache = false;
+        boolean checkSelect = checkSelect(sqlNode);
+
+        switch (sqlNode.getKind()) {
+            case SELECT:
+                return checkSelect;
+            case INSERT:
+            case UPDATE:
+            case DELETE:
+                if (enableDMLPlanCache) {
+                    return true;
+                } else {
+                    return false;
+                }
+            case ORDER_BY:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public RelNode getValidPlan(SqlNode sqlNode) {
+        RelNode relNode = null;
+        return relNode;
+    }
+
+    private PlanCacheKey makePlanCacheKey(DingoConnection connection, SqlNode sqlNode, boolean stmntCachable) {
+        String dbName = connection.getSchema();
+        List<String> tableNames = getTableNames(sqlNode);
+        int limits = Integer.MAX_VALUE;
+        if (sqlNode instanceof SqlOrderBy) {
+            SqlNode limit = ((SqlOrderBy) sqlNode).fetch;
+            if (limit != null) {
+                limits = ((SqlNumericLiteral) limit).intValue(true);
+            }
+        }
+//        SqlNode parameterizedQuery = replaceFilterValues(sqlNode);
+//        String parameterizedStr = parameterizedQuery.toString();
+        List<String> cols = new ArrayList<>();
+        SqlSelect select = null;
+        if (sqlNode instanceof SqlOrderBy) {
+            select = (SqlSelect) ((SqlOrderBy) sqlNode).query;
+        } else if (sqlNode instanceof SqlSelect) {
+            select = (SqlSelect) sqlNode;
+        }
+        assert select != null;
+        select.getSelectList().forEach(item -> cols.add(item.toString()));
+        List<String> hints = new ArrayList<>();
+        select.getHints().forEach(iterm -> hints.add(iterm.toString()));
+
+        return PlanCacheKey.builder().dbName(dbName).queryStr(sqlNode.toString()).limits(limits).tbls(tableNames)
+            .outputColumns(cols).hints(hints).stmtCacheable(stmntCachable).preparedAst(sqlNode).build();
+    }
+
+    private PlanCacheValue findPlanCacheValue(PlanCacheKey planCacheKey, LRUPlanCache planCache) {
+        String planCacheTimeOut = connection.getClientInfo("planCacheTimeout");
+        return planCache.get(planCacheKey);
+    }
+
+    public static List<String> getTableNames(SqlNode sqlNode) {
+        List<String> tableNames = new ArrayList<>();
+        extractTableNames(sqlNode, tableNames);
+        return tableNames;
+    }
+
+    private static void extractTableNames(SqlNode sqlNode, List<String> tableNames) {
+        if (sqlNode instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect) sqlNode;
+            SqlNode from = select.getFrom();
+            if (from != null) {
+                processFromClause(from, tableNames);
+            }
+        } else if (sqlNode instanceof SqlJoin) {
+            SqlJoin join = (SqlJoin) sqlNode;
+            extractTableNames(join.getLeft(), tableNames);
+            extractTableNames(join.getRight(), tableNames);
+        } else if (sqlNode instanceof SqlIdentifier) {
+            SqlIdentifier identifier = (SqlIdentifier) sqlNode;
+            if (!identifier.isSimple()) {
+                return;
+            }
+            tableNames.add(identifier.getSimple());
+        } else if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy) sqlNode;
+            SqlSelect select = (SqlSelect) orderBy.query;
+            SqlNode from = select.getFrom();
+            if (from != null) {
+                processFromClause(from, tableNames);
+            }
+        }
+    }
+
+    private static void processFromClause(SqlNode from, List<String> tableNames) {
+        if (from instanceof SqlIdentifier) {
+            SqlIdentifier identifier = (SqlIdentifier) from;
+            if (!identifier.isSimple()) {
+                return;
+            }
+            tableNames.add(identifier.getSimple());
+        } else if (from instanceof SqlJoin) {
+            SqlJoin join = (SqlJoin) from;
+            extractTableNames(join.getLeft(), tableNames);
+            extractTableNames(join.getRight(), tableNames);
+        }
+    }
+
+    public static String generatePlanDigest(SqlNode sqlNode) {
+        List<String> keyFeatures = new ArrayList<>();
+        extractKeyFeatures(sqlNode, keyFeatures);
+        return String.join(",", keyFeatures);
+    }
+
+    public static void extractKeyFeatures(SqlNode sqlNode, List<String> keyFeatures) {
+        SqlSelect select = null;
+        if (sqlNode instanceof SqlSelect) {
+            select = (SqlSelect) sqlNode;
+        } else if (sqlNode instanceof SqlOrderBy) {
+            select = (SqlSelect) ((SqlOrderBy) sqlNode).query;
+        }
+        keyFeatures.add("SELECT");
+        select.getSelectList().getList().forEach(column -> {
+            keyFeatures.add("COLUMN:" + column.toString());
+        });
+        if (select.getFrom() != null) {
+            keyFeatures.add("FROM:" + select.getFrom().toString());
+        }
+        if (select.getWhere() != null) {
+            keyFeatures.add("WHERE:" + select.getWhere().toString());
+        }
+        if (select.getFetch() != null) {
+            keyFeatures.add("LIMIT" + select.getFetch().toString());
+        }
+
+    }
+
+    public static SqlNode replaceFilterValues(SqlNode sqlNode) {
+
+        SqlSelect select = null;
+        if (sqlNode instanceof SqlSelect) {
+            select = (SqlSelect) sqlNode;
+        } else if (sqlNode instanceof SqlOrderBy) {
+            select = (SqlSelect) ((SqlOrderBy) sqlNode).query;
+        }
+        if (select.getWhere() != null) {
+            select.setWhere(replaceValuesInCondition(select.getWhere()));
+        }
+        if(select.getFetch() != null) {
+            select.setFetch(replaceValuesInCondition(select.getFetch()));
+        }
+        return sqlNode;
+    }
+
+    public static SqlNode replaceValuesInCondition(SqlNode conditionNode) {
+        if (conditionNode instanceof SqlBasicCall) {
+            SqlBasicCall basicCall = (SqlBasicCall) conditionNode;
+            List<SqlNode> operandList = basicCall.getOperandList();
+            for (int i = 0; i < operandList.size(); i++) {
+                SqlNode operand = operandList.get(i);
+                if (operand instanceof SqlLiteral) {
+                    SqlLiteral value = (SqlLiteral) operand;
+                        SqlIdentifier sqlIdentifier = new SqlIdentifier("?", value.getParserPosition());
+                        basicCall.setOperand(i, sqlIdentifier);
+
+                } else if (operand instanceof SqlBasicCall) {
+                    replaceValuesInCondition(operand);
+                }
+            }
+        }
+        return conditionNode;
+    }
+
+    private static boolean checkKind(SqlKind kind) {
+        if (SqlKind.EQUALS.equals(kind) || SqlKind.BETWEEN.equals(kind) || SqlKind.LIKE.equals(kind)
+            || SqlKind.NOT_IN.equals(kind) || SqlKind.IN.equals(kind) || SqlKind.LESS_THAN_OR_EQUAL.equals(kind)
+            || SqlKind.GREATER_THAN_OR_EQUAL.equals(kind) || SqlKind.LESS_THAN.equals(kind)
+            || SqlKind.GREATER_THAN.equals(kind) || SqlKind.NOT_EQUALS.equals(kind) || SqlKind.IS_NOT_NULL.equals(kind)) {
+            return Boolean.TRUE;
+        } else {
+            return Boolean.FALSE;
+        }
+    }
 }
