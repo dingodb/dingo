@@ -20,6 +20,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -44,6 +45,14 @@ public class SqlAlterChangeColumn extends SqlAlterTable {
         this.oldName = oldName;
         this.newName = newName;
         this.dingoSqlColumn = sqlColumn;
+    }
+
+    @Override
+    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("ALTER TABLE");
+        this.table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("CHANGE COLUMN");
+        dingoSqlColumn.unparse(writer, leftPrec, rightPrec);
     }
 
 }

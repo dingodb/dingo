@@ -64,6 +64,16 @@ SqlAlterSchema SqlAlterSchema(Span s, String scope): {
    }
 }
 
+SqlAlterTable SqlAlterIgnoreTable(Span s, String scope): {
+    SqlAlterTable alterTable = null;
+} {
+  <IGNORE>
+  alterTable = SqlAlterTable(s, scope)
+  {
+    return alterTable;
+  }
+}
+
 SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlIdentifier id;
     SqlAlterTable alterTable = null;
@@ -81,6 +91,10 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
             alterTable = addColumn(s, scope, id)
         |
             alterTable = addConstraint(s, scope, id)
+        |
+            <FULLTEXT> alterTable = addIndexByMode(s, scope, id, "fulltext")
+        |
+           <SPATIAL> alterTable = addIndexByMode(s, scope, id, "spetail")
 	    )
 	  |
          <DROP>
@@ -166,6 +180,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     boolean primary = false;
     String comment = "";
     boolean autoInc = false;
+    String collate = "utf8_bin";
 } {
     <COLUMN>
     columnId = SimpleIdentifier()
@@ -189,6 +204,8 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     |
        <COMMENT> comment = dingoIdentifier()
     |
+       <COLLATE> { collate = this.getNextToken().image;}
+    |
        <AUTO_INCREMENT> { autoInc = true;}
     |
        <ON> <UPDATE> <CURRENT_TIMESTAMP>
@@ -199,7 +216,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
                     : ColumnStrategy.NOT_NULLABLE;
         }
         return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
-            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary
+            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary, collate
         ));
     }
 }
@@ -233,17 +250,20 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     int replica = 0;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
-    final SqlNodeList columnList;
+    List<SqlNode> columnList;
     String engine = null;
+    Properties prop = new Properties();
+    String indexAlg = null;
+    String indexLockOpt = null;
 } {
 <INDEX> { s.add(this); }
     { index = getNextToken().image; }
     (
-        <VECTOR> { indexType = "vector"; } columnList = ParenthesizedSimpleIdentifierList()
+        <VECTOR> { indexType = "vector"; } columnList = indexColumns()
     |
-        <TEXT> { indexType = "text"; } columnList = ParenthesizedSimpleIdentifierList()
+        <TEXT> { indexType = "text"; } columnList = indexColumns()
     |
-        [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
+        [<SCALAR>] columnList = indexColumns()
     )
     (
        <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
@@ -261,11 +281,14 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
      |
         <PARAMETERS> properties = readProperties()
     )*
+    prop = indexOption()
+    [ indexAlg = indexAlg()]
+    [ indexLockOpt = indexLockOpt()]
     {
         return new SqlAlterAddIndex(
             s.end(this), id,
             new SqlIndexDeclaration(
-                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, false
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, "", prop, indexAlg, indexLockOpt
             )
         );
     }
@@ -279,12 +302,15 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     int replica = 0;
     String indexType = "scalar";
     SqlNodeList withColumnList = null;
-    final SqlNodeList columnList;
+    List<SqlNode> columnList;
     String engine = null;
+    Properties prop = null;
+    String indexAlg = null;
+    String indexLockOpt = null;
 } {
  <UNIQUE> [<INDEX>][<KEY>] { s.add(this); }
     { index = getNextToken().image; }
-    [<SCALAR>] columnList = ParenthesizedSimpleIdentifierList()
+    [<SCALAR>] columnList = indexColumns()
     (
        <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
      |
@@ -301,15 +327,65 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
      |
         <PARAMETERS> properties = readProperties()
     )*
+    prop = indexOption()
+    [ indexAlg = indexAlg()]
+    [ indexLockOpt = indexLockOpt()]
     {
         return new SqlAlterAddIndex(
             s.end(this), id,
             new SqlIndexDeclaration(
-                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, true
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, "unique", prop, indexAlg, indexLockOpt
             )
         );
     }
 }
+
+SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode): {
+    final String index;
+    Boolean autoIncrement = false;
+    Properties properties = null;
+    PartitionDefinition partitionDefinition = null;
+    int replica = 0;
+    String indexType = "scalar";
+    SqlNodeList withColumnList = null;
+    List<SqlNode> columnList;
+    String engine = null;
+    Properties prop = null;
+    String indexAlg = null;
+    String indexLockOpt = null;
+} {
+   <INDEX> { s.add(this); }
+    { index = getNextToken().image; }
+    columnList = indexColumns()
+    (
+       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+     |
+       <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+     |
+        <PARTITION> <BY>
+            {
+                partitionDefinition = new PartitionDefinition();
+                partitionDefinition.setFuncName(getNextToken().image);
+                partitionDefinition.setDetails(readPartitionDetails());
+            }
+     |
+        <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
+     |
+        <PARAMETERS> properties = readProperties()
+    )*
+    prop = indexOption()
+    [ indexAlg = indexAlg()]
+    [ indexLockOpt = indexLockOpt()]
+    {
+        return new SqlAlterAddIndex(
+            s.end(this), id,
+            new SqlIndexDeclaration(
+                s.end(this), index, columnList, withColumnList, properties,partitionDefinition, replica, indexType, engine, mode, prop, indexAlg, indexLockOpt
+            )
+        );
+    }
+}
+
 
 SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
     final String index;
@@ -501,6 +577,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
     PartitionDefinition partitionDefinition = null;
     int replica = 0;
     String engine = null;
+    String collate = "utf8_bin";
     String indexType = "scalar";
     Boolean primaryKey = false;
     String comment = "";
@@ -508,6 +585,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
     SqlIdentifier refTable = null;
     String updateRefOpt = null;
     String deleteRefOpt = null;
+    SqlIdentifier afterCol = null;
 } {
    <COLUMN> name = SimpleIdentifier()
     (
@@ -541,6 +619,8 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
          |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
          |
+          <COLLATE> { collate = this.getNextToken().image; }
+         |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> [<NOT>] [<ENFORCED>]
@@ -553,20 +633,22 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
           )
           )*
         )*
+        [ <AFTER> afterCol = SimpleIdentifier() ]
         {
             if (e == null) {
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
         }
     )
    {
      if (alterTable == null) {
-         return new SqlAlterModifyColumn(s.end(this), id, columnDec);
+         return new SqlAlterModifyColumn(s.end(this), id, columnDec, afterCol);
      } else {
          SqlAlterModifyColumn alterModifyCol = (SqlAlterModifyColumn)alterTable;
          alterModifyCol.addSqlColumn(columnDec);
+         alterModifyCol.addAlterColumn(afterCol);
          return alterModifyCol;
      }
    }
@@ -617,6 +699,7 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
     SqlIdentifier refTable = null;
     String updateRefOpt = null;
     String deleteRefOpt = null;
+    String collate = "utf8_bin";
 } {
   <COLUMN> name = SimpleIdentifier() newName = SimpleIdentifier()
    (
@@ -650,6 +733,8 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
          |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
          |
+          <COLLATE> { collate = this.getNextToken().image;}
+         |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> [<NOT>] [<ENFORCED>]
@@ -667,7 +752,7 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
         }
     )?
   {

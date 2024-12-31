@@ -20,6 +20,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlAlterTruncatePart extends SqlAlterTable {
@@ -32,5 +33,13 @@ public class SqlAlterTruncatePart extends SqlAlterTable {
     public SqlAlterTruncatePart(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlIdentifier part) {
         super(pos, sqlIdentifier, OPERATOR);
         this.part = part;
+    }
+
+    @Override
+    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("ALTER TABLE");
+        this.table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("TRUNCATE PART");
+        part.unparse(writer, leftPrec, rightPrec);
     }
 }

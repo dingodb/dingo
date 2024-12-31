@@ -2025,16 +2025,26 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_DELETE_REORG:
-                partitionList.remove(matchPart);
                 CommonId tableId = Mapper.MAPPER.idFrom(tableWithId.getTableId());
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
                     MetaService.root().getRangeDistribution(Mapper.MAPPER.idFrom(tableWithId.getTableId()));
                 List<RangeDistribution> regionList = ranges.values().stream()
                     .filter(region -> region.getId().domain == matchPart.getId().getEntityId())
                     .collect(Collectors.toList());
-                LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
                 MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                long newPartId = MetaService.root().generatePartId();
+                matchPart.getId().setEntityId(newPartId);
+                byte[] originStartKey = matchPart.getRange().getStartKey();
+                byte[] originEndKey = matchPart.getRange().getEndKey();
+                matchPart.getRange().setStartKey(Mapper.MAPPER.realKey(originStartKey, matchPart.getId(), (byte)'t'));
+                if (originEndKey.length == 9) {
+                    matchPart.getRange().setEndKey(Mapper.MAPPER.nextKey(matchPart.getId(), (byte)'t'));
+                } else {
+                    matchPart.getRange().setEndKey(Mapper.MAPPER.realKey(originEndKey, matchPart.getId(), (byte)'t'));
+                }
 
+                MetaService.root().rebaseRegion(tableWithId, matchPart);
+                // disable index
                 indexList.forEach(obj -> {
                     TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
                     MetaService.root().dropIndex(

@@ -1067,7 +1067,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
         long ts,
         boolean autoInc
     ) {
-        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
         LogUtils.info(log, "dropRegion size:{}, tableId:{}", rangeDistributions.size(), tableId);
@@ -1099,6 +1098,43 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 }
             }
         }
+    }
+
+    public void rebaseRegion(
+        Object tableWithId,
+        Object partition
+    ) {
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tableWithId;
+        io.dingodb.sdk.service.entity.meta.TableDefinition withIdTableDefinition
+            = tableDefinitionWithId.getTableDefinition();
+        long schemaId = tableDefinitionWithId.getTableId().getParentEntityId();
+        Partition partition1 = (Partition) partition;
+        CreateRegionRequest request = CreateRegionRequest
+            .builder()
+            .regionName("T_" + schemaId + "_" + withIdTableDefinition.getName()
+                + "_part_" + partition1.getId().getEntityId())
+            .regionType(RegionType.STORE_REGION)
+            .replicaNum(withIdTableDefinition.getReplica())
+            .range(partition1.getRange())
+            .rawEngine(getRawEngine(withIdTableDefinition.getEngine()))
+            .storeEngine(withIdTableDefinition.getStoreEngine())
+            .schemaId(schemaId)
+            .tableId(tableDefinitionWithId.getTableId().getEntityId())
+            .partId(partition1.getId().getEntityId())
+            .tenantId(tableDefinitionWithId.getTenantId())
+            .build();
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        coordinatorService.createRegion(tso(), request);
+    }
+
+    public long generatePartId() {
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        return coordinatorService.createIds(tso(), CreateIdsRequest.builder()
+                .idEpochType(IdEpochType.ID_NEXT_TABLE)
+                .count(1)
+                .build()
+            )
+            .getIds().get(0);
     }
 
     private static void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
@@ -1145,9 +1181,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 return true;
             }
             List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
-            indexIds.forEach(indexId -> {
-                infoSchemaService.dropIndex(indexId.domain, indexId.seq);
-            });
+            indexIds.forEach(indexId -> infoSchemaService.dropIndex(indexId.domain, indexId.seq));
         }
         return true;
     }

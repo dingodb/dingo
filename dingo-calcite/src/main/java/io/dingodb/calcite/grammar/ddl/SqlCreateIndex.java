@@ -26,6 +26,7 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class SqlCreateIndex extends SqlCreate {
@@ -34,11 +35,19 @@ public class SqlCreateIndex extends SqlCreate {
 
     public SqlIdentifier table;
 
-    public List<String> columns;
+    public List<SqlNode> columns;
 
     public boolean isUnique;
 
+    public String mode;
+
     public int replica;
+
+    public Properties properties;
+
+    public String indexAlg;
+
+    public String indexLockOpt;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE INDEX", SqlKind.OTHER_DDL);
@@ -46,16 +55,23 @@ public class SqlCreateIndex extends SqlCreate {
     public SqlCreateIndex(SqlParserPos pos, boolean replace, boolean ifNotExists,
                           String index,
                           SqlIdentifier table,
-                          List<SqlIdentifier> columns,
-                          boolean isUnique, int replica) {
+                          List<SqlNode> columns,
+                          boolean isUnique,
+                          int replica,
+                          String mode,
+                          Properties prop,
+                          String indexAlg,
+                          String indexLockOpt) {
         super(OPERATOR, pos, replace, ifNotExists);
         this.index = index;
         this.table = table;
-        this.columns = columns.stream()
-            .map(SqlIdentifier::getSimple)
-            .map(String::toUpperCase).collect(Collectors.toList());
+        this.columns = columns;
         this.isUnique = isUnique;
         this.replica = replica;
+        this.mode = mode;
+        this.properties = prop;
+        this.indexAlg = indexAlg;
+        this.indexLockOpt = indexLockOpt;
     }
 
     @Override
@@ -65,8 +81,24 @@ public class SqlCreateIndex extends SqlCreate {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("create index");
+        writer.keyword("create");
+        if (mode != null) {
+            writer.keyword(mode);
+        }
+        writer.keyword("index");
         writer.keyword(index);
+        writer.keyword("on");
+        table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("(");
+        int i = 0;
+        for (SqlNode col : columns) {
+            col.unparse(writer, leftPrec, rightPrec);
+            if (i < columns.size() - 1) {
+                writer.keyword(",");
+            }
+            i ++;
+        }
+        writer.keyword(")");
     }
 
 }

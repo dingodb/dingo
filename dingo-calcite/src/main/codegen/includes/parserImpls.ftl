@@ -155,6 +155,10 @@ void TableElement(List<SqlNode> list) :
     SqlIdentifier refTable = null;
     String updateRefOpt = null;
     String deleteRefOpt = null;
+    String collate = "utf8_bin";
+    Properties prop = null;
+    String indexAlg = null;
+    String indexLockOpt = null;
 }
 {
     LOOKAHEAD(2) id = SimpleIdentifier()
@@ -187,7 +191,8 @@ void TableElement(List<SqlNode> list) :
          |
            <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
          |
-
+           <COLLATE> { collate = this.getNextToken().image; }
+         |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
          |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
@@ -199,7 +204,7 @@ void TableElement(List<SqlNode> list) :
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey);
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
             list.add(columnDec);
         }
     )
@@ -240,6 +245,9 @@ void TableElement(List<SqlNode> list) :
          |
            <PARAMETERS> properties = readProperties()
         )*
+        prop = indexOption()
+        [ indexAlg = indexAlg()]
+        [ indexLockOpt = indexLockOpt()]
         {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
             partitionDefinition, replica, indexType, engine, false));
@@ -267,6 +275,9 @@ void TableElement(List<SqlNode> list) :
         [
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
         ]
+        prop = indexOption()
+        [ indexAlg = indexAlg()]
+        [ indexLockOpt = indexLockOpt()]
     |
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
@@ -602,18 +613,28 @@ Number number(): {
       )
 }
 
+
 SqlCreate SqlCreateView(Span s, boolean replace) :
 {
     final SqlIdentifier id;
     SqlNodeList columnList = null;
     final SqlNode query;
+    String user = null;
+    String host = null;
+    String alg = null;
+    String security = null;
+    String checkOpt = null;
 }
 {
+    [<ALGORITHM> <EQ> (<UNDEFINED>|<MERGE>|<TEMPTABLE>)]
+    [ <DEFINER> <EQ> user = strIdent() [ <AT_SPLIT> strIdent() { host = token.image; }  ]]
+    [ <SQL> <SECURITY> (<DEFINER>|<INVOKER>)]
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
-    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return SqlDdlNodes.createView(s.end(this), replace, id, columnList,
-            query);
+    <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [ <WITH> (<CASCADED> {checkOpt = "cascaded";}|<LOCAL> {checkOpt = "local";}) <CHECK> <OPTION>]
+    {
+        return new DingoSqlCreateView(s.end(this), replace, id, columnList, query, security, alg, user, host, checkOpt);
     }
 }
 
@@ -684,32 +705,150 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
 SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     boolean isUnique = false;
+    String mode = "";
     final String index;
     SqlIdentifier table;
-    SqlIdentifier column;
-    List<SqlIdentifier> columns;
+    SqlNode column;
+    List<SqlNode> columns;
     int replica = 0;
     SqlNode create = null;
     Boolean ifNotExists = false;
+    Properties prop = null;
+    String indexAlg = null;
+    String indexLockOpt = null;
 }
 {
-    [ <UNIQUE> { isUnique = true;}]
+    [ (<UNIQUE> { isUnique = true; mode="unique"; } | <FULLTEXT> { mode = "fulltext";}|<SPATIAL> {mode = "fulltext";})]
     <INDEX> ifNotExists = IfNotExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
      { index = token.image.toUpperCase(); }
     <ON> table = CompoundIdentifier()
-    <LPAREN> column = SimpleIdentifier() { columns = new ArrayList<SqlIdentifier>(); columns.add(column); }
-    (
-       <COMMA>
-       column = SimpleIdentifier() { columns.add(column); }
-    )*
-    <RPAREN>
+    columns = indexColumns()
     [
         <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
     ]
+    prop = indexOption()
+    [ indexAlg = indexAlg()]
+    [ indexLockOpt = indexLockOpt()]
     {
-       return new SqlCreateIndex(s.end(this), replace, ifNotExists, index, table, columns, isUnique, replica);
+       return new SqlCreateIndex(s.end(this), replace, ifNotExists, index, table, columns, isUnique, replica, mode, prop, indexAlg, indexLockOpt);
     }
+}
+
+String indexAlg(): {
+  String alg = null;
+} {
+  <ALGORITHM> <EQ>
+  (
+   <DEFAULT_> {alg = "default";}
+   |
+   <INPLACE> { alg = "inplace";}
+   |
+   <COPY> { alg = "copy";}
+  )
+  {
+    return alg;
+  }
+}
+
+String indexLockOpt(): {
+  String lockOpt = null;
+} {
+  <LOCK> [<EQ>]
+  (
+    <DEFAULT_> { lockOpt = "default";}
+    |
+    <NONE> { lockOpt = "none";}
+    |
+    <SHARED> { lockOpt = "shared";}
+    |
+    <EXCLUSIVE> { lockOpt = "exclusive"; }
+  )
+  {
+    return lockOpt;
+  }
+}
+
+Properties indexOption(): {
+  Properties prop = new Properties();
+} {
+   (
+    <KEY_BLOCK_SIZE> [<EQ>] <UNSIGNED_INTEGER_LITERAL> { prop.put("key_block_size", Integer.parseInt(this.token.image));}
+    |
+    <RTREE> { prop.put("indexType", "bdb"); }
+    |
+    <BTREE> { prop.put("indexType", "bdb"); }
+    |
+    <HASH> { prop.put("indexType", "hash"); }
+    |
+    <WITH> <PARSER> { prop.put("parser", strIdent()); }
+    |
+    <COMMENT> { prop.put("comment", strIdent());}
+    |
+    <VISIBLE> { prop.put("visible", "true"); }
+    |
+    <INVISIBLE> { prop.put("visible", "false"); }
+    |
+    <GLOBAL> { prop.put("isGlobal", "true"); }
+    |
+    <LOCAL> { prop.put("isGlobal", "false"); }
+   )*
+   {
+     return prop;
+   }
+}
+
+String strIdent(): {
+  String str = null;
+} {
+   (
+    <IDENTIFIER> { str = token.image; }
+   |
+    <QUOTED_STRING> { str = token.image.replace("'", "");}
+   )
+   {
+     return str;
+   }
+}
+
+List<SqlNode> indexColumns(): {
+   List<SqlNode> columns = new ArrayList<>();
+   SqlNode column = null;
+} {
+  <LPAREN> column = keyPart() { columns.add(column); }
+    (
+       <COMMA>
+       column = keyPart() { columns.add(column); }
+    )*
+    <RPAREN>
+    {
+      return columns;
+    }
+}
+
+SqlNode keyPart():{
+ SqlIdentifier column = null;
+ SqlNode expr = null;
+ int precision = -1;
+} {
+  (
+  column = SimpleIdentifier()
+  [ <LPAREN>
+         precision = UnsignedIntLiteral()
+    <RPAREN>
+  ]
+  [<ASC>] [<DESC>]
+  {
+     return column;
+  }
+  |
+  <LPAREN>
+      expr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+  <RPAREN>[<ASC>] [<DESC>]
+  {
+     return expr;
+  }
+  )
 }
 
 SqlCreate SqlCreateVectorIndex(Span s, boolean replace) :

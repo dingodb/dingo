@@ -6206,6 +6206,9 @@ SqlTypeNameSpec CharacterTypeName(Span s) :
         charSetName = Identifier()
     ]
     {
+        if (charSetName != null) {
+            charSetName = charSetName.toUpperCase();
+        }
         return new SqlBasicTypeNameSpec(sqlTypeName, precision, charSetName, s.end(this));
     }
 }

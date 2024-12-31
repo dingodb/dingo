@@ -21,6 +21,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlAlterTableAddPart extends SqlAlterTable {
@@ -35,4 +36,28 @@ public class SqlAlterTableAddPart extends SqlAlterTable {
         this.part = part;
     }
 
+    @Override
+    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("ALTER TABLE");
+        this.table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("ADD PARTITION");
+        if (part.getPartName() != null) {
+            writer.keyword(part.getPartName());
+        }
+        writer.keyword("VALUES LESS THAN(");
+        int i = 0;
+        int opSize = part.getOperand().length;
+        for (Object operand : part.getOperand()) {
+            if (operand == null) {
+                writer.keyword("null");
+            } else {
+                writer.keyword(operand.toString());
+            }
+            if (i < opSize - 1) {
+                writer.keyword(",");
+            }
+            i ++;
+        }
+        writer.keyword(")");
+    }
 }

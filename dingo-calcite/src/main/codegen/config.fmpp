@@ -67,6 +67,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAnalyze"
       "io.dingodb.calcite.grammar.ddl.SqlCreateTenant"
       "io.dingodb.calcite.grammar.ddl.SqlCreateSchema"
+      "io.dingodb.calcite.grammar.ddl.DingoSqlCreateView"
       "io.dingodb.calcite.grammar.ddl.SqlCreateUser"
       "io.dingodb.calcite.grammar.ddl.SqlCreateIndex"
       "io.dingodb.calcite.grammar.ddl.SqlCreateVectorIndex"
@@ -161,7 +162,10 @@ data: {
   # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
   # not a reserved keyword, add it to the 'nonReservedKeywords' section.
   keywords: [
+      "ALGORITHM"
+      "INPLACE"
       "IF"
+      "COPY"
       "MATERIALIZED"
       "STORED"
       "VIRTUAL"
@@ -178,6 +182,7 @@ data: {
       "ENGINE"
       "ENGINES"
       "EXCHANGE"
+      "EXCLUSIVE"
       "EXECUTOR"
       "EXECUTORS"
       "ENFORCED"
@@ -208,6 +213,7 @@ data: {
       "SCAN"
       "SSL"
       "STARTING"
+      "SHARED"
       "STATUS"
       "TABLES"
       "STARTTS"
@@ -228,6 +234,7 @@ data: {
       "SAMPLES"
       "SAMPLERATE"
       "PESSIMISTIC"
+      "PARSER"
       "OPTIMISTIC"
       "BLOCKS"
       "HASH"
@@ -260,6 +267,13 @@ data: {
       "CACHE"
       "MODIFY"
       "CHANGE"
+      "SPATIAL"
+      "FULLTEXT"
+      "KEY_BLOCK_SIZE"
+      "BTREE"
+      "RTREE"
+      "UNDEFINED"
+      "TEMPTABLE"
     ]
 
     # List of non-reserved keywords to add;

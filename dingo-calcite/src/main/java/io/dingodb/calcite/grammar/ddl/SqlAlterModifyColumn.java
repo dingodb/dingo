@@ -20,6 +20,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
@@ -29,16 +30,31 @@ import java.util.List;
 public class SqlAlterModifyColumn extends SqlAlterTable {
 
     public List<DingoSqlColumn> dingoSqlColumnList = new ArrayList<>();
+    public List<SqlIdentifier> afterColumnList = new ArrayList<>();
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE MODIFY COLUMN", SqlKind.ALTER_TABLE);
 
-    public SqlAlterModifyColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, DingoSqlColumn sqlColumn) {
+    public SqlAlterModifyColumn(
+        SqlParserPos pos, SqlIdentifier sqlIdentifier, DingoSqlColumn sqlColumn, SqlIdentifier afterCol) {
         super(pos, sqlIdentifier, OPERATOR);
         this.dingoSqlColumnList.add(sqlColumn);
+        this.afterColumnList.add(afterCol);
     }
 
     public void addSqlColumn(DingoSqlColumn sqlColumn) {
         this.dingoSqlColumnList.add(sqlColumn);
+    }
+
+    public void addAlterColumn(SqlIdentifier alterCol) {
+        this.afterColumnList.add(alterCol);
+    }
+
+    @Override
+    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("ALTER TABLE");
+        this.table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("MODIFY COLUMN");
+        this.dingoSqlColumnList.get(0).unparse(writer, leftPrec, rightPrec);
     }
 }

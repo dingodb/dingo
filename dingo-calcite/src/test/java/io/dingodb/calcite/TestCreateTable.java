@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite;
 
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
@@ -25,6 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
+import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -32,6 +34,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
+import org.apache.calcite.sql.ddl.SqlCreateView;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
@@ -40,6 +43,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 
 public class TestCreateTable {
 
@@ -347,12 +352,52 @@ public class TestCreateTable {
 
     @Test
     public void sqlAlterChangeColumn() {
-        String sql = "ALTER TABLE table_name change column a b int not null";
-        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
-        SqlParser parser = SqlParser.create(sql, config);
+        String sql = "ALTER TABLE `config_info` MODIFY COLUMN `src_ip` varchar(50) CHARACTER SET utf8  DEFAULT NULL COMMENT 'source ip'";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            assert sqlNode instanceof SqlAlterChangeColumn;
+            assert sqlNode instanceof SqlAlterModifyColumn;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlCreateIndex() {
+        String sql = "create fulltext index ix on tx(col1(10) asc, col2(20)) btree comment 'commitsss' "
+            + "algorithm=inplace "
+            + "lock =none";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateIndex;
+            SqlCreateIndex sqlCreateIndex = (SqlCreateIndex) sqlNode;
+            assert sqlCreateIndex.mode.contentEquals("fulltext");
+            assert sqlCreateIndex.properties.get("comment").equals("commitsss");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterAddIndex() {
+        String sql = "alter table t1 add fulltext index ix(age) btree comment 'commitsss' algorithm=inplace lock=none";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterAddIndex;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlCreateView() {
+        String sql = "create algorithm=merge definer=dingo sql security invoker view v1 as select * from t1";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof DingoSqlCreateView;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

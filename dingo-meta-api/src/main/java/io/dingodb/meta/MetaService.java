@@ -299,6 +299,17 @@ public interface MetaService {
 
     }
 
+    default void rebaseRegion(
+        Object tableWithId,
+        Object partition
+    ) {
+
+    }
+
+    default long generatePartId() {
+        return 0;
+    }
+
     default void createTenant(Tenant tenant) {
 
     }

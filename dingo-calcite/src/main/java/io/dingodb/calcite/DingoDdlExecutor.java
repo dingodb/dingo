@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
@@ -156,7 +157,6 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.DingoSqlKeyConstraint;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
-import org.apache.calcite.sql.ddl.SqlCreateView;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlDropView;
@@ -194,6 +194,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedModifyVec;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
@@ -752,7 +753,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
-    public void execute(SqlCreateView sqlCreateView, CalcitePrepare.Context context) {
+    public void execute(DingoSqlCreateView sqlCreateView, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", sqlCreateView);
         String connId = (String) context.getDataContext().get("connId");
         SubSnapshotSchema schema = getSnapShotSchema(sqlCreateView.name, context, false);
@@ -827,13 +828,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .replica(3)
             .createSql(sql)
             .comment("VIEW")
-            .charset(null)
-            .collate(null)
+            .charset("utf8mb4")
+            .collate("utf8mb4_bin")
             .tableType("VIEW")
             .rowFormat(null)
             .createTime(System.currentTimeMillis())
             .updateTime(0)
             .build();
+        Properties properties = new Properties();
+        properties.setProperty("user", sqlCreateView.definer);
+        properties.setProperty("host", sqlCreateView.host);
+        properties.setProperty("check_option", sqlCreateView.checkOpt);
+        properties.setProperty("security_type", sqlCreateView.security);
+        tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
         ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null);
     }
@@ -1008,7 +1015,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         boolean duplicatePart = table.getPartitions().stream()
             .anyMatch(partition -> detail.getPartName().equalsIgnoreCase(partition.getName()));
         if (duplicatePart) {
-            
+            throw DingoErrUtil.newStdErr("duplicate part");
         }
 
         DdlService.root().alterTableAddPart(
@@ -1019,6 +1026,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterAddIndex sqlAlterAddIndex, CalcitePrepare.Context context) {
+        if ("fulltext".equalsIgnoreCase(sqlAlterAddIndex.getIndexDeclaration().mode)
+            || "spatial".equalsIgnoreCase(sqlAlterAddIndex.getIndexDeclaration().mode)) {
+            throw DingoErrUtil.newStdErr(sqlAlterAddIndex.getIndexDeclaration().mode + " index is not supported",
+                ErrUnsupportedDDLOperation);
+        }
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
@@ -1096,6 +1108,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlCreateIndex sqlCreateIndex, CalcitePrepare.Context context) {
+        if ("fulltext".equalsIgnoreCase(sqlCreateIndex.mode) || "spatial".equalsIgnoreCase(sqlCreateIndex.mode)) {
+            throw DingoErrUtil.newStdErr(sqlCreateIndex.mode + " index is not supported",
+                ErrUnsupportedDDLOperation);
+        }
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(sqlCreateIndex.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
@@ -1113,14 +1129,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             null,
             sqlCreateIndex.replica,
             "scalar",
-            "TXN_LSM"
+            "TXN_LSM",
+            sqlCreateIndex.mode,
+            sqlCreateIndex.properties,
+            sqlCreateIndex.indexAlg,
+            sqlCreateIndex.indexLockOpt
         );
         sqlIndexDeclaration.unique = sqlCreateIndex.isUnique;
         if (isNotTxnEngine(table.getTable().getEngine())) {
-            throw new IllegalArgumentException("Table with index, the engine must be transactional.");
+            throw DingoErrUtil.newStdErr("Table with index, the engine must be transactional.");
         }
         IndexDefinition indexDef = fromSqlIndexDeclaration(sqlIndexDeclaration, fromTable(table.getTable()));
         indexDef.setUnique(sqlCreateIndex.isUnique);
+        indexDef.setVisible(sqlIndexDeclaration.isVisible());
+        indexDef.setComment(sqlIndexDeclaration.getComment());
         validateIndex(schema, tableName, indexDef);
         DdlService.root().createIndex(schema.getSchemaName(), tableName, indexDef);
 
@@ -1441,7 +1463,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (sqlAlterModifyColumn.dingoSqlColumnList.size() > 1) {
             throw DingoErrUtil.newStdErr("not support");
         }
-        for (DingoSqlColumn dingoSqlColumn : sqlAlterModifyColumn.dingoSqlColumnList) {
+        for (int j = 0; j < sqlAlterModifyColumn.dingoSqlColumnList.size(); j ++) {
+            DingoSqlColumn dingoSqlColumn = sqlAlterModifyColumn.dingoSqlColumnList.get(j);
             String name = dingoSqlColumn.name.getSimple();
             boolean indexMatch = table.getIndexes().stream().anyMatch(indexTable -> {
                 if (indexTable.getName().startsWith(DdlUtil.ddlTmpTableName)) {
@@ -1468,6 +1491,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             if (column == null) {
                 throw DINGO_RESOURCE.unknownColumn(name, tableName).ex();
             }
+            SqlIdentifier afterCol = sqlAlterModifyColumn.afterColumnList.get(j);
+            String afterColName;
+            if (afterCol != null) {
+                afterColName = afterCol.getSimple();
+                Column afterColumn = table.getColumns().stream()
+                    .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                        && col.getName().equalsIgnoreCase(afterColName)).findFirst().orElse(null);
+
+                if (afterColumn == null) {
+                    throw DINGO_RESOURCE.unknownColumn(name, tableName).ex();
+                }
+            } else {
+                afterColName = null;
+            }
             ColumnDefinition oldColumn = mapTo(column);
 
             ColumnDefinition newColumn = fromSqlColumnDeclaration(
@@ -1487,6 +1524,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .newCol(newColumn)
                 .changingCol(oldColumn)
                 .oldColName(oldColumn.getName())
+                .afterColName(afterColName)
                 .build();
             modifyingColInfoList.add(modifyingColInfo);
         }
@@ -2368,7 +2406,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             indexTableDefinition,
             indexTableDefinition.getPartDefinition()
         );
-        indexTableDefinition.setVisible(true);
+        indexTableDefinition.setVisible(indexDeclaration.isVisible());
+        indexTableDefinition.setComment(indexDeclaration.getComment());
 
         return indexTableDefinition;
     }

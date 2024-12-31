@@ -79,9 +79,10 @@ public class DingoSqlDdlNodes {
         ColumnStrategy strategy,
         boolean autoIncrement,
         String comment,
-        boolean primary
+        boolean primary,
+        String collate
     ) {
-        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary);
+        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary, collate);
     }
 
 }

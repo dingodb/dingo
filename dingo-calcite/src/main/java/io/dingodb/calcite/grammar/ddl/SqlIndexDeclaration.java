@@ -38,6 +38,7 @@ public class SqlIndexDeclaration extends SqlCall {
 
     public String index;
     public boolean unique;
+    public String mode;
 
     public List<String> columnList;
 
@@ -58,8 +59,59 @@ public class SqlIndexDeclaration extends SqlCall {
     @Getter
     String engine;
 
+    Properties indexOpt;
+    String algorithm;
+    String lockOpt;
+
     private static final SqlSpecialOperator OPERATOR =
         new SqlSpecialOperator("INDEX_DECL", SqlKind.CREATE_INDEX);
+
+    public SqlIndexDeclaration(
+        SqlParserPos pos,
+        String index,
+        List<SqlNode> columnList,
+        SqlNodeList withColumnList,
+        Properties properties,
+        PartitionDefinition partDefinition,
+        int replica,
+        String indexType,
+        String engine,
+        String mode,
+        Properties option,
+        String algorithm,
+        String lockOpt
+    ) {
+        super(pos);
+        this.index = index;
+        if (columnList != null) {
+            this.columnList = columnList.stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new));
+        }
+        if (withColumnList != null) {
+            this.withColumnList = withColumnList.getList().stream()
+                .filter(Objects::nonNull)
+                .map(SqlIdentifier.class::cast)
+                .map(SqlIdentifier::getSimple)
+                .map(String::toUpperCase)
+                .collect(Collectors.toCollection(ArrayList::new));
+        }
+        this.properties = properties;
+        this.partDefinition = partDefinition;
+        this.replica = replica;
+        this.indexType = indexType;
+        this.engine = engine;
+        if ("unique".equalsIgnoreCase(mode)) {
+            this.unique = true;
+        }
+        this.mode = mode;
+        this.algorithm = algorithm;
+        this.lockOpt = lockOpt;
+        this.indexOpt = option;
+    }
 
     public SqlIndexDeclaration(
         SqlParserPos pos,
@@ -135,5 +187,20 @@ public class SqlIndexDeclaration extends SqlCall {
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("index");
         writer.keyword(index);
+    }
+
+    public boolean isVisible() {
+        if (indexOpt != null) {
+            String visibleStr = indexOpt.getOrDefault("visible", "true").toString();
+            return Boolean.parseBoolean(visibleStr);
+        }
+        return true;
+    }
+
+    public String getComment() {
+        if (indexOpt != null) {
+            return indexOpt.getOrDefault("comment", "").toString();
+        }
+        return "";
     }
 }

@@ -31,6 +31,7 @@ public class ModifyingColInfo {
     ColumnDefinition changingCol;
     String oldColName;
     int modifyTp;
+    String afterColName;
 
     public ModifyingColInfo() {
 
@@ -40,11 +41,13 @@ public class ModifyingColInfo {
         ColumnDefinition newCol,
         ColumnDefinition changingCol,
         String oldColName,
-        int modifyTp
+        int modifyTp,
+        String afterColName
     ) {
         this.newCol = newCol;
         this.changingCol = changingCol;
         this.oldColName = oldColName;
         this.modifyTp = modifyTp;
+        this.afterColName = afterColName;
     }
 }

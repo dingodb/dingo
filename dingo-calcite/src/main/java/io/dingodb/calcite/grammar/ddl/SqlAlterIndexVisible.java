@@ -21,6 +21,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 public class SqlAlterIndexVisible extends SqlAlterTable {
@@ -35,5 +36,18 @@ public class SqlAlterIndexVisible extends SqlAlterTable {
         super(pos, sqlIdentifier, OPERATOR);
         this.index = indexName;
         this.invisible = invisible;
+    }
+
+    @Override
+    public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword("ALTER TABLE");
+        this.table.unparse(writer, leftPrec, rightPrec);
+        writer.keyword("ALTER INDEX");
+        writer.keyword(index);
+        if (invisible) {
+            writer.keyword("INVISIBLE");
+        } else {
+            writer.keyword("VISIBLE");
+        }
     }
 }

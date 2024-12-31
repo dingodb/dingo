@@ -80,6 +80,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "SCHEMA_PRIVILEGES":
             case "TABLE_PRIVILEGES":
             case "VIEWS":
+                return getView();
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
                 return getEmpty();
@@ -386,6 +387,47 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
     private static Iterator<Object[]> getMdlView() {
         return TransactionService.getDefault().getMdlInfo();
+    }
+
+    public static Iterator<Object[]> getView() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        return is.getSchemaMap().values()
+            .stream()
+            .filter(schemaTables ->
+                !schemaTables.getSchemaInfo().getName().equalsIgnoreCase("INFORMATION_SCHEMA"))
+            .flatMap(e -> {
+                Collection<Table> tables = e.getTables().values();
+                return tables.stream()
+                    .filter(td -> td.getTableType().equalsIgnoreCase("VIEW"))
+                    .map(td -> {
+                        String checkOpt = td.getProperties().getProperty("check_option", "");
+                        String isUpdaTable = "NO";
+                        String user = td.getProperties().getProperty("user", "");
+                        String host = td.getProperties().getProperty("host", "");
+                        String definer = user + "@" + host;
+                        String security = td.getProperties().getProperty("security_type");
+                        String character = "utf8";
+                        String collate = "utf8mb4_bin";
+                        try {
+                            return new Object[]{"def",
+                                e.getSchemaInfo().getName(),
+                                td.getName(),
+                                td.createSql,
+                                checkOpt,
+                                isUpdaTable,
+                                definer,
+                                security,
+                                character,
+                                collate
+                            };
+                        } catch (Exception e1) {
+                            LogUtils.error(log, e1.getMessage(), e1);
+                            return null;
+                        }
+                    }).filter(Objects::nonNull)
+                    .collect(Collectors.toList()).stream();
+            })
+            .iterator();
     }
 
     /**
