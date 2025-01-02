@@ -55,8 +55,8 @@ public interface DdlService {
     }
 
     default void dropColumn(
-        long schemaId, String schemaName,
-        Long tableId, String tableName, String column,
+        SchemaInfo schemaInfo,
+        Table table, String column,
         String markDel, String relatedIndex, String connId
     ) {
 
@@ -75,16 +75,16 @@ public interface DdlService {
 
     }
 
-    default void renameTable(long schemaId, String schemaName, long tableId, String tableName, String toName) {
+    default void renameTable(long schemaId, String schemaName, Table table, String toName) {
 
     }
 
-    default void renameIndex(long schemaId, String schemaName, long tableId, String tableName,
+    default void renameIndex(long schemaId, String schemaName, Table table,
         String originIndexName, String toIndexName) {
 
     }
 
-    default void alterModifyComment(long schemaId, String schemaName, long tableId, String tableName, String comment) {
+    default void alterModifyComment(long schemaId, String schemaName, Table table, String comment) {
 
     }
 
@@ -127,22 +127,22 @@ public interface DdlService {
     }
 
     default void alterIndexVisible(
-        long schemaId, String schemaName, long tableId, String tableName, String index, boolean invisible
+        long schemaId, String schemaName, Table table, String index, boolean invisible
     ) {
 
     }
 
     default void alterTableAddPart(
-        long schemaId, String schemaName, long tableId, String tableName, PartitionDetailDefinition part
+        long schemaId, String schemaName, Table table, PartitionDetailDefinition part
     ) {
 
     }
 
-    default void alterTableDropPart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+    default void alterTableDropPart(SchemaInfo schemaInfo, Table table, String part) {
 
     }
 
-    default void alterTableTruncatePart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+    default void alterTableTruncatePart(SchemaInfo schemaInfo, Table table, String part) {
 
     }
 }

@@ -173,50 +173,25 @@ SqlAlterTable addPartition(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     final SqlIdentifier columnId;
     final SqlDataTypeSpec type;
-    final boolean nullable;
-    SqlNode e = null;
-    SqlNode constraint = null;
-    ColumnStrategy strategy = null;
-    boolean primary = false;
-    String comment = "";
-    boolean autoInc = false;
-    String collate = "utf8_bin";
+    SqlIdentifier afterCol = null;
+    ColumnOption columnOpt = null;
 } {
     <COLUMN>
     columnId = SimpleIdentifier()
     type = DataType()
-    nullable = NullableOptDefaultTrue()
-    (
-        [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
-        (
-            <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
-        |
-            <STORED> { strategy = ColumnStrategy.STORED; }
-        |
-            { strategy = ColumnStrategy.VIRTUAL; }
-        )
-    |
-        <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
-        { strategy = ColumnStrategy.DEFAULT; }
-    |
-       <PRIMARY> <KEY> { primary=true; }
-    |
-       <COMMENT> comment = dingoIdentifier()
-    |
-       <COLLATE> { collate = this.getNextToken().image;}
-    |
-       <AUTO_INCREMENT> { autoInc = true;}
-    |
-       <ON> <UPDATE> <CURRENT_TIMESTAMP>
-    )*
+    columnOpt = parseColumnOption()
+    [
+          (
+           <AFTER> afterCol = SimpleIdentifier()
+           |
+           <FIRST>
+          )
+    ]
     {
-        if (e == null) {
-                strategy = nullable ? ColumnStrategy.NULLABLE
-                    : ColumnStrategy.NOT_NULLABLE;
-        }
+        boolean nullable = true;
+        if (columnOpt != null) { nullable = columnOpt.nullable; }
         return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
-            s.end(this), columnId, type.withNullable(nullable), e, strategy, autoInc, comment, primary, collate
+            s.end(this), columnId, type.withNullable(nullable), columnOpt
         ));
     }
 }
@@ -255,8 +230,9 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     Properties prop = new Properties();
     String indexAlg = null;
     String indexLockOpt = null;
+    boolean ifNotExists = false;
 } {
-<INDEX> { s.add(this); }
+ (<INDEX>|<KEY>) ifNotExists = IfNotExistsOpt() { s.add(this); }
     { index = getNextToken().image; }
     (
         <VECTOR> { indexType = "vector"; } columnList = indexColumns()
@@ -354,7 +330,7 @@ SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode
     String indexAlg = null;
     String indexLockOpt = null;
 } {
-   <INDEX> { s.add(this); }
+   [(<INDEX>|<KEY>)] { s.add(this); }
     { index = getNextToken().image; }
     columnList = indexColumns()
     (
@@ -563,83 +539,25 @@ SqlAlterTable dropPartition(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable alterTable): {
   DingoSqlColumn columnDec;
     final SqlDataTypeSpec type;
-    boolean nullable = true;
-    SqlNode checkExpr = null;
-    SqlNode e = null;
-    final SqlNode constraint;
-    SqlIdentifier name = null;
-    final SqlNodeList columnList;
-    SqlNodeList withColumnList = null;
-    ColumnStrategy strategy = null;
-    final String index;
-    Boolean autoIncrement = false;
-    Properties properties = null;
-    PartitionDefinition partitionDefinition = null;
-    int replica = 0;
-    String engine = null;
-    String collate = "utf8_bin";
-    String indexType = "scalar";
-    Boolean primaryKey = false;
-    String comment = "";
-    SqlNodeList refColumnList = null;
-    SqlIdentifier refTable = null;
-    String updateRefOpt = null;
-    String deleteRefOpt = null;
+    ColumnOption columnOpt = null;
     SqlIdentifier afterCol = null;
+    SqlIdentifier name = null;
 } {
    <COLUMN> name = SimpleIdentifier()
     (
         type = DataType()
-        (
-           <AUTO_INCREMENT> {autoIncrement = true; }
-         |
-           <NULL> { nullable = true; }
-         |
-           <NOT> <NULL> { nullable = false; }
-         |
-           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
-            e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
-            (
-                <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
-            |
-                <STORED> { strategy = ColumnStrategy.STORED; }
-            |
-                { strategy = ColumnStrategy.VIRTUAL; }
-            )
-         |
-           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
-         |
-           <PRIMARY> <KEY> { primaryKey = true; }
-         |
-           <CHECK>  <LPAREN>
-             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
-         |
-           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
-         |
-          <ON> <UPDATE> <CURRENT_TIMESTAMP>
-         |
-          <COLLATE> { collate = this.getNextToken().image; }
-         |
-          <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
-             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
-         |
-          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
-          ( <ON> (
-           <UPDATE> updateRefOpt = referenceOpt()
+        columnOpt = parseColumnOption()
+        [
+          (
+           <AFTER> afterCol = SimpleIdentifier()
            |
-           <DELETE> deleteRefOpt = referenceOpt()
+           <FIRST>
           )
-          )*
-        )*
-        [ <AFTER> afterCol = SimpleIdentifier() ]
+        ]
         {
-            if (e == null) {
-                strategy = nullable ? ColumnStrategy.NULLABLE
-                    : ColumnStrategy.NOT_NULLABLE;
-            }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
+            boolean nullable = true;
+            if (columnOpt != null) { nullable = columnOpt.nullable; }
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), columnOpt);
         }
     )
    {
@@ -657,13 +575,20 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
 SqlAlterTable alterColumn(Span s, String scope, SqlIdentifier id): {
     SqlIdentifier name = null;
     SqlNode e = null;
+    boolean visible = true;
 }
 {
     <COLUMN> { s.add(this); }
     name = SimpleIdentifier()
     (
       <SET>
-      <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+      (
+       <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+       |
+       <VISIBLE> { visible = true;}
+       |
+       <INVISIBLE> { visible = false; }
+      )
       {
         return new SqlAlterColumn(
             s.end(this), id, name, 1, e
@@ -679,80 +604,16 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
   SqlIdentifier newName = null;
   DingoSqlColumn columnDec = null;
     final SqlDataTypeSpec type;
-    boolean nullable = true;
-    SqlNode checkExpr = null;
-    SqlNode e = null;
-    final SqlNode constraint;
-    final SqlNodeList columnList;
-    SqlNodeList withColumnList = null;
-    ColumnStrategy strategy = null;
-    final String index;
-    Boolean autoIncrement = false;
-    Properties properties = null;
-    PartitionDefinition partitionDefinition = null;
-    int replica = 0;
-    String engine = null;
-    String indexType = "scalar";
-    Boolean primaryKey = false;
-    String comment = "";
-    SqlNodeList refColumnList = null;
-    SqlIdentifier refTable = null;
-    String updateRefOpt = null;
-    String deleteRefOpt = null;
-    String collate = "utf8_bin";
+   ColumnOption columnOpt = null;
 } {
   <COLUMN> name = SimpleIdentifier() newName = SimpleIdentifier()
    (
         type = DataType()
-        (
-           <AUTO_INCREMENT> {autoIncrement = true; }
-         |
-           <NULL> { nullable = true; }
-         |
-           <NOT> <NULL> { nullable = false; }
-         |
-           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
-            e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
-            (
-                <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
-            |
-                <STORED> { strategy = ColumnStrategy.STORED; }
-            |
-                { strategy = ColumnStrategy.VIRTUAL; }
-            )
-         |
-           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
-         |
-           <PRIMARY> <KEY> { primaryKey = true; }
-         |
-           <CHECK>  <LPAREN>
-             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
-         |
-           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
-         |
-          <ON> <UPDATE> <CURRENT_TIMESTAMP>
-         |
-          <COLLATE> { collate = this.getNextToken().image;}
-         |
-          <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
-             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
-         |
-          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
-          ( <ON> (
-           <UPDATE> updateRefOpt = referenceOpt()
-           |
-           <DELETE> deleteRefOpt = referenceOpt()
-          )
-          )*
-        )*
+        columnOpt = parseColumnOption()
         {
-            if (e == null) {
-                strategy = nullable ? ColumnStrategy.NULLABLE
-                    : ColumnStrategy.NOT_NULLABLE;
-            }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
+            boolean nullable = true;
+            if (columnOpt != null) { nullable = columnOpt.nullable;}
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), name, type.withNullable(nullable), columnOpt);
         }
     )?
   {

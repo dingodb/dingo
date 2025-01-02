@@ -60,8 +60,8 @@ public class DingoSqlCreateView extends SqlCreate {
         this.name = (SqlIdentifier) Objects.requireNonNull(name, "name");
         this.columnList = columnList;
         this.query = (SqlNode)Objects.requireNonNull(query, "query");
-        this.security = security;
-        this.alg = alg;
+        this.security = security == null ? "" : security;
+        this.alg = alg == null ? "" : security;
         this.definer = definer;
         this.host = host;
         this.checkOpt = checkOpt;

@@ -1163,10 +1163,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
         boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
 
         long ts = TsoService.getDefault().tso();
-        dropRegionByTable(table.getTableId(), jobId, ts, autoInc);
 
         List<IndexTable> indexes = null;
         if (!"view".equalsIgnoreCase(table.getTableType())) {
+            dropRegionByTable(table.getTableId(), jobId, ts, autoInc);
             indexes = table.getIndexes();
             if (indexes != null) {
                 for (IndexTable index : indexes) {

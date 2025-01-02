@@ -85,4 +85,15 @@ public class DingoSqlDdlNodes {
         return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary, collate);
     }
 
+    public static DingoSqlColumn createColumn(
+        SqlParserPos pos,
+        SqlIdentifier name,
+        SqlDataTypeSpec dataType,
+        ColumnOption columnOption
+    ) {
+        return new DingoSqlColumn(pos, name, dataType, columnOption.expression,
+            columnOption.strategy, columnOption.autoIncrement, columnOption.comment, columnOption.primaryKey,
+            columnOption.collate);
+    }
+
 }

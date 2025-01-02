@@ -28,6 +28,8 @@ data: {
     imports: [
       "io.dingodb.common.partition.PartitionDetailDefinition"
       "io.dingodb.common.partition.PartitionDefinition"
+      "io.dingodb.calcite.grammar.ddl.ColumnOption"
+      "io.dingodb.calcite.grammar.ddl.Constraint"
       "io.dingodb.calcite.grammar.ddl.DingoSqlDdlNodes"
       "io.dingodb.calcite.grammar.ddl.SqlBeginTx"
       "io.dingodb.calcite.grammar.ddl.SqlBlock"
@@ -163,6 +165,7 @@ data: {
   # not a reserved keyword, add it to the 'nonReservedKeywords' section.
   keywords: [
       "ALGORITHM"
+      "AUTO_RANDOM"
       "INPLACE"
       "IF"
       "COPY"
@@ -176,6 +179,8 @@ data: {
       "ACCOUNT"
       "AUTO_INCREMENT"
       "COLUMNS"
+      "CLUSTERED"
+      "NONCLUSTERED"
       "DATABASES"
       "DISTRIBUTION"
       "ENCLOSED"
@@ -187,6 +192,7 @@ data: {
       "EXECUTORS"
       "ENFORCED"
       "EXPIRE"
+      "ENCRYPTION"
       "ESCAPED"
       "FIELDS"
       "FLUSH"
@@ -212,9 +218,11 @@ data: {
       "REQUIRE"
       "SCAN"
       "SSL"
+      "SERIAL"
       "STARTING"
       "SHARED"
       "STATUS"
+      "STORAGE"
       "TABLES"
       "STARTTS"
       "TERMINATED"
@@ -256,6 +264,7 @@ data: {
       "RENAME"
       "TEXT_SEARCH"
       "HYBRID_SEARCH"
+      "DISK"
       "DISK_ANN_BUILD"
       "DISK_ANN_LOAD"
       "DISK_ANN_STATUS"
@@ -274,6 +283,9 @@ data: {
       "RTREE"
       "UNDEFINED"
       "TEMPTABLE"
+      "FIXED"
+      "MEMORY"
+      "COLUMN_FORMAT"
     ]
 
     # List of non-reserved keywords to add;
@@ -328,6 +340,7 @@ data: {
        "SqlAlterUser"
        "SqlAlterTenant"
        "SqlAlterSchema"
+       "SqlAlterIgnoreTable"
     ]
 
     statementParserMethods: [

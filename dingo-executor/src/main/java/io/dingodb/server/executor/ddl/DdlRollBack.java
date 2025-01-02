@@ -21,6 +21,7 @@ import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.meta.InfoSchemaService;
@@ -31,7 +32,7 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Base64;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrCancelledDDLJob;
 
 @Slf4j
 public final class DdlRollBack {
@@ -62,7 +63,8 @@ public final class DdlRollBack {
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
-                error = "ErrCancelledDDLJob";
+                job.setDingoErr(DingoErrUtil.newInternalErr(ErrCancelledDDLJob));
+                error = job.getDingoErr().errorMsg;
         }
         if (error != null)  {
             if (job.getError() == null) {
@@ -94,7 +96,8 @@ public final class DdlRollBack {
         }
         if (res.getKey().getTableDefinition().getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
             ddlJob.setState(JobState.jobStateCancelled);
-            return "ErrCancelledDDLJob";
+            ddlJob.setDingoErr(DingoErrUtil.newInternalErr(ErrCancelledDDLJob));
+            return ddlJob.getDingoErr().errorMsg;
         }
         ddlJob.setState(JobState.jobStateRunning);
         return null;

@@ -45,22 +45,37 @@ public class ShowCreateTableExecutor extends QueryExecutor {
     private String schemaName;
     private String tableName;
 
+    private boolean isView;
+
     public ShowCreateTableExecutor(SqlNode sqlNode, String defaultSchemaName) {
         SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
         SqlIdentifier tableIdentifier = showCreateTable.tableIdentifier;
         if (tableIdentifier.names.size() == 1) {
-            this.schemaName = defaultSchemaName;
+            this.schemaName = defaultSchemaName.toUpperCase();
             tableName = tableIdentifier.names.get(0);
         } else if (tableIdentifier.names.size() == 2) {
             this.schemaName = tableIdentifier.names.get(0).toUpperCase();
             tableName = tableIdentifier.names.get(1);
         }
+        InfoSchema is = DdlService.root().getIsLatest();
+        assert schemaName != null;
+        Table table = is.getTable(schemaName, tableName);
+        if (table == null) {
+            String errorKey = schemaName + "." + tableName;
+            throw DingoResource.DINGO_RESOURCE.tableNotExists(errorKey).ex();
+        }
+        isView = table.getTableType().equalsIgnoreCase("view");
     }
 
     @Override
     public Iterator<Object[]> getIterator() {
         List<Object[]> createTableList = new ArrayList<>();
-        String createTable = getCreateTable();
+        String createTable;
+        if (!isView) {
+            createTable = getCreateTable();
+        } else {
+            createTable = getCreateView();
+        }
         if (StringUtils.isNotBlank(createTable)) {
             Object[] tuples = new Object[]{tableName, createTable};
             createTableList.add(tuples);
@@ -72,18 +87,39 @@ public class ShowCreateTableExecutor extends QueryExecutor {
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
-        columns.add("Table");
-        columns.add("Create Table");
+        if (!isView) {
+            columns.add("Table");
+            columns.add("Create Table");
+        } else {
+            columns.add("View");
+            columns.add("Create View");
+        }
         return columns;
+    }
+
+    private String getCreateView() {
+        InfoSchema is = DdlService.root().getIsLatest();
+        Table table = is.getTable(schemaName, tableName);
+        StringBuilder createTableSqlStr = new StringBuilder();
+        createTableSqlStr.append("CREATE ");
+        String alg = table.getProperties().getProperty("algorithm");
+        createTableSqlStr.append("ALGORITHM=").append(alg);
+        String user = table.getProperties().getProperty("user");
+        String host = table.getProperties().getProperty("host");
+        createTableSqlStr.append(" DEFINER=").append(user).append("@").append(host);
+        String securityType = table.getProperties().getProperty("security_type");
+        createTableSqlStr.append(" SQL SECURITY ").append(securityType);
+        createTableSqlStr.append(" VIEW ");
+        createTableSqlStr.append("`").append(tableName).append('`');
+        createTableSqlStr.append(" AS ");
+        createTableSqlStr.append(table.createSql);
+        return createTableSqlStr.toString();
     }
 
     private String getCreateTable() {
         InfoSchema is = DdlService.root().getIsLatest();
-        Table table = is.getTable(schemaName.toUpperCase(), tableName);
-        if (table == null) {
-            String errorKey = schemaName + "." + tableName;
-            throw DingoResource.DINGO_RESOURCE.tableNotExists(errorKey).ex();
-        }
+        Table table = is.getTable(schemaName, tableName);
+
         StringBuilder createTableSqlStr = new StringBuilder();
         createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
         createTableSqlStr.append("(");
@@ -214,6 +250,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         createTableSqlStr.append(")");
         createTableSqlStr.append(" engine=").append(table.getEngine()).append(" ");
         createTableSqlStr.append(" replica=").append(table.getReplica());
+        if (table.getComment() != null) {
+            createTableSqlStr.append(" comment=").append(table.getComment());
+        }
         appendPart(table, createTableSqlStr);
         return createTableSqlStr.toString();
     }

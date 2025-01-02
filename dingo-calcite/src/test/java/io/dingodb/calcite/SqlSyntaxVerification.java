@@ -20,14 +20,17 @@ import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
-import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
+import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
+import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -40,37 +43,9 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 
-public class TestCreateTable {
-
-    public static void parseCreateTable(SqlCreateTable create) {
-        List<String> keyList = null;
-        for (SqlNode sqlNode : create.columnList) {
-            if (sqlNode instanceof SqlKeyConstraint) {
-                SqlKeyConstraint constraint = (SqlKeyConstraint) sqlNode;
-                if (constraint.getOperator().getKind() == SqlKind.PRIMARY_KEY) {
-                    // The 0th element is the name of the constraint
-                    keyList = ((SqlNodeList) constraint.getOperandList().get(1)).getList().stream()
-                        .map(t -> ((SqlIdentifier) Objects.requireNonNull(t)).getSimple())
-                        .collect(Collectors.toList());
-                    break;
-                }
-            }
-        }
-
-        for (String key : keyList) {
-            System.out.println("---> primary key:" + key);
-        }
-    }
-
-    public static void main(String[] args) {
-        System.out.println("---");
-    }
+public class SqlSyntaxVerification {
 
     @Test
     public void createUser() {
@@ -79,9 +54,8 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlCreateUser;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -93,24 +67,9 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode: " + sqlNode);
+            assert sqlNode instanceof SqlCreateTenant;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException();
-        }
-    }
-
-    @Test
-    public void createUserWithLocation() {
-        String sql = "CREATE USER 'gj'@localhost IDENTIFIED BY 'abc'";
-        SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
-        SqlParser parser = SqlParser.create(sql, config);
-        try {
-            SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
         }
     }
 
@@ -121,9 +80,8 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlDropUser;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -135,9 +93,8 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlGrant;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -149,11 +106,8 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            SqlGrant sqlGrant = (SqlGrant) sqlNode;
-            System.out.println(sqlGrant.privileges.size());
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlGrant;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -165,9 +119,8 @@ public class TestCreateTable {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            System.out.println("---> sqlNode:" + sqlNode);
+            assert sqlNode instanceof SqlRevoke;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -183,7 +136,6 @@ public class TestCreateTable {
             SqlNode sqlNode = parser.parseStmt();
             assert sqlNode instanceof SqlAlterAddConstraint;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -212,7 +164,6 @@ public class TestCreateTable {
             SqlNode sqlNode = parser.parseStmt();
             assert sqlNode instanceof SqlAlterAddIndex;
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -352,7 +303,7 @@ public class TestCreateTable {
 
     @Test
     public void sqlAlterChangeColumn() {
-        String sql = "ALTER TABLE `config_info` MODIFY COLUMN `src_ip` varchar(50) CHARACTER SET utf8  DEFAULT NULL COMMENT 'source ip'";
+        String sql = "ALTER TABLE `config_info` MODIFY COLUMN `src_ip` varchar(50) CHARACTER SET utf8  DEFAULT NULL COMMENT 'source ip' first";
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         try {
             SqlNode sqlNode = parser.parseStmt();
@@ -380,8 +331,8 @@ public class TestCreateTable {
     }
 
     @Test
-    public void sqlAlterAddIndex() {
-        String sql = "alter table t1 add fulltext index ix(age) btree comment 'commitsss' algorithm=inplace lock=none";
+    public void sqlAlterAddFulltextKey() {
+        String sql = "alter table t1 add fulltext key ix(age) btree comment 'commitsss' algorithm=inplace lock=none";
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         try {
             SqlNode sqlNode = parser.parseStmt();
@@ -398,6 +349,35 @@ public class TestCreateTable {
         try {
             SqlNode sqlNode = parser.parseStmt();
             assert sqlNode instanceof DingoSqlCreateView;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlCreateFullTextIndex() {
+        String sql = "alter table t1 add fulltext key ix1 (age)";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterAddIndex;
+            SqlAlterAddIndex sqlAlterAddIndex = (SqlAlterAddIndex) sqlNode;
+            assert sqlAlterAddIndex.getIndexDeclaration().mode.equalsIgnoreCase("fulltext");
+            assert !sqlAlterAddIndex.getIndexDeclaration().unique;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlAlterAddIndex() {
+        String sql = "alter table t1 add index if not exists ix1 (age)";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterAddIndex;
+            SqlAlterAddIndex sqlAlterAddIndex = (SqlAlterAddIndex) sqlNode;
+            assert !sqlAlterAddIndex.getIndexDeclaration().unique;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

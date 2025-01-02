@@ -51,8 +51,15 @@ SqlCreate SqlCreateSchema(Span s, boolean replace) :
 }
 {
     ( <SCHEMA> | <DATABASE> ) ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
-    [ <CHARACTER> <SET> { charset = getNextToken().image; }]
-    [ <COLLATE> { collate = getNextToken().image; } ]
+    (
+     <DEFAULT_>
+     |
+     <CHARACTER> <SET> { charset = getNextToken().image; }
+     |
+     <COLLATE> { collate = getNextToken().image; }
+     |
+     <ENCRYPTION>
+    )*
     {
         return new io.dingodb.calcite.grammar.ddl.SqlCreateSchema(s.end(this), replace, ifNotExists, id, charset, collate);
     }
@@ -187,7 +194,7 @@ void TableElement(List<SqlNode> list) :
          |
            <CHECK>  <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
+                    <RPAREN> [<NOT>] [(<ENFORCED>|<NULL>)]
          |
            <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
          |
@@ -197,7 +204,7 @@ void TableElement(List<SqlNode> list) :
          |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [<ENFORCED>]
+                    <RPAREN> [<NOT>] [(<ENFORCED>|<NULL>)]
         )*
         {
             if (e == null) {
@@ -298,6 +305,98 @@ void TableElement(List<SqlNode> list) :
         list.add(sqlForeign);
       }
     )
+}
+
+ColumnOption parseColumnOption(): {
+   ColumnOption colOpt = new ColumnOption();
+   SqlNode e = null;
+   ColumnStrategy strategy = null;
+   SqlNode checkExpr = null;
+   boolean constraintNot = false;
+   String constraintOpt = null;
+   SqlIdentifier name = null;
+   SqlNodeList refColumnList = null;
+    SqlIdentifier refTable = null;
+    String updateRefOpt = null;
+    String deleteRefOpt = null;
+} {
+    (
+         <AUTO_INCREMENT> { colOpt.autoIncrement = true; }
+         |
+           <NULL> { colOpt.nullable=true; }
+         |
+           <NOT> <NULL> { colOpt.nullable=false; }
+         |
+           [ <GENERATED> <ALWAYS> ] <AS> <LPAREN>
+            e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN>
+            (
+                <VIRTUAL> { strategy = ColumnStrategy.VIRTUAL; }
+            |
+                <STORED> { strategy = ColumnStrategy.STORED; }
+            |
+                { strategy = ColumnStrategy.VIRTUAL; }
+            )
+         |
+           <DEFAULT_> e = Expression(ExprContext.ACCEPT_SUB_QUERY) { strategy = ColumnStrategy.DEFAULT;}
+         |
+           <PRIMARY> <KEY> { colOpt.primaryKey=true; } [<CLUSTERED> {colOpt.clustered=true;}|<NONCLUSTERED> {colOpt.clustered=false;}] [<GLOBAL>|<LOCAL> {colOpt.global=false;}]
+         |
+           <CHECK>  <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT> {constraintNot = true;}] [(<ENFORCED> {constraintOpt="enforced";}|<NULL> {constraintOpt="null";})]
+         |
+           <COMMENT> { String comment = strIdent(); colOpt.comment=comment; }
+         |
+           <COLLATE> { String collate = strIdent(); colOpt.collate=collate; }
+         |
+           <COLUMN_FORMAT> (<FIXED> {colOpt.columnFormat="fixed";}|<DYNAMIC> {colOpt.columnFormat="dynamic";}|<DEFAULT_> {colOpt.columnFormat="default";}) 
+         |
+          <ON> <UPDATE> <CURRENT_TIMESTAMP>
+         |
+          <STORAGE> (<DISK> {colOpt.storage="disk";}|<MEMORY>{colOpt.storage="memory";})
+         |
+          <AUTO_RANDOM> [ <RPAREN> {int autoRandomLen = UnsignedIntLiteral(); colOpt.autoRandom=autoRandomLen;} <RPAREN>]
+         |
+          <UNIQUE> { colOpt.uniqueKey=true;} [<KEY>] [(<GLOBAL> {colOpt.global=true;}|<LOCAL> {colOpt.global=false;})]
+         |
+          <SERIAL> <DEFAULT_> <VALUE> {colOpt.serialDefaultVal=true;}
+         |
+          <VISIBLE> {colOpt.visible=true;}
+         |
+          <INVISIBLE> {colOpt.visible=false;}
+         |
+          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+           [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
+            ( <ON> (
+              <UPDATE> updateRefOpt = referenceOpt()
+              |
+              <DELETE> deleteRefOpt = referenceOpt()
+             )
+            )*
+         |
+          <CONSTRAINT>  [name = SimpleIdentifier()] <CHECK> <LPAREN>
+             checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
+                    <RPAREN> [<NOT> {constraintNot=true;}] [(<ENFORCED> {constraintOpt="enforced";}|<NULL>{constraintOpt="null";})]
+      )*  
+      {
+            if (e == null) {
+                strategy = colOpt.nullable ? ColumnStrategy.NULLABLE
+                    : ColumnStrategy.NOT_NULLABLE;
+            }
+            Constraint constraint = new Constraint();
+            constraint.name = name;
+            constraint.expression = checkExpr;
+            constraint.constraintNot = constraintNot;
+            constraint.constraintOpt = constraintOpt;
+            colOpt.constraint = constraint;
+            colOpt.expression = e;
+            colOpt.strategy = strategy;
+            colOpt.refTable = refTable;
+            colOpt.refColumnList = refColumnList;
+            colOpt.updateRefOpt = updateRefOpt;
+            colOpt.deleteRefOpt = deleteRefOpt;
+            return colOpt;
+      }
 }
 
 SqlNodeList AttributeDefList() :
@@ -621,9 +720,9 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
     final SqlNode query;
     String user = null;
     String host = null;
-    String alg = null;
-    String security = null;
-    String checkOpt = null;
+    String alg = "UNDEFINED";
+    String security = "DEFINER";
+    String checkOpt = "CASCADED";
 }
 {
     [<ALGORITHM> <EQ> (<UNDEFINED>|<MERGE>|<TEMPTABLE>)]

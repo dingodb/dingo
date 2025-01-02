@@ -400,7 +400,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return tables.stream()
                     .filter(td -> td.getTableType().equalsIgnoreCase("VIEW"))
                     .map(td -> {
-                        String checkOpt = td.getProperties().getProperty("check_option", "");
+                        String checkOpt = td.getProperties()
+                            .getProperty("check_option", "").toUpperCase();
                         String isUpdaTable = "NO";
                         String user = td.getProperties().getProperty("user", "");
                         String host = td.getProperties().getProperty("host", "");

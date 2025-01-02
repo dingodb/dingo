@@ -49,12 +49,12 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         }
     }
 
-    public void renameTable(long schemaId, String schemaName, long tableId, String tableName, String toName) {
+    public void renameTable(long schemaId, String schemaName, Table table, String toName) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
             .schemaName(schemaName)
-            .tableId(tableId)
-            .tableName(tableName)
+            .tableId(table.tableId.seq)
+            .tableName(table.getName())
             .actionType(ActionType.ActionRenameTable)
             .build();
         List<Object> args = new ArrayList<>();
@@ -63,13 +63,13 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
-    public void renameIndex(long schemaId, String schemaName, long tableId, String tableName,
+    public void renameIndex(long schemaId, String schemaName, Table table,
         String originIndexName, String toIndexName) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
             .schemaName(schemaName)
-            .tableId(tableId)
-            .tableName(tableName)
+            .tableId(table.tableId.seq)
+            .tableName(table.getName())
             .actionType(ActionType.ActionRenameIndex)
             .build();
         List<Object> args = new ArrayList<>();
@@ -79,12 +79,12 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
-    public void alterModifyComment(long schemaId, String schemaName, long tableId, String tableName, String comment) {
+    public void alterModifyComment(long schemaId, String schemaName, Table table, String comment) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
             .schemaName(schemaName)
-            .tableId(tableId)
-            .tableName(tableName)
+            .tableId(table.tableId.seq)
+            .tableName(table.getName())
             .actionType(ActionType.ActionModifyTableComment)
             .build();
         List<Object> args = new ArrayList<>();
@@ -189,13 +189,13 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
     }
 
     public void alterIndexVisible(
-        long schemaId, String schemaName, long tableId, String tableName, String index, boolean invisible
+        long schemaId, String schemaName, Table table, String index, boolean invisible
     ) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
-            .tableId(tableId)
+            .tableId(table.tableId.seq)
             .schemaName(schemaName)
-            .tableName(tableName)
+            .tableName(table.getName())
             .actionType(ActionType.ActionAlterIndexVisibility)
             .build();
         List<Object> args = new ArrayList<>();
@@ -206,13 +206,13 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
     }
 
     public void alterTableAddPart(
-        long schemaId, String schemaName, long tableId, String tableName, PartitionDetailDefinition part
+        long schemaId, String schemaName, Table table, PartitionDetailDefinition part
     ) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
-            .tableId(tableId)
+            .tableId(table.tableId.seq)
             .schemaName(schemaName)
-            .tableName(tableName)
+            .tableName(table.getName())
             .actionType(ActionType.ActionAddTablePartition)
             .build();
         List<Object> args = new ArrayList<>();
@@ -221,12 +221,12 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
-    public void alterTableDropPart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+    public void alterTableDropPart(SchemaInfo schemaInfo, Table table, String part) {
         DdlJob job = DdlJob.builder()
-            .schemaId(schemaId)
-            .tableId(tableId)
-            .schemaName(schemaName)
-            .tableName(tableName)
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.tableId.seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
             .schemaState(SchemaState.SCHEMA_PUBLIC)
             .actionType(ActionType.ActionDropTablePartition)
             .build();
@@ -236,13 +236,14 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
-    public void alterTableTruncatePart(long schemaId, String schemaName, long tableId, String tableName, String part) {
+    public void alterTableTruncatePart(SchemaInfo schemaInfo, Table table, String part) {
         DdlJob job = DdlJob.builder()
-            .schemaId(schemaId)
-            .tableId(tableId)
-            .schemaName(schemaName)
-            .tableName(tableName)
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
             .actionType(ActionType.ActionTruncateTablePartition)
+            .schemaState(SchemaState.SCHEMA_PUBLIC)
             .build();
         List<Object> args = new ArrayList<>();
         args.add(part);
