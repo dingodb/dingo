@@ -72,6 +72,7 @@ public class DistributionParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
     }
 }

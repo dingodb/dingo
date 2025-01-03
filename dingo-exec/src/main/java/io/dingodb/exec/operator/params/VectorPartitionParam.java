@@ -67,7 +67,8 @@ public class VectorPartitionParam extends AbstractParams {
         DingoType dingoType = new LongType(false);
         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
         TupleMapping outputKeyMapping = TupleMapping.of(new int[] {0});
-        this.codec = CodecService.getDefault().createKeyValueCodec(indexId, tupleType, outputKeyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), indexId, tupleType, outputKeyMapping);
         this.table = table;
     }
 

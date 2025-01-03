@@ -105,13 +105,15 @@ public class UserService implements io.dingodb.verify.service.UserService {
             dbPrivStore = new StoreKvTxn(tablePrivTblId, getRegionId(dbPrivTblId));
             tablePrivStore = new StoreKvTxn(tablePrivTblId, getRegionId(tablePrivTblId));
             userCodec = CodecService.getDefault().createKeyValueCodec(
-                getPartId(userTblId, userStore.getRegionId()), userTd.tupleType(), userTd.keyMapping()
+                userTd.codecVersion, getPartId(userTblId, userStore.getRegionId()),
+                userTd.tupleType(), userTd.keyMapping()
             );
             dbPrivCodec = CodecService.getDefault().createKeyValueCodec(
-                getPartId(dbPrivTblId, dbPrivStore.getRegionId()), dbPrivTd.tupleType(), dbPrivTd.keyMapping()
+                dbPrivTd.codecVersion, getPartId(dbPrivTblId, dbPrivStore.getRegionId()), dbPrivTd.tupleType(),
+                dbPrivTd.keyMapping()
             );
             tablePrivCodec = CodecService.getDefault().createKeyValueCodec(
-                getPartId(tablePrivTblId, tablePrivStore.getRegionId()),
+                tablePrivTd.codecVersion, getPartId(tablePrivTblId, tablePrivStore.getRegionId()),
                 tablePrivTd.tupleType(), tablePrivTd.keyMapping()
             );
         } catch (Exception e) {

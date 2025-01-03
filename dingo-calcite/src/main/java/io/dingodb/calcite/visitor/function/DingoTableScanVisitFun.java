@@ -80,7 +80,7 @@ public final class DingoTableScanVisitFun {
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                td.version, td.tupleType(), td.keyMapping()
+                td.getCodecVersion(), td.version, td.tupleType(), td.keyMapping()
             );
             RangeDistribution range = RangeUtils.createRangeByFilter(td, codec, rel.getFilter(), rel.getSelection());
             if (range != null) {
@@ -145,7 +145,8 @@ public final class DingoTableScanVisitFun {
                     scanTs,
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
-                    false
+                    false,
+                    td.codecVersion
                 );
                 scanVertex = new Vertex(TXN_PART_RANGE_SCAN, param);
             } else {
@@ -162,7 +163,8 @@ public final class DingoTableScanVisitFun {
                     rel.getAggCalls() == null ? null : AggFactory.getAggList(
                         rel.getAggCalls(), DefinitionMapper.mapToDingoType(rel.getSelectedType())),
                     DefinitionMapper.mapToDingoType(rel.getNormalRowType()),
-                    rel.isPushDown()
+                    rel.isPushDown(),
+                    td.getCodecVersion()
                 );
                 scanVertex = new Vertex(PART_RANGE_SCAN, param);
             }

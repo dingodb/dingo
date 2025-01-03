@@ -56,7 +56,7 @@ public class DingoRangeDeleteRule extends RelRule<DingoRangeDeleteRule.Config> {
             return;
         }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-            td.version, td.tupleType(), td.keyMapping()
+            td.getCodecVersion(), td.version, td.tupleType(), td.keyMapping()
         );
         RangeDistribution range;
         if (rel.getFilter() == null && (rel.getSelection().size() == rel.getTable().getRowType().getFieldCount())) {

@@ -50,9 +50,10 @@ public final class TxnScanParam extends ScanParam {
         long scanTs,
         int isolationLevel,
         long timeOut,
-        int schemaVersion
+        int schemaVersion,
+        int codecVersion
     ) {
-        super(tableId, schema, keyMapping, schemaVersion);
+        super(tableId, schema, keyMapping, schemaVersion, codecVersion);
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;

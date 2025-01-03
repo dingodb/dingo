@@ -86,13 +86,14 @@ public class ModifyColumnFiller extends IndexAddFiller {
             .collect(Collectors.toList()));
         colLen = columnIndices.size();
         indexCodec = CodecService.getDefault()
-            .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+            .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
+            indexTable.keyMapping());
         ps = PartitionService.getService(
             Optional.ofNullable(indexTable.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
-        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(
+        KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(table.getCodecVersion(),
             table.getVersion(), table.tupleType(), table.keyMapping()
         );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(

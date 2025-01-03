@@ -62,7 +62,8 @@ public class PartVectorParam extends FilterProjectSourceParam {
         Map<String, Object> parameterMap
     ) {
         super(tableId, partId, schema, table.version, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;

@@ -60,8 +60,9 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         long timeOut,
         boolean isSelect
     ) {
-        super(tableId, schema, table.version, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        super(tableId, schema, table.version, filter, selection, keyMapping, table.getCodecVersion());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         this.table = table;
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;

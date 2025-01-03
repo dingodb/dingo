@@ -114,7 +114,7 @@ public final class DingoIndexRangeScanVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
+                indexTd.getCodecVersion(), indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
             );
             RangeDistribution range = RangeUtils.createRangeByFilter(indexTd, codec, rexFilter, null);
             if (range != null) {

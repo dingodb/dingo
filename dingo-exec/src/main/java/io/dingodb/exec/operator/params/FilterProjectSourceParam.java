@@ -36,12 +36,34 @@ public abstract class FilterProjectSourceParam extends SourceParam {
     protected final DingoType schema;
     @JsonProperty("schemaVersion")
     protected final int schemaVersion;
+    @JsonProperty("codecVersion")
+    protected final int codecVersion;
     @JsonProperty("filter")
     protected SqlExpr filter;
     @JsonProperty("selection")
     protected TupleMapping selection;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
+
+    public FilterProjectSourceParam(
+        CommonId tableId,
+        CommonId partId,
+        DingoType schema,
+        int schemaVersion,
+        SqlExpr filter,
+        TupleMapping selection,
+        TupleMapping keyMapping,
+        int codecVersion
+    ) {
+        super(partId, null);
+        this.tableId = tableId;
+        this.schema = schema;
+        this.schemaVersion = schemaVersion;
+        this.filter = filter;
+        this.selection = selection;
+        this.keyMapping = keyMapping;
+        this.codecVersion = codecVersion;
+    }
 
     public FilterProjectSourceParam(
         CommonId tableId,
@@ -59,6 +81,7 @@ public abstract class FilterProjectSourceParam extends SourceParam {
         this.filter = filter;
         this.selection = selection;
         this.keyMapping = keyMapping;
+        this.codecVersion = 2;
     }
 
     @Override

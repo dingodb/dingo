@@ -83,7 +83,8 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                                  boolean pushDown,
                                  TupleMapping selection,
                                  int limit) {
-        super(tableId, index.tupleType(), keyMapping, relOp, outputSchema, pushDown, index.getVersion(), limit);
+        super(tableId, index.tupleType(), keyMapping, relOp, outputSchema,
+            pushDown, index.getVersion(), limit, table.getCodecVersion());
         this.indexSchema = index.tupleType();
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;
@@ -93,9 +94,11 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
         this.scanTs = scanTs;
         this.timeout = timeout;
         this.selection = selection;
-        this.codec = CodecService.getDefault().createKeyValueCodec(index.version, index.tupleType(), index.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            index.getCodecVersion(), index.version, index.tupleType(), index.keyMapping());
         if (isLookup) {
-            lookupCodec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+            lookupCodec = CodecService.getDefault().createKeyValueCodec(
+                table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         } else {
             this.mapList = index.getColumns().stream().map(table.columns::indexOf).collect(Collectors.toList());
         }
@@ -144,7 +147,8 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
 
     public KeyValueCodec getPushDownCodec() {
         TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
-        return CodecService.getDefault().createKeyValueCodec(schemaVersion, indexSchema, outputKeyMapping);
+        return CodecService.getDefault().createKeyValueCodec(
+            index.getCodecVersion(), schemaVersion, indexSchema, outputKeyMapping);
     }
 
 }

@@ -129,7 +129,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             schema = indexTable.tupleType();
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(
-                indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
             );
         }
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);

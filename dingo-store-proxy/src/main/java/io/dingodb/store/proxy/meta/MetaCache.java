@@ -294,8 +294,9 @@ public class MetaCache {
                 });
             NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
             Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-            KeyValueCodec codec = CodecService.getDefault()
-                .createKeyValueCodec(tableDefinition.getVersion(), table.tupleType(), table.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
+                table.tupleType(), table.keyMapping());
             boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
             rangeDistributionList.forEach(scanRegionWithPartId -> {
                 RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);

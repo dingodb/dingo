@@ -221,6 +221,11 @@ public class TableDefinition implements Table {
         return tableDefinition.getUpdateTime();
     }
 
+    @Override
+    public int getCodecVersion() {
+        return tableDefinition.getCodecVersion();
+    }
+
     private VectorIndexParameter.MetricType getMetricType(String metricType) {
         switch (metricType.toUpperCase()) {
             case "INNER_PRODUCT":

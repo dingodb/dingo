@@ -432,14 +432,15 @@ public class Txn {
                 }
                 if (indexTable.indexType.isVector) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                        indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                        indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
+                        indexTable.keyMapping()
                     );
                     Object[] decodeKey = codec.decodeKeyPrefix(key);
                     TupleMapping mapping = TupleMapping.of(new int[]{0});
                     DingoType dingoType = new LongType(false);
                     TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
                     KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(
-                        indexTable.version, tupleType, mapping
+                        indexTable.getCodecVersion(), indexTable.version, tupleType, mapping
                     );
                     key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                 }
@@ -585,14 +586,15 @@ public class Txn {
                     }
                     if (indexTable.indexType.isVector) {
                         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                            indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                            indexTable.getCodecVersion(), indexTable.version,
+                            indexTable.tupleType(), indexTable.keyMapping()
                         );
                         Object[] decodeKey = codec.decodeKeyPrefix(key);
                         TupleMapping mapping = TupleMapping.of(new int[]{0});
                         DingoType dingoType = new LongType(false);
                         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
                         KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(
-                            indexTable.version, tupleType, mapping
+                            indexTable.getCodecVersion(), indexTable.version, tupleType, mapping
                         );
                         key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
                     }

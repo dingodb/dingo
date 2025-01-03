@@ -71,7 +71,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         long scanTs,
         long timeout
     ) {
-        super(tableId, table.tupleType(), table.version, filter, selection, keyMapping);
+        super(tableId, table.tupleType(), table.version, filter, selection, keyMapping, table.getCodecVersion());
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;
         this.isUnique = isUnique;
@@ -79,14 +79,16 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         this.table = table;
         this.scanTs = scanTs;
         this.timeout = timeout;
-        this.codec = CodecService.getDefault().createKeyValueCodec(index.version, index.tupleType(), index.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            index.getCodecVersion(), index.version, index.tupleType(), index.keyMapping());
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
         if (isLookup()) {
-            lookupCodec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+            lookupCodec = CodecService.getDefault().createKeyValueCodec(
+                table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         } else {
             mapList = mapping(selection, table, index);
         }

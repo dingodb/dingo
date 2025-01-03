@@ -59,8 +59,9 @@ public class PartDocumentParam extends FilterProjectSourceParam {
         String queryString,
         int topN
     ) {
-        super(tableId, partId, schema, table.version, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        super(tableId, partId, schema, table.version, filter, selection, keyMapping, table.codecVersion);
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexId;

@@ -104,7 +104,8 @@ public final class Mapping {
             null,
             null,
             0,
-            true);
+            true,
+            table.getCodecVersion());
     }
 
     public static io.dingodb.store.proxy.common.TableDefinition mapping(TableDefinition tableDefinition) {

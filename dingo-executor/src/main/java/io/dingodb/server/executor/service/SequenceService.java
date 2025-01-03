@@ -75,7 +75,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
             this.table = getTable(SEQUENCE_TABLE);
             CommonId tableId = table.getTableId();
             this.store = new StoreKvTxn(tableId, getRegionId(tableId));
-            this.codec = CodecService.getDefault().createKeyValueCodec(
+            this.codec = CodecService.getDefault().createKeyValueCodec(this.table.getCodecVersion(),
                 getPartId(tableId, store.getRegionId()), table.tupleType(), table.keyMapping()
             );
             this.queueMap = new ConcurrentHashMap<>();

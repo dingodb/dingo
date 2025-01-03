@@ -127,14 +127,15 @@ public class IndexAddFiller implements BackFiller {
             .map(Column::getName)
             .collect(Collectors.toList()));
         indexCodec = CodecService.getDefault()
-            .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+            .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
+            indexTable.tupleType(), indexTable.keyMapping());
         ps = PartitionService.getService(
             Optional.ofNullable(indexTable.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
         // reorging when region split
         StoreInstance kvStore = Services.KV_STORE.getInstance(task.getTableId(), task.getRegionId());
         KeyValueCodec codec  = CodecService.getDefault().createKeyValueCodec(
-            table.getVersion(), table.tupleType(), table.keyMapping()
+            table.getCodecVersion(), table.getVersion(), table.tupleType(), table.keyMapping()
         );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),
@@ -486,7 +487,7 @@ public class IndexAddFiller implements BackFiller {
     private Iterator<Object[]> getIterator(ReorgBackFillTask task, CommonId tableId, boolean check) {
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-            table.getVersion(), table.tupleType(), table.keyMapping()
+            table.getCodecVersion(), table.getVersion(), table.tupleType(), table.keyMapping()
         );
         Iterator<KeyValue> iterator = kvStore.txnScanWithoutStream(
             task.getStartTs(),

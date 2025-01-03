@@ -484,7 +484,7 @@ public class OperationServiceV2 {
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
-            tableId, td.tupleType(), td.keyMapping()
+            td.getCodecVersion(), tableId, td.tupleType(), td.keyMapping()
         );
 
         Key start = keyRange.start;
@@ -526,7 +526,8 @@ public class OperationServiceV2 {
                 null,
                 null,
                 td.tupleType(),
-                true
+                true,
+                td.getCodecVersion()
             );
             Vertex scanVertex = new Vertex(PART_RANGE_SCAN, param);
             scanVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -548,7 +549,7 @@ public class OperationServiceV2 {
         CommonId tableId = Parameters.nonNull(metaService.getTable(tableName).getTableId(), "Table not found.");
         Table td = Parameters.nonNull(metaService.getTable(tableName), "Table not found.");
         io.dingodb.codec.KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
-            tableId, td.tupleType(), td.keyMapping()
+            td.codecVersion, tableId, td.tupleType(), td.keyMapping()
         );
 
         byte[] startKey = codec.encodeKeyPrefix(mapKeyPrefix(td, begin), begin.userKey.size());
@@ -572,7 +573,8 @@ public class OperationServiceV2 {
 
         List<Vertex> outputs = new ArrayList<>();
         for (int i = 0; i <= td.getPartitions().size(); i++) {
-            PartRangeDeleteParam param = new PartRangeDeleteParam(tableId, td.version, td.tupleType(), td.keyMapping());
+            PartRangeDeleteParam param = new PartRangeDeleteParam(
+                tableId, td.version, td.tupleType(), td.keyMapping(), td.getCodecVersion());
             Vertex deleteVertex = new Vertex(PART_RANGE_DELETE, param);
             task = job.getOrCreate(currentLocation, idGenerator);
             deleteVertex.setId(idGenerator.getOperatorId(task.getId()));

@@ -35,7 +35,6 @@ import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.partition.DingoPartitionServiceProvider;
-import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.version.PutRequest;
@@ -366,7 +365,7 @@ public final class PrepareMeta {
             io.dingodb.meta.entity.Table table = io.dingodb.meta.InfoSchemaService.root()
                 .getTableDef(tableId.domain, tableId.seq);
             KeyValueCodec codec = CodecService.getDefault()
-                .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+                .createKeyValueCodec(table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
             KeyValue keyValue = codec.encode(values.get(0));
 
             CommonId regionId = rangeDistribution.firstEntry().getValue().getId();
@@ -447,6 +446,7 @@ public final class PrepareMeta {
             .charset("utf8")
             .collate("utf8_bin")
             .tableType(tableType)
+            .codecVersion(2)
             .schemaState(SchemaState.SCHEMA_PUBLIC)
             .rowFormat(rowFormat);
 

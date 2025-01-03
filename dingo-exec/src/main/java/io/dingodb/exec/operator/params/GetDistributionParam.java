@@ -60,7 +60,8 @@ public class GetDistributionParam extends SourceParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
 
     }
 }

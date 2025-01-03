@@ -40,29 +40,34 @@ public class CodecService implements io.dingodb.codec.CodecService {
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(int version, CommonId id, DingoType type, TupleMapping keyMapping) {
-        return createKeyValueCodec(id, type, keyMapping);
+    public KeyValueCodec createKeyValueCodec(
+        int codecVersion, int version, CommonId id, DingoType type, TupleMapping keyMapping
+    ) {
+        return createKeyValueCodec(codecVersion, id, type, keyMapping);
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(int version, CommonId id, List<ColumnDefinition> columns) {
-        return createKeyValueCodec(id, columns);
+    public KeyValueCodec createKeyValueCodec(
+        int codecVersion, int version, CommonId id, List<ColumnDefinition> columns
+    ) {
+        return createKeyValueCodec(codecVersion, id, columns);
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
+    public KeyValueCodec createKeyValueCodec(int codecVersion, CommonId id, DingoType type, TupleMapping keyMapping) {
         return new DingoKeyValueCodec(type, keyMapping);
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns) {
+    public KeyValueCodec createKeyValueCodec(int codecVersion, CommonId id, List<ColumnDefinition> columns) {
         TableDefinition tableDefinition = new TableDefinition("");
         tableDefinition.setColumns(columns);
-        return createKeyValueCodec(id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+        return createKeyValueCodec(codecVersion, id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
     }
 
     @Override
     public KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
-        return createKeyValueCodec(id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
+        return createKeyValueCodec(
+            tableDefinition.getCodecVersion(), id, tableDefinition.getDingoType(), tableDefinition.getKeyMapping());
     }
 }

@@ -116,7 +116,9 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     isDocument = true;
                 }
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
-                codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                codec = CodecService.getDefault().createKeyValueCodec(
+                    indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                );
             }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);

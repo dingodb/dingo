@@ -24,7 +24,6 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.GetByKeysParam;
 import io.dingodb.exec.operator.params.TxnGetByKeysParam;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.utils.ByteUtils;

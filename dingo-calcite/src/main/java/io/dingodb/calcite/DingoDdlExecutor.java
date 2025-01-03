@@ -489,6 +489,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .name(tableName)
             .columns(columns)
             .version(1)
+            .codecVersion(2)
             .ttl(create.getTtl())
             .partDefinition(create.getPartDefinition())
             .engine(create.getEngine())

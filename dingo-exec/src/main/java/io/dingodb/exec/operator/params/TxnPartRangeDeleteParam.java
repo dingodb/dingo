@@ -46,22 +46,25 @@ public class TxnPartRangeDeleteParam extends AbstractParams {
 
     private transient KeyValueCodec codec;
     private int schemaVersion;
+    private int codecVersion;
 
     public TxnPartRangeDeleteParam(
         CommonId tableId,
         int schemaVersion,
         DingoType schema,
-        TupleMapping keyMapping
+        TupleMapping keyMapping,
+        int codecVersion
     ) {
         super();
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.schemaVersion = schemaVersion;
+        this.codecVersion = codecVersion;
     }
 
     @Override
     public void init(Vertex vertex) {
-        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(codecVersion, schemaVersion, schema, keyMapping);
     }
 }

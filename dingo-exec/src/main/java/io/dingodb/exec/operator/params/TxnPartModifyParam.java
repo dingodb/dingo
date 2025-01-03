@@ -22,7 +22,6 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 public abstract class TxnPartModifyParam extends PartModifyParam {

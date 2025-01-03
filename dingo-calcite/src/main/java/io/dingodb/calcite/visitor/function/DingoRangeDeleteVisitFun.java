@@ -96,14 +96,16 @@ public final class DingoRangeDeleteVisitFun {
                     tableInfo.getId(),
                     td.version,
                     td.tupleType(),
-                    td.keyMapping());
+                    td.keyMapping(),
+                    td.getCodecVersion());
                 deleteVertex = new Vertex(TXN_PART_RANGE_DELETE, param);
             } else {
                 PartRangeDeleteParam param = new PartRangeDeleteParam(
                     tableInfo.getId(),
                     td.version,
                     td.tupleType(),
-                    td.keyMapping());
+                    td.keyMapping(),
+                    td.codecVersion);
                 deleteVertex = new Vertex(PART_RANGE_DELETE, param);
             }
             if (transaction != null) {

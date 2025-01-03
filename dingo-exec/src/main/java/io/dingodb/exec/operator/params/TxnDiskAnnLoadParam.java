@@ -91,7 +91,8 @@ public class TxnDiskAnnLoadParam extends FilterProjectSourceParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), schemaVersion, schema, keyMapping);
     }
 
     @Override

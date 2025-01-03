@@ -58,9 +58,10 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
         DingoType outputSchema,
         boolean pushDown,
         int schemaVersion,
-        int limit
+        int limit,
+        int codecVersion
     ) {
-        super(tableId, schema, keyMapping, relOp, outputSchema, pushDown, schemaVersion, limit);
+        super(tableId, schema, keyMapping, relOp, outputSchema, pushDown, schemaVersion, limit, codecVersion);
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;

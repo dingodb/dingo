@@ -78,7 +78,8 @@ public class DistributeOperator extends SoleOutOperator {
                         }
                     }
                     KeyValueCodec indexCodec = CodecService.getDefault()
-                        .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                        .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
+                        indexTable.tupleType(), indexTable.keyMapping());
                     partId = ps.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
                 } else {
                     partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());

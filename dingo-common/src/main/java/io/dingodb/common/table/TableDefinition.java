@@ -142,6 +142,10 @@ public class TableDefinition {
     @Setter
     private boolean visible;
 
+    @Getter
+    @Setter
+    private int codecVersion;
+
     @JsonCreator
     public TableDefinition(@JsonProperty("name") String name) {
         this.name = name;
@@ -358,7 +362,8 @@ public class TableDefinition {
             this.schemaState,
             this.indices,
             prepareTableId,
-            this.visible
+            this.visible,
+            this.codecVersion
         );
     }
 

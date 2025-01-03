@@ -105,7 +105,8 @@ public final class DingoLikeScanVisitFun {
                 td.keyMapping(),
                 Optional.mapOrNull(filter, SqlExpr::copy),
                 rel.getSelection(),
-                rel.getPrefix()
+                rel.getPrefix(),
+                td.getCodecVersion()
             );
             Vertex vertex = new Vertex(LIKE_SCAN, param);
             OutputHint hint = new OutputHint();

@@ -92,7 +92,8 @@ public final class DingoFunctionScanVisitFun {
                 null,
                 null,
                 td.tupleType(),
-                false
+                false,
+                td.codecVersion
             );
             task = job.getOrCreate(currentLocation, idGenerator);
             Vertex scanVertex = new Vertex(PART_RANGE_SCAN, param);

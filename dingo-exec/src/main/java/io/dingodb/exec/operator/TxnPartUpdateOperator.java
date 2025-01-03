@@ -128,7 +128,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 tableId = context.getIndexId();
                 schema = indexTable.tupleType();
                 codec = CodecService.getDefault().createKeyValueCodec(
-                    indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                    indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
                 );
                 Object[] finalNewTuple = newTuple;
                 Object finalDefaultVal = defaultVal;

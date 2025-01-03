@@ -108,7 +108,8 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         int vectorIndex,
         String distanceType
     ) {
-        super(table.tableId, partId, schema, table.version, filter, selection, table.keyMapping());
+        super(table.tableId, partId, schema,
+            table.version, filter, selection, table.keyMapping(), table.getCodecVersion());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
@@ -161,7 +162,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
 
             coprocessor = builder.build();
         }
-        codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        codec = CodecService.getDefault().createKeyValueCodec(codecVersion, schemaVersion, schema, keyMapping);
     }
 
     @Override

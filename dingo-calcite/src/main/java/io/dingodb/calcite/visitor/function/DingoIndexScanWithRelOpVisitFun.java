@@ -174,7 +174,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 td.tableId,
                 td.tupleType(),
                 td.keyMapping(),
-                td.version
+                td.version,
+                td.getCodecVersion()
             );
             return new Vertex(SCAN_WITH_NO_OP, param);
         } else {
@@ -186,7 +187,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 DefinitionMapper.mapToDingoType(rel.getRowType()),
                 rel.isPushDown(),
                 td.version,
-                0
+                0,
+                td.getCodecVersion()
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(SCAN_WITH_PIPE_OP, param);
@@ -212,7 +214,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 scanTs,
                 transaction.getIsolationLevel(),
                 transaction.getLockTimeOut(),
-                td.version
+                td.version,
+                td.getCodecVersion()
             );
             return new Vertex(TXN_SCAN_WITH_NO_OP, param);
         } else {
@@ -227,7 +230,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 DefinitionMapper.mapToDingoType(rel.getRowType()),
                 rel.isPushDown(),
                 td.version,
-                0
+                0,
+                td.getCodecVersion()
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(TXN_SCAN_WITH_PIPE_OP, param);

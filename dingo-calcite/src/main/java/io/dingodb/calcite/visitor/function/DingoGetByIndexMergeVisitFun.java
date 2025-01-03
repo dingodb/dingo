@@ -93,7 +93,7 @@ public final class DingoGetByIndexMergeVisitFun {
 
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
+                indexTd.getCodecVersion(), indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
             );
             List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {

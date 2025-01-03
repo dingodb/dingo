@@ -159,7 +159,9 @@ public class LoadDataExecutor implements DmlExecutor {
         if (table == null) {
             throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
         }
-        codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
+        );
         distributions = metaService.getRangeDistribution(table.tableId);
         schema = table.tupleType();
         this.isTxn = checkEngine();
@@ -420,7 +422,9 @@ public class LoadDataExecutor implements DmlExecutor {
                     .collect(Collectors.toList()));
                 Object[] tuplesTmp = columnIndices.stream().map(i -> tuples[i]).toArray();
                 KeyValueCodec codec = CodecService.getDefault()
-                    .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                    .createKeyValueCodec(
+                        indexTable.getCodecVersion(), indexTable.version,
+                        indexTable.tupleType(), indexTable.keyMapping());
 
                 keyValue = wrap(codec::encode).apply(tuplesTmp);
                 PartitionService ps = PartitionService.getService(

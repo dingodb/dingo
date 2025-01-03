@@ -17,7 +17,6 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnDiskAnnStatusParam;

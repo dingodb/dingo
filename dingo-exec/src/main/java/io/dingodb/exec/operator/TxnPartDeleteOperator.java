@@ -107,7 +107,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(
-                indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+                indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
             );
         }
         byte[] keys = wrap(codec::encodeKey).apply(tuple);

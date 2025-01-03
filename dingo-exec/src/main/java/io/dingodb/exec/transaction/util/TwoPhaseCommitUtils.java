@@ -205,6 +205,7 @@ public final class TwoPhaseCommitUtils {
             IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
             if (indexTable.indexType.isVector || indexTable.indexType == IndexType.DOCUMENT) {
                 KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                    indexTable.codecVersion,
                     indexTable.version,
                     indexTable.tupleType(),
                     indexTable.keyMapping()
@@ -214,6 +215,7 @@ public final class TwoPhaseCommitUtils {
                 DingoType dingoType = new LongType(false);
                 TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
                 KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
+                    indexTable.codecVersion,
                     indexTable.version,
                     tupleType,
                     mapping

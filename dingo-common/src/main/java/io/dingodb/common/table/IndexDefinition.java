@@ -60,11 +60,12 @@ public class IndexDefinition extends TableDefinition {
         List<IndexDefinition> indices, long prepareTableId,
         boolean unique,
         List<String> originKeyList,
-        List<String> originWithKeyList
+        List<String> originWithKeyList,
+        int codecVersion
     ) {
         super(name, columns, version, ttl, partDefinition, engine, properties, autoIncrement, replica, createSql,
             comment, charset, collate, tableType, rowFormat, createTime, updateTime, schemaState,
-            indices, prepareTableId, true);
+            indices, prepareTableId, true, codecVersion);
         this.unique = unique;
         this.originKeyList = originKeyList;
         this.originWithKeyList = originWithKeyList;
@@ -100,7 +101,8 @@ public class IndexDefinition extends TableDefinition {
             definition.getPrepareTableId(),
             unique,
             originKeyList,
-            originWithKeyList
+            originWithKeyList,
+            2
         );
     }
 }

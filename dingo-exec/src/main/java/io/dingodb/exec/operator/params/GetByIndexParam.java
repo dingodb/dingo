@@ -65,14 +65,14 @@ public class GetByIndexParam extends FilterProjectParam {
         Table table,
         boolean isLookup
     ) {
-        super(tableId, table.tupleType(), table.getVersion(), filter, selection, keyMapping);
+        super(tableId, table.tupleType(), table.getVersion(), filter, selection, keyMapping, index.getCodecVersion());
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;
         this.isUnique = isUnique;
         this.index = index;
         this.table = table;
         this.codec = CodecService.getDefault().createKeyValueCodec(
-            index.getVersion(), index.tupleType(), index.keyMapping()
+            index.getCodecVersion(), index.getVersion(), index.tupleType(), index.keyMapping()
         );
     }
 
@@ -81,7 +81,7 @@ public class GetByIndexParam extends FilterProjectParam {
         super.init(vertex);
         if (isLookup()) {
             lookupCodec = CodecService.getDefault().createKeyValueCodec(
-                table.getVersion(), table.tupleType(), table.keyMapping()
+                table.getCodecVersion(), table.getVersion(), table.tupleType(), table.keyMapping()
             );
         } else {
             mapList = mapping(selection, table, index);

@@ -108,6 +108,9 @@ public class Table {
     @JsonProperty
     public SchemaState schemaState;
 
+    @JsonProperty
+    public int codecVersion;
+
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream().map(Column::getType).toArray(DingoType[]::new));
     }

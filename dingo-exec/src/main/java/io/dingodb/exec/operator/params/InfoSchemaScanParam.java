@@ -45,7 +45,7 @@ public class InfoSchemaScanParam extends FilterProjectSourceParam {
                                SqlExpr filter,
                                TupleMapping selection,
                                String target) {
-        super(null, null, schema, schemaVersion, filter, selection, null);
+        super(null, null, schema, schemaVersion, filter, selection, null, 2);
         this.schema = schema;
         this.filter = filter;
         this.selection = selection;

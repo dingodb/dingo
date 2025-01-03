@@ -88,14 +88,18 @@ public abstract class StatsOperator {
             cmSketchTblId = cmSketchTable.tableId;
             analyzeTaskCodec = CodecService.getDefault()
                 .createKeyValueCodec(
-                    analyzeTaskTable.version, analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping()
+                    analyzeTaskTable.getCodecVersion(), analyzeTaskTable.version,
+                    analyzeTaskTable.tupleType(), analyzeTaskTable.keyMapping()
                 );
             bucketsCodec = CodecService.getDefault()
-                .createKeyValueCodec(bucketsTable.version, bucketsTable.tupleType(), bucketsTable.keyMapping());
+                .createKeyValueCodec(bucketsTable.getCodecVersion(), bucketsTable.version,
+                bucketsTable.tupleType(), bucketsTable.keyMapping());
             statsCodec = CodecService.getDefault()
-                .createKeyValueCodec(statsTable.version, statsTable.tupleType(), statsTable.keyMapping());
+                .createKeyValueCodec(statsTable.getCodecVersion(), statsTable.version,
+                statsTable.tupleType(), statsTable.keyMapping());
             cmSketchCodec = CodecService.getDefault()
-                .createKeyValueCodec(cmSketchTable.version, cmSketchTable.tupleType(), cmSketchTable.keyMapping());
+                .createKeyValueCodec(cmSketchTable.getCodecVersion(), cmSketchTable.version,
+                cmSketchTable.tupleType(), cmSketchTable.keyMapping());
             analyzeTaskStore = storeTxnService.getInstance(analyzeTaskTblId,
                 getRegionId(analyzeTaskTblId));
             bucketsStore = storeTxnService.getInstance(bucketsTblId, getRegionId(bucketsTblId));

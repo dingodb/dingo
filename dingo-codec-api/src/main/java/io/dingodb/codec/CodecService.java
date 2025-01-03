@@ -50,9 +50,12 @@ public interface CodecService {
         return new KeyValue(setId(keyValue.getKey(), id), keyValue.getValue());
     }
 
-    KeyValueCodec createKeyValueCodec(int version, CommonId id, DingoType type, TupleMapping keyMapping);
+    KeyValueCodec createKeyValueCodec(int codecVersion, int version, CommonId id,
+                                      DingoType type, TupleMapping keyMapping);
 
-    default KeyValueCodec createKeyValueCodec(int version, CommonId id, List<ColumnDefinition> columns) {
+    default KeyValueCodec createKeyValueCodec(
+        int codecVersion, int version, CommonId id, List<ColumnDefinition> columns
+    ) {
         int[] mappings = new int[columns.size()];
         int keyCount = 0;
         for (int i = 0; i < columns.size(); i++) {
@@ -64,6 +67,7 @@ public interface CodecService {
         }
         TupleMapping keyMapping = TupleMapping.of(Arrays.copyOf(mappings, keyCount));
         return createKeyValueCodec(
+            codecVersion,
             version,
             id,
             DingoTypeFactory.tuple((DingoType[]) columns.stream().map(ColumnDefinition::getType).toArray()),
@@ -72,29 +76,33 @@ public interface CodecService {
     }
 
     @Deprecated
-    default KeyValueCodec createKeyValueCodec(CommonId id, DingoType type, TupleMapping keyMapping) {
-        return createKeyValueCodec(1, id, type, keyMapping);
+    default KeyValueCodec createKeyValueCodec(int codecVersion, CommonId id, DingoType type, TupleMapping keyMapping) {
+        return createKeyValueCodec(codecVersion, 1, id, type, keyMapping);
     }
 
     @Deprecated
-    default KeyValueCodec createKeyValueCodec(CommonId id, List<ColumnDefinition> columns) {
-        return createKeyValueCodec(1, id, columns);
+    default KeyValueCodec createKeyValueCodec(int codecVersion, CommonId id, List<ColumnDefinition> columns) {
+        return createKeyValueCodec(codecVersion, 1, id, columns);
     }
 
     default KeyValueCodec createKeyValueCodec(CommonId id, TableDefinition tableDefinition) {
-        return createKeyValueCodec(tableDefinition.getVersion(), id, tableDefinition.getColumns());
+        return createKeyValueCodec(
+            tableDefinition.getCodecVersion(), tableDefinition.getVersion(), id, tableDefinition.getColumns()
+        );
     }
 
-    default KeyValueCodec createKeyValueCodec(int version, DingoType type, TupleMapping keyMapping) {
-        return createKeyValueCodec(version, CommonId.EMPTY_TABLE, type, keyMapping);
+    default KeyValueCodec createKeyValueCodec(int codecVersion, int version, DingoType type, TupleMapping keyMapping) {
+        return createKeyValueCodec(codecVersion, version, CommonId.EMPTY_TABLE, type, keyMapping);
     }
 
-    default KeyValueCodec createKeyValueCodec(int version, List<ColumnDefinition> columns) {
-        return createKeyValueCodec(version, CommonId.EMPTY_TABLE, columns);
+    default KeyValueCodec createKeyValueCodec(int codecVersion, int version, List<ColumnDefinition> columns) {
+        return createKeyValueCodec(codecVersion, version, CommonId.EMPTY_TABLE, columns);
     }
 
     default KeyValueCodec createKeyValueCodec(TableDefinition tableDefinition) {
-        return createKeyValueCodec(tableDefinition.getVersion(), CommonId.EMPTY_TABLE, tableDefinition.getColumns());
+        return createKeyValueCodec(
+            tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
+            CommonId.EMPTY_TABLE, tableDefinition.getColumns());
     }
 
 }

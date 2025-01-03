@@ -20,7 +20,6 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.Services;

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.profile.SourceProfile;
@@ -58,22 +57,25 @@ public class ScanParam extends AbstractParams {
     @Getter
     protected List<Profile> profileList;
     protected int schemaVersion;
+    protected int codecVersion;
 
     public ScanParam(
         CommonId tableId,
         @NonNull DingoType schema,
         TupleMapping keyMapping,
-        int schemaVersion
+        int schemaVersion,
+        int codecVersion
     ) {
         super(null, null);
         this.tableId = tableId;
         this.schema = schema;
         this.keyMapping = keyMapping;
         this.schemaVersion = schemaVersion;
+        this.codecVersion = codecVersion;
     }
 
     public KeyValueCodec getCodec() {
-        return CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        return CodecService.getDefault().createKeyValueCodec(codecVersion, schemaVersion, schema, keyMapping);
     }
 
     public synchronized OperatorProfile getProfile(String type) {

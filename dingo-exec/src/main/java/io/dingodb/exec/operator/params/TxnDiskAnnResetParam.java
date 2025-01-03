@@ -69,7 +69,8 @@ public class TxnDiskAnnResetParam extends FilterProjectSourceParam {
         int isolationLevel,
         long timeOut
     ) {
-        super(table.tableId, partId, schema, table.version, filter, selection, table.keyMapping());
+        super(table.tableId, partId, schema, table.version, filter, selection,
+            table.keyMapping(), indexTable.getCodecVersion());
         this.table = table;
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
@@ -82,7 +83,8 @@ public class TxnDiskAnnResetParam extends FilterProjectSourceParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        codec = CodecService.getDefault().createKeyValueCodec(
+            indexTable.getCodecVersion(), schemaVersion, schema, keyMapping);
     }
 
     @Override

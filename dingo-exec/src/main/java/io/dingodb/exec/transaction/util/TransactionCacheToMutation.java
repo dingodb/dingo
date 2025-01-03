@@ -74,7 +74,7 @@ public final class TransactionCacheToMutation {
         TupleMapping mapping = TupleMapping.of(new int[]{0});
         DingoType dingoType = new LongType(false);
         TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
-        CODEC = CodecService.getDefault().createKeyValueCodec(1, tupleType, mapping);
+        CODEC = CodecService.getDefault().createKeyValueCodec(2, 1, tupleType, mapping);
     }
 
     private TransactionCacheToMutation() {
@@ -94,7 +94,7 @@ public final class TransactionCacheToMutation {
                 return new Mutation(Op.forNumber(op), key, value, forUpdateTs, null, null);
             }
             KeyValueCodec keyValueCodec = CodecService.getDefault().createKeyValueCodec(
-                index.tableId, index.tupleType(), index.keyMapping()
+                index.getCodecVersion(), index.tableId, index.tupleType(), index.keyMapping()
             );
             Table table = (Table) TransactionManager.getTable(txnId, index.primaryId);
             if (table == null) {
@@ -111,7 +111,7 @@ public final class TransactionCacheToMutation {
                 }
             }
             key = CodecService.getDefault()
-                .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping())
+                .createKeyValueCodec(table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping())
                 .encodeKey(tableRecord);
 
             Column column = index.getColumns().get(0);

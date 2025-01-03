@@ -196,7 +196,8 @@ public interface TableMapper {
             builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         }
         KeyValueCodec codec = CodecService.INSTANCE
-            .createKeyValueCodec(definition.getVersion(), columnDefinitionFrom(definition.getColumns()));
+            .createKeyValueCodec(definition.getCodecVersion(), definition.getVersion(),
+            columnDefinitionFrom(definition.getColumns()));
 
         if (definition.getTablePartition() != null) {
             builder.partitions(partitionFrom(
@@ -222,8 +223,9 @@ public interface TableMapper {
         tableFrom(definition, builder);
         PartitionRule partitionRule = definition.getTablePartition();
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
-        KeyValueCodec codec = CodecService.INSTANCE
-            .createKeyValueCodec(definition.getVersion(), columnDefinitionFrom(definition.getColumns()));
+        KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(
+            definition.getCodecVersion(), definition.getVersion(), columnDefinitionFrom(definition.getColumns())
+        );
         builder.partitions(partitionFrom(
             definition.getTablePartition().getPartitions(),
             codec,

@@ -47,15 +47,16 @@ public class LikeScanParam extends FilterProjectSourceParam {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         @JsonProperty("filter") SqlExpr filter,
         @JsonProperty("selection") TupleMapping selection,
-        @JsonProperty("prefix") byte[] prefix
+        @JsonProperty("prefix") byte[] prefix,
+        @JsonProperty("codecVersion") int codecVersion
     ) {
-        super(tableId, partId, schema, schemaVersion, filter, selection, keyMapping);
+        super(tableId, partId, schema, schemaVersion, filter, selection, keyMapping, codecVersion);
         this.prefix = prefix;
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, schema, keyMapping);
+        this.codec = CodecService.getDefault().createKeyValueCodec(codecVersion, schemaVersion, schema, keyMapping);
     }
 }

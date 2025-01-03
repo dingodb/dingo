@@ -75,7 +75,8 @@ public class DingoIndexScanWithRelOp extends LogicalIndexScanWithRelOp implement
         super(cluster, traitSet, hints, table, rowType, relOp, filter, pushDown, keepOrder, indexTable, rangeScan);
         if (getFilter() != null) {
             KeyValueCodec codec = CodecService.getDefault()
-                .createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+                .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
+                indexTable.keyMapping());
             RangeDistribution range = RangeUtils.createRangeByFilter(indexTable, codec, filter, null);
             rangeDistribution = range;
             if (range != null && !(range.getStartKey() == null && range.getEndKey() == null)) {

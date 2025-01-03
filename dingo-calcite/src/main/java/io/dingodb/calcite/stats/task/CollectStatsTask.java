@@ -85,7 +85,8 @@ public class CollectStatsTask implements Callable<TableStats> {
         this.startTs = scanTs;
         this.timeout = timeout;
         this.kvStore = Services.KV_STORE.getInstance(tableId, region.id());
-        this.codec = CodecService.getDefault().createKeyValueCodec(td.getVersion(), td.tupleType(), td.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            td.getCodecVersion(), td.getVersion(), td.tupleType(), td.keyMapping());
 
         this.minSketchList = minSketches.stream().map(CountMinSketch::copy)
             .collect(Collectors.toList());

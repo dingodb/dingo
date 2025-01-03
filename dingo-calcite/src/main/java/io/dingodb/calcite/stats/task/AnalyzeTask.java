@@ -342,7 +342,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             );
             return Iterators.transform(
                 iterator,
-                wrap(CodecService.getDefault().createKeyValueCodec(td.version,
+                wrap(CodecService.getDefault().createKeyValueCodec(td.getCodecVersion(), td.version,
                    outputSchema, outputKeyMapping)::decode)::apply
             );
         }).collect(Collectors.toList());

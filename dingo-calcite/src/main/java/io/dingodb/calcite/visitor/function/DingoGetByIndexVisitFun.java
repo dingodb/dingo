@@ -90,8 +90,8 @@ public final class DingoGetByIndexVisitFun {
 
             List<Object[]> keyTuples = TableUtils.getTuplesForKeyMapping(indexValSet.getValue(), indexTd);
 
-            KeyValueCodec codec =
-                CodecService.getDefault().createKeyValueCodec(indexTd.version, indexTd.tupleType(), indexTd.keyMapping());
+            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                indexTd.getCodecVersion(), indexTd.version, indexTd.tupleType(), indexTd.keyMapping());
             List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));

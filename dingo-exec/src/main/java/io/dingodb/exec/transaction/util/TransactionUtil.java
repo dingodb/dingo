@@ -310,7 +310,7 @@ public final class TransactionUtil {
             throw new RuntimeException("duplicateEntryKey get table by txn is null, tableId:" + tableId);
         }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-            table.version, table.tupleType(), table.keyMapping()
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
         );
         TupleMapping keyMapping = table.keyMapping();
         return joinPrimaryKey(codec.decodeKeyPrefix(key), keyMapping);

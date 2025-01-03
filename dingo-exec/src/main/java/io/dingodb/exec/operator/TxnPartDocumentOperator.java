@@ -56,10 +56,6 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
         TxnPartDocumentParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("partDocument");
         long start = System.currentTimeMillis();
-        KeyValueCodec tableCodec;
-        tableCodec = CodecService.getDefault().createKeyValueCodec(
-            param.getTable().version, param.getTableDataSchema(), param.tableDataKeyMapping()
-        );
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         DocumentSearchParameter documentSearchParameter = DocumentSearchParameter.builder()
             .topN(param.getTopN())

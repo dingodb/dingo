@@ -18,6 +18,7 @@ package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
@@ -129,21 +130,23 @@ public final class CodecService implements io.dingodb.codec.CodecService {
 
     @Override
     public KeyValueCodec createKeyValueCodec(
-        int schemaVersion, CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns) {
+        int codecVersion, int schemaVersion, CommonId id, List<io.dingodb.common.table.ColumnDefinition> columns) {
         return new KeyValueCodec(
             id,
             DingoKeyValueCodec.of(
-                schemaVersion, id.seq, columns.stream().map(Mapping::mapping).collect(Collectors.toList())
+                codecVersion, schemaVersion, id.seq, columns.stream().map(Mapping::mapping).collect(Collectors.toList())
             ),
             tuple(columns.stream().map(ColumnDefinition::getType).toArray(DingoType[]::new))
         );
     }
 
     @Override
-    public KeyValueCodec createKeyValueCodec(int schemaVersion, CommonId id, DingoType type, TupleMapping keyMapping) {
+    public io.dingodb.codec.KeyValueCodec createKeyValueCodec(
+        int codecVersion, int version, CommonId id, DingoType type, TupleMapping keyMapping
+    ) {
         return new KeyValueCodec(
             id,
-            new DingoKeyValueCodec(schemaVersion, id.seq, createSchemasForType(type, keyMapping)),
+            new DingoKeyValueCodec(codecVersion, version, id.seq, createSchemasForType(type, keyMapping)),
             type);
     }
 

@@ -44,8 +44,9 @@ public class GetByKeysParam extends FilterProjectParam {
         TupleMapping selection,
         Table table
     ) {
-        super(tableId, schema, schemaVersion, filter, selection, keyMapping);
-        this.codec = CodecService.getDefault().createKeyValueCodec(schemaVersion, table.tupleType(), table.keyMapping());
+        super(tableId, schema, schemaVersion, filter, selection, keyMapping, table.codecVersion);
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.codecVersion, schemaVersion, table.tupleType(), table.keyMapping());
         this.table = table;
     }
 

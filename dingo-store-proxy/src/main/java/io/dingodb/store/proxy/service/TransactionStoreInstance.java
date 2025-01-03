@@ -285,7 +285,7 @@ public class TransactionStoreInstance {
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
         assert table != null;
         KeyValueCodec codec = CodecService.getDefault()
-            .createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+            .createKeyValueCodec(table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");
         TupleMapping keyMapping = table.keyMapping();
         keysAlreadyExist.forEach(

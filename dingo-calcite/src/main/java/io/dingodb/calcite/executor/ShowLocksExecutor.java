@@ -225,7 +225,7 @@ public class ShowLocksExecutor extends QueryExecutor {
             return "";
         }
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-            table.version, table.tupleType(), table.keyMapping()
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
         );
         return Utils.buildKeyStr(table.keyMapping(), codec.decodeKeyPrefix(keyBytes));
     }
