@@ -423,6 +423,7 @@ SqlAlterTable addConstraint(Span s, String scope, SqlIdentifier id): {
      }
     |
       <UNIQUE> [<KEY>] [<INDEX>] { index = getNextToken().image; }
+      [ indexTypeName() ]
       columnList = ParenthesizedSimpleIdentifierList()
       {
         return new SqlAlterAddIndex(

@@ -22,7 +22,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 
 public class ColumnOption {
-    public boolean nullable;
+    public boolean nullable = true;
     public boolean autoIncrement;
     public boolean primaryKey;
     public boolean clustered = true;

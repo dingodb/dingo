@@ -257,7 +257,6 @@ public final class DdlServer {
                         try {
                             Pair<Boolean, Long> res = checkMDLInfo(ddlJob.getId());
                             if (res.getKey()) {
-                                pool.returnObject(worker);
                                 String error = DdlWorker.waitSchemaSyncedForMDL(dc, ddlJob, res.getValue());
                                 if (error != null) {
                                     LogUtils.warn(log, "[ddl] check MDL info failed, jobId:{}", ddlJob.getId());
@@ -268,7 +267,6 @@ public final class DdlServer {
                                 return;
                             }
                         } catch (Exception e) {
-                            pool.returnObject(worker);
                             LogUtils.warn(log, "[ddl] check MDL info failed, jobId:{}", ddlJob.getId());
                             return;
                         }
@@ -276,7 +274,6 @@ public final class DdlServer {
                         try {
                             waitSchemaSynced(dc, ddlJob, 2 * dc.getLease(), worker);
                         } catch (Exception e) {
-                            pool.returnObject(worker);
                             LogUtils.error(log, "[ddl] wait ddl job sync failed, reason:" + e.getMessage()
                                 + ", job:" + ddlJob);
                             Utils.sleep(1000);

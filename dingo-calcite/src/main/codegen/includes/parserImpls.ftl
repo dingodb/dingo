@@ -225,6 +225,7 @@ void TableElement(List<SqlNode> list) :
     |
         <INDEX> { s.add(this); }
         { index = getNextToken().image; }
+        [ indexTypeName() ]
         (
             <VECTOR>
             { indexType = "vector"; }
@@ -261,7 +262,11 @@ void TableElement(List<SqlNode> list) :
         }
     |
         <KEY> { s.add(this); } name = SimpleIdentifier()
+        [ indexTypeName() ]
         columnList = ParenthesizedSimpleIdentifierList()
+        prop = indexOption()
+        [ indexAlg = indexAlg()]
+        [ indexLockOpt = indexLockOpt()]
         {
             index = name.getSimple();
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
@@ -275,10 +280,10 @@ void TableElement(List<SqlNode> list) :
           <INDEX>
         )?
         [ name = SimpleIdentifier() ]
+        [ indexTypeName() ]
         columnList = ParenthesizedSimpleIdentifierList() {
               list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList));
         }
-        [<USING> <IDENTIFIER> ]
         [
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
         ]
@@ -291,6 +296,7 @@ void TableElement(List<SqlNode> list) :
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
         }
     |
+      [<CONSTRAINT>]
       <FOREIGN><KEY> [ name = SimpleIdentifier() ]
       columnList = ParenthesizedSimpleIdentifierList()
       <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
@@ -305,6 +311,26 @@ void TableElement(List<SqlNode> list) :
         list.add(sqlForeign);
       }
     )
+}
+
+String indexTypeName(): {
+  String indexType = null;
+} {
+  (
+   <USING>
+   |
+   <TYPE>
+  )
+  (
+   <BTREE> { indexType = "btree";}
+   |
+   <RTREE> { indexType = "rtree"; }
+   |
+   <HASH> { indexType = "hash";}
+  )
+  {
+    return indexType;
+  }
 }
 
 ColumnOption parseColumnOption(): {
@@ -349,7 +375,7 @@ ColumnOption parseColumnOption(): {
          |
            <COLLATE> { String collate = strIdent(); colOpt.collate=collate; }
          |
-           <COLUMN_FORMAT> (<FIXED> {colOpt.columnFormat="fixed";}|<DYNAMIC> {colOpt.columnFormat="dynamic";}|<DEFAULT_> {colOpt.columnFormat="default";}) 
+           <COLUMN_FORMAT> (<FIXED> {colOpt.columnFormat="fixed";}|<DYNAMIC> {colOpt.columnFormat="dynamic";}|<DEFAULT_> {colOpt.columnFormat="default";})
          |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
          |
@@ -377,7 +403,7 @@ ColumnOption parseColumnOption(): {
           <CONSTRAINT>  [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> [<NOT> {constraintNot=true;}] [(<ENFORCED> {constraintOpt="enforced";}|<NULL>{constraintOpt="null";})]
-      )*  
+      )*
       {
             if (e == null) {
                 strategy = colOpt.nullable ? ColumnStrategy.NULLABLE
@@ -870,15 +896,12 @@ String indexLockOpt(): {
 
 Properties indexOption(): {
   Properties prop = new Properties();
+  String indexType = "lsm";
 } {
    (
     <KEY_BLOCK_SIZE> [<EQ>] <UNSIGNED_INTEGER_LITERAL> { prop.put("key_block_size", Integer.parseInt(this.token.image));}
     |
-    <RTREE> { prop.put("indexType", "bdb"); }
-    |
-    <BTREE> { prop.put("indexType", "bdb"); }
-    |
-    <HASH> { prop.put("indexType", "hash"); }
+    indexType = indexTypeName() { prop.put("indexType", indexType);}
     |
     <WITH> <PARSER> { prop.put("parser", strIdent()); }
     |

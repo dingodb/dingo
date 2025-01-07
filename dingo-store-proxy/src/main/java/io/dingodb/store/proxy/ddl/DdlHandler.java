@@ -397,10 +397,8 @@ public class DdlHandler {
     }
 
     public void dropColumn(
-        long schemaId,
-        String schemaName,
-        Long tableId,
-        String tableName,
+        SchemaInfo schemaInfo,
+        Table table,
         String columnName,
         String markDel, String relatedIndex,
         String connId
@@ -410,10 +408,10 @@ public class DdlHandler {
         args.add(markDel);
         args.add(relatedIndex);
         DdlJob job = DdlJob.builder()
-            .schemaId(schemaId)
-            .tableId(tableId)
-            .schemaName(schemaName)
-            .tableName(tableName)
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.tableId.seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
             .schemaState(SchemaState.SCHEMA_PUBLIC)
             .actionType(ActionType.ActionDropColumn)
             .build();
@@ -422,7 +420,7 @@ public class DdlHandler {
             doDdlJob(job);
         } catch (Exception e) {
             LogUtils.error(log, "[ddl-error] dropColumn error, tableName:{}, columnName:{}",
-                tableName, columnName, e);
+                table.getName(), columnName, e);
             throw e;
         }
     }

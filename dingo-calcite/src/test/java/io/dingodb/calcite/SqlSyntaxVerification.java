@@ -25,6 +25,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
@@ -315,7 +316,7 @@ public class SqlSyntaxVerification {
 
     @Test
     public void sqlCreateIndex() {
-        String sql = "create fulltext index ix on tx(col1(10) asc, col2(20)) btree comment 'commitsss' "
+        String sql = "create fulltext index ix on tx(col1(10) asc, col2(20)) using btree comment 'commitsss' "
             + "algorithm=inplace "
             + "lock =none";
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
@@ -332,7 +333,7 @@ public class SqlSyntaxVerification {
 
     @Test
     public void sqlAlterAddFulltextKey() {
-        String sql = "alter table t1 add fulltext key ix(age) btree comment 'commitsss' algorithm=inplace lock=none";
+        String sql = "alter table t1 add fulltext key ix(age) using btree comment 'commitsss' algorithm=inplace lock=none";
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         try {
             SqlNode sqlNode = parser.parseStmt();
@@ -378,6 +379,47 @@ public class SqlSyntaxVerification {
             assert sqlNode instanceof SqlAlterAddIndex;
             SqlAlterAddIndex sqlAlterAddIndex = (SqlAlterAddIndex) sqlNode;
             assert !sqlAlterAddIndex.getIndexDeclaration().unique;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlIndexTypeOpt() {
+        String sql = "CREATE TABLE `roles_txnlsm` (\n" +
+            "\t`username` varchar(50) NOT NULL,\n" +
+            "\t`role` varchar(50) NOT NULL,\n" +
+            "\tUNIQUE INDEX `idx_user_role` (`username` ASC, `role` ASC) USING BTREE\n" +
+            ") engine=TXN_LSM";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateTable;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlConstraintForeign() {
+        String sql = "create table t1(id int,age int,name varchar(20),primary key(id), "
+           + "constraint foreign key n1(col1,col2) references tbl_name(col1,col2) on update RESTRICT)";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlCreateTable;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void sqlDropConstraintForeign() {
+        String sql = "alter table t1 drop foreign key ke";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            assert sqlNode instanceof SqlAlterTable;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
