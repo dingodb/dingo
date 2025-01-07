@@ -193,6 +193,7 @@ public class Table {
             .tableType(this.tableType)
             .updateTime(this.updateTime)
             .version(this.version)
+            .codecVersion(this.codecVersion)
             .build();
     }
 

@@ -174,7 +174,8 @@ public class ScanCoprocessorOperation implements Operation {
 
         List<Column> columnDefinitions = coprocessor.getResultSchema().getSchemas();
         KeyValueCodec codec = new KeyValueCodec(
-            DingoKeyValueCodec.of(context.getTableId().entityId(), columnDefinitions), columnDefinitions
+            DingoKeyValueCodec.of(context.getTable().getCodecVersion(),
+                context.getTableId().entityId(), columnDefinitions), columnDefinitions
         );
         context.<Iterator<KeyValue>[]>result()[context.getSeq()] = new CoprocessorIterator(
             columnDefinitions, codec, scanResult, context.getTableId().entityId()
