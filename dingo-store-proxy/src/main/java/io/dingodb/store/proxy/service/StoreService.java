@@ -598,7 +598,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 .search(search)
                 .build();
             if (isDiskAnn) {
-                String diskAnnStatus = diskAnnStatus(requestTs, indexId);
+                String diskAnnStatus = diskAnnDetailStatus(requestTs, indexId);
                 if (diskAnnStatus != null && diskAnnStatus.equals("NODATA")) {
                     parameter.setUseBruteForce(true);
                 }
@@ -686,12 +686,16 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorBuildResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
-                .orElse("INITIALIZED");
+                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .orElse("DISKANN_INITIALIZED");
         }
 
         @Override
         public String diskAnnLoad(long requestTs, CommonId indexId, int nodesCacheNum, boolean warmup) {
+            String diskAnnStatus = diskAnnDetailStatus(requestTs, indexId);
+            if (diskAnnStatus != null && diskAnnStatus.equals("NODATA")) {
+                return "NODATA";
+            }
             VectorLoadResponse vectorLoadResponse = indexService(indexId, regionId).vectorLoad(
                 requestTs,
                 VectorLoadRequest.builder()
@@ -708,12 +712,23 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorLoadResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
-                .orElse("INITIALIZED");
+                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .orElse("DISKANN_INITIALIZED");
         }
 
         @Override
         public String diskAnnStatus(long requestTs, CommonId indexId) {
+            VectorStatusResponse vectorStatusResponse = indexService(indexId, regionId).vectorStatus(
+                requestTs,
+                VectorStatusRequest.builder().build()
+            );
+            Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorStatusResponse.getState());
+            return optionalState
+                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .orElse("DISKANN_INITIALIZED");
+        }
+
+        public String diskAnnDetailStatus(long requestTs, CommonId indexId) {
             VectorStatusResponse vectorStatusResponse = indexService(indexId, regionId).vectorStatus(
                 requestTs,
                 VectorStatusRequest.builder().build()
@@ -732,8 +747,8 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorResetResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
-                .orElse("INITIALIZED");
+                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .orElse("DISKANN_INITIALIZED");
         }
 
         @Override
