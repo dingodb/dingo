@@ -152,6 +152,7 @@ public interface EntityMapper {
             .originalSchema(SchemaWrapper.builder().schema(attrSchemas).build())
             .selectionColumns(attrSchemas.stream().map(Schema::getIndex).collect(Collectors.toList()))
             .relExpr(outputStream.toByteArray())
+            .codecVersion(2)
             .build();
     }
 

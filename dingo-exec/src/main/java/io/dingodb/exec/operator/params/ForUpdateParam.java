@@ -76,6 +76,8 @@ public class ForUpdateParam extends AbstractParams {
         this.lockTimeOut = lockTimeOut;
         this.isScan = isScan;
         this.table = table;
-        this.codec = CodecService.getDefault().createKeyValueCodec(table.version, table.tupleType(), table.keyMapping());
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
+        );
     }
 }

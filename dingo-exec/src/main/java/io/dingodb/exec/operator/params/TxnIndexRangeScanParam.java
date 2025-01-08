@@ -126,6 +126,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                     .resultSchema(SchemaWrapperUtils.buildSchemaWrapper(indexSchema, outputKeyMapping, indexTableId.seq))
                     .selection(selection)
                     .relExpr(os.toByteArray())
+                    .codecVersion(this.codecVersion)
                     .build();
             }
         }

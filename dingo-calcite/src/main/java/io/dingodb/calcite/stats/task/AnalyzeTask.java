@@ -470,6 +470,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 .selection(selection)
                 .relExpr(os.toByteArray())
                 .schemaVersion(table.getVersion())
+                .codecVersion(table.getCodecVersion())
                 .build();
             return coprocessor;
         }

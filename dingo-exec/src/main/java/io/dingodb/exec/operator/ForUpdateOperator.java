@@ -101,7 +101,10 @@ public class ForUpdateOperator extends SoleOutOperator {
             }).toArray();
             schema = indexTable.tupleType();
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
-            codec = CodecService.getDefault().createKeyValueCodec(indexTable.version, indexTable.tupleType(), indexTable.keyMapping());
+            codec = CodecService.getDefault().createKeyValueCodec(
+                indexTable.codecVersion,
+                indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
+            );
         }
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         KeyValue keyValue = wrap(codec::encode).apply(newTuple);

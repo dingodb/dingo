@@ -154,6 +154,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
                 filter = null;
             }
             builder.schemaVersion(table.getVersion());
+            builder.codecVersion(table.getCodecVersion());
             builder.originalSchema(
                 SchemaWrapperUtils.buildSchemaWrapper(
                     tableDataSchema, tableDataKeyMapping(), 0

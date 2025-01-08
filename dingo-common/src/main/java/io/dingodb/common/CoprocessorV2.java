@@ -46,4 +46,7 @@ public class CoprocessorV2 {
 
     @Setter
     private int limit;
+
+    @Setter
+    private int codecVersion;
 }

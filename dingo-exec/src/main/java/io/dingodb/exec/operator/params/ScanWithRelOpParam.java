@@ -153,6 +153,7 @@ public class ScanWithRelOpParam extends ScanParam {
                     .resultSchema(SchemaWrapperUtils.buildSchemaWrapper(outputSchema, outputKeyMapping, tableId.seq))
                     .selection(selection)
                     .relExpr(os.toByteArray())
+                    .codecVersion(codecVersion)
                     .build();
                 if (limit > 0) {
                     coprocessor.setLimit(limit);

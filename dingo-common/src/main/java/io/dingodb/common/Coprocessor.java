@@ -20,6 +20,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,5 +50,8 @@ public class Coprocessor {
 
     @Builder.Default
     private List<AggregationOperator> aggregations = Collections.emptyList();
+
+    @Setter
+    private int codecVersion;
 
 }
