@@ -51,6 +51,7 @@ import io.dingodb.sdk.service.ChannelProvider;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.DiskANNState;
 import io.dingodb.sdk.service.entity.common.DocumentWithScore;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.RangeWithOptions;
@@ -686,7 +687,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorBuildResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
+                    .map(DiskANNState::toString)
+                    .orElse("DISKANN_INITIALIZED"))
                 .orElse("DISKANN_INITIALIZED");
         }
 
@@ -712,7 +715,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorLoadResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
+                    .map(DiskANNState::toString)
+                    .orElse("DISKANN_INITIALIZED"))
                 .orElse("DISKANN_INITIALIZED");
         }
 
@@ -724,7 +729,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorStatusResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
+                    .map(DiskANNState::toString)
+                    .orElse("DISKANN_INITIALIZED"))
                 .orElse("DISKANN_INITIALIZED");
         }
 
@@ -747,7 +754,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             );
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorResetResponse.getState());
             return optionalState
-                .map(state -> ((StateDiskAnnParam) state.getState()).getDiskannState().toString())
+                .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
+                    .map(DiskANNState::toString)
+                    .orElse("DISKANN_INITIALIZED"))
                 .orElse("DISKANN_INITIALIZED");
         }
 
