@@ -1195,7 +1195,7 @@ SqlNode SqlStmt() :
         stmt = SqlDrop()
     |
 </#if>
-        stmt = SqlDescTable()
+        LOOKAHEAD(3) stmt = SqlDescTable()
     |
         stmt = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
@@ -5969,8 +5969,6 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <DOUBLE> { s.add(this); }
         [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
-    |
-        <FLOAT> { s.add(this); sqlTypeName = SqlTypeName.FLOAT; }
     )
     {
         return new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));

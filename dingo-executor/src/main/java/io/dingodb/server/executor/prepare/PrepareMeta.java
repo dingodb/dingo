@@ -37,7 +37,6 @@ import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
-import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.meta.MetaService;
@@ -55,9 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
-
-import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public final class PrepareMeta {
@@ -99,7 +95,7 @@ public final class PrepareMeta {
         prepareSchema(tenantId);
         prepareMysql();
 
-        prepareInformation(coordinators);
+        prepareInformation();
         infoSchemaService.prepareDone();
         DdlContext.prepareDone();
         long end = System.currentTimeMillis();
@@ -188,10 +184,10 @@ public final class PrepareMeta {
         LogUtils.info(log, "prepare mysql meta table done");
     }
 
-    public static void prepareInformation(String coordinators) {
+    public static void prepareInformation() {
         String schemaName = "INFORMATION_SCHEMA";
         initTableByTemplate(schemaName, "GLOBAL_VARIABLES", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
-        initGlobalVariables(coordinators);
+        initGlobalVariables();
         initTableByTemplate(schemaName, "COLUMNS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "PARTITIONS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "EVENTS", SYSTEM_VIEW, TXN_LSM, DYNAMIC);
@@ -216,7 +212,7 @@ public final class PrepareMeta {
         LogUtils.info(log, "prepare information meta table done");
     }
 
-    public static void initGlobalVariables(String coordinators) {
+    public static void initGlobalVariables() {
         InfoSchemaService infoSchemaService = InfoSchemaService.ROOT;
         List<Object[]> globalVariablesList = getGlobalVariablesList();
         for (Object[] objects : globalVariablesList) {
@@ -298,20 +294,6 @@ public final class PrepareMeta {
         values.add(new Object[]{"enable_async_commit_sleep", "off"});
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         return values;
-    }
-
-    public static PutRequest putRequest(Object resourceKey, Object valObj) {
-        String key = GLOBAL_VAR_PREFIX_BEGIN + resourceKey.toString();
-        String value = valObj.toString();
-        return PutRequest.builder()
-            .lease(0L)
-            .ignoreValue(value == null || value.isEmpty())
-            .keyValue(io.dingodb.sdk.service.entity.common.KeyValue.builder()
-                .key(key.getBytes(UTF_8))
-                .value(value == null ? null : value.getBytes(UTF_8))
-                .build())
-            .needPrevKv(true)
-            .build();
     }
 
     public static void createUserTable(String schemaName,

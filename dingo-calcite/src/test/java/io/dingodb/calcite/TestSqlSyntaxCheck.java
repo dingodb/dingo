@@ -32,21 +32,19 @@ import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
-import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
-import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
-import org.apache.calcite.sql.ddl.SqlCreateView;
-import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 import org.junit.jupiter.api.Test;
 
-import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SqlSyntaxVerification {
+import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class TestSqlSyntaxCheck {
 
     @Test
     public void createUser() {
@@ -425,4 +423,87 @@ public class SqlSyntaxVerification {
         }
     }
 
+    @Test
+    public void testConstraintCheck() {
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add("create table t1(id int,age int CONSTRAINT t1 check (age>1) not enforced)");
+        sqlList.add("create table t1(id int,age int CONSTRAINT t1 check (age>1) enforced)");
+        sqlList.add("create table t1(id int,age int CONSTRAINT t1 check (age>1) not null)");
+        sqlList.add("create table t1(id int,age int CONSTRAINT t1 check (age>1) null)");
+        sqlList.add("create table t1(id int,age int CONSTRAINT check (age>1))");
+        sqlList.add("create table t1(id int,age int, constraint primary key(id))");
+        sqlList.add("alter table t1 add constraint c1 check(a>1) not enforced");
+        sqlList.add("alter table t1 add constraint check(a>1) not enforced");
+        sqlList.add("alter table t1 add constraint check(a>1)");
+        sqlList.add("alter table t1 add constraint check(a>1) enforced");
+        sqlList.add("alter table t1 drop constraint name1");
+        sqlList.add("alter table t1 alter constraint name1 not enforced");
+        sqlList.add("alter table t1 alter constraint name1 enforced");
+        sqlList.add("create table t1(id int,age int check(age>10) not enforced,primary key(id))");
+        sqlList.add("create table t1(id int,age int check(age>10) not null,primary key(id))");
+        sqlList.add("create table t1(id int,age int check(age>10) null,primary key(id))");
+        sqlList.add("create table t1(id int,age int,primary key(id), constraint check(age>10) not enforced)");
+        sqlList.add("alter table t1 add constraint name1 unique key t1 using btree (age)");
+        sqlList.add("alter table t1 add constraint unique key t1 (age)");
+        sqlList.add("alter table t1 add constraint unique t1 (age)");
+        sqlList.add("alter table t1 add unique t1 (age)");
+        sqlList.add("create table t1(id int,age int,name varchar(20),primary key(id), "
+            + "constraint foreign key (col1,col2) references tbl_name(col1,col2) match partial "
+            + "on update CASCADE)");
+        sqlList.add("create table t1(id int,age int references t2(age) match full on update cascade)");
+        sqlList.add("alter table t1 add constraint c1 foreign key f1 (age,name) references t2(age,name) "
+            + "match full on update RESTRICT");
+        sqlList.add("ALTER TABLE table_name DROP FOREIGN KEY fk_identifier");
+        for (String sql : sqlList) {
+            assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
+        }
+    }
+
+    @Test
+    public void testAlterTable() {
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add("ALTER TABLE TBL ALTER COLUMN C1 SET DEFAULT 'A2'");
+        sqlList.add("ALTER TABLE TBL ALTER COLUMN C1 DROP DEFAULT");
+        sqlList.add("alter table table1 change column column1 column2 decimal(10,1) DEFAULT NULL COMMENT '注释'");
+        sqlList.add("alter table table1 change column1 column2 decimal(10,1) DEFAULT NULL COMMENT '注释'");
+
+        // modify column
+        sqlList.add("alter table t1 modify column col1 int not null");
+        sqlList.add("alter table t1 modify col1 int not null");
+        sqlList.add("alter table t1 modify col1 int");
+        sqlList.add("alter ignore table t1 modify col1 int");
+        sqlList.add("alter ignore table t1 modify col1 int auto_increment");
+        sqlList.add("alter ignore table t1 modify col1 int default val");
+        sqlList.add("alter ignore table t1 modify col1 int on update current_timestamp comment 'ss'");
+        sqlList.add("alter ignore table t1 modify col1 int constraint check(col1>10) not enforced");
+        sqlList.add("alter ignore table t1 modify col1 int references tbl(age) match full on update RESTRICT");
+        sqlList.add("ALTER TABLE table_name AUTO_INCREMENT=310");
+        sqlList.add("rename table t1 to t2");
+        sqlList.add("alter table t1 comment='test'");
+        sqlList.add("ALTER TABLE tbl_name RENAME INDEX old_index_name TO new_index_name, ALGORITHM=INPLACE, LOCK=NONE");
+        for (String sql : sqlList) {
+            assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
+        }
+    }
+
+    @Test
+    public void testLoadData() {
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add("load data infile '/xx/data' into table t1 lines terminated by 'x' starting by 'a' "
+            + " fields terminated by ','");
+        for (String sql : sqlList) {
+            assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
+        }
+    }
+
+    private boolean isValidEntry(String sql) {
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            parser.parseStmt();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

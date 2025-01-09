@@ -52,11 +52,6 @@ task copyDepends(type: Copy) {
     }
     into layout.projectDirectory.dir("dingo")
 
-    from(project(':dingo-mysql-init').layout.buildDirectory) {
-        include('libs/dingo-mysql-init-*-all.jar')
-    }
-    into layout.projectDirectory.dir("dingo")
-
     from(project(':dingo-proxy').layout.buildDirectory) {
         include("libs/dingo-proxy-*.jar")
         exclude("libs/dingo-proxy-*-plain.jar")
@@ -88,7 +83,6 @@ copyDepends.dependsOn([
     ':dingo-proxy:build',
     ':dingo-net-netty:fatJar',
     ':dingo-executor:fatJar',
-    ':dingo-mysql-init:fatJar',
     ':dingo-store-local:fatJar'
 ])
 

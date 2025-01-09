@@ -410,14 +410,17 @@ SqlAlterTable addConstraint(Span s, String scope, SqlIdentifier id): {
    SqlNodeList columnList = null;
    String index = null;
    SqlAlterAddForeign sqlAlterAddForeign = null;
+   Properties prop = null;
+   String indexAlg = null;
+   boolean checkNot = false;
+   String indexLockOpt = null;
 } {
     <CONSTRAINT> { s.add(this); } [ name = SimpleIdentifier() ]
     (
      <CHECK> <LPAREN>
      e = Expression(ExprContext.ACCEPT_SUB_QUERY)
      <RPAREN>
-     [<NOT> <ENFORCED> { enforced = false; }]
-     [<ENFORCED> { enforced = true;}]
+     (<NOT>|{checkNot = false;}) (<ENFORCED>|<NULL>|{ String t = "";})
      {
         return new SqlAlterAddConstraint(s.end(this), name, e, enforced);
      }
@@ -425,6 +428,9 @@ SqlAlterTable addConstraint(Span s, String scope, SqlIdentifier id): {
       <UNIQUE> [<KEY>] [<INDEX>] { index = getNextToken().image; }
       [ indexTypeName() ]
       columnList = ParenthesizedSimpleIdentifierList()
+      prop = indexOption()
+      [ indexAlg = indexAlg()]
+      [ indexLockOpt = indexLockOpt()]
       {
         return new SqlAlterAddIndex(
             s.end(this), id,
@@ -452,6 +458,7 @@ SqlAlterAddForeign foreign(Span s, SqlIdentifier id): {
    <FOREIGN><KEY> [ name = SimpleIdentifier() ]
    columnList = ParenthesizedSimpleIdentifierList()
    <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+   [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
    ( <ON> (
            <UPDATE> updateRefOpt = referenceOpt()
            |
@@ -544,7 +551,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
     SqlIdentifier afterCol = null;
     SqlIdentifier name = null;
 } {
-   <COLUMN> name = SimpleIdentifier()
+   [<COLUMN>] name = SimpleIdentifier()
     (
         type = DataType()
         columnOpt = parseColumnOption()
@@ -607,7 +614,7 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
     final SqlDataTypeSpec type;
    ColumnOption columnOpt = null;
 } {
-  <COLUMN> name = SimpleIdentifier() newName = SimpleIdentifier()
+  [<COLUMN>] name = SimpleIdentifier() newName = SimpleIdentifier()
    (
         type = DataType()
         columnOpt = parseColumnOption()
@@ -633,12 +640,22 @@ SqlAlterTable alterAutoInc(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
     String index = null;
     String toIndexName = null;
+    String indexAlg = null;
+    String indexLockOpt = null;
 }
 {
     <INDEX> { s.add(this); }
     { index = getNextToken().image; }
     <TO>
-    { toIndexName = getNextToken().image; return new SqlAlterRenameIndex(s.end(this), id, index, toIndexName);  }
+    { toIndexName = getNextToken().image; }
+    (
+     <COMMA>
+     ( indexAlg = indexAlg()
+     |
+     indexLockOpt = indexLockOpt()
+     )
+    )*
+    { return new SqlAlterRenameIndex(s.end(this), id, index, toIndexName);  }
 }
 
 SqlAlterTable alterTableComment(Span s, String scope, SqlIdentifier id): {

@@ -32,33 +32,28 @@ SqlLoadData SqlLoadData(): {
   <DATA> [<LOCAL>] <INFILE>
   <QUOTED_STRING> { filePath = token.image.replace("'", "").toLowerCase(); }
   <INTO> <TABLE> table = CompoundIdentifier()
-   [
+   (
       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
-   ]
-   [
+   |
      <FIELDS>
-     [<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
+     (<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
                         [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
-     ]
-     [<ENCLOSED> <BY> <QUOTED_STRING> { enclosed = getEnclosed(token.image); } ]
-     [<ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
+     |
+      <ENCLOSED> <BY> <QUOTED_STRING> { enclosed = getEnclosed(token.image); } 
+     |
+      <ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
                      [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
-     ]
-   ]
-   [
+     )*
+   |
      <LINES>
-     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
+     ( <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
                        [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-     ]
-     [ <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
+     |
+      <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
                          [<BINARY_STRING_LITERAL> { lineTerminated = getSpecialHexBytes(token.image); }]
-     ]
-     [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-                       [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-     ]
-   ]
-   [
+     )*
+   |
      <IGNORE> (<UNSIGNED_INTEGER_LITERAL> | <DECIMAL_NUMERIC_LITERAL>) { ignoreNum = Integer.parseInt(token.image); }
-   ]
+   )*
   { return new SqlLoadData(s.end(this), table, filePath, terminated, escaped, lineTerminated, enclosed, lineStarting, exportCharset, ignoreNum); }
 }

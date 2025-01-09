@@ -37,22 +37,15 @@ SqlAnalyze SqlAnalyze(): {
      colId = SimpleIdentifier() { colIds.add(colId); }
     )*
   ]
-  [
-    <WITH> numberTmp = number()
-     <BUCKETS> { buckets = numberTmp.intValue(); }
-  ]
-  [
-     <WITH>
+  (
+    <WITH>
+     ( 
+     numberTmp = number()
+     (<BUCKETS> { buckets = numberTmp.intValue(); } |<SAMPLES> {samples=numberTmp.longValue();}|<SAMPLERATE> {sampleRate=numberTmp.floatValue();})
+     |
      <CMSKETCH> cmSketchHeight = number() cmSketchWidth = number()
-  ]
-  [
-     <WITH> numberTmp = number()
-     (
-      <SAMPLES> { samples = numberTmp.longValue(); }
-      |
-      <SAMPLERATE> { sampleRate = numberTmp.floatValue(); }
      )
-  ]
+  )*
   {
     return new SqlAnalyze(s.end(this), tableId, colIds, cmSketchHeight, cmSketchWidth, buckets, samples, sampleRate );
   }

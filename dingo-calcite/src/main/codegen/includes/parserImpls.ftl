@@ -142,6 +142,7 @@ void TableElement(List<SqlNode> list) :
     final SqlDataTypeSpec type;
     boolean nullable = true;
     SqlNode checkExpr = null;
+    boolean checkNot = false;
     SqlNode e = null;
     final SqlNode constraint;
     SqlIdentifier name = null;
@@ -194,7 +195,7 @@ void TableElement(List<SqlNode> list) :
          |
            <CHECK>  <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [(<ENFORCED>|<NULL>)]
+                    <RPAREN> (<NOT>|{ checkNot=false;}) (<ENFORCED>|<NULL>|{ String t = "";})
          |
            <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
          |
@@ -204,7 +205,16 @@ void TableElement(List<SqlNode> list) :
          |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT>] [(<ENFORCED>|<NULL>)]
+                    <RPAREN> (<NOT>|{checkNot =false;}) (<ENFORCED>|<NULL>|{ String t = "";})
+         |
+          <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+           [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
+           ( <ON> (
+             <UPDATE> updateRefOpt = referenceOpt()
+             |
+            <DELETE> deleteRefOpt = referenceOpt()
+             )
+           )*
         )*
         {
             if (e == null) {
@@ -219,7 +229,7 @@ void TableElement(List<SqlNode> list) :
     [ <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] ]
     (
         <CHECK> { s.add(this); } <LPAREN>
-        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN> [<NOT>] [<ENFORCED>]{
+        e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN> [<NOT>] (<ENFORCED>|<NULL>|{ String t = "";}){
             list.add(SqlDdlNodes.check(s.end(this), name, e));
         }
     |
@@ -231,10 +241,9 @@ void TableElement(List<SqlNode> list) :
             { indexType = "vector"; }
             columnList = ParenthesizedSimpleIdentifierList()
         |
-            [<SCALAR>]
             columnList = ParenthesizedSimpleIdentifierList()
         |
-            [<TEXT>]
+            <TEXT>
             { indexType = "text"; }
             columnList = ParenthesizedSimpleIdentifierList()
         )
@@ -279,7 +288,7 @@ void TableElement(List<SqlNode> list) :
           |
           <INDEX>
         )?
-        [ name = SimpleIdentifier() ]
+        ( name = SimpleIdentifier()|{ boolean hasName=false;} )
         [ indexTypeName() ]
         columnList = ParenthesizedSimpleIdentifierList() {
               list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList));
@@ -300,6 +309,7 @@ void TableElement(List<SqlNode> list) :
       <FOREIGN><KEY> [ name = SimpleIdentifier() ]
       columnList = ParenthesizedSimpleIdentifierList()
       <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
+      [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
       ( <ON> (
            <UPDATE> updateRefOpt = referenceOpt()
            |
@@ -369,7 +379,7 @@ ColumnOption parseColumnOption(): {
          |
            <CHECK>  <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT> {constraintNot = true;}] [(<ENFORCED> {constraintOpt="enforced";}|<NULL> {constraintOpt="null";})]
+                    <RPAREN> (<NOT> {constraintNot = true;}|{constraintNot=false;}) (<ENFORCED> {constraintOpt="enforced";}|<NULL> {constraintOpt="null";}|{constraintOpt="";})
          |
            <COMMENT> { String comment = strIdent(); colOpt.comment=comment; }
          |
@@ -402,7 +412,7 @@ ColumnOption parseColumnOption(): {
          |
           <CONSTRAINT>  [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                    <RPAREN> [<NOT> {constraintNot=true;}] [(<ENFORCED> {constraintOpt="enforced";}|<NULL>{constraintOpt="null";})]
+                     <RPAREN>  (<NOT> {constraintNot=true;} | {constraintNot = false;}) (<ENFORCED> {constraintOpt="enforced";}|<NULL>{constraintOpt="null";} | { constraintOpt="";})
       )*
       {
             if (e == null) {
@@ -678,7 +688,6 @@ Object anything() : {
 }{
 	(
 	  x = symbol()
-	| <DECIMAL_NUMERIC_LITERAL>
 	| <DATE_LITERAL>
 	| <TIME_LITERAL>
 	| <DATE_TIME>

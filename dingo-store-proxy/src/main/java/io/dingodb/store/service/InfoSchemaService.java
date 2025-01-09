@@ -959,13 +959,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .build();
     }
 
-    private static RangeRequest rangeRequest() {
-        return RangeRequest.builder()
-            .key(GLOBAL_VAR_PREFIX_BEGIN.getBytes(UTF_8))
-            .rangeEnd(GLOBAL_VAR_PREFIX_END.getBytes(UTF_8))
-            .build();
-    }
-
     public SchemaDiff getSchemaDiff(long schemaVersion) {
         byte[] key = schemaDiffKey(schemaVersion);
         byte[] val = this.txn.ddlGet(key);
