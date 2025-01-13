@@ -435,7 +435,7 @@ SqlAlterTable addConstraint(Span s, String scope, SqlIdentifier id): {
         return new SqlAlterAddIndex(
             s.end(this), id,
             new SqlIndexDeclaration(
-                s.end(this), index, columnList, null, null,null, 3, "scalar", null, true
+                s.end(this), index, columnList, null, null,null, 3, "scalar", null, true, prop
             )
          );
       }

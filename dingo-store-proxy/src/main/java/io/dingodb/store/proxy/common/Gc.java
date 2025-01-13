@@ -38,7 +38,6 @@ import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
-import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.Region;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
@@ -56,9 +55,6 @@ import io.dingodb.sdk.service.entity.store.TxnPessimisticRollbackRequest;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanLockResponse;
-import io.dingodb.sdk.service.entity.version.Kv;
-import io.dingodb.sdk.service.entity.version.RangeRequest;
-import io.dingodb.sdk.service.entity.version.RangeResponse;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.checkstatus.AsyncResolveData;
 import io.dingodb.store.api.transaction.exception.NonAsyncCommitLockException;
@@ -71,6 +67,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,14 +81,9 @@ import static io.dingodb.store.proxy.Configuration.coordinatorSet;
 import static io.dingodb.store.utils.ResolveLockUtil.checkSecondaryAllLocks;
 import static io.dingodb.store.utils.ResolveLockUtil.resolveAsyncResolveData;
 import static java.lang.Math.min;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Slf4j
 public class Gc {
-
-    public static final RangeRequest enableKeyReq = RangeRequest.builder()
-        .key(GcApi.enableKeyStr.getBytes(UTF_8))
-        .build();
 
     private static final List<Action> pessimisticRollbackActions = Arrays.asList(
         LockNotExistRollback, TTLExpirePessimisticRollback, TTLExpireRollback
@@ -106,7 +98,7 @@ public class Gc {
             LogUtils.info(log, "Run safe point update task.");
             Set<Location> coordinators = coordinatorSet();
             long reqTs = tso();
-            long safeTs = safeTs(getTxnDurationSafeTs(coordinators, reqTs));
+            long safeTs = safeTs(getTxnDurationSafeTs(reqTs));
             List<Region> regions = Services.coordinatorService(coordinators).getRegionMap(
                 reqTs, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
             ).getRegionmap().getRegions();
@@ -240,16 +232,14 @@ public class Gc {
         }
     }
 
-    private static long getTxnDurationSafeTs(Set<Location> coordinators, long requestId) {
-        return Optional.ofNullable(Services.versionService(coordinators).kvRange(
-                requestId, RangeRequest.builder().key(GcApi.txnDurationKey).build()
-            ).getKvs())
-            .filter($ -> !$.isEmpty())
-            .map($ -> $.get(0)).map(Kv::getKv)
-            .map(KeyValue::getValue).map(String::new)
-            .map(Long::parseLong)
-            .map($ -> requestId - (TimeUnit.SECONDS.toMillis($) << GcApi.PHYSICAL_SHIFT))
-            .orElseGet(() -> requestId);
+    private static long getTxnDurationSafeTs(long requestId) {
+        Map<String, String> globalVariablesMap = InfoSchemaService.root().getGlobalVariables();
+        String durationStr = globalVariablesMap.get(GcApi.txnDurationKeyStr);
+        if (durationStr == null) {
+            return requestId;
+        }
+        long duration = Long.parseLong(durationStr);
+        return requestId - (TimeUnit.SECONDS.toMillis(duration) << GcApi.PHYSICAL_SHIFT);
     }
 
     private static long safeTs(long safeTs) {
@@ -291,15 +281,9 @@ public class Gc {
     }
 
     private static boolean isDisable(long reqTs) {
-        return Optional.of(Services.versionService(coordinatorSet()).kvRange(reqTs, enableKeyReq))
-            .map(RangeResponse::getKvs)
-            .filter($ -> !$.isEmpty())
-            .map($ -> $.get(0))
-            .map(Kv::getKv)
-            .map(KeyValue::getValue)
-            .map(String::new)
-            .filter("1"::equals)
-            .isAbsent();
+        Map<String,String> globalVariables = InfoSchemaService.root().getGlobalVariables();
+        String enableGc = globalVariables.get(GcApi.enableKeyStr);
+        return "1".equalsIgnoreCase(enableGc);
     }
 
     private static StoreService storeRegionService(long regionId) {

@@ -56,6 +56,10 @@ public class DingoSqlCreateTable extends SqlCreateTable {
     @Setter
     private String collate;
 
+    @Getter
+    @Setter
+    private int codecVersion;
+
     /**
      * Creates a SqlCreateTable.
      *
@@ -81,7 +85,8 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         int autoIncrement,
         String comment,
         String charset,
-        String collate
+        String collate,
+        int codecVersion
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.properties = properties;
@@ -93,5 +98,6 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         this.comment = comment;
         this.charset = charset;
         this.collate = collate;
+        this.codecVersion = codecVersion;
     }
 }

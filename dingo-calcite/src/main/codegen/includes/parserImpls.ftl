@@ -267,7 +267,7 @@ void TableElement(List<SqlNode> list) :
         [ indexLockOpt = indexLockOpt()]
         {
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType, engine, false));
+            partitionDefinition, replica, indexType, engine, false, prop));
         }
     |
         <KEY> { s.add(this); } name = SimpleIdentifier()
@@ -279,7 +279,7 @@ void TableElement(List<SqlNode> list) :
         {
             index = name.getSimple();
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
-            partitionDefinition, replica, indexType, null, false));
+            partitionDefinition, replica, indexType, null, false, prop));
         }
     |
         <UNIQUE> { s.add(this); }
@@ -538,6 +538,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     String charset = "utf8";
     String collate = "utf8_bin";
     String comment = null;
+    int codecVersion = 2;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -570,11 +571,13 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
      <COLLATE> <EQ> { collate = getNextToken().image; }
     |
      <COMMENT> <EQ> { comment = getNextToken().image; }
+    |
+     <CODEC_VERSION> <EQ> { codecVersion = Integer.parseInt(getNextToken().image); }
     )*
     {
         return DingoSqlDdlNodes.createTable(
             s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, replica,
-            engine, properties, autoIncrement, comment, charset, collate
+            engine, properties, autoIncrement, comment, charset, collate, codecVersion
         );
     }
 }
@@ -923,6 +926,8 @@ Properties indexOption(): {
     <GLOBAL> { prop.put("isGlobal", "true"); }
     |
     <LOCAL> { prop.put("isGlobal", "false"); }
+    |
+    <CODEC_VERSION> [<EQ>] <UNSIGNED_INTEGER_LITERAL> { prop.put("codec_version", Integer.parseInt(this.token.image)); }
    )*
    {
      return prop;

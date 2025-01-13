@@ -191,6 +191,9 @@ public interface TableMapper {
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
         Table.TableBuilder builder = Table.builder();
         tableFrom(definition, builder);
+        if (definition.getCodecVersion() == 0) {
+            builder.codecVersion(1);
+        }
         PartitionRule partitionRule = definition.getTablePartition();
         if (partitionRule != null) {
             builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
@@ -221,6 +224,9 @@ public interface TableMapper {
         IndexTable.IndexTableBuilder builder = IndexTable.builder();
         io.dingodb.sdk.service.entity.meta.TableDefinition definition = tableWithId.getTableDefinition();
         tableFrom(definition, builder);
+        if (definition.getCodecVersion() == 0) {
+            builder.codecVersion(1);
+        }
         PartitionRule partitionRule = definition.getTablePartition();
         builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         KeyValueCodec codec = CodecService.INSTANCE.createKeyValueCodec(

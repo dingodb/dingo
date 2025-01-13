@@ -27,10 +27,8 @@ public final class GcApi {
     public static final int PHYSICAL_SHIFT = 18;
     public static final String lockKeyStr =  "safe_point_update_" + TenantConstant.TENANT_ID;
 
-    public static final String enableKeyStr = GLOBAL_VAR_PREFIX_BEGIN + "enable_safe_point_update";
-    public static final String txnDurationKeyStr = GLOBAL_VAR_PREFIX_BEGIN + "txn_history_duration";
-
-    public static final byte[] txnDurationKey = txnDurationKeyStr.getBytes(UTF_8);
+    public static final String enableKeyStr = "enable_safe_point_update";
+    public static final String txnDurationKeyStr = "txn_history_duration";
 
     public static final AtomicBoolean running = new AtomicBoolean(false);
 }

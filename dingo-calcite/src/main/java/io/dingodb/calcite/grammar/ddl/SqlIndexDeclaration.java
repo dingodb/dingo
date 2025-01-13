@@ -59,6 +59,7 @@ public class SqlIndexDeclaration extends SqlCall {
     @Getter
     String engine;
 
+    @Getter
     Properties indexOpt;
     String algorithm;
     String lockOpt;
@@ -123,7 +124,8 @@ public class SqlIndexDeclaration extends SqlCall {
         int replica,
         String indexType,
         String engine,
-        boolean unique
+        boolean unique,
+        Properties indexOpt
     ) {
         super(pos);
         this.index = index;
@@ -149,6 +151,7 @@ public class SqlIndexDeclaration extends SqlCall {
         this.indexType = indexType;
         this.engine = engine;
         this.unique = unique;
+        this.indexOpt = indexOpt;
     }
 
     public SqlIndexDeclaration(

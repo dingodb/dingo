@@ -489,7 +489,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .name(tableName)
             .columns(columns)
             .version(1)
-            .codecVersion(2)
+            .codecVersion(create.getCodecVersion())
             .ttl(create.getTtl())
             .partDefinition(create.getPartDefinition())
             .engine(create.getEngine())
@@ -2448,6 +2448,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         );
         indexTableDefinition.setVisible(indexDeclaration.isVisible());
         indexTableDefinition.setComment(indexDeclaration.getComment());
+        if (indexDeclaration.getIndexOpt() != null) {
+            int codecVersion = (int) indexDeclaration.getIndexOpt().getOrDefault("codec_version", 2);
+            indexTableDefinition.setCodecVersion(codecVersion);
+        }
 
         return indexTableDefinition;
     }
