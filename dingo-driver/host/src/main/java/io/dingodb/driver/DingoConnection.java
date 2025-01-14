@@ -131,8 +131,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         LogUtils.info(log, "DingoConnection:" + id);
         info.put("connId", id);
         LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
-        context = new DingoParserContext(defaultSchema, info);
         sessionVariables = new Properties();
+        context = new DingoParserContext(defaultSchema, info, sessionVariables);
         String user = info.getProperty("user");
         String host  = info.getProperty("host");
         if (user != null && host != null) {
@@ -258,6 +258,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 InfoSchema is = getContext().getRootSchema().initTxn(transaction.getTxnId());
                 transaction.setIs(is);
             }
+            this.getContext().setAutoCommit(autoCommit);
         }
         return transaction;
     }

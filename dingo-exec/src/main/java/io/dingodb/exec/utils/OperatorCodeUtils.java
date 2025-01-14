@@ -42,6 +42,7 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_PART_VECTOR = new CommonId(CommonId.CommonType.OP, SOURCE, 14);
     public static final CommonId CALC_DISTRIBUTION_1 = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
     public static final CommonId TXN_PART_DOCUMENT = new CommonId(CommonId.CommonType.OP, SOURCE, 16);
+    public static final CommonId DOCUMENT_SCAN_FILTER = new CommonId(CommonId.CommonType.OP, SOURCE, 17);
 
 
     // op

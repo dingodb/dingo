@@ -16,7 +16,10 @@
 
 package io.dingodb.calcite.rule;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoGetByIndex;
@@ -29,10 +32,21 @@ import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.utils.DocumentScanFilterOb;
+import io.dingodb.calcite.utils.DocumentScanFilterVisitor;
+import io.dingodb.calcite.utils.GlobalVariablesUtil;
+import io.dingodb.calcite.utils.IndexRangeMapSet;
+import io.dingodb.calcite.utils.IndexRangeVisitor;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.Pair;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -43,13 +57,20 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -250,6 +271,104 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
         }
 
         if (scan == null) {
+            // document filter
+            if (GlobalVariablesUtil.getEnableDocumentScanFilter((DingoParserContext) document.getCluster().getPlanner().getContext())) {
+                IndexRangeVisitor indexRangeVisitor = new IndexRangeVisitor(document.getCluster().getRexBuilder());
+                IndexRangeMapSet<Integer, RexNode> indexRangeMapSet = rexNode.accept(indexRangeVisitor);
+                Set<Map<Integer, RexNode>> set = indexRangeMapSet.getSet();
+                if (set == null || set.isEmpty()) {
+                    return null;
+                }
+                final List<Integer> selectedColumns = new ArrayList<>();
+                final RexVisitorImpl<Void> rexVisitor = new RexVisitorImpl<Void>(true) {
+                    @Override
+                    public @Nullable Void visitInputRef(@NonNull RexInputRef inputRef) {
+                        if (!selectedColumns.contains(inputRef.getIndex())) {
+                            selectedColumns.add(inputRef.getIndex());
+                        }
+                        return null;
+                    }
+
+                };
+                condition.accept(rexVisitor);
+                boolean match = true;
+                outer:for (Map<Integer, RexNode> map : set) {
+                    for (int k : map.keySet()) {
+                        int originIndex = (selection == null ? k : selection.get(k));
+                        Column column = td.getColumns().get(originIndex);
+                        // match primary key
+                        if (column.primaryKeyIndex == 0) {
+                            return null;
+                        }
+                        if (match) {
+                            DingoType type = column.getType();
+                            if (!(type instanceof StringType || type instanceof LongType || type instanceof DoubleType
+                                || type instanceof TimestampType || type instanceof BooleanType)) {
+                                match = false;
+                                break outer;
+                            }
+                            if (type instanceof StringType) {
+                                Properties properties = document.getIndexTable().getProperties();
+                                String json = (String) properties.get("text_fields");
+                                if (json == null) {
+                                    match = false;
+                                    break outer;
+                                }
+                                try {
+                                    ObjectMapper JSON = new ObjectMapper();
+                                    JsonNode jsonNode = JSON.readTree(json);
+                                    Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+                                    boolean flag = false;
+                                    while (fields.hasNext()) {
+                                        Map.Entry<String, JsonNode> next = fields.next();
+                                        json = json.replace(next.getKey(), next.getKey().toUpperCase());
+                                        JsonNode tokenizer = next.getValue().get("tokenizer");
+                                        if (tokenizer == null) {
+                                            match = false;
+                                            break outer;
+                                        }
+                                        if (!next.getKey().equalsIgnoreCase(column.getName())) {
+                                            continue;
+                                        }
+                                        flag = true;
+                                        String tokenType = next.getValue().get("tokenizer").get("type").asText();
+                                        if (!tokenType.equalsIgnoreCase("raw")) {
+                                            match = false;
+                                            break outer;
+                                        }
+                                        break ;
+                                    }
+                                    if (!flag) {
+                                        match = false;
+                                        break;
+                                    }
+                                } catch (Exception e) {
+                                    match = false;
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!match) {
+                    return null;
+                }
+                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                    document.getCluster().getRexBuilder(),
+                    DocumentScanFilterOb.builder()
+                        .match(false)
+                        .queryStr(document.getQueryStr() + " AND")
+                        .columns(td.columns)
+                        .build()
+                );
+                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                boolean flag = accept.isMatch();
+                String queryString = accept.getQueryStr();
+                if (flag) {
+                    document.setQueryStr(queryString);
+                    document.setDocumentScanFilter(true);
+                }
+            }
             return null;
         }
         DocumentStreamConvertor documentStreamConvertor = new DocumentStreamConvertor(

@@ -41,7 +41,8 @@ public class TestDingoSqlValidator {
     public void setupAll() {
         MockMetaServiceProvider.init();
         Properties properties = new Properties();
-        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
+        Properties sessionVariables = new Properties();
+        DingoParserContext context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties, sessionVariables);
         parser = new DingoParser(context);
     }
 

@@ -16,18 +16,36 @@
 
 package io.dingodb.exec.transaction.util;
 
+import io.dingodb.common.log.LogUtils;
+import lombok.extern.slf4j.Slf4j;
+
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+@Slf4j
 public class TimeUtils {
     public static final String FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    public static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static String to(Timestamp timestamp) {
         Instant instant = timestamp.toInstant();
         ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of("UTC+8"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
         return zonedDateTime.format(formatter);
+    }
+
+    public static Timestamp toTimeStamp(String dateString) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIME_FORMAT);
+        try {
+            LocalDateTime localDateTime = LocalDateTime.parse(dateString, formatter);
+            Timestamp timestamp = Timestamp.valueOf(localDateTime);
+            return timestamp;
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+        return null;
     }
 }

@@ -112,16 +112,23 @@ public final class DingoDocumentVisitFun {
         if (!indexTableName.equalsIgnoreCase(indexName)) {
             throw new IllegalArgumentException("Can not find the text index with name: " + indexName);
         }
+        IndexTable indexTable = (IndexTable) rel.getIndexTable();
+        boolean pushDown = false;
+        RexNode rexFilter = rel.getFilter();
 
-        String queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
+        String queryString;
+        if (rel.isDocumentScanFilter()) {
+            queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
+        } else {
+            queryString = rel.getQueryStr();
+            rexFilter = null;
+        }
 
         if (!(operandsList.get(3) instanceof SqlNumericLiteral)) {
             throw new IllegalArgumentException("Top n not a number.");
         }
 
-        IndexTable indexTable = (IndexTable) rel.getIndexTable();
-        boolean pushDown = false;
-        RexNode rexFilter = rel.getFilter();
+
         TupleMapping resultSelection = rel.getSelection();
 
         List<Column> columnNames = indexTable.getColumns();

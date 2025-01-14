@@ -128,7 +128,7 @@ public final class TransactionCacheToMutation {
                 }
 
                 Map<String, DocumentValue> documentData = new HashMap<>();
-                for (int i = 1; i < index.getColumns().size(); i++) {
+                for (int i = 0; i < index.getColumns().size(); i++) {
                     Column columnDef = index.getColumns().get(i);
                     if (jsonNode != null && jsonNode.get(columnDef.getName().toLowerCase()) == null
                         && jsonNode.get(columnDef.getName().toUpperCase()) == null) {

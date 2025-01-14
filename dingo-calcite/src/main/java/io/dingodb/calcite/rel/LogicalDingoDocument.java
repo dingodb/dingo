@@ -41,6 +41,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -49,6 +50,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,6 +81,13 @@ public class LogicalDingoDocument extends TableFunctionScan {
     @Getter
     public List<RelHint> hints;
 
+    @Getter
+    @Setter
+    protected String queryStr;
+    @Getter
+    @Setter
+    protected boolean isDocumentScanFilter;
+
     public LogicalDingoDocument(RelOptCluster cluster,
                                  RelTraitSet traitSet,
                                  RexCall call,
@@ -88,7 +97,8 @@ public class LogicalDingoDocument extends TableFunctionScan {
                                  @NonNull Table indexTable,
                                  TupleMapping selection,
                                  RexNode filter,
-                                 List<RelHint> hints
+                                 List<RelHint> hints,
+                                 boolean isDocumentScanFilter
                               ) {
         super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
         this.call = call;
@@ -100,6 +110,8 @@ public class LogicalDingoDocument extends TableFunctionScan {
         this.rowType = null;
         this.realSelection = selection;
         this.hints = hints;
+        this.queryStr = Objects.requireNonNull((SqlCharStringLiteral) operands.get(2)).getStringValue();
+        this.isDocumentScanFilter = isDocumentScanFilter;
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         if (selection != null) {
             if (forDml) {
@@ -144,7 +156,7 @@ public class LogicalDingoDocument extends TableFunctionScan {
         return new LogicalDingoDocument(
             getCluster(),
             traitSet,
-            call, table, operands, indexTableId, indexTable, selection, filter, hints);
+            call, table, operands, indexTableId, indexTable, selection, filter, hints, isDocumentScanFilter);
     }
 
     @Override

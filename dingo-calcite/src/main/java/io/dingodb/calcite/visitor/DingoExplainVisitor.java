@@ -48,6 +48,7 @@ import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
+import io.dingodb.calcite.rel.dingo.DingoDocumentScanFilter;
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rel.dingo.DingoIndexScanWithRelOp;
 import io.dingodb.calcite.rel.dingo.DingoReduceAggregate;
@@ -299,17 +300,18 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
 
     @Override
     public Explain visit(@NonNull DingoDocument rel) {
-        String filter = "";
+        StringBuilder filter = new StringBuilder();
         if (rel.getFilter() != null) {
-            filter = rel.getFilter().toString();
+            filter.append("condition=").append(rel.getFilter().toString()).append(",");
         }
+        filter.append("queryStr=").append(rel.getQueryStr());
         String tableNames = "";
         if (rel.getIndexTable() != null) {
             tableNames = rel.getIndexTable().getName();
         }
         return new Explain(
             "dingDocument", rel.getRowCount(), "root",
-            tableNames, filter
+            tableNames, filter.toString()
         );
     }
 
@@ -614,4 +616,20 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             tableNames, filter
         );
     }
+
+    @Override
+    public Explain visit(@NonNull DingoDocumentScanFilter indexRangeScan) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("parallel=").append(Utils.parallel(indexRangeScan.getKeepSerialOrder()));
+        if (indexRangeScan.getFilter() != null) {
+            filter.append(", condition=").append(indexRangeScan.getFilter().toString());
+        }
+        filter.append(", queryStr:").append(indexRangeScan.getQueryString());
+        filter.append(", lookup:").append(indexRangeScan.isLookup());
+        return new Explain(
+            "documentScanFilter", indexRangeScan.getRowCount(), "root",
+            indexRangeScan.getIndexTable().getName(), filter.toString()
+        );
+    }
+
 }

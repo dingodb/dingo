@@ -97,7 +97,8 @@ public class DingoDocumentProjectRule extends RelRule<DingoDocumentProjectRule.C
             document.getIndexTable(),
             TupleMapping.of(selectedColumns),
             filter,
-            document.hints
+            document.hints,
+            document.isDocumentScanFilter()
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
         if (RexUtil.isIdentity(newProjectRexNodes, newDocument.getSelectedType())) {

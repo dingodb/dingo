@@ -52,7 +52,8 @@ public class TestJoin {
     public static void setupAll() {
         MockMetaServiceProvider.init();
         Properties properties = new Properties();
-        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties);
+        Properties sessionVariables = new Properties();
+        context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties, sessionVariables);
     }
 
     @BeforeEach

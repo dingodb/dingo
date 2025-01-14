@@ -38,7 +38,12 @@ import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.StoreService;
+import io.dingodb.sdk.service.entity.common.Document;
+import io.dingodb.sdk.service.entity.common.DocumentWithScore;
 import io.dingodb.sdk.service.entity.common.KeyValue;
+import io.dingodb.sdk.service.entity.common.TableData;
+import io.dingodb.sdk.service.entity.document.DocumentSearchAllRequest;
+import io.dingodb.sdk.service.entity.document.DocumentSearchAllResponse;
 import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.AlreadyExist;
 import io.dingodb.sdk.service.entity.store.LockInfo;
@@ -62,6 +67,7 @@ import io.dingodb.sdk.service.entity.store.WriteConflict;
 import io.dingodb.sdk.service.entity.stream.StreamRequestMeta;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.ProfileScanIterator;
+import io.dingodb.store.api.transaction.data.DocumentSearchParameter;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.TxnVariables;
 import io.dingodb.store.api.transaction.data.checkstatus.AsyncResolveData;
@@ -515,6 +521,13 @@ public class TransactionStoreInstance {
         return txnScan(ts, range, timeOut, null);
     }
 
+    public Iterator<io.dingodb.common.store.KeyValue> documentScanFilter(
+        long ts,
+        DocumentSearchParameter documentSearchParameter
+    ) {
+        return getDocumentScanFilterStreamIterator(ts, documentSearchParameter);
+    }
+
     public Iterator<io.dingodb.common.store.KeyValue> txnScan(
         long ts,
         StoreInstance.Range range,
@@ -549,6 +562,13 @@ public class TransactionStoreInstance {
         long ts, StoreInstance.Range range, long timeOut, CoprocessorV2 coprocessor
     ) {
         return new ScanStreamIterator(ts, range, timeOut, coprocessor);
+    }
+
+    @NonNull
+    public DocumentScanFilterStreamIterator getDocumentScanFilterStreamIterator(
+        long ts, DocumentSearchParameter documentSearchParameter
+    ) {
+        return new DocumentScanFilterStreamIterator(ts, documentSearchParameter);
     }
 
     public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
@@ -1397,6 +1417,142 @@ public class TransactionStoreInstance {
         @Override
         public io.dingodb.common.store.KeyValue next() {
             return MAPPER.kvFrom(keyValues.next());
+        }
+
+        @Override
+        public Profile getRpcProfile() {
+            return rpcProfile;
+        }
+
+        @Override
+        public Profile getInitRpcProfile() {
+            return initRpcProfile;
+        }
+    }
+
+
+    public class DocumentScanFilterStreamIterator implements ProfileScanIterator {
+        private final long startTs;
+        private final DocumentSearchParameter documentSearchParameter;
+        private boolean hasMore = true;
+        private String streamId;
+        private boolean closeStream;
+        private Iterator<io.dingodb.common.store.KeyValue> keyValues;
+        private final OperatorProfile rpcProfile;
+        private final OperatorProfile initRpcProfile;
+
+        public DocumentScanFilterStreamIterator(long startTs, DocumentSearchParameter documentSearchParameter) {
+            this.startTs = startTs;
+            this.documentSearchParameter = documentSearchParameter;
+            this.streamId = null;
+            this.closeStream = false;
+            initRpcProfile = new OperatorProfile("initDocumentScanFilterRpc");
+            rpcProfile = new OperatorProfile("continueDocumentScanFilterRpc");
+            initRpcProfile.start();
+            long start = System.currentTimeMillis();
+            fetch();
+            initRpcProfile.time(start);
+            initRpcProfile.end();
+        }
+
+        private synchronized void fetch() {
+            if (!hasMore) {
+                return;
+            }
+            long start = System.currentTimeMillis();
+            CommonId txnId = new CommonId(
+                CommonId.CommonType.TRANSACTION,
+                TransactionManager.getServerId().seq,
+                startTs
+            );
+            MdcUtils.setTxnId(txnId.toString());
+            boolean closeStream = false;
+
+            DocumentSearchAllRequest documentSearchAllRequest = DocumentSearchAllRequest.builder().parameter(
+               MAPPER.documentSearchParamTo(documentSearchParameter)
+            ).build();
+
+            if (documentSearchAllRequest.getStreamMeta() == null) {
+                documentSearchAllRequest.setStreamMeta(new StreamRequestMeta());
+            }
+
+            //actually it is not a loop. Just run once in normal cases.
+            while (true) {
+                documentSearchAllRequest.getStreamMeta().setStreamId(streamId);
+                documentSearchAllRequest.getStreamMeta().setClose(closeStream);
+                documentSearchAllRequest.getStreamMeta().setLimit(ScopeVariables.getRpcBatchSize());
+
+                try {
+                    DocumentSearchAllResponse documentSearchAllResponse = documentService.documentSearchAll(
+                        startTs,
+                        documentSearchAllRequest
+                    );
+                    List<DocumentWithScore> documentWithScores = documentSearchAllResponse.getDocumentWithScores();
+
+                    if (documentSearchAllResponse.getError() == null) {
+                        //get and set stream id for next request.
+                        if (documentSearchAllResponse.getStreamMeta() != null) {
+                            this.streamId = documentSearchAllResponse.getStreamMeta().getStreamId();
+                            hasMore = documentSearchAllResponse.getStreamMeta().isHasMore();
+                        } else {
+                            hasMore = false;
+                        }
+                        if (documentWithScores == null || documentWithScores.isEmpty()) {
+                            keyValues = Collections.emptyIterator();
+                        } else {
+                            List<io.dingodb.common.store.KeyValue> list = new ArrayList<>();
+                            for (DocumentWithScore documentWithScore : documentWithScores) {
+                                Document document = documentWithScore.getDocumentWithId().getDocument();
+                                if (document != null) {
+                                    TableData tableData = document.getTableData();
+                                    if (tableData != null) {
+                                        list.add(
+                                            new io.dingodb.common.store.KeyValue(
+                                                tableData.getTableKey(),
+                                                tableData.getTableValue()
+                                            )
+                                        );
+                                    }
+                                }
+                            }
+                            keyValues = list.listIterator();
+                        }
+                        break;
+                    }
+                } catch (RequestErrorException e) {
+                    if (e.getErrorCode() == 10118) {
+                        //ESTREAM_EXPIRED: stream id is expired.
+                        this.streamId = null;
+                        LogUtils.info(log, "document scan filter stream id expired, info:{}", e.getMessage());
+                    } else {
+                        throw e;
+                    }
+                } catch (DingoClientException.InvalidRouteTableException e) {
+                    LogUtils.error(log, e.getMessage() ,e);
+                    throw e;
+                }
+                break;
+            }
+            long sub = System.currentTimeMillis() - start;
+            DingoMetrics.timer("documentScanFilterRpc").update(sub, TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (hasMore && !keyValues.hasNext()) {
+                if (rpcProfile.getStart() == 0) {
+                    rpcProfile.start();
+                }
+                long start = System.currentTimeMillis();
+                fetch();
+                rpcProfile.time(start);
+            }
+            return keyValues.hasNext();
+        }
+
+        @Override
+        public io.dingodb.common.store.KeyValue next() {
+            return keyValues.next();
         }
 
         @Override

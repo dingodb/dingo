@@ -146,6 +146,9 @@ public final class DingoRules {
     public static final DingoIndexRangeScanRule INDEX_RANGE_SCAN_RULE
         = DingoIndexRangeScanRule.DEFAULT.toRule(DingoIndexRangeScanRule.class);
 
+    public static final DingoDocumentScanFilterRule DOCUMENT_INDEX_RANGE_SCAN_RULE
+        = DingoDocumentScanFilterRule.DEFAULT.toRule(DingoDocumentScanFilterRule.class);
+
     public static final DingoRemoveSortRule SORT_PRIMARY_REMOVE
         = DingoRemoveSortRule.Config.REMOVE_PRIMARY_SORT.toRule();
 
@@ -251,7 +254,8 @@ public final class DingoRules {
         DINGO_DOCUMENT_INDEX_RULE,
         DINGO_DOCUMENT_JOIN_RULE,
         DINGO_DOCUMENT_PROJECT_RULE,
-        DINGO_DOCUMENT_FILTER_RULE
+        DINGO_DOCUMENT_FILTER_RULE,
+        DOCUMENT_INDEX_RANGE_SCAN_RULE
 
     );
 

@@ -272,7 +272,8 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                     namespace.getIndex(),
                     null,
                     null,
-                    new ArrayList<>()
+                    new ArrayList<>(),
+                    false
                 );
             }
         } else if (validator.getNamespace(call) instanceof TableHybridFunctionNamespace) {

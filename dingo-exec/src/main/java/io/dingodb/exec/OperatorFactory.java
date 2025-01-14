@@ -70,6 +70,7 @@ import io.dingodb.exec.operator.TxnDiskAnnCountMemoryOperator;
 import io.dingodb.exec.operator.TxnDiskAnnLoadOperator;
 import io.dingodb.exec.operator.TxnDiskAnnResetOperator;
 import io.dingodb.exec.operator.TxnDiskAnnStatusOperator;
+import io.dingodb.exec.operator.TxnDocumentScanOperator;
 import io.dingodb.exec.operator.TxnGetByIndexOperator;
 import io.dingodb.exec.operator.TxnGetByKeysOperator;
 import io.dingodb.exec.operator.TxnIndexRangeScanOperator;
@@ -109,6 +110,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.COMMIT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COPY;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DISTRIBUTE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.DOCUMENT_SCAN_FILTER;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EMPTY_SOURCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.EXPORT_DATA;
 import static io.dingodb.exec.utils.OperatorCodeUtils.FILTER;
@@ -262,6 +264,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_DISK_ANN_BUILD, TxnDiskAnnBuildOperator.INSTANCE);
         OPERATORS.put(TXN_DISK_ANN_LOAD, TxnDiskAnnLoadOperator.INSTANCE);
         OPERATORS.put(FOR_UPDATE, ForUpdateOperator.INSTANCE);
+        OPERATORS.put(DOCUMENT_SCAN_FILTER, TxnDocumentScanOperator.INSTANCE);
     }
 
     private OperatorFactory() {

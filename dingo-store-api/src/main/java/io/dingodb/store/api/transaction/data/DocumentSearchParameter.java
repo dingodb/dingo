@@ -49,4 +49,6 @@ public class DocumentSearchParameter {
     // If without_scalar_data is false, selected_keys is used to select scalar data,
     // if this parameter is null, all scalar data will be returned.
     private List<String> selectedKeys;
+    // if query_unlimited = true, top_n is ignored
+    private boolean queryUnlimited;
 }

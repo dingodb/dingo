@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.logical.LogicalDocumentScanFilter;
 import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
 import io.dingodb.calcite.rel.logical.LogicalIndexRangeScan;
 import io.dingodb.calcite.traits.DingoConvention;
@@ -51,7 +52,8 @@ public class DingoTableScanRule extends ConverterRule {
     @Override
     public RelNode convert(RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
-        if (scan instanceof LogicalIndexFullScan || scan instanceof LogicalIndexRangeScan) {
+        if (scan instanceof LogicalIndexFullScan || scan instanceof LogicalIndexRangeScan
+            || scan instanceof LogicalDocumentScanFilter) {
             return null;
         }
         RelTraitSet traits = scan.getTraitSet()

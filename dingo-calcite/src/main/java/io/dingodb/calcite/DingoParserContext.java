@@ -82,12 +82,22 @@ public final class DingoParserContext implements Context {
     @Getter
     private List<SQLWarning> warningList;
 
+    @Getter
+    private final Properties sessionVariables;
+
+    @Getter
+    @Setter
+    private boolean autoCommit;
+
     public DingoParserContext(@NonNull String defaultSchemaName) {
-        this(defaultSchemaName, null);
+        this(defaultSchemaName, null, null);
     }
 
-    public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options) {
+    public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options,
+                              @Nullable Properties sessionVariables) {
         this.defaultSchemaName = defaultSchemaName;
+        this.sessionVariables = sessionVariables;
+        this.autoCommit = false;
 
         String timeZoneId = (options != null ? options.getProperty("timeZone") : null);
         timeZone = (timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault());

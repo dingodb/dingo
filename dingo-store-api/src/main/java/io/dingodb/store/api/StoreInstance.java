@@ -287,6 +287,10 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Iterator<KeyValue> documentScanFilter(long startTs, DocumentSearchParameter documentSearchParameter) {
+        throw new UnsupportedOperationException();
+    }
+
     default KeyValue txnGet(long startTs, byte[] key, long timeOut) {
         return txnGet(startTs, Collections.singletonList(key), timeOut).get(0);
     }

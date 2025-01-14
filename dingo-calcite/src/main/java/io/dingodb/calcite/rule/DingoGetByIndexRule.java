@@ -16,18 +16,22 @@
 
 package io.dingodb.calcite.rule;
 
+import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.logical.LogicalDocumentScanFilter;
 import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.utils.GlobalVariablesUtil;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -64,7 +68,7 @@ public class DingoGetByIndexRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalDingoTableScan.class,
-            rel -> rel.getFilter() != null && !(rel instanceof LogicalIndexFullScan),
+            rel -> rel.getFilter() != null && !(rel instanceof LogicalIndexFullScan || rel instanceof LogicalDocumentScanFilter),
             Convention.NONE,
             DingoConvention.INSTANCE,
             "DingoGetByKeysRule"
@@ -242,6 +246,28 @@ public class DingoGetByIndexRule extends ConverterRule {
                 scan.isForDml()
             );
         }
+    }
+
+    public static Map<CommonId, Table> getDocumentIndices(LogicalDingoTableScan scan, RelOptTable relOptTable) {
+        Map<CommonId, Table> indexTdMap = new HashMap<>();
+        if (!GlobalVariablesUtil.getEnableDocumentScanFilter((DingoParserContext) scan.getCluster().getPlanner().getContext())) {
+            return indexTdMap;
+        }
+        DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
+        assert dingoTable != null;
+        List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        for (IndexTable index : indexes) {
+            if (index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                continue;
+            }
+            if (index.getProperties() == null) {
+                continue;
+            }
+            if (index.indexType == IndexType.DOCUMENT) {
+                indexTdMap.put(index.getTableId(), index);
+            }
+        }
+        return indexTdMap;
     }
 
     public static Map<CommonId, Table> getScalaIndices(RelOptTable relOptTable) {
