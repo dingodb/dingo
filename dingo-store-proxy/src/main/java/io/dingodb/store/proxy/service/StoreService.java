@@ -609,13 +609,20 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 parameter.setVectorFilter(VectorFilter.TABLE_FILTER);
                 parameter.setVectorFilterType(VectorFilterType.QUERY_PRE);
             }
-            List<VectorWithDistanceResult> results = indexService(indexId, regionId).vectorSearch(
+
+            io.dingodb.sdk.service.entity.index.VectorSearchResponse vectorSearchResponse =
+                indexService(indexId, regionId).vectorSearch(
                 requestTs,
                 VectorSearchRequest.builder()
                     .vectorWithIds(vectors)
                     .parameter(parameter)
                     .build()
-            ).getBatchResults();
+            );
+            if (vectorSearchResponse.getError() != null) {
+                throw new RuntimeException(vectorSearchResponse.getError().getErrmsg());
+            }
+
+            List<VectorWithDistanceResult> results = vectorSearchResponse.getBatchResults();
 
             List<VectorSearchResponse> vectorSearchResponseList = new ArrayList<>();
             // Add all keys and distances
@@ -685,6 +692,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 requestTs,
                 VectorBuildRequest.builder().ts(ts).build()
             );
+            if (vectorBuildResponse.getError() != null) {
+                throw new RuntimeException(vectorBuildResponse.getError().getErrmsg());
+            }
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorBuildResponse.getState());
             return optionalState
                 .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
@@ -713,6 +723,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                             .build())
                     .build()
             );
+            if (vectorLoadResponse.getError() != null) {
+                throw new RuntimeException(vectorLoadResponse.getError().getErrmsg());
+            }
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorLoadResponse.getState());
             return optionalState
                 .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
@@ -727,6 +740,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 requestTs,
                 VectorStatusRequest.builder().build()
             );
+            if (vectorStatusResponse.getError() != null) {
+                throw new RuntimeException(vectorStatusResponse.getError().getErrmsg());
+            }
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorStatusResponse.getState());
             return optionalState
                 .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
@@ -740,6 +756,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 requestTs,
                 VectorStatusRequest.builder().build()
             );
+            if (vectorStatusResponse.getError() != null) {
+                throw new RuntimeException(vectorStatusResponse.getError().getErrmsg());
+            }
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorStatusResponse.getState());
             return optionalState
                 .map(state -> ((StateDiskAnnParam) state.getState()).getState().toString())
@@ -752,6 +771,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 requestTs,
                 VectorResetRequest.builder().build()
             );
+            if (vectorResetResponse.getError() != null) {
+                throw new RuntimeException(vectorResetResponse.getError().getErrmsg());
+            }
             Optional<VectorStateParameter> optionalState = Optional.ofNullable(vectorResetResponse.getState());
             return optionalState
                 .map(state -> Optional.ofNullable(((StateDiskAnnParam) state.getState()).getDiskannState())
@@ -767,6 +789,9 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 requestTs,
                 VectorCountMemoryRequest.builder().build()
             );
+            if (vectorCountMemoryResponse.getError() != null) {
+                throw new RuntimeException(vectorCountMemoryResponse.getError().getErrmsg());
+            }
             return vectorCountMemoryResponse.getCount();
         }
 

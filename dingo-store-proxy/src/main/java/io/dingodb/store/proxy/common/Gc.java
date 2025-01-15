@@ -138,7 +138,7 @@ public class Gc {
             }
 
             LogUtils.info(log, "Update safe point to safeTs: {}, reqTs: {}", safeTs, reqTs);
-            if (!isDisable(reqTs)) {
+            if (isDisable(reqTs)) {
                 UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
                     = UpdateGCSafePointRequest.builder();
                 builder.safePoint(0);
@@ -154,7 +154,7 @@ public class Gc {
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }
-            return new Pair<>(GcStatus.FINISH.toString(), safeTs);
+            return new Pair<>(GcStatus.FINISH.toString(), safeTs - 1);
         } catch (Exception e) {
             LogUtils.error(log, "Update safe point error, skip this run.", e);
             throw e;
@@ -223,7 +223,7 @@ public class Gc {
             Services.coordinatorService(coordinators).updateGCSafePoint(
                 latestTso, request
             );
-            return new Pair<>(GcStatus.FINISH.toString(), safeTs);
+            return new Pair<>(GcStatus.FINISH.toString(), safeTs - 1);
         } catch (Exception e) {
             LogUtils.error(log, "Back up update safe point error, skip this run.", e);
             throw e;
