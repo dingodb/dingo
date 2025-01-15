@@ -85,6 +85,7 @@ import io.dingodb.sdk.service.entity.meta.Schema;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.sdk.service.entity.meta.UpdateTenantRequest;
+import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
@@ -814,10 +815,38 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void dropIndex(CommonId table, CommonId index, long jobId, long startTs) {
+        if (isDiskAnnIndex(index)) {
+            Collection<RangeDistribution> rangeDistributions = getRangeDistribution(index)
+                .values();
+            long tso = tso();
+            boolean noDelete = false;
+            String msg = "";
+            for (RangeDistribution rangeDistribution : rangeDistributions) {
+                StoreInstance instance = io.dingodb.exec.Services.KV_STORE.getInstance(index, rangeDistribution.id());
+                String diskAnnStatus = instance.diskAnnStatus(tso, index);
+                if("DISKANN_BUILDING".equalsIgnoreCase(diskAnnStatus)){
+                    msg = "building";
+                    noDelete = true;
+                    break;
+                } else if ("DISKANN_LOADING".equalsIgnoreCase(diskAnnStatus)) {
+                    msg = "loading";
+                    noDelete = true;
+                    break;
+                }
+            }
+            if (noDelete) {
+                throw new RuntimeException("diskann is " + msg + ", please wait.");
+            }
+
+        }
         dropRegionByTable(index, jobId, startTs);
         infoSchemaService.dropIndex(table.seq, index.seq);
     }
 
+    private static boolean isDiskAnnIndex(CommonId index) {
+        Table table = DdlService.root().getTable(index);
+        return table != null && ((IndexTable)table).getIndexType() == io.dingodb.meta.entity.IndexType.VECTOR_DISKANN;
+    }
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
         return infoSchemaService.listIndex(id.domain, id.seq)

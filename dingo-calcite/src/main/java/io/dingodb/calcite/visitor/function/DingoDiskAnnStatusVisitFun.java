@@ -119,6 +119,9 @@ public final class DingoDiskAnnStatusVisitFun {
             task.putVertex(vertex);
             outputs.add(vertex);
         }
+        if (outputs.isEmpty()) {
+            throw new RuntimeException("There is no matching Region, outputs cannot be empty");
+        }
         return outputs;
     }
 
