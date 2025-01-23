@@ -18,6 +18,7 @@ package io.dingodb.calcite.grammar;
 
 import io.dingodb.common.table.DiskAnnTable;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
+import io.dingodb.exec.fun.vector.VectorHammingDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import org.apache.calcite.sql.SqlKind;
@@ -25,6 +26,7 @@ import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlHammingDistanceOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlIPDistanceOperator;
 import org.apache.calcite.sql2rel.SqlL2DistanceOperator;
@@ -68,6 +70,7 @@ public class SqlUserDefinedOperators {
     public static SqlL2DistanceOperator L2_DISTANCE
         = new SqlL2DistanceOperator(VectorL2DistanceFun.NAME, SqlKind.OTHER_FUNCTION);
 
-
+    public static SqlHammingDistanceOperator HAMMING_DISTANCE
+        = new SqlHammingDistanceOperator(VectorHammingDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
 
 }

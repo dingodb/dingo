@@ -67,7 +67,8 @@ public class DingoVectorProjectRule extends RelRule<DingoVectorProjectRule.Confi
             public Void visitCall(RexCall call) {
                 if (call.op.getName().equalsIgnoreCase(SqlUserDefinedOperators.COSINE_SIMILARITY.getName())
                     || call.op.getName().equalsIgnoreCase(SqlUserDefinedOperators.IP_DISTANCE.getName())
-                    || call.op.getName().equalsIgnoreCase(SqlUserDefinedOperators.L2_DISTANCE.getName())) {
+                    || call.op.getName().equalsIgnoreCase(SqlUserDefinedOperators.L2_DISTANCE.getName())
+                    || call.op.getName().equalsIgnoreCase(SqlUserDefinedOperators.HAMMING_DISTANCE.getName())) {
                     vectorSelected.add(call);
                 }
                 return super.visitCall(call);

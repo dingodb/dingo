@@ -39,11 +39,14 @@ import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
+import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.checkBinaryVector;
 
 public class TableFunctionNamespace extends AbstractNamespace {
 
@@ -91,6 +94,12 @@ public class TableFunctionNamespace extends AbstractNamespace {
             Table table = dingoTable.getTable();
 
             this.index = getVectorIndexTable(table, columnIdentifier.getSimple().toUpperCase());
+            if (((IndexTable)index).getIndexType() == IndexType.VECTOR_BINARY_FLAT
+                || ((IndexTable)index).getIndexType() == IndexType.VECTOR_BINARY_IVF_FLAT) {
+                byte[] binaryBytes = parseBinaryStringToByteArray(new ArrayList<>(operandList));
+                int dimension = Integer.parseInt(index.getProperties().getProperty("dimension"));
+                checkBinaryVector(binaryBytes, dimension);
+            }
             cols.add(Column
                 .builder()
                 .name(index.getName().concat("$distance"))

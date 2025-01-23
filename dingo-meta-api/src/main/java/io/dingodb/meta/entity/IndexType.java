@@ -22,6 +22,8 @@ public enum IndexType {
     VECTOR_FLAT(true),
     VECTOR_IVF_FLAT(true),
     VECTOR_IVF_PQ(true),
+    VECTOR_BINARY_FLAT(true),
+    VECTOR_BINARY_IVF_FLAT(true),
     VECTOR_HNSW(true),
     VECTOR_DISKANN(true),
     VECTOR_BRUTEFORCE(true);

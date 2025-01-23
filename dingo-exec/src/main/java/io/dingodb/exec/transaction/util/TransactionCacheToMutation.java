@@ -65,6 +65,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.checkBinaryVector;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+
 @Slf4j
 public final class TransactionCacheToMutation {
 
@@ -181,7 +184,18 @@ public final class TransactionCacheToMutation {
             } else {
                 Column column1 = index.getColumns().get(1);
                 Vector vector;
-                if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
+                if (column1.getSqlTypeName().equalsIgnoreCase("BINARY")) {
+                    byte[] values = (byte[]) record[colNames.indexOf(column1.getName())];
+                    int dimension = Integer.parseInt(index.getProperties().getProperty("dimension"));
+                    checkBinaryVector(values, dimension);
+                    byte[] bytes = getBinaryVector(values, dimension);
+                    vector = Vector.builder()
+                        .dimension(dimension)
+                        .binaryValues(Collections.singletonList(bytes))
+                        .valueType(Vector.ValueType.UINT8)
+                        .build();
+                    record[colNames.indexOf(column1.getName())] = new byte[]{};
+                } else if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
                     List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
                     vector = Vector.builder()
                         .dimension(values.size())
@@ -210,6 +224,7 @@ public final class TransactionCacheToMutation {
         }
         return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId, documentWithId);
     }
+
 
     /**
      * transform TxnLocalData to Mutation.

@@ -36,6 +36,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Pair;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -57,6 +58,7 @@ import static io.dingodb.calcite.rule.DingoGetByIndexRule.eliminateSpecialCast;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
+import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
 import static io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun.getTargetVector;
 
 @Slf4j
@@ -90,10 +92,18 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
         if (condition != null) {
             dispatchDistanceCondition(condition, selection, dingoTable);
         }
+        int dimension;
+        if (((IndexTable) vector.getIndexTable()).getIndexType() == IndexType.VECTOR_BINARY_FLAT ||
+            ((IndexTable) vector.getIndexTable()).getIndexType() == IndexType.VECTOR_BINARY_IVF_FLAT) {
+            byte[] binaryVector = parseBinaryStringToByteArray(vector.getOperands());
+            dimension = binaryVector.length;
+        } else {
+            List<Float> targetVector = getTargetVector(vector.getOperands());
+            dimension = targetVector.size();
+        }
 
-        List<Float> targetVector = getTargetVector(vector.getOperands());
         // if filter matched point get by primary key, then DingoGetByKeys priority highest
-        Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable, targetVector.size());
+        Pair<Integer, Integer> vectorIdPair = getVectorIndex(dingoTable, dimension);
         assert vectorIdPair != null;
         RelTraitSet traitSet = vector.getTraitSet().replace(DingoRelStreaming.of(vector.getTable()));
         boolean preFilter = vector.getHints() != null

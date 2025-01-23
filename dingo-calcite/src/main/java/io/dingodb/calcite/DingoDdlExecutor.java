@@ -2369,9 +2369,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         throw new RuntimeException("Column must be not null, column name: " + columnName);
                     }
                 } else if (i == 1) {
-                    if (!columnDefinition.getTypeName().equals("ARRAY")
+                    if (!columnDefinition.getTypeName().equals("BINARY")
+                        && (!columnDefinition.getTypeName().equals("ARRAY")
                         || !(columnDefinition.getElementType() != null
-                        && columnDefinition.getElementType().equals("FLOAT"))) {
+                        && columnDefinition.getElementType().equals("FLOAT")))) {
                         throw new RuntimeException("Invalid column type: " + columnName);
                     }
                     if (columnDefinition.isNullable()) {

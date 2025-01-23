@@ -40,8 +40,9 @@ import java.util.NavigableMap;
 import java.util.function.Supplier;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
+import static io.dingodb.calcite.utils.VectorUtils.getVectorFloats;
+import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
 import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getTopkParam;
-import static io.dingodb.calcite.visitor.function.DingoVectorVisitFun.getVectorFloats;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 
 public final class DingoGetVectorByDistanceVisitFun {
@@ -67,8 +68,20 @@ public final class DingoGetVectorByDistanceVisitFun {
         @Override
         public Vertex get() {
             DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) rel.getTable();
-            List<Float> targetVector = getTargetVector(rel.getOperands());
-            IndexTable indexTable = getVectorIndexTable(dingoRelOptTable, targetVector.size());
+            int dimension;
+            List<Float> targetVector = null;
+            byte[] binaryVector = null;
+            boolean isBinaryVector = false;
+            if (((IndexTable) rel.getIndexTable()).getIndexType() == IndexType.VECTOR_BINARY_FLAT ||
+                ((IndexTable) rel.getIndexTable()).getIndexType() == IndexType.VECTOR_BINARY_IVF_FLAT) {
+                binaryVector = getBinaryVector(rel.getOperands());
+                dimension = binaryVector.length;
+                isBinaryVector = true;
+            } else {
+                targetVector = getTargetVector(rel.getOperands());
+                dimension = targetVector.size();
+            }
+            IndexTable indexTable = getVectorIndexTable(dingoRelOptTable, dimension);
             if (indexTable == null) {
                 throw new RuntimeException("not found vector index");
             }
@@ -76,8 +89,6 @@ public final class DingoGetVectorByDistanceVisitFun {
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
                 = metaService.getRangeDistribution(rel.getIndexTableId());
 
-            int dimension = Integer.parseInt(indexTable.getProperties()
-                .getOrDefault("dimension", targetVector.size()).toString());
             String algType;
             if (indexTable.indexType == IndexType.VECTOR_FLAT) {
                 algType = "FLAT";
@@ -94,7 +105,9 @@ public final class DingoGetVectorByDistanceVisitFun {
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
                 rel.getIndexTableId(),
+                isBinaryVector,
                 targetVector,
+                binaryVector,
                 dimension,
                 algType,
                 indexTable.getProperties().getProperty("metricType"),
@@ -104,6 +117,10 @@ public final class DingoGetVectorByDistanceVisitFun {
 
             return new Vertex(VECTOR_POINT_DISTANCE, param);
         }
+    }
+
+    public static byte[] getBinaryVector(List<Object> operandList) {
+        return parseBinaryStringToByteArray(operandList);
     }
 
     public static List<Float> getTargetVector(List<Object> operandList) {

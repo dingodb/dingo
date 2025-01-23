@@ -53,7 +53,11 @@ public final class PartVectorOperator extends FilterProjectSourceOperator {
             param.getIndexId(),
             param.getFloatArray(),
             param.getTopN(),
-            param.getParameterMap());
+            param.getParameterMap(),
+            false,
+            false,
+            null
+        );
         for (VectorSearchResponse response : searchResponseList) {
             CommonId regionId = PartitionService.getService(
                     Optional.ofNullable(param.getTable().getPartitionStrategy())

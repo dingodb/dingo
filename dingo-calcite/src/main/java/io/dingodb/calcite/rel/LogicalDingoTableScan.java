@@ -333,6 +333,9 @@ public class LogicalDingoTableScan extends TableScan {
             case "COSINE":
                 metricTypeFullName = "cosineDistance";
                 break;
+            case "HAMMING":
+                metricTypeFullName = "hammingDistance";
+                break;
             default:
                 metricTypeFullName = null;
                 break;

@@ -80,6 +80,12 @@ public interface IndexMapper {
                 case VECTOR_INDEX_TYPE_BRUTEFORCE:
                     builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_BRUTEFORCE);
                     break;
+                case VECTOR_INDEX_TYPE_BINARY_FLAT:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_BINARY_FLAT);
+                    break;
+                case VECTOR_INDEX_TYPE_BINARY_IVF_FLAT:
+                    builder.indexType(io.dingodb.meta.entity.IndexType.VECTOR_BINARY_IVF_FLAT);
+                    break;
                 default:
                     throw new IllegalStateException(
                         "Unexpected value: " + indexParameter.getVectorIndexParameter().getVectorIndexType()
@@ -224,6 +230,9 @@ public interface IndexMapper {
                 case "L2":
                     metricType = MetricType.METRIC_TYPE_L2;
                     break;
+                case "HAMMING":
+                    metricType = MetricType.METRIC_TYPE_HAMMING;
+                    break;
                 default:
                     throw new IllegalStateException("Unsupported metric type: " + metricType1);
             }
@@ -297,6 +306,35 @@ public interface IndexMapper {
                             .maxElements(Integer.MAX_VALUE)
                             .nlinks(nlinks)
                             .build()
+                        ).build();
+                    break;
+                }
+                case "BINARY_FLAT":
+                    if (dimension % 8 !=0) {
+                        throw new RuntimeException("The dimension must be a multiple of 8.");
+                    }
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_BINARY_FLAT)
+                        .vectorIndexParameter(
+                            VectorIndexParameter.VectorIndexParameterNest.BinaryFlatParameter.builder()
+                                .dimension(dimension)
+                                .metricType(metricType)
+                                .build()
+                        ).build();
+                    break;
+                case "BINARY_IVF_FLAT": {
+                    if (dimension % 8 !=0) {
+                        throw new RuntimeException("The dimension must be a multiple of 8.");
+                    }
+                    int ncentroids = Integer.valueOf(properties.getOrDefault("ncentroids", "2048"));
+                    vectorIndexParameter = VectorIndexParameter.builder()
+                        .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_BINARY_IVF_FLAT)
+                        .vectorIndexParameter(
+                            VectorIndexParameter.VectorIndexParameterNest.BinaryIvfFlatParameter.builder()
+                                .dimension(dimension)
+                                .metricType(metricType)
+                                .ncentroids(ncentroids)
+                                .build()
                         ).build();
                     break;
                 }

@@ -26,6 +26,7 @@ import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
+import io.dingodb.common.util.Pair;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -230,6 +231,14 @@ public interface MetaService {
     }
 
     default void dropIndex(CommonId table, CommonId index, long jobId, long startTs) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Pair<Boolean, String> checkDropDiskAnnIndex(@NonNull CommonId index) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Pair<Boolean, String> checkDropDiskAnnIndex(@NonNull String tableName) {
         throw new UnsupportedOperationException();
     }
 
