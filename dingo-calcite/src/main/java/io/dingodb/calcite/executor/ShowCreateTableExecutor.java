@@ -217,6 +217,12 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                             case VECTOR_DISKANN:
                                 type = "DISKANN";
                                 break;
+                            case VECTOR_BINARY_FLAT:
+                                type = "BINARY_FLAT";
+                                break;
+                            case VECTOR_BINARY_IVF_FLAT:
+                                type = "BINARY_IVF_FLAT";
+                                break;
                             default:
                                 type = "HNSW";
                                 break;
@@ -233,6 +239,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                                         break;
                                     case "METRIC_TYPE_INNER_PRODUCT":
                                         val = "INNER_PRODUCT";
+                                        break;
+                                    case "METRIC_TYPE_HAMMING" :
+                                        val = "HAMMING";
                                         break;
                                 }
                             }

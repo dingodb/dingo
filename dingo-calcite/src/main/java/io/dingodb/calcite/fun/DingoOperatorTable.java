@@ -33,6 +33,7 @@ import io.dingodb.exec.fun.sequence.NextValFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
 import io.dingodb.exec.fun.vector.VectorDistanceFun;
+import io.dingodb.exec.fun.vector.VectorHammingDistanceFun;
 import io.dingodb.exec.fun.vector.VectorIPDistanceFun;
 import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
@@ -334,6 +335,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             FLOAT,
             DingoInferTypes.FLOAT,
             family(SqlTypeFamily.ARRAY, SqlTypeFamily.ARRAY),
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            VectorHammingDistanceFun.NAME,
+            FLOAT,
+            DingoInferTypes.FLOAT,
+            family(SqlTypeFamily.BINARY, SqlTypeFamily.BINARY),
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(

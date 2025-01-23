@@ -47,6 +47,8 @@ import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.SequenceService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -484,6 +486,12 @@ public class DdlWorker {
         if (job.getArgs() != null) {
             newTableId = (long) job.getArgs().get(0);
         }
+        Pair<Boolean, String> checkDropDiskAnn = ms.checkDropDiskAnnIndex(job.getTableName());
+        if (checkDropDiskAnn.getKey()) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(checkDropDiskAnn.getValue()));
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
         if (job.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
             Pair<Long, String> res = updateSchemaVersion(dc, job);
             job.setSchemaState(SchemaState.SCHEMA_GLOBAL_TXN_ONLY);
@@ -536,6 +544,20 @@ public class DdlWorker {
         Pair<Long, String> res;
         switch (tableInfo.getTableDefinition().getSchemaState()) {
             case SCHEMA_PUBLIC:
+                Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
+                List<IndexTable> diskAnnIndex = table.getIndexes().stream()
+                    .filter(e -> e.getIndexType() == IndexType.VECTOR_DISKANN)
+                    .collect(Collectors.toList());
+                for (IndexTable indexTable : diskAnnIndex) {
+                    // check disk ann index status
+                    Pair<Boolean, String> checkDropDiskAnn =
+                        MetaService.root().checkDropDiskAnnIndex(indexTable.getTableId());
+                    if (checkDropDiskAnn.getKey()) {
+                        job.setDingoErr(DingoErrUtil.newInternalErr(checkDropDiskAnn.getValue()));
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
+                }
                 tableInfo.getTableDefinition()
                     .setSchemaState(SCHEMA_WRITE_ONLY);
                 res = TableUtil.updateVersionAndTableInfos(dc, job, tableInfo,
@@ -697,6 +719,15 @@ public class DdlWorker {
             case SCHEMA_PUBLIC:
                 indexWithId.getTableDefinition().setSchemaState(SCHEMA_WRITE_ONLY);
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                // check disk ann index status
+                Pair<Boolean, String> checkDropDiskAnn =
+                    MetaService.root().checkDropDiskAnnIndex(Mapper.MAPPER.idFrom(indexWithId.getTableId()));
+                if (checkDropDiskAnn.getKey()) {
+                    job.setDingoErr(DingoErrUtil.newInternalErr(checkDropDiskAnn.getValue()));
+                    job.setState(JobState.jobStateCancelled);
+                    return Pair.of(0L, job.getDingoErr().errorMsg);
+                }
+
                 return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId,
                     originState != indexWithId.getTableDefinition().getSchemaState()
                 );

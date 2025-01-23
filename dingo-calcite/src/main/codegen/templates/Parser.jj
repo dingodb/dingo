@@ -3990,7 +3990,8 @@ List<Object> Expression2(ExprContext exprContext) :
                 {
                    if ((op == SqlUserDefinedOperators.L2_DISTANCE
                         || op == SqlUserDefinedOperators.IP_DISTANCE
-                        || op == SqlUserDefinedOperators.COSINE_SIMILARITY)
+                        || op == SqlUserDefinedOperators.COSINE_SIMILARITY
+                        || op == SqlUserDefinedOperators.HAMMING_DISTANCE)
                         && list.size() == 3) {
                        SqlNode call = op.createCall(s.end(this), (SqlNode)list.get(0), (SqlNode)list.get(2));
                        list.clear();
@@ -7851,6 +7852,7 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <L2DISTANCE> { return SqlUserDefinedOperators.L2_DISTANCE; }
 |   <COSINESIMILARITY> { return SqlUserDefinedOperators.COSINE_SIMILARITY; }
 |   <IPDISTANCE> { return SqlUserDefinedOperators.IP_DISTANCE; }
+|   <HAMMINGDISTANCE> { return SqlUserDefinedOperators.HAMMING_DISTANCE; }
 }
 
 /**
@@ -8833,6 +8835,7 @@ void NonReservedKeyWord2of3() :
 |   < L2DISTANCE: "<->" >
 |   < COSINESIMILARITY: "<=>" >
 |   < IPDISTANCE: "<*>" >
+|   < HAMMINGDISTANCE: "<HD>">
 |   < DOUBLE_PERIOD: ".." >
 |   < QUOTE: "'" >
 |   < DOUBLE_QUOTE: "\"" >

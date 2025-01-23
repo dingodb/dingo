@@ -33,4 +33,6 @@ public class VectorSearchResponse {
 
     List<Float> floatValues;
 
+    List<byte[]> binaryValues;
+
 }

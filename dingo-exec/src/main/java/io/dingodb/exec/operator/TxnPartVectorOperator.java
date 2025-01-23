@@ -48,6 +48,8 @@ import static io.dingodb.exec.fun.vector.VectorCosineDistanceFun.cosine;
 import static io.dingodb.exec.fun.vector.VectorIPDistanceFun.innerProduct;
 import static io.dingodb.exec.fun.vector.VectorL2DistanceFun.l2DistanceCombine;
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.hammingDistance;
 
 @Slf4j
 public class TxnPartVectorOperator extends FilterProjectSourceOperator {
@@ -74,7 +76,9 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
             param.getTopN(),
             param.getParameterMap(),
             param.getCoprocessor(),
-            param.isDiskAnnVector()
+            param.isDiskAnnVector(),
+            param.isBinaryVector(),
+            param.isBinaryVector() ? getBinaryVector(param.getBinaryBytes(), param.getBinaryBytes().length) : null
         );
         List<Object[]> results = new ArrayList<>();
         if (param.isLookUp()) {
@@ -119,8 +123,14 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                                     distance = cosine((List<Float>) ov, targetVector);
                                 }
                                 objects[objects.length - 1] = distance;
+                            } else if (ov instanceof byte[]) {
+                                float distance = 0.0f;
+                                if (distanceType.contains("HAMMING")) {
+                                    distance = hammingDistance(param.getBinaryBytes(), (byte[]) ov);
+                                }
+                                objects[objects.length - 1] = distance;
                             } else {
-                                objects[objects.length - 1] = 0.0;
+                                objects[objects.length - 1] = 0.0f;
                             }
                         }
                         results.add(objects);
@@ -135,7 +145,9 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
                 }
                 Object[] decode = param.getCodec().decode(keyValue);
                 decode[decode.length - 1] = response.getDistance();
-                decode[vecIdx] = response.getFloatValues();
+                if (!param.isBinaryVector()) {
+                    decode[vecIdx] = response.getFloatValues();
+                }
 
                 //vecPriIdxMapping.forEach((key, value) -> decode[value] = vecTuples[key]);
                 results.add(decode);

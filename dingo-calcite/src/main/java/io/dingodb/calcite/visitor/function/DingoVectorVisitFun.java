@@ -43,11 +43,8 @@ import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
-import io.dingodb.exec.fun.vector.VectorImageFun;
-import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.operator.params.TxnPartVectorParam;
-import io.dingodb.exec.restful.VectorExtract;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -55,20 +52,17 @@ import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
-import org.apache.calcite.sql.fun.SqlArrayValueConstructor;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -84,6 +78,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.LogicalDingoTableScan.getIndexMetricType;
+import static io.dingodb.calcite.utils.VectorUtils.getVectorFloats;
+import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_VECTOR;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_VECTOR;
@@ -193,7 +189,15 @@ public final class DingoVectorVisitFun {
         CommonId tableId = dingoTable.getTableId();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = MetaService.root(visitor.getPointTs())
             .getRangeDistribution(tableId);
-        Float[] floatArray = getVectorFloats(operandsList);
+        boolean isBinaryVector = false;
+        byte [] binaryBytes = null;
+        Float[] floatArray = null;
+        if (indexTable.indexType == IndexType.VECTOR_BINARY_FLAT || indexTable.indexType == IndexType.VECTOR_BINARY_IVF_FLAT) {
+            isBinaryVector = true;
+            binaryBytes = parseBinaryStringToByteArray(operandsList);
+        } else {
+            floatArray = getVectorFloats(operandsList);
+        }
         int topN = ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();
         List<Vertex> outputs = new ArrayList<>();
         // Create tasks based on partitions
@@ -240,7 +244,9 @@ public final class DingoVectorVisitFun {
                     td,
                     ranges,
                     floatArray,
+                    binaryBytes,
                     topN,
+                    isBinaryVector,
                     parameterMap,
                     indexTable,
                     relOp,
@@ -267,75 +273,6 @@ public final class DingoVectorVisitFun {
         return outputs;
     }
 
-    public static Float[] getVectorFloats(List<Object> operandsList) {
-        Float[] floatArray = null;
-        Object call = operandsList.get(2);
-        if (call instanceof RexCall) {
-            RexCall rexCall = (RexCall) call;
-            floatArray = new Float[rexCall.getOperands().size()];
-            int vectorDimension = rexCall.getOperands().size();
-            for (int i = 0; i < vectorDimension; i++) {
-                RexLiteral literal = (RexLiteral) rexCall.getOperands().get(i);
-                floatArray[i] = literal.getValueAs(Float.class);
-            }
-            return floatArray;
-        }
-        SqlBasicCall basicCall = (SqlBasicCall) operandsList.get(2);
-        if (basicCall.getOperator() instanceof SqlArrayValueConstructor) {
-            List<SqlNode> operands = basicCall.getOperandList();
-            floatArray = new Float[operands.size()];
-            for (int i = 0; i < operands.size(); i++) {
-                floatArray[i] = (
-                    (Number) Objects.requireNonNull(((SqlNumericLiteral) operands.get(i)).getValue())
-                ).floatValue();
-            }
-        } else {
-            List<SqlNode> sqlNodes = basicCall.getOperandList();
-            if (sqlNodes.size() < 2) {
-                throw new RuntimeException("vector load param error");
-            }
-            List<Object> paramList = sqlNodes.stream().map(e -> {
-                if (e instanceof SqlLiteral) {
-                    return ((SqlLiteral)e).getValue();
-                } else if (e instanceof SqlIdentifier) {
-                    return ((SqlIdentifier)e).getSimple();
-                } else {
-                    return e.toString();
-                }
-            }).collect(Collectors.toList());
-            if (paramList.get(1) == null || paramList.get(0) == null) {
-                throw new RuntimeException("vector load param error");
-            }
-            String param = paramList.get(1).toString();
-            if (param.contains("'")) {
-                param = param.replace("'", "");
-            }
-            String funcName = basicCall.getOperator().getName();
-            if (funcName.equalsIgnoreCase(VectorTextFun.NAME)) {
-                floatArray = VectorExtract.getTxtVector(
-                    basicCall.getOperator().getName(),
-                    paramList.get(0).toString(),
-                    param);
-            } else if (funcName.equalsIgnoreCase(VectorImageFun.NAME)) {
-                if (paramList.size() < 3) {
-                    throw new RuntimeException("vector load param error");
-                }
-                Object localPath = paramList.get(2);
-                if (!(localPath instanceof Boolean)) {
-                    throw new RuntimeException("vector load param error");
-                }
-                floatArray = VectorExtract.getImgVector(
-                    basicCall.getOperator().getName(),
-                    paramList.get(0).toString(),
-                    paramList.get(1),
-                    (Boolean) paramList.get(2));
-            }
-        }
-        if (floatArray == null) {
-            throw new RuntimeException("vector load error");
-        }
-        return floatArray;
-    }
 
     public static Integer getTopkParam(List<Object> operandsList) {
         return ((Number) Objects.requireNonNull(((SqlNumericLiteral) operandsList.get(3)).getValue())).intValue();

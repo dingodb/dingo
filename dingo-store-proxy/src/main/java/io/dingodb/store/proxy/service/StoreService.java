@@ -578,17 +578,28 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             int topN,
             Map<String, Object> parameterMap,
             CoprocessorV2 coprocessor,
-            boolean isDiskAnn
+            boolean isDiskAnn,
+            boolean isBinaryVector,
+            byte[] binaryBytes
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
             IndexTable indexTable = tableMap.get(indexId);
 
-            Vector vector = Vector.builder()
-                .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
-                .floatValues(Arrays.asList(floatArray))
-                .valueType(ValueType.FLOAT)
-                .build();
+            Vector vector;
+            if (isBinaryVector) {
+                vector = Vector.builder()
+                    .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
+                    .binaryValues(singletonList(binaryBytes))
+                    .valueType(ValueType.UINT8)
+                    .build();
+            } else {
+                vector = Vector.builder()
+                    .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
+                    .floatValues(Arrays.asList(floatArray))
+                    .valueType(ValueType.FLOAT)
+                    .build();
+            }
 
             VectorWithId vectorWithId = VectorWithId.builder().vector(vector).build();
             vectors.add(vectorWithId);
@@ -653,6 +664,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                         response = new VectorSearchResponse();
                     }
                     response.setFloatValues(vectorWithDistance.getVectorWithId().getVector().getFloatValues());
+                    response.setBinaryValues(vectorWithDistance.getVectorWithId().getVector().getBinaryValues());
                     if (vectorWithDistance.getVectorWithId().getTableData() != null) {
                         response.setKey(vectorWithDistance.getVectorWithId().getTableData().getTableKey());
                     } else {
@@ -928,6 +940,32 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     }
 
                     return SearchNest.Hnsw.builder().efSearch(efSearch).build();
+                case VECTOR_BINARY_FLAT:
+                    int binaryParallelOnQueries = 10;
+                    o = parameterMap.get("parallelOnQueries");
+                    if (o != null) {
+                        binaryParallelOnQueries = ((Number) o).intValue();
+                    }
+
+                    return SearchNest.BinaryFlat.builder()
+                        .parallelOnQueries(binaryParallelOnQueries)
+                        .build();
+                case VECTOR_BINARY_IVF_FLAT:
+                    int binaryNProbe = 10;
+                    o = parameterMap.get("nprobe");
+                    if (o != null) {
+                        binaryNProbe = ((Number) o).intValue();
+                    }
+
+                    int binaryParallel = 10;
+                    o = parameterMap.get("parallelOnQueries");
+                    if (o != null) {
+                        binaryParallel = ((Number) o).intValue();
+                    }
+                    return SearchNest.BinaryIvfFlat.builder()
+                        .nprobe(binaryNProbe)
+                        .parallelOnQueries(binaryParallel)
+                        .build();
                 case VECTOR_FLAT:
                 default: {
                     int parallelOnQueries = 10;

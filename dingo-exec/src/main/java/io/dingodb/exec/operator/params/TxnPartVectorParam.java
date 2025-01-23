@@ -62,7 +62,9 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
     private final NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final CommonId indexId;
     private final Float[] floatArray;
+    private final byte[] binaryBytes;
     private final int topN;
+    private final boolean isBinaryVector;
     private final Map<String, Object> parameterMap;
     private final IndexTable indexTable;
 
@@ -95,7 +97,9 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         Float[] floatArray,
+        byte[] binaryBytes,
         int topN,
+        boolean isBinaryVector,
         Map<String, Object> parameterMap,
         Table indexTable,
         RelOp relOp,
@@ -114,7 +118,9 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         this.distributions = distributions;
         this.indexId = indexTable.tableId;
         this.floatArray = floatArray;
+        this.binaryBytes = binaryBytes;
         this.topN = topN;
+        this.isBinaryVector = isBinaryVector;
         this.parameterMap = parameterMap;
         this.indexTable = (IndexTable) indexTable;
         this.pushDown = pushDown;

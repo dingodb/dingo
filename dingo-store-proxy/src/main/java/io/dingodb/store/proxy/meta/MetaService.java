@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.GcDeleteRegion;
+import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
@@ -41,6 +42,7 @@ import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaServiceProvider;
@@ -87,6 +89,7 @@ import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.sdk.service.entity.meta.UpdateTenantRequest;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.service.InfoSchemaService;
@@ -815,32 +818,52 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void dropIndex(CommonId table, CommonId index, long jobId, long startTs) {
+        dropRegionByTable(index, jobId, startTs);
+        infoSchemaService.dropIndex(table.seq, index.seq);
+    }
+
+    @Override
+    public Pair<Boolean, String> checkDropDiskAnnIndex(@NonNull String tableName) {
+        long schemaId = id.getEntityId();
+        // Get old table and indexes
+        TableDefinitionWithId table = Optional.mapOrGet(
+            infoSchemaService.getTable(schemaId, tableName), __ -> (TableDefinitionWithId) __, () -> null);
+        List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
+        List<TableDefinitionWithId> indexes = indexList.stream()
+            .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
+        for (TableDefinitionWithId index : indexes) {
+            // check disk ann index status
+            Pair<Boolean, String> checkDropDiskAnn = checkDropDiskAnnIndex(MAPPER.idFrom(index.getTableId()));
+            if (checkDropDiskAnn.getKey()) {
+                return checkDropDiskAnn;
+            }
+        }
+        return new Pair<>(false, "");
+    }
+
+    @Override
+    public Pair<Boolean, String> checkDropDiskAnnIndex(@NonNull CommonId index) {
+        boolean noDelete = false;
+        String msg = "";
         if (isDiskAnnIndex(index)) {
             Collection<RangeDistribution> rangeDistributions = getRangeDistribution(index)
                 .values();
             long tso = tso();
-            boolean noDelete = false;
-            String msg = "";
             for (RangeDistribution rangeDistribution : rangeDistributions) {
                 StoreInstance instance = io.dingodb.exec.Services.KV_STORE.getInstance(index, rangeDistribution.id());
                 String diskAnnStatus = instance.diskAnnStatus(tso, index);
                 if("DISKANN_BUILDING".equalsIgnoreCase(diskAnnStatus)){
-                    msg = "building";
+                    msg = "diskann is building, please wait.";
                     noDelete = true;
                     break;
                 } else if ("DISKANN_LOADING".equalsIgnoreCase(diskAnnStatus)) {
-                    msg = "loading";
+                    msg = "diskann is loading, please wait.";
                     noDelete = true;
                     break;
                 }
             }
-            if (noDelete) {
-                throw new RuntimeException("diskann is " + msg + ", please wait.");
-            }
-
         }
-        dropRegionByTable(index, jobId, startTs);
-        infoSchemaService.dropIndex(table.seq, index.seq);
+        return new Pair<>(noDelete, msg);
     }
 
     private static boolean isDiskAnnIndex(CommonId index) {
@@ -927,7 +950,13 @@ public class MetaService implements io.dingodb.meta.MetaService {
         List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream()
             .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
-
+        for (TableDefinitionWithId index : indexes) {
+            // check disk ann index status
+            Pair<Boolean, String> checkDropDiskAnn = checkDropDiskAnnIndex(MAPPER.idFrom(index.getTableId()));
+            if (checkDropDiskAnn.getKey()) {
+                throw new RuntimeException(checkDropDiskAnn.getValue());
+            }
+        }
         // Generate new table ids.
         boolean autoInc = table.getTableDefinition().getColumns().stream()
             .anyMatch(io.dingodb.sdk.service.entity.meta.ColumnDefinition::isAutoIncrement);

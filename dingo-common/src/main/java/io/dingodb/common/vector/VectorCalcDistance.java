@@ -29,9 +29,15 @@ public class VectorCalcDistance {
 
     private Long vectorId;
 
+    private boolean isBinaryVector;
+
     private List<List<Float>> leftList;
 
     private List<List<Float>> rightList;
+
+    private List<byte[]> leftBinaryValues;
+
+    private List<byte[]> rightBinaryValues;
 
     private String algorithmType;
 

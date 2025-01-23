@@ -38,6 +38,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+
 @Slf4j
 public class VectorPointDistanceOperator extends SoleOutOperator {
 
@@ -66,46 +68,93 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             edge.fin(fin);
             return;
         }
-        List<List<Float>> rightList = cache.stream().map(e ->
-            (List<Float>) e[param.getVectorIndex()]
-        ).collect(Collectors.toList());
-        int topn = param.getTopk();
-        if (rightList.isEmpty()) {
-            edge.fin(fin);
-            return;
-        }
-        List<Float> floatArray = new ArrayList<>();
-        List<List<List<Float>>> partition = Lists.partition(rightList, 1024);
-        for (List<List<Float>> right : partition) {
-            VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
-                .topN(topn)
-                .leftList(Collections.singletonList(param.getTargetVector()))
-                .rightList(right)
-                .dimension(param.getDimension())
-                .algorithmType(param.getAlgType())
-                .metricType(param.getMetricType())
-                .build();
-            floatArray.addAll(ToolService.getDefault().vectorCalcDistance(
-                param.getRangeDistribution().getId(),
-                vectorCalcDistance).get(0));
-        }
-        List<Pair<Float, Object[]>> pairList = new ArrayList<>();
-        for (int i = 0; i < cache.size(); i ++) {
-            Object[] tuple = cache.get(i);
-            Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
-            result[tuple.length] = floatArray.get(i);
-            pairList.add(new Pair<>((Float) result[tuple.length], result));
-        }
-        Collections.sort(pairList, Comparator.comparing(p -> (Float)p.getKey()));
-        int count = 0;
-        Object[] value;
-
-        for (Pair<Float, Object[]> pair : pairList) {
-            if (count < topn) {
-                value = pair.getValue();
-                edge.transformToNext(param.getContext(), selection.revMap(value));
+        if (!param.isBinaryVector()) {
+            List<List<Float>> rightList = cache.stream().map(e ->
+                (List<Float>) e[param.getVectorIndex()]
+            ).collect(Collectors.toList());
+            int topn = param.getTopk();
+            if (rightList.isEmpty()) {
+                edge.fin(fin);
+                return;
             }
-            count++;
+            List<Float> floatArray = new ArrayList<>();
+            List<List<List<Float>>> partition = Lists.partition(rightList, 1024);
+            for (List<List<Float>> right : partition) {
+                VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
+                    .topN(topn)
+                    .isBinaryVector(false)
+                    .leftList(Collections.singletonList(param.getTargetVector()))
+                    .rightList(right)
+                    .dimension(param.getDimension())
+                    .algorithmType(param.getAlgType())
+                    .metricType(param.getMetricType())
+                    .build();
+                floatArray.addAll(ToolService.getDefault().vectorCalcDistance(
+                    param.getRangeDistribution().getId(),
+                    vectorCalcDistance).get(0));
+            }
+            List<Pair<Float, Object[]>> pairList = new ArrayList<>();
+            for (int i = 0; i < cache.size(); i ++) {
+                Object[] tuple = cache.get(i);
+                Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
+                result[tuple.length] = floatArray.get(i);
+                pairList.add(new Pair<>((Float) result[tuple.length], result));
+            }
+            Collections.sort(pairList, Comparator.comparing(p -> (Float)p.getKey()));
+            int count = 0;
+            Object[] value;
+
+            for (Pair<Float, Object[]> pair : pairList) {
+                if (count < topn) {
+                    value = pair.getValue();
+                    edge.transformToNext(param.getContext(), selection.revMap(value));
+                }
+                count++;
+            }
+        } else {
+            List<byte[]> rightList = cache.stream()
+                .map(e -> (byte[])e[param.getVectorIndex()])
+                .collect(Collectors.toList());
+            int topn = param.getTopk();
+            if (rightList.isEmpty()) {
+                edge.fin(fin);
+                return;
+            }
+            List<Float> floatArray = new ArrayList<>();
+            byte[] leftBinaryValues = getBinaryVector(param.getBinaryVector(), param.getDimension());
+            for (byte[] right : rightList) {
+                byte[] rightBinaryValues = getBinaryVector(right, param.getDimension());
+                VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
+                    .topN(topn)
+                    .isBinaryVector(true)
+                    .leftBinaryValues(Collections.singletonList(leftBinaryValues))
+                    .rightBinaryValues(Collections.singletonList(rightBinaryValues))
+                    .dimension(param.getDimension())
+                    .algorithmType(param.getAlgType())
+                    .metricType(param.getMetricType())
+                    .build();
+                floatArray.addAll(ToolService.getDefault().vectorCalcDistance(
+                    param.getRangeDistribution().getId(),
+                    vectorCalcDistance).get(0));
+            }
+            List<Pair<Float, Object[]>> pairList = new ArrayList<>();
+            for (int i = 0; i < cache.size(); i ++) {
+                Object[] tuple = cache.get(i);
+                Object[] result = Arrays.copyOf(tuple, tuple.length + 1);
+                result[tuple.length] = floatArray.get(i);
+                pairList.add(new Pair<>((Float) result[tuple.length], result));
+            }
+            Collections.sort(pairList, Comparator.comparing(p -> (Float)p.getKey()));
+            int count = 0;
+            Object[] value;
+
+            for (Pair<Float, Object[]> pair : pairList) {
+                if (count < topn) {
+                    value = pair.getValue();
+                    edge.transformToNext(param.getContext(), selection.revMap(value));
+                }
+                count++;
+            }
         }
 
         param.clear();

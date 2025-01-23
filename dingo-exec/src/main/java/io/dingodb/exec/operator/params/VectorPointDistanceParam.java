@@ -36,7 +36,11 @@ public class VectorPointDistanceParam extends AbstractParams {
 
     private final Integer vectorIndex;
 
+    private final boolean isBinaryVector;
+
     private final List<Float> targetVector;
+
+    private final byte[] binaryVector;
     @JsonProperty("dimension")
     private final Integer dimension;
 
@@ -56,7 +60,9 @@ public class VectorPointDistanceParam extends AbstractParams {
         RangeDistribution rangeDistribution,
         Integer vectorIndex,
         CommonId indexTableId,
+        boolean isBinaryVector,
         List<Float> targetVector,
+        byte[] binaryVector,
         Integer dimension,
         String algType,
         String metricType,
@@ -65,7 +71,9 @@ public class VectorPointDistanceParam extends AbstractParams {
     ) {
         this.rangeDistribution = rangeDistribution;
         this.vectorIndex = vectorIndex;
+        this.isBinaryVector = isBinaryVector;
         this.targetVector = targetVector;
+        this.binaryVector = binaryVector;
         this.dimension = dimension;
         this.algType = algType;
         this.metricType = metricType;

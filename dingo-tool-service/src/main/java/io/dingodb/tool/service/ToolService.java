@@ -31,6 +31,7 @@ import io.dingodb.sdk.service.entity.index.VectorCalcDistanceRequest;
 import io.dingodb.sdk.service.entity.index.VectorCalcDistanceResponse;
 import io.dingodb.sdk.service.entity.index.VectorDistance;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,19 +82,39 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
             case "COSINE":
                 metricType = MetricType.METRIC_TYPE_COSINE;
                 break;
+            case "METRIC_TYPE_HAMMING":
+                metricType = MetricType.METRIC_TYPE_HAMMING;
+                break;
             case "L2":
             default:
                 metricType = MetricType.METRIC_TYPE_L2;
                 break;
         }
+        if (!distance.isBinaryVector()) {
+            return VectorCalcDistanceRequest.builder()
+                .algorithmType(algorithmType)
+                .metricType(metricType)
+                .opLeftVectors(distance.getLeftList().stream()
+                    .map(l -> Vector.builder().floatValues(l).dimension(distance.getDimension()).valueType(ValueType.FLOAT).build())
+                    .collect(Collectors.toList()))
+                .opRightVectors(distance.getRightList().stream()
+                    .map(r -> Vector.builder().valueType(ValueType.FLOAT).dimension(distance.getDimension()).floatValues(r).build())
+                    .collect(Collectors.toList()))
+                .isReturnNormlize(false)
+                .build();
+        }
         return VectorCalcDistanceRequest.builder()
             .algorithmType(algorithmType)
             .metricType(metricType)
-            .opLeftVectors(distance.getLeftList().stream()
-                .map(l -> Vector.builder().floatValues(l).dimension(distance.getDimension()).valueType(ValueType.FLOAT).build())
+            .opLeftVectors(distance.getLeftBinaryValues().stream()
+                .map(l -> Vector.builder().binaryValues(
+                    Collections.singletonList(l)).dimension(distance.getDimension()
+                ).valueType(ValueType.UINT8).build())
                 .collect(Collectors.toList()))
-            .opRightVectors(distance.getRightList().stream()
-                .map(r -> Vector.builder().valueType(ValueType.FLOAT).dimension(distance.getDimension()).floatValues(r).build())
+            .opRightVectors(distance.getRightBinaryValues().stream()
+                .map(l -> Vector.builder().binaryValues(
+                    Collections.singletonList(l)).dimension(distance.getDimension()
+                ).valueType(ValueType.UINT8).build())
                 .collect(Collectors.toList()))
             .isReturnNormlize(false)
             .build();
