@@ -48,14 +48,15 @@ public final class DingoRelOp extends LogicalRelOp implements DingoRel {
         RelNode input,
         RelDataType rowType,
         RelOp relOp,
-        RexNode filter
+        RexNode filter,
+        List<Integer> selection
     ) {
-        super(cluster, traits, hints, input, rowType, relOp, filter);
+        super(cluster, traits, hints, input, rowType, relOp, filter, selection);
     }
 
     @Override
     public @NonNull RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new DingoRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp, filter);
+        return new DingoRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp, filter, selection);
     }
 
     @Override

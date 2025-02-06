@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule.logical;
 
 import io.dingodb.calcite.rel.logical.LogicalRelOp;
+import io.dingodb.calcite.rule.SelectionUtil;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -26,6 +27,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+
+import java.util.List;
 
 public class LogicalRelOpFromProjectRule extends ConverterRule implements SubstitutionRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -45,6 +48,7 @@ public class LogicalRelOpFromProjectRule extends ConverterRule implements Substi
     public RelNode convert(RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
         try {
+            List<Integer> selection = SelectionUtil.selection(project);
             Expr[] exprs = project.getProjects().stream()
                 .map(RexConverter::convert)
                 .toArray(Expr[]::new);
@@ -58,7 +62,8 @@ public class LogicalRelOpFromProjectRule extends ConverterRule implements Substi
                 project.getInput(),
                 project.getRowType(),
                 relOp,
-                null
+                null,
+                selection
             );
         } catch (UnsupportedOperationException e) {
             return null;

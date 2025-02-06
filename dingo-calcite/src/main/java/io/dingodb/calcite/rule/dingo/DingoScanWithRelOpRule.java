@@ -55,7 +55,8 @@ public class DingoScanWithRelOpRule extends ConverterRule {
             scan.getFilter(),
             scan.isPushDown(),
             scan.getKeepSerialOrder(),
-            scan.getLimit()
+            scan.getLimit(),
+            scan.getSelection()
         );
     }
 }

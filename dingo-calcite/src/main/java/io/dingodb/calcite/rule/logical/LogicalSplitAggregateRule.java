@@ -133,6 +133,7 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
             aggregate.getInput(),
             aggregate.getRowType(),
             relOp,
+            null,
             null
         );
         call.transformTo(

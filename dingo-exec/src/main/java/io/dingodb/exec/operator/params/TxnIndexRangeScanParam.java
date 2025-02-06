@@ -84,7 +84,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                                  TupleMapping selection,
                                  int limit) {
         super(tableId, index.tupleType(), keyMapping, relOp, outputSchema,
-            pushDown, index.getVersion(), limit, table.getCodecVersion());
+            pushDown, index.getVersion(), limit, table.getCodecVersion(), null);
         this.indexSchema = index.tupleType();
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;

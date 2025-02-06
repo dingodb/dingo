@@ -26,6 +26,8 @@ import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
+
 @Getter
 @JsonTypeName("txnScanRel")
 @JsonPropertyOrder({
@@ -59,9 +61,11 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
         boolean pushDown,
         int schemaVersion,
         int limit,
-        int codecVersion
+        int codecVersion,
+        List<Integer> selection
     ) {
-        super(tableId, schema, keyMapping, relOp, outputSchema, pushDown, schemaVersion, limit, codecVersion);
+        super(tableId, schema, keyMapping, relOp, outputSchema,
+            pushDown, schemaVersion, limit, codecVersion, selection);
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;

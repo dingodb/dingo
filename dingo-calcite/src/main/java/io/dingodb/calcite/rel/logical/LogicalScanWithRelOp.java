@@ -47,6 +47,10 @@ public class LogicalScanWithRelOp extends TableScan {
     @Getter
     protected int limit;
 
+    @Getter
+    @Setter
+    protected List<Integer> selection;
+
     public LogicalScanWithRelOp(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -57,7 +61,8 @@ public class LogicalScanWithRelOp extends TableScan {
         RexNode filter,
         boolean pushDown,
         int keepSerialOrder,
-        int limit
+        int limit,
+        List<Integer> selection
     ) {
         super(cluster, traitSet, hints, table);
         this.relOp = relOp;
@@ -66,6 +71,7 @@ public class LogicalScanWithRelOp extends TableScan {
         this.filter = filter;
         this.keepSerialOrder = keepSerialOrder;
         this.limit = limit;
+        this.selection = selection;
     }
 
     @Override

@@ -72,6 +72,8 @@ public class ScanWithRelOpParam extends ScanParam {
     @JsonDeserialize(using = RelOpDeserializer.class)
     protected RelOp relOp;
 
+    protected List<Integer> selection;
+
     @Getter
     @Setter
     protected int limit;
@@ -123,7 +125,8 @@ public class ScanWithRelOpParam extends ScanParam {
         boolean pushDown,
         int schemaVersion,
         int limit,
-        int codecVersion
+        int codecVersion,
+        List<Integer> selection
     ) {
         super(tableId, schema, keyMapping, schemaVersion, codecVersion);
         this.relOp = relOp;
@@ -132,6 +135,7 @@ public class ScanWithRelOpParam extends ScanParam {
         coprocessor = null;
         this.limit = limit;
         config = new DingoRelConfig();
+        this.selection = selection;
     }
 
     @Override

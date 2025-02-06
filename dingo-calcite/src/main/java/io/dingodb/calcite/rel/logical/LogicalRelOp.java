@@ -39,6 +39,8 @@ public class LogicalRelOp extends SingleRel {
     protected final RexNode filter;
 
     protected RelDataType rowType;
+    @Getter
+    protected List<Integer> selection;
 
     public LogicalRelOp(
         RelOptCluster cluster,
@@ -47,18 +49,20 @@ public class LogicalRelOp extends SingleRel {
         RelNode input,
         RelDataType rowType,
         RelOp relOp,
-        RexNode filter
+        RexNode filter,
+        List<Integer> selection
     ) {
         super(cluster, traits, input);
         this.hints = ImmutableList.copyOf(hints);
         this.rowType = rowType;
         this.relOp = relOp;
         this.filter = filter;
+        this.selection = selection;
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new LogicalRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp, filter);
+        return new LogicalRelOp(getCluster(), traitSet, hints, sole(inputs), rowType, relOp, filter, selection);
     }
 
     @Override

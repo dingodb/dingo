@@ -188,7 +188,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 rel.isPushDown(),
                 td.version,
                 0,
-                td.getCodecVersion()
+                td.getCodecVersion(), null
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(SCAN_WITH_PIPE_OP, param);
@@ -231,7 +231,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 rel.isPushDown(),
                 td.version,
                 0,
-                td.getCodecVersion()
+                td.getCodecVersion(), null
             );
             if (relOp instanceof PipeOp) {
                 return new Vertex(TXN_SCAN_WITH_PIPE_OP, param);

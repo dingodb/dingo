@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rule.logical;
 
 import io.dingodb.calcite.rel.logical.LogicalRelOp;
+import io.dingodb.calcite.rule.SelectionUtil;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -26,6 +27,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+
+import java.util.List;
 
 public class LogicalRelOpFromFilterRule extends ConverterRule implements SubstitutionRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -45,6 +48,7 @@ public class LogicalRelOpFromFilterRule extends ConverterRule implements Substit
     public RelNode convert(RelNode rel) {
         LogicalFilter filter = (LogicalFilter) rel;
         try {
+            List<Integer> selection = SelectionUtil.selection(filter);
             Expr expr = RexConverter.convert(filter.getCondition());
             RelOp relOp = RelOpBuilder.builder()
                 .filter(expr)
@@ -56,7 +60,8 @@ public class LogicalRelOpFromFilterRule extends ConverterRule implements Substit
                 filter.getInput(),
                 filter.getRowType(),
                 relOp,
-                filter.getCondition()
+                filter.getCondition(),
+                selection
             );
         } catch (RexConverter.UnsupportedRexNode e) {
             return null;

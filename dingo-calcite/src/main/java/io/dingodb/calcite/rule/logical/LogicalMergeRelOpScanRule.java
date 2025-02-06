@@ -27,6 +27,9 @@ import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Value.Enclosing
 public class LogicalMergeRelOpScanRule extends RelRule<LogicalMergeRelOpScanRule.Config> implements SubstitutionRule {
     protected LogicalMergeRelOpScanRule(Config config) {
@@ -38,6 +41,17 @@ public class LogicalMergeRelOpScanRule extends RelRule<LogicalMergeRelOpScanRule
         final LogicalRelOp rel = call.rel(0);
         final LogicalScanWithRelOp scan = call.rel(1);
         RelOp op = RelOpBuilder.builder(scan.getRelOp()).add(rel.getRelOp()).build();
+        List<Integer> selection = new ArrayList<>();
+        if (rel.getSelection() != null) {
+            selection.addAll(rel.getSelection());
+        }
+        if (scan.getSelection() != null) {
+            for (Integer i : scan.getSelection()) {
+                if (!selection.contains(i)) {
+                    selection.add(i);
+                }
+            }
+        }
         RexNode filter = rel.getFilter();
         if (filter == null) {
             filter = scan.getFilter();
@@ -53,7 +67,8 @@ public class LogicalMergeRelOpScanRule extends RelRule<LogicalMergeRelOpScanRule
                 filter,
                 scan.isPushDown(),
                 scan.getKeepSerialOrder(),
-                scan.getLimit()
+                scan.getLimit(),
+                selection
             )
         );
         call.getPlanner().prune(scan);

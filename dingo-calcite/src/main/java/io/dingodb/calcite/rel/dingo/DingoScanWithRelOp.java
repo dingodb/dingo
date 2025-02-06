@@ -73,9 +73,10 @@ public final class DingoScanWithRelOp extends LogicalScanWithRelOp implements Di
         RexNode filter,
         boolean pushDown,
         int keepOrder,
-        int limit
+        int limit,
+        List<Integer> selection
     ) {
-        super(cluster, traitSet, hints, table, rowType, relOp, filter, pushDown, keepOrder, limit);
+        super(cluster, traitSet, hints, table, rowType, relOp, filter, pushDown, keepOrder, limit, selection);
         if (getFilter() != null) {
             Table td = Objects.requireNonNull(table.unwrap(DingoTable.class)).getTable();
             KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
@@ -106,7 +107,8 @@ public final class DingoScanWithRelOp extends LogicalScanWithRelOp implements Di
             filter,
             pushDown,
             keepSerialOrder,
-            limit
+            limit,
+            selection
         );
     }
 
