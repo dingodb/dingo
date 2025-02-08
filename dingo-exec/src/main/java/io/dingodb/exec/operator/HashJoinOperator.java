@@ -49,41 +49,42 @@ public class HashJoinOperator extends SoleOutOperator {
         HashJoinParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("hashJoin");
         long start = System.currentTimeMillis();
-        TupleMapping leftMapping = param.getLeftMapping();
-        TupleMapping rightMapping = param.getRightMapping();
-        int leftLength = param.getLeftLength();
-        int rightLength = param.getRightLength();
-        boolean leftRequired = param.isLeftRequired();
-        int pin = context.getPin();
-        param.setContext(context);
-        if (pin == 0) { // left
-            waitRightFinFlag(param);
-            TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
-            List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
-            if (rightList != null) {
-                for (TupleWithJoinFlag t : rightList) {
-                    Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
-                    System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
-                    t.setJoined(true);
-                    if (!edge.transformToNext(context, newTuple)) {
-                        profile.time(start);
-                        return false;
+        try {
+            TupleMapping leftMapping = param.getLeftMapping();
+            TupleMapping rightMapping = param.getRightMapping();
+            int leftLength = param.getLeftLength();
+            int rightLength = param.getRightLength();
+            boolean leftRequired = param.isLeftRequired();
+            int pin = context.getPin();
+            param.setContext(context);
+            if (pin == 0) { // left
+                waitRightFinFlag(param);
+                TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
+                List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
+                if (rightList != null) {
+                    for (TupleWithJoinFlag t : rightList) {
+                        Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                        System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
+                        t.setJoined(true);
+                        if (!edge.transformToNext(context, newTuple)) {
+                            return false;
+                        }
                     }
+                } else if (leftRequired) {
+                    Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                    Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                    return edge.transformToNext(context, newTuple);
                 }
-            } else if (leftRequired) {
-                Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
-                Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
-                profile.time(start);
-                return edge.transformToNext(context, newTuple);
+            } else if (pin == 1) { //right
+                TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
+                List<TupleWithJoinFlag> list = param.getHashMap()
+                    .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
+                list.add(new TupleWithJoinFlag(tuple));
             }
-        } else if (pin == 1) { //right
-            TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
-            List<TupleWithJoinFlag> list = param.getHashMap()
-                .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
-            list.add(new TupleWithJoinFlag(tuple));
+            return true;
+        } finally {
+            profile.time(start);
         }
-        profile.time(start);
-        return true;
     }
 
     @Override

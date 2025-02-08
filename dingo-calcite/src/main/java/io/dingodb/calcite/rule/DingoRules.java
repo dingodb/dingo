@@ -21,6 +21,7 @@ import io.dingodb.calcite.rule.dingo.DingoPhysicalRules;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 
 import java.util.List;
 
@@ -191,6 +192,8 @@ public final class DingoRules {
     public static final  DingoDocumentProjectRule DINGO_DOCUMENT_PROJECT_RULE
         = DingoDocumentProjectRule.Config.DEFAULT.toRule();
 
+    public static final FilterOrJoinRule filterOrJoinRule = FilterOrJoinRule.Config.DEFAULT.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
@@ -199,6 +202,11 @@ public final class DingoRules {
         CoreRules.JOIN_CONDITION_PUSH,
         CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.PROJECT_REMOVE,
+        //CoreRules.JOIN_COMMUTE,
+        CoreRules.JOIN_ASSOCIATE,
+        //JoinPushThroughJoinRule.LEFT,
+        //JoinPushThroughJoinRule.RIGHT,
+        filterOrJoinRule,
         CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
         DingoPhysicalRules.DINGO_HASH_JOIN_RULE,
         DingoPhysicalRules.DINGO_ROOT_RULE,
