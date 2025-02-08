@@ -37,8 +37,63 @@ public class TupleKey {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof TupleKey) {
-            return Arrays.equals(this.tuple, ((TupleKey) obj).tuple);
+            return equals(this.tuple, ((TupleKey) obj).tuple);
         }
         return false;
+    }
+
+    public static boolean equals1(Object[] a, Object[] a2) {
+        if (a==a2)
+            return true;
+        if (a==null || a2==null)
+            return false;
+
+        int length = a.length;
+        if (a2.length != length)
+            return false;
+
+        for (int i=0; i<length; i++) {
+            Object o1 = a[i];
+            Object o2 = a2[i];
+            if (!(o1==null ? o2==null : o1.equals(o2)))
+                return false;
+        }
+
+        return true;
+    }
+
+    public boolean equals(Object[] tuple, Object[] tuple2) {
+        if (tuple == tuple2) {
+            return true;
+        }
+        if (tuple == null || tuple2 == null) {
+            return false;
+        }
+        int length = tuple.length;
+        if (tuple2.length != length) {
+            return false;
+        }
+
+        for (int i = 0; i < length; i++) {
+            Object o1 = tuple[i];
+            Object o2 = tuple2[i];
+            if (o1 instanceof Integer && o2 instanceof Long) {
+                Long longVal = (Long) o2;
+                Integer intVal = (Integer) o1;
+                if (longVal.intValue() != intVal) {
+                    return false;
+                }
+            } else if (o1 instanceof Long && o2 instanceof Integer) {
+                Integer intVal = (Integer) o2;
+                Long longVal = (Long) o1;
+                if (longVal.intValue() != intVal) {
+                    return false;
+                }
+            } else if (!(o1 == null ? o2 == null : o1.equals(o2))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

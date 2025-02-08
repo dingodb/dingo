@@ -20,6 +20,8 @@ import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
@@ -29,6 +31,7 @@ import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Set;
@@ -80,5 +83,21 @@ public final class DingoHashJoin extends Join implements DingoRel {
     public double estimateRowCount(RelMetadataQuery mq) {
         rowCount = super.estimateRowCount(mq);
         return rowCount;
+    }
+
+    @Override
+    public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if (this.isSemiJoin()) {
+            return planner.getCostFactory().makeTinyCost();
+        } else {
+            double rowCount = mq.getRowCount(this);
+            if (this.condition.isAlwaysTrue()) {
+                double leftRowCount = this.getLeft().estimateRowCount(mq);
+                double rightRowCount = this.getRight().estimateRowCount(mq);
+                return planner.getCostFactory().makeCost(leftRowCount * rightRowCount * 1000, 0.0, 0.0);
+            } else {
+                return planner.getCostFactory().makeCost(rowCount, 0.0, 0.0);
+            }
+        }
     }
 }

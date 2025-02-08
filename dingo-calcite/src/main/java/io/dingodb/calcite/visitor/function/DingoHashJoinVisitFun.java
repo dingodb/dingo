@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
+import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
@@ -29,9 +30,14 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -58,8 +64,20 @@ public class DingoHashJoinVisitFun {
             Vertex left = entry.getValue();
             Vertex right = rightInputsMap.get(taskId);
             JoinInfo joinInfo = rel.analyzeCondition();
-            HashJoinParam param = new HashJoinParam(TupleMapping.of(joinInfo.leftKeys),
-                TupleMapping.of(joinInfo.rightKeys), rel.getLeft().getRowType().getFieldCount(),
+            List<Integer> leftKeys = joinInfo.leftKeys;
+            List<Integer> rightKeys = joinInfo.rightKeys;
+            if (DingoHashJoinRule.isEquiCast(joinInfo)) {
+                leftKeys = new ArrayList<>();
+                joinInfo.leftKeys.forEach(leftKeys::add);
+                rightKeys = new ArrayList<>();
+                joinInfo.rightKeys.forEach(rightKeys::add);
+                DingoHashJoinRule.splitJoinCondition(
+                    rel.getCluster().getRexBuilder(), rel.getLeft().getRowType().getFieldCount(),
+                    rel.getCondition(), leftKeys, rightKeys
+                );
+            }
+            HashJoinParam param = new HashJoinParam(TupleMapping.of(leftKeys),
+                TupleMapping.of(rightKeys), rel.getLeft().getRowType().getFieldCount(),
                 rel.getRight().getRowType().getFieldCount(),
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
                 rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
@@ -78,4 +96,5 @@ public class DingoHashJoinVisitFun {
         }
         return outputs;
     }
+
 }

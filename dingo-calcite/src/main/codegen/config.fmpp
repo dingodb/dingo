@@ -756,6 +756,7 @@ data: {
     "XML"
     "YEARS"
     "ZONE"
+    "VALUE"
   ]
   }
 }
