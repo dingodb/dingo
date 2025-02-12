@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import static io.dingodb.common.util.StackTraces.CURRENT_STACK;
 
 public final class LogUtils {
-    private LogUtils() {}
+    private LogUtils() {
+
+    }
 
     public static void info(Logger logger, String message, Object... args) {
         if (logger.isInfoEnabled()) {

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
 import lombok.Getter;
@@ -62,6 +63,11 @@ public class HashJoinParam extends AbstractParams {
     @Getter
     @Setter
     public Profile profileRight;
+
+    @Getter
+    @Setter
+    public SqlExpr otherExpr;
+
 
     public HashJoinParam(
         TupleMapping leftMapping,

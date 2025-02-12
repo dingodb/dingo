@@ -16,10 +16,13 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ReduceRelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
@@ -39,9 +42,12 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
         ReduceRelOpParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("reduceAggr");
+        long start = System.currentTimeMillis();
         synchronized (param.getRelOp()) {
             ((AggregateOp) param.getRelOp()).reduce(tuple);
         }
+        profile.time(start);
         return true;
     }
 
@@ -50,6 +56,10 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
         ReduceRelOpParam param = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         CacheOp relOp = (CacheOp) param.getRelOp();
+        if (fin instanceof FinWithProfiles) {
+            FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+            finWithProfiles.addProfile(vertex);
+        }
         synchronized (relOp) {
             if (!(fin instanceof FinWithException)) {
                 RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());

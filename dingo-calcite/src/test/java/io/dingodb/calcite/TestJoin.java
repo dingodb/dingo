@@ -115,8 +115,7 @@ public class TestJoin {
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
         AssertRelNode assertJoin = Assert.relNode(optimized)
-            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
-            .soleInput().isA(DingoRelOp.class)
+            .isA(DingoRoot.class)
             .soleInput().isA(DingoHashJoin.class).prop("joinType", JoinRelType.INNER).inputNum(2);
         assertJoin.input(0).isA(DingoStreamingConverter.class)
             .soleInput().isA(DingoScanWithRelOp.class);

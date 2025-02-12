@@ -158,6 +158,7 @@ public final class RelOpUtils {
             forwardCacheOpResults(relOp, vertex.getSoleEdge());
             relOp.clear();
         }
+        profile.end();
         return Pair.of(count, breakFlg);
     }
 
