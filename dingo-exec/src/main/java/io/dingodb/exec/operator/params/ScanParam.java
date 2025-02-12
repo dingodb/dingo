@@ -87,6 +87,8 @@ public class ScanParam extends AbstractParams {
         } else {
             if (profileList.size() == 1 && "scanBase".equals(profileList.get(0).getType())) {
                 profileList.get(0).getChildren().add(profile1);
+            } else {
+                profileList.add(profile1);
             }
         }
         return profile1;

@@ -18,21 +18,26 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
+import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -42,6 +47,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.exec.utils.OperatorCodeUtils.HASH_JOIN;
@@ -58,12 +64,36 @@ public class DingoHashJoinVisitFun {
         // Only one left input in each task, because of coalescing.
         leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
         rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
+        JoinInfo joinInfo = rel.analyzeCondition();
+        SqlExpr otherCondition = null;
+        if (!joinInfo.nonEquiConditions.isEmpty()) {
+            RexNode nonEquiCondition = RexUtil.composeConjunction(
+                rel.getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
+            if (nonEquiCondition != null) {
+                otherCondition = SqlExprUtils.toSqlExpr(nonEquiCondition);
+                List<DingoType> leftTypeName = rel.getLeft().getRowType().getFieldList().stream()
+                    .map(ty -> DingoTypeFactory.INSTANCE.fromName(ty.getType().getSqlTypeName().getName(), null, ty.getType().isNullable()))
+                    .collect(Collectors.toList());
+                List<DingoType> rightTypeName = rel.getRight().getRowType().getFieldList().stream()
+                    .map(ty -> DingoTypeFactory.INSTANCE.fromName(ty.getType().getSqlTypeName().getName(), null, ty.getType().isNullable()))
+                    .collect(Collectors.toList());
+                leftTypeName.addAll(rightTypeName);
+                DingoType[] dingoTypes = new DingoType[leftTypeName.size()];
+                for (int i = 0; i < dingoTypes.length; i ++) {
+                    DingoType tmp = leftTypeName.get(i);
+                    tmp.setId(i);
+                    dingoTypes[i] = tmp;
+                }
+                DingoType dingoType = DingoTypeFactory.tuple(dingoTypes);
+                otherCondition.compileIn(dingoType, null);
+            }
+        }
+
         List<Vertex> outputs = new LinkedList<>();
         for (Map.Entry<CommonId, Vertex> entry : leftInputsMap.entrySet()) {
             CommonId taskId = entry.getKey();
             Vertex left = entry.getValue();
             Vertex right = rightInputsMap.get(taskId);
-            JoinInfo joinInfo = rel.analyzeCondition();
             List<Integer> leftKeys = joinInfo.leftKeys;
             List<Integer> rightKeys = joinInfo.rightKeys;
             if (DingoHashJoinRule.isEquiCast(joinInfo)) {
@@ -82,6 +112,7 @@ public class DingoHashJoinVisitFun {
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
                 rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
             );
+            param.setOtherExpr(otherCondition);
             Vertex vertex = new Vertex(HASH_JOIN, param);
             vertex.setId(idGenerator.getOperatorId(taskId));
             left.setPin(0);

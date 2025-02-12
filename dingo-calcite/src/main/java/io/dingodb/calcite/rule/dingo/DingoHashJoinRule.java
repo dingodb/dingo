@@ -78,19 +78,6 @@ public class DingoHashJoinRule extends ConverterRule {
         return true;
     }
 
-    public static boolean isOr(JoinInfo joinInfo) {
-        if (!joinInfo.nonEquiConditions.isEmpty()) {
-            RexNode rexNode = joinInfo.nonEquiConditions.get(0);
-            if (rexNode instanceof RexCall) {
-                RexCall rexCall = (RexCall) rexNode;
-                if (rexCall.op.kind == SqlKind.OR) {
-                    return rexCall.getOperands().size() == 3;
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
     public @Nullable RelNode convert(RelNode rel) {
         LogicalJoin join = (LogicalJoin) rel;

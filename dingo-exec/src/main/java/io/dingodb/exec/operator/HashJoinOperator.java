@@ -66,14 +66,14 @@ public class HashJoinOperator extends SoleOutOperator {
                         Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                         System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
                         t.setJoined(true);
-                        if (!edge.transformToNext(context, newTuple)) {
+                        if (!pushToNext(param, edge, context, newTuple)) {
                             return false;
                         }
                     }
                 } else if (leftRequired) {
                     Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                     Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
-                    return edge.transformToNext(context, newTuple);
+                    return pushToNext(param, edge, context, newTuple);
                 }
             } else if (pin == 1) { //right
                 TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
@@ -109,7 +109,7 @@ public class HashJoinOperator extends SoleOutOperator {
                             Object[] newTuple = new Object[leftLength + rightLength];
                             Arrays.fill(newTuple, 0, leftLength, null);
                             System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
-                            if (!edge.transformToNext(param.getContext(), newTuple)) {
+                            if (!pushToNext(param, edge, param.getContext(), newTuple)) {
                                 break outer;
                             }
                         }
@@ -148,6 +148,19 @@ public class HashJoinOperator extends SoleOutOperator {
         param.getFuture().join();
         if (!param.isRightFinFlag()) {
             throw new RuntimeException();
+        }
+    }
+
+    private static boolean pushToNext(HashJoinParam param, Edge edge, Context context, Object[] tuple) {
+        if (param.getOtherExpr() != null) {
+            Object object = param.getOtherExpr().eval(tuple);
+            if (object != null && (Boolean) object) {
+                return edge.transformToNext(context, tuple);
+            } else {
+                return true;
+            }
+        } else {
+            return edge.transformToNext(context, tuple);
         }
     }
 }
