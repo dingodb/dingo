@@ -56,6 +56,7 @@ import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.grammar.dql.SqlStartGc;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.program.DecorrelateProgram;
+import io.dingodb.calcite.program.DingoPrograms;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rel.LogicalForUpdate;
@@ -365,19 +366,17 @@ public class DingoParser {
             }
         }
         final Program program = Programs.ofRules(builder.build());
-        // Seems the only way to prevent rex simplifying in optimization.
-        try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
-            Program subQueryProgram = Programs.subQuery(cluster.getMetadataProvider());
-            RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+        Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
 
-            DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
-            RelNode relNode2 = decorrelateProgram.run(
-                planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of()
-            );
-            timeCtx.stop();
-            return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
-        }
+        Program subQueryProgram = DingoPrograms.subQuery(cluster.getMetadataProvider());
+        RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+
+        DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
+        RelNode relNode2 = decorrelateProgram.run(
+            planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of()
+        );
+        timeCtx.stop();
+        return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
     }
 
     protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
