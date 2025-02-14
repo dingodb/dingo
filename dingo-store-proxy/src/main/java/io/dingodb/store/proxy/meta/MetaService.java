@@ -81,6 +81,8 @@ import io.dingodb.sdk.service.entity.meta.DropTenantRequest;
 import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.GetSchemasRequest;
 import io.dingodb.sdk.service.entity.meta.GetSchemasResponse;
+import io.dingodb.sdk.service.entity.meta.GetTenantsRequest;
+import io.dingodb.sdk.service.entity.meta.GetTenantsResponse;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.ReservedSchemaIds;
 import io.dingodb.sdk.service.entity.meta.Schema;
@@ -98,6 +100,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1461,6 +1464,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .tenantId(tenantId)
             .build();
         this.service.dropTenant(System.identityHashCode(dropTenantRequest), dropTenantRequest);
+    }
+
+    public boolean existsTenant(long tenantId) {
+        GetTenantsRequest getTenantsRequest = GetTenantsRequest.builder()
+            .tenantIds(Collections.singletonList(tenantId)).build();
+        GetTenantsResponse response = this.service
+            .getTenants(System.identityHashCode(getTenantsRequest), getTenantsRequest);
+        return !response.getTenants().isEmpty();
     }
 
     public static void validatePartBy(TableDefinition tableDefinition) {
