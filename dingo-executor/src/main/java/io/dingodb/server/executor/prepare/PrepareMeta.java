@@ -75,6 +75,7 @@ public final class PrepareMeta {
 
     public static synchronized void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+        synchronizeTenant();
         if (infoSchemaService.prepareStarted()) {
             return;
         }
@@ -623,6 +624,17 @@ public final class PrepareMeta {
             LogUtils.error(log, "create table failed:{}, schemaName:{}, tableName:{}",
                 e.getMessage(), schema, tableName, e);
         }
+    }
+
+    public static void synchronizeTenant() {
+        List<Object> tenantObjList = io.dingodb.meta.InfoSchemaService.root().listTenant();
+        tenantObjList.forEach(object -> {
+            Tenant tenant = (Tenant) object;
+            if (!MetaService.ROOT.existsTenant(tenant.getId())) {
+                MetaService.ROOT.createTenant(tenant);
+                LogUtils.info(log, "synchronize tenant id to coordinator:{}", tenant.getId());
+            }
+        });
     }
 
     private static boolean continueRetry() {

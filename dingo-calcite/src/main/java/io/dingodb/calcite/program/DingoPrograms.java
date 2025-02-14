@@ -34,7 +34,8 @@ public final class DingoPrograms {
         HepProgramBuilder builder = HepProgram.builder();
         builder.addRuleCollection(ImmutableList.of(
             CoreRules.FILTER_SUB_QUERY_TO_CORRELATE, CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-            CoreRules.JOIN_SUB_QUERY_TO_CORRELATE, CoreRules.JOIN_DERIVE_IS_NOT_NULL_FILTER_RULE));
+            CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+            CoreRules.JOIN_DERIVE_IS_NOT_NULL_FILTER_RULE, CoreRules.FILTER_INTO_JOIN));
         return Programs.of(builder.build(), true, metadataProvider);
     }
 
