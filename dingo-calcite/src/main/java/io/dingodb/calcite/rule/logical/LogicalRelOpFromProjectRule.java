@@ -27,7 +27,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class LogicalRelOpFromProjectRule extends ConverterRule implements SubstitutionRule {
@@ -49,9 +54,18 @@ public class LogicalRelOpFromProjectRule extends ConverterRule implements Substi
         LogicalProject project = (LogicalProject) rel;
         try {
             List<Integer> selection = SelectionUtil.selection(project);
-            Expr[] exprs = project.getProjects().stream()
+            // for test start
+            selection.sort(Comparator.naturalOrder());
+            Mapping mapping = Mappings.target(selection, project.getInput().getRowType().getFieldCount());
+            List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
+
+            Expr[] exprs = newProjectRexNodes.stream()
                 .map(RexConverter::convert)
                 .toArray(Expr[]::new);
+            // for test end
+            //Expr[] exprs = project.getProjects().stream()
+            //    .map(RexConverter::convert)
+            //    .toArray(Expr[]::new);
             RelOp relOp = RelOpBuilder.builder()
                 .project(exprs)
                 .build();

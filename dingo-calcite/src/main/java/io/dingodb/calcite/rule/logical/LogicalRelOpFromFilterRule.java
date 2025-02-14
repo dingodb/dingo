@@ -27,7 +27,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class LogicalRelOpFromFilterRule extends ConverterRule implements SubstitutionRule {
@@ -49,7 +54,15 @@ public class LogicalRelOpFromFilterRule extends ConverterRule implements Substit
         LogicalFilter filter = (LogicalFilter) rel;
         try {
             List<Integer> selection = SelectionUtil.selection(filter);
-            Expr expr = RexConverter.convert(filter.getCondition());
+            // for test start
+            selection.sort(Comparator.naturalOrder());
+            Mapping mapping = Mappings.target(selection, filter.getRowType().getFieldCount());
+            // Push selection down over filter.
+            RexNode newFilter = (filter.getCondition() != null) ? RexUtil.apply(mapping, filter.getCondition()) : null;
+
+            Expr expr = RexConverter.convert(newFilter);
+            // for test end
+            //Expr expr = RexConverter.convert(filter.getCondition());
             RelOp relOp = RelOpBuilder.builder()
                 .filter(expr)
                 .build();

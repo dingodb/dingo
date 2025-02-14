@@ -148,9 +148,9 @@ public class ScanWithRelOpParam extends ScanParam {
         if (pushDown) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             if (RelOpCoder.INSTANCE.visit(relOp, os) == CodingFlag.OK) {
-                List<Integer> selection = IntStream.range(0, schema.fieldCount())
-                    .boxed()
-                    .collect(Collectors.toList());
+                //List<Integer> selection = IntStream.range(0, schema.fieldCount())
+                //    .boxed()
+                //    .collect(Collectors.toList());
                 TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
                 coprocessor = CoprocessorV2.builder()
                     .originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq))
