@@ -21,11 +21,22 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.executor.Executor;
 import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement;
+import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterDropPart;
+import io.dingodb.calcite.grammar.ddl.SqlAlterExchangePart;
+import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
+import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
@@ -33,12 +44,15 @@ import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.grammar.ddl.SqlLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlLockTable;
+import io.dingodb.calcite.grammar.ddl.SqlRecoverTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
@@ -73,7 +87,6 @@ import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
-import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
@@ -97,7 +110,6 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSetOption;
@@ -110,7 +122,6 @@ import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
-import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -467,7 +478,21 @@ public class DingoParser {
             || sqlNode instanceof SqlDropSchema || sqlNode instanceof SqlAlterAddColumn
             || sqlNode instanceof SqlAlterDropColumn || sqlNode instanceof SqlAlterAddIndex
             || sqlNode instanceof SqlAlterDropIndex || sqlNode instanceof SqlCreateUser
-            || sqlNode instanceof SqlDropUser || sqlNode instanceof SqlGrant;
+            || sqlNode instanceof SqlDropUser
+            || sqlNode instanceof SqlGrant
+            || sqlNode instanceof SqlAlterRenameTable
+            || sqlNode instanceof SqlAlterRenameIndex
+            || sqlNode instanceof SqlAlterChangeColumn
+            || sqlNode instanceof SqlAlterModifyColumn
+            || sqlNode instanceof SqlRecoverTable
+            || sqlNode instanceof SqlFlashBackTable
+            || sqlNode instanceof SqlFlashBackSchema
+            || sqlNode instanceof SqlAlterColumn
+            || sqlNode instanceof SqlAlterAutoIncrement
+            || sqlNode instanceof SqlAdminResetAutoInc
+            || sqlNode instanceof SqlAlterTableComment
+            || sqlNode instanceof SqlAlterDropPart
+            || sqlNode instanceof SqlAlterTruncatePart || sqlNode instanceof SqlAlterExchangePart;
     }
 
     public long getGcLifeTime() {

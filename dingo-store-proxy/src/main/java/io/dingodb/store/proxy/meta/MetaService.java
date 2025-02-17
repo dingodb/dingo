@@ -22,7 +22,6 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.GcDeleteRegion;
-import io.dingodb.common.ddl.JobState;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
@@ -91,7 +90,6 @@ import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.sdk.service.entity.meta.UpdateTenantRequest;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.service.InfoSchemaService;
@@ -100,7 +98,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -801,6 +798,23 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .tableId(indexId)
             .partIds(indexPartIds)
             .build();
+        int directReplica = index.getReplica();
+        if (index.getReplica() == 0) {
+            String indexType = index.getProperties().getProperty("indexType", "scalar");
+            int actual;
+            switch (indexType) {
+                case "vector":
+                    actual = io.dingodb.meta.InfoSchemaService.root().getIndexReplica();
+                    break;
+                case "document":
+                    actual = io.dingodb.meta.InfoSchemaService.root().getDocumentReplica();
+                    break;
+                default:
+                    actual = io.dingodb.meta.InfoSchemaService.root().getStoreReplica();
+                    break;
+            }
+            index.setReplica(actual);
+        }
 
         TableDefinitionWithId indexWithId = Stream.of(index)
             .map(i -> {
@@ -816,7 +830,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
         io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
-        createIndexRegion(indexWithId, tableId, index.getReplica());
+        createIndexRegion(indexWithId, tableId, directReplica);
     }
 
     @Override

@@ -21,6 +21,7 @@ import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
+import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
@@ -260,7 +261,14 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         createTableSqlStr.append(" engine=").append(table.getEngine()).append(" ");
         createTableSqlStr.append(" replica=").append(table.getReplica());
         if (table.getComment() != null) {
-            createTableSqlStr.append(" comment=").append(table.getComment());
+            createTableSqlStr.append(" comment=").append("'").append(table.getComment()).append("'");
+        }
+        boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
+        if (autoInc) {
+            long autoIncVal = MetaService.root().getNextAutoIncrement(table.tableId);
+            if (autoIncVal > 2) {
+                createTableSqlStr.append(" AUTO_INCREMENT=").append(autoIncVal);
+            }
         }
         appendPart(table, createTableSqlStr);
         return createTableSqlStr.toString();

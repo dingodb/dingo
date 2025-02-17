@@ -22,9 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
-import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
@@ -212,6 +212,9 @@ public class DdlJob {
     public byte[] encode(boolean updateRawArgs) {
         if (updateRawArgs) {
             this.rawArgs = getBytesFromObj(args);
+        }
+        if (this.getDingoErr() != null) {
+            this.dingoErr.encodeError();
         }
         return getBytesFromObj(this);
     }
