@@ -352,17 +352,18 @@ public class DdlWorker {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrDBCreateExists, job.getSchemaName()));
             return Pair.of(0L, "The database already exists");
         }
-        SchemaInfo schemaInfoTmp = infoSchemaService.getSchema(schemaInfo.getName());
-        if (schemaInfoTmp != null && schemaInfoTmp.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
-            job.setState(JobState.jobStateCancelled);
-            job.setDingoErr(DingoErrUtil.newInternalErr(ErrDBCreateExists, job.getSchemaName()));
-            return Pair.of(0L, "The database already exists");
-        }
 
         if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
-            schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
-            InfoSchemaService service = InfoSchemaService.root();
-            service.createSchema(schemaId, schemaInfo);
+            synchronized (infoSchemaService) {
+                schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+                SchemaInfo schemaInfoTmp = infoSchemaService.getSchema(schemaInfo.getName());
+                if (schemaInfoTmp != null && schemaInfoTmp.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+                    job.setState(JobState.jobStateCancelled);
+                    job.setDingoErr(DingoErrUtil.newInternalErr(ErrDBCreateExists, job.getSchemaName()));
+                    return Pair.of(0L, "The database already exists");
+                }
+                infoSchemaService.createSchema(schemaId, schemaInfo);
+            }
             // finish job
             Pair<Long, String> res = updateSchemaVersion(dc, job);
             if (res.getValue() != null) {
@@ -1815,14 +1816,23 @@ public class DdlWorker {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, error);
         }
-        String toName = job.getArgs().get(0).toString();
-        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
-        if (tableRes.getValue() != null && tableRes.getKey() == null) {
-            return Pair.of(0L, tableRes.getValue());
+        synchronized (dc) {
+            io.dingodb.meta.InfoSchemaService service = io.dingodb.meta.InfoSchemaService.root();
+            Object tabObj = service.getTable(job.getSchemaId(), job.getTableName());
+            if (tabObj == null) {
+                job.setState(JobState.jobStateCancelled);
+                job.setDingoErr(DingoErrUtil.newInternalErr(ErrNoSuchTable, job.getTableName()));
+                return Pair.of(0L, job.getDingoErr().errorMsg);
+            }
+            String toName = job.getArgs().get(0).toString();
+            Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+            if (tableRes.getValue() != null && tableRes.getKey() == null) {
+                return Pair.of(0L, tableRes.getValue());
+            }
+            tableRes.getKey().getTableDefinition().setName(toName);
+            job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+            return TableUtil.updateVersionAndTableInfos(dc, job, tableRes.getKey(), true);
         }
-        tableRes.getKey().getTableDefinition().setName(toName);
-        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-        return TableUtil.updateVersionAndTableInfos(dc, job, tableRes.getKey(), true);
     }
 
     public Pair<Long, String> onRenameIndex(DdlContext dc, DdlJob job) {

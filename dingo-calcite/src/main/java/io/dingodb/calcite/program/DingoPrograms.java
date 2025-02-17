@@ -17,10 +17,8 @@
 package io.dingodb.calcite.program;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.tools.Program;
@@ -35,7 +33,9 @@ public final class DingoPrograms {
         builder.addRuleCollection(ImmutableList.of(
             CoreRules.FILTER_SUB_QUERY_TO_CORRELATE, CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
             CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
-            CoreRules.JOIN_DERIVE_IS_NOT_NULL_FILTER_RULE, CoreRules.FILTER_INTO_JOIN));
+            CoreRules.JOIN_DERIVE_IS_NOT_NULL_FILTER_RULE
+            //CoreRules.FILTER_INTO_JOIN
+            ));
         return Programs.of(builder.build(), true, metadataProvider);
     }
 

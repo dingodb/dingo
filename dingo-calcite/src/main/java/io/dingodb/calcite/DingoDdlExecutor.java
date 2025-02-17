@@ -191,6 +191,7 @@ import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
@@ -560,6 +561,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw DINGO_RESOURCE.unknownTable(schema.getSchemaName() + "." + tableName).ex();
             }
         }
+        if ("VIEW".equalsIgnoreCase(table.getTableType())) {
+            throw DingoErrUtil.newStdErr(ErrNoSuchTable, tableName);
+        }
         DdlService ddlService = DdlService.root();
         String connId = (String) context.getDataContext().get("connId");
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
@@ -603,6 +607,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw DINGO_RESOURCE.unknownTable(schema.getSchemaName() + "." + tableName).ex();
             }
         }
+        if (!"VIEW".equalsIgnoreCase(table.getTableType())) {
+            throw DingoErrUtil.newStdErrWithMsg("View '%s' do not exist", ErrNoSuchTable, tableName);
+        }
         DdlService ddlService = DdlService.root();
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
 
@@ -636,6 +643,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String tableName = Parameters.nonNull(schemaTableName.right, "table name").toUpperCase();
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        if ("VIEW".equalsIgnoreCase(table.getTableType())) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         DdlService ddlService = DdlService.root();
@@ -1689,26 +1699,34 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlAlterRenameTable sqlAlterRenameTable, CalcitePrepare.Context context) {
         LogUtils.info(log, sqlAlterRenameTable.toString());
-        final Pair<SubSnapshotSchema, String> schemaTableName
-            = getSchemaAndTableName(sqlAlterRenameTable.originIdList.get(0), context);
-        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        Table table = schema.getTableInfo(tableName);
-        if (table == null) {
-            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+
+        checkRenameTable(sqlAlterRenameTable, context);
+
+        for (int i = 0; i < sqlAlterRenameTable.originIdList.size(); i ++) {
+            SqlIdentifier originId = sqlAlterRenameTable.originIdList.get(i);
+            SqlIdentifier toId = sqlAlterRenameTable.toIdList.get(i);
+            final Pair<SubSnapshotSchema, String> schemaTableName
+                = getSchemaAndTableName(originId, context);
+            final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+            final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+
+            Table table = schema.getTableInfo(tableName);
+            if (table == null) {
+                throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+            }
+            DdlService.root().renameTable(
+                schema.getSchemaId(), schema.getSchemaName(), table,
+                getTableName(toId));
+            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+            RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+            SchemaDiff diff = SchemaDiff.builder()
+                .schemaId(schema.getSchemaId())
+                .tableId(table.getTableId().seq)
+                .type(ActionType.ActionRenameTable)
+                .build();
+            diff.setTableName(tableName);
+            rootSnapshotSchema.applyDiff(diff);
         }
-        DdlService.root().renameTable(
-            schema.getSchemaId(), schema.getSchemaName(), table,
-            getTableName(sqlAlterRenameTable.toIdList.get(0)));
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionRenameTable)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(SqlAlterRenameIndex sqlAlterRenameIndex, CalcitePrepare.Context context) {
@@ -2770,6 +2788,29 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .name(column.getName())
             .autoIncrement(column.isAutoIncrement())
             .build();
+    }
+
+    public static void checkRenameTable(
+        SqlAlterRenameTable sqlAlterRenameTable, CalcitePrepare.@NonNull Context context
+    ) {
+        for (int i = 0; i < sqlAlterRenameTable.originIdList.size(); i ++) {
+            SqlIdentifier originId = sqlAlterRenameTable.originIdList.get(i);
+            final Pair<SubSnapshotSchema, String> schemaTableName
+                = getSchemaAndTableName(originId, context);
+            final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+            final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+
+            Table table = schema.getTableInfo(tableName);
+            if (table == null) {
+                throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+            }
+            SqlIdentifier toId = sqlAlterRenameTable.toIdList.get(i);
+            String toTableName = getTableName(toId);
+            Table toTable = schema.getTableInfo(toTableName);
+            if (toTable != null) {
+                throw DINGO_RESOURCE.tableExists(toTableName).ex();
+            }
+        }
     }
 
 }

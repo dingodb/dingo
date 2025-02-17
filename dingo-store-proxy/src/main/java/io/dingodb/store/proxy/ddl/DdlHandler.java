@@ -562,6 +562,9 @@ public class DdlHandler {
                 String error = ddlJob.decodeError();
                 return Pair.of(false, DingoErrUtil.newInternalErr(error));
             } else {
+                if (ddlJob.getDingoErr().encodeError) {
+                    ddlJob.getDingoErr().decodeError();
+                }
                 return Pair.of(false, ddlJob.getDingoErr());
             }
         }
