@@ -16,10 +16,13 @@
 
 package io.dingodb.common.mysql;
 
+import java.util.Base64;
+
 public class DingoErr {
     public int errorCode;
     public String state;
     public String errorMsg;
+    public boolean encodeError;
 
     public DingoErr() {
 
@@ -39,6 +42,20 @@ public class DingoErr {
             errorMsg = String.format(errorMsg, param[0], param[1]);
         } else if (paramCnt == 3) {
             errorMsg = String.format(errorMsg, param[0], param[1], param[2]);
+        }
+    }
+
+    public void encodeError() {
+        if (this.errorMsg != null) {
+            this.errorMsg = Base64.getEncoder().encodeToString(errorMsg.getBytes());
+            this.encodeError = true;
+        }
+    }
+
+    public void decodeError() {
+        if (this.errorMsg != null) {
+            this.errorMsg = new String(Base64.getDecoder().decode(this.errorMsg));
+            this.encodeError = false;
         }
     }
 

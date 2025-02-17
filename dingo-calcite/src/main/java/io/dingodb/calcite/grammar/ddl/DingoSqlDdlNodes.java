@@ -51,6 +51,9 @@ public class DingoSqlDdlNodes {
         String collate,
         int codecVersion
     ) {
+        if (comment != null) {
+            comment = comment.startsWith("'") ? comment.substring(1, comment.length() - 1) : comment;
+        }
         return new DingoSqlCreateTable(
             pos,
             replace,
