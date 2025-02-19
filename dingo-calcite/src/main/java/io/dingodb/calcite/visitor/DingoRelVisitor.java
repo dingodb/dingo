@@ -44,6 +44,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.DingoWindow;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoDocumentScanFilter;
@@ -141,5 +142,7 @@ public interface DingoRelVisitor<T> {
     T visit(@NonNull DingoForUpdate dingoForUpdate);
 
     T visit(DingoDocumentScanFilter documentIndexRangeScan);
+
+    T visit(DingoWindow dingoWindow);
 
 }

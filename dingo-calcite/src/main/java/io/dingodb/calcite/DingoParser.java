@@ -422,6 +422,11 @@ public class DingoParser {
         List<RelOptRule> rules = DingoRules.rules();
         ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
         builder.addAll(rules);
+
+        builder.addAll(DingoRules.ABSTRACT_RELATIONAL_RULES);
+        builder.addAll(DingoRules.ABSTRACT_RULES);
+        builder.addAll(DingoRules.BASE_RULES);
+
         if (!context.getConfig().topDownOpt()) {
             // This is needed for `IterativeRuleDriver`.
             builder.add(AbstractConverter.ExpandConversionRule.INSTANCE);
