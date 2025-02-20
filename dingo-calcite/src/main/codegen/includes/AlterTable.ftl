@@ -92,6 +92,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
         |
             alterTable = addConstraint(s, scope, id)
         |
+            alterTable = foreign(s, id)
+        |
             <FULLTEXT> alterTable = addIndexByMode(s, scope, id, "fulltext")
         |
            <SPATIAL> alterTable = addIndexByMode(s, scope, id, "spetail")
@@ -242,7 +244,8 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
         [<SCALAR>] columnList = indexColumns()
     )
     (
-       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+       LOOKAHEAD(2)
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -288,7 +291,8 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     { index = getNextToken().image; }
     [<SCALAR>] columnList = indexColumns()
     (
-       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+       LOOKAHEAD(2)
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -334,7 +338,8 @@ SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode
     { index = getNextToken().image; }
     columnList = indexColumns()
     (
-       <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+       LOOKAHEAD(2)
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |

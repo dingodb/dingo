@@ -209,7 +209,7 @@ void TableElement(List<SqlNode> list) :
          |
           <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
            [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
-           ( <ON> (
+           ( LOOKAHEAD(2) <ON> (
              <UPDATE> updateRefOpt = referenceOpt()
              |
             <DELETE> deleteRefOpt = referenceOpt()
@@ -226,7 +226,7 @@ void TableElement(List<SqlNode> list) :
         }
     )
 |
-    [ <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] ]
+    [ LOOKAHEAD(2) <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] ]
     (
         <CHECK> { s.add(this); } <LPAREN>
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) <RPAREN> [<NOT>] (<ENFORCED>|<NULL>|{ String t = "";}){
@@ -247,7 +247,7 @@ void TableElement(List<SqlNode> list) :
             { indexType = "text"; }
             columnList = ParenthesizedSimpleIdentifierList()
         )
-        ( <WITH> withColumnList = ParenthesizedSimpleIdentifierList()
+        ( <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent();})
          |
           <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
          |
@@ -403,7 +403,7 @@ ColumnOption parseColumnOption(): {
          |
           <REFERENCES> refTable = CompoundIdentifier() refColumnList = ParenthesizedSimpleIdentifierList()
            [<MATCH>(<FULL>|<PARTIAL>|<SIMPLE>)]
-            ( <ON> (
+            ( LOOKAHEAD(2) <ON> (
               <UPDATE> updateRefOpt = referenceOpt()
               |
               <DELETE> deleteRefOpt = referenceOpt()
@@ -914,8 +914,6 @@ Properties indexOption(): {
     <KEY_BLOCK_SIZE> [<EQ>] <UNSIGNED_INTEGER_LITERAL> { prop.put("key_block_size", Integer.parseInt(this.token.image));}
     |
     indexType = indexTypeName() { prop.put("indexType", indexType);}
-    |
-    <WITH> <PARSER> { prop.put("parser", strIdent()); }
     |
     <COMMENT> { prop.put("comment", strIdent());}
     |

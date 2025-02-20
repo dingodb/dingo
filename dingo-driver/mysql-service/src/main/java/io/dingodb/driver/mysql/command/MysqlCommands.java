@@ -210,6 +210,9 @@ public class MysqlCommands {
                 // update insert delete
                 int count = statement.getUpdateCount();
                 SQLWarning sqlWarning = statement.getWarnings();
+                if (sqlWarning == null) {
+                    sqlWarning = mysqlConnection.getConnection().getWarnings();
+                }
                 DingoStatement dingoStatement = (DingoStatement) statement;
                 OKPacket okPacket;
                 int initServerStatus = dingoStatement.getServerStatus();

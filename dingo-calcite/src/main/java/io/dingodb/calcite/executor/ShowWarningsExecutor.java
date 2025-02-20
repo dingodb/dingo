@@ -40,7 +40,7 @@ public class ShowWarningsExecutor extends QueryExecutor {
         }
         List<Object[]> res = warningList
             .stream()
-            .map(sqlWarning -> new Object[]{"Error", sqlWarning.getErrorCode(), sqlWarning.getMessage()})
+            .map(sqlWarning -> new Object[]{"Warning", sqlWarning.getErrorCode(), sqlWarning.getMessage()})
             .collect(Collectors.toList());
         return res.iterator();
     }

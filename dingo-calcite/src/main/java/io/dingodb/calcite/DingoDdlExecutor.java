@@ -1686,9 +1686,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
         if (hasInc) {
-            DdlService.root().rebaseAutoInc(
+            String warning = DdlService.root().rebaseAutoInc(
                 schema.getSchemaName(), tableName, table.getTableId().seq, alterAutoIncrement.autoInc
             );
+            alterAutoIncrement.setWarning(warning);
         }
     }
 

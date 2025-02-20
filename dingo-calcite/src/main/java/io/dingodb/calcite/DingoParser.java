@@ -128,6 +128,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.SQLWarning;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -506,6 +507,16 @@ public class DingoParser {
             long safePointTs = currentTime - (gcLifeTime * 1000);
             return TsoService.getDefault().tso(safePointTs);
         }
+    }
+
+    public SQLWarning getWarning(SqlNode sqlNode) {
+        if (sqlNode instanceof SqlAlterAutoIncrement) {
+            SqlAlterAutoIncrement alterAutoIncrement = (SqlAlterAutoIncrement) sqlNode;
+            if (alterAutoIncrement.getWarning() != null) {
+                return new SQLWarning(alterAutoIncrement.getWarning(), "1105");
+            }
+        }
+        return null;
     }
 
 }

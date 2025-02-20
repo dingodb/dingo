@@ -80,6 +80,7 @@ SqlShow SqlShowTable(Span s): {
 } {
    <TABLE>
    (
+    LOOKAHEAD(2)
     <STATUS> [ <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { schema = token.image.toUpperCase(); } ]
      [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
      {

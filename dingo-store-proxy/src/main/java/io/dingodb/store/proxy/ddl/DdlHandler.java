@@ -522,6 +522,7 @@ public class DdlHandler {
         while (!Thread.interrupted()) {
             Pair<Boolean, DingoErr> res = historyJob(job.getId());
             if (res.getKey()) {
+                job.setWarning(res.getValue().warning);
                 return;
             } else if (res.getValue() != null) {
                 LogUtils.error(log, "[ddl-error] doDdlJob error, reason: {}, job: {}", res.getValue(), job);
@@ -555,7 +556,7 @@ public class DdlHandler {
             }
         }
         if (ddlJob.getState() == JobState.jobStateSynced && ddlJob.getError() == null) {
-            return Pair.of(true, null);
+            return Pair.of(true, new DingoErr(ddlJob.getWarning()));
         }
         if (ddlJob.getError() != null) {
             if (ddlJob.getDingoErr() == null || ddlJob.getDingoErr().errorCode == 0) {

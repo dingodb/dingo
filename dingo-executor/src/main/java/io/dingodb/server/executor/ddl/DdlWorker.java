@@ -354,7 +354,7 @@ public class DdlWorker {
         }
 
         if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
-            synchronized (infoSchemaService) {
+            synchronized (DdlContext.INSTANCE) {
                 schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                 SchemaInfo schemaInfoTmp = infoSchemaService.getSchema(schemaInfo.getName());
                 if (schemaInfoTmp != null && schemaInfoTmp.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
@@ -508,7 +508,10 @@ public class DdlWorker {
         try {
             ms.truncateTable(job.getTableName(), newTableId, job.getId());
         } catch (Exception e) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(e.getMessage()));
+            job.setState(JobState.jobStateCancelled);
             LogUtils.error(log, "truncate table error", e);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
         }
         //job.setTableId(tableId);
         Pair<Long, String> res = updateSchemaVersion(dc, job);
@@ -1791,6 +1794,8 @@ public class DdlWorker {
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
             return Pair.of(0L, tableRes.getValue());
         }
+        TableDefinitionWithId withId = tableRes.getKey();
+        withId.getTableDefinition().setAutoIncrement(autoInc);
 
         AutoIncrementService autoIncrementService = AutoIncrementService.INSTANCE;
         io.dingodb.server.executor.common.DingoCommonId dingoCommonId
@@ -1800,9 +1805,12 @@ public class DdlWorker {
         long current = autoIncrementService.current(dingoCommonId);
         if (autoInc > current) {
             autoIncrementService.updateIncrement(dingoCommonId, autoInc);
+        } else {
+            job.setWarning("can not reset AUTO_INCREMENT to "
+                + autoInc + " without FORCE option, using " + current + " instead");
         }
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-        return updateSchemaVersion(dc, job);
+        return TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
     }
 
     public Pair<Long, String> onResetAutoInc(DdlContext dc, DdlJob job) {
