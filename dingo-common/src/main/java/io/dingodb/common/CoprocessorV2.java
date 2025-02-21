@@ -48,5 +48,8 @@ public class CoprocessorV2 {
     private int limit;
 
     @Setter
+    private boolean forAggCount;
+
+    @Setter
     private int codecVersion;
 }
