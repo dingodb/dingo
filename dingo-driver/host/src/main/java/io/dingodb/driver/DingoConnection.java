@@ -66,6 +66,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -578,6 +579,21 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             return context.getUsedSchema().getName();
         }
         return "dingo";
+    }
+
+    @Override
+    public SQLWarning getWarnings() {
+        List<SQLWarning> warningList = this.context.getWarningList();
+        SQLWarning warning = null;
+        if (!warningList.isEmpty()) {
+            warning = warningList.get(0);
+        }
+        return warning;
+    }
+
+    @Override
+    public void clearWarnings() throws SQLException {
+        this.context.getWarningList().clear();
     }
 
     public void removeLockDDLJobs(Map<Long, Long> jobsVerMap, Map<Long, String> jobsIdsMap) {

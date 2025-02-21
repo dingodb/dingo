@@ -189,6 +189,7 @@ import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDupKeyName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
@@ -1686,9 +1687,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
         if (hasInc) {
-            DdlService.root().rebaseAutoInc(
+            String warning = DdlService.root().rebaseAutoInc(
                 schema.getSchemaName(), tableName, table.getTableId().seq, alterAutoIncrement.autoInc
             );
+            alterAutoIncrement.setWarning(warning);
         }
     }
 
@@ -1744,6 +1746,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(originIndexName));
         if (!hasIndex) {
             throw DingoErrUtil.newStdErr(ErrKeyDoesNotExist, originIndexName, tableName);
+        }
+
+        hasIndex = table.getIndexes().stream()
+            .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(sqlAlterRenameIndex.toIndexName));
+        if (hasIndex) {
+            throw DingoErrUtil.newStdErr(ErrDupKeyName, sqlAlterRenameIndex.toIndexName);
         }
 
         DdlService.root().renameIndex(
@@ -2081,20 +2089,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         });
                         newColumn.setDefaultValue(defaultVal);
                     } else {
-                        throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+                        throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                     }
                 } else if (type instanceof MapType) {
                     if (defaultVal.toUpperCase().startsWith("MAP[") && defaultVal.endsWith("]")) {
                         defaultVal = defaultVal.substring(4, defaultVal.length() - 1);
                         int itemSize = defaultVal.split(",").length;
                         if (itemSize % 2 != 0) {
-                            throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+                            throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                         }
                         newColumn.setDefaultValue(defaultVal);
                     }
                 }
             } catch (Exception e) {
-                throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getDefaultValue()).ex();
+                throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
             }
         }
 
@@ -2770,6 +2778,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (exception != null) {
             throw exception;
         }
+        validateAddColumn(toColDef);
         // checkModifyCharsetAndCollation
     }
 

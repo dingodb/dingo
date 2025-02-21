@@ -23,15 +23,24 @@ public class DingoErr {
     public String state;
     public String errorMsg;
     public boolean encodeError;
+    public String warning;
 
     public DingoErr() {
 
     }
 
+    public DingoErr(String warning) {
+        this.warning = warning;
+    }
+
     public DingoErr(int errorCode, String state, String errorMsg) {
         this.errorCode = errorCode;
         this.state = state;
-        this.errorMsg = errorMsg;
+        if (errorMsg == null) {
+            this.errorMsg = "NullPointException";
+        } else {
+            this.errorMsg = errorMsg;
+        }
     }
 
     public void fillErrorByArgs(Object... param) {

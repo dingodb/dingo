@@ -70,7 +70,6 @@ import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.grammar.dql.SqlStartGc;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.program.DecorrelateProgram;
-import io.dingodb.calcite.program.DingoPrograms;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
 import io.dingodb.calcite.rel.LogicalForUpdate;
@@ -110,6 +109,7 @@ import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSetOption;
@@ -122,6 +122,7 @@ import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
+import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -129,6 +130,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.SQLWarning;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -377,17 +379,20 @@ public class DingoParser {
             }
         }
         final Program program = Programs.ofRules(builder.build());
-        Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
+        // Seems the only way to prevent rex simplifying in optimization.
+        try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
 
-        Program subQueryProgram = DingoPrograms.subQuery(cluster.getMetadataProvider());
-        RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
+            Program subQueryProgram = Programs.subQuery(cluster.getMetadataProvider());
+            RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
 
-        DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
-        RelNode relNode2 = decorrelateProgram.run(
-            planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of()
-        );
-        timeCtx.stop();
-        return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
+            DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
+            RelNode relNode2 = decorrelateProgram.run(
+                planner, relNode1, traitSet, ImmutableList.of(), ImmutableList.of()
+            );
+            timeCtx.stop();
+            return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
+        }
     }
 
     protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
@@ -505,6 +510,16 @@ public class DingoParser {
             long safePointTs = currentTime - (gcLifeTime * 1000);
             return TsoService.getDefault().tso(safePointTs);
         }
+    }
+
+    public SQLWarning getWarning(SqlNode sqlNode) {
+        if (sqlNode instanceof SqlAlterAutoIncrement) {
+            SqlAlterAutoIncrement alterAutoIncrement = (SqlAlterAutoIncrement) sqlNode;
+            if (alterAutoIncrement.getWarning() != null) {
+                return new SQLWarning(alterAutoIncrement.getWarning(), "1105");
+            }
+        }
+        return null;
     }
 
 }

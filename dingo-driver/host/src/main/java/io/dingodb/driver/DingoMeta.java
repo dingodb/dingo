@@ -210,7 +210,13 @@ public class DingoMeta extends MetaImpl {
     @NonNull
     private Iterator<Object[]> createIterator(@NonNull AvaticaStatement statement) {
         if (statement instanceof DingoStatement) {
-            return ((DingoStatement) statement).createIterator(jobManager);
+            Iterator<Object[]> result = ((DingoStatement) statement).createIterator(jobManager);
+            try {
+                connection.clearWarnings();
+            } catch (SQLException e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+            return result;
         } else if (statement instanceof DingoPreparedStatement) {
             return ((DingoPreparedStatement) statement).createIterator(jobManager);
         }
