@@ -194,7 +194,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         return cleanName(name, "Schema");
     }
 
-    private static String cleanName(String name, String source) {
+    public static String cleanName(String name, String source) {
         if (warnPattern.matcher(name).matches()) {
             LogUtils.warn(log, "{} name currently only supports uppercase letters, LowerCase -> UpperCase",
                 source);
