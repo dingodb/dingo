@@ -164,7 +164,7 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
     }
 
     @Override
-    public void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
+    public String rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
         SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schemaName);
         long schemaId = schemaInfo.getSchemaId();
         DdlJob job = DdlJob.builder()
@@ -178,6 +178,7 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         args.add(autoInc);
         job.setArgs(args);
         DdlHandler.doDdlJob(job);
+        return job.getWarning();
     }
 
     @Override

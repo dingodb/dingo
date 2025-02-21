@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -26,6 +28,10 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 public class SqlAlterAutoIncrement extends SqlAlterTable {
 
     public Long autoInc;
+
+    @Getter
+    @Setter
+    private String warning;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE INCREMENT", SqlKind.ALTER_TABLE);

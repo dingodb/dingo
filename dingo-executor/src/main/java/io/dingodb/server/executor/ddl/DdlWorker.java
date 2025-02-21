@@ -78,6 +78,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrDBCreateExists;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDBDropExists;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDupFieldName;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDupKeyName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrInvalidDDLState;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
@@ -354,7 +355,7 @@ public class DdlWorker {
         }
 
         if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
-            synchronized (infoSchemaService) {
+            synchronized (DdlContext.INSTANCE) {
                 schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                 SchemaInfo schemaInfoTmp = infoSchemaService.getSchema(schemaInfo.getName());
                 if (schemaInfoTmp != null && schemaInfoTmp.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
@@ -508,7 +509,10 @@ public class DdlWorker {
         try {
             ms.truncateTable(job.getTableName(), newTableId, job.getId());
         } catch (Exception e) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(e.getMessage()));
+            job.setState(JobState.jobStateCancelled);
             LogUtils.error(log, "truncate table error", e);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
         }
         //job.setTableId(tableId);
         Pair<Long, String> res = updateSchemaVersion(dc, job);
@@ -1791,6 +1795,8 @@ public class DdlWorker {
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
             return Pair.of(0L, tableRes.getValue());
         }
+        TableDefinitionWithId withId = tableRes.getKey();
+        withId.getTableDefinition().setAutoIncrement(autoInc);
 
         AutoIncrementService autoIncrementService = AutoIncrementService.INSTANCE;
         io.dingodb.server.executor.common.DingoCommonId dingoCommonId
@@ -1800,9 +1806,12 @@ public class DdlWorker {
         long current = autoIncrementService.current(dingoCommonId);
         if (autoInc > current) {
             autoIncrementService.updateIncrement(dingoCommonId, autoInc);
+        } else {
+            job.setWarning("can not reset AUTO_INCREMENT to "
+                + autoInc + " without FORCE option, using " + current + " instead");
         }
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-        return updateSchemaVersion(dc, job);
+        return TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
     }
 
     public Pair<Long, String> onResetAutoInc(DdlContext dc, DdlJob job) {
@@ -1843,25 +1852,43 @@ public class DdlWorker {
         }
         String toName = job.getArgs().get(1).toString();
         String originName = job.getArgs().get(0).toString();
+        try {
+            io.dingodb.store.proxy.meta.MetaService.cleanName(toName, "Index");
+        } catch (Exception e) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, e.getMessage());
+        }
         Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
             return Pair.of(0L, tableRes.getValue());
         }
-        List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
-        TableDefinitionWithId indexWithId = indexList.stream()
-            .map(idxTable -> (TableDefinitionWithId)idxTable)
-            .filter(idxTable ->
-            idxTable.getTableDefinition().getName().endsWith(originName)
-            || idxTable.getTableDefinition().getName().endsWith(originName.toUpperCase())).findFirst().orElse(null);
-        if (indexWithId == null) {
-            job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, originName, job.getTableName()));
-            return Pair.of(0L, job.getDingoErr().errorMsg);
-        }
-        toName = job.getTableName() + "." + toName;
-        indexWithId.getTableDefinition().setName(toName);
+        synchronized (dc) {
+            List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
+            TableDefinitionWithId indexWithId = indexList.stream()
+                .map(idxTable -> (TableDefinitionWithId) idxTable)
+                .filter(idxTable ->
+                    idxTable.getTableDefinition().getName().endsWith(originName)
+                        || idxTable.getTableDefinition().getName().endsWith(originName.toUpperCase())).findFirst().orElse(null);
+            if (indexWithId == null) {
+                job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, originName, job.getTableName()));
+                return Pair.of(0L, job.getDingoErr().errorMsg);
+            }
+            TableDefinitionWithId toIndex = indexList.stream().map(idxTable -> (TableDefinitionWithId) idxTable)
+                .filter(idxTable ->
+                    idxTable.getTableDefinition().getName().endsWith(toName)
+                        || idxTable.getTableDefinition().getName().endsWith(toName.toUpperCase()))
+                .findFirst().orElse(null);
+            if (toIndex != null) {
+                job.setDingoErr(DingoErrUtil.newInternalErr(ErrDupKeyName, toName));
+                return Pair.of(0L, job.getDingoErr().errorMsg);
+            }
 
-        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-        return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+            String toNameTmp = job.getTableName() + "." + toName;
+            indexWithId.getTableDefinition().setName(toNameTmp);
+
+            job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+            return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+        }
     }
 
     public Pair<Long, String> onModifyComment(DdlContext dc, DdlJob job) {

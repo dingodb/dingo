@@ -1079,6 +1079,7 @@ void AddArg0(List<SqlNode> list, ExprContext exprContext) :
         LOOKAHEAD(3)
         e = TableParam()
     |
+        LOOKAHEAD(2)
         e = PartitionedQueryOrQueryOrExpr(firstExprContext)
     |
         e = TableFunctionCall()
@@ -1107,6 +1108,7 @@ void AddArg(List<SqlNode> list, ExprContext exprContext) :
     |
         e = Expression(exprContext)
     |
+        LOOKAHEAD(2)
         e = TableParam()
     |
         e = TableFunctionCall()
@@ -1412,9 +1414,9 @@ SqlNode SqlSelect() :
         ( groupBy = GroupBy() | { groupBy = null; } )
         ( having = Having() | { having = null; } )
         ( windowDecls = Window() | { windowDecls = null; } )
-        [ exportOptions = exportOptions() ]
-        [ <FOR> <UPDATE> { forUpdate=true; }]
-        [ <AS> <OF> { flashbackQuery = true; }
+        [ LOOKAHEAD(2) exportOptions = exportOptions() ]
+        [ LOOKAHEAD(2) <FOR> <UPDATE> { forUpdate=true; }]
+        [ LOOKAHEAD(2) <AS> <OF> { flashbackQuery = true; }
          (
            <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
            |
@@ -1490,8 +1492,8 @@ SqlNode SqlTraceSelect() :
         ( windowDecls = Window() | { windowDecls = null; } )
         ( orderBy = OrderBy(true) | { orderBy = null; } )
         [ LimitClause(s, offsetFetch) ]
-        [ exportOptions = exportOptions() ]
-        [ <FOR> <UPDATE> { forUpdate=true; }]
+        [ LOOKAHEAD(2) exportOptions = exportOptions() ]
+        [ LOOKAHEAD(2) <FOR> <UPDATE> { forUpdate=true; }]
     |
         E() {
             fromClause = null;
@@ -1542,15 +1544,12 @@ ExportOptions exportOptions(): {
      ]
      [
          <LINES>
-                 [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
+                 ( <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
                                    [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-                 ]
-                 [ <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
+                 |
+                 <TERMINATED> <BY> [<QUOTED_STRING> { lineTerminated = getSpecialBytes(token.image); } ]
                                      [<BINARY_STRING_LITERAL> { lineTerminated = getSpecialHexBytes(token.image); }]
-                 ]
-                 [ <STARTING> <BY> [<QUOTED_STRING> { lineStarting = getSpecialBytes(token.image); }]
-                                   [<BINARY_STRING_LITERAL> { lineStarting = getSpecialHexBytes(token.image); }]
-                 ]
+                 )*
      ]
      [ <STARTTS> (<UNSIGNED_INTEGER_LITERAL> | <DECIMAL_NUMERIC_LITERAL>) { startTs = Long.parseLong(token.image); }]
      {
@@ -2447,7 +2446,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
         [ tableRef = ExtendTable(tableRef) ]
         tableRef = Over(tableRef)
-        [ tableRef = Snapshot(tableRef) ]
+        [ LOOKAHEAD(2) tableRef = Snapshot(tableRef) ]
         [ tableRef = MatchRecognize(tableRef) ]
     |
         LOOKAHEAD(2)
@@ -2460,6 +2459,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         <UNNEST> { s = span(); }
         args = ParenthesizedQueryOrCommaList(ExprContext.ACCEPT_SUB_QUERY)
         [
+            LOOKAHEAD(2)
             <WITH> <ORDINALITY> {
                 unnestOp = SqlStdOperatorTable.UNNEST_WITH_ORDINALITY;
             }
@@ -2485,7 +2485,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
         tableRef = Unpivot(tableRef)
     ]
     [
-        [ <AS> ]
+        [ LOOKAHEAD(2) <AS> ]
         (
           alias = SimpleIdentifier()
          |
@@ -3771,6 +3771,7 @@ SqlNode LeafQueryOrExpr(ExprContext exprContext) :
     SqlNode e;
 }
 {
+    LOOKAHEAD(2)
     e = LeafQuery(exprContext) { return e; }
 |
     e = Expression(exprContext) { return e; }
@@ -4342,6 +4343,7 @@ SqlNode AtomicRowExpression() :
         LOOKAHEAD( [<SPECIFIC>] FunctionName() <LPAREN>)
         e = NamedFunctionCall()
     |
+        LOOKAHEAD(2)
         e = ContextVariable()
     |
         e = CompoundIdentifier()
@@ -4435,7 +4437,8 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         <SET> {
             s.add(this);
         }
-        [
+        (
+             LOOKAHEAD(2)
              <PASSWORD> <FOR>
              ( <QUOTED_STRING> | <IDENTIFIER> )
               { user = token.image; }
@@ -4448,14 +4451,18 @@ SqlSetOption SqlSetOption(Span s, String scope) :
               {
                 return new SqlSetPassword(s.end(this), user, host, password);
               }
-        ]
+        |
         (
-        [ <COMMA> ]
-        [ <GLOBAL> { scope = "SYSTEM"; } ]
-        [ <SESSION> { scope = "SESSION"; } ]
-        [ <EXECUTOR> { scope = "EXECUTOR"; } ]
-        [ <AT_SPLIT> { scope = "USER"; } ]
-        [ <AT_SPLIT_2> { scope = "GLOBAL"; } ]
+         LOOKAHEAD(2)<GLOBAL> { scope = "SYSTEM"; }
+         |
+         LOOKAHEAD(2)<SESSION> { scope = "SESSION"; }
+         |
+         <EXECUTOR> { scope = "EXECUTOR"; }
+         |
+         <AT_SPLIT> { scope = "USER"; }
+         |
+         <AT_SPLIT_2> { scope = "GLOBAL"; }
+         |
         name = CompoundIdentifier()
         (
          <UTF8> {
@@ -4468,13 +4475,17 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             return new SqlSetOption(s.end(this), scope, name, val);
          }
         |
-         (<QUOTED_STRING> <COLLATE> <QUOTED_STRING>
-         |
+          <QUOTED_STRING> <COLLATE> <QUOTED_STRING>
+        |
          <ISOLATION> <LEVEL>
-         [<READ> [<MINUS>] [ <COMMITTED> { val = new SqlIdentifier("read-committed", s.end(this)); } ] [<UNCOMMITTED> { val = new SqlIdentifier("read-uncommitted", s.end(this)); }]  ]
-         [<REPEATABLE> [<MINUS>] <READ> { val = new SqlIdentifier("repeatable-read", s.end(this)); } ]
-         [<SERIALIZABLE> { val = new SqlIdentifier(token.image, s.end(this)); }]
-         ){
+          (
+           <READ> [<MINUS>] ( <COMMITTED> { val = new SqlIdentifier("read-committed", s.end(this)); } | <UNCOMMITTED> { val = new SqlIdentifier("read-uncommitted", s.end(this)); })
+           |
+           <REPEATABLE> [<MINUS>] <READ> { val = new SqlIdentifier("repeatable-read", s.end(this)); }
+           |
+           <SERIALIZABLE> { val = new SqlIdentifier(token.image, s.end(this)); }
+          )
+         {
             if (name.names.size() != 1 || !name.names.get(0).equalsIgnoreCase("transaction")) {
                throw new RuntimeException("Syntax error");
             }
@@ -4485,7 +4496,7 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             return new SqlSetOption(s.end(this), scope, name, val);
          }
         |
-          <READ> [<WRITE> { val = new SqlIdentifier("off", s.end(this)); }]{
+          <READ> {
              name = new SqlIdentifier("transaction_read_only", name.getParserPosition());
              if (val == null) {
                val = new SqlIdentifier("on", s.end(this));
@@ -4513,8 +4524,10 @@ SqlSetOption SqlSetOption(Span s, String scope) :
              val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
            }
         )
+        [ <COMMA> ]
         )
         )*
+        )
         {
             if (scope == null) {
                scope = "session";
@@ -5417,17 +5430,17 @@ SqlIntervalQualifier TimeUnitOrName() : {
 {
     LOOKAHEAD(2)
     <NANOSECOND> { return new SqlIntervalQualifier(TimeUnit.NANOSECOND, null, getPos()); }
-|   <MICROSECOND> { return new SqlIntervalQualifier(TimeUnit.MICROSECOND, null, getPos()); }
-|   <MILLISECOND> { return new SqlIntervalQualifier(TimeUnit.MILLISECOND, null, getPos()); }
+|   LOOKAHEAD(2) <MICROSECOND> { return new SqlIntervalQualifier(TimeUnit.MICROSECOND, null, getPos()); }
+|   LOOKAHEAD(2) <MILLISECOND> { return new SqlIntervalQualifier(TimeUnit.MILLISECOND, null, getPos()); }
 |   <SECOND> { return new SqlIntervalQualifier(TimeUnit.SECOND, null, getPos()); }
 |   <MINUTE> { return new SqlIntervalQualifier(TimeUnit.MINUTE, null, getPos()); }
 |   <HOUR> { return new SqlIntervalQualifier(TimeUnit.HOUR, null, getPos()); }
 |   <DAY> { return new SqlIntervalQualifier(TimeUnit.DAY, null, getPos()); }
-|   <DOW> { return new SqlIntervalQualifier(TimeUnit.DOW, null, getPos()); }
-|   <DOY> { return new SqlIntervalQualifier(TimeUnit.DOY, null, getPos()); }
-|   <ISODOW> { return new SqlIntervalQualifier(TimeUnit.ISODOW, null, getPos()); }
-|   <ISOYEAR> { return new SqlIntervalQualifier(TimeUnit.ISOYEAR, null, getPos()); }
-|   <WEEK> { span = span(); }
+|   LOOKAHEAD(2) <DOW> { return new SqlIntervalQualifier(TimeUnit.DOW, null, getPos()); }
+|   LOOKAHEAD(2) <DOY> { return new SqlIntervalQualifier(TimeUnit.DOY, null, getPos()); }
+|   LOOKAHEAD(2) <ISODOW> { return new SqlIntervalQualifier(TimeUnit.ISODOW, null, getPos()); }
+|   LOOKAHEAD(2) <ISOYEAR> { return new SqlIntervalQualifier(TimeUnit.ISOYEAR, null, getPos()); }
+|   LOOKAHEAD(2) <WEEK> { span = span(); }
     (
         LOOKAHEAD(2)
         <LPAREN> w = weekdayName() <RPAREN> {
@@ -5437,12 +5450,12 @@ SqlIntervalQualifier TimeUnitOrName() : {
         { return new SqlIntervalQualifier(TimeUnit.WEEK, null, getPos()); }
     )
 |   <MONTH> { return new SqlIntervalQualifier(TimeUnit.MONTH, null, getPos()); }
-|   <QUARTER> { return new SqlIntervalQualifier(TimeUnit.QUARTER, null, getPos()); }
+|   LOOKAHEAD(2) <QUARTER> { return new SqlIntervalQualifier(TimeUnit.QUARTER, null, getPos()); }
 |   <YEAR> { return new SqlIntervalQualifier(TimeUnit.YEAR, null, getPos()); }
-|   <EPOCH> { return new SqlIntervalQualifier(TimeUnit.EPOCH, null, getPos()); }
-|   <DECADE> { return new SqlIntervalQualifier(TimeUnit.DECADE, null, getPos()); }
-|   <CENTURY> { return new SqlIntervalQualifier(TimeUnit.CENTURY, null, getPos()); }
-|   <MILLENNIUM> { return new SqlIntervalQualifier(TimeUnit.MILLENNIUM, null, getPos()); }
+|   LOOKAHEAD(2) <EPOCH> { return new SqlIntervalQualifier(TimeUnit.EPOCH, null, getPos()); }
+|   LOOKAHEAD(2) <DECADE> { return new SqlIntervalQualifier(TimeUnit.DECADE, null, getPos()); }
+|   LOOKAHEAD(2) <CENTURY> { return new SqlIntervalQualifier(TimeUnit.CENTURY, null, getPos()); }
+|   LOOKAHEAD(2) <MILLENNIUM> { return new SqlIntervalQualifier(TimeUnit.MILLENNIUM, null, getPos()); }
 |   unitName = SimpleIdentifier() {
         return new SqlIntervalQualifier(unitName.getSimple(),
             unitName.getParserPosition());
@@ -7084,6 +7097,7 @@ SqlCall DateTruncFunctionCall() :
     // the BigQuery variant, e.g. "DATE_TRUNC(d, YEAR)",
     // and the Redshift variant, e.g. "DATE_TRUNC('year', DATE '2008-09-08')".
     (
+        LOOKAHEAD(2)
         unit = TimeUnitOrName() { args.add(unit); }
     |
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
@@ -7511,6 +7525,7 @@ SqlIdentifier FunctionName() :
 }
 {
     (
+        LOOKAHEAD(2)
         qualifiedName = CompoundIdentifier()
     |
         qualifiedName = ReservedFunctionName()
@@ -7703,6 +7718,7 @@ SqlNode JdbcFunctionCall() :
             LOOKAHEAD(1)
             ( <INSERT> | <LEFT> | <RIGHT> | <TRUNCATE> ) { name = unquotedIdentifier(); }
         |
+            LOOKAHEAD(2)
             // For cases like {fn power(1,2)} and {fn lower('a')}
             id = ReservedFunctionName() { name = id.getSimple(); }
         |

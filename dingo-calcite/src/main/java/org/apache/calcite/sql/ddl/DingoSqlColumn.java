@@ -52,6 +52,9 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
         String collate
     ) {
         super(pos, name, dataType, expression, strategy);
+        if (comment != null) {
+            comment = comment.startsWith("'") ? comment.substring(1, comment.length() - 1) : comment;
+        }
         this.autoIncrement = autoIncrement;
         this.comment = comment;
         this.primaryKey = primary;

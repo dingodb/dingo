@@ -113,6 +113,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -306,6 +307,8 @@ public final class DingoDriverParser extends DingoParser {
                     beforeDdl(connection, sqlNode);
                     final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
                     ddlExecutor.executeDdl(connection, sqlNode);
+                    SQLWarning warning = getWarning(sqlNode);
+                    connection.getContext().addWarning(warning);
                     break;
                 } catch (IllegalArgumentException e) {
                     // Method not found:

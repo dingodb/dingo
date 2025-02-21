@@ -118,8 +118,8 @@ public interface DdlService {
 
     void dropSequence(String sequenceName, String connId);
 
-    default void rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
-
+    default String rebaseAutoInc(String schemaName, String tableName, long tableId, long autoInc) {
+        return null;
     }
 
     default void resetAutoInc() {

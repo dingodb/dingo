@@ -463,8 +463,11 @@ public class InfoSchemaBuilder {
     }
 
     public Pair<List<Long>, String> applyRebaseAuto(SchemaDiff diff) {
-        MetaService.root().rebaseAutoInc(
-            new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId())
+        Table table = InfoSchemaService.root().getTableDef(diff.getSchemaId(), diff.getTableId());
+        long autoId = table.getAutoIncrement();
+        autoId--;
+        MetaService.root().updateAutoIncrement(
+            new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()), autoId
         );
         List<Long> tableIdList = new ArrayList<>();
         tableIdList.add(diff.getTableId());

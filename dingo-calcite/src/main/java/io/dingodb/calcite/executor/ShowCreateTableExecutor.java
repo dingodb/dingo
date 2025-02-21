@@ -146,6 +146,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             if (column.isAutoIncrement()) {
                 createTableSqlStr.append(" auto_increment");
             }
+            if (StringUtils.isNotEmpty(column.getComment())) {
+                createTableSqlStr.append(" COMMENT ").append(" '").append(column.getComment()).append("'");
+            }
             if (i < colSize - 1) {
                 createTableSqlStr.append(",");
             }

@@ -80,7 +80,7 @@ public final class DingoParserContext implements Context {
 
     @Setter
     @Getter
-    private List<SQLWarning> warningList;
+    private List<SQLWarning> warningList = new ArrayList<>();
 
     @Getter
     private final Properties sessionVariables;
@@ -248,6 +248,13 @@ public final class DingoParserContext implements Context {
 
     public boolean keyExists(String field) {
         return options != null && options.containsKey(field);
+    }
+
+    public void addWarning(SQLWarning warning) {
+        this.getWarningList().clear();
+        if (warning != null) {
+            this.getWarningList().add(warning);
+        }
     }
 
     public synchronized void setUsedSchema(CalciteSchema schema) {
