@@ -18,7 +18,11 @@ package io.dingodb.exec.codec;
 
 import io.dingodb.common.type.DingoTypeVisitorBase;
 import io.dingodb.common.type.IntervalDayType;
+import io.dingodb.common.type.IntervalHourType;
+import io.dingodb.common.type.IntervalMinuteType;
 import io.dingodb.common.type.IntervalMonthType;
+import io.dingodb.common.type.IntervalSecondType;
+import io.dingodb.common.type.IntervalWeekType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.NullType;
@@ -154,6 +158,26 @@ public class AvroSchemaConverter extends DingoTypeVisitorBase<Schema, Void> {
 
     @Override
     public Schema visitIntervalDayType(@NonNull IntervalDayType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalWeekType(@NonNull IntervalWeekType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalHourType(@NonNull IntervalHourType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalMinuteType(@NonNull IntervalMinuteType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
+    }
+
+    @Override
+    public Schema visitIntervalSecondType(@NonNull IntervalSecondType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.STRING), type.isNullable());
     }
 }

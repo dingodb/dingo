@@ -20,20 +20,20 @@ plugins {
 }
 
 dependencies {
-    api group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
-    api group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
-    api group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
-    api project(':dingo-serial')
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
+    implementation project(':dingo-serial')
     implementation group: 'org.apache.commons', name: 'commons-text', version: 'commons-text'.v()
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: 'commons-pool2'.v()
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'jackson'.v()
-    compile group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
-    compile group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
-    compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
-    compile group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
-    compile group: 'com.google.guava', name: 'guava', version: 'guava'.v()
+    api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'jackson'.v()
+    api group: 'io.protostuff', name: 'protostuff-core', version: 'protostuff'.v()
+    api group: 'io.protostuff', name: 'protostuff-runtime', version: 'protostuff'.v()
+    api group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
+    api group: 'io.dropwizard.metrics', name: 'metrics-jmx', version: 'metrics-jmx'.v()
+    api group: 'com.google.guava', name: 'guava', version: 'guava'.v()
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
-    compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
+    implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
 }

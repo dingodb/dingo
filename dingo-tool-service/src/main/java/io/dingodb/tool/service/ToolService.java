@@ -41,14 +41,16 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
     public static final ToolService DEFAULT_INSTANCE = new ToolService();
 
     @AutoService(io.dingodb.tool.api.ToolServiceProvider.class)
-    public static final class ToolServiceProvider implements io.dingodb.tool.api.ToolServiceProvider{
+    public static final class ToolServiceProvider implements io.dingodb.tool.api.ToolServiceProvider {
 
         @Override
         public ToolService get() {
             return DEFAULT_INSTANCE;
         }
     }
+
     private final Set<Location> coordinators;
+
     private ToolService() {
         coordinators = Services.parse(DingoConfiguration.instance().find("coordinators", String.class));
     }
@@ -95,11 +97,19 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
                 .algorithmType(algorithmType)
                 .metricType(metricType)
                 .opLeftVectors(distance.getLeftList().stream()
-                    .map(l -> Vector.builder().floatValues(l).dimension(distance.getDimension()).valueType(ValueType.FLOAT).build())
-                    .collect(Collectors.toList()))
+                    .map(l -> Vector.builder()
+                        .floatValues(l)
+                        .dimension(distance.getDimension())
+                        .valueType(ValueType.FLOAT)
+                        .build()
+                    ).collect(Collectors.toList()))
                 .opRightVectors(distance.getRightList().stream()
-                    .map(r -> Vector.builder().valueType(ValueType.FLOAT).dimension(distance.getDimension()).floatValues(r).build())
-                    .collect(Collectors.toList()))
+                    .map(r -> Vector.builder()
+                        .valueType(ValueType.FLOAT)
+                        .dimension(distance.getDimension())
+                        .floatValues(r)
+                        .build()
+                    ).collect(Collectors.toList()))
                 .isReturnNormlize(false)
                 .build();
         }

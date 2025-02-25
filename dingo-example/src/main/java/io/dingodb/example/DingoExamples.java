@@ -124,7 +124,7 @@ public class DingoExamples {
             case "JDBC": // operating a table using SQL
                 Class.forName("io.dingodb.driver.client.DingoDriverClient");
                 runOperation(new JDBCRunner(
-                    table.toUpperCase(), DriverManager.getConnection(
+                    table, DriverManager.getConnection(
                         DingoDriverClient.CONNECT_STRING_PREFIX + "url=" + jdbcUrl, "root", "123123")
                 ));
                 break;
@@ -134,7 +134,7 @@ public class DingoExamples {
                 String coordinatorServerList = Configuration.coordinatorExchangeSvrList();
                 DingoClient dingoClient = new DingoClient(coordinatorServerList, 10);
                 runOperation(new SDKRunner(
-                    table.toUpperCase(),
+                    table,
                     dingoClient)
                 );
                 break;
@@ -146,7 +146,7 @@ public class DingoExamples {
                 String coordinatorserverlist = Configuration.coordinatorExchangeSvrList();
                 DingoClient dingoClient1 = new DingoClient(coordinatorserverlist, 10);
                 runOperation(new OpCliRunner(
-                    table.toUpperCase(),
+                    table,
                     dingoClient1)
                 );
                 break;

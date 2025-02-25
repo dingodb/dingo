@@ -92,11 +92,11 @@ public class ExecProfile extends Profile {
 
     @Override
     public String toString() {
-        return "Exec{" +
-            "duration=" + duration +
-            ", start=" + start +
-            ", end=" + end +
-            '}';
+        return "Exec{"
+            + "duration=" + duration
+            + ", start=" + start
+            + ", end=" + end
+            + '}';
     }
 
     public void clear() {

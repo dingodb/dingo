@@ -21,4 +21,5 @@ plugins {
 
 dependencies {
     implementation project(':dingo-common')
+    implementation group: 'com.google.guava', name: 'guava', version: 'guava'.v()
 }

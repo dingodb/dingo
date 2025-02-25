@@ -481,6 +481,7 @@ public class Gc {
     }
 
     private static void gcDeleteRange(long startTs) {
+        // TODO
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type"
             + " from mysql.gc_delete_range where ts<" + startTs;
         LogUtils.info(log, "gcDeleteRange sql:{}", sql);

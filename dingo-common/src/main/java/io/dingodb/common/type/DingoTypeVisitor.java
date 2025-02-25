@@ -68,4 +68,12 @@ public interface DingoTypeVisitor<R, T> {
     R visitIntervalMonthType(@NonNull IntervalMonthType type, T obj);
 
     R visitIntervalDayType(@NonNull IntervalDayType type, T obj);
+
+    R visitIntervalWeekType(@NonNull IntervalWeekType type, T obj);
+
+    R visitIntervalHourType(@NonNull IntervalHourType type, T obj);
+
+    R visitIntervalMinuteType(@NonNull IntervalMinuteType type, T obj);
+
+    R visitIntervalSecondType(@NonNull IntervalSecondType type, T obj);
 }

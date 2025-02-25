@@ -21,6 +21,7 @@ dependencies {
     implementation group: 'io.netty', name: 'netty-all', version: 'netty'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
 
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation 'com.unboundid:unboundid-ldapsdk:3.2.0'
@@ -36,4 +37,8 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

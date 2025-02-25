@@ -41,6 +41,7 @@ import java.util.function.Function;
 
 @Slf4j
 public final class JobTableUtil {
+    // TODO
     private static final String updateDDLJobSQL = "update mysql.dingo_ddl_job set job_meta = '%s' where job_id = %d";
     private static final String getJobSQL = "select job_meta, processing, job_id from mysql.dingo_ddl_job where "
         + "job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) "

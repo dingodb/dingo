@@ -20,7 +20,11 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.common.type.IntervalDayTimeType;
 import io.dingodb.expr.common.type.IntervalDayType;
+import io.dingodb.expr.common.type.IntervalHourType;
+import io.dingodb.expr.common.type.IntervalMinuteType;
 import io.dingodb.expr.common.type.IntervalMonthType;
+import io.dingodb.expr.common.type.IntervalSecondType;
+import io.dingodb.expr.common.type.IntervalWeekType;
 import io.dingodb.expr.common.type.IntervalYearType;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprCompiler;
@@ -135,6 +139,30 @@ public class RexLiteralConverter implements DataConverter {
                 return new IntervalDayType.IntervalDay(value, element);
             } else {
                 return new IntervalDayType.IntervalDay(value, type);
+            }
+        } else if (IntervalWeekType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalWeekType.IntervalWeek(value, element);
+            } else {
+                return new IntervalWeekType.IntervalWeek(value, type);
+            }
+        } else if (IntervalHourType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalHourType.IntervalHour(value, element);
+            } else {
+                return new IntervalHourType.IntervalHour(value, type);
+            }
+        } else if (IntervalMinuteType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalMinuteType.IntervalMinute(value, element);
+            } else {
+                return new IntervalMinuteType.IntervalMinute(value, type);
+            }
+        } else if (IntervalSecondType.class.isAssignableFrom(type.getClass())) {
+            if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalSecondType.IntervalSecond(value, element);
+            } else {
+                return new IntervalSecondType.IntervalSecond(value, type);
             }
         }
         return null;

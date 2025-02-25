@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -35,29 +36,29 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+
+@Getter
 @JsonTypeName("scan0")
 @JsonPropertyOrder({
     "tableId",
     "schema",
     "keyMapping",
 })
+@JsonAutoDetect(fieldVisibility = ANY)
 public class ScanParam extends AbstractParams {
-    @Getter
     @JsonProperty("table")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId tableId;
-    @Getter
+    public final CommonId tableId;
     @JsonProperty("schema")
-    protected final DingoType schema;
-    @Getter
+    public final DingoType schema;
     @JsonProperty("keyMapping")
-    protected final TupleMapping keyMapping;
+    public final TupleMapping keyMapping;
 
-    @Getter
-    protected List<Profile> profileList;
-    protected int schemaVersion;
-    protected int codecVersion;
+    public List<Profile> profileList;
+    public int schemaVersion;
+    public int codecVersion;
 
     public ScanParam(
         CommonId tableId,

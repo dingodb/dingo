@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
+import io.dingodb.calcite.rel.LogicalForUpdate;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.HybridNodeUtils;
@@ -37,6 +38,7 @@ import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.runtime.CalciteContextException;
@@ -116,10 +118,13 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
     @Override
     public RelNode toRel(RelOptTable.@NonNull ToRelContext context, RelOptTable relOptTable) {
         DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
+        boolean forUpdate = context.getCluster()
+            .getHintStrategies()
+            .validateHint(RelHint.builder("for_update").build());
         if (dingoTable.getTable().getTableType() == null
             || (!dingoTable.getTable().getTableType().equalsIgnoreCase("VIEW"))
             || dingoTable.getSchema().getSchemaName().equalsIgnoreCase("INFORMATION_SCHEMA")) {
-            return new LogicalDingoTableScan(
+            LogicalDingoTableScan logicalDingoTableScan = new LogicalDingoTableScan(
                 context.getCluster(),
                 context.getCluster().traitSet(),
                 context.getTableHints(),
@@ -132,6 +137,10 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
                 ((DingoParserContext) context.getCluster().getPlanner().getContext()).isPushDown(),
                 false
             );
+            if (forUpdate) {
+                return new LogicalForUpdate(context.getCluster(), context.getCluster().traitSet(), logicalDingoTableScan, relOptTable);
+            }
+            return logicalDingoTableScan;
         } else {
             SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
             SqlParser parser = SqlParser.create(dingoTable.getTable().createSql, config);

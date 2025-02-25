@@ -31,9 +31,14 @@ allprojects {
         mavenCentral()
         maven {
             url 'http://packages.confluent.io/maven/'
+            allowInsecureProtocol = true
         }
 //        maven {
 //            url 'http://maven.aliyun.com/nexus/content/groups/public/'
 //        }
     }
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

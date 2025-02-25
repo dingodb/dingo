@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -26,25 +27,27 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.Getter;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 @Getter
+@JsonAutoDetect(fieldVisibility = ANY)
 public abstract class FilterProjectParam extends AbstractParams {
 
     @JsonProperty("tableId")
     @JsonSerialize(using = CommonId.JacksonSerializer.class)
     @JsonDeserialize(using = CommonId.JacksonDeserializer.class)
-    protected final CommonId tableId;
+    public final CommonId tableId;
     @JsonProperty("schema")
-    protected final DingoType schema;
+    public final DingoType schema;
     @JsonProperty("schemaVersion")
-    protected final int schemaVersion;
+    public final int schemaVersion;
     @JsonProperty("codecVersion")
-    protected final int codecVersion;
+    public final int codecVersion;
     @JsonProperty("filter")
-    protected SqlExpr filter;
+    public SqlExpr filter;
     @JsonProperty("selection")
-    protected TupleMapping selection;
+    public TupleMapping selection;
     @JsonProperty("keyMapping")
-    protected final TupleMapping keyMapping;
+    public final TupleMapping keyMapping;
 
     public FilterProjectParam(
         CommonId tableId,
@@ -84,3 +87,4 @@ public abstract class FilterProjectParam extends AbstractParams {
         }
     }
 }
+

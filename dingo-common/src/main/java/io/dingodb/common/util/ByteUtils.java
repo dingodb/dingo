@@ -16,8 +16,6 @@
 
 package io.dingodb.common.util;
 
-import javax.xml.bind.DatatypeConverter;
-
 public final class ByteUtils {
     private ByteUtils() {
     }
@@ -38,7 +36,4 @@ public final class ByteUtils {
         return (byte) "0123456789ABCDEF".indexOf(operand);
     }
 
-    public static String byteArrayToHexString(byte[] bytes) {
-        return DatatypeConverter.printHexBinary(bytes);
-    }
 }

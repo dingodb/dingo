@@ -31,7 +31,20 @@ import java.util.List;
 
 @Getter
 @JsonTypeName("txn_update")
-@JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "mapping", "updates", "hasAutoInc", "autoIncColIdx"})
+@JsonPropertyOrder({
+    "pessimisticTxn",
+    "isolationLevel",
+    "primaryLockKey",
+    "lockTimeOut",
+    "startTs",
+    "forUpdateTs",
+    "table",
+    "schema",
+    "keyMapping",
+    "mapping",
+    "updates",
+    "hasAutoInc",
+    "autoIncColIdx"})
 public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")

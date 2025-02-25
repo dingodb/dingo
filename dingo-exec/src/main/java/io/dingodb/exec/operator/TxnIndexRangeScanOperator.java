@@ -139,8 +139,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
-            if (param.getSelection() != null) {
-                iterator = Iterators.transform(iterator, param.getSelection()::revMap);
+            if (param.getSelection2() != null) {
+                iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
             return iterator;
         }
@@ -166,8 +166,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
-            if (param.getSelection() != null) {
-                iterator = Iterators.transform(iterator, param.getSelection()::revMap);
+            if (param.getSelection2() != null) {
+                iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
             return iterator;
         }
@@ -183,8 +183,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
         profile.time(start);
         Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
         iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
-        if (param.getSelection() != null) {
-            iterator = Iterators.transform(iterator, param.getSelection()::revMap);
+        if (param.getSelection2() != null) {
+            iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
         }
         return iterator;
     }

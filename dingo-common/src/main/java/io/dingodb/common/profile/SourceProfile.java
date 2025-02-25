@@ -60,7 +60,8 @@ public class SourceProfile extends Profile {
 
     public void mergeChild() {
         if (this.children != null && this.children.size() > 1) {
-            boolean res = this.children.stream().anyMatch(profile -> profile.duration == 0 && profile.getChildren().isEmpty());
+            boolean res = this.children.stream()
+                .anyMatch(profile -> profile.duration == 0 && profile.getChildren().isEmpty());
             if (!res) {
                 return;
             }
@@ -76,15 +77,15 @@ public class SourceProfile extends Profile {
 
     @Override
     public String toString() {
-        return "{" +
-            "type='" + type + '\'' +
-            ", start=" + start +
-            ", end=" + end +
-            ", count=" + count +
-            ", duration=" + duration +
-            ", max=" + max +
-            ", min=" + min +
-            ", avg=" + avg +
-            '}';
+        return "{"
+            + "type='" + type + '\''
+            + ", start=" + start
+            + ", end=" + end
+            + ", count=" + count
+            + ", duration=" + duration
+            + ", max=" + max
+            + ", min=" + min
+            + ", avg=" + avg
+            + '}';
     }
 }

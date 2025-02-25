@@ -268,9 +268,9 @@ public class ForUpdateOperator extends SoleOutOperator {
                 txnIdByte,
                 tableIdByte,
                 partIdByte);
-            keyValue.setKey(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.DELETE, dataKey));
+            keyValue.setKey(dataKey);
             localStore.put(keyValue);
-            return !context.isShow();
+            return !context.isShow() && vertex.getSoleEdge().transformToNext(context, tuple);
         }
         return true;
     }

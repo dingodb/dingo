@@ -16,7 +16,7 @@
     <option name="myDefaultNotNull" value="org.checkerframework.checker.nullness.qual.NonNull" />
     <option name="myNullables">
       <value>
-        <list size="12">
+        <list size="15">
           <item index="0" class="java.lang.String" itemvalue="android.support.annotation.Nullable" />
           <item index="1" class="java.lang.String" itemvalue="androidx.annotation.Nullable" />
           <item index="2" class="java.lang.String" itemvalue="androidx.annotation.RecentlyNullable" />
@@ -29,12 +29,15 @@
           <item index="9" class="java.lang.String" itemvalue="org.checkerframework.checker.nullness.qual.Nullable" />
           <item index="10" class="java.lang.String" itemvalue="org.eclipse.jdt.annotation.Nullable" />
           <item index="11" class="java.lang.String" itemvalue="org.jetbrains.annotations.Nullable" />
+          <item index="12" class="java.lang.String" itemvalue="org.jspecify.nullness.Nullable" />
+          <item index="13" class="java.lang.String" itemvalue="jakarta.annotation.Nullable" />
+          <item index="14" class="java.lang.String" itemvalue="org.jspecify.annotations.Nullable" />
         </list>
       </value>
     </option>
     <option name="myNotNulls">
       <value>
-        <list size="12">
+        <list size="15">
           <item index="0" class="java.lang.String" itemvalue="android.support.annotation.NonNull" />
           <item index="1" class="java.lang.String" itemvalue="androidx.annotation.NonNull" />
           <item index="2" class="java.lang.String" itemvalue="androidx.annotation.RecentlyNonNull" />
@@ -47,9 +50,12 @@
           <item index="9" class="java.lang.String" itemvalue="org.checkerframework.checker.nullness.qual.NonNull" />
           <item index="10" class="java.lang.String" itemvalue="org.eclipse.jdt.annotation.NonNull" />
           <item index="11" class="java.lang.String" itemvalue="org.jetbrains.annotations.NotNull" />
+          <item index="12" class="java.lang.String" itemvalue="jakarta.annotation.Nonnull" />
+          <item index="13" class="java.lang.String" itemvalue="org.jspecify.nullness.NonNull" />
+          <item index="14" class="java.lang.String" itemvalue="org.jspecify.annotations.NonNull" />
         </list>
       </value>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK" />
 </project>

@@ -18,10 +18,8 @@ plugins {
     id 'java-conventions'
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
 }
-
-apply plugin: 'maven'
-apply plugin: 'signing'
 
 dependencies {
     implementation project(':dingo-common')
@@ -47,10 +45,15 @@ tasks.register('fatJar', Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
 }
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
 
 fatJar.dependsOn([
-    ':dingo-common:jar'
+    ':dingo-common:jar',
+    ':dingo-serial:jar'
 ])
+
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")

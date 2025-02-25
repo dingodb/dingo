@@ -28,6 +28,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -127,6 +128,15 @@ public final class DefinitionMapper {
                 case INTERVAL_SECOND:
                 case INTERVAL_YEAR_MONTH:
                 case INTERVAL_DAY_HOUR:
+                    TimeUnitRange timeUnitRange = Optional.mapOrGet(
+                        relDataType.getIntervalQualifier(), __ -> __.timeUnitRange, () -> null);
+                    if (timeUnitRange == TimeUnitRange.WEEK) {
+                        return DingoTypeFactory.INSTANCE.interval(
+                            "INTERVAL_WEEK",
+                            relDataType.getSqlTypeName().getFamily().name(),
+                            relDataType.isNullable()
+                        );
+                    }
                     return DingoTypeFactory.INSTANCE.interval(
                         relDataType.getSqlTypeName().getName(),
                         relDataType.getSqlTypeName().getFamily().name(),

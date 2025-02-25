@@ -38,6 +38,8 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     implementation group: 'net.agkn', name: 'hll', version: 'hll'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
+    implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
 
     api group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
     api group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()

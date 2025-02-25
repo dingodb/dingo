@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -26,7 +27,10 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import lombok.Getter;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
+
 @Getter
+@JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)
 public abstract class FilterProjectSourceParam extends SourceParam {
 
     @JsonProperty("tableId")

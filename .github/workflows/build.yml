@@ -21,11 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK8
+    - name: Set up JDK17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: 8
+        java-version: 17
 
     - name: Clean Cache
       run: |

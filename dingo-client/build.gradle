@@ -3,10 +3,8 @@ plugins {
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id 'maven-publish'
+    id 'signing'
 }
-
-apply plugin: 'maven'
-apply plugin: 'signing'
 
 dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
@@ -58,6 +56,10 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
     exclude "*.proto"
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 fatJar.dependsOn(

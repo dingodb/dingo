@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -31,17 +32,19 @@ import io.dingodb.expr.rel.json.RelOpDeserializer;
 import io.dingodb.expr.rel.json.RelOpSerializer;
 import lombok.Getter;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+
 @JsonTypeName("rel")
 @JsonPropertyOrder({
     "schema",
     "rel",
 })
+@Getter
+@JsonAutoDetect(fieldVisibility = ANY)
 public class RelOpParam extends AbstractParams {
-    @Getter
     @JsonProperty("schema")
-    protected final DingoType schema;
-    protected final DingoRelConfig config;
-    @Getter
+    public final DingoType schema;
+    public final DingoRelConfig config;
     @JsonProperty("rel")
     @JsonSerialize(using = RelOpSerializer.class)
     @JsonDeserialize(using = RelOpDeserializer.class)

@@ -45,6 +45,7 @@ dependencies {
 
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
 
     implementation project(":dingo-net-api")
@@ -57,6 +58,7 @@ dependencies {
     implementation group:'com.google.protobuf', name:'protobuf-java', version: 'protobuf'.v()
 
     implementation group: 'io.grpc', name: 'grpc-protobuf', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-protobuf-lite', version: 'grpc'.v()
     implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
     implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
 
@@ -75,12 +77,12 @@ bootJar.dependsOn([
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.21.7'
+        artifact = 'com.google.protobuf:protoc:3.25.5'
     }
     generatedFilesBaseDir = "$projectDir/build/generated/sources/protobuf/"
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.52.1'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.69.0'
         }
     }
     generateProtoTasks {

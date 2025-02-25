@@ -18,14 +18,14 @@ package io.dingodb.common.table;
 
 public class DiskAnnTable {
 
-    public final static String TABLE_BUILD_NAME = "DISK_ANN_BUILD";
+    public static final String TABLE_BUILD_NAME = "DISK_ANN_BUILD";
 
-    public final static String TABLE_LOAD_NAME = "DISK_ANN_LOAD";
+    public static final String TABLE_LOAD_NAME = "DISK_ANN_LOAD";
 
-    public final static String TABLE_STATUS_NAME = "DISK_ANN_STATUS";
+    public static final String TABLE_STATUS_NAME = "DISK_ANN_STATUS";
 
-    public final static String TABLE_RESET_NAME = "DISK_ANN_RESET";
+    public static final String TABLE_RESET_NAME = "DISK_ANN_RESET";
 
-    public final static String TABLE_COUNT_MEMORY_NAME = "DISK_ANN_COUNT_MEMORY";
+    public static final String TABLE_COUNT_MEMORY_NAME = "DISK_ANN_COUNT_MEMORY";
 
 }

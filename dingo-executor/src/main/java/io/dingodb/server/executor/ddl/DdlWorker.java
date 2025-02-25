@@ -187,6 +187,7 @@ public class DdlWorker {
         }
         String ids = job.job2TableIDs();
         DingoMetrics.counter("registerMDLInfoNone").inc();
+        // TODO
         String sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
         sql = String.format(sql, job.getId(), ver, Utils.quoteForSql(ids));
         return session.executeUpdate(sql);

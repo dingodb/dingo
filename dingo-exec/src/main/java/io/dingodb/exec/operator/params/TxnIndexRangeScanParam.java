@@ -77,7 +77,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
     @JsonProperty("mapList")
     protected List<Integer> mapList;
     @JsonProperty("selection")
-    private TupleMapping selection;
+    private TupleMapping selection2;
     @JsonProperty("isAutoCommit")
     private final boolean isAutoCommit;
 
@@ -93,11 +93,11 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                                  long timeout,
                                  RelOp relOp,
                                  boolean pushDown,
-                                 TupleMapping selection,
+                                 TupleMapping selection2,
                                  int limit,
                                   boolean isAutoCommit) {
         super(tableId, index.tupleType(), keyMapping, relOp, outputSchema,
-            pushDown, index.getVersion(), limit, table.getCodecVersion(), selection.stream().boxed().collect(Collectors.toList()));
+            pushDown, index.getVersion(), limit, table.getCodecVersion(), selection2.stream().boxed().collect(Collectors.toList()));
         this.indexSchema = index.tupleType();
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;
@@ -106,7 +106,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
         this.table = table;
         this.scanTs = scanTs;
         this.timeout = timeout;
-        this.selection = selection;
+        this.selection2 = selection2;
         this.isAutoCommit = isAutoCommit;
         this.codec = CodecService.getDefault().createKeyValueCodec(
             index.getCodecVersion(), index.version, index.tupleType(), index.keyMapping());

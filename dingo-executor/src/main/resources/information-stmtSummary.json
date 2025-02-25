@@ -32,7 +32,7 @@
     "nullable": true
   },
   {
-    "name": "type",
+    "name": "TYPE",
     "type": "varchar",
     "precision": 32,
     "scale": -2147483648,

@@ -144,6 +144,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutorImpl;
+import org.apache.calcite.sql.DingoAnsiSqlDialect;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
@@ -161,7 +162,6 @@ import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlDropView;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -2505,7 +2505,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (strategy == ColumnStrategy.DEFAULT) {
             SqlNode expr = scd.expression;
             if (expr != null) {
-                defaultValue = expr.toSqlString(c -> c.withDialect(AnsiSqlDialect.DEFAULT)
+                defaultValue = expr.toSqlString(c -> c.withDialect(DingoAnsiSqlDialect.DEFAULT)
                     .withAlwaysUseParentheses(false)
                     .withSelectListItemsOnSeparateLines(false)
                     .withUpdateSetListNewline(false)

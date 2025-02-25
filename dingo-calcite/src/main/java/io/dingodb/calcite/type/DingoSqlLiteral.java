@@ -14,15 +14,26 @@
  * limitations under the License.
  */
 
-plugins {
-    id 'java-conventions'
-    id 'java-library'
-}
+package io.dingodb.calcite.type;
 
-dependencies {
-    api group: 'org.apache.calcite.avatica', name: 'avatica-core', version: 'avatica'.v()
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.parser.SqlParserPos;
 
-    implementation project(':dingo-common')
-    api group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
+public final class DingoSqlLiteral {
 
+    private DingoSqlLiteral() {
+    }
+
+    public static DingoIntervalLiteral createInterval(
+        int sign,
+        String intervalStr,
+        SqlIntervalQualifier intervalQualifier,
+        SqlParserPos pos) {
+        return new DingoIntervalLiteral(
+            sign,
+            intervalStr,
+            intervalQualifier,
+            intervalQualifier.typeName(),
+            pos);
+    }
 }

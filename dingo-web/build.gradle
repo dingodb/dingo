@@ -30,7 +30,10 @@ dependencies {
     implementation project(":dingo-verify")
 
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
     implementation group: 'org.yaml', name: 'snakeyaml', version: 'snakeyaml'.v()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
+    implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
