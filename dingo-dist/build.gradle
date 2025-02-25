@@ -16,6 +16,72 @@
 
 plugins {
     id 'distribution'
+    id 'de.undercouch.download' version '5.4.0'
+}
+
+def jdkConfig = [
+    'Linux-x64' : [
+        url : 'https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz',
+        dir : 'jdk-17.0.2+7'
+    ],
+    'Windows-x64' : [
+        url : 'https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_windows-x64_bin.zip',
+        dir : 'jdk-17.0.2+7'
+    ],
+    'Darwin-x64' : [
+        url : 'https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_macos-x64_bin.tar.gz',
+        dir : 'jdk-17.0.2+7/Contents/Home'
+    ]
+]
+
+def down = project.hasProperty('isDownload') ? project.property('isDownload').toBoolean() : false
+
+tasks.register('downloadJdk') {
+    if (!down) {
+        return
+    }
+    doLast {
+        jdkConfig.each { platform, config ->
+            def destFile = file("${buildDir}/jdk/${platform}.${config.url.split(/\./).last()}")
+            def outputDir = file("${buildDir}/jdk/${platform}")
+
+            download.run {
+                src config.url
+                dest destFile
+                overwrite false
+            }
+
+            destFile.setReadable(true, false)
+            destFile.setWritable(true)
+
+            mkdir(outputDir)
+            outputDir.setWritable(true, false)
+
+            if (destFile.name.endsWith('.gz')) {
+                copy {
+                    from tarTree(resources.gzip(destFile))
+                    into outputDir
+                    eachFile { fcd ->
+                        fcd.path = fcd.path.replaceFirst(/^[^\/]+\//, '')
+                    }
+                    includeEmptyDirs = false
+                }
+            } else if (destFile.name.endsWith('.zip')) {
+                copy {
+                    from zipTree(destFile)
+                    into outputDir
+                    eachFile { fcd ->
+                        fcd.path = fcd.path.replaceFirst(/^[^\/]+\//, '')
+                    }
+                    includeEmptyDirs = false
+                }
+            }
+            fileTree(outputDir).each { file ->
+                file.setReadable(true, false)
+                file.setExecutable(true, false)
+            }
+        }
+    }
 }
 
 task copyDepends(type: Copy) {
@@ -23,6 +89,13 @@ task copyDepends(type: Copy) {
     from(layout.projectDirectory) {
         include "conf/**"
         include "bin/**"
+    }
+    into layout.projectDirectory.dir("dingo")
+
+    from(fileTree("${buildDir}/jdk")) {
+        include('*-x64/**')
+        exclude('*.gz')
+        exclude('*.zip')
     }
     into layout.projectDirectory.dir("dingo")
 
@@ -70,7 +143,7 @@ task copyDepends(type: Copy) {
 }
 
 tasks.register('packageDistribution', Zip) {
-    dependsOn(copyDepends)
+    dependsOn(copyDepends, downloadJdk)
     archiveFileName = "dingo.zip"
     destinationDirectory = layout.buildDirectory.dir('distributions')
     from layout.projectDirectory.dir("dingo")

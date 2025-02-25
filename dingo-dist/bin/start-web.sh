@@ -18,9 +18,17 @@
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 JAR_PATH=$(find $ROOT -name dingo-web*.jar)
+APP_HOME=$( cd "$( dirname "$0" )/.." && pwd )
+PLATFORM=$(uname -s)-$(uname -m | sed 's/x86_64/x64/')
 JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"
 
-nohup java ${JAVA_OPTS} \
+EMBEDDED_JDK="${APP_HOME}/${PLATFORM}"
+if [ -d "${EMBEDDED_JDK}" ]; then
+    export JAVA_HOME="${EMBEDDED_JDK}"
+    PATH="${JAVA_HOME}/bin:${PATH}"
+fi
+
+nohup ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-web.xml \
      -jar ${JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-web.yaml \
