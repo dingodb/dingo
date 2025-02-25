@@ -148,7 +148,8 @@ public final class DingoIndexFullScanVisitFun {
                 relOp,
                 rel.isPushDown(),
                 rel.getSelection(),
-                0
+                0,
+                transaction.isAutoCommit()
             ));
         }
         assert indexScanvertex != null;

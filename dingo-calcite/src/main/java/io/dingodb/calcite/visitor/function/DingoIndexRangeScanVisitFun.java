@@ -175,7 +175,8 @@ public final class DingoIndexRangeScanVisitFun {
                 relOp,
                 rel.isPushDown(),
                 rel.getSelection(),
-                0
+                0,
+                transaction.isAutoCommit()
             ));
         }
         OutputHint hint = new OutputHint();

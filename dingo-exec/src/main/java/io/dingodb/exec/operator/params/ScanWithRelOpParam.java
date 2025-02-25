@@ -42,6 +42,7 @@ import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.NullaryAggExpr;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
@@ -52,6 +53,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+@Slf4j
 @JsonTypeName("scanRel")
 @JsonPropertyOrder({
     "tableId",
@@ -78,6 +80,9 @@ public class ScanWithRelOpParam extends ScanParam {
     @Getter
     @Setter
     protected int limit;
+
+    @JsonProperty("selection")
+    protected List<Integer> selection;
 
     @Getter
     protected transient CoprocessorV2 coprocessor;
@@ -126,7 +131,8 @@ public class ScanWithRelOpParam extends ScanParam {
         boolean pushDown,
         int schemaVersion,
         int limit,
-        int codecVersion
+        int codecVersion,
+        List<Integer> selection
     ) {
         super(tableId, schema, keyMapping, schemaVersion, codecVersion);
         this.relOp = relOp;
@@ -135,6 +141,7 @@ public class ScanWithRelOpParam extends ScanParam {
         coprocessor = null;
         this.limit = limit;
         config = new DingoRelConfig();
+        this.selection = selection;
     }
 
     @Override
