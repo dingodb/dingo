@@ -1998,6 +1998,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     private static void validateAddColumn(ColumnDefinition newColumn) {
         DingoType type = newColumn.getType();
+        if ("NULL".equalsIgnoreCase(newColumn.getDefaultValue())) {
+            newColumn.setDefaultValue(null);
+        }
         if (newColumn.getDefaultValue() == null) {
             if (!newColumn.isNullable()) {
                 if (type instanceof StringType) {

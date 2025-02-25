@@ -362,17 +362,6 @@ public class IndexAddFiller implements BackFiller {
                 param.setPartId(newPartId);
                 param.setTableId(tableId);
             }
-            //String key = Base64.getEncoder().encodeToString(keyValue.getKey());
-            //if (!caches.containsKey(key)) {
-            //    caches.put(key, keyValue);
-            //}
-            //if (caches.size() % max_pre_write_count == 0) {
-            //    try {
-            //        commitSecondData(caches.values());
-            //    } finally {
-            //        caches.clear();
-            //    }
-            //}
         }
         if (!param.getKeys().isEmpty()) {
             boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
@@ -516,56 +505,6 @@ public class IndexAddFiller implements BackFiller {
         prefix[0] = (byte)FILL_BACK.getCode();
         System.arraycopy(txnIdKey, 0, prefix, 1, txnIdKey.length);
         return cache.scan(prefix);
-    }
-
-    public void commitSecondData(Collection<KeyValue> secondData) {
-        CommitParam param = new CommitParam(dingoType, isolationLevel, txnId.seq,
-            commitTs, primaryKey, TransactionType.OPTIMISTIC);
-        param.init(null);
-        for (KeyValue keyValue : secondData) {
-            CommonId tableId = indexTable.tableId;
-            int from = 1;
-            //Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN);
-            from += CommonId.LEN;
-            CommonId newPartId = CommonId.decode(Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN));
-            byte[] key = new byte[keyValue.getKey().length - from];
-            System.arraycopy(keyValue.getKey(), from , key, 0, key.length);
-            CommonId partId = param.getPartId();
-            if (partId == null) {
-                partId = newPartId;
-                param.setPartId(partId);
-                param.setTableId(tableId);
-                param.addKey(key);
-            } else if (partId.equals(newPartId)) {
-                param.addKey(key);
-                if (param.getKeys().size() == max_pre_write_count) {
-                    boolean result = txnCommit(param, txnId, tableId, partId);
-                    if (!result) {
-                        throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:"
-                            + Arrays.toString(param.getPrimaryKey()));
-                    }
-                    param.getKeys().clear();
-                    param.setPartId(null);
-                }
-            } else {
-                boolean result = txnCommit(param, txnId, param.getTableId(), partId);
-                if (!result) {
-                    throw new RuntimeException(txnId + " " + partId + ",txnCommit false,PrimaryKey:"
-                        + Arrays.toString(param.getPrimaryKey()));
-                }
-                param.getKeys().clear();
-                param.addKey(key);
-                param.setPartId(newPartId);
-                param.setTableId(tableId);
-            }
-        }
-        if (!param.getKeys().isEmpty()) {
-            boolean result = txnCommit(param, txnId, param.getTableId(), param.getPartId());
-            if (!result) {
-                throw new RuntimeException(txnId + " " + param.getPartId()
-                    + ",txnCommit false,PrimaryKey:" + Arrays.toString(param.getPrimaryKey()));
-            }
-        }
     }
 
     public TxnLocalData getTxnLocalData(Object[] tuplesTmp) {
