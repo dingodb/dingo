@@ -39,6 +39,10 @@ fatJar.dependsOn([
     ':dingo-client:fatJar',
 ])
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }

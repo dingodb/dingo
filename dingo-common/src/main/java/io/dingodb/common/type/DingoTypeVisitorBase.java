@@ -133,4 +133,24 @@ public abstract class DingoTypeVisitorBase<R, T> implements DingoTypeVisitor<R, 
     public R visitIntervalDayType(@NonNull IntervalDayType type, T obj) {
         return null;
     }
+
+    @Override
+    public R visitIntervalWeekType(@NonNull IntervalWeekType type, T obj) {
+        return null;
+    }
+
+    @Override
+    public R visitIntervalHourType(@NonNull IntervalHourType type, T obj) {
+        return null;
+    }
+
+    @Override
+    public R visitIntervalMinuteType(@NonNull IntervalMinuteType type, T obj) {
+        return null;
+    }
+
+    @Override
+    public R visitIntervalSecondType(@NonNull IntervalSecondType type, T obj) {
+        return null;
+    }
 }

@@ -76,6 +76,10 @@ public final class DingoTypeFactory {
         intervalGenerators.put("INTERVAL_YEAR", IntervalYearType::new);
         intervalGenerators.put("INTERVAL_MONTH", IntervalMonthType::new);
         intervalGenerators.put("INTERVAL_DAY", IntervalDayType::new);
+        intervalGenerators.put("INTERVAL_WEEK", IntervalWeekType::new);
+        intervalGenerators.put("INTERVAL_HOUR", IntervalHourType::new);
+        intervalGenerators.put("INTERVAL_MINUTE", IntervalMinuteType::new);
+        intervalGenerators.put("INTERVAL_SECOND", IntervalSecondType::new);
     }
 
     public static @NonNull TupleType tuple(DingoType[] fields) {

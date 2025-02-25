@@ -15,14 +15,17 @@
  */
 
 plugins {
+    id 'application'
     id 'java-conventions'
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id 'maven-publish'
+    id 'signing'
 }
 
-apply plugin: 'maven'
-apply plugin: 'signing'
+application {
+    applicationDefaultJvmArgs = ["--add-opens", "java.base/java.util=ALL-UNNAMED"]
+}
 
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
@@ -66,6 +69,10 @@ tasks.register('fatJar', Jar) {
     exclude "META-INF/services/java.sql.Driver"
 }
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 fatJar.dependsOn([
         ':dingo-common:jar',
         ':dingo-net-api:jar',
@@ -73,7 +80,16 @@ fatJar.dependsOn([
         ':dingo-serial:jar',
         ':dingo-verify:jar',
         ':dingo-calcite:jar',
-        ":dingo-driver:dingo-driver-common:jar"
+        ":dingo-driver:dingo-driver-common:jar",
+        ':dingo-cluster-api:jar',
+        ':dingo-codec-api:jar',
+        ':dingo-exec:jar',
+        ':dingo-meta-api:jar',
+        ':dingo-partition-api:jar',
+        ':dingo-store-api:jar',
+        ':dingo-tool-api:jar',
+        ':dingo-transaction-api:jar',
+        ':dingo-tso-api:jar'
 ])
 
 tasks.named("build") { x ->

@@ -23,20 +23,19 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class LoggerReporter extends ScheduledReporter {
     private final LoggerReporter.LoggerProxy loggerProxy;
@@ -49,7 +48,15 @@ public class LoggerReporter extends ScheduledReporter {
         return new LoggerReporter.Builder(registry);
     }
 
-    protected LoggerReporter(MetricRegistry registry, LoggerReporter.LoggerProxy loggerProxy, Marker marker, String prefix, TimeUnit rateUnit, TimeUnit durationUnit, MetricFilter filter, ScheduledExecutorService executor, boolean shutdownExecutorOnStop) {
+    protected LoggerReporter(MetricRegistry registry,
+                             LoggerReporter.LoggerProxy loggerProxy,
+                             Marker marker,
+                             String prefix,
+                             TimeUnit rateUnit,
+                             TimeUnit durationUnit,
+                             MetricFilter filter,
+                             ScheduledExecutorService executor,
+                             boolean shutdownExecutorOnStop) {
         super(registry, "logger-reporter", filter, rateUnit, durationUnit, executor, shutdownExecutorOnStop);
         this.loggerProxy = loggerProxy;
         this.marker = marker;
@@ -57,7 +64,11 @@ public class LoggerReporter extends ScheduledReporter {
     }
 
     @Override
-    public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
+    public void report(SortedMap<String, Gauge> gauges,
+                       SortedMap<String, Counter> counters,
+                       SortedMap<String, Histogram> histograms,
+                       SortedMap<String, Meter> meters,
+                       SortedMap<String, Timer> timers) {
         if (this.loggerProxy.isEnabled(this.marker) && metricLogEnable) {
             Iterator var6 = gauges.entrySet().iterator();
 
@@ -103,24 +114,69 @@ public class LoggerReporter extends ScheduledReporter {
 
     private void logTimer(String name, Timer timer) {
         Snapshot snapshot = timer.getSnapshot();
-        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, median={}", TenantConstant.TENANT_ID, "TIMER", this.prefix(name), timer.getCount(), this.convertDuration((double)snapshot.getMin()), this.convertDuration((double)snapshot.getMax()), this.convertDuration(snapshot.getMean()), this.convertDuration(snapshot.getMedian()));
+        this.loggerProxy.log(this.marker,
+            "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, median={}",
+            TenantConstant.TENANT_ID,
+            "TIMER",
+            this.prefix(name),
+            timer.getCount(),
+            this.convertDuration((double)snapshot.getMin()),
+            this.convertDuration((double)snapshot.getMax()),
+            this.convertDuration(snapshot.getMean()),
+            this.convertDuration(snapshot.getMedian()));
     }
 
     private void logMeter(String name, Meter meter) {
-        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}", TenantConstant.TENANT_ID, "METER", this.prefix(name), meter.getCount(), this.convertRate(meter.getMeanRate()), this.convertRate(meter.getOneMinuteRate()), this.convertRate(meter.getFiveMinuteRate()), this.convertRate(meter.getFifteenMinuteRate()), this.getRateUnit());
+        this.loggerProxy.log(this.marker,
+            "Tenant id:{} type={}, name={}, count={}, mean_rate={}, m1={}, m5={}, m15={}, rate_unit={}",
+            TenantConstant.TENANT_ID,
+            "METER",
+            this.prefix(name),
+            meter.getCount(),
+            this.convertRate(meter.getMeanRate()),
+            this.convertRate(meter.getOneMinuteRate()),
+            this.convertRate(meter.getFiveMinuteRate()),
+            this.convertRate(meter.getFifteenMinuteRate()),
+            this.getRateUnit());
     }
 
     private void logHistogram(String name, Histogram histogram) {
         Snapshot snapshot = histogram.getSnapshot();
-        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}", TenantConstant.TENANT_ID, "HISTOGRAM", this.prefix(name), histogram.getCount(), snapshot.getMin(), snapshot.getMax(), snapshot.getMean(), snapshot.getStdDev(), snapshot.getMedian(), snapshot.get75thPercentile(), snapshot.get95thPercentile(), snapshot.get98thPercentile(), snapshot.get99thPercentile(), snapshot.get999thPercentile());
+        this.loggerProxy.log(this.marker,
+            "Tenant id:{} type={}, name={}, count={}, min={}, max={}, mean={}, "
+                + "stddev={}, median={}, p75={}, p95={}, p98={}, p99={}, p999={}",
+            TenantConstant.TENANT_ID,
+            "HISTOGRAM",
+            this.prefix(name),
+            histogram.getCount(),
+            snapshot.getMin(),
+            snapshot.getMax(),
+            snapshot.getMean(),
+            snapshot.getStdDev(),
+            snapshot.getMedian(),
+            snapshot.get75thPercentile(),
+            snapshot.get95thPercentile(),
+            snapshot.get98thPercentile(),
+            snapshot.get99thPercentile(),
+            snapshot.get999thPercentile());
     }
 
     private void logCounter(String name, Counter counter) {
-        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, count={}", TenantConstant.TENANT_ID, "COUNTER", this.prefix(name), counter.getCount());
+        this.loggerProxy.log(this.marker,
+            "Tenant id:{} type={}, name={}, count={}",
+            TenantConstant.TENANT_ID,
+            "COUNTER",
+            this.prefix(name),
+            counter.getCount());
     }
 
     private void logGauge(String name, Gauge<?> gauge) {
-        this.loggerProxy.log(this.marker, "Tenant id:{} type={}, name={}, value={}", TenantConstant.TENANT_ID, "GAUGE", this.prefix(name), gauge.getValue());
+        this.loggerProxy.log(this.marker,
+            "Tenant id:{} type={}, name={}, value={}",
+            TenantConstant.TENANT_ID,
+            "GAUGE",
+            this.prefix(name),
+            gauge.getValue());
     }
 
     protected String getRateUnit() {
@@ -303,7 +359,15 @@ public class LoggerReporter extends ScheduledReporter {
                     loggerProxy = new LoggerReporter.DebugLoggerProxy(this.logger);
             }
 
-            return new LoggerReporter(this.registry, (LoggerReporter.LoggerProxy)loggerProxy, this.marker, this.prefix, this.rateUnit, this.durationUnit, this.filter, this.executor, this.shutdownExecutorOnStop);
+            return new LoggerReporter(this.registry,
+                (LoggerReporter.LoggerProxy)loggerProxy,
+                this.marker,
+                this.prefix,
+                this.rateUnit,
+                this.durationUnit,
+                this.filter,
+                this.executor,
+                this.shutdownExecutorOnStop);
         }
     }
 

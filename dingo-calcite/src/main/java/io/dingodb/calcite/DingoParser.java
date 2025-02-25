@@ -258,19 +258,21 @@ public class DingoParser {
 
     public RelRoot convert(@NonNull SqlNode sqlNode, boolean needsValidation) {
         HintPredicate hintPredicate = (hint, rel) -> true;
-        HintStrategyTable hintStrategyTable = new HintStrategyTable.Builder()
+        HintStrategyTable.Builder hintStrategyBuilder = new HintStrategyTable.Builder()
             .hintStrategy("vector_pre", hintPredicate)
             .hintStrategy(HybridSearchTable.HINT_NAME, hintPredicate)
             .hintStrategy("disable_index", hintPredicate)
-            .hintStrategy("text_search_pre", hintPredicate)
-            .build();
+            .hintStrategy("text_search_pre", hintPredicate);
+        if (forUpdate(sqlNode)) {
+            hintStrategyBuilder.hintStrategy("for_update", hintPredicate);
+        }
         SqlToRelConverter sqlToRelConverter = new DingoSqlToRelConverter(
             ViewExpanders.simpleContext(cluster),
             sqlValidator,
             context.getCatalogReader(),
             cluster,
             sqlNode.getKind() == SqlKind.EXPLAIN,
-            hintStrategyTable
+            hintStrategyBuilder.build()
         );
 
         RelRoot relRoot = sqlToRelConverter.convertQuery(sqlNode, needsValidation, true);
@@ -298,16 +300,6 @@ public class DingoParser {
                     sqlSelect.getCharset(),
                     sqlSelect.getLineStarting(),
                     context.getTimeZone()
-                );
-            }
-            if (forUpdate(sqlNode)) {
-                SqlSelect sqlSelect = (SqlSelect) sqlNode;
-                relNode = new LogicalForUpdate(
-                    cluster,
-                    planner.emptyTraitSet(),
-                    relRoot.rel,
-                    Objects.requireNonNull(
-                        sqlValidator.getNamespace(Objects.requireNonNull(sqlSelect.getFrom()))).getTable().unwrap(RelOptTable.class)
                 );
             }
         }

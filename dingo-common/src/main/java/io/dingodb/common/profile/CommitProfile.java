@@ -118,10 +118,10 @@ public class CommitProfile extends Profile {
 
     @Override
     public String toString() {
-        return "CommitProfile{" +
-            "duration=" + duration +
-            ", start=" + start +
-            ", end=" + end +
-            '}';
+        return "CommitProfile{"
+            + "duration=" + duration
+            + ", start=" + start
+            + ", end=" + end
+            + '}';
     }
 }

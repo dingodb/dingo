@@ -123,7 +123,7 @@ public class MonitorServerService {
     @Cacheable(value = {"navigation"}, key = "#key")
     public List<TreeSchema> getNavigation(String key) {
         return rootMetaServiceClient.getSubMetaServices().entrySet().stream().map(e -> {
-            String schemaName = e.getKey().toUpperCase();
+            String schemaName = e.getKey();
             Map<String, Table> tableMap;
             try {
                 tableMap = e.getValue().getTableDefinitionsBySchema();

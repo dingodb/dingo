@@ -45,11 +45,11 @@ public final class SessionUtil {
         if (this.sessionPool != null) {
             return;
         }
-        SessionFactory sessionFactory = new SessionFactory();
         GenericObjectPoolConfig<Session> config = new GenericObjectPoolConfig<>();
         config.setMaxTotal(10000);
         config.setMinIdle(10);
         config.setMaxWaitMillis(120000L);
+        SessionFactory sessionFactory = new SessionFactory();
         this.sessionPool = new SessionPool(sessionFactory, config);
     }
 

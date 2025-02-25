@@ -39,7 +39,7 @@ public class RestfulClient {
         return executeRequest("PUT", path, requestBody);
     }
 
-    private String executeRequest(String method, String path, String requestBody){
+    private String executeRequest(String method, String path, String requestBody) {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(path);

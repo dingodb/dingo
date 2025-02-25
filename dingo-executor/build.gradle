@@ -17,11 +17,13 @@
 plugins {
     id 'application'
     id 'java-conventions'
+    id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 application {
-    mainClassName = 'io.dingodb.server.executor.Starter'
+    getMainClass().set('io.dingodb.server.executor.Starter')
 }
 
 dependencies {
@@ -33,8 +35,16 @@ dependencies {
     implementation group: 'com.beust', name: 'jcommander', version: 'jcommander'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation group: 'org.quartz-scheduler', name: 'quartz', version: 'quartz'.v()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
+    implementation group: 'io.grpc', name: 'grpc-core', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
 
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    // implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+
+    implementation ('io.dingodb:dingo-sdk:2.0.0-SNAPSHOT') {
+        exclude group: 'io.grpc', module: 'grpc-netty-shaded'
+    }
 
     implementation project(":dingo-common")
     implementation project(":dingo-calcite")
@@ -55,8 +65,9 @@ dependencies {
 
     implementation project(':dingo-driver:dingo-driver-host')
     implementation project(':dingo-driver:dingo-driver-client')
-    implementation group: 'com.alibaba', name: 'fastjson', version: 'fastjson'.v()
+    implementation group: 'com.alibaba.fastjson2', name: 'fastjson2', version: 'fastjson'.v()
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: 'commons-pool2'.v()
+    implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
     testImplementation project(":dingo-store-local")
 }
 
@@ -74,6 +85,16 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.SF"
     exclude "META-INF/*.DSA"
     exclude "META-INF/*.RSA"
+    eachFile { details ->
+        if (details.path == 'META-INF/services/io.grpc.NameResolverProvider') {
+            def content = details.file.text.replaceAll("io.grpc.netty.shaded.io.grpc.netty.UdsNameResolverProvider", "")
+            details.file.text = content
+        }
+    }
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.named("build") { x ->

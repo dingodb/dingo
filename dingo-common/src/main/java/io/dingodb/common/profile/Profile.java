@@ -150,7 +150,7 @@ public class Profile {
                 .append(",start:").append(profile.start)
                 .append(",end:").append(profile.end)
                 .append("\r\n");
-                //.append("  ").append(profile.location).append("\r\n");
+            //.append("  ").append(profile.location).append("\r\n");
         }
         for (Profile child : profile.children) {
             byte[] prefix1 = new byte[prefix.length + 2];
@@ -168,8 +168,8 @@ public class Profile {
 
     public String detail() {
         return "type " + type + ":"
-           // + " Start: " + dateFormat.format(new Date(start))
-           // + " End: " + dateFormat.format(new Date(end))
+            // + " Start: " + dateFormat.format(new Date(start))
+            // + " End: " + dateFormat.format(new Date(end))
             + " Duration: " + duration + "ms"
             + " Count: " + count;
     }

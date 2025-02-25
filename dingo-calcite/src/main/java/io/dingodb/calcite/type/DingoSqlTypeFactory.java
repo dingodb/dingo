@@ -33,7 +33,7 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
     public static DingoSqlTypeFactory INSTANCE = new DingoSqlTypeFactory();
 
     private DingoSqlTypeFactory() {
-        super();
+        super(DingoRelDataTypeSystemImpl.DEFAULT);
     }
 
     @Override

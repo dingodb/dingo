@@ -16,7 +16,7 @@
 
 package io.dingodb.server.executor.prepare;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Maps;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
@@ -224,6 +224,7 @@ public final class PrepareMeta {
 
     public static List<Object[]> getGlobalVariablesList() {
         List<Object[]> values = new ArrayList<>();
+        String name = System.getProperty("os.name").toLowerCase();
         values.add(new Object[]{"version_comment", "Ubuntu"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
@@ -295,6 +296,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"enable_async_commit_sleep", "off"});
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         values.add(new Object[]{"enable_document_scan_filter", "on"});
+        values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
         return values;
     }
 

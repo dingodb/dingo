@@ -242,11 +242,11 @@ public class StmtSummary {
             //this.avgCommitLatency = this.sumCommitLatency / execCount;
 
             long preWrite = commitProfile.getPreWrite();
-            long commit = commitProfile.getCommit();
             this.sumPreWriteLatency += preWrite;
             if (this.maxPreWriteLatency < preWrite) {
                 this.maxPreWriteLatency = preWrite;
             }
+            long commit = commitProfile.getCommit();
             this.avgPreWriteLatency = sumPreWriteLatency / execCount;
             this.sumCommitLatency += commit;
             if (this.maxCommitLatency < commit) {

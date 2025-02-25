@@ -21,6 +21,8 @@ plugins {
 
 dependencies {
     api project(':dingo-codec-api')
+    implementation project(':dingo-serial')
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
 
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()

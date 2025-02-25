@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
@@ -23,7 +24,10 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
+
 @Getter
+@JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)
 public abstract class TxnPartModifyParam extends PartModifyParam {
     @JsonProperty("pessimisticTxn")
     protected final boolean pessimisticTxn;

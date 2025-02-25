@@ -158,12 +158,12 @@ public class SqlProfile extends Profile {
         if (logSql.length() > 1000) {
             logSql = sql.substring(0, 1000) + "...";
         }
-        return "SqlProfile{" +
-            "schema='" + schema + '\'' +
-            ", sql='" + logSql + '\'' +
-            ", duration=" + duration +
-            ", start=" + start +
-            ", end=" + end +
-            '}';
+        return "SqlProfile{"
+            + "schema='" + schema + '\''
+            + ", sql='" + logSql + '\''
+            + ", duration=" + duration
+            + ", start=" + start
+            + ", end=" + end
+            + '}';
     }
 }

@@ -61,6 +61,7 @@ public class DdlHandler {
     private static final Map<Long, String> insertFailedJobIdList = new ConcurrentHashMap<>();
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
+    // TODO
     private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids,"
         + " job_meta, type, processing) values";
 

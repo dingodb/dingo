@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
+@Getter
 @JsonTypeName("scanRel")
 @JsonPropertyOrder({
     "tableId",
@@ -62,33 +64,33 @@ import java.util.stream.IntStream;
     "outputSchema",
     "rel",
 })
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ScanWithRelOpParam extends ScanParam {
     @JsonProperty("outSchema")
-    protected final DingoType outputSchema;
+    public final DingoType outputSchema;
     @JsonProperty("pushDown")
-    protected final boolean pushDown;
+    public final boolean pushDown;
 
     @Getter
-    protected final transient DingoRelConfig config;
+    public final transient DingoRelConfig config;
 
-    @Getter
     @JsonProperty("rel")
     @JsonSerialize(using = RelOpSerializer.class)
     @JsonDeserialize(using = RelOpDeserializer.class)
-    protected RelOp relOp;
+    public RelOp relOp;
 
     @Getter
     @Setter
-    protected int limit;
+    public int limit;
 
+    @Getter
     @JsonProperty("selection")
-    protected List<Integer> selection;
+    public List<Integer> selection;
 
     @Getter
-    protected transient CoprocessorV2 coprocessor;
+    public transient CoprocessorV2 coprocessor;
 
-    @Getter
-    protected transient Map<CommonId, CoprocessorV2> coprocessorMap = new HashMap<>();
+    public transient Map<CommonId, CoprocessorV2> coprocessorMap = new HashMap<>();
     private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void setNullCoprocessor(CommonId regionId) {

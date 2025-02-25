@@ -130,10 +130,10 @@ public class PlanProfile extends Profile {
 
     @Override
     public String toString() {
-        return "PlanProfile{" +
-            "duration=" + duration +
-            ", start=" + start +
-            ", end=" + end +
-            '}';
+        return "PlanProfile{"
+            + "duration=" + duration
+            + ", start=" + start
+            + ", end=" + end
+            + '}';
     }
 }

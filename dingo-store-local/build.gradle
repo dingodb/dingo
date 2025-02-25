@@ -46,6 +46,19 @@ task fatJar(type: Jar) {
     exclude "META-INF/*.RSA"
 }
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+fatJar.dependsOn([
+    ':dingo-common:jar',
+    ':dingo-net-api:jar',
+    ':dingo-serial:jar',
+    ':dingo-codec-api:jar',
+    ':dingo-meta-api:jar',
+    ':dingo-store-api:jar'
+])
+
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }

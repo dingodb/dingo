@@ -112,6 +112,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.DingoParserUtils;
 import org.apache.calcite.util.Glossary;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.SourceStringReader;
@@ -5175,7 +5176,7 @@ SqlLiteral IntervalLiteral() :
     ]
     p = SimpleStringLiteral()
     intervalQualifier = IntervalQualifier() {
-        return SqlParserUtil.parseIntervalLiteral(s.end(intervalQualifier),
+        return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
             sign, p, intervalQualifier);
     }
 }
@@ -5202,7 +5203,7 @@ SqlNode IntervalLiteralOrExpression() :
         // literal (with quoted string)
         p = SimpleStringLiteral()
         intervalQualifier = IntervalQualifier() {
-            return SqlParserUtil.parseIntervalLiteral(s.end(intervalQualifier),
+            return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
                 sign, p, intervalQualifier);
         }
     |
