@@ -47,6 +47,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -84,6 +85,9 @@ public class ModifyColumnFiller extends IndexAddFiller {
         columnIndices = table.getColumnIndices(indexTable.columns.stream()
             .map(Column::getName)
             .collect(Collectors.toList()));
+        if (columnIndices.contains(-1)) {
+            columnIndices = IntStream.range(0, table.getColumns().size()).boxed().collect(Collectors.toList());
+        }
         colLen = columnIndices.size();
         indexCodec = CodecService.getDefault()
             .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
