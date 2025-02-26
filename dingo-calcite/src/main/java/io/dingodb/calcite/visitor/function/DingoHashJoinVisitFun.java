@@ -112,6 +112,7 @@ public class DingoHashJoinVisitFun {
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
                 rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
             );
+            param.setJoinType(rel.getJoinType().lowerName);
             param.setOtherExpr(otherCondition);
             Vertex vertex = new Vertex(HASH_JOIN, param);
             vertex.setId(idGenerator.getOperatorId(taskId));

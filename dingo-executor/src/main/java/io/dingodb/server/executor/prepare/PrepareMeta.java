@@ -629,14 +629,19 @@ public final class PrepareMeta {
     }
 
     public static void synchronizeTenant() {
-        List<Object> tenantObjList = io.dingodb.meta.InfoSchemaService.root().listTenant();
-        tenantObjList.forEach(object -> {
-            Tenant tenant = (Tenant) object;
-            if (!MetaService.ROOT.existsTenant(tenant.getId())) {
-                MetaService.ROOT.createTenant(tenant);
-                LogUtils.info(log, "synchronize tenant id to coordinator:{}", tenant.getId());
-            }
-        });
+        try {
+            List<Object> tenantObjList = io.dingodb.meta.InfoSchemaService.root().listTenant();
+            tenantObjList.forEach(object -> {
+                Tenant tenant = (Tenant) object;
+                if (!MetaService.ROOT.existsTenant(tenant.getId())) {
+                    MetaService.ROOT.createTenant(tenant);
+                    LogUtils.info(log, "synchronize tenant id to coordinator:{}", tenant.getId());
+                }
+            });
+            LogUtils.info(log, "synchronizeTenant done");
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 
     private static boolean continueRetry() {

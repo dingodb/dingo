@@ -57,16 +57,19 @@ public class HashJoinParam extends AbstractParams {
     @Setter
     private transient CompletableFuture<Void> future;
 
-    @Getter
     @Setter
     public Profile profileLeft;
-    @Getter
     @Setter
     public Profile profileRight;
 
-    @Getter
     @Setter
     public SqlExpr otherExpr;
+
+    @Setter
+    public String joinType;
+
+    public boolean leftMappingEmpty;
+    public boolean rightMappingEmpty;
 
 
     public HashJoinParam(
@@ -83,6 +86,8 @@ public class HashJoinParam extends AbstractParams {
         this.rightLength = rightLength;
         this.leftRequired = leftRequired;
         this.rightRequired = rightRequired;
+        this.leftMappingEmpty = this.leftMapping.size() == 0;
+        this.rightMappingEmpty = this.rightMapping.size() == 0;
     }
 
     @Override
