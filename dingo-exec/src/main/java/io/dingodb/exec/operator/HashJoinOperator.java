@@ -60,6 +60,15 @@ public class HashJoinOperator extends SoleOutOperator {
             if (pin == 0) { // left
                 waitRightFinFlag(param);
                 TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
+                boolean isEmpty = isEmpty(leftKey, param);
+                if (isEmpty && ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType()))) {
+                    return true;
+                }
+                if (isEmpty && "left".equalsIgnoreCase(param.getJoinType())) {
+                    Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                    Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                    return pushToNext(param, edge, context, newTuple);
+                }
                 List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
                 if (rightList != null) {
                     for (TupleWithJoinFlag t : rightList) {
@@ -77,6 +86,9 @@ public class HashJoinOperator extends SoleOutOperator {
                 }
             } else if (pin == 1) { //right
                 TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
+                if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
+                    return true;
+                }
                 List<TupleWithJoinFlag> list = param.getHashMap()
                     .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                 list.add(new TupleWithJoinFlag(tuple));
@@ -162,5 +174,20 @@ public class HashJoinOperator extends SoleOutOperator {
         } else {
             return edge.transformToNext(context, tuple);
         }
+    }
+
+    public static boolean isEmpty(TupleKey tupleKey, HashJoinParam param) {
+        if (param.rightMappingEmpty && param.leftMappingEmpty) {
+            return false;
+        }
+        Object[] tuple = tupleKey.getTuple();
+        if (tuple != null) {
+            for (Object item : tuple) {
+                if (item != null) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
