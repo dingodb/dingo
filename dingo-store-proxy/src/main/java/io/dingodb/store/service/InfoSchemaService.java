@@ -172,7 +172,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         byte[] tableKey = tableKey(tableId);
         byte[] val = getBytesFromObj(table);
-        txn.hInsert(schemaKey, tableKey, val);
+        txn.hPut(schemaKey, tableKey, val);
     }
 
     public void createReplicaTable(long schemaId, long tableId, Object table) {
@@ -733,8 +733,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         return tableObjList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
-            .map(tableWithId -> MAPPER.tableFrom(tableWithId,
-                getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
+            .map(tableWithId -> {
+                try {
+                    return MAPPER.tableFrom(tableWithId,
+                        getIndexes(tableWithId, tableWithId.getTableId(), tenantId));
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    return null;
+                }
+            }).filter(Objects::nonNull)
             .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
     }
 
@@ -826,6 +833,17 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
+    public void setBatchCreateTable(boolean batchCreateTable) {
+        byte[] data;
+        if (batchCreateTable) {
+            data = "batchCreateTable".getBytes();
+        } else {
+            data = "cancel".getBytes();
+        }
+        this.txn.ddlPut(mCreateTables, data);
+    }
+
+    @Override
     public void updateTable(long schemaId, Object table) {
         byte[] tenantKey = tenantKey(tenantId);
         byte[] schemaKey = schemaKey(schemaId);
@@ -855,6 +873,16 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         byte[] indexKey = indexKey(indexInfo.getTableId().getEntityId());
         byte[] val = getBytesFromObj(index);
         this.txn.hPut(tableKey, indexKey, val);
+    }
+
+    public boolean getBatchCreateTable() {
+        byte[] val = this.txn.ddlGet(mCreateTables);
+        if (val == null) {
+            return false;
+        } else {
+            String valStr = new String(val);
+            return "batchCreateTable".equalsIgnoreCase(valStr);
+        }
     }
 
     @Override

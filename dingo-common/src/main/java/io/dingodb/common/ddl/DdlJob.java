@@ -75,6 +75,7 @@ public class DdlJob {
 
     private int priority;
     private long seqNu;
+    private boolean replace;
 
     @Builder
     public DdlJob(
@@ -92,7 +93,8 @@ public class DdlJob {
         SchemaState schemaState, long snapshotVer, long realStartTs,
         long startTs, long dependencyId, String query, long version, int priority, long seqNu,
         List<Object> args,
-        DingoErr err
+        DingoErr err,
+        boolean replace
     ) {
         this.id = id;
         this.actionType = actionType;
@@ -117,6 +119,7 @@ public class DdlJob {
         this.seqNu = seqNu;
         this.args = args;
         this.dingoErr = err;
+        this.replace = replace;
     }
 
     public DdlJob() {

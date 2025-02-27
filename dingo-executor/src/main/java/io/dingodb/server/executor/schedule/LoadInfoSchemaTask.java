@@ -111,7 +111,7 @@ public final class LoadInfoSchemaTask {
             refreshMDLCheckTableInfo();
             DdlJobEventSource.forcePut(DdlJobEventSource.ddlJobEventSource.mdlCheckVerQueue, 1L);
         } catch (Exception e) {
-            LogUtils.error(log, "refreshMDLCheckTableInfo error, reason:{}", e.getMessage());
+            LogUtils.error(log, "refreshMDLCheckTableInfo error, reason:{}", e.getMessage(), e);
         }
     }
 
@@ -233,21 +233,23 @@ public final class LoadInfoSchemaTask {
     }
 
     public static void refreshMDLCheckTableInfo() {
-        Session session = SessionUtil.INSTANCE.getSession();
+        if (!ScopeVariables.runDdl()) {
+            return;
+        }
         InfoSchema is = InfoCache.infoCache.getLatest();
         if (is == null) {
             return;
         }
-        long schemaVer = is.schemaMetaVersion;
-        if (!ScopeVariables.runDdl()) {
-            return;
-        }
+        MdlCheckTableInfo mdlCheckTableInfo;
         long start = System.currentTimeMillis();
-        String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
-        sql = String.format(sql, schemaVer);
-        MdlCheckTableInfo mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
+        long schemaVer;
         List<Object[]> resList;
+        Session session = SessionUtil.INSTANCE.getSession();
         try {
+            schemaVer = is.schemaMetaVersion;
+            String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
+            sql = String.format(sql, schemaVer);
+            mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
             resList = session.executeQuery(sql);
             if (resList.isEmpty()) {
                 LogUtils.debug(log, "[ddl] load mdl table info empty, ver:{}", schemaVer);

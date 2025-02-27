@@ -89,7 +89,7 @@ public final class FieldTypeChecker {
         } catch (SQLException e) {
             throw new DingoSqlException(e);
         } finally {
-            session.destroy();
+            SessionUtil.INSTANCE.closeSession(session);
         }
     }
 

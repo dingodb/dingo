@@ -45,8 +45,9 @@ public interface InfoSchemaService {
     String nextGlobalID = "NextGlobalID";
     String mDDLJobHistoryKey = "DDLJobHistory";
     String mHistoryJobPrefix = String.format("%s:%s", DdlUtil.tenantPrefix, mDDLJobHistoryKey);
-
     byte[] mHistoryJobPrefixKeys = mHistoryJobPrefix.getBytes();
+    String createTables = String.format("%s:%s", DdlUtil.tenantPrefix, "createTables");
+    byte[] mCreateTables = createTables.getBytes();
 
     String mDdlTemplate = "%s:%s:%d";
 
@@ -296,6 +297,8 @@ public interface InfoSchemaService {
 
     }
 
+    void setBatchCreateTable(boolean batchCreateTable);
+
     void updateTable(long schemaId, Object table);
 
     default void updateReplicaTable(long schemaId, long tableId, Object table) {
@@ -304,6 +307,10 @@ public interface InfoSchemaService {
 
     default void updateIndex(long tableId, Object index) {
 
+    }
+
+    default boolean getBatchCreateTable() {
+        return false;
     }
 
     DdlJob getHistoryDDLJob(long jobId);

@@ -67,6 +67,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart"
       "io.dingodb.calcite.grammar.ddl.SqlAlterSchema"
       "io.dingodb.calcite.grammar.ddl.SqlAnalyze"
+      "io.dingodb.calcite.grammar.ddl.SqlBatchCreateTable"
       "io.dingodb.calcite.grammar.ddl.SqlCreateTenant"
       "io.dingodb.calcite.grammar.ddl.SqlCreateSchema"
       "io.dingodb.calcite.grammar.ddl.DingoSqlCreateView"
@@ -166,6 +167,8 @@ data: {
   keywords: [
       "ALGORITHM"
       "AUTO_RANDOM"
+      "BATCH"
+      "CANCEL"
       "INPLACE"
       "IF"
       "COPY"

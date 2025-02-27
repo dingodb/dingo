@@ -537,6 +537,8 @@ public class Gc {
             }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
         }
     }
 
@@ -556,12 +558,19 @@ public class Gc {
         sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
             Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType));
         Session session = SessionUtil.INSTANCE.getSession();
-        session.setAutoCommit(false);
-        session.executeUpdate(sql);
+        try {
+            session.setAutoCommit(false);
+            session.executeUpdate(sql);
 
-        String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
-        session.executeUpdate(removeSql);
-        session.commit();
+            String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
+            session.executeUpdate(removeSql);
+            session.commit();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            session.rollback();
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
         LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
         return true;
     }

@@ -278,6 +278,11 @@ public class LocalInfoSchemaService implements InfoSchemaService {
     }
 
     @Override
+    public void setBatchCreateTable(boolean batchCreateTable) {
+
+    }
+
+    @Override
     public void updateTable(long schemaId, Object table) {
 
     }

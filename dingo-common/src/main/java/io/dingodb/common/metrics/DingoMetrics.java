@@ -25,6 +25,7 @@ import com.codahale.metrics.UniformReservoir;
 import com.codahale.metrics.jmx.JmxReporter;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.RunningJobs;
+import io.dingodb.common.session.SessionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -104,7 +105,7 @@ public final class DingoMetrics {
         metricRegistry.register("activeSessionCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
             protected Integer loadValue() {
-                return RunningJobs.runningJobs.size();
+                return SessionUtil.INSTANCE.getSessionPool().getNumActive();
             }
         });
         metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
