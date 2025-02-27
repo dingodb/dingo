@@ -48,6 +48,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
+import io.dingodb.calcite.grammar.ddl.SqlBatchCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSequence;
@@ -518,9 +519,19 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         tableDefinition.setIndices(indexTableDefinitions);
         DdlService ddlService = DdlService.root();
-        String connId = (String) context.getDataContext().get("connId");
-        ddlService.createTableWithInfo(schema.getSchemaName(), tableDefinition,
-            connId, create.getOriginalCreateSql());
+        ActionType actionType;
+        if (InfoSchemaService.root().getBatchCreateTable()) {
+            tableDefinition.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+            List<IndexDefinition> indices = tableDefinition.getIndices();
+            if (indices != null) {
+                indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
+            }
+            MetaService.root().createTables(schema.getSchemaId(), tableDefinition, indices);
+        } else {
+            String connId = (String) context.getDataContext().get("connId");
+            ddlService.createTableWithInfo(schema.getSchemaName(), tableDefinition,
+                connId, create.getOriginalCreateSql());
+        }
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -779,7 +790,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String tableName = getTableName(sqlCreateView.name);
 
         // Check table exist
-        if (schema.getTable(tableName) != null) {
+        if (schema.getTable(tableName) != null && !sqlCreateView.getReplace()) {
             throw DINGO_RESOURCE.tableExists(tableName).ex();
         }
         SqlNode query = renameColumns(sqlCreateView.columnList, sqlCreateView.query);
@@ -863,7 +874,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         properties.setProperty("algorithm", sqlCreateView.alg);
         tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
-        ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null);
+        ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null, sqlCreateView.getReplace());
     }
 
     public void execute(@NonNull SqlCreateUser sqlCreateUser, CalcitePrepare.Context context) {
@@ -1889,6 +1900,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
+    public void execute(SqlBatchCreateTable sqlBatchCreateTable, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute sql batch create table");
+        InfoSchemaService.root().setBatchCreateTable(sqlBatchCreateTable.batchCreateTable);
+        // increment schema version
+        if (!sqlBatchCreateTable.batchCreateTable) {
+            InfoSchemaService.root().genSchemaVersion(101);
+        }
+    }
+
     public static void validatePartitionBy(
         @NonNull List<String> keyList,
         @NonNull TableDefinition tableDefinition,
@@ -2765,7 +2785,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         } finally {
-            session.destroy();
+            SessionUtil.INSTANCE.closeSession(session);
         }
         return ddlJob;
     }

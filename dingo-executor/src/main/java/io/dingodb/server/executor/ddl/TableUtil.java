@@ -34,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrTableExists;
+
 @Slf4j
 public final class TableUtil {
 
@@ -75,32 +77,26 @@ public final class TableUtil {
         return Pair.of(tableInfo, "ErrInvalidDDLState");
     }
 
-    public static Pair<TableDefinition, String> createView(DdlJob ddlJob) {
+    public static synchronized Pair<TableDefinition, String> createView(DdlJob ddlJob) {
         long schemaId = ddlJob.getSchemaId();
         TableDefinition tableInfo = (TableDefinition) ddlJob.getArgs().get(0);
         tableInfo.setSchemaState(SchemaState.SCHEMA_NONE);
         long tableId = ddlJob.getTableId();
         tableInfo.setPrepareTableId(tableId);
 
-        InfoSchemaService service = InfoSchemaService.root();
-        Object tabObj = service.getTable(schemaId, tableInfo.getName());
-        if (tabObj != null) {
-            ddlJob.setState(JobState.jobStateCancelled);
-            return Pair.of(null, "view has existed");
-        }
         if (tableInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
             tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
             MetaService metaService = MetaService.root();
-            List<IndexDefinition> indices = tableInfo.getIndices();
-            if (indices != null) {
-                indices.forEach(index -> index.setSchemaState(SchemaState.SCHEMA_PUBLIC));
+            InfoSchemaService service = InfoSchemaService.root();
+            Object tabObj = service.getTable(schemaId, tableInfo.getName());
+            if (tabObj != null && !ddlJob.isReplace()) {
+                ddlJob.setState(JobState.jobStateCancelled);
+                return Pair.of(null, "view has existed");
             }
             try {
-                assert indices != null;
                 metaService.createView(schemaId, tableInfo.getName(), tableInfo);
                 return Pair.of(tableInfo, null);
             } catch (Exception e) {
-                metaService.rollbackCreateTable(schemaId, tableInfo, indices);
                 LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
                 ddlJob.setState(JobState.jobStateCancelled);
                 if (e instanceof NullPointerException) {
@@ -208,6 +204,8 @@ public final class TableUtil {
             });
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
         }
 
         // create table Info and set autoIncId

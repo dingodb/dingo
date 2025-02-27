@@ -42,7 +42,7 @@ public interface DdlService {
                              TableDefinition tableDefinition, String connId, String sql);
 
     default void createViewWithInfo(String schemaName,
-                             TableDefinition tableDefinition, String connId, String sql) {
+                             TableDefinition tableDefinition, String connId, String sql, boolean replace) {
 
     }
 

@@ -165,16 +165,12 @@ public class DdlHandler {
         String schemaName,
         TableDefinition tableDefinition,
         String connId,
-        String sql
+        String sql,
+        boolean replace
     ) {
-        DdlJob ddlJob = createViewWithInfoJob(schemaName, tableDefinition);
+        DdlJob ddlJob = createViewWithInfoJob(schemaName, tableDefinition, replace);
         ddlJob.setConnId(connId);
-        try {
-            doDdlJob(ddlJob);
-        } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] create table error,reason:" + e.getMessage() + ", tabDef" + tableDefinition, e);
-            throw e;
-        }
+        doDdlJob(ddlJob);
     }
 
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
@@ -485,9 +481,8 @@ public class DdlHandler {
             .build();
     }
 
-    public static DdlJob createViewWithInfoJob(String schemaName, TableDefinition tableDefinition) {
+    public static DdlJob createViewWithInfoJob(String schemaName, TableDefinition tableDefinition, boolean replace) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        assert infoSchemaService != null;
         SchemaInfo schemaInfo = infoSchemaService.getSchema(schemaName);
         List<Object> args = new ArrayList<>();
         args.add(tableDefinition);
@@ -508,6 +503,7 @@ public class DdlHandler {
             .args(args)
             .tableId(tableEntityId)
             .id(0)
+            .replace(replace)
             .build();
     }
 

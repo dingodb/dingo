@@ -39,5 +39,8 @@ SqlAdmin SqlAdmin(): {
   |
    <START_GC>
    { return new SqlStartGc(s.end(this)); }
+  | <BATCH> <CREATE> <TABLE>
+  { return new SqlBatchCreateTable(s.end(this), true); }
+  | <CANCEL> <BATCH> <CREATE> <TABLE>  { return new SqlBatchCreateTable(s.end(this), false); }
   )
 }

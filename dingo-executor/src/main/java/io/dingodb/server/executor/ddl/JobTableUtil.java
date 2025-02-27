@@ -41,7 +41,6 @@ import java.util.function.Function;
 
 @Slf4j
 public final class JobTableUtil {
-    // TODO
     private static final String updateDDLJobSQL = "update mysql.dingo_ddl_job set job_meta = '%s' where job_id = %d";
     private static final String getJobSQL = "select job_meta, processing, job_id from mysql.dingo_ddl_job where "
         + "job_id in (select min(job_id) from mysql.dingo_ddl_job group by schema_ids, table_ids, processing) "
@@ -283,12 +282,19 @@ public final class JobTableUtil {
         sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
             Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType));
         Session session = SessionUtil.INSTANCE.getSession();
-        session.setAutoCommit(false);
-        session.executeUpdate(sql);
+        try {
+            session.setAutoCommit(false);
+            session.executeUpdate(sql);
 
-        String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
-        session.executeUpdate(removeSql);
-        session.commit();
+            String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
+            session.executeUpdate(removeSql);
+            session.commit();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            session.rollback();
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
         LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
         return true;
     }
