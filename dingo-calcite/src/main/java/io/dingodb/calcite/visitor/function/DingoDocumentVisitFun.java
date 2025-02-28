@@ -117,7 +117,7 @@ public final class DingoDocumentVisitFun {
         RexNode rexFilter = rel.getFilter();
 
         String queryString;
-        if (rel.isDocumentScanFilter()) {
+        if (!rel.isDocumentScanFilter()) {
             queryString = Objects.requireNonNull((SqlCharStringLiteral) operandsList.get(2)).getStringValue();
         } else {
             queryString = rel.getQueryStr();

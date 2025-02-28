@@ -98,6 +98,7 @@ public class LogicalDingoDocument extends TableFunctionScan {
                                  TupleMapping selection,
                                  RexNode filter,
                                  List<RelHint> hints,
+                                 String queryStr,
                                  boolean isDocumentScanFilter
                               ) {
         super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
@@ -110,7 +111,8 @@ public class LogicalDingoDocument extends TableFunctionScan {
         this.rowType = null;
         this.realSelection = selection;
         this.hints = hints;
-        this.queryStr = Objects.requireNonNull((SqlCharStringLiteral) operands.get(2)).getStringValue();
+        this.queryStr = (queryStr == null ?
+            Objects.requireNonNull((SqlCharStringLiteral) operands.get(2)).getStringValue(): queryStr);
         this.isDocumentScanFilter = isDocumentScanFilter;
         DingoTable dingoTable = table.unwrap(DingoTable.class);
         if (selection != null) {
@@ -156,7 +158,7 @@ public class LogicalDingoDocument extends TableFunctionScan {
         return new LogicalDingoDocument(
             getCluster(),
             traitSet,
-            call, table, operands, indexTableId, indexTable, selection, filter, hints, isDocumentScanFilter);
+            call, table, operands, indexTableId, indexTable, selection, filter, hints, queryStr, isDocumentScanFilter);
     }
 
     @Override

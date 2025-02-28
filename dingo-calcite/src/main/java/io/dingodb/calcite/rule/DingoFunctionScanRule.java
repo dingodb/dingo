@@ -93,6 +93,7 @@ public class DingoFunctionScanRule extends ConverterRule {
                 document.getSelection(),
                 document.getFilter(),
                 document.hints,
+                document.getQueryStr(),
                 document.isDocumentScanFilter()
             );
         } else if (rel instanceof LogicalDingoHybridSearch && !(rel instanceof DingoHybridSearch)) {

@@ -53,9 +53,11 @@ public class DingoDocument extends LogicalDingoDocument implements DingoRel {
         TupleMapping selection,
         RexNode filter,
         List<RelHint> hints,
+        String queryStr,
         boolean isDocumentScanFilter
     ) {
-        super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection, filter, hints, isDocumentScanFilter);
+        super(cluster, traitSet, call, table, operands, indexTableId, indexTable, selection,
+            filter, hints, queryStr, isDocumentScanFilter);
     }
 
     @Override

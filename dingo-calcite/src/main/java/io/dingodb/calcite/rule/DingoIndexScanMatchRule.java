@@ -656,44 +656,45 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                         match = false;
                         break outer;
                     }
-                    if (type instanceof StringType) {
-                        Properties properties = result.matchIndexTable.getProperties();
-                        String json = (String) properties.get("text_fields");
-                        if (json == null) {
-                            match = false;
-                            break outer;
-                        }
-                        try {
-                            ObjectMapper JSON = new ObjectMapper();
-                            JsonNode jsonNode = JSON.readTree(json);
-                            Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
-                            boolean flag = false;
-                            while (fields.hasNext()) {
-                                Map.Entry<String, JsonNode> next = fields.next();
-                                json = json.replace(next.getKey(), next.getKey().toUpperCase());
-                                JsonNode tokenizer = next.getValue().get("tokenizer");
-                                if (tokenizer == null) {
-                                    match = false;
-                                    break outer;
-                                }
-                                if (!next.getKey().equalsIgnoreCase(column.getName())) {
-                                    continue;
-                                }
-                                flag = true;
+                    Properties properties = result.matchIndexTable.getProperties();
+                    String json = (String) properties.get("text_fields");
+                    if (json == null) {
+                        match = false;
+                        break outer;
+                    }
+                    try {
+                        ObjectMapper JSON = new ObjectMapper();
+                        JsonNode jsonNode = JSON.readTree(json);
+                        Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+                        boolean flag = false;
+                        while (fields.hasNext()) {
+                            Map.Entry<String, JsonNode> next = fields.next();
+                            json = json.replace(next.getKey(), next.getKey().toUpperCase());
+                            JsonNode tokenizer = next.getValue().get("tokenizer");
+                            if (tokenizer == null) {
+                                match = false;
+                                break outer;
+                            }
+                            if (!next.getKey().equalsIgnoreCase(column.getName())) {
+                                continue;
+                            }
+                            flag = true;
+                            if (type instanceof StringType) {
                                 String tokenType = next.getValue().get("tokenizer").get("type").asText();
                                 if (!tokenType.equalsIgnoreCase("raw")) {
                                     match = false;
                                     break outer;
                                 }
                             }
-                            if (!flag) {
-                                match = false;
-                                break;
-                            }
-                        } catch (Exception e) {
-                            match = false;
-                            break outer;
+                            break ;
                         }
+                        if (!flag) {
+                            match = false;
+                            break;
+                        }
+                    } catch (Exception e) {
+                        match = false;
+                        break outer;
                     }
                 }
             }
@@ -714,8 +715,8 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         boolean needLookup = isNeedLookUp(finalSelection, tupleMapping, table.columns.size());
 
         RelNode relNode;
-        boolean flag = false;
-        String queryString = "";
+//        boolean flag = false;
+//        String queryString = "";
         if (result.isDocumentIndex) {
             DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
                 scan.getCluster().getRexBuilder(),
@@ -726,59 +727,61 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                     .build()
             );
             DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-            flag = accept.isMatch();
-            queryString = accept.getQueryStr();
-        }
-        if (result.isDocumentIndex && flag) {
-            LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
-                scan.getCluster(),
-                scan.getTraitSet(),
-                scan.getHints(),
-                scan.getTable(),
-                scan.getFilter(),
-                finalSelection,
-                result.matchIndexTable,
-                result.indexId,
-                scan.isPushDown(),
-                needLookup,
-                0,
-                queryString);
-            relNode = new LogicalProject(
-                project.getCluster(),
-                project.getTraitSet(),
-                project.getHints(),
-                indexScan,
-                newProjectRexNodes,
-                project.getRowType(),
-                project.getVariablesSet()
-            );
-        } else {
-            LogicalIndexFullScan indexFullScan = new LogicalIndexFullScan(
-                scan.getCluster(),
-                scan.getTraitSet(),
-                scan.getHints(),
-                scan.getTable(),
-                scan.getFilter(),
-                finalSelection,
-                result.matchIndexTable,
-                result.indexId,
-                result.selectionIxList,
-                scan.isPushDown(),
-                needLookup,
-                0);
-            if (RexUtil.isIdentity(newProjectRexNodes, scan.getSelectedType())) {
-                relNode = indexFullScan;
-            } else {
+            boolean flag = accept.isMatch();
+            String queryString = accept.getQueryStr();
+            if (flag) {
+                LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
+                    scan.getCluster(),
+                    scan.getTraitSet(),
+                    scan.getHints(),
+                    scan.getTable(),
+                    scan.getFilter(),
+                    finalSelection,
+                    result.matchIndexTable,
+                    result.indexId,
+                    scan.isPushDown(),
+                    needLookup,
+                    0,
+                    queryString);
                 relNode = new LogicalProject(
                     project.getCluster(),
                     project.getTraitSet(),
                     project.getHints(),
-                    indexFullScan,
+                    indexScan,
                     newProjectRexNodes,
                     project.getRowType(),
                     project.getVariablesSet()
                 );
+                return relNode;
+            } else {
+                return null;
             }
+        }
+        LogicalIndexFullScan indexFullScan = new LogicalIndexFullScan(
+            scan.getCluster(),
+            scan.getTraitSet(),
+            scan.getHints(),
+            scan.getTable(),
+            scan.getFilter(),
+            finalSelection,
+            result.matchIndexTable,
+            result.indexId,
+            result.selectionIxList,
+            scan.isPushDown(),
+            needLookup,
+            0);
+        if (RexUtil.isIdentity(newProjectRexNodes, scan.getSelectedType())) {
+            relNode = indexFullScan;
+        } else {
+            relNode = new LogicalProject(
+                project.getCluster(),
+                project.getTraitSet(),
+                project.getHints(),
+                indexFullScan,
+                newProjectRexNodes,
+                project.getRowType(),
+                project.getVariablesSet()
+            );
         }
         return relNode;
     }

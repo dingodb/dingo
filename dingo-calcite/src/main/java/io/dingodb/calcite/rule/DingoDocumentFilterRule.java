@@ -47,6 +47,7 @@ public class DingoDocumentFilterRule extends RelRule<DingoDocumentFilterRule.Con
                 document.getSelection(),
                 filter.getCondition(),
                 filter.getHints(),
+                null,
                 document.isDocumentScanFilter()
             )
         );

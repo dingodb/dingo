@@ -162,7 +162,7 @@ public final class TransactionCacheToMutation {
                     } else if (type instanceof TimestampType) {
                         Timestamp data = (Timestamp) record[colNames.indexOf(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.DATETIME;
-                        scalarField = new ScalarField(TimeUtils.to(data));
+                        scalarField = new ScalarField(data != null ? TimeUtils.to(data) : null);
                     } else if (type instanceof BooleanType) {
                         Boolean data = (Boolean) record[colNames.indexOf(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.BOOL;

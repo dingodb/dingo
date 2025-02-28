@@ -307,45 +307,45 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
                                 match = false;
                                 break outer;
                             }
-                            if (type instanceof StringType) {
-                                Properties properties = document.getIndexTable().getProperties();
-                                String json = (String) properties.get("text_fields");
-                                if (json == null) {
-                                    match = false;
-                                    break outer;
-                                }
-                                try {
-                                    ObjectMapper JSON = new ObjectMapper();
-                                    JsonNode jsonNode = JSON.readTree(json);
-                                    Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
-                                    boolean flag = false;
-                                    while (fields.hasNext()) {
-                                        Map.Entry<String, JsonNode> next = fields.next();
-                                        json = json.replace(next.getKey(), next.getKey().toUpperCase());
-                                        JsonNode tokenizer = next.getValue().get("tokenizer");
-                                        if (tokenizer == null) {
-                                            match = false;
-                                            break outer;
-                                        }
-                                        if (!next.getKey().equalsIgnoreCase(column.getName())) {
-                                            continue;
-                                        }
-                                        flag = true;
+                            Properties properties = document.getIndexTable().getProperties();
+                            String json = (String) properties.get("text_fields");
+                            if (json == null) {
+                                match = false;
+                                break outer;
+                            }
+                            try {
+                                ObjectMapper JSON = new ObjectMapper();
+                                JsonNode jsonNode = JSON.readTree(json);
+                                Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+                                boolean flag = false;
+                                while (fields.hasNext()) {
+                                    Map.Entry<String, JsonNode> next = fields.next();
+                                    json = json.replace(next.getKey(), next.getKey().toUpperCase());
+                                    JsonNode tokenizer = next.getValue().get("tokenizer");
+                                    if (tokenizer == null) {
+                                        match = false;
+                                        break outer;
+                                    }
+                                    if (!next.getKey().equalsIgnoreCase(column.getName())) {
+                                        continue;
+                                    }
+                                    flag = true;
+                                    if (type instanceof StringType) {
                                         String tokenType = next.getValue().get("tokenizer").get("type").asText();
                                         if (!tokenType.equalsIgnoreCase("raw")) {
                                             match = false;
                                             break outer;
                                         }
-                                        break ;
                                     }
-                                    if (!flag) {
-                                        match = false;
-                                        break;
-                                    }
-                                } catch (Exception e) {
-                                    match = false;
-                                    break outer;
+                                    break ;
                                 }
+                                if (!flag) {
+                                    match = false;
+                                    break;
+                                }
+                            } catch (Exception e) {
+                                match = false;
+                                break outer;
                             }
                         }
                     }
@@ -367,6 +367,22 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
                 if (flag) {
                     document.setQueryStr(queryString);
                     document.setDocumentScanFilter(true);
+                    DingoDocument dingoDocument = new DingoDocument(
+                        document.getCluster(),
+                        document.getTraitSet(),
+                        document.getCall(),
+                        document.getTable(),
+                        document.getOperands(),
+                        document.getIndexTableId(),
+                        document.getIndexTable(),
+                        document.getSelection(),
+                        document.getFilter(),
+                        document.getHints(),
+                        queryString,
+                        true
+                    );
+                    dingoDocument.setQueryStr(queryString);
+                    return dingoDocument;
                 }
             }
             return null;

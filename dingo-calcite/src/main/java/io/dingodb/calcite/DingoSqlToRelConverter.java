@@ -273,6 +273,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                     null,
                     null,
                     new ArrayList<>(),
+                    null,
                     false
                 );
             }
