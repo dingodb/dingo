@@ -98,6 +98,7 @@ public class DingoDocumentProjectRule extends RelRule<DingoDocumentProjectRule.C
             TupleMapping.of(selectedColumns),
             filter,
             document.hints,
+            document.getQueryStr(),
             document.isDocumentScanFilter()
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());

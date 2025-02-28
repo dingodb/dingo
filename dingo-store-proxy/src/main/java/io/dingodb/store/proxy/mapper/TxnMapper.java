@@ -206,7 +206,9 @@ public interface TxnMapper {
     ) {
         switch (type) {
             case BOOL:
-                return ScalarField.builder().data(ScalarField.DataNest.BoolData.of((Boolean) field.getData())).build();
+                return ScalarField.builder().data(field.getData() == null ?
+                    null : ScalarField.DataNest.BoolData.of((Boolean) field.getData()))
+                    .build();
             case INTEGER:
                 return ScalarField.builder().data(ScalarField.DataNest.IntData.of((Integer) field.getData())).build();
             case LONG:
