@@ -794,7 +794,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableExists(tableName).ex();
         }
         SqlNode query = renameColumns(sqlCreateView.columnList, sqlCreateView.query);
-
+        String sql = query.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
         List<String> schemas = new ArrayList<>();
         schemas.add(schema.getSchemaName());
         List<List<String>> schemaPaths = new ArrayList<>();
@@ -841,7 +841,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         String schemaName = schema.getSchemaName();
 
-        String sql = query.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
         // build tableDefinition
         TableDefinition tableDefinition = TableDefinition.builder()
             .name(tableName)
