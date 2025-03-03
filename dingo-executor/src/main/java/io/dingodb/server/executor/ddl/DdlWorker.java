@@ -1951,8 +1951,13 @@ public class DdlWorker {
         }
         TableDefinitionWithId tableWithId = tableRes.getKey();
         PartitionDetailDefinition part = (PartitionDetailDefinition) job.getArgs().get(0);
-        long partId = MetaService.root().addDistribution(job.getSchemaName(), job.getTableName(), part);
-
+        long partId;
+        try {
+            partId = MetaService.root().addDistribution(job.getSchemaName(), job.getTableName(), part);
+        } catch (Exception e) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, "add distribution failed");
+        }
         TableDefinitionWithId newTableWithId = (TableDefinitionWithId) MetaService.root().addPart(
             job.getSchemaName(), job.getTableName(), part, partId, tableWithId);
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);

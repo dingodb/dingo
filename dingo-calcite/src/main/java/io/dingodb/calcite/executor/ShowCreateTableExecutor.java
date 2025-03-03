@@ -256,6 +256,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                     }
                 }
                 createTableSqlStr.append(" replica=").append(indexTable.getReplica());
+                if (!"TXN_LSM".equalsIgnoreCase(indexTable.getEngine())) {
+                    createTableSqlStr.append(" engine=").append(indexTable.getEngine());
+                }
                 appendPart(indexTable, createTableSqlStr);
             }
         }
