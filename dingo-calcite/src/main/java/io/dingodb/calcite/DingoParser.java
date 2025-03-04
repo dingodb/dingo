@@ -209,6 +209,7 @@ public class DingoParser {
             public boolean isPercentRemainderAllowed() {
                 return true;
             }
+
         });
 
     @Getter
