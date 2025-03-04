@@ -47,6 +47,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         super(ExprConfig.ADVANCED);
         registerBinaryFun(SUBSTRING, Exprs.MID2);
         registerTertiaryFun(SUBSTRING, Exprs.MID3);
+        registerTertiaryFun("SUBSTR", Exprs.MID3);
         registerBinaryFun(PowFunFactory.NAME, PowFunFactory.INSTANCE);
         registerNullaryFun(ThrowFun.NAME, ThrowFun.INSTANCE);
 

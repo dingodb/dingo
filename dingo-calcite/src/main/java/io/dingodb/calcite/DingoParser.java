@@ -72,7 +72,6 @@ import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.program.DecorrelateProgram;
 import io.dingodb.calcite.rel.DingoCost;
 import io.dingodb.calcite.rel.LogicalExportData;
-import io.dingodb.calcite.rel.LogicalForUpdate;
 import io.dingodb.calcite.rel.logical.LogicalDingoRoot;
 import io.dingodb.calcite.rule.DingoRules;
 import io.dingodb.calcite.runtime.DingoResource;
@@ -97,7 +96,6 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
 import org.apache.calcite.plan.volcano.AbstractConverter;
@@ -198,6 +196,11 @@ public class DingoParser {
             public boolean isInsertSubsetColumnsAllowed() {
                 return false;
             }
+
+            @Override
+            public boolean allowCharLiteralAlias() {
+                return true;
+            }
         });
 
     @Getter
@@ -213,7 +216,6 @@ public class DingoParser {
 
     public DingoParser(final @NonNull DingoParserContext context) {
         this.context = context;
-
         // Create Planner.
         planner = new VolcanoPlanner(DingoCost.FACTORY, context);
         // Set to `true` to use `TopDownRuleDriver`, or `IterativeRuleDriver` is used.

@@ -111,6 +111,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("NOW", SqlStdOperatorTable.CURRENT_TIMESTAMP);
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
+        funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
 
         // number
         registerFunction(
