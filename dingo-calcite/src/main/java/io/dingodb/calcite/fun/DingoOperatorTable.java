@@ -19,6 +19,7 @@ package io.dingodb.calcite.fun;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
+import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
@@ -411,6 +412,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             CurrValFun.NAME,
             ReturnTypes.BIGINT,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            LengthFun.NAME,
+            ReturnTypes.INTEGER,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.NUMERIC
