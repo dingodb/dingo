@@ -42,4 +42,5 @@ public class LengthFun extends UnaryOp {
     public @NonNull String getName() {
         return NAME;
     }
+
 }
