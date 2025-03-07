@@ -1,0 +1,50 @@
+ [
+    {
+      "name": "engine",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": 0,
+      "nullable": false
+    },
+   {
+     "name": "comment",
+     "type": "varchar",
+     "precision": 128,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+    {
+      "name": "savepoints",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+      "name": "support",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "transactions",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    },
+    {
+     "name": "xa",
+      "type": "varchar",
+      "precision": 128,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": true
+    }
+ ]

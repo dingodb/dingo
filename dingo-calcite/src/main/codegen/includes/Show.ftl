@@ -223,7 +223,7 @@ SqlShow SqlShowLocks(Span s): {
 SqlShow SqlShowEngines(Span s): {
   String pattern = null;
 } {
-  <ENGINES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  <DINGOENGINES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
   { return new SqlShowEngines(s.end(this), pattern); }
 }
 
