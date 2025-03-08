@@ -5966,7 +5966,15 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
                          <RPAREN>
                      ] [<UNSIGNED>] { s.add(this); sqlTypeName = SqlTypeName.INTEGER; }
     |
-        <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT; }
+        <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT; } [
+                            <LPAREN>
+                            precision = UnsignedIntLiteral()
+                            [
+                                <COMMA>
+                                scale = UnsignedIntLiteral()
+                            ]
+                            <RPAREN>
+                        ] [<UNSIGNED>]
     |
         <SMALLINT> { s.add(this); sqlTypeName = SqlTypeName.SMALLINT; }
     |
