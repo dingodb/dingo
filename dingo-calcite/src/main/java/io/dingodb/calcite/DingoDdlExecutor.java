@@ -2557,6 +2557,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (typeName == SqlTypeName.CHAR) {
             sqlTypeName = SqlTypeName.VARCHAR;
             precision = 255;
+        } else if (typeName == SqlTypeName.TINYINT) {
+            sqlTypeName = SqlTypeName.INTEGER;
         } else if (typeName == SqlTypeName.VARCHAR && name.equalsIgnoreCase("tenant_id")) {
             sqlTypeName = typeName;
             precision = 255;
