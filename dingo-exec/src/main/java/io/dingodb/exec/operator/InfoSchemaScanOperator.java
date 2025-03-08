@@ -92,6 +92,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getMdlView();
             case "DINGO_TRX":
                 return getTxnInfo();
+            case "ENGINES":
+                return gxEngineInfos();
             default:
                 throw new RuntimeException("no source");
         }
@@ -473,4 +475,12 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
         return result.stream().iterator();
     }
+
+    private static Iterator<Object[]> gxEngineInfos() {
+        List<Object[]> result = new ArrayList<>();
+        result.add(new Object[]{"ndbcluster", "Clustered, fault-tolerant tables", null, "NO", null, null});
+
+        return result.stream().iterator();
+    }
+
 }

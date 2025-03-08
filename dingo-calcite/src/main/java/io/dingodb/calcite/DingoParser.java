@@ -133,6 +133,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_REDUCE_RULE;
@@ -451,6 +453,15 @@ public class DingoParser {
             sql = sql.replace(comment, "");
         }
         // for dump test
+
+        Pattern pattern = Pattern.compile("WHERE TABLE_SCHEMA = '(.*)' HAVING");
+        Matcher matcher = pattern.matcher(sql);
+        if(matcher.find()) {
+            String matchedSchemaName = matcher.group(1);
+            String sourceString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' HAVING";
+            String targetString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' AND";
+            sql = sql.replaceAll(sourceString, targetString);
+        }
 
         for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
             if (sql.contains(entry.getKey())) {
