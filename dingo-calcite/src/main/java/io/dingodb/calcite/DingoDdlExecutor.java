@@ -2552,9 +2552,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
+        // TODO: Temporary solution
+        SqlTypeName sqlTypeName;
+        if (typeName == SqlTypeName.CHAR) {
+            sqlTypeName = SqlTypeName.VARCHAR;
+            precision = 255;
+        } else if (typeName == SqlTypeName.VARCHAR && name.equalsIgnoreCase("tenant_id")) {
+            sqlTypeName = typeName;
+            precision = 255;
+        } else {
+            sqlTypeName = typeName;
+        }
         return ColumnDefinition.builder()
             .name(name)
-            .type(typeName.getName())
+            .type(sqlTypeName.getName())
             .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
             .precision(precision)
             .scale(scale)
