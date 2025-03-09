@@ -1,0 +1,101 @@
+ [
+    {
+      "name": "PLUGIN_NAME",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": 0,
+      "default": null,
+      "nullable": true
+    },
+    {
+      "name": "PLUGIN_VERSION",
+      "type": "varchar",
+      "precision": 20,
+      "scale": -2147483648,
+      "primary": -1,
+      "default": null,
+      "nullable": true
+    },
+    {
+       "name": "PLUGIN_STATUS",
+       "type": "varchar",
+       "precision": 10,
+       "scale": -2147483648,
+       "primary": -1,
+       "default": null,
+       "nullable": true
+    },
+   {
+     "name": "PLUGIN_TYPE",
+     "type": "varchar",
+     "precision": 80,
+     "scale": -2147483648,
+     "primary": -1,
+     "default": null,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_TYPE_VERSION",
+     "type": "varchar",
+     "precision": 20,
+     "scale": -2147483648,
+     "primary": -1,
+     "default": null,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_LIBRARY",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "default": null,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_LIBRARY_VERSION",
+     "type": "varchar",
+     "precision": 20,
+     "scale": -2147483648,
+     "primary": -1,
+     "default": null,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_AUTHOR",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_DESCRIPTION",
+     "type": "varchar",
+     "precision": 65536,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "PLUGIN_LICENSE",
+     "type": "varchar",
+     "default": null,
+     "precision": 80,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "LOAD_OPTION",
+     "type": "varchar",
+     "default": null,
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

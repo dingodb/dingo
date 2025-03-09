@@ -198,8 +198,12 @@ public class MysqlPacketFactory {
                 String tableName = resultSet.getString("TABLE_NAME");
                 String columnName = resultSet.getString("COLUMN_NAME");
                 String schemaName = resultSet.getString("TABLE_SCHEM");
+                if (!schemaName.equalsIgnoreCase("mysql") && !schemaName.equalsIgnoreCase("information_schema")) {
+                    tableName = tableName.toLowerCase();
+                    columnName = columnName.toLowerCase();
+                }
                 ColumnPacket columnPacket = getColumnPacket(catalog,
-                    schemaName,
+                    schemaName.toLowerCase(),
                     tableName,
                     tableName,
                     columnName,
@@ -236,7 +240,12 @@ public class MysqlPacketFactory {
                 columnName = "user";
                 columnLabel = "user";
             }
-            ColumnPacket columnPacket = getColumnPacket(catalog, schema,
+            if (!schema.equalsIgnoreCase("mysql") && !schema.equalsIgnoreCase("information_schema")) {
+                table = table.toLowerCase();
+                columnName = columnName.toLowerCase();
+                columnLabel = columnLabel.toLowerCase();
+            }
+            ColumnPacket columnPacket = getColumnPacket(catalog, schema.toLowerCase(),
                 table,
                 table, columnLabel,
                 columnName,

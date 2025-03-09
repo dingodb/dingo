@@ -16,8 +16,13 @@
 
 package io.dingodb.common.mysql;
 
-public interface Versions {
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
-    byte PROTOCOL_VERSION = 10;
-    byte[] SERVER_VERSION = "8.0.41-0ubuntu0.22.04.1".getBytes();
+public class LoadRemoteData {
+    public static BlockingQueue<LoadRemoteData> queue = new ArrayBlockingQueue<>(100);
+
+    public String id;
+
+    public byte[] data;
 }

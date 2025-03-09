@@ -84,6 +84,9 @@ public class ERRPacket extends MysqlPacket {
         if (errorMessage != null) {
             if (characterSet != null) {
                 try {
+                    if (characterSet.equalsIgnoreCase("utf8mb4")) {
+                        characterSet = "utf8";
+                    }
                     errMsgBytes = errorMessage.getBytes(characterSet);
                     stringBytes = errMsgBytes;
                 } catch (UnsupportedEncodingException e) {

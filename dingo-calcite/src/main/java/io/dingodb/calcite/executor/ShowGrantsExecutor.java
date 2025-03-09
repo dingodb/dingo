@@ -61,7 +61,7 @@ public class ShowGrantsExecutor extends QueryExecutor {
     @Override
     public Iterator<Object[]> getIterator() {
         List<SqlGrant> sqlGrants = execute((SqlShowGrants) sqlNode);
-        List<Object[]> showGrants = sqlGrants.stream().map(SqlNode::toString)
+        List<Object[]> showGrants = sqlGrants.stream().map(sqlGrant -> sqlGrant.toString())
             .map(grant -> new Object[] {grant})
             .collect(Collectors.toList());
         return showGrants.iterator();

@@ -28,6 +28,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
@@ -90,7 +91,13 @@ public class Txn {
         this.timeOut = timeOut;
     }
 
-    public int commit(List<TxnLocalData> tupleList) {
+    public int commit(List<TxnLocalData> tupleList, boolean skip) {
+        return commitWithoutSkip(tupleList);
+    }
+
+
+
+    public int commitWithoutSkip(List<TxnLocalData> tupleList) {
         List<TxnLocalData> secondList = null;
         try {
             // get local mem data first data and transform to cacheToObject

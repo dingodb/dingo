@@ -21,9 +21,12 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
@@ -38,10 +41,16 @@ import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
+import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.AbstractList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.calcite.util.Static.RESOURCE;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
 
@@ -146,6 +155,98 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             }
         }
         super.inferUnknownTypes(inferredType, scope, node);
+    }
+
+    protected void validateValues(
+        SqlCall node,
+        RelDataType targetRowType,
+        final SqlValidatorScope scope) {
+        assert node.getKind() == SqlKind.VALUES;
+
+        final List<SqlNode> operands = node.getOperandList();
+        for (SqlNode operand : operands) {
+            if (!(operand.getKind() == SqlKind.ROW)) {
+                throw Util.needToImplement(
+                    "Values function where operands are scalars");
+            }
+
+            SqlCall rowConstructor = (SqlCall) operand;
+            if (false
+                && targetRowType.isStruct()
+                && rowConstructor.operandCount() < targetRowType.getFieldCount()) {
+                targetRowType =
+                    typeFactory.createStructType(
+                        targetRowType.getFieldList()
+                            .subList(0, rowConstructor.operandCount()));
+            } else if (targetRowType.isStruct()
+                && rowConstructor.operandCount() != targetRowType.getFieldCount()) {
+                return;
+            }
+
+            inferUnknownTypes(
+                targetRowType,
+                scope,
+                rowConstructor);
+
+            if (targetRowType.isStruct()) {
+                for (Pair<SqlNode, RelDataTypeField> pair
+                    : Pair.zip(rowConstructor.getOperandList(),
+                    targetRowType.getFieldList())) {
+                    if (!pair.right.getType().isNullable()
+                        && SqlUtil.isNullLiteral(pair.left, false)) {
+                        throw newValidationError(node,
+                            RESOURCE.columnNotNullable(pair.right.getName()));
+                    }
+                }
+            }
+        }
+
+        for (SqlNode operand : operands) {
+            operand.validate(this, scope);
+        }
+
+        // validate that all row types have the same number of columns
+        //  and that expressions in each column are compatible.
+        // A values expression is turned into something that looks like
+        // ROW(type00, type01,...), ROW(type11,...),...
+        final int rowCount = operands.size();
+        if (rowCount >= 2) {
+            SqlCall firstRow = (SqlCall) operands.get(0);
+            final int columnCount = firstRow.operandCount();
+
+            // 1. check that all rows have the same cols length
+            for (SqlNode operand : operands) {
+                SqlCall thisRow = (SqlCall) operand;
+                if (columnCount != thisRow.operandCount()) {
+                    throw newValidationError(node,
+                        RESOURCE.incompatibleValueType(
+                            SqlStdOperatorTable.VALUES.getName()));
+                }
+            }
+
+            // 2. check if types at i:th position in each row are compatible
+            for (int col = 0; col < columnCount; col++) {
+                final int c = col;
+                final RelDataType type =
+                    typeFactory.leastRestrictive(
+                        new AbstractList<RelDataType>() {
+                            @Override public RelDataType get(int row) {
+                                SqlCall thisRow = (SqlCall) operands.get(row);
+                                return deriveType(scope, thisRow.operand(c));
+                            }
+
+                            @Override public int size() {
+                                return rowCount;
+                            }
+                        });
+
+                if (null == type) {
+                    throw newValidationError(node,
+                        RESOURCE.incompatibleValueType(
+                            SqlStdOperatorTable.VALUES.getName()));
+                }
+            }
+        }
     }
 
 }

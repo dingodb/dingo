@@ -423,6 +423,7 @@ public class TestSqlSyntaxCheck {
         }
     }
 
+
     @Test
     public void testConstraintCheck() {
         List<String> sqlList = new ArrayList<>();
@@ -491,6 +492,19 @@ public class TestSqlSyntaxCheck {
         List<String> sqlList = new ArrayList<>();
         sqlList.add("load data infile '/xx/data' into table t1 lines terminated by 'x' starting by 'a' "
             + " fields terminated by ','");
+        for (String sql : sqlList) {
+            assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
+        }
+    }
+
+    @Test
+    public void testDtl() {
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add("CREATE TABLE `gcpbs`.`test3`(`id`  int       NOT NULL   ,\n" +
+            "`age`  int       NULL\n" +
+            ", PRIMARY KEY (`id`)) engine=InnoDB DEFAULT CHARSET=`utf8mb4` DEFAULT COLLATE `utf8mb4_0900_ai_ci` ROW_FORMAT= Dynamic");
+        sqlList.add("SELECT PLUGIN_STATUS FROM INFORMATION_SCHEMA.PLUGINS WHERE PLUGIN_NAME LIKE 'keyring_rds'");
+        sqlList.add("LOAD DATA CONCURRENT LOCAL INFILE 'a.csv' ignore INTO TABLE `gcpbs`.`gcp_bs_audit_log` CHARACTER SET utf8mb4 FIELDS TERMINATED BY '\\t' ENCLOSED BY '\"' ESCAPED BY '\\\\' (@`id`,`event_time`,@`act_code`,`is_success`,@`request`,@`response`,@`tenant_id`,@`tenant_name`,@`user_id`,@`user_name`,@`content`,@`module`,@`action`,`tenant_category`) SET `id` = @`id`,`act_code` = UNHEX(@`act_code`),`request` = UNHEX(@`request`),`response` = UNHEX(@`response`),`tenant_id` = UNHEX(@`tenant_id`),`tenant_name` = UNHEX(@`tenant_name`),`user_id` = UNHEX(@`user_id`),`user_name` = UNHEX(@`user_name`),`content` = UNHEX(@`content`),`module` = UNHEX(@`module`),`action` = UNHEX(@`action`)");
         for (String sql : sqlList) {
             assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
         }

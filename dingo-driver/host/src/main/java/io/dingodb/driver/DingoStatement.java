@@ -55,6 +55,7 @@ public class DingoStatement extends AvaticaStatement {
 
     // for mysql protocol
     @Setter
+    @Getter
     private boolean autoCommit;
 
     // for mysql protocol

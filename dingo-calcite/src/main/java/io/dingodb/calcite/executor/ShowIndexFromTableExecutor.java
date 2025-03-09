@@ -93,27 +93,33 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         if (column == null) {
             return null;
         }
-        Object[] val = new Object[16];
+        Object[] val = new Object[17];
         val[0] = tableName;
-        val[1] = unique ? "1" : "0";
         if (index instanceof IndexTable) {
+            val[1] = unique ? 1 : 0;
             val[2] = index.getName();
         } else {
+            val[1] = 0;
             val[2] = "PRIMARY";
         }
         val[3] = seqIndex;
-        val[4] = columnName;
+        val[4] = columnName.toLowerCase();
         val[5] = 'A';
-        val[6] = "0";
+        val[6] = 0;
         val[7] = null;
         val[8] = null;
-        val[9] = column.isNullable() ? "YES" : "NO";
-        val[10] = index.getEngine();
+        if (index instanceof IndexTable) {
+            val[9] = column.isNullable() ? "YES" : "NO";
+        } else {
+            val[9] = "";
+        }
+        val[10] = "BTREE";
         val[11] = column.getComment();
-        val[12] = index.getComment();
+        val[12] = index.getComment() == null ? "" : index.getComment();
         val[13] = "YES";
         val[14] = null;
-        val[15] = "NO";
+        val[15] = "YES";
+        val[16] = "NO";
         return val;
     }
 
@@ -136,6 +142,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         indexList.add("Visible");
         indexList.add("Expression");
         indexList.add("Clustered");
+        indexList.add("Global");
         return indexList;
     }
 }

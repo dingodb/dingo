@@ -62,7 +62,7 @@ public class VersionFun extends NullaryOp {
 
     @Override
     public Object eval(EvalContext context, ExprConfig config) {
-        return version;
+        return "8.0.41-0ubuntu0.22.04.1";
     }
 
     @Override

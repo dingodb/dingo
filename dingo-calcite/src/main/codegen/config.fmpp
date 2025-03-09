@@ -169,7 +169,9 @@ data: {
       "AUTO_RANDOM"
       "BATCH"
       "CANCEL"
+      "CONCURRENT"
       "INPLACE"
+      "UNHEX"
       "IF"
       "COPY"
       "CODEC_VERSION"
@@ -227,6 +229,7 @@ data: {
       "SHARED"
       "STATUS"
       "STORAGE"
+      "ROW_FORMAT"
       "TABLES"
       "STARTTS"
       "TERMINATED"
@@ -303,6 +306,8 @@ data: {
       "JAR"
       "FILE"
       "ARCHIVE"
+      "CARDINALITY"
+      "PLUGINS"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

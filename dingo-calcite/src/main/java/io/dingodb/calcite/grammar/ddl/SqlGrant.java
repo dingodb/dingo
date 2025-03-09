@@ -89,12 +89,17 @@ public class SqlGrant extends SqlDdl {
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("GRANT");
         AtomicInteger i = new AtomicInteger();
-        privileges.forEach(k -> {
-            if (!k.equalsIgnoreCase("grant")) {
-                writer.keyword(k);
+        for (int j = 0; j < privileges.size(); j ++) {
+            String privilege = privileges.get(j);
+            if (!privilege.equalsIgnoreCase("grant")) {
+                if (j < privileges.size() - 1) {
+                    writer.keyword(privilege + ",");
+                } else {
+                    writer.keyword(privilege);
+                }
                 i.getAndIncrement();
             }
-        });
+        }
         if (i.get() == 0) {
             writer.keyword("USAGE");
         }
@@ -103,9 +108,7 @@ public class SqlGrant extends SqlDdl {
         writer.keyword(".");
         writer.keyword(table);
         writer.keyword("TO");
-        writer.keyword(user);
-        writer.keyword("@");
-        writer.keyword(host);
+        writer.keyword("`" + user.toLowerCase() + "`@`" + host.toLowerCase() + "`");
         if (withGrantOption) {
             writer.keyword("with");
             writer.keyword("grant");
