@@ -238,7 +238,6 @@ public class DingoParser {
                 Objects.requireNonNull(cluster.getMetadataProvider())
             )
         ));
-
         // Create SqlValidator
         sqlValidator = context.getSqlValidator();
 
@@ -453,6 +452,17 @@ public class DingoParser {
             sql = sql.replace(comment, "");
         }
         // for dump test
+        // for dts test
+        int i;
+        if ((i = sql.indexOf("where grantee")) >= 0) {
+            sql = sql.substring(0, i);
+            sql = sql + " where 1=1";
+        } else if ((i = sql.indexOf("where  grantee")) >= 0) {
+            sql = sql.substring(0, i);
+            sql = sql + " where 1=1";
+        } else if (sql.equalsIgnoreCase("set time_zone=\"+08:00\"")) {
+            sql = "set time_zone='+08:00'";
+        }
 
         Pattern pattern = Pattern.compile("WHERE TABLE_SCHEMA = '(.*)' HAVING");
         Matcher matcher = pattern.matcher(sql);

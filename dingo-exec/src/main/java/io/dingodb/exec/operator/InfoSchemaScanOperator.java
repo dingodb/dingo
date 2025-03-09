@@ -70,19 +70,21 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getInformationPartitions();
             case "STATISTICS":
                 return getInformationStatistics();
+            case "VIEWS":
+                return getView();
+            case "USER_PRIVILEGES":
+                return getUserPrivileges();
             case "EVENTS":
             case "TRIGGERS":
             case "ROUTINES":
             case "FILES":
             case "KEY_COLUMN_USAGE":
             case "COLUMN_STATISTICS":
-            case "USER_PRIVILEGES":
             case "SCHEMA_PRIVILEGES":
             case "TABLE_PRIVILEGES":
-            case "VIEWS":
-                return getView();
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
+            case "PLUGINS":
                 return getEmpty();
             case "TABLE_CONSTRAINTS":
                 return getInformationTableConstraints();
@@ -125,11 +127,52 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     List<Object[]> colRes = new ArrayList<>();
                     for (int i = 0; i < td.getColumns().size(); i++) {
                         Column column = td.columns.get(i);
+                        String type = column.getSqlTypeName().toLowerCase();
+                        if (type.equalsIgnoreCase("integer")) {
+                            type = "int";
+                        } else if (type.equalsIgnoreCase("timestamp")) {
+                            type = "datetime";
+                        }
+                        String columnType = type;
+                        if (column.getPrecision() > 0 && column.getScale() > 0) {
+                            columnType = columnType + "(" + column.getPrecision() + "," + column.getScale() + ")";
+                        } else if (column.getPrecision() > 0) {
+                            columnType = columnType + "(" + column.getPrecision() + ")";
+                        }
+                        String characterSet = td.charset;
+                        String collation = "utf8_bin";
+                        if (!type.equalsIgnoreCase("varchar")) {
+                            characterSet = null;
+                            collation = null;
+                        }
+                        String extra = "";
+                        if (column.isAutoIncrement()) {
+                            extra = "auto_increment";
+                        }
+                        Integer numberPrecision = null;
+                        Integer numberScale = null;
+                        if (!type.equalsIgnoreCase("varchar")
+                            && !type.equalsIgnoreCase("datetime") && !type.equalsIgnoreCase("char")) {
+                            if (type.equalsIgnoreCase("bigint") && column.getPrecision() < 0) {
+                                numberPrecision = 19;
+                                numberScale = 0;
+                            } else if (type.equalsIgnoreCase("int") && column.getPrecision() < 0) {
+                                numberPrecision = 10;
+                                numberScale = 0;
+                            } else if (type.equalsIgnoreCase("tinyint") && column.getPrecision() < 0) {
+                                numberPrecision = 3;
+                                numberScale = 0;
+                            } else {
+                                numberPrecision = column.getPrecision();
+                                numberScale = column.getScale();
+                            }
+                        }
+
                         colRes.add(new Object[]{
                             "def",
-                            schemaTables.getSchemaInfo().getName(),
-                            td.getName(),
-                            column.name,
+                            schemaTables.getSchemaInfo().getName().toLowerCase(),
+                            td.getName().toLowerCase(),
+                            column.name.toLowerCase(),
                             // ordinal position
                             i + 1L,
                             // default value
@@ -137,18 +180,18 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
-                            column.getSqlTypeName(),
+                            type,
                             (long) column.precision,
                             null,
+                            numberPrecision,
+                            numberScale,
                             null,
-                            null,
-                            null,
-                            "utf8",
-                            "utf8_bin",
-                            column.getSqlTypeName(),
+                            characterSet,
+                            collation,
+                            columnType,
                             // is key
                             column.isPrimary() ? "PRI" : "",
-                            "",
+                            extra,
                             // privileges fix
                             "select,insert,update,references",
                             column.comment,
@@ -189,8 +232,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         }
         return new Object[]{
             "def",
-            schemaName,
-            td.getName(),
+            schemaName.toLowerCase(),
+            td.getName().toLowerCase(),
             // part name
             partition.getName(),
             // sub part name
@@ -253,7 +296,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return is.getSchemaMap()
             .keySet()
             .stream()
-            .map(service -> new Object[]{"def", service, "utf8", "utf8_bin", null})
+            .map(service -> new Object[]{"def", service.toLowerCase(), "utf8", "utf8_bin", null})
             .iterator();
     }
 
@@ -277,10 +320,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         boolean hasInc = td.getColumns().stream().anyMatch(Column::isAutoIncrement);
                         try {
                             return new Object[]{"def",
-                                e.getSchemaInfo().getName(),
-                                td.getName(),
+                                e.getSchemaInfo().getName().toLowerCase(),
+                                td.getName().toLowerCase(),
                                 td.tableType,
-                                td.getEngine(),
+                                "InnoDB",
                                 td.getVersion(),
                                 td.getRowFormat(),
                                 // table rows
@@ -323,10 +366,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 Collection<Table> tables = e.getTables().values();
                 return tables.stream()
                     .map(td -> new Object[]{"def",
-                        e.getSchemaInfo().getName(),
+                        e.getSchemaInfo().getName().toLowerCase(),
                         "PRIMARY",
-                        e.getSchemaInfo().getName(),
-                        td.getName(),
+                        e.getSchemaInfo().getName().toLowerCase(),
+                        td.getName().toLowerCase(),
                         "PRIMARY KEY"
                     })
                     .collect(Collectors.toList()).stream();
@@ -344,19 +387,19 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     .flatMap(table -> table.getColumns().stream().filter(Column::isPrimary).map(
                         column -> new Object[]{
                             "def",
-                            e.getSchemaInfo().getName(),
-                            table.name,
+                            e.getSchemaInfo().getName().toLowerCase(),
+                            table.name.toLowerCase(),
                             0,
-                            e.getSchemaInfo().getName(),
+                            e.getSchemaInfo().getName().toLowerCase(),
                             "PRIMARY",
-                            column.primaryKeyIndex,
-                            column.name,
+                            column.primaryKeyIndex + 1,
+                            column.name.toLowerCase(),
                             "A",
                             0,
                             null,
                             null,
-                            column.isNullable() ? "YES" : "NO",
-                            table.getEngine(),
+                            "",
+                            "InnoDB",
                             column.getComment(),
                             ""
                         }
@@ -483,4 +526,76 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return result.stream().iterator();
     }
 
+    private static Iterator<Object[]> getUserPrivileges() {
+        List<Object[]> response = new ArrayList<>();
+
+        response.add(new Object[]{"'root'@'%'", "def", "SELECT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "INSERT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "UPDATE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "DELETE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "DROP", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "PROCESS", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "REFERENCES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "ALTER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SHOW DATABASES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SUPER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "EXECUTE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "INDEX", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE USER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE TABLESPACE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "TRIGGER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE VIEW", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SHOW VIEW", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE ROLE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "DROP ROLE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE TEMPORARY TABLES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "LOCK TABLES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CREATE ROUTINE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "ALTER ROUTINE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "EVENT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SHUTDOWN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "RELOAD", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FILE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "REPLICATION CLIENT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "REPLICATION SLAVE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "XA_RECOVER_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "TELEMETRY_LOG_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "TABLE_ENCRYPTION_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SYSTEM_VARIABLES_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SYSTEM_USER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SHOW_ROUTINE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SET_USER_ID", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SESSION_VARIABLES_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SERVICE_CONNECTION_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "SENSITIVE_VARIABLES_OBSERVER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "ROLE_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "RESOURCE_GROUP_USER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "RESOURCE_GROUP_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "REPLICATION_SLAVE_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "REPLICATION_APPLIER", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "PERSIST_RO_VARIABLES_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "PASSWORDLESS_USER_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "INNODB_REDO_LOG_ENABLE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "INNODB_REDO_LOG_ARCHIVE", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "GROUP_REPLICATION_STREAM", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "GROUP_REPLICATION_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FLUSH_USER_RESOURCES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FLUSH_TABLES", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FLUSH_STATUS", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FLUSH_OPTIMIZER_COSTS", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "FIREWALL_EXEMPT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "ENCRYPTION_KEY_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CONNECTION_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "CLONE_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "BINLOG_ENCRYPTION_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "BINLOG_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "BACKUP_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "AUTHENTICATION_POLICY_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "AUDIT_ADMIN", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "AUDIT_ABORT_EXEMPT", "YES"});
+        response.add(new Object[]{"'root'@'%'", "def", "APPLICATION_PASSWORD_ADMIN", "YES"});
+
+        return response.iterator();
+    }
 }

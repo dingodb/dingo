@@ -29,8 +29,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class MysqlConnection {
@@ -54,6 +56,9 @@ public class MysqlConnection {
     public MysqlIdleStateHandler mysqlIdleStateHandler;
 
     public volatile Boolean passwordExpire = false;
+
+    public boolean querySpecial;
+    public String querySpecialId;
 
     public MysqlConnection(SocketChannel channel) {
         this.channel = channel;

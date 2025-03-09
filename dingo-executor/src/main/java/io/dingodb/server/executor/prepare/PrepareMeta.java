@@ -211,6 +211,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "DINGO_MDL_VIEW", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "DINGO_TRX", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "ENGINES", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, "PLUGINS", SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
 
@@ -228,6 +229,7 @@ public final class PrepareMeta {
         String name = System.getProperty("os.name").toLowerCase();
         values.add(new Object[]{"version_comment", "Ubuntu"});
         values.add(new Object[]{"wait_timeout", "28800"});
+        values.add(new Object[]{"local_infile", "0"});
         values.add(new Object[]{"interactive_timeout", "28800"});
         values.add(new Object[]{"max_allowed_packet", "16777216"});
         values.add(new Object[]{"max_connections", "151"});
@@ -248,7 +250,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"performance_schema", "0"});
         values.add(new Object[]{"net_write_timeout", "60"});
         values.add(new Object[]{"net_read_timeout", "60"});
-        values.add(new Object[]{"lower_case_table_names", "0"});
+        values.add(new Object[]{"lower_case_table_names", "2"});
         values.add(new Object[]{"version", VersionFun.version});
         values.add(new Object[]{"version_compile_os", "Linux"});
         values.add(new Object[]{"version_compile_machine", "x86_64"});
@@ -297,7 +299,9 @@ public final class PrepareMeta {
         values.add(new Object[]{"enable_async_commit_sleep", "off"});
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         values.add(new Object[]{"enable_document_scan_filter", "on"});
-        values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
+        values.add(new Object[]{"automatic_sp_privileges", "1"});
+        values.add(new Object[]{"log_bin_trust_function_creators", "TRUE"});
+        //values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
         return values;
     }
 
@@ -545,6 +549,9 @@ public final class PrepareMeta {
                 break;
             case "COLLATIONS":
                 jsonFile = "/information-collations.json";
+                break;
+            case "PLUGINS":
+                jsonFile = "/information-plugins.json";
                 break;
             case "DINGO_DDL_JOB":
                 jsonFile = "/mysql-dingoDdlJob.json";

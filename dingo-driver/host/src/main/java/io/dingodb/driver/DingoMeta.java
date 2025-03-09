@@ -210,13 +210,7 @@ public class DingoMeta extends MetaImpl {
     @NonNull
     private Iterator<Object[]> createIterator(@NonNull AvaticaStatement statement) {
         if (statement instanceof DingoStatement) {
-            Iterator<Object[]> result = ((DingoStatement) statement).createIterator(jobManager);
-            try {
-                connection.clearWarnings();
-            } catch (SQLException e) {
-                LogUtils.error(log, e.getMessage(), e);
-            }
-            return result;
+            return ((DingoStatement) statement).createIterator(jobManager);
         } else if (statement instanceof DingoPreparedStatement) {
             return ((DingoPreparedStatement) statement).createIterator(jobManager);
         }
@@ -333,9 +327,6 @@ public class DingoMeta extends MetaImpl {
             sql = signature.sql;
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
-            // for mysql protocol start
-            addMysqlProtocolState(statement, parser);
-            // for mysql protocol end
             sh.signature = signature;
             printDingoAudit(sh, sql, dingoConnection, jobSeqId, parser);
             final int updateCount = getUpdateCount(signature.statementType);
@@ -345,7 +336,9 @@ public class DingoMeta extends MetaImpl {
             }
             // For local driver, here `fetch` is called.
             callback.execute();
-
+            // for mysql protocol start
+            addMysqlProtocolState(statement, parser);
+            // for mysql protocol end
             if (signature.statementType == StatementType.OTHER_DDL) {
                 addSqlProfile(statement.getSqlProfile(), connection);
                 ((DingoConnection) connection).setCommandStartTime(0);
@@ -379,6 +372,10 @@ public class DingoMeta extends MetaImpl {
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
+            }
+            if (e instanceof DingoSqlException) {
+                DingoSqlException sqlException = (DingoSqlException) e;
+                throw sqlException;
             }
             throw ExceptionUtils.toRuntime(e);
         } finally {
@@ -434,8 +431,8 @@ public class DingoMeta extends MetaImpl {
     }
 
     private void addMysqlProtocolState(DingoStatement statement, DingoDriverParser parser) throws SQLException {
-        statement.setInTransaction(parser.isInTransaction());
         statement.setAutoCommit(connection.getAutoCommit());
+        statement.setInTransaction(false);
         String tranReadOnly = connection.getClientInfo("transaction_read_only");
         tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
         statement.setTransReadOnly(tranReadOnly.equalsIgnoreCase("on"));

@@ -60,6 +60,8 @@ public class DingoSqlCreateTable extends SqlCreateTable {
     @Setter
     private int codecVersion;
 
+    private String rowFormat;
+
     /**
      * Creates a SqlCreateTable.
      *
@@ -86,7 +88,8 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         String comment,
         String charset,
         String collate,
-        int codecVersion
+        int codecVersion,
+        String rowFormat
     ) {
         super(pos, replace, ifNotExists, name, columnList, query);
         this.properties = properties;
@@ -99,5 +102,6 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         this.charset = charset;
         this.collate = collate;
         this.codecVersion = codecVersion;
+        this.rowFormat = rowFormat;
     }
 }

@@ -150,7 +150,7 @@ void TableElement(List<SqlNode> list) :
     SqlNodeList withColumnList = null;
     final Span s = Span.of();
     ColumnStrategy strategy = null;
-    final String index;
+    String index = null;
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
@@ -163,6 +163,7 @@ void TableElement(List<SqlNode> list) :
     SqlIdentifier refTable = null;
     String updateRefOpt = null;
     String deleteRefOpt = null;
+    String charset = "utf8";
     String collate = "utf8_bin";
     Properties prop = null;
     String indexAlg = null;
@@ -203,6 +204,8 @@ void TableElement(List<SqlNode> list) :
          |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
          |
+          <CHARSET> { charset = this.getNextToken().image; }
+         |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> (<NOT>|{checkNot =false;}) (<ENFORCED>|<NULL>|{ String t = "";})
@@ -221,7 +224,7 @@ void TableElement(List<SqlNode> list) :
                 strategy = nullable ? ColumnStrategy.NULLABLE
                     : ColumnStrategy.NOT_NULLABLE;
             }
-            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate);
+            columnDec = DingoSqlDdlNodes.createColumn(s.add(id).end(this), id, type.withNullable(nullable), e, strategy, autoIncrement, comment, primaryKey, collate, charset);
             list.add(columnDec);
         }
     )
@@ -266,6 +269,10 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
         {
+               if (index != null) {
+               index = index.startsWith("`") && index.endsWith("`") ? index.substring(1, index.length() - 1)
+               : index;
+               }
             list.add(new SqlIndexDeclaration(s.end(this), index, columnList, withColumnList, properties,
             partitionDefinition, replica, indexType, engine, false, prop));
         }
@@ -539,6 +546,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     String collate = "utf8_bin";
     String comment = null;
     int codecVersion = 2;
+    String rowFormat = "Dynamic";
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -568,7 +576,9 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     |
      <CHARSET> <EQ> { charset = getNextToken().image; }
     |
-     <COLLATE> <EQ> { collate = getNextToken().image; }
+     <COLLATE> [<EQ>] { collate = getNextToken().image; }
+    |
+     <ROW_FORMAT> <EQ> { rowFormat = getNextToken().image; }
     |
      <COMMENT> <EQ> { comment = getNextToken().image; }
     |
@@ -577,7 +587,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     {
         return DingoSqlDdlNodes.createTable(
             s.end(this), replace, ifNotExists, id, tableElementList, query, ttl, partitionDefinition, replica,
-            engine, properties, autoIncrement, comment, charset, collate, codecVersion
+            engine, properties, autoIncrement, comment, charset, collate, codecVersion, rowFormat
         );
     }
 }

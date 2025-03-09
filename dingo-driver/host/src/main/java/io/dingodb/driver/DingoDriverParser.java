@@ -54,8 +54,10 @@ import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
@@ -126,6 +128,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrBadField;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
 @Slf4j
@@ -451,6 +454,10 @@ public final class DingoDriverParser extends DingoParser {
             }
         } catch (CalciteContextException e) {
             LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
+            if (sql.contains("alibaba_rds_row_id")) {
+                DingoSqlException e1 = DingoErrUtil.newStdErr("Unknown column '__#alibaba_rds_row_id#__' in 'field list'", ErrBadField);
+                throw e1;
+            }
             throw ExceptionUtils.toRuntime(e);
         }
         planProfile.endValidator();

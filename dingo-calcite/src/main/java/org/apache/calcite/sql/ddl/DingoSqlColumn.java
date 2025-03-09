@@ -40,6 +40,9 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
     @Getter
     String collate = "utf8_bin";
 
+    @Getter
+    String charset = "utf8";
+
     public DingoSqlColumn(
         SqlParserPos pos,
         SqlIdentifier name,
@@ -49,7 +52,8 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
         boolean autoIncrement,
         String comment,
         boolean primary,
-        String collate
+        String collate,
+        String charset
     ) {
         super(pos, name, dataType, expression, strategy);
         if (comment != null) {
@@ -59,6 +63,7 @@ public class DingoSqlColumn extends SqlColumnDeclaration {
         this.comment = comment;
         this.primaryKey = primary;
         this.collate = collate;
+        this.charset = charset;
     }
 
     @Override

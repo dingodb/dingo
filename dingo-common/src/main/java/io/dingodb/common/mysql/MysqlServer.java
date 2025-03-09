@@ -18,7 +18,7 @@ package io.dingodb.common.mysql;
 
 public class MysqlServer {
 
-    public static final int getServerCapabilities() {
+    public static int getServerCapabilities() {
         int flag = 0;
         //lower
         flag |= CapabilityFlags.CLIENT_LONG_PASSWORD.getCode();
@@ -26,6 +26,7 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_LONG_FLAG.getCode();
         flag |= CapabilityFlags.CLIENT_CONNECT_WITH_DB.getCode();
         //flag |= CapabilityFlags.CLIENT_ODBC.getCode();
+        flag |= CapabilityFlags.CLIENT_LOCAL_FILES.getCode();
         flag |= CapabilityFlags.CLIENT_IGNORE_SPACE.getCode();
         flag |= CapabilityFlags.CLIENT_PROTOCOL_41.getCode();
         flag |= CapabilityFlags.CLIENT_INTERACTIVE.getCode();

@@ -49,10 +49,19 @@ public class DingoSqlDdlNodes {
         String comment,
         String charset,
         String collate,
-        int codecVersion
+        int codecVersion,
+        String rowFormat
     ) {
         if (comment != null) {
             comment = comment.startsWith("'") ? comment.substring(1, comment.length() - 1) : comment;
+        }
+        if (charset != null) {
+            charset = charset.startsWith("`") && charset.endsWith("`") ? charset.substring(1, charset.length() - 1)
+                : charset;
+        }
+        if (collate != null) {
+            collate = collate.startsWith("`") && collate.endsWith("`") ? collate.substring(1, collate.length() - 1)
+                : collate;
         }
         return new DingoSqlCreateTable(
             pos,
@@ -70,7 +79,8 @@ public class DingoSqlDdlNodes {
             comment,
             charset,
             collate,
-            codecVersion
+            codecVersion,
+            rowFormat
         );
     }
 
@@ -83,9 +93,18 @@ public class DingoSqlDdlNodes {
         boolean autoIncrement,
         String comment,
         boolean primary,
-        String collate
+        String collate,
+        String charset
     ) {
-        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary, collate);
+        if (charset != null) {
+            charset = charset.startsWith("`") && charset.endsWith("`") ? charset.substring(1, charset.length() - 1)
+                : charset;
+        }
+        if (collate != null) {
+            collate = collate.startsWith("`") && collate.endsWith("`") ? collate.substring(1, collate.length() - 1)
+                : collate;
+        }
+        return new DingoSqlColumn(pos, name, dataType, expression, strategy, autoIncrement, comment, primary, collate, charset);
     }
 
     public static DingoSqlColumn createColumn(
@@ -96,7 +115,7 @@ public class DingoSqlDdlNodes {
     ) {
         return new DingoSqlColumn(pos, name, dataType, columnOption.expression,
             columnOption.strategy, columnOption.autoIncrement, columnOption.comment, columnOption.primaryKey,
-            columnOption.collate);
+            columnOption.collate, "utf8");
     }
 
 }

@@ -22,6 +22,7 @@ import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
@@ -47,6 +48,10 @@ public class SqlLoadData extends SqlDdl {
     private final String charset;
     private final byte[] lineStarting;
     private final int ignoreNum;
+    private final boolean local;
+    private final boolean ignore;
+    private SqlNodeList withColumnList;
+    private SqlNodeList setColumnList;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("LOAD DATA", SqlKind.INSERT);
@@ -65,7 +70,9 @@ public class SqlLoadData extends SqlDdl {
                        String enclosed,
                        byte[] lineStarting,
                        String charset,
-                       int ignoreNum) {
+                       int ignoreNum, boolean local, boolean ignore,
+                       SqlNodeList withColumnList,
+                       SqlNodeList setColumnList) {
         super(OPERATOR, pos);
         this.tableId = tableId;
         if (tableId.names.size() > 1) {
@@ -82,6 +89,10 @@ public class SqlLoadData extends SqlDdl {
         this.lineStarting = lineStarting;
         this.charset = charset;
         this.ignoreNum = ignoreNum;
+        this.local = local;
+        this.ignore = ignore;
+        this.withColumnList = withColumnList;
+        this.setColumnList = setColumnList;
     }
 
     @Override
