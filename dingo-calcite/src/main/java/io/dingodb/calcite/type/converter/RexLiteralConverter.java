@@ -30,6 +30,7 @@ import io.dingodb.expr.common.type.IntervalYearType;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -100,7 +101,12 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Date convertDateFrom(@NonNull Object value) {
-        return new Date(((Calendar) value).getTimeInMillis());
+        if (value instanceof NlsString nlsString) {
+            String val = nlsString.getValue();
+            return DateTimeUtils.parseDate(val);
+        } else {
+            return new Date(((Calendar) value).getTimeInMillis());
+        }
     }
 
     @Override
@@ -111,6 +117,10 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@NonNull Object value) {
         // This works for literal like `TIMESTAMP '1970-01-01 00:00:00'`, which returns UTC time, not local time
+        if (value instanceof NlsString nlsString) {
+            String val = nlsString.getValue();
+            return DateTimeUtils.parseTimestamp(val);
+        }
         Calendar calendar = (Calendar) value;
         long v = calendar.getTimeInMillis();
         return new Timestamp(v - calendar.getTimeZone().getOffset(v));

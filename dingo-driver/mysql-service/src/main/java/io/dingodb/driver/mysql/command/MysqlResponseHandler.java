@@ -31,12 +31,15 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
+import io.dingodb.expr.runtime.utils.CodecUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.eclipse.jetty.http.HttpStatus;
 
 import java.lang.reflect.Array;
 import java.sql.ResultSet;
@@ -248,13 +251,43 @@ public final class MysqlResponseHandler {
         if (exception.getMessage() == null) {
             ep.errorMessage = "";
         } else if (exception.getMessage().startsWith("Encountered")) {
-            ep.errorMessage = "You have an error in your SQL syntax";
+            String errorDetail = exception.getMessage();
+            String subErr = getSubErr(errorDetail);
+            ep.errorMessage = "You have an error in your SQL syntax; check the manual that corresponds "
+                + "to your MySQL server version for the right syntax to use near " + subErr;
         } else {
             ep.errorMessage = exception.getMessage();
         }
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
         channel.writeAndFlush(buffer);
+    }
+
+
+    @Nullable
+    private static String getSubErr(String errorDetail) {
+        try {
+            int lx = errorDetail.indexOf("Was expecting one of");
+            int sx = errorDetail.indexOf("Encountered");
+            String subErr = null;
+            if (sx > -1 && lx > sx) {
+                subErr = errorDetail.substring(sx, lx);
+                sx = subErr.indexOf("> \"");
+                if (sx > -1) {
+                    if (subErr.length() > (sx + 3)) {
+                        subErr = subErr.substring(sx + 3);
+                    }
+                    subErr = subErr.replace("\"\"", "");
+                    sx = subErr.lastIndexOf(".");
+                    if (sx > 0) {
+                        subErr = subErr.substring(0, sx);
+                    }
+                }
+            }
+            return subErr;
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     public static SQLException errorDingo2Mysql(SQLException e) {
