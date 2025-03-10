@@ -464,6 +464,7 @@ public class DingoParser {
             sql = "set time_zone='+08:00'";
         }
 
+        //Code change just for POC - quickBI.
         Pattern pattern = Pattern.compile("WHERE TABLE_SCHEMA = '(.*)' HAVING");
         Matcher matcher = pattern.matcher(sql);
         if(matcher.find()) {
@@ -471,6 +472,17 @@ public class DingoParser {
             String sourceString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' HAVING";
             String targetString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' AND";
             sql = sql.replaceAll(sourceString, targetString);
+        }
+
+        //Code change just for POC - quickBI.
+        Pattern pattern1 = Pattern.compile("WHERE (.*) LIKE '(.*)' HAVING");
+        Matcher matcher1 = pattern1.matcher(sql);
+        if(matcher1.find()) {
+            String patt1 = matcher1.group(1);
+            String patt2 = matcher1.group(2);
+            String sourceString1 = "WHERE " + patt1 + " LIKE '" + patt2 + "' HAVING";
+            String targetString1 = "WHERE " + patt1 + " LIKE '" + patt2 + "' AND";
+            sql = sql.replaceAll(sourceString1, targetString1);
         }
 
         for (Map.Entry<String, String> entry : sensitiveKey.entrySet()) {
