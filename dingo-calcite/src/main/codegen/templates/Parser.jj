@@ -7579,6 +7579,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FUSION>
     |   <INTERSECTION>
     |   <IFNULL>
+    |   <GETDATE>
     |   <GROUPING>
     |   <HOUR>
     |   <LAG>
@@ -8081,6 +8082,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DATA: "DATA" >
 |   < DATABASE: "DATABASE" >
 |   < DATE: "DATE" >
+|   < GETDATE: "GETDATE" >
 |   < DATE_TRUNC: "DATE_TRUNC" >
 |   < DATETIME: "DATETIME" >
 |   < DATETIME_INTERVAL_CODE: "DATETIME_INTERVAL_CODE" >
