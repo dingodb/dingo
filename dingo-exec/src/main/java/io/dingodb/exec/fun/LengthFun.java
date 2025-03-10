@@ -33,7 +33,7 @@ public class LengthFun extends UnaryOp {
         if (value == null) {
             return null;
         } else {
-            return value.toString().length();
+            return value.toString().getBytes().length;
         }
     }
 }
