@@ -111,7 +111,8 @@ public interface DataConverter {
     }
 
     default Boolean convertBooleanFrom(@NonNull Object value) {
-        if (value instanceof BigDecimal bigDecimal) {
+        if (value instanceof BigDecimal) {
+            BigDecimal bigDecimal = (BigDecimal) value;
             int val = bigDecimal.intValue();
             return val != 0;
         }

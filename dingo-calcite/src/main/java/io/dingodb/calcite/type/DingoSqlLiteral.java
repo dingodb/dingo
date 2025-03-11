@@ -48,15 +48,15 @@ public final class DingoSqlLiteral {
         String s,
         @Nullable String charSet,
         SqlParserPos pos) {
-        if (s != null) {
-            try {
-                if (s.contains("\\'")) {
-                    s = s.replace("\\'", "'");
-                }
-            } catch (Exception e) {
-                LogUtils.warn(log, e.getMessage(), e);
-            }
-        }
+        //if (s != null) {
+        //    try {
+        //        if (s.contains("\\'")) {
+        //            s = s.replace("\\'", "'");
+        //        }
+        //    } catch (Exception e) {
+        //        LogUtils.warn(log, e.getMessage(), e);
+        //    }
+        //}
         NlsString slit = new NlsString(s, charSet, null);
         return new DingoSqlCharStringLiteral(slit, pos);
     }
