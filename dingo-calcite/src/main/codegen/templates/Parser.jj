@@ -4843,7 +4843,7 @@ SqlNode StringLiteral() :
         frags = new ArrayList<SqlLiteral>();
         p = SqlParserUtil.parseString(token.image);
         try {
-            literal = SqlLiteral.createCharString(p, charSet, getPos());
+            literal = DingoSqlLiteral.createCharString(p, charSet, getPos());
             frags.add(literal);
         } catch (java.nio.charset.UnsupportedCharsetException e) {
             throw SqlUtil.newContextException(getPos(),
@@ -8780,7 +8780,7 @@ void NonReservedKeyWord2of3() :
 // which use single-quote as the escape character.
 <DEFAULT, DQID, BTID> TOKEN :
 {
-    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''") | ("\'"))* <QUOTE> >
 |
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
 |
