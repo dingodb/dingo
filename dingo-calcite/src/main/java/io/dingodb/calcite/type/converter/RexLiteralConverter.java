@@ -100,7 +100,8 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Date convertDateFrom(@NonNull Object value) {
-        if (value instanceof NlsString nlsString) {
+        if (value instanceof NlsString) {
+            NlsString nlsString = (NlsString) value;
             String val = nlsString.getValue();
             return DateTimeUtils.parseDate(val);
         } else {
@@ -116,7 +117,8 @@ public class RexLiteralConverter implements DataConverter {
     @Override
     public Timestamp convertTimestampFrom(@NonNull Object value) {
         // This works for literal like `TIMESTAMP '1970-01-01 00:00:00'`, which returns UTC time, not local time
-        if (value instanceof NlsString nlsString) {
+        if (value instanceof NlsString) {
+            NlsString nlsString = (NlsString) value;
             String val = nlsString.getValue();
             return DateTimeUtils.parseTimestamp(val);
         }
