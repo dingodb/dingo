@@ -4840,7 +4840,7 @@ SqlNode StringLiteral() :
         frags = new ArrayList<SqlLiteral>();
         p = DingoSqlParserUtil.parseString(token.image);
         try {
-            literal = SqlLiteral.createCharString(p, charSet, getPos());
+            literal = DingoSqlLiteral.createCharString(p, charSet, getPos());
             frags.add(literal);
         } catch (java.nio.charset.UnsupportedCharsetException e) {
             throw SqlUtil.newContextException(getPos(),
