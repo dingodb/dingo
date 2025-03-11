@@ -22,20 +22,33 @@ import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
+import org.apache.calcite.sql.validate.implicit.DingoTypeCoercionImpl;
+import org.apache.calcite.sql.validate.implicit.TypeCoercion;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
@@ -63,8 +76,16 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     @Getter
     private Map<SqlBasicCall, String> hybridSearchMap;
 
+    private TypeCoercion typeCoercion1;
+
     static Config CONFIG = Config.DEFAULT
+        .withTypeCoercionFactory(DingoSqlValidator::createTypeCoercion)
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
+
+    public static TypeCoercion createTypeCoercion(RelDataTypeFactory typeFactory,
+                                                  SqlValidator validator) {
+        return new DingoTypeCoercionImpl(typeFactory, validator);
+    }
 
     DingoSqlValidator(
         DingoCatalogReader catalogReader,
@@ -83,6 +104,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         this.hybridSearch = false;
         this.hybridSearchSql = "";
         this.hybridSearchMap = new ConcurrentHashMap<>();
+        TypeCoercion typeCoercion2 = CONFIG.typeCoercionFactory().create(typeFactory, this);
+        this.typeCoercion1 = typeCoercion2;
     }
 
     @Override
@@ -249,4 +272,107 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         }
     }
 
+    public void checkTypeAssignment(
+        @Nullable SqlValidatorScope sourceScope,
+        SqlValidatorTable table,
+        RelDataType sourceRowType,
+        RelDataType targetRowType,
+        final SqlNode query) {
+        // NOTE jvs 23-Feb-2006: subclasses may allow for extra targets
+        // representing system-maintained columns, so stop after all sources
+        // matched
+        boolean isUpdateModifiableViewTable = false;
+        if (query instanceof SqlUpdate) {
+            final SqlNodeList targetColumnList = ((SqlUpdate) query).getTargetColumnList();
+            if (targetColumnList != null) {
+                final int targetColumnCnt = targetColumnList.size();
+                targetRowType = SqlTypeUtil.extractLastNFields(typeFactory, targetRowType,
+                    targetColumnCnt);
+                sourceRowType = SqlTypeUtil.extractLastNFields(typeFactory, sourceRowType,
+                    targetColumnCnt);
+            }
+            isUpdateModifiableViewTable = table.unwrap(ModifiableViewTable.class) != null;
+        }
+        if (SqlTypeUtil.equalAsStructSansNullability(typeFactory,
+            sourceRowType,
+            targetRowType,
+            null)) {
+            // Returns early if source and target row type equals sans nullability.
+            return;
+        }
+        if (CONFIG.typeCoercionEnabled() && !isUpdateModifiableViewTable) {
+            // Try type coercion first if implicit type coercion is allowed.
+            boolean coerced = typeCoercion1.querySourceCoercion(sourceScope,
+                sourceRowType,
+                targetRowType,
+                query);
+            if (coerced) {
+                return;
+            }
+        }
+
+        // Fall back to default behavior: compare the type families.
+        List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
+        List<RelDataTypeField> targetFields = targetRowType.getFieldList();
+        final int sourceCount = sourceFields.size();
+        for (int i = 0; i < sourceCount; ++i) {
+            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataType targetType = targetFields.get(i).getType();
+            if (!SqlTypeUtil.canAssignFrom(targetType, sourceType)) {
+                SqlNode node = getNthExpr(query, i, sourceCount);
+                if (node instanceof SqlDynamicParam) {
+                    continue;
+                }
+                String targetTypeString;
+                String sourceTypeString;
+                if (SqlTypeUtil.areCharacterSetsMismatched(
+                    sourceType,
+                    targetType)) {
+                    sourceTypeString = sourceType.getFullTypeString();
+                    targetTypeString = targetType.getFullTypeString();
+                } else {
+                    sourceTypeString = sourceType.toString();
+                    targetTypeString = targetType.toString();
+                }
+                throw newValidationError(node,
+                    RESOURCE.typeNotAssignable(
+                        targetFields.get(i).getName(), targetTypeString,
+                        sourceFields.get(i).getName(), sourceTypeString));
+            }
+        }
+    }
+
+    private static SqlNode getNthExpr(SqlNode query, int ordinal, int sourceCount) {
+        if (query instanceof SqlInsert) {
+            SqlInsert insert = (SqlInsert) query;
+            if (insert.getTargetColumnList() != null) {
+                return insert.getTargetColumnList().get(ordinal);
+            } else {
+                return getNthExpr(
+                    insert.getSource(),
+                    ordinal,
+                    sourceCount);
+            }
+        } else if (query instanceof SqlUpdate) {
+            SqlUpdate update = (SqlUpdate) query;
+            if (update.getSourceExpressionList() != null) {
+                return update.getSourceExpressionList().get(ordinal);
+            } else {
+                return getNthExpr(
+                    SqlNonNullableAccessors.getSourceSelect(update),
+                    ordinal,
+                    sourceCount);
+            }
+        } else if (query instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect) query;
+            SqlNodeList selectList = SqlNonNullableAccessors.getSelectList(select);
+            if (selectList.size() == sourceCount) {
+                return selectList.get(ordinal);
+            } else {
+                return query; // give up
+            }
+        } else {
+            return query; // give up
+        }
+    }
 }
