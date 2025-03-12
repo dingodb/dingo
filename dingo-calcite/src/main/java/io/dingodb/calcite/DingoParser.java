@@ -66,6 +66,7 @@ import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlSelect;
+import io.dingodb.calcite.grammar.dml.SqlUpdate;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.grammar.dql.SqlStartGc;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
@@ -336,6 +337,14 @@ public class DingoParser {
             return sqlSelect.isForUpdate();
         }
         return false;
+    }
+
+    public static int getWhereLimit(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlUpdate) {
+            SqlUpdate sqlUpdate = (SqlUpdate) sqlNode;
+            return sqlUpdate.getLimit();
+        }
+        return -1;
     }
 
     /**

@@ -404,6 +404,15 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         return true;
                     }
                 }
+
+                if (context.getIndexId() == null) {
+                    int dealedWhereLimit = param.getDealedWhereLimit();
+                    if(dealedWhereLimit >= param.getWhereLimitValue()) {
+                        return true;
+                    }
+                    param.updateDealedWhereLimit();
+                }
+
                 if (updated) {
                     byte[] keyValueKey = keyValue.getKey();
                     keyValue.setKey(

@@ -357,6 +357,7 @@ public final class DingoDriverParser extends DingoParser {
             pointTs = sqlSelect.getPointStartTs();
         }
         boolean forUpdate = forUpdate(sqlNode);
+        int whereLimitValue = getWhereLimit(sqlNode);
 
         long startTs;
         CommonId txnId;
@@ -528,7 +529,8 @@ public final class DingoDriverParser extends DingoParser {
             sqlNode.getKind(),
             new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
             pointTs,
-            forUpdate
+            forUpdate,
+            whereLimitValue
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -793,11 +795,12 @@ public final class DingoDriverParser extends DingoParser {
     ) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         boolean forUpdate = forUpdate(sqlNode);
+        int whereLimitValue = getWhereLimit(sqlNode);
         while (retry-- > 0) {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate
+                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate, whereLimitValue
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
