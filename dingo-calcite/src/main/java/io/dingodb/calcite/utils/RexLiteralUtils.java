@@ -19,6 +19,7 @@ package io.dingodb.calcite.utils;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.type.converter.RexLiteralConverter;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.scalar.DecimalType;
 import org.apache.calcite.rex.RexLiteral;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -34,6 +35,10 @@ public final class RexLiteralUtils {
     public static @Nullable Object convertFromRexLiteral(@NonNull RexLiteral rexLiteral, DingoType type) {
         if (!rexLiteral.isNull()) {
             // `rexLiteral.getType()` is not always the required type.
+            if (type instanceof DecimalType) {
+                ((DecimalType) type).setPrecision(rexLiteral.getType().getPrecision());
+                ((DecimalType) type).setScale(rexLiteral.getType().getScale());
+            }
             return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
         }
         return null;

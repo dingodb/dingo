@@ -28,9 +28,11 @@ import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.converter.DingoConverter;
+import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.sdk.common.codec.CodecUtils;
 import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
 import io.dingodb.sdk.common.serial.BufImpl;
+import io.dingodb.sdk.common.serial.schema.DecimalSchema;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 import io.dingodb.sdk.common.utils.TypeSchemaMapper;
 import io.dingodb.store.proxy.common.Mapping;
@@ -70,7 +72,6 @@ public final class CodecService implements io.dingodb.codec.CodecService {
     static class KeyValueCodec implements io.dingodb.codec.KeyValueCodec {
         public final CommonId id;
         public final DingoKeyValueCodec delegate;
-        public final DingoType type;
 
         @Override
         @SneakyThrows
@@ -85,6 +86,8 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         public Object[] decodeKey(byte @NonNull [] key) {
             throw new UnsupportedEncodingException();
         }
+
+        public final DingoType type;
 
         @Override
         @SneakyThrows
@@ -161,6 +164,12 @@ public final class CodecService implements io.dingodb.codec.CodecService {
         schema.setIndex(index);
         schema.setAllowNull(((NullableType)type).isNullable());
         schema.setIsKey(isKey);
+
+        if (schema instanceof DecimalSchema) {
+            schema.setPrecision(((DecimalType)type).getPrecision());
+            schema.setScale(((DecimalType)type).getScale());
+        }
+
         return schema;
     }
 
