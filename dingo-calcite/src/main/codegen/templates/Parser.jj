@@ -6032,6 +6032,13 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <SMALLINT> { s.add(this); sqlTypeName = SqlTypeName.SMALLINT; }
     |
+        <BIT> [<LPAREN> precision = UnsignedIntLiteral()
+           [
+                                           <COMMA>
+                                           scale = UnsignedIntLiteral()
+                                ]
+          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
+    |
         <BIGINT>    [
                          <LPAREN>
                          precision = UnsignedIntLiteral()

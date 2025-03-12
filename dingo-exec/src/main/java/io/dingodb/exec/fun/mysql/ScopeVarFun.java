@@ -24,6 +24,7 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -87,5 +88,10 @@ public class ScopeVarFun extends BinaryOp {
         } else {
             return value;
         }
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 }
