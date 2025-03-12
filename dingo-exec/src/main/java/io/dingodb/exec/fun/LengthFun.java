@@ -18,6 +18,7 @@ package io.dingodb.exec.fun;
 
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 
@@ -35,5 +36,10 @@ public class LengthFun extends UnaryOp {
         } else {
             return value.toString().length();
         }
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
     }
 }

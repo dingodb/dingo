@@ -21,6 +21,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -30,15 +32,26 @@ import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlUpdate;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
+import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
+import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
+import org.apache.calcite.sql.validate.implicit.DingoTypeCoercionImpl;
+import org.apache.calcite.sql.validate.implicit.TypeCoercion;
+import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
@@ -60,6 +73,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.apache.calcite.util.Static.RESOURCE;
+
 public class DingoSqlValidator extends SqlValidatorImpl {
 
     @Getter
@@ -71,8 +86,16 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     @Getter
     private Map<SqlBasicCall, String> hybridSearchMap;
 
+    private TypeCoercion typeCoercion1;
+
     static Config CONFIG = Config.DEFAULT
+        .withTypeCoercionFactory(DingoSqlValidator::createTypeCoercion)
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
+
+    public static TypeCoercion createTypeCoercion(RelDataTypeFactory typeFactory,
+                                                  SqlValidator validator) {
+        return new DingoTypeCoercionImpl(typeFactory, validator);
+    }
 
     DingoSqlValidator(
         DingoCatalogReader catalogReader,
@@ -91,6 +114,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         this.hybridSearch = false;
         this.hybridSearchSql = "";
         this.hybridSearchMap = new ConcurrentHashMap<>();
+        TypeCoercion typeCoercion2 = CONFIG.typeCoercionFactory().create(typeFactory, this);
+        this.typeCoercion1 = typeCoercion2;
     }
 
     @Override
@@ -377,7 +402,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             case BINARY:
                 BitString bitString = (BitString)literal.getValueAs(BitString.class);
                 if (bitString.getBitCount() % 8 != 0) {
-                    throw this.newValidationError(literal, Static.RESOURCE.binaryLiteralOdd());
+                    throw this.newValidationError(literal, RESOURCE.binaryLiteralOdd());
                 }
                 break;
             case DATE:
@@ -387,7 +412,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                 int year = calendar.get(1);
                 int era = calendar.get(0);
                 if (year < 1 || era == 0 || year > 9999) {
-                    throw this.newValidationError(literal, Static.RESOURCE.dateLiteralOutOfRange(literal.toString()));
+                    throw this.newValidationError(literal, RESOURCE.dateLiteralOutOfRange(literal.toString()));
                 }
                 break;
             case INTERVAL_YEAR:
@@ -418,7 +443,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         BigDecimal bd = (BigDecimal)literal.getValueAs(BigDecimal.class);
         double d = bd.doubleValue();
         if (Double.isInfinite(d) || Double.isNaN(d)) {
-            throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(Util.toScientificNotation(bd)));
+            throw this.newValidationError(literal, RESOURCE.numberLiteralOutOfRange(Util.toScientificNotation(bd)));
         }
     }
 }
