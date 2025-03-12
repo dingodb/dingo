@@ -25,6 +25,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.DecimalType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -112,7 +113,18 @@ public class Table {
     public int codecVersion;
 
     public TupleType tupleType() {
-        return DingoTypeFactory.tuple(columns.stream().map(Column::getType).toArray(DingoType[]::new));
+        return DingoTypeFactory.tuple(columns.stream()
+            .map(col -> {
+                if (col.getType() instanceof DecimalType) {
+                    DecimalType decType = (DecimalType) col.getType();
+                    decType.setPrecision(col.getPrecision());
+                    decType.setScale(col.getScale());
+                    return decType;
+                } else {
+                    return col.getType();
+                }
+            })
+            .toArray(DingoType[]::new));
     }
 
     public DingoType onlyKeyType() {

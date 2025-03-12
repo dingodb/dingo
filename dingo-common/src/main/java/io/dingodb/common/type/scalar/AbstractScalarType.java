@@ -38,6 +38,14 @@ public abstract class AbstractScalarType extends NullableType {
     @Getter
     protected boolean hidden;
 
+    @Setter
+    @Getter
+    protected long precision;
+
+    @Setter
+    @Getter
+    protected long scale;
+
     protected AbstractScalarType(Type type, boolean nullable) {
         super(nullable);
         this.type = type;
