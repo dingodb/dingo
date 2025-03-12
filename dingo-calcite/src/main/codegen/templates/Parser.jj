@@ -48,6 +48,7 @@ import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlCollectionTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDelete;
+import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlDescribeSchema;
 import org.apache.calcite.sql.SqlDescribeTable;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -2049,6 +2050,7 @@ SqlNode SqlUpdate() :
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
     final Span s;
+    SqlNode[] offsetFetch = {null, null};
 }
 {
     <UPDATE> {
@@ -2071,11 +2073,12 @@ SqlNode SqlUpdate() :
         <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     ( where = Where() | { where = null; } )
+    [ LimitClause(s, offsetFetch) ]
     {
         final SqlParserPos pos = s.addAll(targetColumnList)
             .addAll(sourceExpressionList).addIf(where).pos();
-        return new SqlUpdate(pos, tableRef, targetColumnList,
-            sourceExpressionList, where, null, alias);
+        return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, tableRef, targetColumnList,
+            sourceExpressionList, where, null, alias, offsetFetch);
     }
 }
 

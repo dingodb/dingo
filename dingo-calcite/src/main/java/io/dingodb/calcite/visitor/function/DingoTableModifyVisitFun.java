@@ -67,7 +67,7 @@ public final class DingoTableModifyVisitFun {
     }
 
     public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
-                                           ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel, boolean forUpdate
+                                           ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel, boolean forUpdate, int whereLimitValue
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
@@ -286,7 +286,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    whereLimitValue
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -316,7 +317,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    whereLimitValue
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
