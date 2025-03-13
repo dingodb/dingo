@@ -195,8 +195,9 @@ public class DingoGetByIndexRule extends ConverterRule {
         // get all index definition
         // find match first index to use;
         // new DingoGetIndex
-        boolean disableIndex = !scan.getHints().isEmpty()
-            && "disable_index".equalsIgnoreCase(scan.getHints().get(0).hintName);
+        //boolean disableIndex = !scan.getHints().isEmpty()
+        //    && "disable_index".equalsIgnoreCase(scan.getHints().get(0).hintName);
+        boolean disableIndex = 1 == 1;
         if (disableIndex) {
             return null;
         }
