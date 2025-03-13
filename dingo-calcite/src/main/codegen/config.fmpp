@@ -310,6 +310,9 @@ data: {
       "JAR"
       "FILE"
       "ARCHIVE"
+      "CARDINALITY"
+      "PLUGINS"
+      "TENANT"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
