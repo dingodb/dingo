@@ -29,6 +29,9 @@ public class InstrFun extends BinaryOp {
 
     @Override
     public Object evalValue(Object value0, Object value1, ExprConfig config) {
+        if (value0 == null || value1 == null) {
+            return null;
+        }
         String str = value0.toString();
         String point = value1.toString();
         return str.indexOf(point) + 1;

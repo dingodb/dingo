@@ -6441,7 +6441,7 @@ SqlNode BuiltinFunctionCall() :
             return e;
         }
     |
-        <SUBSTRING> { s = span(); }
+        ( <SUBSTR> | <SUBSTRING>) { s = span(); }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ( <FROM> | <COMMA>)
@@ -8559,6 +8559,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SUBMULTISET: "SUBMULTISET" >
 |   < SUBSET: "SUBSET" >
 |   < SUBSTITUTE: "SUBSTITUTE" >
+|   < SUBSTR: "SUBSTR" >
 |   < SUBSTRING: "SUBSTRING" >
 |   < SUBSTRING_REGEX: "SUBSTRING_REGEX" >
 |   < SUBSTRING_INDEX: "SUBSTRING_INDEX" >
