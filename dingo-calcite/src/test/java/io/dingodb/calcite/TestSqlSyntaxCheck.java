@@ -32,6 +32,7 @@ import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
+import io.dingodb.common.log.LogUtils;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -508,6 +509,27 @@ public class TestSqlSyntaxCheck {
         for (String sql : sqlList) {
             assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
         }
+    }
+
+    @Test
+    public void split() {
+        String sql = "/* DTS-writer-h8ci338813nu7cl-1 */insert into `gcpbs`.`gcp_bs_charge_detail_head` (`charge_end_reason`,`charge_type`,`charge_value`,`gpu_type`,`stats_type`,`charge_method`,`discount_amt`,`event_type`,`resource_type_id`,`product_id`,`id`,`adjust_desc`,`created_time`,`detail_status`,`aidc_id`,`charge_end_time`,`order_code`,`start_time`,`last_update_time`,`instance_id`,`charge_start_time`,`user_id`,`charge_amt`,`charge_amt_after_adjust`,`bill_cycle`,`charge_amt_after_discount`,`promotion_strategy`,`order_id`,`tenant_id`,`task_name`,`charge_seconds`,`user_name`,`charge_code`,`charge_unit`,`adjust_amt`,`task_id`,`product_code`,`usage_id`,`bill_item_id`,`charge_combo`,`charge_value_before_discount`,`charge_item`,`end_time`,`discount_value`,`unit_price`,`discount_type`,`is_dcu`,`account_id`,`product_category`)  VALUES  (NULL, 3, '0E-8', NULL, 2, 2, NULL, 1, 1, 39, 1089961, NULL, '2025-03-13 15:10:54.0', NULL, 1, '2025-03-13 15:00:00.0', x'4F52443230323530323238313633363132363532313335', '2025-03-13 14:00:00.0', '2025-03-13 15:10:54.0', x'65626366363564342D316536342D346537342D396433322D393639626365366263396164', '2025-03-13 14:00:00.0', x'', NULL, NULL, x'323032352D3033', '0.0000', x'7B2253544F524147455F474946545F4341504143495459223A7B22656E2D5553223A224C696D697465642D74696D65206672656520313032344742206F66666572222C227A682D434E223A22E99990E697B6E5858DE8B4B9313032344742E6B4BBE58AA8227D7D', 4924, x'63366664643439372D613564612D343264642D383634382D353932316163626431613736', x'', 3600, x'', x'54584E3230323530333133313531303533353537323632', 8, NULL, x'', x'5052442D53544F524147452D4341504143495459', NULL, NULL, 11, '0.02000000', 1, '2025-03-13 15:00:00.0', NULL, '0.0000', NULL, 1, 1975, 2) ;/* DTS-writer-h8ci338813nu7cl-1 */insert into `gcpbs`.`gcp_bs_measure_event` (`task_name`,`cluster`,`memory`,`gpu_type`,`user_name`,`gpu_total`,`task_id`,`cpu_total`,`source`,`scene`,`partition_id`,`event_type`,`qos`,`id`,`seq`,`timestamp`,`app`,`created_time`,`product_time`,`cpu`,`gpu_mem_total`,`gpu`,`mem_total`,`start_time`,`event_id`,`instance_id`,`user_id`,`job_id`,`end_state`,`instance_type`,`account`,`status`)  VALUES  (x'', NULL, NULL, NULL, x'', NULL, x'', NULL, NULL, x'42534D2D73746F726167652D34333230', NULL, x'53594E435F4556454E545F545950455F4B454550414C495645', NULL, 12360074, 250313906, x'31373431383439353630', NULL, '2025-03-13 15:10:54.0', '2025-03-13 15:06:00.0', NULL, NULL, NULL, NULL, x'31373339343937353335', x'30376431303165372D323962332D343266382D393131352D366632666538656561623937', x'38623435613565352D633335632D343235612D393337352D353434326664323836353233', x'', x'42534D2D73746F726167652D34333230', NULL, x'73746F72616765', NULL, 0) ;/* DTS-writer-h8ci338813nu7cl-1 */insert into `gcpbs`.`gcp_bs_charge_detail_head` (`charge_end_reason`,`charge_type`,`charge_value`,`gpu_type`,`stats_type`,`charge_method`,`discount_amt`,`event_type`,`resource_type_id`,`product_id`,`id`,`adjust_desc`,`created_time`,`detail_status`,`aidc_id`,`charge_end_time`,`order_code`,`start_time`,`last_update_time`,`instance_id`,`charge_start_time`,`user_id`,`charge_amt`,`charge_amt_after_adjust`,`bill_cycle`,`charge_amt_after_discount`,`promotion_strategy`,`order_id`,`tenant_id`,`task_name`,`charge_seconds`,`user_name`,`charge_code`,`charge_unit`,`adjust_amt`,`task_id`,`product_code`,`usage_id`,`bill_item_id`,`charge_combo`,`charge_value_before_discount`,`charge_item`,`end_time`,`discount_value`,`unit_price`,`discount_type`,`is_dcu`,`account_id`,`product_category`)  VALUES  (NULL, 3, '0E-8', NULL, 2, 2, NULL, 1, 1, 39, 1089962, NULL, '2025-03-13 15:10:55.0', NULL, 1, '2025-03-13 15:00:00.0', x'4F52443230323530323134303934353130343438373139', '2025-03-13 14:00:00.0', '2025-03-13 15:10:55.0', x'38623435613565352D633335632D343235612D393337352D353434326664323836353233', '2025-03-13 14:00:00.0', x'', NULL, NULL, x'323032352D3033', '0.0000', x'7B2253544F524147455F474946545F4341504143495459223A7B22656E2D5553223A224C696D697465642D74696D65206672656520313032344742206F66666572222C227A682D434E223A22E99990E697B6E5858DE8B4B9313032344742E6B4BBE58AA8227D7D', 4320, x'63373065393233352D363364312D346663652D613734342D653564613933383864663362', x'', 3600, x'', x'54584E3230323530333133313531303535323637353130', 8, NULL, x'', x'5052442D53544F524147452D4341504143495459', NULL, NULL, 11, '0.02000000', 1, '2025-03-13 15:00:00.0', NULL, '0.0000', NULL, 1, 1217, 2) ";
+
+        if (sql.contains(";/* DTS-writer")) {
+            String split = ";/*";
+            String[] sqls = sql.split(split);
+            for (String splitSql : sqls) {
+                try {
+                    if (splitSql.startsWith("* DTS-writer")) {
+                        splitSql = "/" + splitSql;
+                    }
+                    System.out.println("--------->" + splitSql);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     private boolean isValidEntry(String sql) {
