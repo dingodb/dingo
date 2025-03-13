@@ -102,7 +102,7 @@ public class MysqlCommands {
                 characterSet);
             return;
         }
-        if (sql.startsWith(";/* DTS-writer")) {
+        if (sql.contains(";/* DTS-writer")) {
             String split = ";/*";
             String[] sqls = sql.split(split);
             for (String splitSql : sqls) {

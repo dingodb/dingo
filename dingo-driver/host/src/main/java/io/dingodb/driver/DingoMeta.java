@@ -682,8 +682,8 @@ public class DingoMeta extends MetaImpl {
             if (transaction != null) {
                 if (StringUtil.isEmpty(((DingoConnection) connection).getContext().getOption("sql_log"))) {
                     String tmpSql = signature.sql;
-                    if (signature.sql != null && signature.sql.length() > 1200) {
-                        tmpSql = signature.sql.substring(0, 1000);
+                    if (signature.sql != null && signature.sql.length() > 2200) {
+                        tmpSql = signature.sql.substring(0, 2000);
                     }
                     LogUtils.info(log, "{} sql:{} , txnAutoCommit:{}, txnType:{} ", transaction.getTxnId(),
                         tmpSql, transaction.isAutoCommit(), transaction.getType());
