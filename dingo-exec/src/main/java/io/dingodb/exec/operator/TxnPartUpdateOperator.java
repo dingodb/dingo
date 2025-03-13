@@ -405,7 +405,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     }
                 }
 
-                if (context.getIndexId() == null) {
+                if (context.getIndexId() == null && param.getWhereLimitValue() != -1) {
                     int dealedWhereLimit = param.getDealedWhereLimit();
                     if(dealedWhereLimit >= param.getWhereLimitValue()) {
                         return true;

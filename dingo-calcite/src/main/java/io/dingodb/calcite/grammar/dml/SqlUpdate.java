@@ -43,6 +43,7 @@ public class SqlUpdate extends org.apache.calcite.sql.SqlUpdate {
                      @Nullable SqlIdentifier alias,
                      SqlNode[] offsetFetch) {
         super(pos, targetTable, targetColumnList, sourceExpressionList, condition, sourceSelect, alias);
+        this.limit = -1;
         if (offsetFetch != null) {
             for (SqlNode sqlNode : offsetFetch) {
                 if (sqlNode != null && sqlNode instanceof SqlNumericLiteral) {
