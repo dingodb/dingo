@@ -331,7 +331,7 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         handshakePacket.serverCapabilities = MysqlServer.getServerCapabilities();
         handshakePacket.serverCharsetIndex = 0x08;
         handshakePacket.serverStatus = SERVER_STATUS_AUTOCOMMIT;
-        handshakePacket.extendedServer = (short) 0xc1ff;
+        handshakePacket.extendedServer = (short) 0xc1fc;
         String plugin = "mysql_native_password";
         handshakePacket.authPluginLength = (byte) plugin.length();
 

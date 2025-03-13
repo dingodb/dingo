@@ -102,7 +102,22 @@ public class MysqlCommands {
                 characterSet);
             return;
         }
-        executeSingleQuery(sql, packetId, mysqlConnection);
+        if (sql.startsWith(";/* DTS-writer")) {
+            String split = ";/*";
+            String[] sqls = sql.split(split);
+            for (String splitSql : sqls) {
+                try {
+                    if (splitSql.startsWith("* DTS-writer")) {
+                        splitSql = "/" + splitSql;
+                    }
+                    executeSingleQuery(splitSql, packetId, mysqlConnection);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage() + ",sql:" + splitSql, e);
+                }
+            }
+        } else {
+            executeSingleQuery(sql, packetId, mysqlConnection);
+        }
     }
 
     private static boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {

@@ -179,6 +179,12 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     } else if ((resultType.getSqlTypeName().getName().equalsIgnoreCase("DECIMAL")
                         && type.getSqlTypeName().getName().equalsIgnoreCase("BINARY"))) {
                         resultType = type;
+                    } else if (type.getSqlTypeName().getName().equalsIgnoreCase("BINARY")
+                        || !resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
+                        resultType = type;
+                    }  else if (!type.getSqlTypeName().getName().equalsIgnoreCase("BINARY")
+                        || resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
+                        continue;
                     } else {
                         return null;
                     }
