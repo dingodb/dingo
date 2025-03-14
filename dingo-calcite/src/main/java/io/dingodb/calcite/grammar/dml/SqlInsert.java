@@ -17,6 +17,7 @@
 package io.dingodb.calcite.grammar.dml;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -34,6 +35,10 @@ public class SqlInsert extends org.apache.calcite.sql.SqlInsert {
     @Getter
     private @Nullable SqlNodeList targetColumnList2;
 
+    @Setter
+    @Getter
+    private boolean replaceInto;
+
     public SqlInsert(SqlParserPos pos,
                      SqlNodeList keywords,
                      SqlNode targetTable,
@@ -50,7 +55,8 @@ public class SqlInsert extends org.apache.calcite.sql.SqlInsert {
                      SqlNode source,
                      @Nullable SqlNodeList columnList,
                      @Nullable SqlNodeList sourceExpressionList,
-                     @Nullable SqlNodeList targetColumnList) {
+                     @Nullable SqlNodeList targetColumnList
+                     ) {
         super(pos, keywords, targetTable, source, columnList);
         this.sourceExpressionList = sourceExpressionList;
         this.targetColumnList2 = targetColumnList;

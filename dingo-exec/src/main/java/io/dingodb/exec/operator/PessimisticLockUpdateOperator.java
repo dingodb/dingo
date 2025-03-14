@@ -77,6 +77,13 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
         synchronized (vertex) {
             PessimisticLockUpdateParam param = vertex.getParam();
             param.setContext(context);
+            if (context.getIndexId() == null && param.getWhereLimitValue() != -1) {
+                int dealedWhereLimit = param.getDealedWhereLimit();
+                if(dealedWhereLimit >= param.getWhereLimitValue()) {
+                    return true;
+                }
+                param.updateDealedWhereLimit();
+            }
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
             CommonId partId = context.getDistribution().getId();

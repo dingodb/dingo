@@ -177,6 +177,13 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             byte[] jobIdByte = vertex.getTask().getJobId().encode();
             int len = txnIdBytes.length + tableIdBytes.length + partIdBytes.length;
             if (param.isPessimisticTxn()) {
+                if (context.getIndexId() == null && param.getWhereLimitValue() != -1) {
+                    int dealedWhereLimit = param.getDealedWhereLimit();
+                    if(dealedWhereLimit >= param.getWhereLimitValue()) {
+                        return true;
+                    }
+                    param.updateDealedWhereLimit();
+                }
                 // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
                 byte[] dataKey = ByteUtils.encode(
                     CommonId.CommonType.TXN_CACHE_DATA,

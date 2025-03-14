@@ -54,16 +54,25 @@ public class DingoUnion extends Union implements DingoRel {
         return visitor.visit(this);
     }
 
+    //@Override
+    //public @Nullable Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+    //    int size = this.inputs.size();
+    //    List<RelTraitSet> traitSetList = new ArrayList<>(size);
+    //    for (int i = 0; i < size; i++) {
+    //        traitSetList.add(childTraits);
+    //    }
+    //    return Pair.of(childTraits, traitSetList);
+    //}
+
     @Override
-    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+    public @Nullable Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(@NonNull RelTraitSet required) {
         int size = this.inputs.size();
         List<RelTraitSet> traitSetList = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            traitSetList.add(childTraits);
+            traitSetList.add(required);
         }
-        return Pair.of(childTraits, traitSetList);
+        return Pair.of(required, traitSetList);
     }
-
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
         rowCount = super.estimateRowCount(mq);

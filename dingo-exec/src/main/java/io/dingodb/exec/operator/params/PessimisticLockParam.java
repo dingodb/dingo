@@ -40,6 +40,11 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     @JsonProperty("isDuplicateKeyUpdate")
     private final boolean isDuplicateUpdate;
     private boolean forUpdate;
+    @JsonProperty("whereLimitValue")
+    private final int whereLimitValue;
+
+    @JsonProperty("dealedWhereLimit")
+    private int dealedWhereLimit;
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -55,7 +60,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         @JsonProperty("opType") String opType,
         Table table,
         boolean isDuplicateUpdate,
-        boolean forUpdate
+        boolean forUpdate,
+        @JsonProperty("whereLimitValue") int whereLimitValue
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -64,8 +70,14 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.opType = opType;
         this.isDuplicateUpdate = isDuplicateUpdate;
         this.forUpdate = forUpdate;
+        this.whereLimitValue = whereLimitValue;
+        this.dealedWhereLimit = 0;
     }
     public void inc() {
         count++;
+    }
+
+    public void updateDealedWhereLimit() {
+        this.dealedWhereLimit++;
     }
 }
