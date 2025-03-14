@@ -70,8 +70,9 @@ public final class DingoGetByKeys extends DingoGetByIndex {
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = estimateRowCount(mq);
-        double rowSize = getScanAvgRowSize(this);
-        double indexNetCost = getNetCost(rowCount, rowSize) / scanConcurrency;
+        // double rowSize = getScanAvgRowSize(this);
+        // TODO To be optimized
+        double indexNetCost = getNetCost(rowCount, 1) / scanConcurrency;
 
         return DingoCost.FACTORY.makeCost(indexNetCost, 0, 0);
     }
