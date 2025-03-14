@@ -32,7 +32,7 @@ import java.util.List;
 @Getter
 @JsonTypeName("pessimistic_lock_update")
 @JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn",
-    "isScan", "table", "schema", "keyMapping"})
+    "isScan", "table", "schema", "keyMapping","whereLimitValue", "dealedWhereLimit"})
 public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
@@ -41,6 +41,12 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
     private final List<SqlExpr> updates;
     @JsonProperty("isScan")
     private final boolean isScan;
+
+    @JsonProperty("whereLimitValue")
+    private final int whereLimitValue;
+
+    @JsonProperty("dealedWhereLimit")
+    private int dealedWhereLimit;
     public PessimisticLockUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -54,13 +60,16 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         @JsonProperty("primaryLockKey") byte[] primaryLockKey,
         @JsonProperty("lockTimeOut") long lockTimeOut,
         @JsonProperty("isScan") boolean isScan,
-        Table table
+        Table table,
+        @JsonProperty("whereLimitValue") int whereLimitValue
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;
         this.isScan = isScan;
+        this.whereLimitValue = whereLimitValue;
+        this.dealedWhereLimit = 0;
     }
     @Override
     public void init(Vertex vertex) {
@@ -76,5 +85,9 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
     public void setParas(Object[] paras) {
         super.setParas(paras);
         updates.forEach(e -> e.setParas(paras));
+    }
+
+    public void updateDealedWhereLimit() {
+        this.dealedWhereLimit++;
     }
 }

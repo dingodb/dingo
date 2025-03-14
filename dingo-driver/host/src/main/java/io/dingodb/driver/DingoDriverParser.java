@@ -31,6 +31,7 @@ import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
+import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
 import io.dingodb.calcite.meta.DingoColumnMetaData;
 import io.dingodb.calcite.rel.AutoIncrementShuttle;
@@ -56,6 +57,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
@@ -273,8 +275,14 @@ public final class DingoDriverParser extends DingoParser {
         boolean prepare
     ) {
         SqlNode sqlNode;
+        boolean replaceInto = false;
         try {
             long start = System.currentTimeMillis();
+            replaceInto = sql.contains("replace into");
+            if (replaceInto) {
+                SqlLogUtils.info("Input replace into Query: {}", sql);
+                sql = sql.replace("replace into", "insert into ");
+            }
             sqlNode = parse(sql);
             long sub = System.currentTimeMillis() - start;
             DingoMetrics.timer("sql-parse").update(sub, TimeUnit.MILLISECONDS);
@@ -481,6 +489,9 @@ public final class DingoDriverParser extends DingoParser {
             columns = getTraceColMeta(typeFactory);
             enableColumnMetas = columns;
         }
+        if (sqlNode instanceof SqlInsert) {
+            ((SqlInsert) sqlNode).setReplaceInto(replaceInto);
+        }
 
         long start = System.currentTimeMillis();
         final RelRoot relRoot = convert(sqlNode, false);
@@ -530,7 +541,8 @@ public final class DingoDriverParser extends DingoParser {
             new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
             pointTs,
             forUpdate,
-            whereLimitValue
+            whereLimitValue,
+            replaceInto
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -800,7 +812,7 @@ public final class DingoDriverParser extends DingoParser {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate, whereLimitValue
+                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate, whereLimitValue, getReplaceInto(sqlNode)
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);

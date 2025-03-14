@@ -144,8 +144,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Getter
     private int whereLimitValue;
 
+    @Getter
+    private boolean replaceInto;
+
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
-                            SqlKind kind, ExecuteVariables executeVariables, long pointTs, boolean forUpdate, int whereLimitValue) {
+                            SqlKind kind, ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
+                            int whereLimitValue, boolean replaceInto) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
@@ -155,6 +159,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         this.pointTs = pointTs;
         this.forUpdate = forUpdate;
         this.whereLimitValue = whereLimitValue;
+        this.replaceInto = replaceInto;
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation) {
@@ -166,16 +171,17 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
                                  ExecuteVariables executeVariables) {
         renderJob(jobManager, job, input, currentLocation, checkRoot, transaction, kind,
-            executeVariables, 0, false, -1);
+            executeVariables, 0, false, -1, false);
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
-                                 ExecuteVariables executeVariables, long pointTs, boolean forUpdate, int whereLimitValue) {
+                                 ExecuteVariables executeVariables, long pointTs, boolean forUpdate, int whereLimitValue,
+                                 boolean replaceInto) {
         try {
             IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
             DingoJobVisitor visitor = new DingoJobVisitor(
-                job, idGenerator, currentLocation, transaction, kind, executeVariables, pointTs, forUpdate, whereLimitValue
+                job, idGenerator, currentLocation, transaction, kind, executeVariables, pointTs, forUpdate, whereLimitValue, replaceInto
             );
             Collection<Vertex> outputs = dingo(input).accept(visitor);
             if (checkRoot && !outputs.isEmpty()) {
@@ -214,7 +220,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoTableModify rel) {
-        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel, forUpdate, whereLimitValue);
+        return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel, forUpdate, whereLimitValue, replaceInto);
     }
 
     @Override
