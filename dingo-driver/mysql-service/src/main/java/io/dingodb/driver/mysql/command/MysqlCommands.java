@@ -17,10 +17,12 @@
 package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
+import io.dingodb.common.util.Pair;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
@@ -30,6 +32,7 @@ import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.EOFPacket;
 import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
 import io.dingodb.driver.mysql.packet.LoadDataResPacket;
+import io.dingodb.driver.mysql.packet.MultiStatementRes;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PrepareOkPacket;
@@ -59,6 +62,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 
 @Slf4j
@@ -105,15 +109,41 @@ public class MysqlCommands {
         if (sql.contains(";/* DTS-writer")) {
             String split = ";/*";
             String[] sqls = sql.split(split);
+            AtomicLong atomicLong = new AtomicLong();
+            SQLException sqlException = null;
+            List<MultiStatementRes> resList = new ArrayList<>();
             for (String splitSql : sqls) {
                 try {
                     if (splitSql.startsWith("* DTS-writer")) {
                         splitSql = "/" + splitSql;
                     }
-                    executeSingleQuery(splitSql, packetId, mysqlConnection);
+                    MultiStatementRes res = executeSingleDml(splitSql, mysqlConnection);
+                    resList.add(res);
+                    if (res != null) {
+                        if (res.sqlException == null) {
+                            atomicLong.addAndGet(res.rows);
+                        } else {
+                            sqlException = res.sqlException;
+                            break;
+                        }
+                    }
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage() + ",sql:" + splitSql, e);
+                    sqlException = new SQLException("ErrUnknown", "HY000", ErrUnknown);
+                    break;
                 }
+            }
+            if (sqlException != null) {
+                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException,
+                    characterSet);
+            } else {
+                int serverStatus = 0;
+                if (!resList.isEmpty()) {
+                    serverStatus = resList.get(resList.size() - 1).serverStatus;
+                }
+                OKPacket okPacket = MysqlPacketFactory.getInstance()
+                    .getOkPacket(atomicLong.intValue(), packetId, serverStatus, BigInteger.ZERO, null);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } else {
             executeSingleQuery(sql, packetId, mysqlConnection);
@@ -271,6 +301,64 @@ public class MysqlCommands {
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             throw e;
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+        }
+    }
+
+    public MultiStatementRes executeSingleDml(String sql, MysqlConnection mysqlConnection) {
+        Statement statement = null;
+        boolean hasResults;
+        String connCharSet = null;
+        int initServerStatus = 0;
+        try {
+            statement = mysqlConnection.getConnection().createStatement();
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            hasResults = statement.execute(sql);
+            if (hasResults) {
+                // select
+                LogUtils.error(log, "executeSingleDml query.");
+                DingoStatement dingoStatement = (DingoStatement) statement;
+                return new MultiStatementRes(0, BigInteger.ZERO, null, dingoStatement.getServerStatus());
+            } else {
+                // update insert delete
+                int count = statement.getUpdateCount();
+                SQLWarning sqlWarning = statement.getWarnings();
+                if (sqlWarning == null) {
+                    sqlWarning = mysqlConnection.getConnection().getWarnings();
+                }
+                try {
+                    mysqlConnection.getConnection().clearWarnings();
+                } catch (SQLException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                }
+                DingoStatement dingoStatement = (DingoStatement) statement;
+                initServerStatus = dingoStatement.getServerStatus();
+                String warning = null;
+                if (sqlWarning != null) {
+                    warning = sqlWarning.getMessage();
+                }
+                if (dingoStatement.isHasIncId()) {
+                    Long lastInsertId = dingoStatement.getAutoIncId();
+                    return new MultiStatementRes(count, new BigInteger(String.valueOf(lastInsertId)), null, initServerStatus);
+                } else {
+                    return new MultiStatementRes(count, BigInteger.ZERO, null, initServerStatus);
+                }
+            }
+        } catch (SQLException sqlException) {
+            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:"
+                + sqlException.getErrorCode()
+                + ", message:" + sqlException.getMessage());
+            return new MultiStatementRes(0, BigInteger.ZERO, sqlException, initServerStatus);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return new MultiStatementRes(0, BigInteger.ZERO, new SQLException("ErrUnknown", "HY000", ErrUnknown), initServerStatus);
         } finally {
             try {
                 if (statement != null) {
