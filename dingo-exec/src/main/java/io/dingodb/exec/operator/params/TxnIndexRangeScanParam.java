@@ -81,6 +81,8 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
     @JsonProperty("isAutoCommit")
     private final boolean isAutoCommit;
 
+    private RelOp otherRelOp;
+
     public TxnIndexRangeScanParam(CommonId indexTableId,
                                  CommonId tableId,
                                  TupleMapping keyMapping,
@@ -95,7 +97,8 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                                  boolean pushDown,
                                  TupleMapping selection2,
                                  int limit,
-                                  boolean isAutoCommit) {
+                                  boolean isAutoCommit,
+                                  RelOp otherRelOp) {
         super(tableId, index.tupleType(), keyMapping, relOp, outputSchema,
             pushDown, index.getVersion(), limit, table.getCodecVersion(), selection2.stream().boxed().collect(Collectors.toList()));
         this.indexSchema = index.tupleType();
@@ -116,6 +119,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
         } else {
             this.mapList = index.getColumns().stream().map(table.columns::indexOf).collect(Collectors.toList());
         }
+        this.otherRelOp = otherRelOp;
     }
 
     @Override
@@ -127,6 +131,16 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
             (TupleType) indexSchema.getType(),
             (TupleType) vertex.getParasType().getType()
         ), config);
+        if (otherRelOp != null) {
+            try {
+                otherRelOp = otherRelOp.compile(new DingoCompileContext(
+                    (TupleType) table.tupleType().getType(),
+                    (TupleType) vertex.getParasType().getType()
+                ), config);
+            } catch (Exception e) {
+                LogUtils.error(log, "otherRelOp {} compile error: {}", otherRelOp, e.getMessage(), e);
+            }
+        }
         if (pushDown) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             if (RelOpCoder.INSTANCE.visit(relOpCompile, os) == CodingFlag.OK) {

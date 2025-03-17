@@ -27,7 +27,10 @@ import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlIntervalLiteral;
+import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
@@ -54,11 +57,16 @@ import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
+import org.apache.calcite.util.BitString;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.AbstractList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -373,6 +381,67 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             }
         } else {
             return query; // give up
+        }
+    }
+
+    public void validateLiteral(SqlLiteral literal) {
+        switch (literal.getTypeName()) {
+            case DECIMAL:
+                //BigDecimal bd = (BigDecimal)literal.getValueAs(BigDecimal.class);
+                //BigInteger unscaled = bd.toBigInteger();
+                //long longValue = unscaled.longValue();
+                //if (!BigInteger.valueOf(longValue).equals(unscaled)) {
+                //    throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(bd.toString()));
+                //}
+                break;
+            case DOUBLE:
+                this.validateLiteralAsDouble(literal);
+                break;
+            case BINARY:
+                BitString bitString = (BitString)literal.getValueAs(BitString.class);
+                if (bitString.getBitCount() % 8 != 0) {
+                    throw this.newValidationError(literal, Static.RESOURCE.binaryLiteralOdd());
+                }
+                break;
+            case DATE:
+            case TIME:
+            case TIMESTAMP:
+                Calendar calendar = (Calendar)literal.getValueAs(Calendar.class);
+                int year = calendar.get(1);
+                int era = calendar.get(0);
+                if (year < 1 || era == 0 || year > 9999) {
+                    throw this.newValidationError(literal, Static.RESOURCE.dateLiteralOutOfRange(literal.toString()));
+                }
+                break;
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_SECOND:
+                if (literal instanceof SqlIntervalLiteral) {
+                    SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue)literal.getValueAs(SqlIntervalLiteral.IntervalValue.class);
+                    SqlIntervalQualifier intervalQualifier = interval.getIntervalQualifier();
+                    this.validateIntervalQualifier(intervalQualifier);
+                    String intervalStr = interval.getIntervalLiteral();
+                    int[] values = intervalQualifier.evaluateIntervalLiteral(intervalStr, literal.getParserPosition(), this.typeFactory.getTypeSystem());
+                    Util.discard(values);
+                }
+        }
+    }
+
+    private void validateLiteralAsDouble(SqlLiteral literal) {
+        BigDecimal bd = (BigDecimal)literal.getValueAs(BigDecimal.class);
+        double d = bd.doubleValue();
+        if (Double.isInfinite(d) || Double.isNaN(d)) {
+            throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(Util.toScientificNotation(bd)));
         }
     }
 }
