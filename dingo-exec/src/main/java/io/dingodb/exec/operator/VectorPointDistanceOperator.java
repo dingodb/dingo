@@ -38,7 +38,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVectorList;
 
 @Slf4j
 public class VectorPointDistanceOperator extends SoleOutOperator {
@@ -121,14 +121,14 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
                 return;
             }
             List<Float> floatArray = new ArrayList<>();
-            byte[] leftBinaryValues = getBinaryVector(param.getBinaryVector(), param.getDimension());
+            List<byte[]> leftBinaryValues = getBinaryVectorList(param.getBinaryVector(), param.getDimension());
             for (byte[] right : rightList) {
-                byte[] rightBinaryValues = getBinaryVector(right, param.getDimension());
+                List<byte[]> rightBinaryValues = getBinaryVectorList(right, param.getDimension());
                 VectorCalcDistance vectorCalcDistance = VectorCalcDistance.builder()
                     .topN(topn)
                     .isBinaryVector(true)
-                    .leftBinaryValues(Collections.singletonList(leftBinaryValues))
-                    .rightBinaryValues(Collections.singletonList(rightBinaryValues))
+                    .leftBinaryValues(leftBinaryValues)
+                    .rightBinaryValues(rightBinaryValues)
                     .dimension(param.getDimension())
                     .algorithmType(param.getAlgType())
                     .metricType(param.getMetricType())

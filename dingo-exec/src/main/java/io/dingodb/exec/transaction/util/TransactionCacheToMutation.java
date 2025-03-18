@@ -66,7 +66,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.exec.transaction.util.BinaryVectorUtils.checkBinaryVector;
-import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVectorList;
 
 @Slf4j
 public final class TransactionCacheToMutation {
@@ -188,10 +188,9 @@ public final class TransactionCacheToMutation {
                     byte[] values = (byte[]) record[colNames.indexOf(column1.getName())];
                     int dimension = Integer.parseInt(index.getProperties().getProperty("dimension"));
                     checkBinaryVector(values, dimension);
-                    byte[] bytes = getBinaryVector(values, dimension);
                     vector = Vector.builder()
                         .dimension(dimension)
-                        .binaryValues(Collections.singletonList(bytes))
+                        .binaryValues(getBinaryVectorList(values, dimension))
                         .valueType(Vector.ValueType.UINT8)
                         .build();
                     record[colNames.indexOf(column1.getName())] = new byte[]{};

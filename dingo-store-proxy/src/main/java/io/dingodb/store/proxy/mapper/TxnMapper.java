@@ -212,11 +212,17 @@ public interface TxnMapper {
             case INTEGER:
                 return ScalarField.builder().data(ScalarField.DataNest.IntData.of((Integer) field.getData())).build();
             case LONG:
-                return ScalarField.builder().data(ScalarField.DataNest.LongData.of((Long) field.getData())).build();
+                return ScalarField.builder().data(
+                    field.getData() == null ? null : ScalarField.DataNest.LongData.of((Long) field.getData())
+                    )
+                    .build();
             case FLOAT:
                 return ScalarField.builder().data(ScalarField.DataNest.FloatData.of((Float) field.getData())).build();
             case DOUBLE:
-                return ScalarField.builder().data(ScalarField.DataNest.DoubleData.of((Double) field.getData())).build();
+                return ScalarField.builder().data(
+                        field.getData() == null ? null : ScalarField.DataNest.DoubleData.of((Double) field.getData())
+                    )
+                    .build();
             case STRING:
                 return ScalarField.builder().data(ScalarField.DataNest.StringData.of((String) field.getData())).build();
             case BYTES:
