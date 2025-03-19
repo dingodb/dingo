@@ -23,6 +23,12 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlIntervalLiteral;
+import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -40,6 +46,17 @@ import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.apache.calcite.util.BitString;
+import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Static;
+import org.apache.calcite.util.Util;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.AbstractList;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -148,4 +165,260 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         super.inferUnknownTypes(inferredType, scope, node);
     }
 
+    protected void validateValues(
+        SqlCall node,
+        RelDataType targetRowType,
+        final SqlValidatorScope scope) {
+        assert node.getKind() == SqlKind.VALUES;
+
+        final List<SqlNode> operands = node.getOperandList();
+        for (SqlNode operand : operands) {
+            if (!(operand.getKind() == SqlKind.ROW)) {
+                throw Util.needToImplement(
+                    "Values function where operands are scalars");
+            }
+
+            SqlCall rowConstructor = (SqlCall) operand;
+            if (false
+                && targetRowType.isStruct()
+                && rowConstructor.operandCount() < targetRowType.getFieldCount()) {
+                targetRowType =
+                    typeFactory.createStructType(
+                        targetRowType.getFieldList()
+                            .subList(0, rowConstructor.operandCount()));
+            } else if (targetRowType.isStruct()
+                && rowConstructor.operandCount() != targetRowType.getFieldCount()) {
+                return;
+            }
+
+            inferUnknownTypes(
+                targetRowType,
+                scope,
+                rowConstructor);
+
+            if (targetRowType.isStruct()) {
+                for (Pair<SqlNode, RelDataTypeField> pair
+                    : Pair.zip(rowConstructor.getOperandList(),
+                    targetRowType.getFieldList())) {
+                    if (!pair.right.getType().isNullable()
+                        && SqlUtil.isNullLiteral(pair.left, false)) {
+                        throw newValidationError(node,
+                            RESOURCE.columnNotNullable(pair.right.getName()));
+                    }
+                }
+            }
+        }
+
+        for (SqlNode operand : operands) {
+            operand.validate(this, scope);
+        }
+
+        // validate that all row types have the same number of columns
+        //  and that expressions in each column are compatible.
+        // A values expression is turned into something that looks like
+        // ROW(type00, type01,...), ROW(type11,...),...
+        final int rowCount = operands.size();
+        if (rowCount >= 2) {
+            SqlCall firstRow = (SqlCall) operands.get(0);
+            final int columnCount = firstRow.operandCount();
+
+            // 1. check that all rows have the same cols length
+            for (SqlNode operand : operands) {
+                SqlCall thisRow = (SqlCall) operand;
+                if (columnCount != thisRow.operandCount()) {
+                    throw newValidationError(node,
+                        RESOURCE.incompatibleValueType(
+                            SqlStdOperatorTable.VALUES.getName()));
+                }
+            }
+
+            // 2. check if types at i:th position in each row are compatible
+            for (int col = 0; col < columnCount; col++) {
+                final int c = col;
+                final RelDataType type =
+                    typeFactory.leastRestrictive(
+                        new AbstractList<RelDataType>() {
+                            @Override public RelDataType get(int row) {
+                                SqlCall thisRow = (SqlCall) operands.get(row);
+                                return deriveType(scope, thisRow.operand(c));
+                            }
+
+                            @Override public int size() {
+                                return rowCount;
+                            }
+                        });
+
+                if (null == type) {
+                    throw newValidationError(node,
+                        RESOURCE.incompatibleValueType(
+                            SqlStdOperatorTable.VALUES.getName()));
+                }
+            }
+        }
+    }
+
+    public void checkTypeAssignment(
+        @Nullable SqlValidatorScope sourceScope,
+        SqlValidatorTable table,
+        RelDataType sourceRowType,
+        RelDataType targetRowType,
+        final SqlNode query) {
+        // NOTE jvs 23-Feb-2006: subclasses may allow for extra targets
+        // representing system-maintained columns, so stop after all sources
+        // matched
+        boolean isUpdateModifiableViewTable = false;
+        if (query instanceof SqlUpdate) {
+            final SqlNodeList targetColumnList = ((SqlUpdate) query).getTargetColumnList();
+            if (targetColumnList != null) {
+                final int targetColumnCnt = targetColumnList.size();
+                targetRowType = SqlTypeUtil.extractLastNFields(typeFactory, targetRowType,
+                    targetColumnCnt);
+                sourceRowType = SqlTypeUtil.extractLastNFields(typeFactory, sourceRowType,
+                    targetColumnCnt);
+            }
+            isUpdateModifiableViewTable = table.unwrap(ModifiableViewTable.class) != null;
+        }
+        if (SqlTypeUtil.equalAsStructSansNullability(typeFactory,
+            sourceRowType,
+            targetRowType,
+            null)) {
+            // Returns early if source and target row type equals sans nullability.
+            return;
+        }
+        if (CONFIG.typeCoercionEnabled() && !isUpdateModifiableViewTable) {
+            // Try type coercion first if implicit type coercion is allowed.
+            boolean coerced = typeCoercion1.querySourceCoercion(sourceScope,
+                sourceRowType,
+                targetRowType,
+                query);
+            if (coerced) {
+                return;
+            }
+        }
+
+        // Fall back to default behavior: compare the type families.
+        List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
+        List<RelDataTypeField> targetFields = targetRowType.getFieldList();
+        final int sourceCount = sourceFields.size();
+        for (int i = 0; i < sourceCount; ++i) {
+            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataType targetType = targetFields.get(i).getType();
+            if (!SqlTypeUtil.canAssignFrom(targetType, sourceType)) {
+                SqlNode node = getNthExpr(query, i, sourceCount);
+                if (node instanceof SqlDynamicParam) {
+                    continue;
+                }
+                String targetTypeString;
+                String sourceTypeString;
+                if (SqlTypeUtil.areCharacterSetsMismatched(
+                    sourceType,
+                    targetType)) {
+                    sourceTypeString = sourceType.getFullTypeString();
+                    targetTypeString = targetType.getFullTypeString();
+                } else {
+                    sourceTypeString = sourceType.toString();
+                    targetTypeString = targetType.toString();
+                }
+                throw newValidationError(node,
+                    RESOURCE.typeNotAssignable(
+                        targetFields.get(i).getName(), targetTypeString,
+                        sourceFields.get(i).getName(), sourceTypeString));
+            }
+        }
+    }
+
+    private static SqlNode getNthExpr(SqlNode query, int ordinal, int sourceCount) {
+        if (query instanceof SqlInsert) {
+            SqlInsert insert = (SqlInsert) query;
+            if (insert.getTargetColumnList() != null) {
+                return insert.getTargetColumnList().get(ordinal);
+            } else {
+                return getNthExpr(
+                    insert.getSource(),
+                    ordinal,
+                    sourceCount);
+            }
+        } else if (query instanceof SqlUpdate) {
+            SqlUpdate update = (SqlUpdate) query;
+            if (update.getSourceExpressionList() != null) {
+                return update.getSourceExpressionList().get(ordinal);
+            } else {
+                return getNthExpr(
+                    SqlNonNullableAccessors.getSourceSelect(update),
+                    ordinal,
+                    sourceCount);
+            }
+        } else if (query instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect) query;
+            SqlNodeList selectList = SqlNonNullableAccessors.getSelectList(select);
+            if (selectList.size() == sourceCount) {
+                return selectList.get(ordinal);
+            } else {
+                return query; // give up
+            }
+        } else {
+            return query; // give up
+        }
+    }
+
+    public void validateLiteral(SqlLiteral literal) {
+        switch (literal.getTypeName()) {
+            case DECIMAL:
+                //BigDecimal bd = (BigDecimal)literal.getValueAs(BigDecimal.class);
+                //BigInteger unscaled = bd.toBigInteger();
+                //long longValue = unscaled.longValue();
+                //if (!BigInteger.valueOf(longValue).equals(unscaled)) {
+                //    throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(bd.toString()));
+                //}
+                break;
+            case DOUBLE:
+                this.validateLiteralAsDouble(literal);
+                break;
+            case BINARY:
+                BitString bitString = (BitString)literal.getValueAs(BitString.class);
+                if (bitString.getBitCount() % 8 != 0) {
+                    throw this.newValidationError(literal, Static.RESOURCE.binaryLiteralOdd());
+                }
+                break;
+            case DATE:
+            case TIME:
+            case TIMESTAMP:
+                Calendar calendar = (Calendar)literal.getValueAs(Calendar.class);
+                int year = calendar.get(1);
+                int era = calendar.get(0);
+                if (year < 1 || era == 0 || year > 9999) {
+                    throw this.newValidationError(literal, Static.RESOURCE.dateLiteralOutOfRange(literal.toString()));
+                }
+                break;
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_SECOND:
+                if (literal instanceof SqlIntervalLiteral) {
+                    SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue)literal.getValueAs(SqlIntervalLiteral.IntervalValue.class);
+                    SqlIntervalQualifier intervalQualifier = interval.getIntervalQualifier();
+                    this.validateIntervalQualifier(intervalQualifier);
+                    String intervalStr = interval.getIntervalLiteral();
+                    int[] values = intervalQualifier.evaluateIntervalLiteral(intervalStr, literal.getParserPosition(), this.typeFactory.getTypeSystem());
+                    Util.discard(values);
+                }
+        }
+    }
+
+    private void validateLiteralAsDouble(SqlLiteral literal) {
+        BigDecimal bd = (BigDecimal)literal.getValueAs(BigDecimal.class);
+        double d = bd.doubleValue();
+        if (Double.isInfinite(d) || Double.isNaN(d)) {
+            throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(Util.toScientificNotation(bd)));
+        }
+    }
 }
