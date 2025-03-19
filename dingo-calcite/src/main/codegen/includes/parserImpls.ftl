@@ -197,7 +197,7 @@ void TableElement(List<SqlNode> list) :
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> (<NOT>|{ checkNot=false;}) (<ENFORCED>|<NULL>|{ String t = "";})
          |
-           <COMMENT> (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+           <COMMENT> comment = identifier1()
          |
            <COLLATE> { collate = this.getNextToken().image; }
          |
@@ -247,7 +247,7 @@ void TableElement(List<SqlNode> list) :
             { indexType = "text"; }
             columnList = ParenthesizedSimpleIdentifierList()
         )
-        ( <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent();})
+        ( <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1();})
          |
           <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
          |
@@ -381,9 +381,9 @@ ColumnOption parseColumnOption(): {
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> (<NOT> {constraintNot = true;}|{constraintNot=false;}) (<ENFORCED> {constraintOpt="enforced";}|<NULL> {constraintOpt="null";}|{constraintOpt="";})
          |
-           <COMMENT> { String comment = strIdent(); colOpt.comment=comment; }
+           <COMMENT> { String comment = identifier1(); colOpt.comment=comment; }
          |
-           <COLLATE> { String collate = strIdent(); colOpt.collate=collate; }
+           <COLLATE> { String collate = identifier1(); colOpt.collate=collate; }
          |
            <COLUMN_FORMAT> (<FIXED> {colOpt.columnFormat="fixed";}|<DYNAMIC> {colOpt.columnFormat="dynamic";}|<DEFAULT_> {colOpt.columnFormat="default";})
          |
@@ -506,14 +506,13 @@ SqlCreate SqlCreateUser(Span s, boolean replace) :
 }
 {
     <USER> ifNotExists = IfNotExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-     { user = token.image; }
-    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
+    user = identifier1()
+    [ <AT_SPLIT>  host = identifier1()  ]
     <IDENTIFIED>
     (
-    <WITH> (<QUOTED_STRING> | <IDENTIFIER>) { plugin = token.image; } [<AS> <QUOTED_STRING> { pluginDn = token.image; }]
+    <WITH>  plugin = identifier1() [<AS> <QUOTED_STRING> { pluginDn = SqlParserUtil.trim(token.image, "'"); }]
     |
-    <BY>  <QUOTED_STRING> { password = token.image; }
+    <BY>  <QUOTED_STRING> { password = SqlParserUtil.trim(token.image, "'"); }
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
     [ <PASSWORD> <EXPIRE> { expireDays = "0"; } [ <INTERVAL> expireDays = number() <DAY> ] ]
     [ <ACCOUNT> [ <LOCK> { lock = "Y"; } ] [ <UNLOCK> { lock = "N"; } ] ]
@@ -764,7 +763,7 @@ SqlCreate SqlCreateView(Span s, boolean replace) :
 }
 {
     [<ALGORITHM> <EQ> (<UNDEFINED>|<MERGE>|<TEMPTABLE>)]
-    [ <DEFINER> <EQ> user = strIdent() [ <AT_SPLIT> strIdent() { host = token.image; }  ]]
+    [ <DEFINER> <EQ> user = identifier1() [ <AT_SPLIT> host = identifier1()  ]]
     [ <SQL> <SECURITY> (<DEFINER>|<INVOKER>)]
     <VIEW> id = CompoundIdentifier()
     [ columnList = ParenthesizedSimpleIdentifierList() ]
@@ -842,8 +841,7 @@ SqlCreate SqlCreateFunction(Span s, boolean replace) :
 SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     boolean isUnique = false;
-    String mode = "";
-    final String index;
+    String mode = ""; String index;
     SqlIdentifier table;
     SqlNode column;
     List<SqlNode> columns;
@@ -857,8 +855,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
 {
     [ (<UNIQUE> { isUnique = true; mode="unique"; } | <FULLTEXT> { mode = "fulltext";}|<SPATIAL> {mode = "fulltext";})]
     <INDEX> ifNotExists = IfNotExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-     { index = token.image; }
+    index = identifier1()
     <ON> table = CompoundIdentifier()
     columns = indexColumns()
     [
@@ -915,7 +912,7 @@ Properties indexOption(): {
     |
     indexType = indexTypeName() { prop.put("indexType", indexType);}
     |
-    <COMMENT> { prop.put("comment", strIdent());}
+    <COMMENT> { prop.put("comment", identifier1());}
     |
     <VISIBLE> { prop.put("visible", "true"); }
     |
@@ -929,19 +926,6 @@ Properties indexOption(): {
    )*
    {
      return prop;
-   }
-}
-
-String strIdent(): {
-  String str = null;
-} {
-   (
-    <IDENTIFIER> { str = token.image; }
-   |
-    <QUOTED_STRING> { str = token.image.replace("'", "");}
-   )
-   {
-     return str;
    }
 }
 
@@ -1112,8 +1096,7 @@ SqlDrop SqlDropSequence(Span s, boolean replace) :
 }
 {
     <SEQUENCE> ifExists = IfExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-    { sequence = token.image; }
+     sequence = identifier1()
     {
         return new SqlDropSequence(s.end(this), ifExists, sequence);
     }
@@ -1169,9 +1152,8 @@ SqlDrop SqlDropUser(Span s, boolean replace) :
 }
 {
     <USER> ifExists = IfExistsOpt()
-    ( <QUOTED_STRING> | <IDENTIFIER> )
-    { user = token.image; }
-    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER> ) { host = token.image;} ]
+     user = identifier1()
+    [ <AT_SPLIT>  host = identifier1() ]
     {
         return new SqlDropUser(s.end(this), ifExists, user, host);
     }
@@ -1224,76 +1206,6 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
     id = CompoundIdentifier()
     {
       return new SqlDropIndex(s.end(this), ifExists, index, id);
-    }
-}
-
-String dingoIdentifier(): {
-    String id;
-    SqlParserPos pos;
-    Span span;
-    char unicodeEscapeChar = BACKSLASH;
-}
-{
-     (
-        <IDENTIFIER> {
-            id = unquotedIdentifier();
-            pos = getPos();
-        }
-    |
-        <HYPHENATED_IDENTIFIER> {
-            id = unquotedIdentifier();
-            pos = getPos();
-        }
-    |
-        <QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.stripQuotes(getToken(0).image, DQ, DQ, DQDQ,
-                quotedCasing);
-            pos = getPos().withQuoting(true);
-        }
-    |
-        <BACK_QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.stripQuotes(getToken(0).image, "`", "`", "``",
-                quotedCasing);
-            pos = getPos().withQuoting(true);
-        }
-    |
-        <BIG_QUERY_BACK_QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.stripQuotes(getToken(0).image, "`", "`", "\\`",
-                quotedCasing);
-            pos = getPos().withQuoting(true);
-        }
-    |
-        <BRACKET_QUOTED_IDENTIFIER> {
-            id = SqlParserUtil.stripQuotes(getToken(0).image, "[", "]", "]]",
-                quotedCasing);
-            pos = getPos().withQuoting(true);
-        }
-    |
-        <UNICODE_QUOTED_IDENTIFIER> {
-            span = span();
-            String image = getToken(0).image;
-            image = image.substring(image.indexOf('"'));
-            image = SqlParserUtil.stripQuotes(image, DQ, DQ, DQDQ, quotedCasing);
-        }
-        [
-            <UESCAPE> <QUOTED_STRING> {
-                String s = SqlParserUtil.parseString(token.image);
-                unicodeEscapeChar = SqlParserUtil.checkUnicodeEscapeChar(s);
-            }
-        ]
-        {
-            pos = span.end(this).withQuoting(true);
-            SqlLiteral lit = SqlLiteral.createCharString(image, "UTF16", pos);
-            lit = lit.unescapeUnicode(unicodeEscapeChar);
-            id = lit.toValue();
-        }
-    |
-        id = NonReservedKeyWord() {
-            pos = getPos();
-        }
-    )
-    {
-      return id;
     }
 }
 
@@ -1512,9 +1424,9 @@ SqlAlterUser SqlAlterUser(Span s, String scope): {
     Object expireDays = null;
 } {
    <USER>
-   ( <QUOTED_STRING> | <IDENTIFIER> )
-     { s = span(); user = token.image; }
-    [ <AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) { host = token.image; }  ]
+    user = identifier1()
+     { s = span(); }
+    [ <AT_SPLIT>  host = identifier1()  ]
     [ <IDENTIFIED> <BY>  <QUOTED_STRING> { password = token.image; } ]
     [ <REQUIRE> (  <SSL> { requireSsl = "SSL"; } | <NONE> { requireSsl  = "NONE"; }) ]
     [ <PASSWORD> <EXPIRE> { expireDays = "0"; } [ <INTERVAL> expireDays = number() <DAY> ] ]

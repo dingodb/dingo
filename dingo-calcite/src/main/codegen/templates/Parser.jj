@@ -465,24 +465,22 @@ JAVACODE SqlParseException convertException(Throwable ex)
             // Checks token.image.equals("1") to avoid recursive call.
             // The SqlAbstractParserImpl#MetadataImpl constructor uses constant "1" to
             // throw intentionally to collect the expected tokens.
-            if (!token.image.equals("1")
-                && getMetadata().isKeyword(token.image)
-                && SqlParserUtil.allowsIdentifier(tokenImage, expectedTokenSequences)) {
+            //if (!token.image.equals("1")
+            //    && getMetadata().isKeyword(token.image)
+            //    && SqlParserUtil.allowsIdentifier(tokenImage, expectedTokenSequences)) {
                 // If the next token is a keyword, reformat the error message as:
 
                 // Incorrect syntax near the keyword '{keyword}' at line {line_number},
                 // column {column_number}.
-                final String expecting = ex.getMessage()
-                    .substring(ex.getMessage().indexOf("Was expecting"));
-                final String errorMsg = String.format("Incorrect syntax near the keyword '%s' "
-                        + "at line %d, column %d.\n%s",
+                String errorFormat = "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '%s' at line %d, column %d.";
+                final String errorMsg = String.format(errorFormat,
                     token.image,
                     token.beginLine,
-                    token.beginColumn,
-                    expecting);
+                    token.beginColumn
+                    );
                 // Replace the ParseException with explicit error message.
                 ex = new ParseException(errorMsg);
-            }
+            //}
             pos = new SqlParserPos(
                 token.beginLine,
                 token.beginColumn,
@@ -1419,7 +1417,7 @@ SqlNode SqlSelect() :
         [ LOOKAHEAD(2) <FOR> <UPDATE> { forUpdate=true; }]
         [ LOOKAHEAD(2) <AS> <OF> { flashbackQuery = true; }
          (
-           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
+           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = SqlParserUtil.trim(token.image, "'"); }
            |
            <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
          ) ]
@@ -1528,10 +1526,10 @@ ExportOptions exportOptions(): {
     <INTO> <OUTFILE> <QUOTED_STRING>
     {
       export = true;
-      outfile = token.image.replace("'", "");
+      outfile = SqlParserUtil.trim(token.image, "'");
     }
     [
-       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
+       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = SqlParserUtil.trim(token.image, "'"); }
     ]
     [
        <FIELDS>
@@ -2557,7 +2555,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
           alias = SimpleIdentifier()
          |
           <OF> (
-                <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
+                <TIMESTAMP> <QUOTED_STRING> { flashBackStr = SqlParserUtil.trim(token.image, "'"); }
                 |
                 <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
                )
@@ -4906,7 +4904,7 @@ SqlNode StringLiteral() :
     )
     {
         frags = new ArrayList<SqlLiteral>();
-        p = SqlParserUtil.parseString(token.image);
+        p = DingoSqlParserUtil.parseString(token.image);
         try {
             literal = SqlLiteral.createCharString(p, charSet, getPos());
             frags.add(literal);
@@ -8835,7 +8833,7 @@ void NonReservedKeyWord2of3() :
 // which use single-quote as the escape character.
 <DEFAULT, DQID, BTID> TOKEN :
 {
-    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''") | ("\\'") )* <QUOTE> >
 |
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
 |
@@ -9112,7 +9110,7 @@ MORE :
 
 <DEFAULT, DQID, BTID, BQID> TOKEN :
 {
-    < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+    < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|<PARENTHESIS>)* >
 }
 
 <DEFAULT, DQID, BTID, BQID, BQHID> TOKEN :
@@ -9163,6 +9161,12 @@ MORE :
         "\u1040"-"\u1049"
     ]
     >
+|
+   < #PARENTHESIS:
+   [
+      "\uff08"-"\uff09"
+   ]
+   >
 }
 
 /* Special token to throw a wrench in the works. It is never valid in SQL,
