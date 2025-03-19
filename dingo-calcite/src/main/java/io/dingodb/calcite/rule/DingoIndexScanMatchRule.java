@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.logical.LogicalDocumentScanFilter;
 import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
 import io.dingodb.calcite.rel.logical.LogicalIndexRangeScan;
 import io.dingodb.calcite.traits.DingoRelCollationImpl;
+import io.dingodb.calcite.utils.DingoFilterUtils;
 import io.dingodb.calcite.utils.DocumentScanFilterOb;
 import io.dingodb.calcite.utils.DocumentScanFilterVisitor;
 import io.dingodb.calcite.utils.GlobalVariablesUtil;
@@ -323,6 +324,11 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             columnNames.stream().map(table.columns::indexOf).collect(Collectors.toList())
         );
         boolean lookup = isNeedLookUp(TupleMapping.of(secList), tupleMapping, table.columns.size());
+        if (lookup) {
+            if (!DingoFilterUtils.enableIndexRangeFilter(scan.getFilter())) {
+                return null;
+            }
+        }
 
         LogicalIndexRangeScan logicalIndexRangeScan = new LogicalIndexRangeScan(scan.getCluster(),
             scan.getTraitSet(),
