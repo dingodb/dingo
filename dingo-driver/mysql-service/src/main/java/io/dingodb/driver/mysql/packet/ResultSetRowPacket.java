@@ -23,6 +23,7 @@ import io.netty.buffer.Unpooled;
 import lombok.Setter;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -129,7 +130,11 @@ public class ResultSetRowPacket extends MysqlPacket {
                 return;
             }
             try {
-                values.add(val.toString().getBytes(characterSet));
+                if (val instanceof BigDecimal) {
+                    values.add(((BigDecimal) val).toPlainString().getBytes(characterSet));
+                } else {
+                    values.add(val.toString().getBytes(characterSet));
+                }
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }
