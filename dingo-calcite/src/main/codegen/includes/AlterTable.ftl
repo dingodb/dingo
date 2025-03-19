@@ -245,7 +245,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     )
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -292,7 +292,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     [<SCALAR>] columnList = indexColumns()
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -339,7 +339,7 @@ SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode
     columnList = indexColumns()
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -666,7 +666,7 @@ SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable alterTableComment(Span s, String scope, SqlIdentifier id): {
   String comment = null;
 } {
-   <EQ> { s.add(this); } (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+   <EQ> { s.add(this); }  comment = identifier1()
    {
      return new SqlAlterTableComment(s.end(this), id, comment);
    }

@@ -1477,7 +1477,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public void checkRegionConsistent(TableDefinitionWithId tableDefinitionWithId, boolean index) {
         if (!index) {
             int replica = io.dingodb.meta.InfoSchemaService.root().getStoreReplica();
-            if (tableDefinitionWithId.getTableDefinition().getReplica() != replica) {
+            if (tableDefinitionWithId.getTableDefinition().getReplica() > replica) {
                 throw DingoErrUtil.newStdErr("Check for inconsistent number of copies");
             }
         } else {
@@ -1491,7 +1491,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             } else if (indexType.equalsIgnoreCase("document")) {
                 replica = io.dingodb.meta.InfoSchemaService.root().getDocumentReplica();
             }
-            if (tableDefinitionWithId.getTableDefinition().getReplica() != replica) {
+            if (tableDefinitionWithId.getTableDefinition().getReplica() > replica) {
                 throw DingoErrUtil.newStdErr("Check for inconsistent number of copies");
             }
         }

@@ -205,6 +205,11 @@ public class DingoParser {
             public boolean allowCharLiteralAlias() {
                 return true;
             }
+
+            @Override
+            public boolean isPercentRemainderAllowed() {
+                return true;
+            }
         });
 
     @Getter
@@ -443,9 +448,6 @@ public class DingoParser {
     }
 
     private static String processKeyWords(String sql) {
-        if (sql.contains("\\r\\n") || sql.contains("\\n")) {
-            sql = StringEscapeUtils.unescapeJson(sql);
-        }
         if (sql.endsWith(" ")) {
             sql = sql.trim();
         }
@@ -456,10 +458,6 @@ public class DingoParser {
         if ((sql.startsWith("use") || sql.startsWith("USE")) && sql.contains("`") ) {
             sql = sql.replace("`", "");
         }
-        //if (sql.contains(",'[") && sql.contains("]'")) {
-        //    sql = sql.replace(",'[", ", array[");
-        //    sql = sql.replace("]'", "]");
-        //}
         // tmp todo replace
         if (sql.startsWith("/*!") && sql.endsWith("*/")) {
             sql = "set session net_write_timeout=10000";
