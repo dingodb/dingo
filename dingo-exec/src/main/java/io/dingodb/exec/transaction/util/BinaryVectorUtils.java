@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.transaction.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BinaryVectorUtils {
 
     private static final int MULTIPLE = 8;
@@ -52,6 +55,21 @@ public class BinaryVectorUtils {
             byteArray[i / MULTIPLE] |= ((binaryVector[i] & 0x01) << ((MULTIPLE - 1) - (i % MULTIPLE)));
         }
         return byteArray;
+    }
+
+    public static List<byte[]> getBinaryVectorList(byte[] binaryVector, int dimension) {
+        List<byte[]> result = new ArrayList<>();
+        int segmentLength = (dimension + (MULTIPLE - 1)) / MULTIPLE;
+        for (int i = 0; i < segmentLength; i++) {
+            byte acc = 0;
+            int effectiveLength = Math.min(MULTIPLE, dimension - i * MULTIPLE);
+            for (int j = 0; j < effectiveLength; j++) {
+                int vectorIndex = i * MULTIPLE + j;
+                acc |= ((binaryVector[vectorIndex] & 0x01) << (MULTIPLE - 1 - j));
+            }
+            result.add(new byte[]{acc});
+        }
+        return result;
     }
 
     public static int hammingDistance(byte[] x, byte[] y) {

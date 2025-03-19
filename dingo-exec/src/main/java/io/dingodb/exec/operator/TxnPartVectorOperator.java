@@ -48,7 +48,7 @@ import static io.dingodb.exec.fun.vector.VectorCosineDistanceFun.cosine;
 import static io.dingodb.exec.fun.vector.VectorIPDistanceFun.innerProduct;
 import static io.dingodb.exec.fun.vector.VectorL2DistanceFun.l2DistanceCombine;
 import static io.dingodb.exec.operator.TxnGetByKeysOperator.getLocalStore;
-import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVector;
+import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVectorList;
 import static io.dingodb.exec.transaction.util.BinaryVectorUtils.hammingDistance;
 
 @Slf4j
@@ -78,7 +78,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
             param.getCoprocessor(),
             param.isDiskAnnVector(),
             param.isBinaryVector(),
-            param.isBinaryVector() ? getBinaryVector(param.getBinaryBytes(), param.getBinaryBytes().length) : null
+            param.isBinaryVector() ? getBinaryVectorList(param.getBinaryBytes(), param.getBinaryBytes().length) : null
         );
         List<Object[]> results = new ArrayList<>();
         if (param.isLookUp()) {

@@ -580,7 +580,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             CoprocessorV2 coprocessor,
             boolean isDiskAnn,
             boolean isBinaryVector,
-            byte[] binaryBytes
+            List<byte[]> binaryBytes
         ) {
 
             List<VectorWithId> vectors = new ArrayList<>();
@@ -590,7 +590,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             if (isBinaryVector) {
                 vector = Vector.builder()
                     .dimension(Integer.parseInt(indexTable.getProperties().getProperty("dimension")))
-                    .binaryValues(singletonList(binaryBytes))
+                    .binaryValues(binaryBytes)
                     .valueType(ValueType.UINT8)
                     .build();
             } else {

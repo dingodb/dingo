@@ -155,7 +155,7 @@ public interface StoreInstance {
 
     default List<VectorSearchResponse> vectorSearch(
         CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap,
-        boolean isDiskAnn, boolean isBinaryVector, byte[] binaryBytes
+        boolean isDiskAnn, boolean isBinaryVector, List<byte[]> binaryBytes
     ) {
         return vectorSearch(
             System.identityHashCode(floatArray),
@@ -172,7 +172,7 @@ public interface StoreInstance {
 
     default List<VectorSearchResponse> vectorSearch(
         long requestTs, CommonId indexId, Float[] floatArray, int topN, Map<String, Object> parameterMap,
-        CoprocessorV2 coprocessorV2, boolean isDiskAnn, boolean isBinaryVector, byte[] binaryBytes
+        CoprocessorV2 coprocessorV2, boolean isDiskAnn, boolean isBinaryVector, List<byte[]> binaryBytes
     ) {
         throw new UnsupportedOperationException();
     }
