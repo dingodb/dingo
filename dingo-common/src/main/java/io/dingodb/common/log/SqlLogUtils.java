@@ -23,7 +23,10 @@ import static io.dingodb.common.util.StackTraces.CURRENT_STACK;
 
 @Slf4j
 public final class SqlLogUtils {
-    private SqlLogUtils() {}
+    private SqlLogUtils() {
+
+    }
+
     public static void info(String message, Object... args) {
         if (log.isInfoEnabled()) {
             log.info(

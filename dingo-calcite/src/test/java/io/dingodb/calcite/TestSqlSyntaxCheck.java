@@ -32,9 +32,12 @@ import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
+import io.dingodb.calcite.grammar.dml.SqlInsert;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.ddl.SqlCreateTable;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestSqlSyntaxCheck {
@@ -496,10 +500,34 @@ public class TestSqlSyntaxCheck {
         }
     }
 
+    @Test
+    public void testSqlParseXml() {
+        String sql = "INSERT INTO `gcp_report_template` (`id`, `name`, `content`, `created_time`, `last_update_time`, `is_deleted`) VALUES (1, 'userStockByDayStats.ureport.xml', '<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><ureport><cell expand=\\\"None\\\" name=\\\"A1\\\" row=\\\"1\\\" col=\\\"1\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" bgcolor=\\\"170,161,161\\\" bold=\\\"true\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><simple-value><![CDATA[date]]></simple-value></cell><cell expand=\\\"None\\\" name=\\\"B1\\\" row=\\\"1\\\" col=\\\"2\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" bgcolor=\\\"170,161,161\\\" bold=\\\"true\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><simple-value><![CDATA[number]]></simple-value></cell><cell expand=\\\"None\\\" name=\\\"C1\\\" row=\\\"1\\\" col=\\\"3\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" bgcolor=\\\"170,161,161\\\" bold=\\\"true\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><simple-value><![CDATA[count]]></simple-value></cell><cell expand=\\\"Down\\\" name=\\\"A2\\\" row=\\\"2\\\" col=\\\"1\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><dataset-value dataset-name=\\\"userPerDayStockStats\\\" aggregate=\\\"group\\\" property=\\\"dt\\\" order=\\\"asc\\\" mapping-type=\\\"simple\\\"></dataset-value></cell><cell expand=\\\"None\\\" name=\\\"B2\\\" row=\\\"2\\\" col=\\\"2\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><dataset-value dataset-name=\\\"userPerDayStockStats\\\" aggregate=\\\"sum\\\" property=\\\"num\\\" order=\\\"none\\\" mapping-type=\\\"simple\\\"></dataset-value></cell><cell expand=\\\"None\\\" name=\\\"C2\\\" row=\\\"2\\\" col=\\\"3\\\"><cell-style font-size=\\\"10\\\" font-family=\\\"宋体\\\" align=\\\"center\\\" valign=\\\"middle\\\"><left-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><right-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><top-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/><bottom-border width=\\\"1\\\" style=\\\"solid\\\" color=\\\"0,0,0\\\"/></cell-style><expression-value><![CDATA[if(&A2==1){\\r\\n return B2;\\r\\n}else{\\r\\n   B2 + C2[A2:-1]\\r\\n}]]></expression-value></cell><row row-number=\\\"1\\\" height=\\\"18\\\"/><row row-number=\\\"2\\\" height=\\\"18\\\"/><column col-number=\\\"1\\\" width=\\\"80\\\"/><column col-number=\\\"2\\\" width=\\\"80\\\"/><column col-number=\\\"3\\\" width=\\\"83\\\"/><datasource name=\\\"InnerDataSource\\\" type=\\\"buildin\\\"><dataset name=\\\"userPerDayStockStats\\\" type=\\\"sql\\\"><sql><![CDATA[WITH RECURSIVE date_sequence AS (\\r\\n  SELECT\\r\\n    DATE_ADD(curdate() , INTERVAL -:days DAY) AS date\\r\\n  UNION ALL\\r\\n  SELECT\\r\\n    DATE_ADD(date, INTERVAL 1 DAY)\\r\\n  FROM\\r\\n    date_sequence\\r\\n  WHERE\\r\\n    date < DATE_ADD(curdate() , INTERVAL -1 DAY)\\r\\n)\\r\\nselect DATE_ADD(curdate() , INTERVAL -:days DAY) dt,count(*) num from gcp_bs_tenant t where t.is_deleted =0 and date_format(t.created_time,\\'%Y-%m-%d\\') <=DATE_ADD(curdate() , INTERVAL -:days DAY)\\r\\nunion all\\r\\nSELECT date dt,0 FROM date_sequence\\r\\nunion all\\r\\nselect date_format(t.created_time,\\'%Y-%m-%d\\'),count(*) num from gcp_bs_tenant t where t.is_deleted =0 and date_format(t.created_time,\\'%Y-%m-%d\\') >DATE_ADD(curdate() , INTERVAL -:days DAY) and date_format(t.created_time,\\'%Y-%m-%d\\') <=DATE_ADD(curdate() , INTERVAL -1 DAY) group by date_format(t.created_time,\\'%Y-%m-%d\\')]]></sql><field name=\\\"dt\\\"/><field name=\\\"num\\\"/><parameter name=\\\"days\\\" type=\\\"Integer\\\" default-value=\\\"14\\\"/></dataset></datasource><paper type=\\\"A4\\\" left-margin=\\\"90\\\" right-margin=\\\"90\\\"\\r\\n    top-margin=\\\"72\\\" bottom-margin=\\\"72\\\" paging-mode=\\\"fitpage\\\" fixrows=\\\"0\\\"\\r\\n    width=\\\"595\\\" height=\\\"842\\\" orientation=\\\"portrait\\\" html-report-align=\\\"left\\\" bg-image=\\\"\\\" html-interval-refresh-value=\\\"0\\\" column-enabled=\\\"false\\\"></paper></ureport>', '2024-08-09 16:03:19', '2024-08-09 16:04:17', 0) ";
+        SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
+        try {
+            SqlNode sqlNode = parser.parseStmt();
+            SqlInsert sqlInsert = (SqlInsert) sqlNode;
+            SqlBasicCall call = (SqlBasicCall) sqlInsert.getSource();
+            SqlBasicCall subCall = call.operand(0);
+            assertEquals(6, subCall.getOperandList().size());
+        } catch (Exception e) {
+            assertTrue(false, "syntax check error,sql:" + sql);
+        }
+    }
+
+    @Test
+    public void testSqlChineseCharacter() {
+        List<String> sqlList = new ArrayList<>();
+        sqlList.add("select name as 使用时长（小时）, age as sf from test1");
+        for (String sql : sqlList) {
+            assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
+        }
+    }
+
     private boolean isValidEntry(String sql) {
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         try {
-            parser.parseStmt();
+            SqlNode sqlNode = parser.parseStmt();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
