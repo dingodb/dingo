@@ -45,6 +45,8 @@ String dingoIdentifier(): {
             pos = getPos();
         }
     |
+       <QUOTED_STRING> { id = SqlParserUtil.trim(token.image, "'"); pos = getPos();  }
+    |
         <HYPHENATED_IDENTIFIER> {
             id = unquotedIdentifier();
             pos = getPos();

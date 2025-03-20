@@ -197,11 +197,15 @@ void TableElement(List<SqlNode> list) :
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
                     <RPAREN> (<NOT>|{ checkNot=false;}) (<ENFORCED>|<NULL>|{ String t = "";})
          |
-           <COMMENT> comment = identifier1()
+           <COMMENT> comment = dingoIdentifier()
          |
            <COLLATE> { collate = this.getNextToken().image; }
          |
           <ON> <UPDATE> <CURRENT_TIMESTAMP>
+         |
+          <CHARSET> { charset = dingoIdentifier(); }
+         |
+          <CHARACTER> <SET> { charset = dingoIdentifier(); }
          |
           <CONSTRAINT> { s.add(this); } [name = SimpleIdentifier()] <CHECK> <LPAREN>
              checkExpr = Expression(ExprContext.ACCEPT_SUB_QUERY)
@@ -300,7 +304,7 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
     |
-        <PRIMARY>  { s.add(this); } <KEY>
+        <PRIMARY>  { s.add(this); } <KEY> [ <USING> <BTREE>]
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
         }
