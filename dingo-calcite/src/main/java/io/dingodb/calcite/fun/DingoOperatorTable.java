@@ -19,6 +19,7 @@ package io.dingodb.calcite.fun;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
+import io.dingodb.exec.fun.ConcatFun;
 import io.dingodb.exec.fun.DateFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
@@ -114,6 +115,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
         funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+        funMap.put("CONCAT", SqlConcatFunction.CONCAT);
 
         // number
         registerFunction(
@@ -147,13 +149,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
 
         // string
-        registerFunction(
-            ConcatFunFactory.NAME,
-            ReturnTypes.VARCHAR_2000_NULLABLE,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING_STRING,
-            SqlFunctionCategory.STRING
-        );
+//        registerFunction(
+//            ConcatFunFactory.NAME,
+//            ReturnTypes.VARCHAR_2000_NULLABLE,
+//            InferTypes.VARCHAR_1024,
+//            OperandTypes.STRING_STRING,
+//            SqlFunctionCategory.STRING
+//        );
         registerFunction(
             LeftFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
@@ -293,6 +295,18 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ),
             SqlFunctionCategory.STRING
         );
+
+//        registerFunction(
+//            ConcatFun.NAME,
+//            ReturnTypes.VARCHAR_2000_NULLABLE,
+//            DingoInferTypes.VARCHAR1024_VARCHAR1024_VARCHAR1024,
+//            OperandTypes.or(
+//                OperandTypes.STRING,
+//                OperandTypes.STRING,
+//                OperandTypes.STRING
+//            ),
+//            SqlFunctionCategory.STRING
+//        );
 
         // special
         registerFunction(

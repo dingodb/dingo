@@ -2535,9 +2535,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String name = scd.name.getSimple().toUpperCase();
-        if (!namePattern.matcher(name).matches()) {
-            throw DINGO_RESOURCE.invalidColumn().ex();
-        }
+        //if (!namePattern.matcher(name).matches()) {
+        //    throw DINGO_RESOURCE.invalidColumn().ex();
+        //}
 
         // Obtaining id from method
         if (scd.isAutoIncrement() && !SqlTypeName.INT_TYPES.contains(typeName)) {

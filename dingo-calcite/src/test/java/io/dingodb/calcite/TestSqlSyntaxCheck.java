@@ -533,6 +533,67 @@ public class TestSqlSyntaxCheck {
     public void testSqlChineseCharacter() {
         List<String> sqlList = new ArrayList<>();
         sqlList.add("select name as 使用时长（小时）, age as sf from test1");
+        sqlList.add("create table t1(id int,age varchar(20) comment 'as;sdfas\\'a\"sdf')");
+        sqlList.add("create table t1(id int,`value` varchar(64) CHARACTER SET `utf8mb3` COLLATE utf8mb3_general_ci DEFAULT NULL)");
+        sqlList.add("CREATE TABLE `gcp_bs_charge_detail_head` (\n" +
+            "`id` bigint NOT NULL AUTO_INCREMENT,\n" +
+            "`charge_code` varchar(100) DEFAULT NULL COMMENT '详单编号（交易单号）,所有计费详单统一编号（跨表），全局唯一,Txn+交易日期-账户ID-随机数\\n例如：Txn-20240110-12345678-随机数',\n" +
+            "`event_type` int DEFAULT NULL COMMENT '事件类型：\\r\\n1-Slurm用量事件（Slurm计费详单）\\r\\n2-预付订单结清事件（包年包月计费详单）\\r\\n3-预付订单退费事件（包年包月计费详单）\\r\\n4-后付订单日结事件（包年包月计费详单）',\n" +
+            "`tenant_id` varchar(100) DEFAULT NULL,\n" +
+            "`user_name` varchar(100) DEFAULT NULL COMMENT '用户名,对应租户的主账号,即gcp_bs_user.username且 is_manager=true',\n" +
+            "`account_id` bigint DEFAULT NULL COMMENT '账户编号',\n" +
+            "`resource_type_id` bigint DEFAULT NULL COMMENT '资源类型id',\n" +
+            "`product_id` bigint DEFAULT NULL COMMENT '产品id',\n" +
+            "`product_code` varchar(100) DEFAULT NULL COMMENT '产品编号',\n" +
+            "`charge_method` int DEFAULT NULL COMMENT '1-包年包月 2-按量计费',\n" +
+            "`charge_type` int DEFAULT NULL COMMENT '1- OC - 预付费（一次付清）2- \\nRC - 后付费（月付账单）\\n3- UC - 实时付费（实时付费）',\n" +
+            "`start_time` datetime DEFAULT NULL COMMENT '计费周期开始时间,对于预付费，对应订单开始时间;对于后付费，对应日结计费周期的开始时间;对于实时付费，对应详单的小时计费周期开始时间',\n" +
+            "`end_time` datetime DEFAULT NULL COMMENT '计费周期的结束时间,对于预付费，对应订单终止时间;对于后付费，对应日结计费周期的结束时间;对于实时付费，对应详单的小时计费周期结束时间',\n" +
+            "`order_id` bigint DEFAULT NULL COMMENT '订单表的主键id',\n" +
+            "`order_code` varchar(100) DEFAULT NULL COMMENT '订单编号',\n" +
+            "`instance_id` varchar(100) DEFAULT NULL COMMENT '产品实例编号',\n" +
+            "`aidc_id` bigint DEFAULT NULL COMMENT '智算中心id',\n" +
+            "`charge_item` int DEFAULT NULL,\n" +
+            "`charge_start_time` datetime DEFAULT NULL COMMENT '计费开始时间，对于预付费，对应订单开始时间;对于后付费，对应日计费周期的开始时间(下单当日为订单开始时间);对于实时付费，对应Max(任务开始时间，本次计费周期开始时间)',\n" +
+            "`charge_end_time` datetime DEFAULT NULL COMMENT '计费结束时间,对于预付费，对应订单终止时间;对于后付费，对应日计费结束时间(订单到期日为订单终止时间);对于实时付费，对应Min(任务结束时间，本次计费周期结束时间)',\n" +
+            "`charge_end_reason` varchar(100) DEFAULT NULL COMMENT '作业正常结束;作业掉卡;作业资源被抢占;实例到期;实例变更（升级/降级）;实例终止退费',\n" +
+            "`charge_seconds` bigint DEFAULT NULL COMMENT '计量时长（秒）= 计量结束时间 - 计量开始时间',\n" +
+            "`charge_value` decimal(24,8) DEFAULT NULL COMMENT '计量值,通过产品计费项的计量公式计算得到,定点数四舍五入保留八位小数',\n" +
+            "`charge_unit` int DEFAULT NULL COMMENT '计量单位,与产品计费项的计量单位对齐',\n" +
+            "`unit_price` decimal(16,4) DEFAULT NULL COMMENT '通过产品计费项的单价公式计算得到单价,定点数四舍五入保留四位小数，单位：元',\n" +
+            "`charge_amt` decimal(16,4) DEFAULT NULL COMMENT '计费金额=计费单价×计量值，定点数四舍五入保留四位小数，单位：元',\n" +
+            "`discount_type` int DEFAULT NULL COMMENT '1-折扣,2-\\n直减',\n" +
+            "`discount_value` decimal(16,4) DEFAULT NULL COMMENT '优惠方式为折扣时表示折扣率，优惠方式为直减时代表单价下调金额（元）',\n" +
+            "`discount_amt` decimal(16,4) DEFAULT NULL COMMENT '折扣 优惠金额 = (1-折扣率)×计费单价×计量值；直减 优惠金额 = (计费单价-下调金额)×计量值',\n" +
+            "`charge_amt_after_discount` decimal(16,4) DEFAULT NULL COMMENT '优惠后金额=计费金额-优惠金额',\n" +
+            "`adjust_amt` decimal(16,4) DEFAULT NULL COMMENT '调整金额',\n" +
+            "`adjust_desc` varchar(255) DEFAULT NULL COMMENT '调整描述',\n" +
+            "`charge_amt_after_adjust` decimal(16,4) DEFAULT NULL COMMENT '应付金额 = 计费金额 - 优惠金额 - 调整金额',\n" +
+            "`bill_cycle` varchar(100) DEFAULT NULL COMMENT 'YYYY-MM',\n" +
+            "`bill_item_id` varchar(100) DEFAULT NULL COMMENT '账目编号,出账日生成账单账目',\n" +
+            "`detail_status` int DEFAULT NULL COMMENT '账单明细状态   1未支付  2已支付',\n" +
+            "`created_time` datetime DEFAULT NULL COMMENT '创建时间',\n" +
+            "`last_update_time` datetime DEFAULT NULL COMMENT '最后更新时间',\n" +
+            "`user_id` varchar(100) DEFAULT NULL,\n" +
+            "`charge_combo` int DEFAULT NULL COMMENT '(12-按量付费周期费用,13-按量付费按量付费,21-包年包月一次结清,22-包年包月周期费用)',\n" +
+            "`product_category` int DEFAULT NULL,\n" +
+            "`usage_id` varchar(100) DEFAULT NULL COMMENT '计量事件id；',\n" +
+            "`is_dcu` tinyint(1) DEFAULT NULL COMMENT '是否dcu账单明细；',\n" +
+            "`gpu_type` varchar(100) DEFAULT NULL COMMENT 'GPU类型',\n" +
+            "`task_id` varchar(100) DEFAULT NULL COMMENT '任务id',\n" +
+            "`task_name` varchar(100) DEFAULT NULL COMMENT '任务名称',\n" +
+            "`stats_type` int DEFAULT NULL COMMENT '统计类型：1-独占,2-共享',\n" +
+            "`promotion_strategy` varchar(255) DEFAULT NULL COMMENT '优惠策略描述国际化JSON',\n" +
+            "`charge_value_before_discount` decimal(24,8) DEFAULT NULL COMMENT '优惠扣减前DCU使用量',\n" +
+            "PRIMARY KEY (`id`),\n" +
+            "KEY `idx_start_time` (`start_time`),\n" +
+            "KEY `idx_order_id` (`order_id`),\n" +
+            "KEY `idx_account_id` (`account_id`),\n" +
+            "KEY `idx_tenant_id` (`tenant_id`),\n" +
+            "KEY `idx_product_id` (`product_id`),\n" +
+            "KEY `idx_charge_code` (`charge_code`),\n" +
+            "KEY `idx_aidc_id` (`aidc_id`)\n" +
+            ") ENGINE=InnoDB AUTO_INCREMENT=944162 DEFAULT CHARSET=utf8mb3");
         for (String sql : sqlList) {
             assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
         }
