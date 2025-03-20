@@ -40,7 +40,6 @@ import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.runtime.op.special.IfNullFunFactory;
-import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
 import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.LeftFunFactory;
 import io.dingodb.expr.runtime.op.string.Locate2FunFactory;
@@ -113,6 +112,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
         funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+        funMap.put("CONCAT", SqlConcatFunction.CONCAT);
+        funMap.put("IF", SqlIfFunction.IF);
 
         // number
         registerFunction(
@@ -146,13 +147,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
 
         // string
-        registerFunction(
-            ConcatFunFactory.NAME,
-            ReturnTypes.VARCHAR_2000_NULLABLE,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING_STRING,
-            SqlFunctionCategory.STRING
-        );
+//        registerFunction(
+//            ConcatFunFactory.NAME,
+//            ReturnTypes.VARCHAR_2000_NULLABLE,
+//            InferTypes.VARCHAR_1024,
+//            OperandTypes.STRING_STRING,
+//            SqlFunctionCategory.STRING
+//        );
         registerFunction(
             LeftFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
@@ -281,6 +282,18 @@ public class DingoOperatorTable implements SqlOperatorTable {
             family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
             SqlFunctionCategory.NUMERIC
         );
+
+//        registerFunction(
+//            ConcatFun.NAME,
+//            ReturnTypes.VARCHAR_2000_NULLABLE,
+//            DingoInferTypes.VARCHAR1024_VARCHAR1024_VARCHAR1024,
+//            OperandTypes.or(
+//                OperandTypes.STRING,
+//                OperandTypes.STRING,
+//                OperandTypes.STRING
+//            ),
+//            SqlFunctionCategory.STRING
+//        );
 
         // special
         registerFunction(

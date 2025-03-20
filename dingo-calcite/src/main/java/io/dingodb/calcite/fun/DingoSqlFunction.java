@@ -20,8 +20,10 @@ import lombok.EqualsAndHashCode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -60,4 +62,5 @@ public class DingoSqlFunction extends SqlFunction {
         assert getClass().isAssignableFrom(operator.getClass());
         super.validateCall(call, validator, scope, operandScope);
     }
+
 }
