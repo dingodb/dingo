@@ -157,6 +157,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.STRING
         );
+
         registerFunction(
             LeftFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
@@ -292,6 +293,18 @@ public class DingoOperatorTable implements SqlOperatorTable {
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.NUMERIC
         );
+
+//        registerFunction(
+//            ConcatFun.NAME,
+//            ReturnTypes.VARCHAR_2000_NULLABLE,
+//            DingoInferTypes.VARCHAR1024_VARCHAR1024_VARCHAR1024,
+//            OperandTypes.or(
+//                OperandTypes.STRING,
+//                OperandTypes.STRING,
+//                OperandTypes.STRING
+//            ),
+//            SqlFunctionCategory.STRING
+//        );
 
         // special
         registerFunction(
