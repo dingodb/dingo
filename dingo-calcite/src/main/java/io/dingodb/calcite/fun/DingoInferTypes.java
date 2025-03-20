@@ -45,6 +45,9 @@ public final class DingoInferTypes {
     public static final SqlOperandTypeInference VARCHAR1024_VARCHAR1024_BOOLEAN
         = explicit(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR, SqlTypeName.BOOLEAN);
 
+    public static final SqlOperandTypeInference BOOLEAN_VARCHAR1024_VARCHAR1024
+        = explicit(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+
     private DingoInferTypes() {
     }
 

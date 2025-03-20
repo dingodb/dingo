@@ -17,7 +17,6 @@
 package io.dingodb.exec.fun;
 
 import io.dingodb.expr.common.type.Type;
-import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.OpKeys;
@@ -26,28 +25,31 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 
-public class ConcatFun extends TertiaryOp {
-
-    public static final ConcatFun INSTANCE = new ConcatFun();
-
-    public static final String NAME = "CONCAT";
-
+public class IfFun extends TertiaryOp {
     @Serial
-    private static final long serialVersionUID = -6456730710140240892L;
+    private static final long serialVersionUID = -5133323746662125787L;
+
+    public static final IfFun INSTANCE = new IfFun();
+
+    public static final String NAME = "IF";
 
     @Override
     public OpKey keyOf(@NonNull Type type0, @NonNull Type type1, @NonNull Type type2) {
-        return OpKeys.STRING_STRING_STRING.keyOf(type0, type1, type2);
+        return OpKeys.BOOL_STRING_STRING.keyOf(type0, type1, type2);
     }
 
     @Override
     public Object evalValue(@NonNull Object value0, @NonNull Object value1, @NonNull Object value2, ExprConfig config) {
-        if (value0 == null || value1 == null || value2 == null) {
-            return null;
+        if (value0 instanceof Boolean) {
+            boolean v0 = (boolean) value0;
+            if (v0) {
+                return value1;
+            } else {
+                return value2;
+            }
+        } else {
+            return value1;
         }
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(value0).append(value1).append(value2);
-        return stringBuilder.toString();
     }
 
     @Override

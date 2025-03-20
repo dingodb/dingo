@@ -21,6 +21,7 @@ import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.ConcatFun;
 import io.dingodb.exec.fun.DateFun;
+import io.dingodb.exec.fun.IfFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.mysql.InstrFun;
@@ -116,6 +117,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
         funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
         funMap.put("CONCAT", SqlConcatFunction.CONCAT);
+        funMap.put("IF", SqlIfFunction.IF);
 
         // number
         registerFunction(
