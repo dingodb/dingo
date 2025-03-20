@@ -22,8 +22,13 @@ import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Builder;
 
+import java.io.UnsupportedEncodingException;
+
 @Builder
 public class ColumnPacket extends MysqlPacket {
+
+    public final String defaultColumnCharset = "GBK";
+
     public String catalog;
     public String schema;
 
@@ -34,6 +39,9 @@ public class ColumnPacket extends MysqlPacket {
     public String name;
 
     public String orgName;
+
+    private byte[] nameBytes;
+    private byte[] orgNameBytes;
 
     public short characterSet;
 
@@ -73,8 +81,8 @@ public class ColumnPacket extends MysqlPacket {
         BufferUtil.writeWithLength(buffer, schema.getBytes());
         BufferUtil.writeWithLength(buffer, table.getBytes());
         BufferUtil.writeWithLength(buffer, orgTable.getBytes());
-        BufferUtil.writeWithLength(buffer, name.getBytes());
-        BufferUtil.writeWithLength(buffer, orgName.getBytes());;
+        BufferUtil.writeWithLength(buffer, nameBytes);
+        BufferUtil.writeWithLength(buffer, orgNameBytes);
         buffer.writeByte((byte) 0x0c);
         byte[] charsetNum = MysqlByteUtil.shortToBytesLittleEndian(characterSet);
         buffer.writeBytes(charsetNum);
@@ -94,8 +102,18 @@ public class ColumnPacket extends MysqlPacket {
         i += BufferUtil.getLength(schema.getBytes());
         i += BufferUtil.getLength(table.getBytes());
         i += BufferUtil.getLength(orgTable.getBytes());
-        i += BufferUtil.getLength(name.getBytes());
-        i += BufferUtil.getLength(orgName.getBytes());
+        try {
+            nameBytes = name.getBytes(defaultColumnCharset);
+        } catch (UnsupportedEncodingException e) {
+            nameBytes = name.getBytes();
+        }
+        i += BufferUtil.getLength(nameBytes);
+        try {
+            orgNameBytes = orgName.getBytes(defaultColumnCharset);
+        } catch (UnsupportedEncodingException e) {
+            orgNameBytes = orgName.getBytes();
+        }
+        i += BufferUtil.getLength(orgNameBytes);
         // 0x0c
         i += 1;
         i += 2;

@@ -332,7 +332,10 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                                     call.getOperands().get(1).accept(this)
                                 );
                             case QUARTER:
-                                break;
+                                return Exprs.op(
+                                    Exprs.QUARTER,
+                                    call.getOperands().get(1).accept(this)
+                                );
                             case WEEK:
                                 return Exprs.op(
                                     Exprs.WEEK,

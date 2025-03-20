@@ -483,11 +483,14 @@ public class DingoParser {
         //Code change just for POC - quickBI.
         Pattern pattern = Pattern.compile("WHERE TABLE_SCHEMA = '(.*)' HAVING");
         Matcher matcher = pattern.matcher(sql);
-        if(matcher.find()) {
+        if (matcher.find()) {
             String matchedSchemaName = matcher.group(1);
             String sourceString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' HAVING";
-            String targetString = "WHERE TABLE_SCHEMA = '(" + matchedSchemaName + ")' AND";
+            String targetString = "WHERE TABLE_SCHEMA = '" + matchedSchemaName + "' AND";
             sql = sql.replaceAll(sourceString, targetString);
+        }
+        if (sql.contains("TABLE_TYPE IN ('TABLE'")) {
+            sql = sql.replace("TABLE_TYPE IN ('TABLE'", "TABLE_TYPE IN ('BASE TABLE'");
         }
 
         //Code change just for POC - quickBI.

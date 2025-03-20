@@ -1530,7 +1530,7 @@ ExportOptions exportOptions(): {
       outfile = SqlParserUtil.trim(token.image, "'");
     }
     [
-       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = SqlParserUtil.trim(token.image, "'"); }
+       <CHARACTER> <SET> { exportCharset = dingoIdentifier(); }
     ]
     [
        <FIELDS>
@@ -7840,7 +7840,7 @@ SqlBinaryOperator BinaryMultisetOperator() :
 /**
  * Parses a binary row operator like AND.
  */
-SqlBinaryOperator BinaryRowOperator() :
+SqlOperator BinaryRowOperator() :
 {
     SqlBinaryOperator op;
 }
