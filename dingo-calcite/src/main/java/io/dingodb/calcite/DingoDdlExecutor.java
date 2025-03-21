@@ -820,7 +820,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 int precision = f.getType().getPrecision();
                 int scale = f.getType().getScale();
                 String name = f.getType().getSqlTypeName().getName();
-                if ("BIGINT".equals(name) || "FLOAT".equals(name) || "INTEGER".equals(name)) {
+                if ("BIGINT".equals(name) || "FLOAT".equals(name)
+                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)) {
                     precision = -1;
                     scale = -2147483648;
                 }
