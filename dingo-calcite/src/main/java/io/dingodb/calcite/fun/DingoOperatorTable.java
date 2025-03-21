@@ -21,6 +21,7 @@ import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.ConcatFun;
 import io.dingodb.exec.fun.DateFun;
+import io.dingodb.exec.fun.DaySubFun;
 import io.dingodb.exec.fun.IfFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
@@ -150,14 +151,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
 
-        // string
-//        registerFunction(
-//            ConcatFunFactory.NAME,
-//            ReturnTypes.VARCHAR_2000_NULLABLE,
-//            InferTypes.VARCHAR_1024,
-//            OperandTypes.STRING_STRING,
-//            SqlFunctionCategory.STRING
-//        );
         registerFunction(
             LeftFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
@@ -298,18 +291,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
 
-//        registerFunction(
-//            ConcatFun.NAME,
-//            ReturnTypes.VARCHAR_2000_NULLABLE,
-//            DingoInferTypes.VARCHAR1024_VARCHAR1024_VARCHAR1024,
-//            OperandTypes.or(
-//                OperandTypes.STRING,
-//                OperandTypes.STRING,
-//                OperandTypes.STRING
-//            ),
-//            SqlFunctionCategory.STRING
-//        );
-
         // special
         registerFunction(
             ThrowFun.NAME,
@@ -449,6 +430,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.INTEGER,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            DaySubFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.DATE_LONG,
+            family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.NUMERIC
         );
     }
