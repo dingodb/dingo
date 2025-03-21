@@ -33,6 +33,10 @@ public final class DingoInferTypes {
         = explicit(SqlTypeName.VARCHAR, SqlTypeName.INTEGER, SqlTypeName.INTEGER);
     public static final SqlOperandTypeInference DATE_VARCHAR1024
         = explicit(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+    public static final SqlOperandTypeInference DATE_LONG
+        = explicit(SqlTypeName.DATE, SqlTypeName.BIGINT);
+    public static final SqlOperandTypeInference TIMESTAMP_LONG
+        = explicit(SqlTypeName.TIMESTAMP, SqlTypeName.BIGINT);
     public static final SqlOperandTypeInference TIME_VARCHAR1024
         = explicit(SqlTypeName.TIME, SqlTypeName.VARCHAR);
     public static final SqlOperandTypeInference TIMESTAMP_VARCHAR1024

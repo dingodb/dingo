@@ -54,4 +54,5 @@ public class ConcatFun extends TertiaryOp {
     public @NonNull String getName() {
         return NAME;
     }
+
 }
