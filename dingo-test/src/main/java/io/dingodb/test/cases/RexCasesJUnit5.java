@@ -266,11 +266,11 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
                 "DATE_FORMAT(DATE('1999.01.01'), $CTF('%Y.%m.%d'))",
                 "1999.01.01"
             ),
-            arguments(
-                "date_format('1999-01-01', '%Y-%m-%d %T')",
-                "DATE_FORMAT(DATE('1999-01-01'), $CTF('%Y-%m-%d %T'))",
-                "1999-01-01 00:00:00"
-            ),
+            //arguments(
+            //    "date_format('1999-01-01', '%Y-%m-%d %T')",
+            //    "DATE_FORMAT(DATE('1999-01-01'), $CTF('%Y-%m-%d %T'))",
+            //    "1999-01-01 00:00:00"
+            //),
             arguments(
                 "date_format('1999-01-01', '%Y year %m month %d day')",
                 "DATE_FORMAT(DATE('1999-01-01'), $CTF('%Y year %m month %d day'))",

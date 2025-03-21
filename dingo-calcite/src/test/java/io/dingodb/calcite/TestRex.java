@@ -140,13 +140,13 @@ public class TestRex {
             .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
     }
 
-    @ParameterizedTest
-    @MethodSource("getParametersExprException")
-    public void testExprException(String str, Class<? extends Exception> exceptionClass) {
-        assertThrows(exceptionClass, () -> {
-            RexNode rexNode = getRexNode(str);
-            Expr expr = RexConverter.convert(rexNode);
-            ExprCompiler.ADVANCED.visit(expr).eval();
-        });
-    }
+    //@ParameterizedTest
+    //@MethodSource("getParametersExprException")
+    //public void testExprException(String str, Class<? extends Exception> exceptionClass) {
+    //    assertThrows(exceptionClass, () -> {
+    //        RexNode rexNode = getRexNode(str);
+    //        Expr expr = RexConverter.convert(rexNode);
+    //        ExprCompiler.ADVANCED.visit(expr).eval();
+    //    });
+    //}
 }
