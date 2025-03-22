@@ -25,6 +25,7 @@ import io.dingodb.exec.fun.DaySubFun;
 import io.dingodb.exec.fun.IfFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
+import io.dingodb.exec.fun.StrToDateFun;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
@@ -437,6 +438,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.DATE,
             DingoInferTypes.DATE_LONG,
             family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            StrToDateFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.VARCHAR1024_VARCHAR1024,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.NUMERIC
         );
     }
