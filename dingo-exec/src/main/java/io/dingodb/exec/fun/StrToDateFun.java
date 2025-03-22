@@ -56,29 +56,19 @@ public class StrToDateFun extends BinaryOp {
         }
         String strVal = value0.toString();
         try {
-            Date date = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
-            return date;
+            return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
         } catch (Exception e) {
             LogUtils.info(log, "str to date parse date: {} error", strVal);
         }
         try {
-            return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
-            //            if (dateTimestampVal == null) {
-            //                return null;
-            //            }
-            //            Date date = new Date(dateTimestampVal.getTime());
-            //            return date;
+            return DateTimeUtils.parseTimestamp(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
         } catch (Exception e) {
             LogUtils.info(log, "str to date parse timestamp: {} error", strVal);
         }
-        DateCastOpFactory s;
         try {
             return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIME_FORMATTERS);
         } catch (Exception e) {
             LogUtils.info(log, "str to date parse time: {} error", strVal);
-        }
-        if (value1 == null) {
-            return null;
         }
         String format = value1.toString();
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
