@@ -71,6 +71,7 @@ public final class DingoTypeFactory {
         scalarGenerators.put("VARBINARY", BinaryType::new);
         scalarGenerators.put("OBJECT", ObjectType::new);
         scalarGenerators.put("ANY", ObjectType::new);
+        scalarGenerators.put("SMALLINT", IntegerType::new);
 
         // interval
         intervalGenerators.put("INTERVAL_YEAR", IntervalYearType::new);
