@@ -615,7 +615,7 @@ public class DingoMeta extends MetaImpl {
                     getTraceValues(sqlProfile, rows);
                 }
             } catch (Throwable e) {
-                LogUtils.error(log, "run job exception:{}", e, e);
+                LogUtils.error(log, "run job exception:{}", e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
                     && isDml(signature)) {
 
