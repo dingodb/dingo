@@ -454,6 +454,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             OperandTypes.STRING,
             SqlFunctionCategory.NUMERIC
         );
+        registerFunction(
+            StrToDateFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.VARCHAR1024_VARCHAR1024,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.NUMERIC
+        );
     }
 
     public void registerFunction(
