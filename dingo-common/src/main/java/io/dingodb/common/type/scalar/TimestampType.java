@@ -19,6 +19,7 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.converter.DataConverter;
@@ -26,11 +27,14 @@ import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.LongSchema;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+@Slf4j
 @JsonTypeName("timestamp")
 public class TimestampType extends AbstractScalarType {
     @JsonCreator
@@ -62,7 +66,21 @@ public class TimestampType extends AbstractScalarType {
 
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
-        return converter.convert((Timestamp) value);
+        if (value instanceof Timestamp) {
+            return converter.convert((Timestamp) value);
+        } else {
+            if (value instanceof Long) {
+                return converter.convert(new Timestamp((Long) value));
+            } else if (value instanceof BigDecimal) {
+                long time = ((BigDecimal) value).longValue();
+                return converter.convert(new Timestamp(time));
+            } else {
+                if (value != null) {
+                    LogUtils.error(log, "timestamp value:{} convertValueTo error", value);
+                }
+                return null;
+            }
+        }
     }
 
     @Override

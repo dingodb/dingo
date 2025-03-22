@@ -19,15 +19,19 @@ package io.dingodb.common.type.scalar;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.StringSchema;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
+@Slf4j
 @JsonTypeName("decimal")
 public class DecimalType extends AbstractScalarType {
     @JsonCreator
@@ -52,6 +56,17 @@ public class DecimalType extends AbstractScalarType {
 
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
+        if (value == null) {
+            return null;
+        }
+        if (!(value instanceof BigDecimal)) {
+            try {
+                return converter.convert(new BigDecimal(value.toString()));
+            } catch (Exception e) {
+                LogUtils.error(log, "decimal value:{} convertValueTo error", value);
+                return null;
+            }
+        }
         return converter.convert((BigDecimal) value);
     }
 
