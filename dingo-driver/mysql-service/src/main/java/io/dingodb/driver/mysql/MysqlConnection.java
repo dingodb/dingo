@@ -55,6 +55,9 @@ public class MysqlConnection {
 
     public volatile Boolean passwordExpire = false;
 
+    public boolean querySpecial;
+    public String querySpecialId;
+
     public MysqlConnection(SocketChannel channel) {
         this.channel = channel;
     }

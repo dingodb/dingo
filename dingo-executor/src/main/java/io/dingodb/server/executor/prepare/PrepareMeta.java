@@ -229,6 +229,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
         values.add(new Object[]{"max_allowed_packet", "16777216"});
+        values.add(new Object[]{"local_infile", "1"});
         values.add(new Object[]{"max_connections", "151"});
         values.add(new Object[]{"max_connect_errors", "10"});
         values.add(new Object[]{"max_user_connections", "151"});

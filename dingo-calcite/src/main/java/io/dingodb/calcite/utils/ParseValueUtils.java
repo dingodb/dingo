@@ -49,6 +49,11 @@ public final class ParseValueUtils {
     }
 
     public static byte[] getSpecialBytes(String image) {
+        if (image.equalsIgnoreCase("'\\t'")) {
+            byte[] res = new byte[1];
+            res[0] = 0x09;
+            return res;
+        }
         byte[] res = image.getBytes();
         if (res.length == 4) {
             boolean mat = false;
