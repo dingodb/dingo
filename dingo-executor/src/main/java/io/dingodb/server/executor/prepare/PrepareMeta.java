@@ -297,6 +297,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"enable_async_commit_sleep", "off"});
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         values.add(new Object[]{"enable_document_scan_filter", "on"});
+        values.add(new Object[]{"job_need_gc", "on"});
         values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
         return values;
     }

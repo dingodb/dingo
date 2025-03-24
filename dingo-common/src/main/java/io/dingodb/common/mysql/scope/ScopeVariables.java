@@ -129,15 +129,6 @@ public final class ScopeVariables {
         }
     }
 
-    public static boolean getNeedGc() {
-        try {
-            String jobNeedGc = executorProp.getOrDefault("job_need_gc", "off").toString();
-            return jobNeedGc.equals("on");
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     public static void testIndexBlock() {
         while (true) {
             String testRun = executorProp.getOrDefault("test_index", "off").toString();
