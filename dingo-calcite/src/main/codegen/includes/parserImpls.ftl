@@ -162,7 +162,7 @@ void TableElement(List<SqlNode> list) :
     SqlNodeList refColumnList = null;
     SqlIdentifier refTable = null;
     String updateRefOpt = null;
-    String deleteRefOpt = null;
+    String deleteRefOpt = null; String charset = "utf8";
     String collate = "utf8_bin";
     Properties prop = null;
     String indexAlg = null;
