@@ -1169,7 +1169,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         long jobId, long startTs, boolean autoInc,
         Collection<RangeDistribution> rangeDistributions
     ) {
-        if (ScopeVariables.getNeedGc() && jobId >= 0) {
+        Map<String, String> globalVarMap = io.dingodb.meta.InfoSchemaService.root().getGlobalVariables();
+        String jobGc = globalVarMap.getOrDefault("job_need_gc", "on");
+        if ("on".equalsIgnoreCase(jobGc) && jobId >= 0) {
             Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
             gcDeleteRegion(rangeDistributions, jobId, startTs, tableId, autoInc);
             context.stop();

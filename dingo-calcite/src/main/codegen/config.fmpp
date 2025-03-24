@@ -143,6 +143,7 @@ data: {
       "io.dingodb.calcite.fun.SqlConcatFunction"
       "io.dingodb.calcite.type.DingoSqlLiteral"
       "io.dingodb.calcite.type.DingoSqlCharStringLiteral"
+      "io.dingodb.calcite.utils.DingoSqlParserUtil"
       "org.apache.calcite.avatica.util.DateTimeUtils"
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlCreate"
@@ -296,8 +297,6 @@ data: {
       "FIXED"
       "MEMORY"
       "COLUMN_FORMAT"
-      "CARDINALITY"
-      "PLUGINS"
     ]
 
     # List of non-reserved keywords to add;
@@ -417,6 +416,7 @@ data: {
       "Tenant.ftl"
       "Admin.ftl"
       "Flashback.ftl"
+      "Identifier.ftl"
     ]
 
     includePosixOperators: false
