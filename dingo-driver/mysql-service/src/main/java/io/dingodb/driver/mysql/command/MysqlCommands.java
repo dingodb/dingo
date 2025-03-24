@@ -29,6 +29,7 @@ import io.dingodb.driver.mysql.MysqlType;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.EOFPacket;
 import io.dingodb.driver.mysql.packet.ExecuteStatementPacket;
+import io.dingodb.driver.mysql.packet.LoadDataResPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PrepareOkPacket;
@@ -36,6 +37,8 @@ import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.Meta;
 
@@ -212,6 +215,23 @@ public class MysqlCommands {
                 SQLWarning sqlWarning = statement.getWarnings();
                 if (sqlWarning == null) {
                     sqlWarning = mysqlConnection.getConnection().getWarnings();
+                    if (sqlWarning != null && sqlWarning.getMessage().contains("local infile:")) {
+                        mysqlConnection.querySpecial = true;
+                        mysqlConnection.querySpecialId = sqlWarning.getSQLState();
+                        String ret = sqlWarning.getMessage().substring(13);
+                        LoadDataResPacket loadDataResPacket = new LoadDataResPacket();
+                        loadDataResPacket.message = ret;
+                        loadDataResPacket.packetId = (byte) packetId.getAndIncrement();
+                        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+                        loadDataResPacket.write(buffer);
+                        mysqlConnection.channel.writeAndFlush(buffer);
+                        return;
+                    }
+                }
+                try {
+                    mysqlConnection.getConnection().clearWarnings();
+                } catch (SQLException e) {
+                    LogUtils.error(log, e.getMessage(), e);
                 }
                 DingoStatement dingoStatement = (DingoStatement) statement;
                 OKPacket okPacket;
@@ -394,9 +414,9 @@ public class MysqlCommands {
             inTransaction = connection.getTransaction().getType() != TransactionType.NONE;
         }
         int initServerStatus = 0;
-        if (inTransaction) {
-            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
-        }
+        //if (inTransaction) {
+        //    initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
+        //}
         if (connection.getAutoCommit()) {
             initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
         }

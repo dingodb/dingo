@@ -15,7 +15,6 @@
 // limitations under the License.
 -->
 
-
 SqlLoadData SqlLoadData(): {
   final Span s;
   String filePath = null;
@@ -23,23 +22,30 @@ SqlLoadData SqlLoadData(): {
   byte[] terminated = "	".getBytes();
   String enclosed = null;
   byte[] escaped = "\\".getBytes();
-  byte[] lineTerminated = new byte[]{0x0d, 0x0a};
+  byte[] lineTerminated = new byte[]{0x0a};
   byte[] lineStarting = null;
   String exportCharset = null;
   int ignoreNum = 0;
+  boolean local = false;
+  boolean ignore = false;
+  SqlNodeList withColumnList = null;
+  SqlNodeList setColumnList = null;
+  boolean replaceInto = false;
 } {
   <LOAD> { s = span(); }
-  <DATA> [<LOCAL>] <INFILE>
+  <DATA> [<CONCURRENT>][<LOCAL> { local = true; }] <INFILE>
   <QUOTED_STRING> { filePath = token.image.replace("'", "").toLowerCase(); }
+  [ <IGNORE> {ignore = true;}]
+  [ <REPLACE> { replaceInto = true; }]
   <INTO> <TABLE> table = CompoundIdentifier()
    (
-      <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
+      <CHARACTER> <SET>  { exportCharset = dingoIdentifier(); }
    |
      <FIELDS>
      (<TERMINATED> <BY> [<QUOTED_STRING> { terminated = getSpecialBytes(token.image); }]
                         [<BINARY_STRING_LITERAL> { terminated = getSpecialHexBytes(token.image);}]
      |
-      <ENCLOSED> <BY> <QUOTED_STRING> { enclosed = getEnclosed(token.image); } 
+      <ENCLOSED> <BY> <QUOTED_STRING> { enclosed = getEnclosed(token.image); }
      |
       <ESCAPED> <BY> [<QUOTED_STRING> { escaped = getSpecialBytes(token.image); }]
                      [<BINARY_STRING_LITERAL> { escaped = getSpecialHexBytes(token.image);}]
@@ -55,5 +61,77 @@ SqlLoadData SqlLoadData(): {
    |
      <IGNORE> (<UNSIGNED_INTEGER_LITERAL> | <DECIMAL_NUMERIC_LITERAL>) { ignoreNum = Integer.parseInt(token.image); }
    )*
-  { return new SqlLoadData(s.end(this), table, filePath, terminated, escaped, lineTerminated, enclosed, lineStarting, exportCharset, ignoreNum); }
+  [ withColumnList = loadDataParenthesizedSimpleIdentifierList()]
+  [ setColumnList = setLoadProp()]
+  { return new SqlLoadData(s.end(this), table, filePath, terminated, escaped, lineTerminated, enclosed, lineStarting, exportCharset, ignoreNum, local, ignore, withColumnList, setColumnList, replaceInto); }
 }
+
+SqlNodeList loadDataParenthesizedSimpleIdentifierList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+}
+{
+    <LPAREN> { s = span(); }
+    AddLoadDataSimpleIdentifiers(list)
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+void AddLoadDataSimpleIdentifiers(List<SqlNode> list) :
+{
+    SqlIdentifier id;
+}
+{
+    [<AT_SPLIT>]
+    id = SimpleIdentifier() {list.add(id);}
+    (
+        <COMMA> [<AT_SPLIT>]id = SimpleIdentifier() {
+            list.add(id);
+        } [<ASC>] [<DESC>]
+    )*
+}
+
+SqlNodeList setLoadProp() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlIdentifier id;
+    SqlIdentifier tid = null;
+    SqlIdentifier hexId = null;
+}
+{
+    <SET> { s = span(); }
+    id = SimpleIdentifier()
+    <EQ>
+    (
+      <AT_SPLIT> tid = SimpleIdentifier()
+     |
+      <UNHEX> <LPAREN> <AT_SPLIT>hexId = SimpleIdentifier() <RPAREN>
+    )
+    {
+     if (hexId != null) {
+      list.add(hexId);
+     }
+    }
+    (
+     <COMMA>
+     id = SimpleIdentifier()
+     <EQ>
+     (
+       <AT_SPLIT> tid = SimpleIdentifier()
+      |
+       <UNHEX> <LPAREN> <AT_SPLIT> hexId = SimpleIdentifier() <RPAREN>
+     )
+     {
+       if (hexId != null) {
+        list.add(hexId);
+       }
+     }
+    )*
+    {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+

@@ -223,7 +223,10 @@ public final class SqlToExecutorConverter {
             if (StringUtils.isBlank(sqlLoadData.getSchemaName())) {
                 sqlLoadData.setSchemaName(getSchemaName(context));
             }
-            return Optional.of(new LoadDataExecutor(sqlLoadData, connection, context));
+            return Optional.of(new LoadDataExecutor(sqlLoadData, connection, context,
+                sqlLoadData.isLocal(), sqlLoadData.isIgnore(),
+                sqlLoadData.getSetColumnList(),
+                sqlLoadData.getWithColumnList()));
         } else if (sqlNode instanceof SqlShowProcessList) {
             SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;
             String user = context.getOption("user");

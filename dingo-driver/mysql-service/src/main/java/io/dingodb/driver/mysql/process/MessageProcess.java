@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.process;
 
+import io.dingodb.calcite.service.LoadDataService;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
@@ -55,9 +56,26 @@ public final class MessageProcess {
         int length = msg.readableBytes();
         byte[] array = new byte[length];
         msg.getBytes(msg.readerIndex(), array);
-        byte flg = array[1];
         byte packetIdByte = array[0];
         AtomicLong packetId = new AtomicLong(packetIdByte);
+        if (mysqlConnection.querySpecial) {
+            byte[] bytes = new byte[array.length - 1];
+            System.arraycopy(array, 1, bytes, 0, array.length - 1);
+            if (bytes.length > 0) {
+                LoadDataService.DEFAULT_INSTANCE.processStream(mysqlConnection.querySpecialId, bytes);
+            } else {
+                Long cnt = LoadDataService.DEFAULT_INSTANCE.endStream(mysqlConnection.querySpecialId, "end");
+                packetId.incrementAndGet();
+                OKPacket okPacket = MysqlPacketFactory.getInstance()
+                    .getOkPacket(cnt.intValue(), packetId,
+                        ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
+                mysqlConnection.querySpecial = false;
+                mysqlConnection.querySpecialId = "";
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+            }
+            return;
+        }
+        byte flg = array[1];
         packetId.incrementAndGet();
         String connCharSet = null;
 

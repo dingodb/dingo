@@ -19,6 +19,7 @@ package io.dingodb.calcite.executor;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
+import io.dingodb.calcite.service.LoadDataService;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -37,6 +38,7 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.expr.runtime.utils.CodecUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -50,6 +52,8 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -84,6 +88,7 @@ public class LoadDataExecutor implements DmlExecutor {
     private final DingoParserContext context;
 
     private final String schemaName;
+    private final boolean local;
 
     private final String filePath;
     private final byte[] fieldsTerm;
@@ -94,10 +99,12 @@ public class LoadDataExecutor implements DmlExecutor {
     private final byte[] escaped;
     private String charset;
     private final int ignoreNum;
+    private boolean ignore;
+    private boolean replaceInto;
 
     private volatile boolean isDone;
     private volatile String errMessage;
-    private final Table table;
+    private Table table;
     private final KeyValueCodec codec;
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final DingoType schema;
@@ -114,12 +121,20 @@ public class LoadDataExecutor implements DmlExecutor {
     private long timeOut;
     private CompletableFuture<String> loadDataRead;
     private long start;
+    private List<String> withColumnList;
+    private List<Integer> exprList;
 
     private final AtomicLong count = new AtomicLong(0);
 
     private final BlockingQueue<Object> queue = new ArrayBlockingQueue<>(10000);
 
-    public LoadDataExecutor(SqlLoadData sqlLoadData, Connection connection, DingoParserContext context) {
+    public LoadDataExecutor(
+        SqlLoadData sqlLoadData, Connection connection,
+        DingoParserContext context,
+        boolean local, boolean ignore,
+        SqlNodeList setColumnList,
+        SqlNodeList withColumnList
+    ) {
         this.context = context;
         this.filePath = sqlLoadData.getFilePath();
         this.fieldsTerm = sqlLoadData.getTerminated();
@@ -134,6 +149,9 @@ public class LoadDataExecutor implements DmlExecutor {
             } catch (SQLException e) {
                 this.charset = "utf8";
             }
+        }
+        if (this.charset.equalsIgnoreCase("utf8mb4") || this.charset.equalsIgnoreCase("utf8mb3")) {
+            this.charset = "utf8";
         }
         try {
             String txnRetryStr = connection.getClientInfo("txn_retry");
@@ -157,7 +175,10 @@ public class LoadDataExecutor implements DmlExecutor {
         InfoSchema is = DdlService.root().getIsLatest();
         table = is.getTable(schemaName, sqlLoadData.getTableName());
         if (table == null) {
-            throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
+            table = is.getTable(schemaName.toUpperCase(), sqlLoadData.getTableName().toUpperCase());
+            if (table == null) {
+                throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
+            }
         }
         codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
@@ -166,6 +187,32 @@ public class LoadDataExecutor implements DmlExecutor {
         schema = table.tupleType();
         this.isTxn = checkEngine();
         this.statementId = UUID.randomUUID().toString();
+        this.local = local;
+        this.ignore = ignore;
+        if (withColumnList != null) {
+            this.withColumnList = withColumnList
+                .stream().map(SqlNode::toString).collect(Collectors.toList());
+        }
+        if (setColumnList != null) {
+            List<String> setCl = setColumnList.stream()
+                .map(SqlNode::toString)
+                .toList();
+            this.exprList = setCl.stream()
+                .map(sc -> getColumnIndex(sc, this.withColumnList))
+                .collect(Collectors.toList());
+        }
+        this.replaceInto = sqlLoadData.isReplaceInto();
+    }
+
+    public static int getColumnIndex(String name, List<String> withColumnList) {
+        int i = 0;
+        for (String cn : withColumnList) {
+            if (cn.equalsIgnoreCase(name)) {
+                return i;
+            }
+            ++i;
+        }
+        return -1;
     }
 
     @Override
@@ -185,6 +232,13 @@ public class LoadDataExecutor implements DmlExecutor {
                         byte[] bytes = (byte[]) val;
                         preBytes = splitLine(bytes, preBytes, fieldsTerm, linesTerm);
                     } else {
+                        if (preBytes != null && preBytes.length > 0) {
+                            byte[] end = splitLine(new byte[]{}, preBytes, fieldsTerm, linesTerm);
+                            if (end != null && end.length == preBytes.length) {
+                                Object[] objects = splitRow(end, fieldsTerm);
+                                insertTuples(objects);
+                            }
+                        }
                         break;
                     }
                 }
@@ -204,32 +258,34 @@ public class LoadDataExecutor implements DmlExecutor {
                 isDone = true;
             }
         });
-        try {
-            FileInputStream is = new FileInputStream(filePath);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            loadDataRead = Executors.submit("loadDataRead", () -> {
-                try {
-                    byte[] buffer = new byte[1000];
-                    int length;
-                    while ((length = is.read(buffer)) != -1) {
-                        bos.write(buffer, 0, length);
-                        queue.put(bos.toByteArray());
-                        bos.reset();
+        if (!local) {
+            try {
+                FileInputStream is = new FileInputStream(filePath);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                loadDataRead = Executors.submit("loadDataRead", () -> {
+                    try {
+                        byte[] buffer = new byte[1000];
+                        int length;
+                        while ((length = is.read(buffer)) != -1) {
+                            bos.write(buffer, 0, length);
+                            queue.put(bos.toByteArray());
+                            bos.reset();
+                        }
+                        queue.put("end");
+                        bos.close();
+                        is.close();
+                        return null;
+                    } catch (IOException e) {
+                        LogUtils.error(log, e.getMessage(), e);
+                        return e.getMessage();
                     }
-                    queue.put("end");
-                    bos.close();
-                    is.close();
-                    return null;
-                } catch (IOException e) {
-                    LogUtils.error(log, e.getMessage(), e);
-                    return e.getMessage();
-                }
-            });
-        } catch (FileNotFoundException e) {
-            // Err code 2: No such file or directory
-            throw DingoResource.DINGO_RESOURCE.accessError(filePath, 2, "No such file or directory").ex();
-        } catch (Exception e) {
-            throw DingoResource.DINGO_RESOURCE.loadDataError().ex();
+                });
+            } catch (FileNotFoundException e) {
+                // Err code 2: No such file or directory
+                throw DingoResource.DINGO_RESOURCE.accessError(filePath, 2, "No such file or directory").ex();
+            } catch (Exception e) {
+                throw DingoResource.DINGO_RESOURCE.loadDataError().ex();
+            }
         }
         future.whenCompleteAsync((r, e) -> {
             if (r != null) {
@@ -241,13 +297,50 @@ public class LoadDataExecutor implements DmlExecutor {
         return true;
     }
 
+    public void loadRemoteData(byte[] data) {
+        try {
+            queue.put(data);
+        } catch (InterruptedException e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+    }
+
+    public long endRemoteData(String flg) {
+        try {
+            queue.put(flg);
+        } catch (InterruptedException e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+        while (!isDone) {
+            Utils.sleep(1000L);
+        }
+        long insertCount = count.get();
+        List<IndexTable> indexTableList = table.getIndexes();
+        if (indexTableList != null) {
+            insertCount = !indexTableList.isEmpty() ? insertCount / (indexTableList.size() + 1)  : insertCount;
+        }
+        return insertCount;
+    }
+
     @Override
     public Iterator<Object[]> getIterator() {
-        loadDataRead.whenComplete((r, e) -> {
-            if (r != null) {
-                throw DingoResource.DINGO_RESOURCE.accessError("filepath", 13, "Permission denied").ex();
-            }
-        });
+        if (local) {
+            LoadDataService.DEFAULT_INSTANCE.addLoadDataExecutor(statementId, this);
+            List<SQLWarning> sqlWarningList = new ArrayList<>();
+            sqlWarningList.add(new SQLWarning("local infile:" + filePath, statementId, 1062));
+            context.setWarningList(sqlWarningList);
+
+            List<Object[]> response = new ArrayList<>();
+            response.add(new Object[] {0});
+            return response.iterator();
+        }
+        if (loadDataRead != null) {
+            loadDataRead.whenComplete((r, e) -> {
+                if (r != null) {
+                    throw DingoResource.DINGO_RESOURCE.accessError("filepath", 13, "Permission denied").ex();
+                }
+            });
+        }
         while (!isDone) {
             Utils.sleep(1000L);
         }
@@ -346,7 +439,20 @@ public class LoadDataExecutor implements DmlExecutor {
         }
         tuples = enclosed(tuples);
         tuples = processHideCol(tuples);
-        tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
+        if (exprList != null) {
+            for (Integer ix : exprList) {
+                Object hexVal = tuples[ix];
+                if (hexVal != null) {
+                    byte[] actVal = CodecUtils.hexStringToBytes(hexVal.toString());
+                    tuples[ix] = new String(actVal);
+                }
+            }
+        }
+        try {
+            tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
+        } catch (Exception e) {
+            LogUtils.warn(log, e.getMessage(), e);
+        }
 
         if (isTxn) {
             if (dataGenNum % max_pre_write_count == 0) {
@@ -438,11 +544,17 @@ public class LoadDataExecutor implements DmlExecutor {
                 byte[] txnIdByte = txnId.encode();
                 byte[] tableIdByte = indexTable.tableId.encode();
                 byte[] partIdByte = partId.encode();
+                int opCode;
+                if (replaceInto) {
+                    opCode = Op.PUT.getCode();
+                } else {
+                    opCode = Op.PUTIFABSENT.getCode();
+                }
                 keyValue.setKey(
                     ByteUtils.encode(
                         CommonId.CommonType.TXN_CACHE_DATA,
                         keyValue.getKey(),
-                        Op.PUTIFABSENT.getCode(),
+                        opCode,
                         (txnIdByte.length + tableIdByte.length + partIdByte.length),
                         txnIdByte,
                         tableIdByte,
@@ -494,7 +606,7 @@ public class LoadDataExecutor implements DmlExecutor {
         keyValue.setKey(ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_DATA,
             keyValue.getKey(),
-            Op.PUTIFABSENT.getCode(),
+            Op.PUT.getCode(),
             (txnIdByte.length + tableIdByte.length + partIdByte.length),
             txnIdByte, tableIdByte, partIdByte));
     }
@@ -702,5 +814,4 @@ public class LoadDataExecutor implements DmlExecutor {
         String engine = table.getEngine().toUpperCase();
         return StringUtils.isNotBlank(engine) && engine.contains("TXN");
     }
-
 }
