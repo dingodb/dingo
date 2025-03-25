@@ -30,6 +30,7 @@ import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlOperandCountRanges;
@@ -53,15 +54,15 @@ public class SqlConcatFunction extends SqlFunction {
     //~ Constructors -----------------------------------------------------------
 
     /**
-     * Creates the SqlSubstringFunction.
+     * Creates the SqlConcatFunction.
      */
     public SqlConcatFunction() {
         super(
             "CONCAT",
             SqlKind.OTHER_FUNCTION,
             ReturnTypes.ARG0_NULLABLE_VARYING,
-            null,
-            null,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.or(OperandTypes.STRING_STRING_STRING, OperandTypes.STRING_STRING),
             SqlFunctionCategory.STRING);
     }
 
@@ -70,9 +71,9 @@ public class SqlConcatFunction extends SqlFunction {
     @Override public String getSignatureTemplate(final int operandsCount) {
         switch (operandsCount) {
             case 2:
-                return "{0}({1} FROM {2})";
+                return "{0}({1}, {2})";
             case 3:
-                return "{0}({1} FROM {2} FOR {3})";
+                return "{0}({1}, {2}, {3})";
             default:
                 throw new AssertionError();
         }
@@ -99,34 +100,10 @@ public class SqlConcatFunction extends SqlFunction {
     @Override public boolean checkOperandTypes(
         SqlCallBinding callBinding,
         boolean throwOnFailure) {
-        switch (callBinding.operands().size()) {
-            default:
-                throw new AssertionError();
-            case 2:
-                return true;
-            case 3:
-//                if (!CHECKER3
-//                    .checkOperandTypes(callBinding, throwOnFailure)) {
-//                    return false;
-//                }
-//                // Reset the operands because they may be coerced during
-//                // implicit type coercion.
-//                final List<SqlNode> operands = callBinding.getCall().getOperandList();
-//                final RelDataType t1 = callBinding.getOperandType(1);
-//                final RelDataType t2 = callBinding.getOperandType(2);
-//                if (SqlTypeUtil.inCharFamily(t1)) {
-//                    if (!SqlTypeUtil.isCharTypeComparable(callBinding, operands,
-//                        throwOnFailure)) {
-//                        return false;
-//                    }
-//                }
-//                if (!SqlTypeUtil.inSameFamily(t1, t2)) {
-//                    if (throwOnFailure) {
-//                        throw callBinding.newValidationSignatureError();
-//                    }
-//                    return false;
-//                }
-                return true;
+        if (this.getOperandTypeChecker() == null) {
+            throw Util.needToImplement(this);
+        } else {
+            return this.getOperandTypeChecker().checkOperandTypes(callBinding, throwOnFailure);
         }
     }
 
@@ -141,11 +118,11 @@ public class SqlConcatFunction extends SqlFunction {
         int rightPrec) {
         final SqlWriter.Frame frame = writer.startFunCall(getName());
         call.operand(0).unparse(writer, leftPrec, rightPrec);
-        writer.sep("FROM");
+        writer.sep(",");
         call.operand(1).unparse(writer, leftPrec, rightPrec);
 
         if (3 == call.operandCount()) {
-            writer.sep("FOR");
+            writer.sep(",");
             call.operand(2).unparse(writer, leftPrec, rightPrec);
         }
 
@@ -153,7 +130,6 @@ public class SqlConcatFunction extends SqlFunction {
     }
 
     @Override public SqlMonotonicity getMonotonicity(SqlOperatorBinding call) {
-        // SUBSTRING(x FROM 0 FOR constant) has same monotonicity as x
         if (call.getOperandCount() == 3) {
             final SqlMonotonicity mono0 = call.getOperandMonotonicity(0);
             if (mono0 != null
