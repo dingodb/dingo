@@ -92,12 +92,21 @@ public class ShowColumnsExecutor extends QueryExecutor {
 
             columnValues.add(columnName);
             String type = column.getSqlTypeName();
-            if (type.equals("VARCHAR")) {
+            if (type.equalsIgnoreCase("INTEGER")) {
+                type = "int";
                 if (column.getPrecision() > 0) {
                     type = type + "(" + column.getPrecision() + ")";
                 }
+            } else if (type.equals("VARCHAR")) {
+                if (column.getPrecision() > 0) {
+                    type = type + "(" + column.getPrecision() + ")";
+                }
+            } else if (type.equalsIgnoreCase("DECIMAL")) {
+                if (column.getPrecision() > 0 && column.getScale() >= 0) {
+                    type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
+                }
             }
-            columnValues.add(type);
+            columnValues.add(type.toLowerCase());
             columnValues.add(column.isNullable() ? "YES" : "NO");
             columnValues.add(column.isPrimary() ? "PRI" : "");
             columnValues.add(column.defaultValueExpr != null ? column.defaultValueExpr : "NULL");

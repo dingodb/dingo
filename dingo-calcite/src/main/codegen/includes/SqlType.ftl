@@ -26,7 +26,7 @@ SqlTypeNameSpec SqlTextTypeName(Span s): {
         typeName = SqlTypeName.VARCHAR;
         precision = 65535;
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlLongTextTypeName(Span s): {
@@ -40,7 +40,7 @@ SqlTypeNameSpec SqlLongTextTypeName(Span s): {
         typeName = SqlTypeName.VARCHAR;
         precision = Integer.MAX_VALUE;
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
@@ -60,7 +60,7 @@ SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
             typeName = SqlTypeName.TIMESTAMP;
         }
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlFloatTypeName(Span s) :
@@ -73,10 +73,15 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
         s.add(this);
         SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
         int precision = -1;
+        int scale = -1;
     }
         [
             <LPAREN>
                 precision = UnsignedIntLiteral()
+                [
+                <COMMA>
+                    scale = UnsignedIntLiteral()
+                    ]
             <RPAREN>
         ]
     {
