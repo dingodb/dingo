@@ -146,6 +146,7 @@ data: {
       "io.dingodb.calcite.utils.DingoSqlParserUtil"
       "org.apache.calcite.avatica.util.DateTimeUtils"
       "org.apache.calcite.schema.ColumnStrategy"
+      "org.apache.calcite.sql.DingoSqlBasicCall"
       "org.apache.calcite.sql.SqlCreate"
       "org.apache.calcite.sql.SqlDateLiteral"
       "org.apache.calcite.sql.SqlDrop"

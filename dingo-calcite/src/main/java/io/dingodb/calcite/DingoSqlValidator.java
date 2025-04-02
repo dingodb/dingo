@@ -23,6 +23,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
+import org.apache.calcite.sql.DingoSqlBasicCall;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -442,6 +443,17 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         double d = bd.doubleValue();
         if (Double.isInfinite(d) || Double.isNaN(d)) {
             throw this.newValidationError(literal, Static.RESOURCE.numberLiteralOutOfRange(Util.toScientificNotation(bd)));
+        }
+    }
+
+    @Override public SqlNode expandOrderExpr(SqlSelect select, SqlNode orderExpr) {
+        SqlNode resNode = super.expandOrderExpr(select, orderExpr);
+        if (!(resNode instanceof DingoSqlBasicCall) && resNode instanceof SqlBasicCall) {
+            SqlBasicCall sqlBasicCall = (SqlBasicCall) resNode;
+            return new DingoSqlBasicCall(sqlBasicCall.getOperator(), sqlBasicCall.getOperandList(),
+                sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
+        } else {
+            return resNode;
         }
     }
 }
