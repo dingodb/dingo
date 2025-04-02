@@ -21,7 +21,6 @@ import io.dingodb.calcite.rule.dingo.DingoPhysicalRules;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 
 import java.util.List;
 
@@ -201,19 +200,12 @@ public final class DingoRules {
         CoreRules.JOIN_CONDITION_PUSH,
         CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.PROJECT_REMOVE,
-        //CoreRules.JOIN_COMMUTE,
         CoreRules.JOIN_ASSOCIATE,
-        //JoinPushThroughJoinRule.LEFT,
-        //JoinPushThroughJoinRule.RIGHT,
         CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
         DingoPhysicalRules.DINGO_HASH_JOIN_RULE,
         DingoPhysicalRules.DINGO_ROOT_RULE,
         DingoPhysicalRules.DINGO_SORT_RULE,
         DingoPhysicalRules.DINGO_TRANSPOSE_REL_OP_STREAMING_CONVERTER_RULE,
-        CoreRules.SORT_PROJECT_TRANSPOSE,
-        CoreRules.SORT_JOIN_TRANSPOSE,
-        CoreRules.SORT_REMOVE_CONSTANT_KEYS,
-        CoreRules.SORT_UNION_TRANSPOSE,
         DINGO_GET_BY_INDEX_RULE,
         DINGO_LIKE_RULE,
         DINGO_PART_COUNT_RULE,
@@ -235,7 +227,6 @@ public final class DingoRules {
         DINGO_FUNCTION_SCAN_RULE,
         DINGO_VECTOR_INDEX_RULE,
         DINGO_VECTOR_JOIN_RULE,
-        //DINGO_MODIFY_INDEX_RULE,
         FILTER_SUB_QUERY_TO_CORRELATE,
         JOIN_SUB_QUERY_TO_CORRELATE,
         EXPORT_DATA_RULE,

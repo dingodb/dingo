@@ -5999,7 +5999,15 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; }
     |
-        <DOUBLE> { s.add(this); }
+        <DOUBLE> { s.add(this); } [
+                                                           <LPAREN>
+                                                           precision = UnsignedIntLiteral()
+                                                           [
+                                                               <COMMA>
+                                                               scale = UnsignedIntLiteral()
+                                                           ]
+                                                           <RPAREN>
+                                                       ]
         [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
     )
     {
@@ -7475,7 +7483,7 @@ SqlCall NamedCall() :
         }
     )
     {
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
+        return DingoSqlBasicCall.createCall(qualifiedName, s.end(this), funcType, quantifier, args);
     }
 }
 

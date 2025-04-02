@@ -1142,18 +1142,4 @@ public final class DingoDriverParser extends DingoParser {
         }
     }
 
-    //public static void afterDdl(DingoConnection connection, SqlNode sqlNode) {
-    //    if (!ddlTxn(sqlNode)) {
-    //        return;
-    //    }
-    //    try {
-    //        if (connection.getTransaction() != null) {
-    //            boolean pessimistic = "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"));
-    //            TransactionService.getDefault().begin(connection, pessimistic);
-    //        }
-    //    } catch (SQLException e) {
-    //        LogUtils.error(log, e.getMessage(), e);
-    //    }
-    //}
-
 }
