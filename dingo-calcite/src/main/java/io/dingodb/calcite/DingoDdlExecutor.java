@@ -838,10 +838,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 if (sqlValidator.isHybridSearch() && "BIGINT".equals(name)) {
                     nullable = true;
                 }
+                String typeName = f.getType().getSqlTypeName().getName();
+                if ("NULL".equalsIgnoreCase(typeName)) {
+                    typeName = "INTEGER";
+                }
                 return ColumnDefinition
                     .builder()
                     .name(f.getName())
-                    .type(f.getType().getSqlTypeName().getName())
+                    .type(typeName)
                     .scale(scale)
                     .precision(precision)
                     .nullable(nullable)

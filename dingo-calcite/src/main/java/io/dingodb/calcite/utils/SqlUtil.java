@@ -19,7 +19,14 @@ package io.dingodb.calcite.utils;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
+import org.apache.calcite.sql.DingoSqlBasicCall;
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.Litmus;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.List;
 
 public class SqlUtil {
     public static String checkSql(SqlNode sqlNode, String sql) {
@@ -34,5 +41,37 @@ public class SqlUtil {
             sql = sql.substring(0, 1000) + "...";
         }
         return sql;
+    }
+
+    public static boolean equalDeepIgnoreCast(List<? extends @Nullable SqlNode> operands0,
+                                    List<? extends @Nullable SqlNode> operands1, Litmus litmus) {
+        if (operands0.size() != operands1.size()) {
+            return litmus.fail(null);
+        }
+        for (int i = 0; i < operands0.size(); i++) {
+            if (!SqlNode.equalDeep(operands0.get(i), operands1.get(i), litmus)) {
+                if (operands0.get(i) instanceof SqlBasicCall && operands1.get(i) instanceof SqlBasicCall) {
+                    SqlBasicCall sqlBasicCall0 = (SqlBasicCall) operands0.get(i);
+                    SqlBasicCall sqlBasicCall1 = (SqlBasicCall) operands1.get(i);
+                    if (sqlBasicCall0.getKind() == SqlKind.CAST && sqlBasicCall1.getKind() != SqlKind.CAST) {
+                        return sqlBasicCall0.operand(0).equalsDeep(sqlBasicCall1, litmus);
+                    } else if (sqlBasicCall1.getKind() == SqlKind.CAST && sqlBasicCall0.getKind() != SqlKind.CAST) {
+                        return sqlBasicCall1.operand(0).equalsDeep(sqlBasicCall0, litmus);
+                    } else if (sqlBasicCall0.getKind() == SqlKind.CAST && sqlBasicCall1.getKind() == SqlKind.CAST) {
+                        boolean checkOperand1 = sqlBasicCall0.operand(1).equalsDeep(sqlBasicCall1.operand(1), litmus);
+                        SqlBasicCall call0 = sqlBasicCall0.operand(0);
+                        SqlBasicCall call1 = sqlBasicCall1.operand(0);
+                        if (call0 instanceof DingoSqlBasicCall) {
+                            return call0.equalsDeep(call1, litmus) && checkOperand1;
+                        } else if (call1 instanceof DingoSqlBasicCall) {
+                            return call1.equalsDeep(call0, litmus) && checkOperand1;
+                        }
+                        return false;
+                    }
+                }
+                return litmus.fail(null);
+            }
+        }
+        return litmus.succeed();
     }
 }

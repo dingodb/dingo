@@ -73,10 +73,15 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
         s.add(this);
         SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
         int precision = -1;
+        int scale = -1;
     }
         [
             <LPAREN>
                 precision = UnsignedIntLiteral()
+                [
+                <COMMA>
+                    scale = UnsignedIntLiteral()
+                    ]
             <RPAREN>
         ]
     {

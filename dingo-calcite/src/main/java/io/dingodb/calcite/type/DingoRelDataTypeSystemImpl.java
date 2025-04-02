@@ -53,7 +53,7 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
             case VARBINARY:
                 return RelDataType.PRECISION_NOT_SPECIFIED;
             case DECIMAL:
-                return getMaxNumericPrecision();
+                return 10;
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:

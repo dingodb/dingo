@@ -17,9 +17,6 @@
 package io.dingodb.test;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.schema.RootSnapshotSchema;
-import io.dingodb.common.CommonId;
-import io.dingodb.meta.MetaService;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,9 +59,9 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
             ImmutableList.of(
-                new Object[]{"id", "INTEGER", "NO", "PRI", "NULL"},
-                new Object[]{"name", "VARCHAR(32)", "YES", " ", "NULL"},
-                new Object[]{"age", "INTEGER", "YES", " ", "NULL"}
+                new Object[]{"id", "int", "NO", "PRI", "NULL"},
+                new Object[]{"name", "varchar(32)", "YES", " ", "NULL"},
+                new Object[]{"age", "int", "YES", " ", "NULL"}
             )
         ));
     }
@@ -75,7 +72,7 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
             ImmutableList.of(
-                new Object[]{"name", "VARCHAR(32)", "YES", " ", "NULL"}
+                new Object[]{"name", "varchar(32)", "YES", " ", "NULL"}
             )
         ));
     }
