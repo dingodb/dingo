@@ -178,6 +178,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1391,6 +1392,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (job == null) {
             throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
+        if (!checkDeleteTableJob(job)) {
+            throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
+        }
         InfoSchema is = DdlService.root().getIsLatest();
         String validateTableName;
         if (sqlFlashBackTable.newTableName != null) {
@@ -1400,7 +1404,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         Table table = is.getTable(schemaInfo.getName(), validateTableName);
         if (table != null) {
-            throw DINGO_RESOURCE.tableExists(tableName).ex();
+            throw DINGO_RESOURCE.tableExists(validateTableName).ex();
         }
         RecoverInfo recoverInfo = new RecoverInfo();
         recoverInfo.setDropJobId(job.getId());
@@ -2746,6 +2750,22 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         sql = String.format(sql, Utils.quoteForSql(schemaName),
             Utils.quoteForSql(tableName));
         return getRecoverJobBySql(sql, true);
+    }
+
+    public static boolean checkDeleteTableJob(DdlJob job) {
+        String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type "
+            + "from mysql.gc_delete_range where job_id="
+            + job.getId();
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            List<Object[]> resultList = session.executeQuery(sql);
+            return !resultList.isEmpty();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return false;
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
     }
 
     public static DdlJob getRecoverJob(String schemaName) {

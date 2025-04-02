@@ -22,6 +22,7 @@ SqlFlashBack SqlFlashBack(): {
   final SqlIdentifier tableId;
   SqlIdentifier newTableId = null;
   SqlIdentifier schemaId = null;
+  SqlIdentifier newSchemaId = null;
 } {
   <FLASHBACK> { s = span(); }
   (
@@ -32,8 +33,9 @@ SqlFlashBack SqlFlashBack(): {
     }
   |
    (<SCHEMA>|<DATABASE>) schemaId = CompoundIdentifier()
+   [ <TO>  newSchemaId = CompoundIdentifier() ]
     {
-      return new SqlFlashBackSchema(s.end(this), schemaId);
+      return new SqlFlashBackSchema(s.end(this), schemaId, newSchemaId);
     }
   )
 

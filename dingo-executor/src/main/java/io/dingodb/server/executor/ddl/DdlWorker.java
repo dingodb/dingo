@@ -1445,6 +1445,11 @@ public class DdlWorker {
                     = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
                 TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
                     .getTable(recoverInfo.getSchemaId(), tableId);
+                if (tableDefinitionWithId == null) {
+                    job.setDingoErr(DingoErrUtil.newInternalErr("tableDef is null"));
+                    job.setState(JobState.jobStateCancelled);
+                    return Pair.of(0L, job.getDingoErr().errorMsg);
+                }
                 List<Object> indexList = infoSchemaService.listIndex(job.getSchemaId(), job.getTableId());
                 tableDefinitionWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
                 if (recoverInfo.getNewTableName() != null) {
