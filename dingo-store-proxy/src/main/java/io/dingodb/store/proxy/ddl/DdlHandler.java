@@ -581,6 +581,7 @@ public class DdlHandler {
             .schemaId(recoverInfo.getSchemaId())
             .schemaName(recoverInfo.getOldSchemaName())
             .tableId(recoverInfo.getTableId())
+            .tableName(recoverInfo.getOldTableName())
             .state(JobState.jobStateQueueing)
             .build();
         List<Object> args = new ArrayList<>();

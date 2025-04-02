@@ -285,7 +285,12 @@ public final class JobTableUtil {
         try {
             session.setAutoCommit(false);
             session.executeUpdate(sql);
-
+            session.commit();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            session.rollback();
+        }
+        try {
             String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
             session.executeUpdate(removeSql);
             session.commit();

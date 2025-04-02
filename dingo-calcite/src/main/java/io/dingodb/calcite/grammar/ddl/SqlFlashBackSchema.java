@@ -26,13 +26,15 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 public class SqlFlashBackSchema extends SqlFlashBack {
 
     public SqlIdentifier schemaId;
+    public SqlIdentifier newSchemaId;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("FLASHBACK SCHEMA", SqlKind.OTHER_DDL);
 
-    public SqlFlashBackSchema(SqlParserPos pos, SqlIdentifier schemaId) {
+    public SqlFlashBackSchema(SqlParserPos pos, SqlIdentifier schemaId, SqlIdentifier newSchemaId) {
         super(OPERATOR, pos);
         this.schemaId = schemaId;
+        this.newSchemaId = newSchemaId;
     }
 
     @Override
