@@ -2498,7 +2498,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexTableDefinition.setVisible(indexDeclaration.isVisible());
         indexTableDefinition.setComment(indexDeclaration.getComment());
         if (indexDeclaration.getIndexOpt() != null) {
-            int codecVersion = (int) indexDeclaration.getIndexOpt().getOrDefault("codec_version", 2);
+            //codec version in index should be same as that in original table.
+            int codecVersion = tableDefinition.getCodecVersion();
+
             indexTableDefinition.setCodecVersion(codecVersion);
         }
 
