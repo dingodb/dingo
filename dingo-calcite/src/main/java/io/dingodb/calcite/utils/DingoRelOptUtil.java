@@ -67,6 +67,11 @@ public class DingoRelOptUtil {
             if (!type1.equals(type2)) {
                 if (type1.getSqlTypeName() == type2.getSqlTypeName()) {
                     continue;
+                } else {
+                    if ((type1.getSqlTypeName() != null && "NULL".equalsIgnoreCase(type1.getSqlTypeName().getName()))
+                        || (type2.getSqlTypeName() != null && "NULL".equalsIgnoreCase(type2.getSqlTypeName().getName()))) {
+                        continue;
+                    }
                 }
                 return false;
             }

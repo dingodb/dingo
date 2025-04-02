@@ -137,7 +137,11 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             createTableSqlStr.append("`").append(column.getName()).append("` ");
             createTableSqlStr.append(getTypeName(column.getSqlTypeName(), column.getElementTypeName()));
             if (column.getPrecision() > 0) {
-                createTableSqlStr.append("(").append(column.getPrecision()).append(")");
+                createTableSqlStr.append("(").append(column.getPrecision());
+                if (column.getScale() >= 0) {
+                    createTableSqlStr.append(",").append(column.getScale());
+                }
+                createTableSqlStr.append(")");
             }
             if (!column.isNullable()) {
                 createTableSqlStr.append(" NOT NULL");
