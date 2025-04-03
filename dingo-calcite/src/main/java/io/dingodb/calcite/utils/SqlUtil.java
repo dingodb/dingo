@@ -59,12 +59,15 @@ public class SqlUtil {
                         return sqlBasicCall1.operand(0).equalsDeep(sqlBasicCall0, litmus);
                     } else if (sqlBasicCall0.getKind() == SqlKind.CAST && sqlBasicCall1.getKind() == SqlKind.CAST) {
                         boolean checkOperand1 = sqlBasicCall0.operand(1).equalsDeep(sqlBasicCall1.operand(1), litmus);
-                        SqlBasicCall call0 = sqlBasicCall0.operand(0);
-                        SqlBasicCall call1 = sqlBasicCall1.operand(0);
-                        if (call0 instanceof DingoSqlBasicCall) {
-                            return call0.equalsDeep(call1, litmus) && checkOperand1;
-                        } else if (call1 instanceof DingoSqlBasicCall) {
-                            return call1.equalsDeep(call0, litmus) && checkOperand1;
+                        if (!checkOperand1) {
+                            return false;
+                        }
+                        SqlNode sqlNode0 = sqlBasicCall0.operand(0);
+                        SqlNode sqlNode1 = sqlBasicCall1.operand(0);
+                        if (sqlNode0 instanceof DingoSqlBasicCall && sqlNode1 instanceof SqlBasicCall) {
+                            return sqlNode0.equalsDeep(sqlNode1, litmus);
+                        } else if (sqlNode1 instanceof DingoSqlBasicCall && sqlNode0 instanceof SqlBasicCall) {
+                            return sqlNode1.equalsDeep(sqlNode0, litmus);
                         }
                         return false;
                     }
