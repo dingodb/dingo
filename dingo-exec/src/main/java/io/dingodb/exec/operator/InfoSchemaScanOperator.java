@@ -92,6 +92,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getMdlView();
             case "DINGO_TRX":
                 return getTxnInfo();
+            case "ENGINES":
+                return mysqlEngineInfos();
             default:
                 throw new RuntimeException("no source");
         }
@@ -470,6 +472,13 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         while (iterator.hasNext()) {
             result.add(iterator.next());
         }
+
+        return result.stream().iterator();
+    }
+
+    private static Iterator<Object[]> mysqlEngineInfos() {
+        List<Object[]> result = new ArrayList<>();
+        result.add(new Object[]{"ndbcluster", "Clustered, fault-tolerant tables", null, "NO", null, null});
 
         return result.stream().iterator();
     }
