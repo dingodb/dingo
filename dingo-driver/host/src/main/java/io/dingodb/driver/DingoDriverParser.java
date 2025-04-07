@@ -29,6 +29,7 @@ import io.dingodb.calcite.executor.KillQuery;
 import io.dingodb.calcite.executor.QueryExecutor;
 import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
@@ -278,6 +279,8 @@ public final class DingoDriverParser extends DingoParser {
             DingoMetrics.timer("sql-parse").update(sub, TimeUnit.MILLISECONDS);
             if (sqlNode instanceof DingoSqlCreateTable) {
                 ((DingoSqlCreateTable) sqlNode).setOriginalCreateSql(sql);
+            } else if (sqlNode instanceof DingoSqlCreateView) {
+                ((DingoSqlCreateView) sqlNode).setOriginalCreateSql(sql);
             }
         } catch (SqlParseException e) {
             throw ExceptionUtils.toRuntime(e);
