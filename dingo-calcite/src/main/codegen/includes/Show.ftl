@@ -140,9 +140,11 @@ SqlShow SqlShowDatabases(Span s): {
 
 SqlShow SqlShowTables(Span s): {
    String pattern = null;
+   boolean only = false;
 } {
   <TABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
-  { return new SqlShowTables(s.end(this), pattern); }
+  [<ONLY> { only = true;} ]
+  { return new SqlShowTables(s.end(this), pattern, only); }
 }
 
 SqlShow SqlShowFullTables(Span s): {

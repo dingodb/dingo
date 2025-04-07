@@ -885,6 +885,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         properties.setProperty("check_option", sqlCreateView.checkOpt);
         properties.setProperty("security_type", sqlCreateView.security);
         properties.setProperty("algorithm", sqlCreateView.alg);
+        properties.setProperty("originSql", sqlCreateView.getOriginalCreateSql());
         tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
         ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null, sqlCreateView.getReplace());

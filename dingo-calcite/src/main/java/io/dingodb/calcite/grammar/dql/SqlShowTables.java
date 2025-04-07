@@ -25,6 +25,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 public class SqlShowTables extends SqlShow {
 
     public String sqlLikePattern;
+    public boolean only;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("SHOW TABLES", SqlKind.SELECT);
@@ -34,9 +35,10 @@ public class SqlShowTables extends SqlShow {
      *
      * @param pos      pos
      */
-    public SqlShowTables(SqlParserPos pos, String sqlLikePattern) {
+    public SqlShowTables(SqlParserPos pos, String sqlLikePattern, boolean only) {
         super(OPERATOR, pos);
         this.sqlLikePattern = sqlLikePattern;
+        this.only = only;
     }
 
     @Override

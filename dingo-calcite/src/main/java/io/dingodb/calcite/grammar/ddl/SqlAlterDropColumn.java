@@ -27,8 +27,8 @@ public class SqlAlterDropColumn extends SqlAlterTable {
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE DROP COLUMN", SqlKind.ALTER_TABLE);
 
-    public SqlAlterDropColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, String columnNm) {
+    public SqlAlterDropColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlIdentifier columnId) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.columnNm = columnNm;
+        this.columnNm = columnId.getSimple().toUpperCase();
     }
 }
