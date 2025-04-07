@@ -210,6 +210,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "COLLATIONS", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "DINGO_MDL_VIEW", SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, "DINGO_TRX", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, "ENGINES", SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
 
@@ -570,6 +571,9 @@ public final class PrepareMeta {
                 break;
             case "DINGO_TRX":
                 jsonFile = "/information-dingoTrx.json";
+                break;
+            case "ENGINES":
+                jsonFile = "/information-engines.json";
                 break;
             case "DINGO_DDL_REORG":
                 jsonFile = "/mysql-dingoDdlReorg.json";
