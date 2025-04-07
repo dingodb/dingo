@@ -42,6 +42,8 @@ public class Context {
     // OPTIMISTIC select... for update
     private boolean isShow;
 
+    private boolean isReplaceIntoKey;
+
     public Context setPin(int pin) {
         this.pin = pin;
         return this;

@@ -173,6 +173,29 @@ public class BasicDmlCases extends SqlTestCaseJavaBuilder {
                 "11, Cindy, 8.5"
             ));
 
+        test("replace")
+            .use("table", "i4k_vs_f80")
+            .modify("i4k_vs_f80")
+            .step(
+                "replace into {table} values(10, 'Alice', 10.0), (11, 'Cindy', 11.5)",
+                count(2)
+            )
+            .data(csv(
+                "ID, NAME, AMOUNT",
+                "INT, STRING, DOUBLE",
+                "1, Alice, 3.5",
+                "2, Betty, 4.0",
+                "3, Cindy, 4.5",
+                "4, Doris, 5.0",
+                "5, Emily, 5.5",
+                "6, Alice, 6.0",
+                "7, Betty, 6.5",
+                "8, Alice, 7.0",
+                "9, Cindy, 7.5",
+                "10, Alice, 10.0",
+                "11, Cindy, 11.5"
+            ));
+
         test("Batch insert")
             .use("table", "i4k_vs_f80")
             .modify("i4k_vs_f80")

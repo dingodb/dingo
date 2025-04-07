@@ -59,6 +59,7 @@ import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
+import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
@@ -333,6 +334,14 @@ public class DingoParser {
         if (sqlNode instanceof SqlSelect) {
             SqlSelect sqlSelect = (SqlSelect) sqlNode;
             return sqlSelect.isForUpdate();
+        }
+        return false;
+    }
+
+    public static boolean getReplaceInto(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlInsert) {
+            SqlInsert sqlInsert = (SqlInsert) sqlNode;
+            return sqlInsert.isReplace();
         }
         return false;
     }

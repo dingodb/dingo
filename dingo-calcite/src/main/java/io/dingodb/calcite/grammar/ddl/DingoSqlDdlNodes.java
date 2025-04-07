@@ -45,7 +45,7 @@ public class DingoSqlDdlNodes {
         int replica,
         String engine,
         Properties properties,
-        int autoIncrement,
+        long autoIncrement,
         String comment,
         String charset,
         String collate,

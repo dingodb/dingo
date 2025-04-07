@@ -33,7 +33,7 @@ import java.util.List;
 @Getter
 @JsonTypeName("txn_insert")
 @JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut",
-    "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
+    "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "isReplaceInto"})
 public class TxnPartInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("hasAutoInc")
@@ -48,6 +48,8 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     private List<Long> autoIncList = new ArrayList<>();
     private TupleMapping updateMapping;
     private List<SqlExpr> updates;
+    @JsonProperty("isReplaceInto")
+    private boolean isReplaceInto;
 
     public TxnPartInsertParam(
         @JsonProperty("table") CommonId tableId,
@@ -64,7 +66,8 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
         TupleMapping updateMapping,
-        List<SqlExpr> updates
+        List<SqlExpr> updates,
+        boolean isReplaceInto
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -73,6 +76,7 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         this.autoIncColIdx = autoIncColIdx;
         this.updateMapping = updateMapping;
         this.updates = updates;
+        this.isReplaceInto = isReplaceInto;
     }
 
     @Override
@@ -86,4 +90,9 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     public void inc() {
         count++;
     }
+
+    public void inc(long num) {
+        count += num;
+    }
+
 }

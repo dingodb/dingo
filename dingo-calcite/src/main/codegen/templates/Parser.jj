@@ -1905,6 +1905,7 @@ SqlNode SqlInsert() :
     SqlNodeList sourceExpressionList;
     SqlNodeList targetColumnList;
     SqlIdentifier id;
+    boolean isReplace = false;
 }
 {
     (
@@ -1952,9 +1953,74 @@ SqlNode SqlInsert() :
     ]
     {
         return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList, sourceExpressionList, targetColumnList);
+            columnList, sourceExpressionList, targetColumnList, isReplace);
     }
 }
+
+/**
+ * Parses an REPLACE statement.
+ */
+SqlNode SqlReplace() :
+{
+    final List<SqlLiteral> keywords = new ArrayList<SqlLiteral>();
+    final SqlNodeList keywordList;
+    final SqlIdentifier tableName;
+    SqlNode tableRef;
+    SqlNode source;
+    final SqlNodeList columnList;
+    final Span s;
+    final Pair<SqlNodeList, SqlNodeList> p;
+    SqlNodeList sourceExpressionList;
+    SqlNodeList targetColumnList;
+    SqlIdentifier id;
+    boolean isReplace = false;
+}
+{
+    <REPLACE> { isReplace = true;}
+    {
+        s = span();
+        targetColumnList = new SqlNodeList(s.pos());
+        sourceExpressionList = new SqlNodeList(s.pos());
+    }
+    SqlInsertKeywords(keywords) {
+        keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
+    }
+    <INTO> tableName = CompoundTableIdentifier()
+    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    [ LOOKAHEAD(5) tableRef = ExtendTable(tableRef) ]
+    (
+        LOOKAHEAD(2)
+        p = ParenthesizedCompoundIdentifierList() {
+            if (p.right.size() > 0) {
+                tableRef = extend(tableRef, p.right);
+            }
+            if (p.left.size() > 0) {
+                columnList = p.left;
+            } else {
+                columnList = null;
+            }
+        }
+    |   { columnList = null; }
+    )
+    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    [
+        <ON> <DUPLICATE> <KEY> <UPDATE>
+            id = SimpleIdentifier() {
+                targetColumnList.add(id);
+            }
+            <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
+            (
+                <COMMA>
+                id = SimpleIdentifier() { targetColumnList.add(id); }
+                <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
+            )*
+    ]
+    {
+        return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
+            columnList, sourceExpressionList, targetColumnList, isReplace);
+    }
+}
+
 
 /**
  * Parses a leaf insert into expression.

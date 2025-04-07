@@ -36,6 +36,19 @@ public final class ParseValueUtils {
         }
     }
 
+    public static long positiveLong(String source, String field) {
+        try {
+            long value = Long.parseLong(source);
+            if (value > 0) {
+                return value;
+            } else {
+                throw new RuntimeException();
+            }
+        } catch (Exception ignore) {
+            throw new IllegalArgumentException("The " + field + " need a positive long, but [" + source + "].");
+        }
+    }
+
     public static String getEnclosed(String enclose) {
         if (enclose.equals("''''")) {
             return "'";
