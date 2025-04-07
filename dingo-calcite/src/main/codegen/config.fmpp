@@ -379,6 +379,7 @@ data: {
         "SqlFlashBack"
         "SqlRecoverTable"
         "SqlRenameTable"
+        "SqlReplace"
     ]
 
     sqlTypeNameMethods: [

@@ -207,8 +207,40 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param.inc();
                         }
                     } else {
-                        throw new DuplicateEntryException("Duplicate entry "
-                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        if (!param.isReplaceInto()) {
+                            throw new DuplicateEntryException("Duplicate entry "
+                                + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        } else {
+                            byte[] extraKey = ByteUtils.encode(
+                                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
+                                key,
+                                oldKey[oldKey.length - 2],
+                                len,
+                                jobIdByte,
+                                tableIdByte,
+                                partIdByte
+                            );
+                            KeyValue extraKeyValue;
+                            if (value.getValue() == null) {
+                                // delete
+                                extraKeyValue = new KeyValue(extraKey, null);
+                            } else {
+                                extraKeyValue = new KeyValue(
+                                    extraKey, Arrays.copyOf(value.getValue(), value.getValue().length)
+                                );
+                            }
+                            localStore.put(extraKeyValue);
+                            localStore.delete(dataKey);
+                            localStore.delete(updateKey);
+                            vertex.getTask().getPartData().put(
+                                new TxnPartData(tableId, partId),
+                                (!isVector && !isDocument)
+                            );
+                            keyValue.setKey(updateKey);
+                            if (localStore.put(keyValue) && context.getIndexId() == null) {
+                                param.inc(2L);
+                            }
+                        }
                     }
                 } else {
                     KeyValue insertUpKv = null;
@@ -293,19 +325,29 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     partIdByte
                 );
                 localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
+                long num = 1L;
                 // write data
                 if (insertUpKv != null && insertUpKv.getValue() != null) {
                     keyValue.setKey(insertUpKv.getKey());
                     keyValue.setValue(insertUpKv.getValue());
                 } else {
-                    keyValue.setKey(dataKey);
+                    if (!param.isReplaceInto()) {
+                        keyValue.setKey(dataKey);
+                    } else {
+                        if (context.isReplaceIntoKey()) {
+                            num++;
+                            keyValue.setKey(updateKey);
+                        } else {
+                            keyValue.setKey(dataKey);
+                        }
+                    }
                 }
                 vertex.getTask().getPartData().put(
                     new TxnPartData(tableId, partId),
                     (!isVector && !isDocument)
                 );
                 if (localStore.put(keyValue) && context.getIndexId() == null) {
-                    param.inc();
+                    param.inc(num);
                 }
             }
         } else {
@@ -335,6 +377,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     context.setDuplicateKey(true);
                 }
             }
+            long num = 1L;
             if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " Key is not existed than two in local store");
@@ -356,8 +399,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             len);
                         op = Op.PUT;
                     } else {
-                        throw new DuplicateEntryException("Duplicate entry "
-                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        if (!param.isReplaceInto()) {
+                            throw new DuplicateEntryException("Duplicate entry "
+                                + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        } else {
+                            num++;
+                        }
                     }
                 } else {
                     // delete  ->  insert  convert --> put
@@ -365,7 +412,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     op = Op.DELETE;
                 }
             } else {
-                if (!context.isDuplicateKey() && param.isCheckInPlace()) {
+                if (!context.isDuplicateKey() && (param.isCheckInPlace() || param.isReplaceInto())) {
                     byte[] originalKey;
                     if (isVector) {
                         originalKey = codec.encodeKeyPrefix(newTuple, 1);
@@ -383,8 +430,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param.getLockTimeOut()
                     );
                     if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        throw new DuplicateEntryException("Duplicate entry " +
-                            TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        if (!param.isReplaceInto()) {
+                            throw new DuplicateEntryException("Duplicate entry " +
+                                TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        } else {
+                            num++;
+                        }
                     }
                 }
                 if (context.isDuplicateKey()) {
@@ -399,17 +450,25 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         partIdByte,
                         len);
                 } else {
-                    keyValue.setKey(
-                        ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
-                    );
-                    localStore.put(keyValue);
+                    if (!param.isReplaceInto()) {
+                        keyValue.setKey(
+                            ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
+                        );
+                        localStore.put(keyValue);
+                    }
                 }
             }
             if (insertUpKv != null && insertUpKv.getValue() != null) {
                 keyValue.setKey(insertUpKv.getKey());
                 keyValue.setValue(insertUpKv.getValue());
             } else {
-                keyValue.setKey(insertKey);
+                if (param.isReplaceInto()) {
+                    keyValue.setKey(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, insertKey));
+                    localStore.delete(insertKey);
+                    localStore.delete(updateKey);
+                } else {
+                    keyValue.setKey(insertKey);
+                }
             }
             localStore.delete(deleteKey);
             // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
@@ -428,7 +487,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             );
             localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (localStore.put(keyValue) && context.getIndexId() == null) {
-                param.inc();
+                param.inc(num);
                 context.addKeyState(true);
             }
         }

@@ -534,7 +534,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     int replica = 0;
     String engine = null;
     Properties properties = null;
-    int autoIncrement = 1;
+    long autoIncrement = 1;
     String charset = "utf8";
     String collate = "utf8_bin";
     String comment = null;
@@ -562,7 +562,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     |
      <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
-     <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }
+     <AUTO_INCREMENT> <EQ> {autoIncrement = positiveLong(getNextToken().image, "auto_increment"); }
     |
      <DEFAULT_>
     |

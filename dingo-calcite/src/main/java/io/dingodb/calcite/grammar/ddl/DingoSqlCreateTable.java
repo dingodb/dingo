@@ -40,7 +40,7 @@ public class DingoSqlCreateTable extends SqlCreateTable {
 
     @Getter String engine;
 
-    @Getter int autoIncrement;
+    @Getter long autoIncrement;
 
     @Getter
     @Setter
@@ -82,7 +82,7 @@ public class DingoSqlCreateTable extends SqlCreateTable {
         int replica,
         String engine,
         Properties properties,
-        int autoIncrement,
+        long autoIncrement,
         String comment,
         String charset,
         String collate,

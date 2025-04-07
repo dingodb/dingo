@@ -246,22 +246,27 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     if (param.isDuplicateUpdate()) {
                         context.setDuplicateKey(true);
                     } else {
-                        TransactionUtil.resolvePessimisticLock(
-                            param.getIsolationLevel(),
-                            txnId,
-                            tableId,
-                            partId,
-                            deadLockKeyBytes,
-                            key,
-                            param.getStartTs(),
-                            forUpdateTs,
-                            true,
-                            new DuplicateEntryException("Duplicate entry " +
-                                TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
-                        );
+                        if (!param.isReplaceInto()) {
+                            TransactionUtil.resolvePessimisticLock(
+                                param.getIsolationLevel(),
+                                txnId,
+                                tableId,
+                                partId,
+                                deadLockKeyBytes,
+                                key,
+                                param.getStartTs(),
+                                forUpdateTs,
+                                true,
+                                new DuplicateEntryException("Duplicate entry " +
+                                    TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
+                            );
+                        } else {
+                            context.setReplaceIntoKey(true);
+                        }
                     }
                 } else {
                     context.setDuplicateKey(false);
+                    context.setReplaceIntoKey(false);
                 }
                 byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
                 // lockKeyValue
@@ -301,6 +306,14 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     if (keyValues == null || keyValues.isEmpty()) {
                         KeyValue getKv = kvStore.txnGet(TsoService.getDefault().tso(), key, param.getLockTimeOut());
                         context.setDuplicateKey(getKv != null && getKv.getValue() != null);
+                    }
+                }
+                if (param.isReplaceInto() && context.getIndexId() == null && !isVector && !isDocument ) {
+                    KeyValue kvKeyValue = kvStore.txnGet(
+                        TsoService.getDefault().tso(), originalKey, param.getLockTimeOut()
+                    );
+                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                        context.setReplaceIntoKey(true);
                     }
                 }
                 @Nullable Object[] finalTuple1 = tuple;

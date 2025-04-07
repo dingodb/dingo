@@ -67,7 +67,8 @@ public final class DingoTableModifyVisitFun {
     }
 
     public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
-                                           ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel, boolean forUpdate
+                                           ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel,
+                                           boolean forUpdate, boolean replaceInto
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
@@ -115,7 +116,8 @@ public final class DingoTableModifyVisitFun {
                                     "insert",
                                     td,
                                     isUpdate,
-                                    forUpdate
+                                    forUpdate,
+                                    replaceInto
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -131,7 +133,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     isScan,
                                     td,
-                                    isUpdate
+                                    isUpdate,
+                                    replaceInto
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
                             }
@@ -157,7 +160,8 @@ public final class DingoTableModifyVisitFun {
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
                                     updateMapping,
-                                    updates));
+                                    updates,
+                                    replaceInto));
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge lockEdge = new Edge(lockVertex, insertVertex);
                             lockVertex.addEdge(lockEdge);
@@ -184,7 +188,8 @@ public final class DingoTableModifyVisitFun {
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
                                     updateMapping,
-                                    updates));
+                                    updates,
+                                    replaceInto));
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
                             task.putVertex(vertex);
                             input.setPin(0);
@@ -240,7 +245,8 @@ public final class DingoTableModifyVisitFun {
                                     "update",
                                     td,
                                     false,
-                                    forUpdate
+                                    forUpdate,
+                                    replaceInto
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -378,7 +384,8 @@ public final class DingoTableModifyVisitFun {
                                     "delete",
                                     td,
                                     false,
-                                    forUpdate
+                                    forUpdate,
+                                    replaceInto
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {

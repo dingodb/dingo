@@ -90,7 +90,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 }
                 IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
-                    LogUtils.error(log, "[ddl] Pessimistic lock get index table null, indexId:{}", context.getIndexId());
+                    LogUtils.error(log, "Pessimistic lock get index table null, indexId:{}", context.getIndexId());
                     return false;
                 }
                 if (!OpStateUtils.allowOpContinue(param.getOpType(), indexTable.schemaState)) {
@@ -243,7 +243,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
 
                 if (param.isInsert()) {
                     if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
-                        if (!param.isDuplicateUpdate()) {
+                        if (!param.isDuplicateUpdate() && !param.isReplaceInto()) {
                             if (future != null) {
                                 future.cancel(true);
                             }

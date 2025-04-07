@@ -521,7 +521,8 @@ public final class DingoDriverParser extends DingoParser {
             sqlNode.getKind(),
             new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
             pointTs,
-            forUpdate
+            forUpdate,
+            getReplaceInto(sqlNode)
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -790,7 +791,7 @@ public final class DingoDriverParser extends DingoParser {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate
+                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate, getReplaceInto(sqlNode)
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
