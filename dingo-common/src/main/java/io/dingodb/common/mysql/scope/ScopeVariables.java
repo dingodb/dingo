@@ -35,8 +35,8 @@ public final class ScopeVariables {
     public static final List<String> characterSet = new ArrayList<>();
 
     static {
-        immutableVariables.add("version_comment");
-        immutableVariables.add("version");
+        //immutableVariables.add("version_comment");
+        //immutableVariables.add("version");
         immutableVariables.add("version_compile_os");
         immutableVariables.add("version_compile_machine");
         immutableVariables.add("license");
