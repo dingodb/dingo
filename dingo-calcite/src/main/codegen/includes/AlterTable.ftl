@@ -178,7 +178,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     SqlIdentifier afterCol = null;
     ColumnOption columnOpt = null;
 } {
-    <COLUMN>
+    [<COLUMN>]
     columnId = SimpleIdentifier()
     type = DataType()
     columnOpt = parseColumnOption()
@@ -209,12 +209,12 @@ SqlAlterTable dropIndex(Span s, String scope, SqlIdentifier id): {
 }
 
 SqlAlterTable dropColumn(Span s, String scope, SqlIdentifier id): {
-  String column;
+  SqlIdentifier columnId;
 } {
-   <COLUMN> { s.add(this); }
-   { column = getNextToken().image; }
+   [ <COLUMN> ] { s.add(this); }
+   columnId = SimpleIdentifier()
    {
-     return new SqlAlterDropColumn(s.end(this), id, column);
+     return new SqlAlterDropColumn(s.end(this), id, columnId);
    }
 }
 

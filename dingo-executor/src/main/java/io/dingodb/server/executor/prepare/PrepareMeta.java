@@ -227,6 +227,7 @@ public final class PrepareMeta {
     public static List<Object[]> getGlobalVariablesList() {
         List<Object[]> values = new ArrayList<>();
         String name = System.getProperty("os.name").toLowerCase();
+        //values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 8.0 compatible"});
         values.add(new Object[]{"version_comment", "Ubuntu"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"local_infile", "0"});
@@ -301,6 +302,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"enable_document_scan_filter", "on"});
         values.add(new Object[]{"automatic_sp_privileges", "1"});
         values.add(new Object[]{"log_bin_trust_function_creators", "TRUE"});
+        values.add(new Object[]{"innodb_online_alter_log_max_size", "134217728"});
+        values.add(new Object[]{"innodb_version", "5.6.25"});
         //values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
         return values;
     }

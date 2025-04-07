@@ -101,13 +101,18 @@ public class ShowCreateTableExecutor extends QueryExecutor {
     private String getCreateView() {
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName, tableName);
+        if (table.getProperties().containsKey("originSql")) {
+            return table.getProperties().getProperty("originSql");
+        }
         StringBuilder createTableSqlStr = new StringBuilder();
         createTableSqlStr.append("CREATE ");
         String alg = table.getProperties().getProperty("algorithm");
-        createTableSqlStr.append("ALGORITHM=").append(alg);
+        if ("UNDEFINED".equalsIgnoreCase(alg) || "MERGE".equalsIgnoreCase(alg) || "TEMPTABLE".equalsIgnoreCase(alg)) {
+            createTableSqlStr.append("ALGORITHM=").append(alg);
+        }
         String user = table.getProperties().getProperty("user");
         String host = table.getProperties().getProperty("host");
-        createTableSqlStr.append(" DEFINER=").append(user).append("@").append(host);
+        createTableSqlStr.append(" DEFINER=").append(user).append("@").append("'").append(host).append("'");
         String securityType = table.getProperties().getProperty("security_type");
         createTableSqlStr.append(" SQL SECURITY ").append(securityType);
         createTableSqlStr.append(" VIEW ");
@@ -145,7 +150,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                 createTableSqlStr.append(" NOT NULL");
             }
             if (column.getDefaultValueExpr() != null) {
-                createTableSqlStr.append(" DEFAULT ").append(column.getDefaultValueExpr());
+                if (!(!column.isNullable() && "NULL".equalsIgnoreCase(column.getDefaultValueExpr()))) {
+                    createTableSqlStr.append(" DEFAULT ").append(column.getDefaultValueExpr());
+                }
             }
             if (column.isAutoIncrement()) {
                 createTableSqlStr.append(" auto_increment");

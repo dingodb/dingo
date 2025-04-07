@@ -35,7 +35,7 @@ import java.io.InputStreamReader;
 public class VersionFun extends NullaryOp {
     public static final VersionFun INSTANCE = new VersionFun();
     public static final String NAME = "version";
-    public static final String PRE = "5.7.41-DingoDB-";
+    public static final String PRE = "8.0.11-DingoDB-";
 
     public static String version = "UNKNOWN";
     private static final long serialVersionUID = -4130064040675181327L;

@@ -17,6 +17,8 @@
 package io.dingodb.calcite.grammar.ddl;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -37,6 +39,9 @@ public class DingoSqlCreateView extends SqlCreate {
     public final SqlIdentifier name;
     public final @Nullable SqlNodeList columnList;
     public final SqlNode query;
+    @Getter
+    @Setter
+    private String originalCreateSql;
     private static final SqlOperator OPERATOR;
     public String security;
     public String alg;
@@ -61,7 +66,7 @@ public class DingoSqlCreateView extends SqlCreate {
         this.columnList = columnList;
         this.query = (SqlNode)Objects.requireNonNull(query, "query");
         this.security = security == null ? "" : security;
-        this.alg = alg == null ? "" : security;
+        this.alg = alg == null ? "" : alg;
         this.definer = definer;
         this.host = host;
         this.checkOpt = checkOpt;

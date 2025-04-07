@@ -468,6 +468,10 @@ public class TestSqlSyntaxCheck {
     @Test
     public void testAlterTable() {
         List<String> sqlList = new ArrayList<>();
+        sqlList.add("ALTER TABLE `gcpbs`.`gcp_bs_charge_detail_head` ADD `extension` VARCHAR(2048) NULL COMMENT '扩展字段'");
+        sqlList.add("ALTER TABLE `gcpbs`.`gcp_bs_charge_detail_head` ADD column `extension` VARCHAR(2048) NULL COMMENT '扩展字段'");
+        sqlList.add("ALTER TABLE `gcpbs`.`gcp_bs_charge_detail_head` drop column `extension`");
+        sqlList.add("ALTER TABLE `gcpbs`.`gcp_bs_charge_detail_head` drop `extension`");
         sqlList.add("ALTER TABLE TBL ALTER COLUMN C1 SET DEFAULT 'A2'");
         sqlList.add("ALTER TABLE TBL ALTER COLUMN C1 DROP DEFAULT");
         sqlList.add("alter table table1 change column column1 column2 decimal(10,1) DEFAULT NULL COMMENT '注释'");

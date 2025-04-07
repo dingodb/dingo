@@ -1518,7 +1518,7 @@ ExportOptions exportOptions(): {
     String outfile = null;
     byte[] terminated = new byte[]{0x09};
     String enclosed = null;
-    byte[] lineTerminated = new byte[]{0x0d, 0x0a};
+    byte[] lineTerminated = new byte[]{0x0a};
     byte[] escaped = "\\".getBytes();
     byte[] lineStarting = null;
     String exportCharset = "utf8";
