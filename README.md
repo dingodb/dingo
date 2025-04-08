@@ -1,5 +1,5 @@
 
-# 1. DingoDB
+# DingoDB
 [DingoDB](https://github.com/dingodb/dingo) is an open-source distributed multi-modal vector database independently designed and developed by [DataCanvas](https://www.datacanvas.com/), which integrates real-time strong consistency, relational semantics, and vector semantics into a unified platform, DingoDB positioning itself as a distinctive multi-modal database solution. With exceptional horizontal scalability and elastic scaling capabilities, it effortlessly meets enterprise-grade high availability requirements. Furthermore, DingoDB offers extensive multi-language interfaces and seamless compatibility with the MySQL protocol, delivering unparalleled flexibility and convenience for users. Demonstrating comprehensive excellence in functionality, performance, and user-friendliness, DingoDB stands out as a robust solution for modern data-driven applications.
 
 ## Key Features
@@ -24,6 +24,9 @@ DingoDB supports both traditional database index types and various vector index 
 
 DingoDB can build scalar and vector indexes in real time, providing users with unconscious background automatic index optimization. At the same time, it ensures no delays during data retrieval.
 
+**6.Cold-Hot Tiered Retrieval for Massive Datasets**
+DingoDB provides disk-based vector search capabilities to minimize memory consumption, and supports dynamic switching between different indexes based on data scale requirements.
+
 ## Get Start
 
 ### Docs
@@ -46,79 +49,11 @@ We recommend YourKit Java Profiler for any preformance critical application you 
 
 Check it out at https://www.yourkit.com/
 
-# 2. DingoFS
-[DingoFS](https://github.com/dingodb/dingofs) is a cloud-native distributed high-speed file storage system designed and developed by [DataCanvas](https://www.datacanvas.com/). It integrates multiple features such as elasticity, multi-cloud compatibility, multi-protocol convergence, and exceptional performance.By leveraging its multi-tiered, multi-type, and high-performance distributed multi-level caching architecture, DingoFS accelerates data I/O for AI workflows, effectively addressing burst I/O challenges in AI scenarios. Additionally, it provides local cache storage capabilities to meet the full lifecycle storage requirements of large-scale AI models.
-
-## Key Features
-
-**1. POSIX Compliance**
-
-DingoFS delivers a native file system-like operational experience, enabling seamless system integration.
-
-**2. AI-Native Architecture**
-
-Deeply optimized for large language model (LLM) workflows, efficiently managing massive training datasets and checkpoint workloads.
-
-**3. S3 Protocol Compatibility**
-
-DingoFS supports standard S3 interface protocols for streamlined access to filesystem namespace resources.
-
-**4. Fully Distributed Architecture**
-
-DingoFS's metadata Service (MDS), data storage layer, caching system, and client components all support linear scalability.
-
-**5. Exceptional Performance**
-
-Combines SSD-level low-latency responsiveness with object storage-grade elastic throughput capacity.
-
-**6. Intelligent Caching Acceleration System**
-
-DingFS implements a three-tier caching topology (memory/local SSD/distributed cluster) to deliver high-throughput, low-latency intelligent I/O acceleration for AI workloads.
-
-## Get Start
-### 1. Setup Dingo-eureka and Dingo-sdk
-If you installed the software using a [Docker](./Docs/Docker.md) container, the container already includes pre-integrated [Dingo-eureka](https://github.com/dingodb/dingo-eureka) and [Dingo-sdk](https://github.com/dingodb/dingo-sdk), no additional installation is required.
-
-### 2. Install jemalloc
-```shell
-wget https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2
-tar -xjvf jemalloc-5.3.0.tar.bz2
-cd jemalloc-5.3.0 && ./configure && make && make install
-```
-
-### 3. Download dep
-```sh
-git submodule sync
-git submodule update --init --recursive
-```
-
-### 4. Build Etcd Client
-```sh
-bash build_thirdparties.sh
-```
-
-### 5. Build
-```sh
-mkdir build
-cd build
-cmake ..
-make -j 32
-```
-
-## Developing DingoFS
-### Install Dependencies
-We recommend Rocky and Ubuntu to develop the DingoFS codebase.
-### GCC 13
-We recommend using GCC 13 as the primary compiled language.
-
-## Projects about Dingo
-The main projects about Dingo are as follows:
-- [DingoDB](https://github.com/dingodb/dingo): A Unified SQL Engine to parse and compute for both structured and unstructured data.
-- [DingoFS](https://github.com/dingodb/dingofs): A Cloud-native distributed high-speed file storage system.
+## Projects about DingoDB
+The main projects about DingoDB are as follows:
 - [Dingo-Store](https://github.com/dingodb/dingo-store): A strongly consistent distributed storage system based on the Raft protocol.
 - [Dingo-Deploy](https://github.com/dingodb/dingo-deploy): The deployment project of compute nodes and storage nodes.
-- [Dingo-eureka](https://github.com/dingodb/dingo-eureka): A Necessary Service Components for DingoFS.
-- [Dingo-sdk](https://github.com/dingodb/dingo-sdk): A Unified Software Development Kit (SDK) required for DingoFS.
+
 ## How to make a clean pull request
 
 - Create a personal fork of dingo on GitHub.
@@ -146,9 +81,9 @@ The main projects about Dingo are as follows:
 
 ### DataCanvas
 
-Dingo is Sponsored by [DataCanvas](https://www.datacanvas.com/), a new platform to do data science and data process in real-time.
+DingoDB is Sponsored by [DataCanvas](https://www.datacanvas.com/), a new platform to do data science and data process in real-time.
 
-DingoDB is an open-source project licensed in **Apache License Version 2.0**, and DingoFS is an open-source project licensed in **License Version 3.0**, welcome any feedback from the community.
+DingoDB is an open-source project licensed under the **Apache License Version 2.0**, welcome any feedback from the community.
 For any support or suggestion, please contact us.
 
 ## Contact us
