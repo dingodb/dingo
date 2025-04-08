@@ -1397,11 +1397,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         InfoSchema is = DdlService.root().getIsLatest();
         String validateTableName;
-        if (sqlFlashBackTable.newTableName != null) {
-            validateTableName = sqlFlashBackTable.newTableName;
-        } else {
-            validateTableName = tableName;
-        }
+        validateTableName = Objects.requireNonNullElse(sqlFlashBackTable.newTableName, tableName);
         Table table = is.getTable(schemaInfo.getName(), validateTableName);
         if (table != null) {
             throw DINGO_RESOURCE.tableExists(validateTableName).ex();
@@ -1444,12 +1440,26 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (job == null) {
             throw DingoErrUtil.newStdErr(ErrNotFoundDropSchema, schemaName);
         }
+        if (sqlFlashBackSchema.newSchemaName != null) {
+            String validateName = sqlFlashBackSchema.newSchemaName;
+            SubSnapshotSchema subSchema1 = rootSchema.getSubSchema(schemaName);
+            if (subSchema1 != null) {
+                throw SqlUtil.newContextException(
+                    sqlFlashBackSchema.schemaId.getParserPosition(),
+                    RESOURCE.schemaExists(validateName)
+                );
+            }
+        }
+
         RecoverInfo recoverInfo = new RecoverInfo();
         recoverInfo.setDropJobId(job.getId());
         recoverInfo.setSchemaId(job.getSchemaId());
         recoverInfo.setTableId(job.getTableId());
         recoverInfo.setSnapshotTs(job.getRealStartTs());
         recoverInfo.setOldSchemaName(job.getSchemaName());
+        if (sqlFlashBackSchema.newSchemaName != null) {
+            recoverInfo.setNewSchemaName(sqlFlashBackSchema.newSchemaName);
+        }
         recoverInfo.setOldTableName(job.getTableName());
         DdlService.root().recoverSchema(recoverInfo);
 

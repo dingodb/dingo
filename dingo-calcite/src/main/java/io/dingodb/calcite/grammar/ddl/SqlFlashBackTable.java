@@ -28,6 +28,7 @@ public class SqlFlashBackTable extends SqlFlashBack {
     public SqlIdentifier tableId;
 
     public String newTableName;
+    public String newSchemaName;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("FLASHBACK TABLE", SqlKind.OTHER_DDL);
@@ -40,6 +41,7 @@ public class SqlFlashBackTable extends SqlFlashBack {
         }
         // todo ignore lowUpper case
         if (newTableId.names.size() > 1) {
+            this.newSchemaName = newTableId.names.get(0);
             this.newTableName = newTableId.names.get(1).toUpperCase();
         } else {
             this.newTableName = newTableId.names.get(0).toUpperCase();

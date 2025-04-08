@@ -24,6 +24,8 @@ import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
 import io.dingodb.calcite.grammar.ddl.SqlDropIndex;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
+import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
@@ -212,6 +214,14 @@ public class DingoDdlVerify {
             }
         } else if (sqlNode instanceof SqlShowProcessList) {
             accessTypes.add(DingoSqlAccessEnum.PROCESS);
+        } else if (sqlNode instanceof SqlFlashBackSchema) {
+            SqlFlashBackSchema sqlFlashBackSchema = (SqlFlashBackSchema) sqlNode;
+            accessTypes.add(DingoSqlAccessEnum.CREATE);
+            schemaTables = initSchemaTable(sqlFlashBackSchema.schemaId.names, connection);
+        } else if (sqlNode instanceof SqlFlashBackTable) {
+            SqlFlashBackTable sqlFlashBackTable = (SqlFlashBackTable) sqlNode;
+            accessTypes.add(DingoSqlAccessEnum.CREATE);
+            schemaTables = initSchemaTable(sqlFlashBackTable.tableId.names, connection);
         }
 
         if (schemaTables != null) {

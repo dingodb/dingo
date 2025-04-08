@@ -1436,28 +1436,31 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_ONLY:
-                if (enableGc) {
-                    // disableGc
-                    InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                synchronized (dc) {
+                    if (enableGc) {
+                        // disableGc
+                        InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                    }
+                    // recover table
+                    InfoSchemaService infoSchemaService
+                        = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                    TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
+                        .getTable(recoverInfo.getSchemaId(), tableId);
+                    if (tableDefinitionWithId == null) {
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped table '"
+                            + recoverInfo.getOldTableName() + "'"));
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
+                    List<Object> indexList = infoSchemaService.listIndex(job.getSchemaId(), job.getTableId());
+                    tableDefinitionWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                    if (recoverInfo.getNewTableName() != null) {
+                        tableDefinitionWithId.getTableDefinition().setName(recoverInfo.getNewTableName());
+                    }
+                    TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                    return updateSchemaVersion(dc, job);
                 }
-                // recover table
-                InfoSchemaService infoSchemaService
-                    = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
-                TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
-                    .getTable(recoverInfo.getSchemaId(), tableId);
-                if (tableDefinitionWithId == null) {
-                    job.setDingoErr(DingoErrUtil.newInternalErr("tableDef is null"));
-                    job.setState(JobState.jobStateCancelled);
-                    return Pair.of(0L, job.getDingoErr().errorMsg);
-                }
-                List<Object> indexList = infoSchemaService.listIndex(job.getSchemaId(), job.getTableId());
-                tableDefinitionWithId.getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
-                if (recoverInfo.getNewTableName() != null) {
-                    tableDefinitionWithId.getTableDefinition().setName(recoverInfo.getNewTableName());
-                }
-                TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
-                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-                return updateSchemaVersion(dc, job);
             default:
                 job.setDingoErr(DingoErrUtil.newInternalErr(
                     ErrInvalidDDLState, "table", job.getSchemaState().toString()));
@@ -1694,18 +1697,41 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_ONLY:
-                if (enableGc) {
-                    // disableGc
-                    InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                synchronized (dc) {
+                    if (enableGc) {
+                        // disableGc
+                        InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
+                    }
+                    // recover table
+                    InfoSchemaService infoSchemaService
+                        = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                    SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
+                    if (schemaInfo == null) {
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped schema '"
+                            + recoverInfo.getOldSchemaName() + "'"));
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
+                    job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                    InfoSchemaService currentInfoService = InfoSchemaService.root();
+                    Object schemaInfoTmp = currentInfoService.getSchema(schemaInfo.getSchemaId());
+                    if (schemaInfoTmp != null) {
+                        SchemaInfo schemaInfoTmp1 = (SchemaInfo) schemaInfoTmp;
+                        String errFormat = "Schema '%s' already been recover to '%s', can not be recover repeatedly";
+                        String newSchemaNm = schemaInfoTmp1.getName();
+                        String errMsg = String.format(errFormat, recoverInfo.getOldSchemaName(), newSchemaNm);
+                        DingoErr dingoErr = DingoErrUtil.newInternalErr(errMsg);
+                        dingoErr.errorCode = 1007;
+                        job.setDingoErr(dingoErr);
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
+                    if (recoverInfo.getNewSchemaName() != null) {
+                        schemaInfo.setName(recoverInfo.getNewSchemaName());
+                    }
+                    currentInfoService.createSchema(schemaInfo.getSchemaId(), schemaInfo);
+                    return updateSchemaVersion(dc, job);
                 }
-                // recover table
-                InfoSchemaService infoSchemaService
-                    = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
-                SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
-                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
-                InfoSchemaService currentInfoService = InfoSchemaService.root();
-                currentInfoService.createSchema(schemaInfo.getSchemaId(), schemaInfo);
-                return updateSchemaVersion(dc, job);
             default:
                 job.setDingoErr(DingoErrUtil.newInternalErr(
                     ErrInvalidDDLState, "schema", job.getSchemaState().toString()));
