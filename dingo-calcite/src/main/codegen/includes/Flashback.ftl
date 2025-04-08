@@ -23,11 +23,13 @@ SqlFlashBack SqlFlashBack(): {
   SqlIdentifier newTableId = null;
   SqlIdentifier schemaId = null;
   SqlIdentifier newSchemaId = null;
+final List<String> nameList = new ArrayList<String>();
+        final List<SqlParserPos> posList = new ArrayList<SqlParserPos>();
 } {
   <FLASHBACK> { s = span(); }
   (
    <TABLE> tableId = CompoundIdentifier()
-    [ <TO>  newTableId = CompoundIdentifier() ]
+    [ <TO>  AddIdentifierSegment(nameList, posList) { SqlParserPos pos = SqlParserPos.sum(posList); newTableId = new SqlIdentifier(nameList, null, pos, posList); } ]
     {
       return new SqlFlashBackTable(s.end(this), tableId, newTableId);
     }

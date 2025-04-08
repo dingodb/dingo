@@ -451,7 +451,14 @@ public class InfoSchemaBuilder {
     }
 
     public Pair<List<Long>, String> applyRecoverSchema(SchemaDiff diff) {
-        String error = applyCreateSchema(diff);
+        String error = null;
+        InfoSchemaService schemaService = InfoSchemaService.root();
+        SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
+        if (schemaInfo == null) {
+            error = "schemaId not exists, schemaId:" + diff.getSchemaId();
+        } else {
+            this.is.schemaMap.put(schemaInfo.getName(), new SchemaTables(schemaInfo));
+        }
         return Pair.of(null, error);
     }
 

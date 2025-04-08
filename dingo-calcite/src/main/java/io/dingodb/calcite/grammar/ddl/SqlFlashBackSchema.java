@@ -27,6 +27,7 @@ public class SqlFlashBackSchema extends SqlFlashBack {
 
     public SqlIdentifier schemaId;
     public SqlIdentifier newSchemaId;
+    public String newSchemaName;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("FLASHBACK SCHEMA", SqlKind.OTHER_DDL);
@@ -35,6 +36,13 @@ public class SqlFlashBackSchema extends SqlFlashBack {
         super(OPERATOR, pos);
         this.schemaId = schemaId;
         this.newSchemaId = newSchemaId;
+        if (newSchemaId != null) {
+            if (newSchemaId.names.size() > 1) {
+                this.newSchemaName = newSchemaId.names.get(1).toUpperCase();
+            } else {
+                this.newSchemaName = newSchemaId.names.get(0).toUpperCase();
+            }
+        }
     }
 
     @Override

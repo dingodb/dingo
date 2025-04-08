@@ -70,6 +70,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getInformationPartitions();
             case "STATISTICS":
                 return getInformationStatistics();
+            case "VIEWS":
+                return getView();
             case "EVENTS":
             case "TRIGGERS":
             case "ROUTINES":
@@ -79,8 +81,6 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "USER_PRIVILEGES":
             case "SCHEMA_PRIVILEGES":
             case "TABLE_PRIVILEGES":
-            case "VIEWS":
-                return getView();
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
                 return getEmpty();
@@ -182,7 +182,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
 
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
         String operand = null;
-        if (partition.getOperand() != null) {
+        if (partition != null && partition.getOperand() != null) {
             operand = Arrays.toString(partition.getOperand());
         }
         return new Object[]{

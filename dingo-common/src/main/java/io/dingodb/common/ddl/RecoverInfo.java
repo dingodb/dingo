@@ -27,6 +27,7 @@ public class RecoverInfo {
     long snapshotTs;
     long tableId;
     String oldSchemaName;
+    String newSchemaName;
     String oldTableName;
     String newTableName;
     boolean enableGc;
