@@ -89,9 +89,9 @@ public final class VariableValidator {
         }
 
         if ("SYSTEM".equals(scope)) {
-            if (!ScopeVariables.containsGlobalVarKey(name)) {
-                throw new RuntimeException(String.format(ErrorCode.ER_UNKNOWN_VARIABLES.message, name));
-            }
+            //if (!ScopeVariables.containsGlobalVarKey(name)) {
+            //    throw new RuntimeException(String.format(ErrorCode.ER_UNKNOWN_VARIABLES.message, name));
+            //}
         } else {
             if (value.contains("'")) {
                 value = value.replace("'", "");
