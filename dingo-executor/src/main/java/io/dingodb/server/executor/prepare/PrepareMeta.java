@@ -223,6 +223,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("COLLATIONS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_MDL_VIEW", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_TRX", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("PLUGINS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
@@ -238,7 +239,8 @@ public final class PrepareMeta {
 
     public static List<Object[]> getGlobalVariablesList() {
         List<Object[]> values = new ArrayList<>();
-        values.add(new Object[]{"version_comment", "Ubuntu"});
+        String name = System.getProperty("os.name").toLowerCase();
+        values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 8.0 compatible"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
         values.add(new Object[]{"max_allowed_packet", "16777216"});
@@ -261,7 +263,6 @@ public final class PrepareMeta {
         values.add(new Object[]{"performance_schema", "0"});
         values.add(new Object[]{"net_write_timeout", "60"});
         values.add(new Object[]{"net_read_timeout", "60"});
-        values.add(new Object[]{"lower_case_table_names", "0"});
         values.add(new Object[]{"version", VersionFun.version});
         values.add(new Object[]{"version_compile_os", "Linux"});
         values.add(new Object[]{"version_compile_machine", "x86_64"});
@@ -311,6 +312,11 @@ public final class PrepareMeta {
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         values.add(new Object[]{"enable_document_scan_filter", "on"});
         values.add(new Object[]{"job_need_gc", "on"});
+        values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
+        values.add(new Object[]{"automatic_sp_privileges", "1"});
+        values.add(new Object[]{"log_bin_trust_function_creators", "TRUE"});
+        values.add(new Object[]{"innodb_online_alter_log_max_size", "134217728"});
+        values.add(new Object[]{"innodb_version", "5.6.25"});
         return values;
     }
 
@@ -546,6 +552,7 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("gc_delete_range_done"), "/mysql-gcDeleteRangeDone.json");
         TABLE_MAP.put(convertName("sequence"), "/mysql-sequence.json");
         TABLE_MAP.put(convertName("ENGINES"), "/information-engines.json");
+        TABLE_MAP.put(convertName("PLUGINS"), "/information-plugins.json");
     }
 
     public static void initTableByTemplate(String schema,
