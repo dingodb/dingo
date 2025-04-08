@@ -2683,6 +2683,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .createTime(table.createTime)
             .comment(table.comment)
             .collate(table.collate)
+            .codecVersion(table.codecVersion)
             .columns(table.columns.stream().map(DingoDdlExecutor::fromColumn).collect(Collectors.toList()))
             .properties(table.properties)
             .build();
