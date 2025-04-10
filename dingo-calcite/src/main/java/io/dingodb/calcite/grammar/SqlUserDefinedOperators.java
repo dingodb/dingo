@@ -45,8 +45,6 @@ public class SqlUserDefinedOperators {
 
     public static SqlVectorOperator VECTOR = new SqlVectorOperator("VECTOR", SqlKind.COLLECTION_TABLE);
 
-    public static SqlDocumentOperator DOCUMENT = new SqlDocumentOperator("TEXT", SqlKind.COLLECTION_TABLE );
-
     public static SqlDocumentOperator TEXT_SEARCH = new SqlDocumentOperator("TEXT_SEARCH", SqlKind.COLLECTION_TABLE);
 
     public static SqlHybridSearchOperator HYBRID_SEARCH = new SqlHybridSearchOperator("HYBRID_SEARCH", SqlKind.COLLECTION_TABLE);

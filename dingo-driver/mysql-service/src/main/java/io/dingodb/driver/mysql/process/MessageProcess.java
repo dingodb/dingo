@@ -43,6 +43,7 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
 public final class MessageProcess {
@@ -105,7 +106,6 @@ public final class MessageProcess {
                 System.arraycopy(array, 2, schemaBytes, 0, schemaBytes.length);
                 DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
                 String usedSchema = new String(schemaBytes);
-                usedSchema = usedSchema.toUpperCase();
                 String user = connection.getContext().getOption("user");
                 String host = connection.getContext().getOption("host");
                 if (!PrivilegeVerify.verify(user, host, usedSchema, null, "use")) {
@@ -115,8 +115,8 @@ public final class MessageProcess {
                         ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error, connCharSet);
                     return;
                 }
-                // todo: current version, ignore name case
-                CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(usedSchema, false);
+                CalciteSchema schema = connection.getContext().getRootSchema()
+                    .getSubSchema(usedSchema, caseSensitive());
                 if (schema != null) {
                     connection.getContext().setUsedSchema(schema);
                     OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,

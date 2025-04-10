@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
+
 @Slf4j
 public final class JobTableUtil {
     private static final String updateDDLJobSQL = "update mysql.dingo_ddl_job set job_meta = '%s' where job_id = %d";
@@ -58,13 +60,13 @@ public final class JobTableUtil {
     public static String updateDDLJob2Table(Session session, DdlJob ddlJob, boolean updateRawArgs) {
         byte[] bytes = ddlJob.encode(updateRawArgs);
         String jobMeta = new String(bytes);
-        String sql = String.format(updateDDLJobSQL, jobMeta, ddlJob.getId());
+        String sql = convertSql(String.format(updateDDLJobSQL, jobMeta, ddlJob.getId()));
         return session.executeUpdate(sql);
     }
 
     public static String deleteDDLJob(Session session, DdlJob job) {
         String sql = "delete from mysql.dingo_ddl_job where job_id = " + job.getId();
-        return session.executeUpdate(sql);
+        return session.executeUpdate(convertSql(sql));
     }
 
     public static String addHistoryDDLJob2Table(Session session, DdlJob job, boolean updateRawArgs) {
@@ -75,9 +77,10 @@ public final class JobTableUtil {
             job.setRawArgs(null);
             byte[] meta = job.encode(false);
             String jobMeta = new String(meta);
-            sql = String.format(sql, job.getId(), Utils.quoteForSql(jobMeta), Utils.quoteForSql(job.getSchemaName()),
-                Utils.quoteForSql(job.getTableName()), Utils.quoteForSql(job.getSchemaId()),
-                Utils.quoteForSql(job.getTableId()), Utils.quoteForSql(time), job.getActionType().getCode());
+            sql = convertSql(String.format(sql, job.getId(), Utils.quoteForSql(jobMeta),
+                Utils.quoteForSql(job.getSchemaName()), Utils.quoteForSql(job.getTableName()),
+                Utils.quoteForSql(job.getSchemaId()), Utils.quoteForSql(job.getTableId()),
+                Utils.quoteForSql(time), job.getActionType().getCode()));
             session.executeUpdate(sql);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
@@ -88,7 +91,7 @@ public final class JobTableUtil {
     public static void cleanMDLInfo(long jobId) {
         long start = System.currentTimeMillis();
         String sql = "delete from mysql.dingo_mdl_info where job_id = " + jobId;
-        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(convertSql(sql));
         if (error != null) {
             LogUtils.error(log, "[ddl] cleanMDLInfo error:{}, jobId:{}", error, jobId);
         }
@@ -113,7 +116,7 @@ public final class JobTableUtil {
                     if (job1.getActionType() == ActionType.ActionDropSchema) {
                         String sql = "select job_id from mysql.dingo_ddl_job where schema_ids = %s "
                             + "and processing limit 1";
-                        sql = String.format(sql, Utils.quoteForSql(job1.getSchemaId()));
+                        sql = convertSql(String.format(sql, Utils.quoteForSql(job1.getSchemaId())));
                         return checkJobIsRunnable(session1, sql);
                     }
                     return Pair.of(false, null);
@@ -144,7 +147,7 @@ public final class JobTableUtil {
         int jobType,
         Function<DdlJob, Pair<Boolean, String>> filter
     ) {
-        String sql = String.format(getJobsSQL, DdlContext.INSTANCE.excludeJobIDs());
+        String sql = convertSql(String.format(getJobsSQL, DdlContext.INSTANCE.excludeJobIDs()));
         List<DdlJob> ddlJobList = new ArrayList<>();
         //List<CompletableFuture<Pair<DdlJob, String>>> futureList = new ArrayList<>();
         try {
@@ -191,7 +194,7 @@ public final class JobTableUtil {
         if (jobType == 1) {
             not = "";
         }
-        String sql = String.format(getJobSQL, not, DdlContext.INSTANCE.excludeJobIDs());
+        String sql = convertSql(String.format(getJobSQL, not, DdlContext.INSTANCE.excludeJobIDs()));
         try {
             long start = System.currentTimeMillis();
             List<Object[]> resList = session.executeQuery(sql);
@@ -246,7 +249,7 @@ public final class JobTableUtil {
         try {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("markJobProcessing");
             String sql = "update mysql.dingo_ddl_job set processing = true where job_id = " + job.getId();
-            String res = markJobProcessing(session1, sql, 3);
+            String res = markJobProcessing(session1, convertSql(sql), 3);
             timeCtx.stop();
             return res;
         } finally {
@@ -279,8 +282,8 @@ public final class JobTableUtil {
         String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
             + " element_id, element_type)"
             + " values(%d, %d, %d, %s, %s, %s, %s)";
-        sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
-            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType));
+        sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
+            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(false);
@@ -292,7 +295,7 @@ public final class JobTableUtil {
         }
         try {
             String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
-            session.executeUpdate(removeSql);
+            session.executeUpdate(convertSql(removeSql));
             session.commit();
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
@@ -316,7 +319,7 @@ public final class JobTableUtil {
             Utils.quoteForSql(gcDeleteRegion.getEndKey()), gcDeleteRegion.getStartTs(),
             Utils.quoteForSql(gcDeleteRegion.getEleId()), Utils.quoteForSql(gcDeleteRegion.getEleType()));
         sql = sql + conditionValue;
-        String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+        String error = SessionUtil.INSTANCE.exeUpdateInTxn(convertSql(sql));
         if (error != null) {
             LogUtils.error(log, "insert into gc delete region error,reason:{}", error);
         }

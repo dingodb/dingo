@@ -53,13 +53,13 @@ public class GetDistributionOperator extends SourceOperator {
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
 
-        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         for (Object[] keyTuple : param.getKeyTuples()) {
             TupleMapping keyMapping = param.getKeyMapping();
             boolean allMatch = keyMapping.stream().allMatch(i -> Objects.isNull(keyTuple[i]));
             if (allMatch) {
                 return false;
             }
+            Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
             while (retry-- > 0) {
                 try {
                     CommonId partId = ps.calcPartId(param.getCodec().encodeKey(keyTuple), param.getDistributions());

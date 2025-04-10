@@ -53,8 +53,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Slf4j
@@ -69,9 +73,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
     }
 
-    public static final String userTable = "USER";
-    public static final String dbPrivilegeTable = "DB";
-    public static final String tablePrivilegeTable = "TABLES_PRIV";
+    public static final String userTable = "user";
+    public static final String dbPrivilegeTable = "db";
+    public static final String tablePrivilegeTable = "tables_priv";
 
     private MetaService metaService;
     private CommonId tablePrivTblId;
@@ -127,7 +131,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         while (times-- > 0) {
             InfoSchema is = ddlService.getIsLatest();
             if (is != null) {
-                Table table = is.getTable("MYSQL", tableName);
+                Table table = is.getTable(convertName("mysql"), tableName);
                 if (table != null) {
                     return table;
                 }
@@ -163,9 +167,9 @@ public class UserService implements io.dingodb.verify.service.UserService {
         String delDbSql = "delete from mysql.db where " + condition;
         String delTablesPrivSql = "delete from mysql.tables_priv where " + condition;
         List<String> sqlList = new ArrayList<>();
-        sqlList.add(delUserSql);
-        sqlList.add(delDbSql);
-        sqlList.add(delTablesPrivSql);
+        sqlList.add(convertSql(delUserSql));
+        sqlList.add(convertSql(delDbSql));
+        sqlList.add(convertSql(delTablesPrivSql));
         SessionUtil.INSTANCE.executeUpdate(sqlList);
     }
 
@@ -252,10 +256,11 @@ public class UserService implements io.dingodb.verify.service.UserService {
         }
         List<Object[]> dpValues = getSchemaPrivilegeList(userDefinition);
         List<Object[]> tpValues = getTablePrivilegeList(userDefinition);
-        Map<String, SchemaPrivDefinition> schemaPrivDefMap = new HashMap<>();
+        NavigableMap<String, SchemaPrivDefinition> schemaPrivDefMap =
+            caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         if (dpValues != null) {
             dpValues.forEach(dbValue -> {
-                String schemaName = (String) dbValue[2];
+                String schemaName = convertName((String) dbValue[2]);
                 SchemaPrivDefinition schemaPrivDefinition = new SchemaPrivDefinition();
                 schemaPrivDefinition.setSchemaName(schemaName);
                 schemaPrivDefinition.setPrivileges(spMapping(dbValue));
@@ -266,8 +271,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Map<String, TablePrivDefinition> tablePrivDefMap = new HashMap<>();
         if (tpValues != null) {
             tpValues.forEach(tpValue -> {
-                String schemaName = (String) tpValue[2];
-                String tableName = (String) tpValue[3];
+                String schemaName = convertName((String) tpValue[2]);
+                String tableName = convertName((String) tpValue[3]);
 
                 TablePrivDefinition tablePrivDefinition = new TablePrivDefinition();
                 tablePrivDefinition.setSchemaName(schemaName);
@@ -337,7 +342,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
             rangeDistribution.getEndKey());
         assert list != null;
         list.forEach(e -> {
-            if (schemaName.equalsIgnoreCase((String) e[2]) && tableName.equalsIgnoreCase((String) e[3])) {
+            if (convertName(schemaName).equals(convertName((String) e[2]))
+                && convertName(tableName).equals(convertName((String) e[3]))) {
                 delete(tablePrivStore, tablePrivCodec, e);
             }
         });
@@ -594,7 +600,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] dbValues = new Object[dbPrivTd.columns.size()];
         dbValues[0] = host;
         dbValues[1] = user;
-        dbValues[2] = db;
+        dbValues[2] = convertName(db);
         for (int i = 3; i < dbValues.length; i++) {
             dbValues[i] = "N";
         }
@@ -616,8 +622,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] tpValues = new Object[tablePrivTd.columns.size()];
         tpValues[0] = host;
         tpValues[1] = user;
-        tpValues[2] = db;
-        tpValues[3] = tableName;
+        tpValues[2] = convertName(db);
+        tpValues[3] = convertName(tableName);
         tpValues[4] = grantor;
         tpValues[5] = new Timestamp(System.currentTimeMillis());
         tpValues[6] = "";
@@ -815,6 +821,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] getDbPrivilegeKeys(PrivilegeDefinition user, String db) {
+        db = convertName(db);
         Object[] values = new Object[dbPrivTd.columns.size()];
         values[0] = user.getHost();
         values[1] = user.getUser();
@@ -825,6 +832,8 @@ public class UserService implements io.dingodb.verify.service.UserService {
     }
 
     private Object[] getTablePrivilegeKeys(PrivilegeDefinition user, String db, String table) {
+        db = convertName(db);
+        table = convertName(table);
         Object[] values = new Object[tablePrivTd.columns.size()];
         values[0] = user.getHost();
         values[1] = user.getUser();

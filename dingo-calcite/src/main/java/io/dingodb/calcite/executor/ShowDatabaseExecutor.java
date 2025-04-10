@@ -48,7 +48,7 @@ public class ShowDatabaseExecutor extends QueryExecutor {
                     continue;
                 }
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(schemaName, sqlLikePattern)) {
-                    schemas.add(new Object[] {schemaName.toLowerCase()});
+                    schemas.add(new Object[] {schemaName});
                 }
             }
         } catch (SQLException e) {
@@ -60,7 +60,7 @@ public class ShowDatabaseExecutor extends QueryExecutor {
     @Override
     public List<String> columns() {
         List<String> columns =  new ArrayList<>();
-        columns.add("TABLE_SCHEM");
+        columns.add("Database");
         return columns;
     }
 }

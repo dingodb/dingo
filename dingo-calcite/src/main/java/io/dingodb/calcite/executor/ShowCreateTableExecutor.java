@@ -38,6 +38,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class ShowCreateTableExecutor extends QueryExecutor {
 
     @Setter
@@ -52,11 +54,11 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
         SqlIdentifier tableIdentifier = showCreateTable.tableIdentifier;
         if (tableIdentifier.names.size() == 1) {
-            this.schemaName = defaultSchemaName.toUpperCase();
-            tableName = tableIdentifier.names.get(0);
+            this.schemaName = convertName(defaultSchemaName);
+            this.tableName = showCreateTable.tableName;
         } else if (tableIdentifier.names.size() == 2) {
-            this.schemaName = tableIdentifier.names.get(0).toUpperCase();
-            tableName = tableIdentifier.names.get(1);
+            this.schemaName = showCreateTable.schemaName;
+            this.tableName = showCreateTable.tableName;
         }
         InfoSchema is = DdlService.root().getIsLatest();
         assert schemaName != null;
@@ -122,7 +124,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         Table table = is.getTable(schemaName, tableName);
 
         StringBuilder createTableSqlStr = new StringBuilder();
-        createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
+        createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName).append("`");
         createTableSqlStr.append("(");
         int colSize = table.getColumns().size();
         for (int i = 0; i < colSize; i ++) {

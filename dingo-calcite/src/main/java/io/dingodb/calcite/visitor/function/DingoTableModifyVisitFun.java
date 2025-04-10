@@ -90,10 +90,10 @@ public final class DingoTableModifyVisitFun {
                         if ((rel.getTargetColumnNames() != null && !rel.getTargetColumnNames().isEmpty())
                             && !rel.getSourceExpressionList2().isEmpty()
                         ) {
-                            List<String> colNames = td.getColumns()
-                                .stream().map(Column::getName).collect(Collectors.toList());
-                            updateMapping = TupleMapping.of(rel.getTargetColumnNames()
-                                .stream().map(colNames::indexOf).collect(Collectors.toList()));
+                            List<String> colNames = td.getColumns().stream()
+                                .map(Column::getName).map(String::toUpperCase).toList();
+                            updateMapping = TupleMapping.of(rel.getTargetColumnNames().stream()
+                                .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList()));
                             updates = rel.getSourceExpressionList2()
                                 .stream().map(SqlExprUtils::toSqlExpr).collect(Collectors.toList());
                             isUpdate = true;
@@ -221,9 +221,9 @@ public final class DingoTableModifyVisitFun {
                     break;
                 case UPDATE:
                     List<String> colNames = td.getColumns().stream()
-                        .map(Column::getName).collect(Collectors.toList());
-                    TupleMapping updateMapping = TupleMapping.of(
-                        rel.getUpdateColumnList().stream().map(colNames::indexOf).collect(Collectors.toList())
+                        .map(Column::getName).map(String::toUpperCase).toList();
+                    TupleMapping updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream()
+                        .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList())
                     );
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();

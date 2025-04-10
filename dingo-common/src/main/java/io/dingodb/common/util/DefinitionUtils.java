@@ -50,12 +50,12 @@ public final class DefinitionUtils {
         DataConverter fromConverter = StrParseConverter.INSTANCE;
         DataConverter toConverter = DingoConverter.INSTANCE;
         if (partitionBy == null || partitionBy.isEmpty()) {
-            partitionBy = keyNames;
+            partitionBy = keyNames.stream().map(String::toUpperCase).toList();
         } else {
             partitionBy = partitionBy.stream().map(String::toUpperCase).collect(Collectors.toList());
         }
 
-        if (!keyNames.equals(partitionBy)) {
+        if (!keyNames.stream().map(String::toUpperCase).toList().equals(partitionBy)) {
             throw new IllegalArgumentException(
                 "Partition columns must be equals primary key columns, but " + partitionBy
             );
@@ -86,12 +86,12 @@ public final class DefinitionUtils {
         List<String> partitionBy
     ) {
         if (partitionBy == null || partitionBy.isEmpty()) {
-            partitionBy = keyNames;
+            partitionBy = keyNames.stream().map(String::toUpperCase).toList();
         } else {
             partitionBy = partitionBy.stream().map(String::toUpperCase).collect(Collectors.toList());
         }
 
-        if (!keyNames.equals(partitionBy)) {
+        if (!keyNames.stream().map(String::toUpperCase).toList().equals(partitionBy)) {
             throw new IllegalArgumentException(
                 "Partition columns must be equals primary key columns, but " + partitionBy
             );

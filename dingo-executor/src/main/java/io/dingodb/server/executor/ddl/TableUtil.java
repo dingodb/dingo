@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
-import static io.dingodb.common.mysql.error.ErrorCode.ErrTableExists;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
 
 @Slf4j
 public final class TableUtil {
@@ -181,6 +181,7 @@ public final class TableUtil {
         // remove gc_delete_range to gc_delete_range_done
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type from mysql.gc_delete_range where job_id="
             + recoverInfo.getDropJobId();
+        sql = convertSql(sql);
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             List<Object[]> gcResults = session.executeQuery(sql);

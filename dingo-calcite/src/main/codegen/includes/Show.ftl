@@ -81,7 +81,7 @@ SqlShow SqlShowTable(Span s): {
    <TABLE>
    (
     LOOKAHEAD(2)
-    <STATUS> [ <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { schema = token.image.toUpperCase(); } ]
+    <STATUS> [ <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { schema = token.image; } ]
      [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
      {
        return new SqlShowTableStatus(s.end(this), schema, pattern);

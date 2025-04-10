@@ -14,6 +14,7 @@ variable:
     autoIncrementIncrement: 1
     autoIncrementOffset: 1
     enableTableLock: true
+    lowerCaseTableNames: 2
 common:
     scheduledCoreThreads: 16
     lockCoreThreads: 0

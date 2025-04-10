@@ -128,7 +128,7 @@ public class TestAggregate {
 
     @Test
     public void testCountGroup() throws SqlParseException {
-        String sql = "select name, count(*) from test group by name";
+        String sql = "select NAME, count(*) from test group by name";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
@@ -160,6 +160,24 @@ public class TestAggregate {
         Assert.relNode(optimized)
             .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoScanWithRelOp.class);
+    }
+
+    @Test
+    public void testCountGroup2() throws SqlParseException {
+        String sql = "select name, count(*) from test group by name";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoReduceAggregate.class)
             .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
             .soleInput().isA(DingoScanWithRelOp.class);
@@ -233,7 +251,7 @@ public class TestAggregate {
 
     @Test
     public void testAvg1() throws SqlParseException {
-        String sql = "select name, avg(amount) from test group by name";
+        String sql = "select NAME, avg(amount) from test group by name";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
@@ -253,12 +271,50 @@ public class TestAggregate {
 
     @Test
     public void testAvg2() throws SqlParseException {
-        String sql = "select name, avg(id), avg(amount) from test group by name";
+        String sql = "select NAME, avg(id), avg(amount) from test group by name";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoScanWithRelOp.class);
+    }
+
+    @Test
+    public void testAvg3() throws SqlParseException {
+        String sql = "select name, avg(amount) from test group by name";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoReduceAggregate.class)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoScanWithRelOp.class);
+    }
+
+    @Test
+    public void testAvg4() throws SqlParseException {
+        String sql = "select name, avg(id), avg(amount) from test group by name";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
@@ -292,12 +348,30 @@ public class TestAggregate {
 
     @Test
     public void testMultiDistinctCountWithGroup() throws SqlParseException {
-        String sql = "select name, count(distinct id), count(distinct name) from test group by name";
+        String sql = "select NAME, count(distinct id), count(distinct name) from test group by name";
         SqlNode sqlNode = parser.parse(sql);
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalAggregate.class)
+            .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalDingoTableScan.class);
+        RelNode optimized = parser.optimize(relRoot.rel);
+        Assert.relNode(optimized)
+            .isA(DingoRoot.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoStreamingConverter.class).streaming(DingoRelStreaming.ROOT)
+            .soleInput().isA(DingoRelOp.class)
+            .soleInput().isA(DingoHashJoin.class).inputNum(2);
+    }
+
+    @Test
+    public void testMultiDistinctCountWithGroup1() throws SqlParseException {
+        String sql = "select name, count(distinct id), count(distinct name) from test group by name";
+        SqlNode sqlNode = parser.parse(sql);
+        RelRoot relRoot = parser.convert(sqlNode);
+        Assert.relNode(relRoot.rel)
+            .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);

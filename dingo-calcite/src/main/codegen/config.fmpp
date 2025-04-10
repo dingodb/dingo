@@ -140,6 +140,7 @@ data: {
       "io.dingodb.calcite.grammar.dml.SqlExecute"
       "io.dingodb.calcite.grammar.dml.SqlPrepare"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
+      "io.dingodb.calcite.fun.SqlConcatFunction"
       "org.apache.calcite.avatica.util.DateTimeUtils"
       "org.apache.calcite.schema.ColumnStrategy"
       "org.apache.calcite.sql.SqlCreate"

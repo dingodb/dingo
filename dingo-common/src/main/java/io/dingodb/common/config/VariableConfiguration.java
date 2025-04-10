@@ -30,6 +30,7 @@ public class VariableConfiguration {
     private Integer autoIncrementIncrement;
     private Integer autoIncrementOffset;
     private Boolean enableTableLock;
+    private Integer lowerCaseTableNames;
 
     public boolean getEnableTableLock() {
         if (enableTableLock == null) {

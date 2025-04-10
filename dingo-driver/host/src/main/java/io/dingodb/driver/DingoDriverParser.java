@@ -126,6 +126,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
 @Slf4j
@@ -1041,7 +1042,7 @@ public final class DingoDriverParser extends DingoParser {
                     || opName.equalsIgnoreCase("schema")
                     || opName.equalsIgnoreCase("user")) {
                     sqlNodes.remove(i);
-                    nodes.add(SqlLiteral.createCharString("DINGO", call.getParserPosition()));
+                    nodes.add(SqlLiteral.createCharString(convertName("dingo"), call.getParserPosition()));
                 } else if (opName.equals("@") || opName.equals("@@")) {
                     sqlNodes.remove(i);
                     nodes.add(call.getOperandList().get(0));

@@ -5267,10 +5267,10 @@ SqlNode IntervalLiteralOrExpression() :
     ]
     (
         // literal (with quoted string)
-        p = SimpleStringLiteral()
+        e = UnsignedNumericLiteral()
         intervalQualifier = IntervalQualifier() {
             return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
-                sign, p, intervalQualifier);
+                sign, ((SqlNumericLiteral) e).toValue(), intervalQualifier);
         }
     |
         // To keep parsing simple, any expressions besides numeric literal and
@@ -5279,8 +5279,6 @@ SqlNode IntervalLiteralOrExpression() :
             <LPAREN>
             e = Expression(ExprContext.ACCEPT_SUB_QUERY)
             <RPAREN>
-        |
-            e = UnsignedNumericLiteral()
         |
             e = CompoundIdentifier()
         )
@@ -6488,7 +6486,7 @@ SqlNode BuiltinFunctionCall() :
             return e;
         }
     |
-        <SUBSTRING> { s = span(); }
+        ( <SUBSTR> | <SUBSTRING>)  { s = span(); }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ( <FROM> | <COMMA>)
@@ -7675,6 +7673,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <SUM>
     |   <UPPER>
     |   <USER>
+    |   <VALUES>
     |   <VAR_POP>
     |   <VAR_SAMP>
     |   <YEAR>
@@ -8604,6 +8603,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SUBMULTISET: "SUBMULTISET" >
 |   < SUBSET: "SUBSET" >
 |   < SUBSTITUTE: "SUBSTITUTE" >
+|   < SUBSTR: "SUBSTR" >
 |   < SUBSTRING: "SUBSTRING" >
 |   < SUBSTRING_REGEX: "SUBSTRING_REGEX" >
 |   < SUBSTRING_INDEX: "SUBSTRING_INDEX" >

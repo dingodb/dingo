@@ -88,6 +88,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Builder
@@ -406,7 +407,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 if (totalExecCount < 20) {
                     values[6] = StatsTaskState.PENDING.getState();
                 } else {
-                    delStats("mysql.analyze_task", schemaName, tableName);
+                    delStats(convertName("mysql.analyze_task"), schemaName, tableName);
                 }
             } else {
                 values[6] = StatsTaskState.SUCCESS.getState();

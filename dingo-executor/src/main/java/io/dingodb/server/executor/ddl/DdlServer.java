@@ -49,6 +49,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
+
 @Slf4j
 public final class DdlServer {
     public static BlockingQueue<Long> verDelQueue = new LinkedBlockingDeque<>(10000);
@@ -322,7 +324,7 @@ public final class DdlServer {
         String sql = "select version from mysql.dingo_mdl_info where job_id = " + jobId;
         Session session = SessionUtil.INSTANCE.getSession();
         try {
-            List<Object[]> objList = session.executeQuery(sql);
+            List<Object[]> objList = session.executeQuery(convertSql(sql));
             if (objList.isEmpty()) {
                 return Pair.of(false, 0L);
             }

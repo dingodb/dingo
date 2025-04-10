@@ -41,15 +41,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
+
 @Slf4j
 public abstract class StatsOperator {
     public static StoreTxnService storeTxnService;
     public static MetaService metaService;
 
-    public static final String ANALYZE_TASK = "ANALYZE_TASK";
-    public static final String TABLE_BUCKETS = "TABLE_BUCKETS";
-    public static final String TABLE_STATS = "TABLE_STATS";
-    public static final String CM_SKETCH = "CM_SKETCH";
+    public static final String ANALYZE_TASK = "analyze_task";
+    public static final String TABLE_BUCKETS = "table_buckets";
+    public static final String TABLE_STATS = "table_stats";
+    public static final String CM_SKETCH = "cm_sketch";
 
     public static Table analyzeTaskTable;
     public static Table bucketsTable;
@@ -77,7 +80,7 @@ public abstract class StatsOperator {
                 Utils.sleep(5000L);
             }
             storeTxnService = StoreTxnService.getDefault();
-            metaService = MetaService.root().getSubMetaService("MYSQL");
+            metaService = MetaService.root().getSubMetaService(convertName("mysql"));
             analyzeTaskTable = getTable(ANALYZE_TASK);
             bucketsTable = getTable(TABLE_BUCKETS);
             statsTable = getTable(TABLE_STATS);
@@ -136,7 +139,7 @@ public abstract class StatsOperator {
 
     public static void delStats(String table, String schemaName, String tableName) {
         String sqlTemp = "delete from %s where schema_name='%s' and table_name='%s'";
-        String sql = String.format(sqlTemp, table, schemaName, tableName);
+        String sql = convertSql(String.format(sqlTemp, table, schemaName, tableName));
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
             LogUtils.error(log, "delStats error:{}, table:{}, schema:{}, tableName:{}",
@@ -193,7 +196,7 @@ public abstract class StatsOperator {
         while (times-- > 0) {
             InfoSchema is = ddlService.getIsLatest();
             if (is != null) {
-                Table table = is.getTable("MYSQL", tableName);
+                Table table = is.getTable(convertName("mysql"), tableName);
                 if (table != null) {
                     return table;
                 }

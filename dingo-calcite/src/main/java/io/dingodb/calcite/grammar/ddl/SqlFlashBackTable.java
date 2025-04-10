@@ -23,6 +23,8 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class SqlFlashBackTable extends SqlFlashBack {
 
     public SqlIdentifier tableId;
@@ -39,12 +41,11 @@ public class SqlFlashBackTable extends SqlFlashBack {
         if (newTableId == null) {
             return;
         }
-        // todo ignore lowUpper case
         if (newTableId.names.size() > 1) {
-            this.newSchemaName = newTableId.names.get(0);
-            this.newTableName = newTableId.names.get(1).toUpperCase();
+            this.newSchemaName = convertName(newTableId.names.get(0));
+            this.newTableName = convertName(newTableId.names.get(1));
         } else {
-            this.newTableName = newTableId.names.get(0).toUpperCase();
+            this.newTableName = convertName(newTableId.names.get(0));
         }
     }
 

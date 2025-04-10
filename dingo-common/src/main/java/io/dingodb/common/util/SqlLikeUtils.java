@@ -107,6 +107,7 @@ public class SqlLikeUtils {
         int i;
         final int len = sqlPattern.length();
         final StringBuilder javaPattern = new StringBuilder(len + len);
+        javaPattern.append("(?i)");
         for (i = 0; i < len; i++) {
             char c = sqlPattern.charAt(i);
             if (JAVA_REGEX_SPECIALS.indexOf(c) >= 0) {

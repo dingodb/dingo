@@ -19,8 +19,10 @@ package io.dingodb.calcite.fun;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
+import io.dingodb.exec.fun.DateAddFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
+import io.dingodb.exec.fun.StrToDateFun;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
@@ -40,6 +42,7 @@ import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.runtime.op.special.IfNullFunFactory;
+import io.dingodb.expr.runtime.op.special.ValuesFunFactory;
 import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
 import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.LeftFunFactory;
@@ -113,6 +116,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
         funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+        funMap.put("CONCAT", SqlConcatFunction.CONCAT);
+        funMap.put("IF", SqlIfFunction.IF);
 
         // number
         registerFunction(
@@ -142,6 +147,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.explicit(SqlTypeName.ANY),
             InferTypes.ANY_NULLABLE,
             OperandTypes.ANY_ANY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        registerFunction(
+            ValuesFunFactory.NAME,
+            ReturnTypes.explicit(SqlTypeName.ANY),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.ANY,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
 
@@ -281,8 +294,22 @@ public class DingoOperatorTable implements SqlOperatorTable {
             family(SqlTypeFamily.DATE, SqlTypeFamily.DATE),
             SqlFunctionCategory.NUMERIC
         );
+        registerFunction(
+            StrToDateFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.VARCHAR1024_VARCHAR1024,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.NUMERIC
+        );
 
         // special
+        registerFunction(
+            DateAddFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.DATE_LONG,
+            family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
+            SqlFunctionCategory.NUMERIC
+        );
         registerFunction(
             ThrowFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,

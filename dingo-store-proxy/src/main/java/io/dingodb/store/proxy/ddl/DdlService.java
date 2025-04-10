@@ -36,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService {
 
@@ -95,12 +97,12 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
 
     @Override
     public void createSequence(SequenceDefinition sequenceDefinition, String connId) {
-        DdlHandler.createSequence("MYSQL", "SEQUENCE", sequenceDefinition, connId);
+        DdlHandler.createSequence(convertName("MYSQL"), convertName("SEQUENCE"), sequenceDefinition, connId);
     }
 
     @Override
     public void dropSequence(String sequenceName, String connId) {
-        DdlHandler.dropSequence("MYSQL", "SEQUENCE", sequenceName, connId);
+        DdlHandler.dropSequence(convertName("MYSQL"), convertName("SEQUENCE"), sequenceName, connId);
     }
 
     @Override

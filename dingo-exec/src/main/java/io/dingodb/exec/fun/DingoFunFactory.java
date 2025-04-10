@@ -67,9 +67,13 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(UserFun.NAME, UserFun.INSTANCE);
         registerBinaryFun(InstrFun.NAME, InstrFun.INSTANCE);
         registerBinaryFun(SchemaFun.NAME, SchemaFun.INSTANCE);
+        registerBinaryFun(StrToDateFun.NAME, StrToDateFun.INSTANCE);
         registerUnaryFun(NextValFun.NAME, NextValFun.INSTANCE);
         registerUnaryFun(CurrValFun.NAME, CurrValFun.INSTANCE);
         registerUnaryFun(LengthFun.NAME, LengthFun.INSTANCE);
+        registerTertiaryFun(ConcatFun.NAME, ConcatFun.INSTANCE);
+        registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);
+        registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {

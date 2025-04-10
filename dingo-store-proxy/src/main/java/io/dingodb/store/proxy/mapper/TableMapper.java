@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.partition.DingoPartitionServiceProvider.RANGE_FUNC_NAME;
 import static io.dingodb.sdk.service.entity.meta.PartitionStrategy.PT_STRATEGY_HASH;
@@ -273,7 +274,7 @@ public interface TableMapper {
                 partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
             );
         }
-        definition.setName(definition.getName().toUpperCase());
+        definition.setName(convertName(definition.getName()));
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
         return TableDefinitionWithId.builder().tenantId(tenantId)
             .tableDefinition(definition).tableId(ids.getTableId()).build();

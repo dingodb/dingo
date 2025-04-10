@@ -66,7 +66,7 @@ public class SqlAnalyze extends SqlDdl {
         }
         if (columnList != null) {
             columns = columnList.stream()
-                .map(sqlIdentifier -> sqlIdentifier.names.get(0).toUpperCase())
+                .map(sqlIdentifier -> sqlIdentifier.names.get(0))
                 .collect(Collectors.toList());
         }
         this.buckets = buckets;

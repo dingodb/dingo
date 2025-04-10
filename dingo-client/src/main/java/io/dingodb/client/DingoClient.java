@@ -41,6 +41,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class DingoClient {
 
@@ -56,17 +58,17 @@ public class DingoClient {
     }
 
     public DingoClient(String coordinatorSvr, Integer retryTimes) {
-        this(coordinatorSvr, "DINGO", retryTimes);
+        this(coordinatorSvr, convertName("dingo"), retryTimes);
     }
 
     public DingoClient(String coordinatorSvr, String schema, Integer retryTimes) {
         operationService = new OperationService(coordinatorSvr, retryTimes);
         indexOperationService = new IndexOperationService(coordinatorSvr, retryTimes);
-        this.schema = schema.toUpperCase();
+        this.schema = schema;
     }
 
     public DingoClient(String schema, OperationService operationService) {
-        this.schema = schema.toUpperCase();
+        this.schema = schema;
         this.operationService = operationService;
     }
 

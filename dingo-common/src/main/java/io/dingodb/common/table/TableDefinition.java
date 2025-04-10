@@ -164,7 +164,7 @@ public class TableDefinition {
     }
 
     public String getName() {
-        return name.toUpperCase();
+        return name;
     }
 
     public TableDefinition addColumn(ColumnDefinition column) {
@@ -368,6 +368,9 @@ public class TableDefinition {
     }
 
     public List<String> getKeyNames() {
-        return getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList());
+        return getKeyColumns().stream()
+            .map(ColumnDefinition::getName)
+            .map(String::toUpperCase)
+            .collect(Collectors.toList());
     }
 }

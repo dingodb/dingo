@@ -27,6 +27,8 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class AutoIncrementFun extends BinaryOp {
     public static final AutoIncrementFun INSTANCE = new AutoIncrementFun();
 
@@ -41,7 +43,7 @@ public class AutoIncrementFun extends BinaryOp {
     protected Object evalNonNullValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
         MetaService metaService = MetaService.root().getSubMetaService((String) value0);
         InfoSchema is = DdlService.root().getIsLatest();
-        return metaService.getAutoIncrement(is.getTable((String)value0, (String)value1).getTableId());
+        return metaService.getAutoIncrement(is.getTable(convertName((String)value0), (String)value1).getTableId());
     }
 
     @Override

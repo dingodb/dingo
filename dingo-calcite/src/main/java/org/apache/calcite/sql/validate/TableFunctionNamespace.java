@@ -113,7 +113,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             RelDataTypeFactory typeFactory = validator.typeFactory;
             RelDataType rowType = typeFactory.createStructType(
                 cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                cols.stream().map(Column::getName).collect(Collectors.toList())
             );
             this.rowType = rowType;
             return rowType;
@@ -139,7 +139,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             RelDataTypeFactory typeFactory = validator.typeFactory;
             RelDataType rowType = typeFactory.createStructType(
                 cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                cols.stream().map(Column::getName).collect(Collectors.toList())
             );
             this.rowType = rowType;
             return rowType;
@@ -160,9 +160,12 @@ public class TableFunctionNamespace extends AbstractNamespace {
                 continue;
             }
 
-            List<String> indexColumns = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
+            List<String> indexColumns = index.getColumns().stream()
+                .map(Column::getName)
+                .map(String::toUpperCase)
+                .toList();
             // Skip if the vector column is not included
-            if (!indexColumns.contains(vectorColName)) {
+            if (!indexColumns.contains(vectorColName.toUpperCase())) {
                 continue;
             }
 

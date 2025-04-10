@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class SubSnapshotSchema extends RootSnapshotSchema {
     @Getter
     String schemaName;
@@ -56,6 +58,7 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
 
     @Override
     public @Nullable DingoTable getTable(String tableName) {
+        tableName = convertName(tableName);
         SchemaTables schemaTables;
         if (is == null) {
             InfoSchema isTmp = DdlService.root().getIsLatest();
@@ -81,6 +84,7 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
     }
 
     public @Nullable DingoTable getValidateTable(String tableName) {
+        tableName = convertName(tableName);
         SchemaTables schemaTables;
         if (is == null) {
             InfoSchema isTmp = DdlService.root().getIsLatest();
@@ -143,6 +147,7 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
     }
 
     public Table getTableInfo(String tableName) {
+        tableName = convertName(tableName);
         SchemaTables schemaTables;
         if (is == null) {
             InfoSchema isTmp = DdlService.root().getIsLatest();

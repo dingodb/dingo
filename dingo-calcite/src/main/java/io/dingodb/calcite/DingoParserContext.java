@@ -55,6 +55,8 @@ import java.util.Properties;
 import java.util.TimeZone;
 
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 // These are static for every sql parsing.
@@ -224,14 +226,12 @@ public final class DingoParserContext implements Context {
     }
 
     public CalciteSchema getDefaultSchema() {
-        // todo: current version, ignore name case
-        return rootSchema.getSubSchema(defaultSchemaName, false);
+        return rootSchema.getSubSchema(defaultSchemaName, caseSensitive());
     }
 
     public CalciteSchema getSchemaByNames(@NonNull List<String> names) {
         // ignore 0 root schema
-        // todo: current version, ignore name case
-        return rootSchema.getSubSchema(names.get(1), false);
+        return rootSchema.getSubSchema(convertName(names.get(1)), caseSensitive());
     }
 
     @Override

@@ -25,6 +25,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class AnalyzeTableExecutor extends StatsOperator implements DdlExecutor {
 
@@ -42,8 +44,8 @@ public class AnalyzeTableExecutor extends StatsOperator implements DdlExecutor {
     private long timeout;
 
     public AnalyzeTableExecutor(SqlAnalyze sqlAnalyze, Connection connection) {
-        this.schemaName = sqlAnalyze.getSchemaName();
-        this.tableName = sqlAnalyze.getTableName();
+        this.schemaName = convertName(sqlAnalyze.getSchemaName());
+        this.tableName = convertName(sqlAnalyze.getTableName());
         this.columnList = sqlAnalyze.getColumns();
         this.cmSketchHeight = sqlAnalyze.getCmSketchHeight();
         this.cmSketchWidth = sqlAnalyze.getCmSketchWidth();
@@ -69,7 +71,7 @@ public class AnalyzeTableExecutor extends StatsOperator implements DdlExecutor {
         AnalyzeTask analyzeTask = AnalyzeTask.builder()
             .samples(samples)
             .schemaName(schemaName)
-            .tableName(tableName.toUpperCase())
+            .tableName(tableName)
             .columnList(columnList)
             .cmSketchHeight(cmSketchHeight)
             .cmSketchWidth(cmSketchWidth)

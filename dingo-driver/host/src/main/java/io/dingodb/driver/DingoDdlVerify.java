@@ -38,6 +38,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -52,6 +53,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 public class DingoDdlVerify {
 
@@ -93,12 +96,12 @@ public class DingoDdlVerify {
             if ("*".equals(sqlGrant.schema)) {
                 schemaName = null;
             } else {
-                schemaName = sqlGrant.schema;
+                schemaName = convertName(sqlGrant.schema);
             }
             if ("*".equals(sqlGrant.table)) {
                 tableName = null;
             } else {
-                tableName = sqlGrant.table;
+                tableName = convertName(sqlGrant.table);
             }
             schemaTables = new String[]{schemaName, tableName};
         } else if (sqlNode instanceof SqlFlushPrivileges) {
@@ -117,7 +120,7 @@ public class DingoDdlVerify {
                 throw new DingoSqlException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
             accessTypes.add(DingoSqlAccessEnum.UPDATE);
-            schemaTables = new String[] {"mysql", "user"};
+            schemaTables = new String[] {convertName("mysql"), convertName("user")};
         } else if (sqlNode instanceof SqlTruncate) {
             accessTypes.add(DingoSqlAccessEnum.DROP);
             accessTypes.add(DingoSqlAccessEnum.CREATE);
@@ -142,7 +145,7 @@ public class DingoDdlVerify {
             if (schema == null) {
                 schema = connection.getContext().getDefaultSchemaName();
             }
-            if (!PrivilegeVerify.verify(user, host, schema, null, "getTables")) {
+            if (!PrivilegeVerify.verify(user, host, convertName(schema), null, "getTables")) {
                 throw new RuntimeException(String.format("Access denied for user '%s'@'%s'", user, host));
             }
         } else if (sqlNode instanceof SqlAlterUser) {
@@ -168,7 +171,7 @@ public class DingoDdlVerify {
                  return;
             }
             accessTypes.add(DingoSqlAccessEnum.SELECT);
-            schemaTables = new String[] {"mysql", ""};
+            schemaTables = new String[] {convertName("mysql"), ""};
         } else if (sqlNode instanceof SqlShowCreateTable) {
             SqlShowCreateTable showCreateTable = (SqlShowCreateTable) sqlNode;
             if (showCreateTable.schemaName == null) {
@@ -193,7 +196,7 @@ public class DingoDdlVerify {
                 return;
             }
             accessTypes.add(DingoSqlAccessEnum.SELECT);
-            schemaTables = new String[] {"mysql", "user"};
+            schemaTables = new String[] {convertName("mysql"), convertName("user")};
         } else if (sqlNode instanceof SqlShowTableDistribution) {
             SqlShowTableDistribution sqlShowTableDistribution = (SqlShowTableDistribution) sqlNode;
             if (sqlShowTableDistribution.schemaName == null) {
@@ -257,7 +260,7 @@ public class DingoDdlVerify {
         String schemaName;
         String tableName;
         if (names.size() == 1) {
-            tableName = names.get(0).toUpperCase();
+            tableName = names.get(0);
             if (connection.getContext().getUsedSchema() == null) {
                 schemaName = connection.getContext().getDefaultSchemaName();
             } else {
@@ -265,18 +268,11 @@ public class DingoDdlVerify {
             }
         } else {
             schemaName = names.get(0);
-            tableName = names.get(1).toUpperCase();
+            tableName = names.get(1);
         }
-        if (schemaName != null) {
-            schemaName = schemaName.toUpperCase();
-        }
-        // todo: current version, ignore name case
-        CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(schemaName, false);
-//        if (schema == null) {
-//            throw new RuntimeException("Schema not found: " + schemaName);
-//        }
+        CalciteSchema schema = connection.getContext().getRootSchema().getSubSchema(schemaName, caseSensitive());
 
-        return new String[] {schemaName, tableName};
+        return new String[] {convertName(schemaName), convertName(tableName)};
     }
 
 }

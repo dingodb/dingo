@@ -25,8 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.meta.ddl.InfoSchemaBuilder.bucketIdx;
 
 @Slf4j
@@ -34,23 +38,24 @@ import static io.dingodb.meta.ddl.InfoSchemaBuilder.bucketIdx;
 public class InfoSchema {
     public long schemaMetaVersion;
 
-    public Map<String, SchemaTables> schemaMap;
+    public NavigableMap<String, SchemaTables> schemaMap;
 
     public Map<Integer, List<TableInfoCache>> sortedTablesBuckets;
 
     public InfoSchema() {
         schemaMetaVersion = 0;
-        this.schemaMap = new ConcurrentHashMap<>();
+        this.schemaMap = caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         this.sortedTablesBuckets = new ConcurrentHashMap<>();
     }
 
     public Table getTable(String schemaName, String tableName) {
-        tableName = tableName.toUpperCase();
+        tableName = convertName(tableName);
         if (schemaMap.containsKey(schemaName)) {
             Map<String, Table> tableMap = schemaMap.get(schemaName).getTables();
             if (tableMap != null) {
                 return tableMap.get(tableName);
             }
+
         }
         return null;
     }
@@ -71,8 +76,8 @@ public class InfoSchema {
     }
 
     public boolean dropTable(String schemaName, String tableName) {
-        schemaName = schemaName.toUpperCase();
-        tableName = tableName.toUpperCase();
+        schemaName = convertName(schemaName);
+        tableName = convertName(tableName);
         if (getSchemaMap().containsKey(schemaName)) {
             SchemaTables schemaTables = getSchemaMap().get(schemaName);
             return schemaTables.dropTable(tableName);

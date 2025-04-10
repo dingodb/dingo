@@ -38,8 +38,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public class InfoSchemaBuilder {
@@ -60,11 +65,11 @@ public class InfoSchemaBuilder {
         this.is.sortedTablesBuckets = deepCopyBuckets(oldSchema.getSortedTablesBuckets());
     }
 
-    public static Map<String, SchemaTables> deepCopy(Map<String, SchemaTables> original) {
+    public static NavigableMap<String, SchemaTables> deepCopy(NavigableMap<String, SchemaTables> original) {
         if (original == null) {
             return null;
         }
-        Map<String, SchemaTables> copy = new ConcurrentHashMap<>();
+        NavigableMap<String, SchemaTables> copy = caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, SchemaTables> entry : original.entrySet()) {
             copy.put(entry.getKey(), entry.getValue().copy());
         }
@@ -98,7 +103,7 @@ public class InfoSchemaBuilder {
     }
 
     public void createSchemaTablesForDB(SchemaInfo schemaInfo, InfoSchemaService infoSchemaService) {
-        Map<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId());
+        NavigableMap<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId());
         SchemaTables schemaTables = new SchemaTables(schemaInfo, tableMap);
         is.getSchemaMap().put(schemaInfo.getName(), schemaTables);
 
@@ -137,7 +142,7 @@ public class InfoSchemaBuilder {
         InfoSchemaService infoSchemaService,
         long tenantId
     ) {
-        Map<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId(), tenantId);
+        NavigableMap<String, Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId(), tenantId);
         SchemaTables schemaTables = new SchemaTables(schemaInfo, tableMap);
         is.getSchemaMap().put(schemaInfo.getName(), schemaTables);
 
@@ -304,10 +309,11 @@ public class InfoSchemaBuilder {
                 return Pair.of(new ArrayList<>(), null);
             }
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
-            this.is.putTable(schemaInfo.getName(), table.name, table);
+            String name = convertName(table.name);
+            this.is.putTable(schemaInfo.getName(), name, table);
             int idx = bucketIdx(diff.getTableId());
             TableInfoCache tmp = new TableInfoCache(
-                table.tableId.seq, table.name, schemaInfo.getSchemaId(), schemaInfo.getName()
+                table.tableId.seq, name, schemaInfo.getSchemaId(), schemaInfo.getName()
             );
             if (is.sortedTablesBuckets.containsKey(idx)) {
                 List<TableInfoCache> buckets = is.sortedTablesBuckets.get(idx);

@@ -56,12 +56,14 @@ import java.util.stream.Collectors;
 import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
 import static io.dingodb.common.CommonId.CommonType.SCHEMA;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 
 public class LocalMetaService implements MetaService {
 
     public static final CommonId ROOT_ID = new CommonId(SCHEMA, 1, 1);
-    public static final String ROOT_NAME = "LOCAL_ROOT";
+    public static final String ROOT_NAME = "local_root";
     public static final LocalMetaService ROOT = new LocalMetaService(ROOT_ID, ROOT_NAME);
     private static final NavigableMap<CommonId, LocalMetaService> metaServices = new ConcurrentSkipListMap<>();
     private static final NavigableMap<CommonId, TableDefinition> tableDefinitions = new ConcurrentSkipListMap<>();
@@ -121,12 +123,12 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public io.dingodb.meta.MetaService getSubMetaService(String name) {
-        return getSubMetaServices().get(name);
+        return getSubMetaServices().get(convertName(name));
     }
 
     @Override
     public boolean dropSubMetaService(String name) {
-        metaServices.remove(getSubMetaService(name).id());
+        metaServices.remove(getSubMetaService(convertName(name)).id());
         return true;
     }
 
@@ -211,7 +213,6 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public boolean dropTable(long tenantId, long schemaId, String tableName, long jobId) {
-        tableName = tableName.toUpperCase();
         CommonId tableId = getTable(tableName).getTableId();
         if (tableId != null) {
             tableDefinitions.remove(tableId);
@@ -227,7 +228,7 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public long truncateTable(@NonNull String tableName, long tableEntityId, long jobId) {
-        TableDefinition tableDefinition = tableDefinitions.get(getTableId(tableName));
+        TableDefinition tableDefinition = tableDefinitions.get(getTableId(convertName(tableName)));
         if (tableDefinition != null) {
             dropTable(id.seq, tableName, -1);
         }
@@ -236,12 +237,12 @@ public class LocalMetaService implements MetaService {
     }
 
     public CommonId getTableId(@NonNull String tableName) {
-        String tableNameU = tableName.toUpperCase();
         return tableDefinitions.subMap(
                 CommonId.prefix(TABLE, id.seq), true,
                 CommonId.prefix(TABLE, id.seq + 1), false
             ).entrySet().stream()
-            .filter(e -> e.getValue().getName().equals(tableNameU))
+            .filter(e -> caseSensitive() ? e.getValue().getName().equals(tableName)
+                : e.getValue().getName().equalsIgnoreCase(tableName))
             .findAny().map(Map.Entry::getKey).orElse(null);
     }
 
@@ -254,7 +255,6 @@ public class LocalMetaService implements MetaService {
     }
 
     public TableDefinition getTableDefinition(@NonNull String tableName) {
-        tableName = tableName.toUpperCase();
         return getTableDefinitions().get(tableName);
     }
 
@@ -264,6 +264,7 @@ public class LocalMetaService implements MetaService {
 
     @Override
     public Table getTable(String tableName) {
+        tableName = convertName(tableName);
         CommonId tableId = getTableId(tableName);
         if (tableId == null) {
             return null;

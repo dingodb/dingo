@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.grammar.dql;
 
-import io.dingodb.calcite.grammar.dql.SqlShow;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -24,6 +23,8 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.lang3.StringUtils;
+
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 public class SqlShowTableIndex extends SqlShow {
 
@@ -41,10 +42,10 @@ public class SqlShowTableIndex extends SqlShow {
     public SqlShowTableIndex(SqlParserPos pos, SqlIdentifier tableIdentifier) {
         super(OPERATOR, pos);
         if (tableIdentifier.names.size() == 1) {
-            this.tableName = tableIdentifier.names.get(0);
+            this.tableName = convertName(tableIdentifier.names.get(0));
         } else {
             this.schemaName = tableIdentifier.names.get(0);
-            this.tableName = tableIdentifier.names.get(1);
+            this.tableName = convertName(tableIdentifier.names.get(1));
         }
     }
 
