@@ -411,15 +411,6 @@ public class DingoParser {
         }
     }
 
-    public static Program subQuery(RelMetadataProvider metadataProvider) {
-        final HepProgramBuilder builder = HepProgram.builder();
-        builder.addRuleCollection(
-            ImmutableList.of(CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
-                CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                CoreRules.JOIN_SUB_QUERY_TO_CORRELATE, CoreRules.FILTER_REDUCE_EXPRESSIONS));
-        return Programs.of(builder.build(), true, metadataProvider);
-    }
-
     protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
         if (sqlNode instanceof SqlShow || sqlNode instanceof SqlNextAutoIncrement) {
             planProfile.setStmtType("show");
@@ -455,6 +446,9 @@ public class DingoParser {
     }
 
     private static String processKeyWords(String sql) {
+        if (sql.contains("\\r\\n") || sql.contains("\\n")) {
+            sql = StringEscapeUtils.unescapeJson(sql);
+        }
         if (sql.endsWith(" ")) {
             sql = sql.trim();
         }

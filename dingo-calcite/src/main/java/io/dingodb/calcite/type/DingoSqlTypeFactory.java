@@ -180,10 +180,10 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                         && type.getSqlTypeName().getName().equalsIgnoreCase("BINARY"))) {
                         resultType = type;
                     } else if (type.getSqlTypeName().getName().equalsIgnoreCase("BINARY")
-                        || !resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
+                        && !resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
                         resultType = type;
                     }  else if (!type.getSqlTypeName().getName().equalsIgnoreCase("BINARY")
-                        || resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
+                        && resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
                         continue;
                     } else {
                         return null;
