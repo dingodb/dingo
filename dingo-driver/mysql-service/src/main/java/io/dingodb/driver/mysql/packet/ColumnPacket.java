@@ -22,8 +22,6 @@ import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Builder;
 
-import java.io.UnsupportedEncodingException;
-
 @Builder
 public class ColumnPacket extends MysqlPacket {
 
@@ -102,17 +100,9 @@ public class ColumnPacket extends MysqlPacket {
         i += BufferUtil.getLength(schema.getBytes());
         i += BufferUtil.getLength(table.getBytes());
         i += BufferUtil.getLength(orgTable.getBytes());
-        try {
-            nameBytes = name.getBytes(defaultColumnCharset);
-        } catch (UnsupportedEncodingException e) {
-            nameBytes = name.getBytes();
-        }
+        nameBytes = name.getBytes();
         i += BufferUtil.getLength(nameBytes);
-        try {
-            orgNameBytes = orgName.getBytes(defaultColumnCharset);
-        } catch (UnsupportedEncodingException e) {
-            orgNameBytes = orgName.getBytes();
-        }
+        orgNameBytes = orgName.getBytes();
         i += BufferUtil.getLength(orgNameBytes);
         // 0x0c
         i += 1;

@@ -128,7 +128,7 @@ public class RootSnapshotSchema implements Schema {
             if (sub == null) {
                 String schemaStr = String.join(",", isTmp.getSchemaMap().keySet());
                 LogUtils.info(log, "get sub schema null by tmp, isTmp schemaMap:"
-                    + schemaStr + ", isTmp version:" + isTmp.getSchemaMetaVersion());
+                    + schemaStr + ", isTmp version:" + isTmp.getSchemaMetaVersion() + ", schemaName:" + schemaName);
             }
             return sub;
         }
