@@ -124,7 +124,6 @@ public class OperationServiceV2 {
     }
 
     public MetaService getSubMetaService(String schemaName) {
-        schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(metaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 

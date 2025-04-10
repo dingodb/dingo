@@ -72,6 +72,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.toHex;
 import static io.dingodb.sdk.service.entity.store.Action.LockNotExistRollback;
 import static io.dingodb.sdk.service.entity.store.Action.TTLExpirePessimisticRollback;
@@ -483,9 +484,9 @@ public class Gc {
     }
 
     private static void gcDeleteRange(long startTs) {
-        // TODO
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type"
             + " from mysql.gc_delete_range where ts<" + startTs;
+        sql = convertSql(sql);
         LogUtils.info(log, "gcDeleteRange sql:{}", sql);
         Session session = SessionUtil.INSTANCE.getSession();
         try {
@@ -557,15 +558,15 @@ public class Gc {
         String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
             + " element_id, element_type)"
             + " values(%d, %d, %d, %s, %s, %s, %s)";
-        sql = String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
-            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType));
+        sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
+            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(false);
             session.executeUpdate(sql);
 
             String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
-            session.executeUpdate(removeSql);
+            session.executeUpdate(convertSql(removeSql));
             session.commit();
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);

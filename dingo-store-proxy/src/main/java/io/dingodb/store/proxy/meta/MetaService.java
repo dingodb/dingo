@@ -118,13 +118,14 @@ import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
 public class MetaService implements io.dingodb.meta.MetaService {
 
-    private static final String ROOT_NAME = "ROOT";
+    private static final String ROOT_NAME = convertName("root");
     private static final DingoCommonId ROOT_SCHEMA_ID = DingoCommonId.builder()
         .entityType(EntityType.ENTITY_TYPE_SCHEMA)
         .parentEntityId(ReservedSchemaIds.ROOT_SCHEMA.number.longValue())
@@ -146,7 +147,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    private static final Pattern pattern = Pattern.compile("^[A-Z_][A-Z\\d_]*$");
+    private static final Pattern pattern = Pattern.compile("^[A-Za-z_][A-Za-z\\d_]*$");
     private static final Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
 
     public final DingoCommonId id;
@@ -195,14 +196,15 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     public static String cleanName(String name, String source) {
-        if (warnPattern.matcher(name).matches()) {
+        /*if (warnPattern.matcher(name).matches()) {
             LogUtils.warn(log, "{} name currently only supports uppercase letters, LowerCase -> UpperCase",
                 source);
             name = name.toUpperCase();
-        }
+        }*/
+        name = convertName(name);
         if (!pattern.matcher(name).matches()) {
-            throw new RuntimeException(source + " name currently only supports uppercase letters, "
-                + "digits, and underscores");
+            throw new RuntimeException(source + " name: " + name + " currently only supports uppercase and "
+                + "lowercase letters, digits, and underscores");
         }
         return name;
     }
@@ -244,9 +246,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public Map<String, MetaService> getSubMetaServices() {
+    public NavigableMap<String, MetaService> getSubMetaServices() {
         if (id != ROOT_SCHEMA_ID) {
-            return Collections.emptyMap();
+            return Collections.emptyNavigableMap();
         }
         return cache.getMetaServices();
     }
@@ -529,6 +531,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (tabObj != null) {
             throw new RuntimeException("table has existed");
         }
+        tableDefinitionWithId.getTableDefinition()
+            .setName(convertName(tableDefinitionWithId.getTableDefinition().getName()));
         // recover table meta
         infoSchemaService.createTableOrView(
             schemaId,
@@ -577,6 +581,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tableDefinition;
         long originTableId = tableDefinitionWithId.getTableId().getEntityId();
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        tableDefinitionWithId.getTableDefinition()
+            .setName(convertName(tableDefinitionWithId.getTableDefinition().getName()));
         // Generate new table ids.
         long tableEntityId = coordinatorService.createIds(
             tso(),
@@ -653,6 +659,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
         TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) indexDefinition;
         CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
         // Generate new table ids.
+        tableDefinitionWithId.getTableDefinition()
+            .setName(convertName(tableDefinitionWithId.getTableDefinition().getName()));
         long tableEntityId = coordinatorService.createIds(
             tso(),
             CreateIdsRequest.builder()
@@ -765,7 +773,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     });
             }
 
-            List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
+            List<CommonId> indexIds = indexes.stream().map(Table::getTableId).toList();
             indexIds.forEach(indexId -> infoSchemaService.dropIndex(indexId.domain, indexId.seq));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -857,7 +865,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             infoSchemaService.getTable(schemaId, tableName), __ -> (TableDefinitionWithId) __, () -> null);
         List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream()
-            .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
+            .map(object -> (TableDefinitionWithId) object).toList();
         for (TableDefinitionWithId index : indexes) {
             // check disk ann index status
             Pair<Boolean, String> checkDropDiskAnn = checkDropDiskAnnIndex(MAPPER.idFrom(index.getTableId()));
@@ -913,7 +921,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             }));
     }
 
-    private TableDefinition mapping1(TableDefinitionWithId tableDefinitionWithId) {
+    private static TableDefinition mapping1(TableDefinitionWithId tableDefinitionWithId) {
         io.dingodb.sdk.service.entity.meta.TableDefinition table = tableDefinitionWithId.getTableDefinition();
         Map<String, String> properties = table.getProperties();
         Properties prop = new Properties();
@@ -976,7 +984,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream()
-            .map(object -> (TableDefinitionWithId) object).collect(Collectors.toList());
+            .map(object -> (TableDefinitionWithId) object).toList();
         for (TableDefinitionWithId index : indexes) {
             // check disk ann index status
             Pair<Boolean, String> checkDropDiskAnn = checkDropDiskAnnIndex(MAPPER.idFrom(index.getTableId()));
@@ -1272,7 +1280,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             if (indexes == null) {
                 return true;
             }
-            List<CommonId> indexIds = indexes.stream().map(Table::getTableId).collect(Collectors.toList());
+            List<CommonId> indexIds = indexes.stream().map(Table::getTableId).toList();
             indexIds.forEach(indexId -> infoSchemaService.dropIndex(indexId.domain, indexId.seq));
         }
         return true;
@@ -1319,7 +1327,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .getRegions().stream()
             .map(Region::getId)
             .map($ -> coordinatorService.queryRegion(tso, QueryRegionRequest.builder().regionId($).build()).getRegion())
-            .collect(Collectors.toList());
+            .toList();
         GetSchemasResponse getSchemasResponse
             = service.getSchemas(
             tso, GetSchemasRequest.builder().schemaId(io.dingodb.store.proxy.meta.MetaService.ROOT.id).build()
@@ -1330,7 +1338,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .map(DingoCommonId::getEntityId)
-            .collect(Collectors.toList());
+            .toList();
 
         Map<CommonId, Long> metrics = new HashMap<>();
 

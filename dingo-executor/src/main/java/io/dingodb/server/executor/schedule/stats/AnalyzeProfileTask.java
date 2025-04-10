@@ -20,6 +20,8 @@ import io.dingodb.common.profile.AnalyzeEvent;
 import io.dingodb.common.profile.StmtSummaryMap;
 import lombok.extern.slf4j.Slf4j;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class AnalyzeProfileTask extends TableModifyMonitorTask implements Runnable {
 
@@ -27,8 +29,8 @@ public class AnalyzeProfileTask extends TableModifyMonitorTask implements Runnab
     public void run() {
         while (!Thread.interrupted()) {
             AnalyzeEvent analyzeEvent = StmtSummaryMap.getAnalyzeEvent();
-            String schemaName = analyzeEvent.getSchemaName();
-            String tableName = analyzeEvent.getTableName();
+            String schemaName = convertName(analyzeEvent.getSchemaName());
+            String tableName = convertName(analyzeEvent.getTableName());
             try {
                 autoAnalyzeTriggerPolicy(schemaName, tableName, analyzeEvent.getModify());
             } catch (Exception ignored) {

@@ -91,7 +91,7 @@ public final class Record {
         values = new Value[valueMap.size()];
         for (Map.Entry<String, Object> entry : valueMap.entrySet()) {
             ColumnDefinition column = ColumnDefinition.builder()
-                .name(entry.getKey().toUpperCase())
+                .name(entry.getKey())
                 .primary(keyColumns.contains(entry.getKey()) ? primary++ : -1)
                 .build();
             Value value = Value.get(entry.getValue());
@@ -155,7 +155,7 @@ public final class Record {
         Object[] values = new Object[cols.size()];
         int index;
         for (int i = 0; i < cols.size(); i++) {
-            String col = cols.get(i).toUpperCase();
+            String col = cols.get(i);
             index = Parameters.check(columnIndex.get(col), Objects::nonNull,
                 () -> new DingoClientException("column name: " + col + " that does not exist")
             );
@@ -169,7 +169,7 @@ public final class Record {
         Value[] values = new Value[cols.size()];
         int index;
         for (int i = 0; i < cols.size(); i++) {
-            String col = cols.get(i).toUpperCase();
+            String col = cols.get(i);
             index = Parameters.check(columnIndex.get(col), Objects::nonNull,
                 () -> new DingoClientException("column name: " + col + " that does not exist")
             );

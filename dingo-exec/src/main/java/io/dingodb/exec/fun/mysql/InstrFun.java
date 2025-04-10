@@ -18,6 +18,7 @@ package io.dingodb.exec.fun.mysql;
 
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class InstrFun extends BinaryOp {
     private static final long serialVersionUID = -200033123590846940L;
@@ -28,8 +29,16 @@ public class InstrFun extends BinaryOp {
 
     @Override
     public Object evalValue(Object value0, Object value1, ExprConfig config) {
+        if (value0 == null || value1 == null) {
+            return null;
+        }
         String str = value0.toString();
         String point = value1.toString();
         return str.indexOf(point) + 1;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
     }
 }

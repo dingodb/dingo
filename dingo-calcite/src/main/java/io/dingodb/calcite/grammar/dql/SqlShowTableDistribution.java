@@ -24,6 +24,8 @@ import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.lang3.StringUtils;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class SqlShowTableDistribution extends SqlShow {
 
     public String schemaName;
@@ -40,10 +42,10 @@ public class SqlShowTableDistribution extends SqlShow {
     public SqlShowTableDistribution(SqlParserPos pos, SqlIdentifier tableIdentifier) {
         super(OPERATOR, pos);
         if (tableIdentifier.names.size() == 1) {
-            this.tableName = tableIdentifier.names.get(0);
+            this.tableName = convertName(tableIdentifier.names.get(0));
         } else {
-            this.schemaName = tableIdentifier.names.get(0);
-            this.tableName = tableIdentifier.names.get(1);
+            this.schemaName = convertName(tableIdentifier.names.get(0));
+            this.tableName = convertName(tableIdentifier.names.get(1));
         }
     }
 

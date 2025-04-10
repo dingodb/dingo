@@ -63,6 +63,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
 public class DingoTable extends AbstractTable implements TranslatableTable {
@@ -105,7 +108,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     public IndexTable getIndexDefinition(String name) {
         return indexTableDefinitions.stream()
-            .filter(i -> i.getName().equalsIgnoreCase(name))
+            .filter(i -> caseSensitive() ? i.getName().equals(name) : i.getName().equalsIgnoreCase(name))
             .findAny()
             .orElse(null);
     }
@@ -123,7 +126,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             .validateHint(RelHint.builder("for_update").build());
         if (dingoTable.getTable().getTableType() == null
             || (!dingoTable.getTable().getTableType().equalsIgnoreCase("VIEW"))
-            || dingoTable.getSchema().getSchemaName().equalsIgnoreCase("INFORMATION_SCHEMA")) {
+            || convertName(dingoTable.getSchema().getSchemaName())
+            .equals(convertName("INFORMATION_SCHEMA"))) {
             LogicalDingoTableScan logicalDingoTableScan = new LogicalDingoTableScan(
                 context.getCluster(),
                 context.getCluster().traitSet(),
@@ -138,7 +142,11 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
                 false
             );
             if (forUpdate) {
-                return new LogicalForUpdate(context.getCluster(), context.getCluster().traitSet(), logicalDingoTableScan, relOptTable);
+                return new LogicalForUpdate(
+                    context.getCluster(),
+                    context.getCluster().traitSet(),
+                    logicalDingoTableScan,
+                    relOptTable);
             }
             return logicalDingoTableScan;
         } else {

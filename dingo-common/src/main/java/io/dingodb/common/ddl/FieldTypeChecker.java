@@ -31,6 +31,7 @@ import static io.dingodb.common.mysql.DingoErrUtil.newStdErr;
 import static io.dingodb.common.mysql.DingoErrUtil.newStdErrWithMsg;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
 import static io.dingodb.common.mysql.error.ErrorCode.WarnDataTruncated;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 public final class FieldTypeChecker {
 
@@ -80,6 +81,8 @@ public final class FieldTypeChecker {
         String sql = "select 1 from %s.%s where " + colName + " is null limit 1";
         Session session = SessionUtil.INSTANCE.getSession();
         try {
+            schemaName = convertName(schemaName);
+            tableName = convertName(tableName);
             sql = String.format(sql, schemaName, tableName);
             List<Object[]> res = session.executeQuery(sql);
             if (!res.isEmpty()) {

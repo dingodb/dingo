@@ -101,6 +101,10 @@ public class DingoConfiguration {
         return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGlobalCoreThreads, () -> 0);
     }
 
+    public static Integer lowerCaseTableNames() {
+        return Optional.mapOrGet(INSTANCE.variable, VariableConfiguration::getLowerCaseTableNames, () -> 2);
+    }
+
     public static CommonId serverId() {
         return INSTANCE.serverId;
     }

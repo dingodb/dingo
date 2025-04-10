@@ -79,6 +79,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.getByteIndexOf;
 import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
@@ -167,7 +168,7 @@ public class LoadDataExecutor implements DmlExecutor {
             txnRetryCnt = 0;
         }
 
-        this.schemaName = sqlLoadData.getSchemaName();
+        this.schemaName = convertName(sqlLoadData.getSchemaName());
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root();
@@ -175,7 +176,7 @@ public class LoadDataExecutor implements DmlExecutor {
         InfoSchema is = DdlService.root().getIsLatest();
         table = is.getTable(schemaName, sqlLoadData.getTableName());
         if (table == null) {
-            table = is.getTable(schemaName.toUpperCase(), sqlLoadData.getTableName().toUpperCase());
+            table = is.getTable(schemaName, sqlLoadData.getTableName());
             if (table == null) {
                 throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
             }

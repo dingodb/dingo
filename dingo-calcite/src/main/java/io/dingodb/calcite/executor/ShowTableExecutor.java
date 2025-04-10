@@ -42,12 +42,12 @@ public class ShowTableExecutor extends QueryExecutor {
     public Iterator getIterator() {
         try {
             List<Object[]> tables = new ArrayList<>();
-            ResultSet rs = connection.getMetaData().getTables(null, schemaName.toUpperCase(),
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName,
                 null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
-                    Object[] tuples = new Object[] {tableName.toLowerCase()};
+                    Object[] tuples = new Object[] {tableName};
                     tables.add(tuples);
                 }
             }

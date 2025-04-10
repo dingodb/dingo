@@ -370,11 +370,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             List<KeyValue> keyValues = localStore.get(bytes);
             Op op = Op.NONE;
             KeyValue insertUpKv = null;
+            Object[] oldTuple = null;
             if (param.getUpdateMapping() != null && param.getUpdates() != null) {
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
                 KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
                 if (oldKv != null && oldKv.getValue() != null) {
                     context.setDuplicateKey(true);
+                    oldTuple = codec.decode(oldKv);
                 }
             }
             long num = 1L;
@@ -392,7 +394,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param,
                             partId,
                             codec,
-                            newTuple,
+                            oldTuple,
                             txnIdByte,
                             tableIdByte,
                             partIdByte,
@@ -444,7 +446,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param,
                         partId,
                         codec,
-                        newTuple,
+                        oldTuple,
                         txnIdByte,
                         tableIdByte,
                         partIdByte,
@@ -489,6 +491,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 param.inc(num);
                 context.addKeyState(true);
+                if (context.isDuplicateKey() && oldTuple != null) {
+                    param.inc();
+                }
             }
         }
         profile.time(start - System.currentTimeMillis());
@@ -515,7 +520,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 newTuple[index] = newValue;
             }
         }
-        KeyValue updateKv = wrap(codec::encode).apply(newTuple);
+        DingoType schema = param.getSchema();
+        Object[] convertTuple = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
+        KeyValue updateKv = wrap(codec::encode).apply(convertTuple);
         CodecService.getDefault().setId(updateKv.getKey(), partId.domain);
         byte[] insertKey = ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_DATA,

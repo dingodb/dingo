@@ -62,9 +62,9 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
             ImmutableList.of(
-                new Object[]{"ID", "INTEGER", "NO", "PRI", "NULL"},
-                new Object[]{"NAME", "VARCHAR(32)", "YES", " ", "NULL"},
-                new Object[]{"AGE", "INTEGER", "YES", " ", "NULL"}
+                new Object[]{"id", "INTEGER", "NO", "PRI", "NULL"},
+                new Object[]{"name", "VARCHAR(32)", "YES", " ", "NULL"},
+                new Object[]{"age", "INTEGER", "YES", " ", "NULL"}
             )
         ));
     }
@@ -75,7 +75,7 @@ public class ShowTest {
         context.execSql(sql).test(is(
             new String[]{"Field", "Type", "Null", "Key", "Default"},
             ImmutableList.of(
-                new Object[]{"NAME", "VARCHAR(32)", "YES", " ", "NULL"}
+                new Object[]{"name", "VARCHAR(32)", "YES", " ", "NULL"}
             )
         ));
     }

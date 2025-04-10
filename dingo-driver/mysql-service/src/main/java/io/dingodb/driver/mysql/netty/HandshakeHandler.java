@@ -62,6 +62,8 @@ import javax.net.ssl.SSLEngine;
 
 import static io.dingodb.common.mysql.Versions.PROTOCOL_VERSION;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCOMMIT;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @ChannelHandler.Sharable
 @Slf4j
@@ -205,10 +207,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         MysqlNettyServer.connections.put(mysqlConnection.getId(), mysqlConnection);
 
                         if (StringUtils.isNotBlank(authPacket.database)) {
-                            String usedSchema = authPacket.database.toUpperCase();
-                            // todo: current version, ignore name case
+                            String usedSchema = convertName(authPacket.database);
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
-                                .getSubSchema(usedSchema, false);
+                                .getSubSchema(usedSchema, caseSensitive());
                             if (schema != null) {
                                 dingoConnection.getContext().setUsedSchema(schema);
                             }

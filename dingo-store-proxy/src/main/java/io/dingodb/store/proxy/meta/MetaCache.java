@@ -73,6 +73,7 @@ import static io.dingodb.common.CommonId.CommonType.DDL;
 import static io.dingodb.common.CommonId.CommonType.INDEX;
 import static io.dingodb.common.CommonId.CommonType.META;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_DELETE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_UPDATE;
@@ -349,7 +350,7 @@ public class MetaCache {
         distributionCache.invalidate(tableId);
     }
 
-    public synchronized Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
+    public synchronized NavigableMap<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
         InfoSchema infoSchema = DdlService.root().getIsLatest();
         List<SchemaInfo> schemaInfoList;
         if (infoSchema == null) {
@@ -362,7 +363,7 @@ public class MetaCache {
         return getMetaServices(schemaInfoList);
     }
 
-    public Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices(List<SchemaInfo> schemaInfoList) {
+    public NavigableMap<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices(List<SchemaInfo> schemaInfoList) {
         return schemaInfoList
             .stream()
             .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)
@@ -374,9 +375,13 @@ public class MetaCache {
                     .parentEntityId(0)
                     .build();
                 return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
-                    schemaInfo.getName().toUpperCase(), metaService, this);
+                    schemaInfo.getName(), metaService, this);
             })
-            .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
+            .collect(Collectors.toMap(
+                io.dingodb.store.proxy.meta.MetaService::name,
+                Function.identity(),
+                (existing, replacement) -> existing,
+                () -> caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
     }
 
     @SneakyThrows

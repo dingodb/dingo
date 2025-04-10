@@ -126,7 +126,7 @@ public class TableDiskAnnFunctionNamespace extends AbstractNamespace {
                 RelDataTypeFactory typeFactory = validator.typeFactory;
                 rowType = typeFactory.createStructType(
                     cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                    cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                    cols.stream().map(Column::getName).collect(Collectors.toList())
                 );
             } else if (funcName.equals(DiskAnnTable.TABLE_LOAD_NAME)) {
                 if (operandList.size() > 5 || operandList.size() < 2) {
@@ -159,7 +159,7 @@ public class TableDiskAnnFunctionNamespace extends AbstractNamespace {
                 RelDataTypeFactory typeFactory = validator.typeFactory;
                 rowType = typeFactory.createStructType(
                     cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                    cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                    cols.stream().map(Column::getName).collect(Collectors.toList())
                 );
             } else if (funcName.equals(DiskAnnTable.TABLE_STATUS_NAME)) {
                 if (operandList.size() != 2) {
@@ -182,7 +182,7 @@ public class TableDiskAnnFunctionNamespace extends AbstractNamespace {
                 RelDataTypeFactory typeFactory = validator.typeFactory;
                 rowType = typeFactory.createStructType(
                     cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                    cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                    cols.stream().map(Column::getName).collect(Collectors.toList())
                 );
             } else if (funcName.equals(DiskAnnTable.TABLE_RESET_NAME)) {
                 if (operandList.size() > 3 || operandList.size() < 2) {
@@ -215,7 +215,7 @@ public class TableDiskAnnFunctionNamespace extends AbstractNamespace {
                 RelDataTypeFactory typeFactory = validator.typeFactory;
                 rowType = typeFactory.createStructType(
                     cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                    cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                    cols.stream().map(Column::getName).collect(Collectors.toList())
                 );
             } else if (funcName.equals(DiskAnnTable.TABLE_COUNT_MEMORY_NAME)) {
                 if (operandList.size() != 2) {
@@ -238,7 +238,7 @@ public class TableDiskAnnFunctionNamespace extends AbstractNamespace {
                 RelDataTypeFactory typeFactory = validator.typeFactory;
                 rowType = typeFactory.createStructType(
                     cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-                    cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+                    cols.stream().map(Column::getName).collect(Collectors.toList())
                 );
             } else {
                 throw new RuntimeException("unsupported operator type.");

@@ -858,7 +858,7 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     [ (<UNIQUE> { isUnique = true; mode="unique"; } | <FULLTEXT> { mode = "fulltext";}|<SPATIAL> {mode = "fulltext";})]
     <INDEX> ifNotExists = IfNotExistsOpt()
     ( <QUOTED_STRING> | <IDENTIFIER> )
-     { index = token.image.toUpperCase(); }
+     { index = token.image; }
     <ON> table = CompoundIdentifier()
     columns = indexColumns()
     [

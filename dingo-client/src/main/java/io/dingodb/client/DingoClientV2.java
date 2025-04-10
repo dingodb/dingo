@@ -45,11 +45,11 @@ public class DingoClientV2 {
 
     public DingoClientV2(String coordinatorSvr, String schema) {
         operationService = new OperationServiceV2(coordinatorSvr);
-        this.schema = schema.toUpperCase();
+        this.schema = schema;
     }
 
     public DingoClientV2(String schema, OperationServiceV2 operationService) {
-        this.schema = schema.toUpperCase();
+        this.schema = schema;
         this.operationService = operationService;
     }
 

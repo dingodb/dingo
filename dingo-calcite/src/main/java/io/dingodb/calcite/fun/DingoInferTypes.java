@@ -41,9 +41,14 @@ public final class DingoInferTypes {
         = explicit(SqlTypeName.DATE, SqlTypeName.DATE);
     public static final SqlOperandTypeInference FLOAT
         = explicit(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
+    public static final SqlOperandTypeInference DATE_LONG
+        = explicit(SqlTypeName.DATE, SqlTypeName.BIGINT);
 
     public static final SqlOperandTypeInference VARCHAR1024_VARCHAR1024_BOOLEAN
         = explicit(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR, SqlTypeName.BOOLEAN);
+
+    public static final SqlOperandTypeInference VARCHAR1024_VARCHAR1024
+        = explicit(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
 
     private DingoInferTypes() {
     }

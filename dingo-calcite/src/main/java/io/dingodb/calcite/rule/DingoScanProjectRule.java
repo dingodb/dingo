@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.type.converter.DefinitionMapper.mapToRelDataType;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static org.apache.calcite.sql.validate.TableFunctionNamespace.getVectorIndexTable;
 
 @Slf4j
@@ -198,7 +199,7 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
             .map(rexNode -> (RexInputRef) rexNode)
             .map(RexSlot::getIndex)
             .collect(Collectors.toList());
-        String col = dingoTable.getTable().getColumns().get(inputRefList.get(0)).getName().toUpperCase();
+        String col = dingoTable.getTable().getColumns().get(inputRefList.get(0)).getName();
 
         Table useIndex;
         try {
@@ -223,11 +224,11 @@ public class DingoScanProjectRule extends RelRule<DingoScanProjectRule.Config> i
         RelDataTypeFactory typeFactory = scan.getCluster().getTypeFactory();
         RelDataType rowType = typeFactory.createStructType(
             cols.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            cols.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+            cols.stream().map(Column::getName).collect(Collectors.toList())
         );
 
         List<Object> operands = new ArrayList<>();
-        operands.add(dingoTable.getTable().getName());
+        operands.add(convertName(dingoTable.getTable().getName()));
         operands.add(col);
         operands.add(vectorCall.operands.get(1));
         operands.add(SqlLiteral.createExactNumeric("100", new SqlParserPos(1, 1)));

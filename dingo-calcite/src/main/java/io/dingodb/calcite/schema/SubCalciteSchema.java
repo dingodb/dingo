@@ -73,14 +73,13 @@ public class SubCalciteSchema extends CalciteSchema {
         if (stackTrace.length > 19) {
             forValidate = stackTrace[19].getMethodName().equalsIgnoreCase("validate");
         }
-        String name = tableName.toUpperCase();
         SubSnapshotSchema subSnapshotSchema = (SubSnapshotSchema) schema;
         boolean inTxn = subSnapshotSchema.inTransaction();
         Table table;
         if (forValidate) {
-            table = ((SubSnapshotSchema) schema).getValidateTable(name);
+            table = ((SubSnapshotSchema) schema).getValidateTable(tableName);
         } else {
-            table = schema.getTable(name);
+            table = schema.getTable(tableName);
         }
         if (table != null && inTxn) {
             DingoTable dingoTable = (DingoTable) table;
@@ -88,7 +87,7 @@ public class SubCalciteSchema extends CalciteSchema {
         }
         return Optional.mapOrNull(
             table,
-            $ -> new TableEntryImpl(this, name, $, ImmutableList.of())
+            $ -> new TableEntryImpl(this, tableName, $, ImmutableList.of())
         );
     }
 

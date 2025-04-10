@@ -28,6 +28,8 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public class SqlNextAutoIncrement extends SqlSelect {
 
     public SqlParserPos pos;
@@ -56,10 +58,10 @@ public class SqlNextAutoIncrement extends SqlSelect {
 
         this.pos = pos;
         if (tableName.names.size() == 1) {
-            this.tableName = tableName.names.get(0);
+            this.tableName = convertName(tableName.names.get(0));
         } else {
-            this.schemaName = tableName.names.get(0);
-            this.tableName = tableName.names.get(1);
+            this.schemaName = convertName(tableName.names.get(0));
+            this.tableName = convertName(tableName.names.get(1));
         }
     }
 

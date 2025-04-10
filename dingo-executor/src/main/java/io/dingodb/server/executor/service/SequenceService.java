@@ -43,6 +43,8 @@ import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class SequenceService implements io.dingodb.meta.SequenceService {
 
@@ -201,7 +203,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
         while (times-- > 0) {
             InfoSchema is = ddlService.getIsLatest();
             if (is != null) {
-                Table table = is.getTable("MYSQL", tableName);
+                Table table = is.getTable(convertName("mysql"), tableName);
                 if (table != null) {
                     return table;
                 }

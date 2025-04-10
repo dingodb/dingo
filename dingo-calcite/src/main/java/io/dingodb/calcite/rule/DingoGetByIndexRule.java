@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
@@ -43,6 +44,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -176,6 +178,22 @@ public class DingoGetByIndexRule extends ConverterRule {
             RelTraitSet traits = scan.getTraitSet()
                 .replace(DingoConvention.INSTANCE)
                 .replace(DingoRelStreaming.of(scan.getTable()));
+            /*boolean forUpdate = scan.getCluster()
+                .getHintStrategies()
+                .validateHint(RelHint.builder("for_update").build());
+            DingoGetByKeys getByKeys = new DingoGetByKeys(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getSelection(),
+                keyMapSet
+            );
+            if (forUpdate) {
+                return new DingoForUpdate(scan.getCluster(), scan.getTraitSet(), getByKeys, scan.getTable());
+            }
+            return getByKeys;*/
             return new DingoGetByKeys(
                 scan.getCluster(),
                 traits,

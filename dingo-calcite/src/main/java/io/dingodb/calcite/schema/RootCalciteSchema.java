@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.InfoSchema;
 import lombok.Builder;
@@ -40,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public class RootCalciteSchema extends CalciteSchema {
@@ -68,12 +69,11 @@ public class RootCalciteSchema extends CalciteSchema {
 
     @Override
     protected @Nullable CalciteSchema getImplicitSubSchema(String schemaName, boolean caseSensitive) {
-        String name = schemaName.toUpperCase();
-        Schema subSchema = schema.getSubSchema(name);
+        Schema subSchema = schema.getSubSchema(schemaName);
         if (subSchema == null) {
             return null;
         }
-        return SubCalciteSchema.builder().rootCalciteSchema(this).schema(subSchema).name(schemaName).build();
+        return SubCalciteSchema.builder().rootCalciteSchema(this).schema(subSchema).name(convertName(schemaName)).build();
     }
 
     @Override

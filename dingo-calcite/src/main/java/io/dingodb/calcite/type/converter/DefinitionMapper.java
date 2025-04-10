@@ -23,6 +23,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
+import io.dingodb.common.util.NameCaseUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.type.DingoTypeFactory.list;
 import static io.dingodb.common.type.DingoTypeFactory.map;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public final class DefinitionMapper {
@@ -137,6 +139,13 @@ public final class DefinitionMapper {
                             relDataType.isNullable()
                         );
                     }
+                    if (timeUnitRange == TimeUnitRange.QUARTER) {
+                        return DingoTypeFactory.INSTANCE.interval(
+                            "INTERVAL_QUARTER",
+                            relDataType.getSqlTypeName().getFamily().name(),
+                            relDataType.isNullable()
+                        );
+                    }
                     return DingoTypeFactory.INSTANCE.interval(
                         relDataType.getSqlTypeName().getName(),
                         relDataType.getSqlTypeName().getFamily().name(),
@@ -214,7 +223,7 @@ public final class DefinitionMapper {
         List<ColumnDefinition> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
+            columns.stream().map(ColumnDefinition::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
         );
     }
 
@@ -223,7 +232,7 @@ public final class DefinitionMapper {
         List<Column> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+            columns.stream().map(Column::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
         );
     }
 

@@ -23,9 +23,11 @@ import io.dingodb.meta.MetaService;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public final class MetaServiceUtils {
 
-    public static final String SCHEMA_NAME = "DINGO";
+    public static final String SCHEMA_NAME = convertName("dingo");
 
     private MetaServiceUtils() {
     }

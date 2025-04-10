@@ -42,7 +42,7 @@ public final class IndexUtil {
 
     public static TableDefinitionWithId getIndexWithId(Table table, String indexName) {
         long indexId = table.getIndexes().stream()
-            .filter(s -> s.getName().equalsIgnoreCase(indexName))
+            .filter(s -> s.getName().equals(indexName))
             .map(s -> s.getTableId().seq)
             .findFirst().orElse(0L);
 

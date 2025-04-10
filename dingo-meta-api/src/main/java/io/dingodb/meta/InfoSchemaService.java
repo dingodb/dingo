@@ -30,6 +30,7 @@ import io.dingodb.meta.entity.Table;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 
 public interface InfoSchemaService {
     long tenantId = TenantConstant.TENANT_ID;
@@ -277,9 +278,9 @@ public interface InfoSchemaService {
 
     long getSchemaVersionWithNonEmptyDiff();
 
-    Map<String, Table> listTableDef(long schemaId);
+    NavigableMap<String, Table> listTableDef(long schemaId);
 
-    default Map<String, Table> listTableDef(long schemaId, long tenantId) {
+    default NavigableMap<String, Table> listTableDef(long schemaId, long tenantId) {
         return null;
     }
 

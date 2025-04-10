@@ -80,6 +80,7 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.utils.SqlUtil;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
@@ -166,7 +167,7 @@ public class DingoParser {
 
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
         .withLex(Lex.MYSQL)
-        .withCaseSensitive(false)
+        .withCaseSensitive(DingoConfiguration.lowerCaseTableNames() == 0)
         .withIdentifierMaxLength(100000)
         .withParserFactory(DingoDdlParserFactory.INSTANCE)
         .withConformance(new SqlDelegatingConformance(SqlConformanceEnum.MYSQL_5) {

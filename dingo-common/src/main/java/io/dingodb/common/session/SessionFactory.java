@@ -26,6 +26,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.TimeZone;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class SessionFactory extends BasePooledObjectFactory<Session> {
 
@@ -48,7 +50,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         String user = "root";
         String host = "%";
         Properties properties = new Properties();
-        properties.setProperty("defaultSchema", "DINGO");
+        properties.setProperty("defaultSchema", convertName("dingo"));
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", user);

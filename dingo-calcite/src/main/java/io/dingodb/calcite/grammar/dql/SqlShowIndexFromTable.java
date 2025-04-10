@@ -40,7 +40,7 @@ public class SqlShowIndexFromTable extends SqlShow {
         if (tableName.names.size() == 1) {
             this.tableName = tableName.names.get(0);
         } else {
-            this.schemaName = tableName.names.get(0).toUpperCase();
+            this.schemaName = tableName.names.get(0);
             this.tableName = tableName.names.get(1);
         }
     }

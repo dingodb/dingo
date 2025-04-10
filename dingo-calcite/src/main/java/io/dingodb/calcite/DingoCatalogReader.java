@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import io.dingodb.common.config.DingoConfiguration;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -77,6 +78,8 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 public class DingoCatalogReader implements Prepare.CatalogReader {
     protected final CalciteSchema rootSchema;
     protected final RelDataTypeFactory typeFactory;
@@ -88,8 +91,7 @@ public class DingoCatalogReader implements Prepare.CatalogReader {
                               List<List<String>> array,
                               RelDataTypeFactory typeFactory,
                               CalciteConnectionConfig config) {
-        // todo: current version, ignore name case
-        this(rootSchema, SqlNameMatchers.withCaseSensitive(false), array, typeFactory, config);
+        this(rootSchema, SqlNameMatchers.withCaseSensitive(caseSensitive()), array, typeFactory, config);
     }
 
     protected DingoCatalogReader(CalciteSchema rootSchema,
