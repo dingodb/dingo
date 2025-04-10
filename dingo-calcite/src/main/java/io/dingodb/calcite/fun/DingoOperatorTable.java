@@ -42,7 +42,6 @@ import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.runtime.op.special.IfNullFunFactory;
-import io.dingodb.expr.runtime.op.special.ValuesFunFactory;
 import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
 import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.LeftFunFactory;
@@ -147,14 +146,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.explicit(SqlTypeName.ANY),
             InferTypes.ANY_NULLABLE,
             OperandTypes.ANY_ANY,
-            SqlFunctionCategory.USER_DEFINED_FUNCTION
-        );
-
-        registerFunction(
-            ValuesFunFactory.NAME,
-            ReturnTypes.explicit(SqlTypeName.ANY),
-            InferTypes.ANY_NULLABLE,
-            OperandTypes.ANY,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
 
