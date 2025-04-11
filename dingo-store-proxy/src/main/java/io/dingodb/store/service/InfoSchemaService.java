@@ -557,7 +557,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return valueList.stream()
                 .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
                 .map(objWithId -> (TableDefinitionWithId)objWithId)
-                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();
@@ -1031,12 +1030,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .listIndex(tableId.getParentEntityId(), tableId.getEntityId(), tenantId);
             return indexList.stream()
                 .map(object -> (TableDefinitionWithId) object)
-                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
                 .peek(indexWithId -> {
                     String name1 = indexWithId.getTableDefinition().getName();
                     String[] split = name1.split("\\.");
                     if (split.length > 1) {
                         name1 = split[split.length - 1];
+                    }
+                    int codecVersion = indexWithId.getTableDefinition().getCodecVersion();
+                    if (codecVersion < 2) {
+                        indexWithId.getTableDefinition().setVisible(true);
                     }
                     indexWithId.getTableDefinition().setName(name1);
                 })

@@ -308,10 +308,10 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
     |
-        <PRIMARY>  { s.add(this); } <KEY> [ <USING> <BTREE>]
+        <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
-        }
+        } [ <USING> <BTREE>]
     |
       [<CONSTRAINT>]
       <FOREIGN><KEY> [ name = SimpleIdentifier() ]

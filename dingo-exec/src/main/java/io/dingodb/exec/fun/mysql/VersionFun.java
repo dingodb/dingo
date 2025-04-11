@@ -26,10 +26,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class VersionFun extends NullaryOp {
@@ -47,8 +47,8 @@ public class VersionFun extends NullaryOp {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if(line.contains("=")){
-                        version = PRE + line.split("=")[1].toString();
+                    if (line.contains("=")) {
+                        version = PRE + line.split("=")[1];
                         break;
                     }
                 }

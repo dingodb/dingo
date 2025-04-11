@@ -130,6 +130,9 @@ public class DingoGetByIndexRule extends ConverterRule {
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
                 for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
+                    if (!index.getValue().visible) {
+                        continue;
+                    }
                     columnList = index.getValue().getColumns();
                     indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
@@ -295,6 +298,9 @@ public class DingoGetByIndexRule extends ConverterRule {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
             if (index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                continue;
+            }
+            if (!index.visible) {
                 continue;
             }
             if (index.getProperties() == null) {
