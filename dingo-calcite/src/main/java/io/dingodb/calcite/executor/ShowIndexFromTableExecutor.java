@@ -58,6 +58,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
             .collect(Collectors.toList());
         primaryRes.addAll(table.getIndexes()
             .stream()
+                .filter(indexTable -> indexTable.visible)
             .flatMap(index -> {
                 Properties properties = index.getProperties();
                 if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {

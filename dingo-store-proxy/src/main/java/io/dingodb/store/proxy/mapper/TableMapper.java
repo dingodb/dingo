@@ -249,6 +249,7 @@ public interface TableMapper {
         builder.schemaState(io.dingodb.common.meta.SchemaState.get(
             tableWithId.getTableDefinition().getSchemaState().number)
         );
+        builder.visible(definition.isVisible());
         MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }

@@ -112,6 +112,9 @@ public class Table {
     @JsonProperty
     public int codecVersion;
 
+    @JsonProperty
+    public boolean visible;
+
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream()
             .map(col -> {

@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -255,7 +256,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"thread_stack", "262144"});
         values.add(new Object[]{"thread_concurrency", "10"});
         values.add(new Object[]{"time_zone", "SYSTEM"});
-        values.add(new Object[]{"system_time_zone", "UTC"});
+        values.add(new Object[]{"system_time_zone", TimeZone.getDefault().getID()});
         values.add(new Object[]{"sql_mode",
             "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"});
         values.add(new Object[]{"query_cache_type", "OFF"});
@@ -527,7 +528,7 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("TABLES"), "/information-tables.json");
         TABLE_MAP.put(convertName("analyze_task"), "/mysql-analyzeTask.json");
         TABLE_MAP.put(convertName("cm_sketch"), "/mysql-cmSketch.json");
-        TABLE_MAP.put(convertName("table_buckets"), "/mysql-tablebuckets.json");
+        TABLE_MAP.put(convertName("table_buckets"), "/mysql-tableBuckets.json");
         TABLE_MAP.put(convertName("table_stats"), "/mysql-tableStats.json");
         TABLE_MAP.put(convertName("STATEMENTS_SUMMARY"), "/information-stmtSummary.json");
         TABLE_MAP.put(convertName("FILES"), "/information-files.json");
