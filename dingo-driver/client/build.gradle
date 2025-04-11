@@ -23,6 +23,10 @@ plugins {
     id 'signing'
 }
 
+application {
+    applicationDefaultJvmArgs = ["--add-opens", "java.base/java.util=ALL-UNNAMED"]
+}
+
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()

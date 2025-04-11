@@ -150,6 +150,7 @@ import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_F
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SPLIT_AGGREGATE_RULE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -167,7 +168,7 @@ public class DingoParser {
 
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
         .withLex(Lex.MYSQL)
-        .withCaseSensitive(DingoConfiguration.lowerCaseTableNames() == 0)
+        .withCaseSensitive(caseSensitive())
         .withIdentifierMaxLength(100000)
         .withParserFactory(DingoDdlParserFactory.INSTANCE)
         .withConformance(new SqlDelegatingConformance(SqlConformanceEnum.MYSQL_5) {
