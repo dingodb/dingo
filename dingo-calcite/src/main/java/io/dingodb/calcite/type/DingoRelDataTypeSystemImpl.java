@@ -17,15 +17,29 @@
 package io.dingodb.calcite.type;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
 
     public static RelDataTypeSystem DEFAULT = new DingoRelDataTypeSystemImpl();
 
     public static final int INTERVAL_START_PRECISION = 8;
+
+    @Override
+    @Nullable
+    public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory,
+                                        RelDataType type1, RelDataType type2) {
+        if(( SqlTypeName.INTEGER.equals(type1.getSqlTypeName()) || SqlTypeName.BIGINT.equals(type1.getSqlTypeName())) &&
+            ( SqlTypeName.INTEGER.equals(type2.getSqlTypeName()) || SqlTypeName.BIGINT.equals(type2.getSqlTypeName()))){
+            return typeFactory.createSqlType(SqlTypeName.DOUBLE);
+        } else {
+            return super.deriveDecimalDivideType(typeFactory, type1, type2);
+        }
+    }
 
     @Override
     public int getDefaultPrecision(SqlTypeName typeName) {
