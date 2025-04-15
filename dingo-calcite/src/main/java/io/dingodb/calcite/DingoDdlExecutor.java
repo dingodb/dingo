@@ -42,9 +42,11 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterIndexVisible;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableAddPart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTenant;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterUser;
@@ -146,6 +148,7 @@ import org.apache.calcite.jdbc.ContextSqlValidator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
+import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.server.DdlExecutorImpl;
 import org.apache.calcite.sql.DingoAnsiSqlDialect;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
@@ -176,6 +179,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -759,8 +763,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (dingoSqlColumn.isAutoIncrement()) {
             throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
         }
-        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
         validateAddColumn(newColumn);
+        if (sqlAlterAddColumn.isPreValidate()) {
+            sqlAlterAddColumn.setPreValidate(false);
+            return;
+        }
+        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
         DdlService.root().addColumn(schemaInfo, definition, newColumn, "");
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
@@ -1020,6 +1028,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } catch (Exception e) {
             throw DINGO_RESOURCE.illegalArgumentException().ex();
         }
+        if (sqlAlterTableDistribution.isPreValidate()) {
+            sqlAlterTableDistribution.setPreValidate(false);
+            return;
+        }
         LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}",
             tableName, detail);
         MetaService metaService = MetaService.root();
@@ -1064,6 +1076,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (duplicatePart) {
             throw DingoErrUtil.newStdErr("duplicate part");
         }
+        if (sqlAlterTableAddPart.isPreValidate()) {
+            sqlAlterTableAddPart.setPreValidate(false);
+            return;
+        }
 
         DdlService.root().alterTableAddPart(
             schema.getSchemaId(), schema.getSchemaName(), table, detail
@@ -1093,6 +1109,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw new IllegalArgumentException("Table with index, the engine must be transactional.");
         }
         validateIndex(schema, tableName, indexDef);
+        if (sqlAlterAddIndex.isPreValidate()) {
+            sqlAlterAddIndex.setPreValidate(false);
+            return;
+        }
         DdlService ddlService = DdlService.root();
         ddlService.createIndex(schema.getSchemaName() , tableName, indexDef);
 
@@ -1122,6 +1142,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (sqlAlterIndex.getProperties().contains("indexType")) {
             throw new IllegalArgumentException("Cannot change index type.");
         }
+        if (sqlAlterIndex.isPreValidate()) {
+            sqlAlterIndex.setPreValidate(false);
+            return;
+        }
         indexTable.getProperties().putAll(sqlAlterIndex.getProperties());
     }
 
@@ -1138,6 +1162,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema.getSchemaId(), table.getTableId().seq, sqlAlterIndexVisible.index);
         if (!hasIndex) {
             throw DingoErrUtil.newStdErr(ErrKeyDoesNotExist, sqlAlterIndexVisible.getIndex(), tableName);
+        }
+        if (sqlAlterIndexVisible.isPreValidate()) {
+            sqlAlterIndexVisible.setPreValidate(false);
+            return;
         }
         DdlService.root().alterIndexVisible(
             schema.getSchemaId(), schema.getSchemaName(), table,
@@ -1234,7 +1262,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         validateDropIndex(table, sqlDropIndex.getIndexNm());
-        DdlService.root().dropIndex(schema.getSchemaName(), tableName, convertName(sqlDropIndex.getIndexNm()));
+        if (sqlDropIndex.isPreValidate()) {
+            sqlDropIndex.setPreValidate(false);
+            return;
+        }
+        DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
 
         RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
         RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
@@ -1303,6 +1335,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }).map(Table::getName).collect(Collectors.toList());
         if (matchIndices.size() > indicesInfo.size()) {
             throw DINGO_RESOURCE.dropColumnError().ex();
+        }
+        if (sqlAlterDropColumn.isPreValidate()) {
+            sqlAlterDropColumn.setPreValidate(false);
+            return;
         }
 
         String markedDelete = "";
@@ -1599,6 +1635,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .build();
             modifyingColInfoList.add(modifyingColInfo);
         }
+        if (sqlAlterModifyColumn.isPreValidate()) {
+            sqlAlterModifyColumn.setPreValidate(false);
+            return;
+        }
         DdlService.root().modifyColumn(
             schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, modifyingColInfoList
         );
@@ -1649,7 +1689,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         newColumn.setName(sqlAlterChangeColumn.newName.getSimple());
         checkModifyTypes(schema.getSchemaName(), tableName, oldColumn, newColumn);
-
+        if (sqlAlterChangeColumn.isPreValidate()) {
+            sqlAlterChangeColumn.setPreValidate(false);
+            return;
+        }
         newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
 
         ModifyingColInfo modifyingColInfo = ModifyingColInfo
@@ -1695,6 +1738,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (column == null) {
             throw DINGO_RESOURCE.unknownColumn(name, tableName).ex();
         }
+        if (sqlAlterColumn.isPreValidate()) {
+            sqlAlterColumn.setPreValidate(false);
+            return;
+        }
         ColumnDefinition oldColumn = mapTo(column);
         if (sqlAlterColumn.op == 1 || sqlAlterColumn.defaultExpr != null) {
             oldColumn.setDefaultValue(sqlAlterColumn.defaultExpr.toString());
@@ -1732,6 +1779,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        if (alterAutoIncrement.isPreValidate()) {
+            alterAutoIncrement.setPreValidate(false);
+            return;
         }
         boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
         if (hasInc) {
@@ -1804,6 +1855,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (hasIndex) {
             throw DingoErrUtil.newStdErr(ErrDupKeyName, sqlAlterRenameIndex.toIndexName);
         }
+        if (sqlAlterRenameIndex.isPreValidate()) {
+            sqlAlterRenameIndex.setPreValidate(false);
+            return;
+        }
 
         DdlService.root().renameIndex(
             schema.getSchemaId(), schema.getSchemaName(), table,
@@ -1828,6 +1883,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        if (sqlAlterTableComment.isPreValidate()) {
+            sqlAlterTableComment.setPreValidate(false);
+            return;
         }
         DdlService.root().alterModifyComment(
             schema.getSchemaId(), schema.getSchemaName(), table,
@@ -1865,6 +1924,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
         if (noneMatch) {
             throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        }
+        if (sqlAlterDropPart.isPreValidate()) {
+            sqlAlterDropPart.setPreValidate(false);
+            return;
         }
         DdlService.root().alterTableDropPart(
             schemaInfo,
@@ -1904,6 +1967,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
         if (noneMatch) {
             throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        }
+        if (sqlAlterTruncatePart.isPreValidate()) {
+            sqlAlterTruncatePart.setPreValidate(false);
+            return;
         }
         DdlService.root().alterTableTruncatePart(schemaInfo, table, part);
 
@@ -1946,6 +2013,71 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // increment schema version
         if (!sqlBatchCreateTable.batchCreateTable) {
             InfoSchemaService.root().genSchemaVersion(101);
+        }
+    }
+
+    public void execute(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterTableOptions);
+        validateMultiSchemaChange(sqlAlterTableOptions, context);
+        List<SqlAlterTable> alterTableList = sqlAlterTableOptions.alterTableList;
+        for (SqlAlterTable alterTable : alterTableList) {
+            int retry = 10;
+            while (retry-- > 0) {
+                try {
+                    final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
+                    ddlExecutor.executeDdl(context, alterTable);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    // Method not found:
+                    // execute([class org.apache.calcite.sql.ddl.SqlCreateTable,
+                    // org.apache.calcite.jdbc.CalcitePrepare$Context])
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (!e.getMessage().startsWith("Method not found: execute") || retry <= 0) {
+                        throw e;
+                    }
+                } catch (RuntimeException e) {
+                    // java.lang.RuntimeException:
+                    // While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute
+                    // (org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (retry <= 0
+                        || !e.getMessage().startsWith("While invoking method")) {
+                        throw e;
+                    }
+                }
+            }
+        }
+    }
+
+    public void validateMultiSchemaChange(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {
+        List<SqlAlterTable> alterTableList = sqlAlterTableOptions.alterTableList;
+        for (SqlAlterTable alterTable : alterTableList) {
+            alterTable.setPreValidate(true);
+            int retry = 10;
+            while (retry-- > 0) {
+                try {
+                    final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
+                    ddlExecutor.executeDdl(context, alterTable);
+                    break;
+                } catch (IllegalArgumentException e) {
+                    // Method not found:
+                    // execute([class org.apache.calcite.sql.ddl.SqlCreateTable,
+                    // org.apache.calcite.jdbc.CalcitePrepare$Context])
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (!e.getMessage().startsWith("Method not found: execute") || retry <= 0) {
+                        throw e;
+                    }
+                } catch (RuntimeException e) {
+                    // java.lang.RuntimeException:
+                    // While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute
+                    // (org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
+                    LogUtils.error(log, e.getMessage(), e);
+                    if (retry <= 0
+                        || !e.getMessage().startsWith("While invoking method")) {
+                        throw e;
+                    }
+                }
+            }
         }
     }
 
