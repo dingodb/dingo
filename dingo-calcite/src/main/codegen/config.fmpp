@@ -388,6 +388,7 @@ data: {
         "SqlDateTimeTypeName"
         "SqlTextTypeName"
         "SqlLongTextTypeName"
+        "SqlTinyintTypeName"
     ]
 
     functionCallMethods: [
