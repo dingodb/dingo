@@ -309,10 +309,10 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
     |
-        <PRIMARY>  { s.add(this); } <KEY> [ <USING> <BTREE>]
+        <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
-        }
+        } [ <USING> <BTREE>]
     |
       [<CONSTRAINT>]
       <FOREIGN><KEY> [ name = SimpleIdentifier() ]
@@ -553,7 +553,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     (
-     <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+     <ENGINE> [<EQ>] { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
      <TTL> <EQ> [ <MINUS> {ttl = positiveInteger("-" + getNextToken().image, "ttl");} ]
         { ttl = positiveInteger(getNextToken().image, "ttl"); }
@@ -571,17 +571,17 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     |
      <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
-     <AUTO_INCREMENT> <EQ> {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }
+     <AUTO_INCREMENT> [<EQ>] {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }
     |
      <DEFAULT_>
     |
-     <CHARSET> <EQ> { charset = getNextToken().image; }
+     <CHARSET> [<EQ>] { charset = getNextToken().image; }
     |
      <COLLATE> [<EQ>] { collate = getNextToken().image; }
     |
-     <ROW_FORMAT> <EQ> { rowFormat = getNextToken().image; }
+     <ROW_FORMAT> [<EQ>] { rowFormat = getNextToken().image; }
     |
-     <COMMENT> <EQ> { comment = getNextToken().image; }
+     <COMMENT> [<EQ>] { comment = getNextToken().image; }
     |
      <CODEC_VERSION> <EQ> { codecVersion = Integer.parseInt(getNextToken().image); }
     )*

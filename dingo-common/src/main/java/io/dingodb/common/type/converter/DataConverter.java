@@ -24,6 +24,8 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -115,6 +117,12 @@ public interface DataConverter {
             BigDecimal bigDecimal = (BigDecimal) value;
             int val = bigDecimal.intValue();
             return val != 0;
+        } else if (value instanceof Integer) {
+            Integer intValue = (Integer) value;
+            return intValue != 0;
+        } else if (value instanceof Number) {
+            Number number = (Number) value;
+            return number.intValue() != 0;
         }
         return (Boolean) value;
     }
@@ -128,6 +136,11 @@ public interface DataConverter {
     }
 
     default Date convertDateFrom(@NonNull Object value) {
+        if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            LocalDateTime localDateTime = timestamp.toLocalDateTime();
+            return new Date(localDateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli());
+        }
         return (Date) value;
     }
 

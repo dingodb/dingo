@@ -21,10 +21,13 @@ SqlTypeNameSpec SqlTextTypeName(Span s): {
    SqlTypeName typeName;
 } {
    <TEXT>
+   precision = PrecisionOpt()
     {
         s.add(this);
         typeName = SqlTypeName.VARCHAR;
-        precision = 65535;
+        if (precision == -1) {
+            precision = 65535;
+        }
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
     }
 }

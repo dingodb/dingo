@@ -23,6 +23,8 @@ import org.apache.calcite.sql.DingoSqlBasicCall;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOrderBy;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.util.Litmus;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -37,7 +39,7 @@ public class SqlUtil {
         } else if (sqlNode instanceof SqlSetPassword) {
             sql = ((SqlSetPassword) sqlNode).toLog();
         }
-        if (sql.length() > 1000) {
+        if (!(sqlNode instanceof SqlSelect) && !(sqlNode instanceof SqlOrderBy) && sql.length() > 1000) {
             sql = sql.substring(0, 1000) + "...";
         }
         return sql;
