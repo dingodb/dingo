@@ -58,7 +58,6 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
             .collect(Collectors.toList());
         primaryRes.addAll(table.getIndexes()
             .stream()
-                .filter(indexTable -> indexTable.visible)
             .flatMap(index -> {
                 Properties properties = index.getProperties();
                 if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
@@ -117,7 +116,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         val[10] = index.getEngine();
         val[11] = column.getComment();
         val[12] = index.getComment() == null ? "" : index.getComment();
-        val[13] = "YES";
+        val[13] = index.visible ? "YES" : "NO";
         val[14] = null;
         val[15] = "YES";
         val[16] = "NO";
