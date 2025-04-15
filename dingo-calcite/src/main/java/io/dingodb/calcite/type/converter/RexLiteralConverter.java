@@ -23,6 +23,7 @@ import io.dingodb.expr.common.type.IntervalDayType;
 import io.dingodb.expr.common.type.IntervalHourType;
 import io.dingodb.expr.common.type.IntervalMinuteType;
 import io.dingodb.expr.common.type.IntervalMonthType;
+import io.dingodb.expr.common.type.IntervalQuarterType;
 import io.dingodb.expr.common.type.IntervalSecondType;
 import io.dingodb.expr.common.type.IntervalWeekType;
 import io.dingodb.expr.common.type.IntervalYearType;
@@ -145,7 +146,11 @@ public class RexLiteralConverter implements DataConverter {
                 return new IntervalYearType.IntervalYear(value, type);
             }
         } else if (IntervalMonthType.class.isAssignableFrom(type.getClass())) {
-            return new IntervalMonthType.IntervalMonth(value);
+            if (element != null && IntervalQuarterType.class.isAssignableFrom(element.getClass())) {
+                return new IntervalMonthType.IntervalMonth(value, element);
+            } else {
+                return new IntervalMonthType.IntervalMonth(value, type);
+            }
         } else if (IntervalDayType.class.isAssignableFrom(type.getClass())) {
             if (element != null && IntervalDayTimeType.class.isAssignableFrom(element.getClass())) {
                 return new IntervalDayType.IntervalDay(value, element);
