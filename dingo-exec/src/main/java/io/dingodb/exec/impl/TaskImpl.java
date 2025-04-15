@@ -57,8 +57,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.common.metrics.DingoMetrics.activeTaskCount;
@@ -222,11 +224,23 @@ public final class TaskImpl implements Task {
         if (status.get() == Status.BORN) {
             LogUtils.error(log, "jobId:{}, taskId:{}, Run task but check task has init failed: {}",
                 jobId.toString(), id.toString(), taskInitStatus);
-            Vertex vertex = vertexes.get(runList.get(0));
-            // Try to propagate error by any operator, may not succeed because task init failed.
+            // Vertex vertex = vertexes.get(runList.get(0));
             // operator.fin(0, FinWithException.of(taskInitStatus));
-            Operator operator = OperatorFactory.getInstance(vertex.getOp());
-            operator.fin(0, FinWithException.of(taskInitStatus), vertex);
+            // Operator operator = OperatorFactory.getInstance(vertex.getOp());
+            // operator.fin(0, FinWithException.of(taskInitStatus), vertex);
+            // Try to propagate error by any operator, may not succeed because task init failed.
+            CompletableFuture<Void> initFail = Executors.submit("task-init-fail" + jobId + "-" + id, () -> {
+                for (CommonId operatorId : runList) {
+                    Vertex vertex = vertexes.get(operatorId);
+                    Operator operator = OperatorFactory.getInstance(vertex.getOp());
+                    operator.fin(0, FinWithException.of(taskInitStatus), vertex);
+                }
+            });
+            try {
+                initFail.get(5, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                LogUtils.error(log, "jobId:" + jobId + ", taskId:" + id + ", init fail error failed" , e);
+            }
             return;
         }
         // This method should not be blocked, so schedule a running thread.
