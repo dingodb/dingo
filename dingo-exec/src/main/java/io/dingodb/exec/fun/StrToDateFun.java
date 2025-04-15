@@ -29,7 +29,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 import java.sql.Date;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -59,16 +58,10 @@ public class StrToDateFun extends BinaryOp {
         try {
             Date date = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
             return date;
-        } catch (Exception e) {
-            LogUtils.info(log, "str to date parse date: {} error", strVal);
+        } catch (Exception ignored) {
         }
         try {
             return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
-//            if (dateTimestampVal == null) {
-//                return null;
-//            }
-//            Date date = new Date(dateTimestampVal.getTime());
-//            return date;
         } catch (Exception e) {
             LogUtils.info(log, "str to date parse timestamp: {} error", strVal);
         }
@@ -77,9 +70,6 @@ public class StrToDateFun extends BinaryOp {
             return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIME_FORMATTERS);
         } catch (Exception e) {
             LogUtils.info(log, "str to date parse time: {} error", strVal);
-        }
-        if (value1 == null) {
-            return null;
         }
         String format = value1.toString();
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
