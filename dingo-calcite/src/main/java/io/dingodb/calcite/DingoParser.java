@@ -36,6 +36,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
@@ -260,6 +261,9 @@ public class DingoParser {
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
+        if (sqlNode instanceof SqlAlterTableOptions) {
+            ((SqlAlterTableOptions) sqlNode).setSql(sql);
+        }
         if (StringUtils.isEmpty(context.getOption("sql_log"))) {
             SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
         }
@@ -509,7 +513,9 @@ public class DingoParser {
             || sqlNode instanceof SqlAdminResetAutoInc
             || sqlNode instanceof SqlAlterTableComment
             || sqlNode instanceof SqlAlterDropPart
-            || sqlNode instanceof SqlAlterTruncatePart || sqlNode instanceof SqlAlterExchangePart;
+            || sqlNode instanceof SqlAlterTruncatePart
+            || sqlNode instanceof SqlAlterExchangePart
+            || sqlNode instanceof SqlAlterTableOptions;
     }
 
     public long getGcLifeTime() {

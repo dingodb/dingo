@@ -65,6 +65,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableComment"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTenant"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart"
       "io.dingodb.calcite.grammar.ddl.SqlAlterSchema"
       "io.dingodb.calcite.grammar.ddl.SqlAnalyze"

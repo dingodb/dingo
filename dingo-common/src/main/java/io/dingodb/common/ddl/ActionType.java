@@ -40,6 +40,7 @@ public enum ActionType {
     ActionTruncateTablePartition(23),
     ActionDropView(24),
     ActionRecoverTable(25),
+    ActionMultiSchemaChange(26),
     ActionAddPrimaryKey(32),
     ActionAlterIndexVisibility(41),
     ActionAddCheckConstraint(43),

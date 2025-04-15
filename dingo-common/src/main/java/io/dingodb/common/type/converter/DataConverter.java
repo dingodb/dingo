@@ -120,6 +120,9 @@ public interface DataConverter {
         } else if (value instanceof Integer) {
             Integer intValue = (Integer) value;
             return intValue != 0;
+        } else if (value instanceof Number) {
+            Number number = (Number) value;
+            return number.intValue() != 0;
         }
         return (Boolean) value;
     }

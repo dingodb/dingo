@@ -26,6 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterDropForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions;
 import io.dingodb.calcite.grammar.ddl.SqlCreateIndex;
 import io.dingodb.calcite.grammar.ddl.SqlCreateTenant;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
@@ -274,7 +275,7 @@ public class TestSqlSyntaxCheck {
         SqlParser parser = SqlParser.create(sql, config);
         try {
             SqlNode sqlNode = parser.parseStmt();
-            assert sqlNode instanceof SqlAlterModifyColumn;
+            assert sqlNode instanceof SqlAlterTableOptions;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -491,6 +492,9 @@ public class TestSqlSyntaxCheck {
         sqlList.add("rename table t1 to t2");
         sqlList.add("alter table t1 comment='test'");
         sqlList.add("ALTER TABLE tbl_name RENAME INDEX old_index_name TO new_index_name, ALGORITHM=INPLACE, LOCK=NONE");
+
+        sqlList.add("alter table t1 modify column col1 int not null, add column name varchar(20) not null");
+        sqlList.add("alter table t1 add col1 int not null, add column name varchar(20) not null");
         for (String sql : sqlList) {
             assertTrue(isValidEntry(sql), "syntax check error,sql:" + sql);
         }

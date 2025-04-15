@@ -6302,6 +6302,7 @@ SqlTypeNameSpec CharacterTypeName(Span s) :
     )
     precision = PrecisionOpt()
     [
+        LOOKAHEAD(2)
         <CHARACTER> <SET>
         charSetName = Identifier()
     ]
@@ -6309,7 +6310,7 @@ SqlTypeNameSpec CharacterTypeName(Span s) :
         if (charSetName != null) {
             charSetName = charSetName.toUpperCase();
             if (charSetName.equals("UTF8MB3") || charSetName.equals("UTF8MB4")) {
-               charSetName = "UTF8";
+                charSetName = "UTF8";
             }
         }
         return new SqlBasicTypeNameSpec(sqlTypeName, precision, charSetName, s.end(this));

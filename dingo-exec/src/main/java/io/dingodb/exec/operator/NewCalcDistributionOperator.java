@@ -160,14 +160,15 @@ public class NewCalcDistributionOperator extends SourceOperator {
             return vertex.getSoleEdge().transformToNext(copyContext, null);
         };
         Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
-            .find("retry", int.class), __ -> __, () -> 30);
+            .find("retry", int.class), __ -> __, () -> 120);
         return CompletableFuture.supplyAsync(
             supplier, Executors.executor(
                 "operator-" + vertex.getTask().getJobId() + "-"
                     + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId()))
             .exceptionally(ex -> {
                 if (ex != null) {
-                    if (ex.getCause() instanceof RegionSplitException) {
+                    if (ex.getCause() instanceof RegionSplitException
+                        || (ex.getMessage() != null && ex.getMessage().contains("epoch is not match, region_epoch"))) {
                         int retry;
                         if (param.getSplitRetry().containsKey(distribution.getId())) {
                             int retryCnt = param.getSplitRetry().get(distribution.getId());
