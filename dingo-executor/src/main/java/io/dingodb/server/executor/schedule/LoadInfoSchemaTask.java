@@ -165,6 +165,7 @@ public final class LoadInfoSchemaTask {
                 infoSchemaService, currentSchemaVersion, neededSchemaVersion
             );
             if (loadSchemaDiffs.getError() == null) {
+                LogUtils.info(log, "[ddl] load schema diff done");
                 infoCache.insert(loadSchemaDiffs.getIs(), startTs);
                 DdlContext.INSTANCE.incrementNewVer(loadSchemaDiffs.getIs().getSchemaMetaVersion());
                 return new LoadIsResponse(loadSchemaDiffs.getIs(), false, currentSchemaVersion,
@@ -216,6 +217,7 @@ public final class LoadInfoSchemaTask {
         List<Long> actionTypes = new ArrayList<>();
         for (SchemaDiff schemaDiff : schemaDiffList) {
             Pair<List<Long>, String> diff = builder.applyDiff(infoSchemaService, schemaDiff);
+            LogUtils.info(log, "schemaDiff apply done:{}", schemaDiff);
             if (diff.getValue() != null) {
                 return new LoadSchemaDiffs(null, null, diff.getValue());
             }
