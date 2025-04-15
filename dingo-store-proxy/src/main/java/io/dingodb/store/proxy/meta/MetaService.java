@@ -949,6 +949,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .createSql(table.getCreateSql())
             .schemaState(SchemaState.get(table.getSchemaState().number))
             .properties(prop)
+            .visible(table.isVisible())
             .build();
     }
 
