@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.SumUpParam;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,10 @@ public class SumUpOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
             SumUpParam param = vertex.getParam();
             Edge edge = vertex.getSoleEdge();
