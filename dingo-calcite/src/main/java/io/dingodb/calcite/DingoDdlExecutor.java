@@ -188,6 +188,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
@@ -2597,7 +2598,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.invalidDefaultValue(name).ex();
         }
         assert pkSet != null;
-        int primary = pkSet.indexOf(name);
+        int primary = IntStream.range(0, pkSet.size())
+            .filter(i -> pkSet.get(i) != null && pkSet.get(i).equalsIgnoreCase(name))
+            .findFirst()
+            .orElse(-1);
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;

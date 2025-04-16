@@ -74,6 +74,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerTertiaryFun(ConcatFun.NAME, ConcatFun.INSTANCE);
         registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);
         registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
+        registerUnaryFun(DateFun.NAME, DateFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {
