@@ -226,6 +226,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     }
 
     private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
+        if (partition == null) {
+            return new Object[]{};
+        }
         String operand = null;
         if (partition.getOperand() != null) {
             operand = Arrays.toString(partition.getOperand());

@@ -32,7 +32,7 @@ for srcSchema in $databases; do
     cat ts.sql |grep -v ts >pointerts
     export ts=`cat ts.sql|grep -v 'ts'`
 
-    for i in `cat tables.sql|grep -v Tables_in`
+    for i in `cat tables.sql|grep -v tables_in`
     do
             mysql -u$srcUser -p$srcPwd -h $srcHost -P $srcPort --ssl-mode=disabled $srcSchema -e "select * from \`$i\` into outfile '$ROOT/$data_dir/$srcSchema/$i.data' startts $ts"
             #echo "-------------$ROOT/$data_dir/$srcSchema/$i.data    -------$ts"

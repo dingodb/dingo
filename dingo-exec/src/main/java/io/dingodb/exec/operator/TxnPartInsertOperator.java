@@ -488,9 +488,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         synchronized (vertex) {
             TxnPartInsertParam param = vertex.getParam();
             Edge edge = vertex.getSoleEdge();
-            if (!(fin instanceof FinWithException)) {
-                edge.transformToNext(new Object[]{param.getCount()});
+            if (fin instanceof FinWithException) {
+                edge.fin(fin);
+                param.reset();
+                return;
             }
+            edge.transformToNext(new Object[]{param.getCount()});
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                 finWithProfiles.addProfile(vertex);
