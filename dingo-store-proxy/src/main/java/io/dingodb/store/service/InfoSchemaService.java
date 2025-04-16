@@ -22,7 +22,6 @@ import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.CodedOutputStream;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.CodecKvUtil;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.SchemaDiff;
@@ -92,7 +91,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TxStructure txn;
     private VersionService versionService;
-    Set<Location> coordinators;
+    public Set<Location> coordinators;
     private static final long tenantId = TenantConstant.TENANT_ID;
     public static final InfoSchemaService ROOT = new InfoSchemaService();
 
@@ -112,6 +111,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     public InfoSchemaService(Long startTs) {
         this.coordinators = Services.parse(Configuration.coordinators());
+        this.versionService = Services.versionService(coordinators);
+        this.txn = new TxStructure(startTs);
+    }
+
+    public InfoSchemaService(Long startTs, Set<Location> coordinators) {
+        this.coordinators = coordinators;
         this.versionService = Services.versionService(coordinators);
         this.txn = new TxStructure(startTs);
     }

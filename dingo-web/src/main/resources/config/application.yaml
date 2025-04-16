@@ -5,6 +5,13 @@ spring:
         type: ehcache
         ehcache:
           config: classpath:ehcache.xml
+    datasource:
+      url: jdbc:mysql://node1:3307/information_schema?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      username: root
+      password: 123123
+    jpa:
+      database-platform: org.hibernate.dialect.MySQLDialect
+      show-sql: true
 server:
   compression:
     enabled: true
@@ -23,3 +30,4 @@ server:
       cpuAlarmThreshold: 70
       memAlarmThreshold: 70
       diskAlarmThreshold: 90
+

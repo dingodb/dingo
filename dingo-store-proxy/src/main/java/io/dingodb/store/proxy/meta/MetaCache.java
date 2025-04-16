@@ -95,7 +95,7 @@ public class MetaCache {
 
     public MetaCache(Set<Location> coordinators) {
         this.metaService = Services.metaService(coordinators);
-        this.infoSchemaService = InfoSchemaService.root();
+        this.infoSchemaService = new io.dingodb.store.service.InfoSchemaService(0L, coordinators);
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
         this.distributionCache = buildDistributionCache();
         Executors.execute("watch-meta", () -> {
