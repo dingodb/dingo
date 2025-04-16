@@ -16,26 +16,25 @@
 
 package io.dingodb.web.service;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.Common;
+import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.index.Index;
-import io.dingodb.sdk.common.DingoCommonId;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.sdk.common.Location;
 import io.dingodb.sdk.common.cluster.Coordinator;
-import io.dingodb.sdk.common.codec.DingoKeyValueCodec;
-import io.dingodb.sdk.common.index.IndexMetrics;
 import io.dingodb.sdk.common.serial.BufImpl;
-import io.dingodb.sdk.common.table.RangeDistribution;
-import io.dingodb.sdk.common.table.Table;
-import io.dingodb.sdk.common.table.TableDefinition;
 import io.dingodb.sdk.service.cluster.ClusterServiceClient;
 import io.dingodb.sdk.service.connector.IndexServiceConnector;
 import io.dingodb.sdk.service.connector.StoreServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
 import io.dingodb.store.Store;
+import io.dingodb.store.proxy.meta.MetaCache;
+import io.dingodb.store.service.InfoSchemaService;
 import io.dingodb.web.bean.LogEventCache;
 import io.dingodb.web.constant.DingoCluster;
 import io.dingodb.web.model.vo.ClusterInfo;
@@ -112,6 +111,13 @@ public class MonitorServerService {
 
     @Autowired
     MetaServiceClient rootMetaServiceClient;
+
+    @Autowired
+    MetaCache metaCache;
+
+    @Autowired
+    InfoSchemaService infoSchemaService;
+
     byte[] lineTerm = new byte[]{13, 10};
     String lineSeparator = new String(lineTerm);
 
@@ -122,30 +128,26 @@ public class MonitorServerService {
 
     @Cacheable(value = {"navigation"}, key = "#key")
     public List<TreeSchema> getNavigation(String key) {
-        return rootMetaServiceClient.getSubMetaServices().entrySet().stream().map(e -> {
-            String schemaName = e.getKey();
-            Map<String, Table> tableMap;
-            try {
-                tableMap = e.getValue().getTableDefinitionsBySchema();
-            } catch (Exception ex) {
-                return null;
-            }
-            List<TreeTable> tables = tableMap.keySet().stream()
+        List<io.dingodb.common.meta.SchemaInfo> schemaInfoList = infoSchemaService.listSchema();
+        return schemaInfoList.stream().map(schemaInfo -> {
+            String schemaName = schemaInfo.getName();
+            Map<String, io.dingodb.meta.entity.Table> tableMap = infoSchemaService.listTableDef(schemaInfo.getSchemaId());
+            List<TreeTable> tables = tableMap.values().stream()
                 .map(table -> {
-                    long tableId = e.getValue().getTableId(table).entityId();
-                    List<TreeIndex> indices = e.getValue().getTableIndexes(table).entrySet()
+                    long tableId = table.tableId.seq;
+                    List<TreeIndex> indices = table.getIndexes()
                         .stream().map(i ->
                             new TreeIndex(
-                                i.getValue().getName(),
-                                i.getKey().entityId(),
-                                i.getValue().getProperties().get("indexType"),
+                                i.getName(),
+                                i.tableId.seq,
+                                i.getProperties().getOrDefault("indexType", "scalar").toString(),
                                 schemaName,
-                                table,
+                                table.getName(),
                                 INDEX_TYPE
                             )
                         )
                         .collect(Collectors.toList());
-                    return new TreeTable(table, tableId, indices, schemaName, TABLE_TYPE);
+                    return new TreeTable(table.name, tableId, indices, schemaName, TABLE_TYPE);
                 })
                 .collect(Collectors.toList());
             return new TreeSchema(schemaName, tables, SCHEMA_TYPE);
@@ -156,13 +158,19 @@ public class MonitorServerService {
     public TableInfo getTableInfo(String schema, String table, String key) {
         // get table definition
         // include column definition and partition definition
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
-        TableDefinition tableDef = (TableDefinition) metaServiceClient.getTableDefinition(table);
+        //MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
+        //TableDefinition tableDef = (TableDefinition) metaServiceClient.getTableDefinition(table);
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
         List<Column> columns = tableDef.getColumns().stream().map(
-                e -> new Column(e.getName(), e.getType(), e.isPrimary()))
+                e -> new Column(e.getName(), e.getSqlTypeName(), e.isPrimary()))
             .collect(Collectors.toList());
-        int partCount = tableDef.getPartition().getDetails().size() + 1;
-        Collection<RangeDistribution> rangeDistributions = metaServiceClient.getRangeDistribution(table).values();
+        int partCount = tableDef.getPartitions().size();
+        Collection<io.dingodb.common.partition.RangeDistribution> rangeDistributions
+            = metaCache.getRangeDistribution(tableDef.tableId).values();
         // get table regions count
         int regionsCount = rangeDistributions.size();
         List<Partition> partitions = getPartitionDtoList(tableDef, partCount, rangeDistributions);
@@ -171,24 +179,26 @@ public class MonitorServerService {
 
     @Cacheable(value = {"partRegion"}, key = "#key")
     public List<Region> getRegionByPart(String schema, String table, Long partId, String key) {
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
-        TableDefinition tableDefinition = (TableDefinition) metaServiceClient.getTableDefinition(table);
-        String funcName = tableDefinition.getPartition().getFuncName();
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
+        String funcName = tableDef.getPartitionStrategy();
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
-        RangeDistribution[] rangeDistributions = metaServiceClient
-            .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
-        DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
+        RangeDistribution[] rangeDistributions = metaCache
+            .getRangeDistribution(tableDef.tableId).values().toArray(new RangeDistribution[0]);
+        io.dingodb.codec.KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDef.getCodecVersion(), tableDef.version, tableDef.tupleType(), tableDef.keyMapping()
+        );
+
         DingoType dingoType = DingoTypeFactory.tuple(
-            tableDefinition.getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
-                col.getType(),
-                col.getElementType(),
-                col.isNullable()
-            )).toArray(DingoType[]::new)
+            tableDef.getColumns().stream().map(col -> col.getType()).toArray(DingoType[]::new)
         );
         List<Region> regionList = new ArrayList<>();
         for (int i = 0; i < rangeDistributions.length; i++) {
-            if (rangeDistributions[i].getId().parentId() == partId) {
-                transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
+            if (rangeDistributions[i].getId().domain == partId) {
+                transformRegion(tableDef, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
             }
         }
         return regionList;
@@ -197,32 +207,33 @@ public class MonitorServerService {
     @Cacheable(value = {"indexPartRegion"}, key = "#key")
     public List<Region> getRegionByIndexPart(String schema, String table, long indexId,
                                              Long partId, String key) {
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
+        List<IndexTable> indexTableList = tableDef.getIndexes();
 
-        Map<DingoCommonId, Table> indexMap = metaServiceClient.getTableIndexes(table);
-
-        Optional<List<Region>> regionList = indexMap.entrySet()
+        Optional<List<Region>> regionList = indexTableList
             .stream()
-            .filter(e -> e.getKey().entityId() == indexId)
+            .filter(e -> e.tableId.seq == indexId)
             .map(e -> {
-                String funcName = e.getValue().getPartition().getFuncName();
+                String funcName = e.getPartitionStrategy();
                 boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
                 RangeDistribution[] rangeDistributions
-                    = metaServiceClient.getIndexRangeDistribution(e.getKey()).values()
+                    = metaCache.getRangeDistribution(e.tableId).values()
                     .toArray(new RangeDistribution[0]);
-                DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, e.getValue());
+                io.dingodb.codec.KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                    tableDef.getCodecVersion(), tableDef.version, tableDef.tupleType(), tableDef.keyMapping()
+                );
                 DingoType dingoType = DingoTypeFactory.tuple(
-                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
-                        col.getType(),
-                        col.getElementType(),
-                        col.isNullable()
-                    )).toArray(DingoType[]::new)
+                    e.getColumns().stream().map(io.dingodb.meta.entity.Column::getType).toArray(DingoType[]::new)
                 );
                 List<Region> tmpRegionList = new ArrayList<>();
                 for (int i = 0; i < rangeDistributions.length; i++) {
-                    if (rangeDistributions[i].getId().parentId() == partId) {
+                    if (rangeDistributions[i].getId().domain == partId) {
                         transformRegion(
-                            (TableDefinition) e.getValue(),
+                            e,
                             isOriginalKey,
                             codec,
                             rangeDistributions,
@@ -238,22 +249,32 @@ public class MonitorServerService {
 
     @Cacheable(value = {"tableRegion"}, key = "#key")
     public List<Region> getRegionByTable(String schema, String table, String key) {
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
-        TableDefinition tableDefinition = (TableDefinition) metaServiceClient.getTableDefinition(table);
-        String funcName = tableDefinition.getPartition().getFuncName();
+        //MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
+        String funcName = tableDef.getPartitionStrategy();
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
         DingoType dingoType = DingoTypeFactory.tuple(
-            tableDefinition.getColumns()
+            tableDef.getColumns()
                 .stream()
-                .map(col -> DingoTypeFactory.INSTANCE.fromName(col.getType(), col.getElementType(), col.isNullable())
+                .map(col -> col.getType()
                 ).toArray(DingoType[]::new)
         );
-        RangeDistribution[] rangeDistributions = metaServiceClient
-            .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
-        DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
+        //RangeDistribution[] rangeDistributions = metaServiceClient
+        //    .getRangeDistribution(table).values().toArray(new RangeDistribution[0]);
+        //DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDefinition);
+        RangeDistribution[] rangeDistributions
+            = metaCache.getRangeDistribution(tableDef.tableId).values()
+            .toArray(new RangeDistribution[0]);
+        io.dingodb.codec.KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDef.getCodecVersion(), tableDef.version, tableDef.tupleType(), tableDef.keyMapping()
+        );
         List<Region> regionList = new ArrayList<>();
         for (int i = 0; i < rangeDistributions.length; i++) {
-            transformRegion(tableDefinition, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
+            transformRegion(tableDef, isOriginalKey, codec, rangeDistributions, regionList, i, dingoType);
         }
         return regionList;
     }
@@ -263,28 +284,35 @@ public class MonitorServerService {
                                   String table,
                                   long indexId,
                                   String key) {
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
-        Map<DingoCommonId, Table> indexMap = metaServiceClient.getTableIndexes(table);
-        Optional<IndexInfo> tableInfoOptional = indexMap.entrySet().stream()
-            .filter(e -> e.getKey().entityId() == indexId).map(e -> {
-                int partCount = e.getValue().getPartition().getDetails().size() + 1;
-                String indexType = e.getValue().getProperties().get("indexType");
+        //MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
+        List<IndexTable> indexTableList = tableDef.getIndexes();
+        Optional<IndexInfo> tableInfoOptional = indexTableList.stream()
+            .filter(e -> e.tableId.seq == indexId).map(e -> {
+                int partCount = e.getPartitions().size();
+                String indexType = e.getProperties().getOrDefault("indexType", "scalar").toString();
                 Long memoryBytes = 0L;
-                if (!indexType.equalsIgnoreCase("scalar")) {
-                    try {
-                        IndexMetrics indexMetrics = metaServiceClient.getIndexMetrics(e.getKey());
-                        memoryBytes = indexMetrics.getMemoryBytes();
-                    } catch (Exception e1) {
-                        log.error(e1.getMessage(), e1);
-                    }
-                }
-                Collection<RangeDistribution> rangeDistributions
-                    = metaServiceClient.getIndexRangeDistribution(e.getKey()).values();
-                List<Column> columns = e.getValue().getColumns().stream().map(
-                        column -> new Column(column.getName(), column.getType(), column.isPrimary()))
+                //if (!indexType.equalsIgnoreCase("scalar")) {
+                //    try {
+                //        IndexMetrics indexMetrics = metaServiceClient.getIndexMetrics(e.getKey());
+                //        memoryBytes = indexMetrics.getMemoryBytes();
+                //    } catch (Exception e1) {
+                //        log.error(e1.getMessage(), e1);
+                //    }
+                //}
+                //Collection<RangeDistribution> rangeDistributions
+                //    = metaServiceClient.getIndexRangeDistribution(e.getKey()).values();
+                Collection<io.dingodb.common.partition.RangeDistribution> rangeDistributions
+                    = metaCache.getRangeDistribution(tableDef.tableId).values();
+                List<Column> columns = e.getColumns().stream().map(
+                        column -> new Column(column.getName(), column.getSqlTypeName(), column.isPrimary()))
                     .collect(Collectors.toList());
 
-                List<Partition> partitionDtoList = getPartitionDtoList((TableDefinition) e.getValue(),
+                List<Partition> partitionDtoList = getPartitionDtoList(e,
                     partCount, rangeDistributions);
                 return new IndexInfo(partCount, rangeDistributions.size(),
                     columns, partitionDtoList, memoryBytes);
@@ -294,28 +322,29 @@ public class MonitorServerService {
 
     @Cacheable(value = {"indexRegion"}, key = "#key")
     public List<Region> getRegionByIndex(String schema, String table, long indexId, String key) {
-        MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
-        Map<DingoCommonId, Table> indexMap = metaServiceClient.getTableIndexes(table);
-        Optional<List<Region>> regionsOptional = indexMap.entrySet().stream()
-            .filter(e -> e.getKey().entityId() == indexId).map(e -> {
+        //MetaServiceClient metaServiceClient = rootMetaServiceClient.getSubMetaService(schema);
+        io.dingodb.common.meta.SchemaInfo schemaInfo = infoSchemaService.getSchema(schema);
+        if (schemaInfo == null) {
+            return null;
+        }
+        io.dingodb.meta.entity.Table tableDef = infoSchemaService.getTableDef(schemaInfo.getSchemaId(), table);
+        List<IndexTable> indexTableList = tableDef.getIndexes();
+        Optional<List<Region>> regionsOptional = indexTableList.stream()
+            .filter(e -> e.tableId.seq == indexId).map(e -> {
                 RangeDistribution[] rangeDistributions
-                    = metaServiceClient.getIndexRangeDistribution(e.getKey())
+                    = metaCache.getRangeDistribution(e.tableId)
                     .values().toArray(new RangeDistribution[0]);
                 List<Region> regionDtoList = new ArrayList<>();
-                String funcName = e.getValue().getPartition().getFuncName();
+                String funcName = e.getPartitionStrategy();
                 boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
-                DingoKeyValueCodec codec = DingoKeyValueCodec.of(
-                    0, e.getValue()
+                io.dingodb.codec.KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                    tableDef.getCodecVersion(), tableDef.version, tableDef.tupleType(), tableDef.keyMapping()
                 );
                 DingoType dingoType = DingoTypeFactory.tuple(
-                    e.getValue().getColumns().stream().map(col -> DingoTypeFactory.INSTANCE.fromName(
-                        col.getType(),
-                        col.getElementType(),
-                        col.isNullable()
-                    )).toArray(DingoType[]::new)
+                    e.getColumns().stream().map(col -> col.getType()).toArray(DingoType[]::new)
                 );
                 for (int i = 0; i < rangeDistributions.length; i++) {
-                    transformRegion((TableDefinition) e.getValue(),
+                    transformRegion(e,
                         isOriginalKey, codec, rangeDistributions, regionDtoList, i, dingoType);
                 }
                 return regionDtoList;
@@ -345,14 +374,13 @@ public class MonitorServerService {
         long currentTimeSeconds = calendar.getTimeInMillis() / 1000;
         promMetricService.loadMetric(currentTimeSeconds, true);
         Map<String, ResourceInfo> nodeExporterMap = new HashMap<>();
-        List<SchemaInfo> schemaList = rootMetaServiceClient
-            .getSubMetaServices().entrySet()
+        List<SchemaInfo> schemaList = infoSchemaService.listSchema()
             .stream()
-            .filter(entry -> !entry.getKey().equalsIgnoreCase("root")
-                && !entry.getKey().equalsIgnoreCase("meta"))
+            .filter(entry -> !entry.getName().equalsIgnoreCase("root")
+                && !entry.getName().equalsIgnoreCase("meta"))
             .map(e -> {
-                int tableCount = e.getValue().getTableDefinitionsBySchema().size();
-                return new SchemaInfo(e.getValue().id().getEntityId(), e.getKey(), tableCount);
+                int tableCount = infoSchemaService.listTable(e.getSchemaId()).size();
+                return new SchemaInfo(e.getSchemaId(), e.getName(), tableCount);
             }).collect(Collectors.toList());
         List<Coordinator> coordinatorList = clusterServiceClient.getCoordinatorMap(0);
         List<String> executorList = new ArrayList<>(promMetricService.jvmHeapMap.keySet());
@@ -481,39 +509,42 @@ public class MonitorServerService {
         return storeServiceConnector.exec(stub -> stub.hello(helloRequest));
     }
 
-    private List<Partition> getPartitionDtoList(TableDefinition tableDef,
+    private List<Partition> getPartitionDtoList(io.dingodb.meta.entity.Table tableDef,
                                                        int partCount,
-                                                       Collection<RangeDistribution> rangeDistributions) {
-        DingoKeyValueCodec codec = DingoKeyValueCodec.of(0, tableDef);
-        String funcName = tableDef.getPartition().getFuncName();
+                                                       Collection<io.dingodb.common.partition.RangeDistribution> rangeDistributions) {
+        io.dingodb.codec.KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDef.getCodecVersion(), tableDef.version, tableDef.tupleType(), tableDef.keyMapping()
+        );
+
+        String funcName = tableDef.getPartitionStrategy();
         boolean isOriginalKey = funcName.equalsIgnoreCase("HASH");
         List<Long> partIdList = new ArrayList<>(0);
         AtomicLong partColSizeAto = new AtomicLong();
         rangeDistributions.forEach(r -> {
-            if (!partIdList.contains(r.getId().parentId())) {
-                partIdList.add(r.getId().parentId());
+            if (!partIdList.contains(r.getId().domain)) {
+                partIdList.add(r.getId().domain);
             }
             if (partColSizeAto.get() == 0) {
-                setId(r.getRange().startKey);
-                Object[] start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(r.getRange().startKey,
-                    r.getRange().startKey.length) : r.getRange().startKey);
+                setId(r.getStartKey());
+                Object[] start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(r.getStartKey(),
+                    r.getStartKey().length) : r.getStartKey());
                 long partByColCount = Arrays.stream(start).filter(Objects::nonNull).count();
                 partColSizeAto.set(partByColCount);
             }
         });
         long partColSize = partColSizeAto.get();
         if (partColSize == 0) {
-            partColSize = tableDef.getPrimaryKeyCount();
+            partColSize = tableDef.getColumns().stream().filter(io.dingodb.meta.entity.Column::isPrimary).count();
         }
         partIdList.sort(Comparator.reverseOrder());
 
-        String partType = tableDef.getPartition().getFuncName();
+        String partType = tableDef.getPartitionStrategy();
         List<Partition> partitions = new ArrayList<>();
         for (int i = 0; i < partCount; i++) {
             String partName = partIdList.get(i).toString();
             List<String> keyNameList = new ArrayList<>();
             for (int c = 0; c < partColSize; c ++) {
-                keyNameList.add(tableDef.getKeyColumns().get(c).getName());
+                keyNameList.add(tableDef.getColumns().get(c).getName());
             }
             String cols = StringUtils.join(keyNameList);
             partitions.add(new Partition(partIdList.get(i),
@@ -522,9 +553,9 @@ public class MonitorServerService {
         return partitions;
     }
 
-    private void transformRegion(TableDefinition tableDefinition,
+    private void transformRegion(io.dingodb.meta.entity.Table tableDefinition,
                                  boolean isOriginalKey,
-                                 DingoKeyValueCodec codec,
+                                 io.dingodb.codec.KeyValueCodec codec,
                                  RangeDistribution[] rangeDistributions,
                                  List<Region> regionDtoList,
                                  int index,
@@ -532,11 +563,11 @@ public class MonitorServerService {
         RangeDistribution rangeDistribution = rangeDistributions[index];
         Object[] start;
         Object[] end;
-        setId(rangeDistribution.getRange().startKey);
-        start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(rangeDistribution.getRange().startKey,
-            rangeDistribution.getRange().startKey.length) : rangeDistribution.getRange().startKey);
+        setId(rangeDistribution.getStartKey());
+        start = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(rangeDistribution.getStartKey(),
+            rangeDistribution.getStartKey().length) : rangeDistribution.getStartKey());
         if (index + 1 < rangeDistributions.length) {
-            byte[] nextStart = rangeDistributions[index + 1].getRange().startKey;
+            byte[] nextStart = rangeDistributions[index + 1].getStartKey();
             setId(nextStart);
             end = codec.decodeKeyPrefix(isOriginalKey ? Arrays.copyOf(nextStart,
                 nextStart.length) : nextStart);
@@ -545,14 +576,17 @@ public class MonitorServerService {
         }
         start = (Object[]) dingoType.convertFrom(start, DingoConverter.INSTANCE);
         end = (Object[]) dingoType.convertFrom(end, DingoConverter.INSTANCE);
-        String startKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), start);
-        String endKey = buildKeyStr(TupleMapping.of(tableDefinition.getKeyColumnIndices()), end);
+        List<String> keyColumnList = tableDefinition.getColumns().stream()
+            .filter(io.dingodb.meta.entity.Column::isPrimary)
+            .map(io.dingodb.meta.entity.Column::getName).collect(Collectors.toList());
+        List<Integer> keyIndices = tableDefinition.getColumnIndices(keyColumnList);
+        String startKey = buildKeyStr(TupleMapping.of(keyIndices), start);
+        String endKey = buildKeyStr(TupleMapping.of(keyIndices), end);
         String range = String.format("[ %s, %s )", startKey, endKey);
-        rangeDistribution.getVoters().remove(rangeDistribution.getLeader());
         regionDtoList.add(new Region(
-            rangeDistribution.getId().entityId(),
-            rangeDistribution.getLeader().toString(),
-            StringUtils.join(rangeDistribution.getVoters()),
+            rangeDistribution.getId().seq,
+            "",
+            "",
             range, 0));
     }
 
