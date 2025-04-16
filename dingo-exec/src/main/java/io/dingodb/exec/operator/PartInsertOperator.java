@@ -81,9 +81,11 @@ public final class PartInsertOperator extends PartModifyOperator {
         synchronized (vertex) {
             PartInsertParam param = vertex.getParam();
             Edge edge = vertex.getSoleEdge();
-            if (!(fin instanceof FinWithException)) {
-                edge.transformToNext(new Object[]{param.getCount()});
+            if (fin instanceof FinWithException) {
+                edge.fin(fin);
+                return;
             }
+            edge.transformToNext(new Object[]{param.getCount()});
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                 finWithProfiles.addProfile(vertex);

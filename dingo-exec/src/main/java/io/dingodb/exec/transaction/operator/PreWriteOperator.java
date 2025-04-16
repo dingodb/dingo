@@ -127,31 +127,33 @@ public final class PreWriteOperator extends TransactionOperator {
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         synchronized (vertex) {
-            if (!(fin instanceof FinWithException)) {
-                PreWriteParam param = vertex.getParam();
-                if (param.getMutations().size() > 0) {
-                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
-                        .primaryKey(param.getPrimaryKey())
-                        .isPessimistic(param.isPessimistic())
-                        .isolationLevel(param.getIsolationLevel())
-                        .txnId(vertex.getTask().getTxnId())
-                        .type(param.getTransactionType())
-                        .lockTimeOut(param.getTimeOut())
-                        .build();
-                    boolean result = TwoPhaseCommitUtils.txnPreWrite(
-                        param.getTableId(),
-                        param.getPartId(),
-                        param.getMutations(),
-                        twoPhaseCommitData
-                    );
-                    if (!result) {
-                        throw new RuntimeException(vertex.getTask().getTxnId() + " " + param.getPartId()
-                            + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
-                    }
-                    param.getMutations().clear();
-                }
-                vertex.getSoleEdge().transformToNext(new Object[]{true});
+            if (fin instanceof FinWithException) {
+                vertex.getSoleEdge().fin(fin);
+                return;
             }
+            PreWriteParam param = vertex.getParam();
+            if (!param.getMutations().isEmpty()) {
+                TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                    .primaryKey(param.getPrimaryKey())
+                    .isPessimistic(param.isPessimistic())
+                    .isolationLevel(param.getIsolationLevel())
+                    .txnId(vertex.getTask().getTxnId())
+                    .type(param.getTransactionType())
+                    .lockTimeOut(param.getTimeOut())
+                    .build();
+                boolean result = TwoPhaseCommitUtils.txnPreWrite(
+                    param.getTableId(),
+                    param.getPartId(),
+                    param.getMutations(),
+                    twoPhaseCommitData
+                );
+                if (!result) {
+                    throw new RuntimeException(vertex.getTask().getTxnId() + " " + param.getPartId()
+                        + ",txnPreWrite false,PrimaryKey:" + param.getPrimaryKey().toString());
+                }
+                param.getMutations().clear();
+            }
+            vertex.getSoleEdge().transformToNext(new Object[]{true});
             vertex.getSoleEdge().fin(fin);
         }
     }

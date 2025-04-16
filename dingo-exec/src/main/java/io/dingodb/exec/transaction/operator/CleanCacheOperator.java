@@ -85,10 +85,12 @@ public class CleanCacheOperator extends TransactionOperator {
 
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
-            if (!(fin instanceof FinWithException)) {
-                vertex.getSoleEdge().transformToNext(new Object[]{true});
-            }
+            vertex.getSoleEdge().transformToNext(new Object[]{true});
             vertex.getSoleEdge().fin(fin);
         }
     }

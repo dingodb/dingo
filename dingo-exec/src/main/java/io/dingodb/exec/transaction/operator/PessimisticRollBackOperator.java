@@ -182,18 +182,20 @@ public class PessimisticRollBackOperator extends TransactionOperator {
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         synchronized (vertex) {
-            if (!(fin instanceof FinWithException)) {
-                PessimisticRollBackParam param = vertex.getParam();
-                if (param.getKeys().size() > 0) {
-                    CommonId txnId = vertex.getTask().getTxnId();
-                    boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), param.getPartId());
-                    if (!result) {
-                        throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPessimisticRollBack false");
-                    }
-                    param.getKeys().clear();
-                }
-                vertex.getSoleEdge().transformToNext(new Object[]{true});
+            if (fin instanceof FinWithException) {
+                vertex.getSoleEdge().fin(fin);
+                return;
             }
+            PessimisticRollBackParam param = vertex.getParam();
+            if (!param.getKeys().isEmpty()) {
+                CommonId txnId = vertex.getTask().getTxnId();
+                boolean result = txnPessimisticRollBack(param, txnId, param.getTableId(), param.getPartId());
+                if (!result) {
+                    throw new RuntimeException(txnId + " " + param.getPartId() + ",txnPessimisticRollBack false");
+                }
+                param.getKeys().clear();
+            }
+            vertex.getSoleEdge().transformToNext(new Object[]{true});
             vertex.getSoleEdge().fin(fin);
         }
     }

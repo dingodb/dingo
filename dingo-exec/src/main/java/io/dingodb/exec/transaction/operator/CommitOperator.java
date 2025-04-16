@@ -119,35 +119,37 @@ public class CommitOperator extends TransactionOperator {
 
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
             CommitParam param = vertex.getParam();
-            if (!(fin instanceof FinWithException)) {
-                if (!param.getKeys().isEmpty()) {
-                    CommonId txnId = vertex.getTask().getTxnId();
-                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
-                        .primaryKey(param.getPrimaryKey())
-                        .isPessimistic(param.isPessimistic())
-                        .isolationLevel(param.getIsolationLevel())
-                        .txnId(txnId)
-                        .type(param.getTransactionType())
-                        .commitTs(param.getCommitTs())
-                        .build();
-                    boolean result = TwoPhaseCommitUtils.txnCommit(
-                        txnId,
-                        param.getTableId(),
-                        param.getPartId(),
-                        param.getKeys(),
-                        twoPhaseCommitData
-                    );
-                    if (!result) {
-                        throw new RuntimeException(
-                            txnId + " " + param.getPartId()
-                            + ",txnCommit false,"
-                            + " PrimaryKey:" + Arrays.toString(param.getPrimaryKey()));
-                    }
+            if (!param.getKeys().isEmpty()) {
+                CommonId txnId = vertex.getTask().getTxnId();
+                TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                    .primaryKey(param.getPrimaryKey())
+                    .isPessimistic(param.isPessimistic())
+                    .isolationLevel(param.getIsolationLevel())
+                    .txnId(txnId)
+                    .type(param.getTransactionType())
+                    .commitTs(param.getCommitTs())
+                    .build();
+                boolean result = TwoPhaseCommitUtils.txnCommit(
+                    txnId,
+                    param.getTableId(),
+                    param.getPartId(),
+                    param.getKeys(),
+                    twoPhaseCommitData
+                );
+                if (!result) {
+                    throw new RuntimeException(
+                        txnId + " " + param.getPartId()
+                        + ",txnCommit false,"
+                        + " PrimaryKey:" + Arrays.toString(param.getPrimaryKey()));
                 }
-                vertex.getSoleEdge().transformToNext(new Object[]{true});
             }
+            vertex.getSoleEdge().transformToNext(new Object[]{true});
             vertex.getSoleEdge().fin(fin);
         }
     }

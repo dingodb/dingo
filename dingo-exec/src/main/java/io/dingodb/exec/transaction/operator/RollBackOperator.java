@@ -135,33 +135,35 @@ public class RollBackOperator extends TransactionOperator {
 
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
-            if (!(fin instanceof FinWithException)) {
-                RollBackParam param = vertex.getParam();
-                if (!param.getKeys().isEmpty()) {
-                    CommonId txnId = vertex.getTask().getTxnId();
-                    TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
-                        .primaryKey(param.getPrimaryKey())
-                        .isPessimistic(param.isPessimistic())
-                        .isolationLevel(param.getIsolationLevel())
-                        .txnId(txnId)
-                        .type(param.getTransactionType())
-                        .build();
-                    boolean result = TwoPhaseCommitUtils.txnRollBack(
-                        txnId,
-                        param.getTableId(),
-                        param.getPartId(),
-                        param.getKeys(),
-                        param.getForUpdateTsList(),
-                        twoPhaseCommitData
-                    );
-                    if (!result) {
-                        throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");
-                    }
-                    param.getKeys().clear();
+            RollBackParam param = vertex.getParam();
+            if (!param.getKeys().isEmpty()) {
+                CommonId txnId = vertex.getTask().getTxnId();
+                TwoPhaseCommitData twoPhaseCommitData = TwoPhaseCommitData.builder()
+                    .primaryKey(param.getPrimaryKey())
+                    .isPessimistic(param.isPessimistic())
+                    .isolationLevel(param.getIsolationLevel())
+                    .txnId(txnId)
+                    .type(param.getTransactionType())
+                    .build();
+                boolean result = TwoPhaseCommitUtils.txnRollBack(
+                    txnId,
+                    param.getTableId(),
+                    param.getPartId(),
+                    param.getKeys(),
+                    param.getForUpdateTsList(),
+                    twoPhaseCommitData
+                );
+                if (!result) {
+                    throw new RuntimeException(txnId + " " + param.getPartId() + ",txnBatchRollback false");
                 }
-                vertex.getSoleEdge().transformToNext(new Object[]{true});
+                param.getKeys().clear();
             }
+            vertex.getSoleEdge().transformToNext(new Object[]{true});
             vertex.getSoleEdge().fin(fin);
         }
     }

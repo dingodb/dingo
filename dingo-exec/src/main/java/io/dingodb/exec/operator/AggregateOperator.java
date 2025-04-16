@@ -16,9 +16,12 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.AggregateParams;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +45,20 @@ public final class AggregateOperator extends SoleOutOperator {
     public  void fin(int pin, Fin fin, Vertex vertex) {
         AggregateParams params = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
-        for (Object[] t : params.getCache()) {
-            if (!edge.transformToNext(t)) {
-                break;
+        try {
+            for (Object[] t : params.getCache()) {
+                if (!edge.transformToNext(t)) {
+                    break;
+                }
             }
+        } catch (Exception e) {
+            LogUtils.error(log, "[task-fin] fin exception:{}", e.getMessage(), e);
+            TaskStatus taskStatus = new TaskStatus();
+            taskStatus.setStatus(false);
+            taskStatus.setTaskId(vertex.getTask().getId().toString());
+            taskStatus.setErrorMsg(e.getMessage());
+            edge.fin(FinWithException.of(taskStatus));
+            return;
         }
         edge.fin(fin);
         // Reset
