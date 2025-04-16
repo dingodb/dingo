@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ReduceParam;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,10 @@ public final class ReduceOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
             ReduceParam param = vertex.getParam();
             Edge edge = vertex.getSoleEdge();

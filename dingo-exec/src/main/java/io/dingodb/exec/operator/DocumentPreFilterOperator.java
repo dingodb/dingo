@@ -55,15 +55,15 @@ public class DocumentPreFilterOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
+        if (fin instanceof FinWithException) {
+            edge.fin(fin);
+            return;
+        }
         DocumentPreFilterParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("documentPreFilter");
         long start = System.currentTimeMillis();
         TupleMapping selection = param.getSelection();
         List<Object[]> cache = param.getCache();
-        if (fin instanceof FinWithException) {
-            edge.fin(fin);
-            return;
-        }
         Integer docIdIndex = param.getDocumentIdIndex();
         List<Long> rightList = cache.stream().map(e ->
             (Long) e[docIdIndex]

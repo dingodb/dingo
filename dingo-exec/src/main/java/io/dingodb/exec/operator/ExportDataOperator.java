@@ -22,6 +22,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ExportDataParam;
 import lombok.extern.slf4j.Slf4j;
@@ -152,6 +153,10 @@ public class ExportDataOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
+        if (fin instanceof FinWithException) {
+            edge.fin(fin);
+            return;
+        }
         try {
             ExportDataParam param = vertex.getParam();
             FileOutputStream writer = fileMap.get(param.getId());
