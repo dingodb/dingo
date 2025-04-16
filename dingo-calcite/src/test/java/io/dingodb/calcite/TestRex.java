@@ -78,7 +78,7 @@ public class TestRex {
     @Nonnull
     private static Stream<Arguments> getParametersTemp() {
         return Stream.of(
-            arguments("pow('10', -2)", "POW(DECIMAL('10'), -2)", BigDecimal.valueOf(0.01))
+            arguments("pow('10', -2)", "POW(CASTDECIMAL('10'), -2)", BigDecimal.valueOf(0.01))
         );
     }
 

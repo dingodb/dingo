@@ -20,6 +20,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.DateAddFun;
+import io.dingodb.exec.fun.DateFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.StrToDateFun;
@@ -292,6 +293,17 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DingoInferTypes.VARCHAR1024_VARCHAR1024,
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            DateFun.NAME,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
+            DingoInferTypes.TIMESTAMP_VARCHAR1024,
+            OperandTypes.or(
+                OperandTypes.TIMESTAMP,
+                OperandTypes.STRING,
+                OperandTypes.DATE
+            ),
+            SqlFunctionCategory.STRING
         );
 
 //        registerFunction(

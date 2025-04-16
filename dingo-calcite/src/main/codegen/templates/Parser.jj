@@ -4386,6 +4386,9 @@ SqlNode AtomicRowExpression() :
     (
         e = LiteralOrIntervalExpression()
     |
+        LOOKAHEAD(<DATE> <QUOTED_STRING>)
+        e = SpecialDateTimeLiteral()
+    |
         e = DynamicParam()
     |
         LOOKAHEAD(2)
@@ -5047,10 +5050,6 @@ SqlLiteral DateTimeLiteral() :
         return SqlParserUtil.parseTimestampLiteral(p, s.end(this));
     }
 |
-    <DATE> { s = span(); } p = SimpleStringLiteral() {
-      return SqlLiteral.createUnknown("DATE", p, s.end(this));
-    }
-|
     <DATETIME> { s = span(); } p = SimpleStringLiteral() {
         return SqlLiteral.createUnknown("DATETIME", p, s.end(this));
     }
@@ -5066,6 +5065,17 @@ SqlLiteral DateTimeLiteral() :
 |
     <TIMESTAMP> { s = span(); } <WITH> <LOCAL> <TIME> <ZONE> p = SimpleStringLiteral() {
         return SqlLiteral.createUnknown("TIMESTAMP WITH LOCAL TIME ZONE", p, s.end(this));
+    }
+}
+
+SqlLiteral SpecialDateTimeLiteral() :
+{
+    final String p;
+    final Span s;
+}
+{
+    <DATE> { s = span(); } p = SimpleStringLiteral() {
+      return SqlLiteral.createUnknown("DATE", p, s.end(this));
     }
 }
 
@@ -7640,6 +7650,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <CURRENT_DATE>
     |   <CURRENT_TIME>
     |   <CURRENT_TIMESTAMP>
+    |   <DATE>
     |   <DENSE_RANK>
     |   <DUPLICATE>
     |   <ELEMENT>
