@@ -16,18 +16,23 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.RelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
 import io.dingodb.expr.rel.CacheOp;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+@Slf4j
 public final class CacheOpOperator extends SoleOutOperator {
     public static final CacheOpOperator INSTANCE = new CacheOpOperator();
 
@@ -44,7 +49,17 @@ public final class CacheOpOperator extends SoleOutOperator {
         }
         CacheOp relOp = (CacheOp) (param).getRelOp();
         synchronized (relOp) {
-            RelOpUtils.forwardCacheOpResults(relOp, edge);
+            try {
+                RelOpUtils.forwardCacheOpResults(relOp, edge);
+            } catch (Exception e) {
+                LogUtils.error(log, "[task-fin] fin exception:{}", e.getMessage(), e);
+                TaskStatus taskStatus = new TaskStatus();
+                taskStatus.setStatus(false);
+                taskStatus.setTaskId(vertex.getTask().getId().toString());
+                taskStatus.setErrorMsg(e.getMessage());
+                edge.fin(FinWithException.of(taskStatus));
+                return;
+            }
             profile.end();
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;

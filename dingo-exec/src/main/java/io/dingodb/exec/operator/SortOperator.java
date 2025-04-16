@@ -20,6 +20,7 @@ import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
@@ -56,6 +57,10 @@ public class SortOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
+        if (fin instanceof FinWithException) {
+            vertex.getSoleEdge().fin(fin);
+            return;
+        }
         synchronized (vertex) {
             SortParam param = vertex.getParam();
             OperatorProfile profile = param.getProfile();
