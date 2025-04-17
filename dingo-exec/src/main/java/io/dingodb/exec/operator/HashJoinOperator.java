@@ -59,9 +59,11 @@ public class HashJoinOperator extends SoleOutOperator {
             param.setContext(context);
             if (pin == 0) { // left
                 waitRightFinFlag(param);
-                TupleKey leftKey = new TupleKey(leftMapping.revMap(tuple));
+                TupleKey leftKey = HashJoinParam.rtrimTupleKey(new TupleKey(leftMapping.revMap(tuple)));
                 boolean isEmpty = isEmpty(leftKey, param);
-                if (isEmpty && ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType()))) {
+                if (isEmpty
+                    && ("inner".equalsIgnoreCase(param.getJoinType())
+                    || "right".equalsIgnoreCase(param.getJoinType()))) {
                     return true;
                 }
                 if (isEmpty && "left".equalsIgnoreCase(param.getJoinType())) {
@@ -85,7 +87,7 @@ public class HashJoinOperator extends SoleOutOperator {
                     return pushToNext(param, edge, context, newTuple);
                 }
             } else if (pin == 1) { //right
-                TupleKey rightKey = new TupleKey(rightMapping.revMap(tuple));
+                TupleKey rightKey = HashJoinParam.rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
                 if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
                     return true;
                 }
@@ -164,8 +166,9 @@ public class HashJoinOperator extends SoleOutOperator {
     }
 
     private static boolean pushToNext(HashJoinParam param, Edge edge, Context context, Object[] tuple) {
+        Object[] tmpTuple = param.rtrimTuple(tuple);
         if (param.getOtherExpr() != null) {
-            Object object = param.getOtherExpr().eval(tuple);
+            Object object = param.getOtherExpr().eval(tmpTuple);
             if (object != null && (Boolean) object) {
                 return edge.transformToNext(context, tuple);
             } else {

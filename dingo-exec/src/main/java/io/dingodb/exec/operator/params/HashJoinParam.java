@@ -28,6 +28,8 @@ import io.dingodb.exec.tuple.TupleKey;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -88,6 +90,52 @@ public class HashJoinParam extends AbstractParams {
         this.rightRequired = rightRequired;
         this.leftMappingEmpty = this.leftMapping.size() == 0;
         this.rightMappingEmpty = this.rightMapping.size() == 0;
+    }
+
+    public static TupleKey rtrimTupleKey(TupleKey key) {
+        ArrayList<Object> arrayList = new ArrayList<>();
+        Arrays.stream(key.getTuple()).forEach(
+            obj -> {
+                if (obj instanceof String str) {
+                    int blankCount = 0;
+                    for ( int i = str.length() - 1; i >= 0; i-- ) {
+                        if ( Character.isWhitespace(str.charAt(i)) ) {
+                            blankCount++;
+                        }
+                    }
+                    str = str.substring(0, str.length() - blankCount);
+                    arrayList.add(str);
+                } else {
+                    arrayList.add(obj);
+                }
+            }
+        );
+
+        return new TupleKey(arrayList.toArray());
+    }
+
+    public static Object[] rtrimTuple(Object[] tuple) {
+        ArrayList<Object> arrayList = new ArrayList<>();
+        Arrays.stream(tuple).forEach(
+            obj -> {
+                if (obj instanceof String str) {
+                    int blankCount = 0;
+                    for (int i = str.length() - 1; i >= 0; i--) {
+                        if (Character.isWhitespace(str.charAt(i))) {
+                            blankCount++;
+                        } else {
+                            break;
+                        }
+                    }
+                    str = str.substring(0, str.length() - blankCount);
+                    arrayList.add(str);
+                } else {
+                    arrayList.add(obj);
+                }
+            }
+        );
+
+        return arrayList.toArray();
     }
 
     @Override
