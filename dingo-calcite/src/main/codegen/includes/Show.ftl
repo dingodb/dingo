@@ -224,9 +224,15 @@ SqlShow SqlShowLocks(Span s): {
 
 SqlShow SqlShowEngines(Span s): {
   String pattern = null;
+  String keyWord = null;
 } {
-  <DINGOENGINES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
-  { return new SqlShowEngines(s.end(this), pattern); }
+  <IDENTIFIER> { keyWord = token.image;} [ <LIKE> <QUOTED_STRING> { pattern = SqlParserUtil.trim(token.image,"'"); } ]
+  {
+    if (!"engines".equalsIgnoreCase(keyWord)) {
+       throw new ParseException("not excepted token:" + keyWord);
+    }
+    return new SqlShowEngines(s.end(this), pattern);
+  }
 }
 
 SqlShow SqlShowCollation(Span s): {
