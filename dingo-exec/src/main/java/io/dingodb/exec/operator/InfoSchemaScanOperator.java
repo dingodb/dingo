@@ -83,6 +83,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "TABLE_PRIVILEGES":
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
+            case "KEYWORDS":
+            case "REFERENTIAL_CONSTRAINTS":
                 return getEmpty();
             case "TABLE_CONSTRAINTS":
                 return getInformationTableConstraints();

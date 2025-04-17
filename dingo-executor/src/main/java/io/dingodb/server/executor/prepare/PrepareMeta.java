@@ -79,7 +79,6 @@ public final class PrepareMeta {
     public static final String MYSQL_SCHEMA = convertName("mysql", CASE_NAMES);
     public static final String INFORMATION_SCHEMA = convertName("INFORMATION_SCHEMA", CASE_NAMES);
     public static final String DINGO_SCHEMA = convertName("dingo", CASE_NAMES);
-    public static final String META_SCHEMA = convertName("meta", CASE_NAMES);
 
     public static ConcurrentHashMap<String, String> TABLE_MAP;
 
@@ -173,10 +172,6 @@ public final class PrepareMeta {
         infoSchemaService.createSchema(dingoSchemaId,
             SchemaInfo.builder().schemaId(dingoSchemaId).name(DINGO_SCHEMA).schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
-        long metaSchemaId = infoSchemaService.genSchemaId();
-        infoSchemaService.createSchema(metaSchemaId,
-            SchemaInfo.builder().schemaId(metaSchemaId).name(META_SCHEMA).schemaState(SchemaState.SCHEMA_PUBLIC).build()
-        );
         LogUtils.info(log, "create schema done");
     }
 
@@ -226,6 +221,8 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("DINGO_TRX", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("PLUGINS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("KEYWORDS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("REFERENTIAL_CONSTRAINTS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
 
@@ -554,6 +551,8 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("sequence"), "/mysql-sequence.json");
         TABLE_MAP.put(convertName("ENGINES"), "/information-engines.json");
         TABLE_MAP.put(convertName("PLUGINS"), "/information-plugins.json");
+        TABLE_MAP.put(convertName("KEYWORDS"), "/information-keywords.json");
+        TABLE_MAP.put(convertName("REFERENTIAL_CONSTRAINTS"), "/information-referentialConstraints.json");
     }
 
     public static void initTableByTemplate(String schema,
