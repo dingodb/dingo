@@ -28,6 +28,8 @@ public class CommitProfile extends Profile {
         super("commit");
     }
 
+    private long cacheContinue;
+    private long cacheContinueTime;
     private long preWritePrimary;
     private long preWritePrimaryTime;
     private long preWriteSecond;
@@ -38,6 +40,11 @@ public class CommitProfile extends Profile {
     private long commitSecondTime;
     private long clean;
     private long cleanTime;
+
+    public void endCheckCache() {
+        this.cacheContinueTime = System.currentTimeMillis();
+        cacheContinue = cacheContinueTime - start;
+    }
 
     public void endPreWritePrimary() {
         this.preWritePrimaryTime = System.currentTimeMillis();
@@ -108,6 +115,7 @@ public class CommitProfile extends Profile {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        dag.append(termStr).append("cacheCheck:").append(cacheContinue).append("\r\n");
         dag.append(termStr).append("preWritePrimary:").append(preWritePrimary).append("\r\n");
         dag.append(termStr).append("preWriteSecond:").append(preWriteSecond).append("\r\n");
         dag.append(termStr).append("commitPrimary:").append(commitPrimary).append("\r\n");

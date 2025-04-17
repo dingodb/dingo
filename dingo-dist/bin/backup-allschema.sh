@@ -19,6 +19,10 @@ echo '----------------'
 mysql -h $srcHost -P $srcPort -u root -p$srcPwd -e "SHOW DATABASES;" | tail -n +2 >$ROOT/$data_dir/database.list
 
 for srcSchema in $databases; do
+    if [ $srcSchema == 'information_schema' ] ; then
+      echo "skip schema:$srcSchema"
+      continue
+    fi
     echo "Processing database: $srcSchema"
     mkdir -p $ROOT/$data_dir/$srcSchema
     cd $ROOT/$data_dir/$srcSchema
