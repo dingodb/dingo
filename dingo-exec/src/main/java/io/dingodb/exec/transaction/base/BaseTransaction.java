@@ -348,6 +348,7 @@ public abstract class BaseTransaction implements ITransaction {
         }
         checkContinue();
         if (getSqlList().isEmpty() || !cache.checkContinue()) {
+            commitProfile.endCheckCache();
             //LogUtils.warn(log, "The current {} has no data to commit", transactionOf());
             if (isPessimistic()) {
                 // PessimisticRollback

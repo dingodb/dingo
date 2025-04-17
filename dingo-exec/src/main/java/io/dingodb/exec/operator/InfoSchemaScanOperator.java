@@ -210,18 +210,11 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(schemaTables -> schemaTables.getTables()
                 .values()
                 .stream()
-                .flatMap(table -> {
-                    if (table.partitions == null || table.getPartitions().isEmpty()) {
-                        LogUtils.warn(log, "The table {} not have partition, please check meta.", table.name);
-                        return Stream.<Object[]>of(
-                            getPartitionDetail(schemaTables.getSchemaInfo().getName(), table, null));
-                    } else {
-                        return table.getPartitions()
-                            .stream()
-                            .map(partition -> getPartitionDetail(
-                                schemaTables.getSchemaInfo().getName(), table, partition));
-                    }
-                }))
+                .filter(table -> table.partitions != null && !table.getPartitions().isEmpty())
+                .flatMap(table -> table.getPartitions()
+                    .stream()
+                    .map(partition -> getPartitionDetail(
+                        schemaTables.getSchemaInfo().getName(), table, partition))))
             .iterator();
     }
 
