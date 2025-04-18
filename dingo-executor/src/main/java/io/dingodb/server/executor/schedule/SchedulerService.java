@@ -104,7 +104,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             scheduler.start();
 
             ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
-
+            SafePointUpdateTask.runScheduleSafePointUpdate();
             new Thread(() -> {
                 LogUtils.info(log, "owner prepare meta start");
                 PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
@@ -120,6 +120,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         try {
             LogUtils.info(log, "lose owner");
             ExecutionEnvironment.INSTANCE.ddlOwner.set(false);
+            SafePointUpdateTask.cancelScheduleSafePointUpdate();
             scheduler.standby();
         } catch (SchedulerException e) {
             LogUtils.error(log, "Stop scheduler error.", e);

@@ -54,6 +54,7 @@ import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
+import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -1440,7 +1441,7 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_ONLY:
-                synchronized (dc) {
+                synchronized (SafePointUpdateTask.safePointUpdateTask) {
                     if (enableGc) {
                         // disableGc
                         InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
@@ -1461,7 +1462,13 @@ public class DdlWorker {
                     if (recoverInfo.getNewTableName() != null) {
                         tableDefinitionWithId.getTableDefinition().setName(recoverInfo.getNewTableName());
                     }
-                    TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                    boolean recover = TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                    if (!recover) {
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped table '"
+                            + recoverInfo.getOldTableName() + "'"));
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                     return updateSchemaVersion(dc, job);
                 }
@@ -1709,8 +1716,12 @@ public class DdlWorker {
                     // recover table
                     InfoSchemaService infoSchemaService
                         = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                    LogUtils.info(log, "flashback schema:{} ts:{}",
+                        recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs());
                     SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
                     if (schemaInfo == null) {
+                        LogUtils.info(log, "flashback schema:{} ts:{}, but found not schemaInfo, new tso:{}",
+                            recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs(), TsoService.getDefault().tso());
                         job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped schema '"
                             + recoverInfo.getOldSchemaName() + "'"));
                         job.setState(JobState.jobStateCancelled);

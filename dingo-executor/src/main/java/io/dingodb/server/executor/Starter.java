@@ -137,7 +137,7 @@ public class Starter {
         ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
         ApiRegistry.getDefault().register(InfoSchemaScanOperator.Api.class, new InfoSchemaScanOperator.Api() { });
 
-        SafePointUpdateTask.run();
+        //SafePointUpdateTask.run();
 
         DdlServer.startDispatchLoop();
     }
