@@ -57,6 +57,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
@@ -127,6 +128,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
@@ -582,7 +584,20 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     private void handleFlashBackQuery(SqlNode sqlNode) {
-        io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+        if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            if (sqlOrderBy.query instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+                validateStartTs((io.dingodb.calcite.grammar.dql.SqlSelect) sqlOrderBy.query);
+            }
+            return;
+        } else if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+            validateStartTs((io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode);
+        }
+        LogUtils.info(log, "flashback query tso:{}", pointTs);
+    }
+
+    private void validateStartTs(io.dingodb.calcite.grammar.dql.SqlSelect sqlNode) {
+        io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = sqlNode;
         if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
             FlashBackSqlIdentifier flashBackSqlIdentifier = (FlashBackSqlIdentifier) sqlSelect.getFrom();
             LogUtils.info(log, "flashback query str:{}", flashBackSqlIdentifier.flashBackTimeStr);
@@ -603,8 +618,11 @@ public final class DingoDriverParser extends DingoParser {
         if (getGcLifeTime() > pointTs) {
             throw DingoResource.DINGO_RESOURCE.invalidAsTimestampParam().ex();
         }
+        long tso = TsoService.getDefault().tso();
+        if (pointTs > tso) {
+            throw DingoErrUtil.newStdErr("cannot set read timestamp to a future time", ErrUnknown);
+        }
         this.connection.setPointTs(pointTs);
-        LogUtils.info(log, "flashback query tso:{}", pointTs);
     }
 
     public int getConcurrencyLevel() {

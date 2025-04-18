@@ -102,7 +102,7 @@ public final class ScopeVariables {
      * @return streamScan
      */
     public static boolean txnScanByStream() {
-        String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "off").toString();
+        String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
         return txnScanByStream.equalsIgnoreCase("on");
     }
 

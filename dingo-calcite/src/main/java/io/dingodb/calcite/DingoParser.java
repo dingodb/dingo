@@ -88,6 +88,7 @@ import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
@@ -115,8 +116,11 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOrderBy;
+import org.apache.calcite.sql.SqlSetOperator;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -155,6 +159,7 @@ import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_F
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SPLIT_AGGREGATE_RULE;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrSetDiffTime;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 // Each sql parsing requires a new instance.
@@ -342,6 +347,28 @@ public class DingoParser {
             } else {
                 return sqlSelect.isFlashBackQuery();
             }
+        } else if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            if (sqlOrderBy.query instanceof SqlSelect) {
+                SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
+                if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                    return true;
+                } else {
+                    return sqlSelect.isFlashBackQuery();
+                }
+            }
+        } else if (sqlNode instanceof SqlBasicCall) {
+            SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
+            sqlBasicCall.getOperandList().forEach(sqlNode1 -> {
+                if (sqlNode1 instanceof SqlSelect) {
+                    SqlSelect sqlSelect = (SqlSelect) sqlNode1;
+                    if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                        throw DingoErrUtil.newStdErr(ErrSetDiffTime);
+                    } else if (sqlSelect.isFlashBackQuery()) {
+                        throw DingoErrUtil.newStdErr(ErrSetDiffTime);
+                    }
+                }
+            });
         }
         return false;
     }
