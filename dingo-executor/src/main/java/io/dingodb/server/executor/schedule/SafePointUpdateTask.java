@@ -27,42 +27,47 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public final class SafePointUpdateTask {
     public static volatile boolean isLeader;
     private static final String lockKeyStr =  "safe_point_update_" + TenantConstant.TENANT_ID;
+    private static ScheduledFuture<?> future;
+    private static ScheduledFuture<?> regionDelFuture;
+
+    public static final SafePointUpdateTask safePointUpdateTask = new SafePointUpdateTask();
 
     private SafePointUpdateTask() {
     }
 
-    public static void run() {
-        Executors.execute(lockKeyStr, () -> {
-            LockService lockService = new LockService(lockKeyStr, Configuration.coordinators());
-            try {
-                String value = DingoConfiguration.serverId() + "#" + DingoConfiguration.location();
-                LockService.Lock lock = lockService.newLock(value);
-                lock.lock();
-                isLeader = true;
-                LogUtils.info(log, "Start safe point update task.");
-                ScheduledFuture<?> future = Executors.scheduleWithFixedDelay(
-                    lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 300, TimeUnit.SECONDS
-                );
-                ScheduledFuture<?> regionDelFuture = Executors.scheduleWithFixedDelay(
-                    lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60, 60, TimeUnit.SECONDS
-                );
-                lock.watchDestroy().thenRun(() -> {
-                    future.cancel(true);
-                    regionDelFuture.cancel(true);
-                    isLeader = false;
-                    lockService.cancel();
-                    run();
-                });
-            } catch (Exception e) {
+    public static void runScheduleSafePointUpdate() {
+        isLeader = true;
+        LogUtils.info(log, "Start safe point update task.");
+        future = Executors.scheduleWithFixedDelay(
+            lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 300, TimeUnit.SECONDS
+        );
+        regionDelFuture = Executors.scheduleWithFixedDelay(
+            lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60, 60, TimeUnit.SECONDS
+        );
+    }
 
-                run();
+    public static void cancelScheduleSafePointUpdate() {
+        if (future != null) {
+            try {
+                future.cancel(true);
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
             }
-        });
+        }
+        if (regionDelFuture != null) {
+            try {
+                regionDelFuture.cancel(true);
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+        }
+        isLeader = false;
     }
 
     private static void safePointUpdate() {
@@ -70,7 +75,9 @@ public final class SafePointUpdateTask {
     }
 
     private static void gcDeleteRegion() {
-        GcService.getDefault().gcDeleteRegion();
+        synchronized (safePointUpdateTask) {
+            GcService.getDefault().gcDeleteRegion();
+        }
     }
 
 }
