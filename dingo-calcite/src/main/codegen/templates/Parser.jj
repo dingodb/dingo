@@ -8874,7 +8874,7 @@ void NonReservedKeyWord2of3() :
 // which use single-quote as the escape character.
 <DEFAULT, DQID, BTID> TOKEN :
 {
-    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''") )* <QUOTE> >
+    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''") | ("\\'") )* <QUOTE> >
 |
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
 |

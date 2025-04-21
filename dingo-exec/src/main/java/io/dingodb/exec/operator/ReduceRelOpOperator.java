@@ -28,6 +28,7 @@ import io.dingodb.exec.operator.params.ReduceRelOpParam;
 import io.dingodb.exec.utils.RelOpUtils;
 import io.dingodb.expr.rel.CacheOp;
 import io.dingodb.expr.rel.op.AggregateOp;
+import io.dingodb.expr.runtime.expr.UnaryAggExpr;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -60,6 +61,8 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
             FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
             finWithProfiles.addProfile(vertex);
         }
+        UnaryAggExpr unaryAggExpr;
+        AggregateOp aggregateOp;
         synchronized (relOp) {
             if (!(fin instanceof FinWithException)) {
                 RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());

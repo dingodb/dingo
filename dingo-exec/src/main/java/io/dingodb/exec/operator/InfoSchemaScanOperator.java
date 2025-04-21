@@ -21,6 +21,8 @@ import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.StmtSummaryMap;
+import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.DdlService;
@@ -32,6 +34,7 @@ import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TransactionService;
+import io.dingodb.verify.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -39,6 +42,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -72,13 +76,14 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getInformationStatistics();
             case "VIEWS":
                 return getView();
+            case "USER_PRIVILEGES":
+                return getUserPrivileges();
             case "EVENTS":
             case "TRIGGERS":
             case "ROUTINES":
             case "FILES":
             case "KEY_COLUMN_USAGE":
             case "COLUMN_STATISTICS":
-            case "USER_PRIVILEGES":
             case "SCHEMA_PRIVILEGES":
             case "TABLE_PRIVILEGES":
             case "COLUMN_PRIVILEGES":
@@ -474,6 +479,70 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         }
 
         return result.stream().iterator();
+    }
+
+    private static Iterator<Object[]> getUserPrivileges() {
+        Session session = SessionUtil.INSTANCE.getSession();
+        Map<Integer, String> privilegeMap = new HashMap<>();
+        privilegeMap.put(2, "SELECT");
+        privilegeMap.put(3, "INSERT");
+        privilegeMap.put(4, "UPDATE");
+        privilegeMap.put(5, "DELETE");
+        privilegeMap.put(6, "CREATE");
+        privilegeMap.put(7, "DROP");
+        privilegeMap.put(8, "RELOAD");
+        privilegeMap.put(9, "SHUTDOWN");
+        privilegeMap.put(10, "PROCESS");
+        privilegeMap.put(11, "FILE");
+        //privilegeMap.put(12, "GRANT");
+        privilegeMap.put(13, "REFERENCES");
+        privilegeMap.put(14, "INDEX");
+        privilegeMap.put(15, "ALTER");
+        privilegeMap.put(16, "SHOW DATABASE");
+        privilegeMap.put(17, "SUPER");
+        privilegeMap.put(18, "CREATE TEMPORARY TABLES");
+        privilegeMap.put(19, "LOCK TABLES");
+        privilegeMap.put(20, "EXECUTE");
+        privilegeMap.put(21, "REPLICATION SLAVE");
+        privilegeMap.put(22, "REPLICATION CLIENT");
+        privilegeMap.put(23, "CREATE VIEW");
+        privilegeMap.put(24, "SHOW VIEW");
+        privilegeMap.put(25, "CREATE ROUTINE");
+        privilegeMap.put(26, "ALTER ROUTINE");
+        privilegeMap.put(27, "CREATE USER");
+        privilegeMap.put(28, "EVENT");
+        privilegeMap.put(29, "TRIGGER");
+        privilegeMap.put(30, "CREATE TABLESPACE");
+        try {
+            String sql = "select * from mysql.user";
+            List<Object[]> users = session.executeQuery(sql);
+            return users.stream().flatMap(userRow -> {
+                List<Object[]> userPrivilegeList = new ArrayList<>();
+                String grantee = "'" + userRow[1] + "'@'" + userRow[0] + "'";
+                String isGrantee =  userRow[12] != null
+                    ? userRow[12].toString() : "N";
+
+                privilegeMap.forEach((key, value) -> {
+                    String privilege = userRow[key] != null
+                        ? userRow[key].toString() : "N";
+                    if ("Y".equalsIgnoreCase(privilege)) {
+                        Object[] userPrivileges = new Object[4];
+                        userPrivileges[0] = grantee;
+                        userPrivileges[1] = "def";
+                        userPrivileges[2] = value;
+                        userPrivileges[3] = "Y".equalsIgnoreCase(isGrantee) ? "YES" : "NO";
+                        userPrivilegeList.add(userPrivileges);
+                    }
+                });
+
+                return userPrivilegeList.stream();
+            }).iterator();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
+        return getEmpty();
     }
 
     private static Iterator<Object[]> mysqlEngineInfos() {

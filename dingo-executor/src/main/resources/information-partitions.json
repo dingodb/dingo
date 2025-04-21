@@ -4,7 +4,7 @@
       "type": "varchar",
       "precision": 512,
       "scale": -2147483648,
-      "primary": 0,
+      "primary": -1,
       "nullable": false
     },
     {
@@ -12,7 +12,7 @@
       "type": "varchar",
       "precision": 64,
       "scale": -2147483648,
-      "primary": 1,
+      "primary": -1,
       "nullable": false
     },
     {
@@ -20,7 +20,7 @@
        "type": "varchar",
        "precision": 64,
        "scale": -2147483648,
-       "primary": 2,
+       "primary": -1,
        "nullable": false
     },
    {
@@ -29,7 +29,7 @@
      "default": null,
      "precision": 64,
      "scale": -2147483648,
-     "primary": 3,
+     "primary": -1,
      "nullable": true
    },
    {
@@ -38,7 +38,7 @@
      "default": null,
      "precision": 64,
      "scale": -2147483648,
-     "primary": 4,
+     "primary": -1,
      "nullable": true
    },
    {
