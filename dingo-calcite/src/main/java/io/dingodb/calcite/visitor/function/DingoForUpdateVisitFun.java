@@ -82,6 +82,7 @@ public final class DingoForUpdateVisitFun {
                     table,
                     false,
                     forUpdate,
+                    false,
                     false
                 );
                 lockVertex = new Vertex(PESSIMISTIC_LOCK, param);

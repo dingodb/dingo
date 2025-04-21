@@ -246,7 +246,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     if (param.isDuplicateUpdate()) {
                         context.setDuplicateKey(true);
                     } else {
-                        if (!param.isReplaceInto()) {
+                        if (!param.isReplaceInto() && !param.isIgnore()) {
                             TransactionUtil.resolvePessimisticLock(
                                 param.getIsolationLevel(),
                                 txnId,
@@ -261,7 +261,19 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                                     TransactionUtil.duplicateEntryKey(CommonId.decode(tableIdByte), key, txnId) + " for key 'PRIMARY'")
                             );
                         } else {
-                            context.setReplaceIntoKey(true);
+                            if (param.isReplaceInto()) {
+                                context.setReplaceIntoKey(true);
+                            }
+                            if (param.isIgnore()) {
+                                LogUtils.info(log, "PessimisticLockInsert RESIDUAL_LOCK jobId:{}",
+                                    CommonId.decode(jobIdByte));
+                                byte[] rollBackKey = ByteUtils.getKeyByOp(
+                                    CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK,
+                                    Op.DELETE,
+                                    deadLockKeyBytes
+                                );
+                                localStore.put(new KeyValue(rollBackKey, kvKeyValue.getValue()));
+                            }
                         }
                     }
                 } else {
@@ -308,7 +320,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                         context.setDuplicateKey(getKv != null && getKv.getValue() != null);
                     }
                 }
-                if (param.isReplaceInto() && context.getIndexId() == null && !isVector && !isDocument ) {
+                if (param.isReplaceInto() && context.getIndexId() == null && !isVector && !isDocument) {
                     KeyValue kvKeyValue = kvStore.txnGet(
                         TsoService.getDefault().tso(), originalKey, param.getLockTimeOut()
                     );

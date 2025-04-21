@@ -204,7 +204,6 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     .returnValues(true)
                     .build();
                 try {
-
                     future = kvStore.txnPessimisticLockPrimaryKey(txnPessimisticLock, param.getLockTimeOut(), param.isScan(), kvKeyValue);
                 } catch (RegionSplitException e) {
                     LogUtils.error(log, e.getMessage(), e);
@@ -243,7 +242,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
 
                 if (param.isInsert()) {
                     if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
-                        if (!param.isDuplicateUpdate() && !param.isReplaceInto()) {
+                        if (!param.isDuplicateUpdate() && !param.isReplaceInto() && !param.isIgnore()) {
                             if (future != null) {
                                 future.cancel(true);
                             }
@@ -305,6 +304,15 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     );
                     LogUtils.info(log, "PessimisticLock jobId:{}", CommonId.decode(jobIdByte));
                     localStore.put(extraKeyValue);
+                    if (param.isIgnore()) {
+                        LogUtils.info(log, "PessimisticLock RESIDUAL_LOCK jobId:{}", CommonId.decode(jobIdByte));
+                        byte[] rollBackKey = ByteUtils.getKeyByOp(
+                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK,
+                            Op.DELETE,
+                            deadLockKeyBytes
+                        );
+                        localStore.put(new KeyValue(rollBackKey, kvKeyValue.get(0).getValue()));
+                    }
                 } else {
                     if (param.isInsert()) {
                         KeyValue keyValue = wrap(codec::encode).apply(newTuple);
@@ -323,7 +331,11 @@ public class PessimisticLockOperator extends SoleOutOperator {
                         localStore.put(extraKeyValue);
                     } else {
                         LogUtils.info(log, "PessimisticLock RESIDUAL_LOCK jobId:{}", CommonId.decode(jobIdByte));
-                        byte[] rollBackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, deadLockKeyBytes);
+                        byte[] rollBackKey = ByteUtils.getKeyByOp(
+                            CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK,
+                            Op.DELETE,
+                            deadLockKeyBytes
+                        );
                         localStore.put(new KeyValue(rollBackKey, null));
                     }
                 }

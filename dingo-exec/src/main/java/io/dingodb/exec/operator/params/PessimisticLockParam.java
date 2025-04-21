@@ -28,7 +28,7 @@ import lombok.Getter;
 @Getter
 @JsonTypeName("pessimistic_lock")
 @JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut",
-    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto"})
+    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore"})
 public class PessimisticLockParam extends TxnPartModifyParam {
 
     @JsonProperty("isInsert")
@@ -42,6 +42,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     private boolean forUpdate;
     @JsonProperty("isReplaceInto")
     private final boolean isReplaceInto;
+    @JsonProperty("isIgnore")
+    private final boolean isIgnore;
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -58,7 +60,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         Table table,
         boolean isDuplicateUpdate,
         boolean forUpdate,
-        boolean isReplaceInto
+        @JsonProperty("isReplaceInto") boolean isReplaceInto,
+        @JsonProperty("isReplaceInto") boolean isIgnore
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -68,6 +71,7 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.isDuplicateUpdate = isDuplicateUpdate;
         this.forUpdate = forUpdate;
         this.isReplaceInto = isReplaceInto;
+        this.isIgnore = isIgnore;
     }
     public void inc() {
         count++;
