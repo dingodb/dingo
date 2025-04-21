@@ -3,7 +3,7 @@
       "name": "VARIABLE_NAME",
       "type": "varchar",
       "scale": -2147483648,
-      "primary": 0,
+      "primary": -1,
       "nullable": false
     },
     {
