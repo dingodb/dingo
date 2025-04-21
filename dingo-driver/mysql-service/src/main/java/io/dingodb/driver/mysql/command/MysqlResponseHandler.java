@@ -162,6 +162,16 @@ public final class MysqlResponseHandler {
                 } else if (typeName.equalsIgnoreCase("ARRAY")) {
                     val = getArrayObject(mysqlConnection, val);
                 }
+
+                if(typeName.equalsIgnoreCase("FLOAT")) {
+                    if(val != null) {
+                        val = (float)Math.round((float)val * (double)10000) / (double)10000.0;
+                    }
+                } else if(typeName.equalsIgnoreCase("DOUBLE")) {
+                    if(val != null) {
+                        val = (double)Math.round((double)val * (double)10000) / (double)10000.0;
+                    }
+                }
                 resultSetRowPacket.addColumnValue(val);
             }
             resultSetRowPacket.write(buffer);
