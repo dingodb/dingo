@@ -2200,6 +2200,8 @@ void AddSelectItem(List<SqlNode> list) :
             // string literal.
             LOOKAHEAD(1)
             id = SimpleIdentifierFromStringLiteral()
+        |
+           <FILTER> { id = new SqlIdentifier(this.token.image, span().end(e)); }
         )
         { list.add(SqlStdOperatorTable.AS.createCall(span().end(e), e, id)); }
     |   { list.add(e); }

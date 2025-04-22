@@ -77,6 +77,7 @@ public final class PrepareMeta {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         synchronizeTenant();
         if (infoSchemaService.prepareStarted()) {
+            preCheckInfoSchema();
             return;
         }
         infoSchemaService.prepareStart();
@@ -183,6 +184,11 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, "DINGO_MDL_INFO", BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, "SEQUENCE", BASE_TABLE, TXN_LSM, DYNAMIC);
         LogUtils.info(log, "prepare mysql meta table done");
+    }
+
+    public static void preCheckInfoSchema() {
+        initTableByTemplate("INFORMATION_SCHEMA", "KEYWORDS", SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate("INFORMATION_SCHEMA", "REFERENTIAL_CONSTRAINTS", SYSTEM_VIEW, TXN_LSM, FIXED);
     }
 
     public static void prepareInformation() {
@@ -555,6 +561,12 @@ public final class PrepareMeta {
                 break;
             case "PLUGINS":
                 jsonFile = "/information-plugins.json";
+                break;
+            case "KEYWORDS":
+                jsonFile = "/information-keywords.json";
+                break;
+            case "REFERENTIAL_CONSTRAINTS":
+                jsonFile = "/information-referentialConstraints.json";
                 break;
             case "DINGO_DDL_JOB":
                 jsonFile = "/mysql-dingoDdlJob.json";

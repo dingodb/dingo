@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
+import io.dingodb.common.log.LogUtils;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,6 +38,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeUtil;

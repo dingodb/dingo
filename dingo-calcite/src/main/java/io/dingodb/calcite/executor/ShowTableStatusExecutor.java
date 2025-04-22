@@ -37,7 +37,7 @@ public class ShowTableStatusExecutor extends QueryExecutor {
 
     public ShowTableStatusExecutor(String schema, String sqlLikePattern) {
         this.schema = schema;
-        if (sqlLikePattern.contains("\\_")) {
+        if (sqlLikePattern != null && sqlLikePattern.contains("\\_")) {
             sqlLikePattern = sqlLikePattern.replace("\\", "");
         }
         this.sqlLikePattern = sqlLikePattern;
@@ -55,11 +55,11 @@ public class ShowTableStatusExecutor extends QueryExecutor {
                 return tables.stream()
                     .filter(table -> (StringUtils.isBlank(sqlLikePattern)
                         || SqlLikeUtils.like(table.getName(), sqlLikePattern)))
-                    .map(table -> new Object[] {table.getName(), table.getEngine(), table.getVersion(),
+                    .map(table -> new Object[] {table.getName().toLowerCase(), table.getEngine(), table.getVersion(),
                         table.rowFormat, null, 0, 0, 16434816, 0, 0, null,
                         DataTimeUtils.getTimeStamp(new Timestamp(table.getCreateTime())), null, null,
                         table.getCollate(), null, null, ""})
-                    .collect(Collectors.toList()).stream();
+                    .toList().stream();
             })
             .iterator();
     }
