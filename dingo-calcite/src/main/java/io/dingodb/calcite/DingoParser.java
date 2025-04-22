@@ -389,6 +389,14 @@ public class DingoParser {
         return false;
     }
 
+    public static boolean getIgnore(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlInsert) {
+            SqlInsert sqlInsert = (SqlInsert) sqlNode;
+            return sqlInsert.isIgnore();
+        }
+        return false;
+    }
+
     /**
      * Optimize a {@link RelNode} tree.
      *

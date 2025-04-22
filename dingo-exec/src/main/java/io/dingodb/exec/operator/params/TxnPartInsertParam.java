@@ -33,7 +33,7 @@ import java.util.List;
 @Getter
 @JsonTypeName("txn_insert")
 @JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut",
-    "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "isReplaceInto"})
+    "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore"})
 public class TxnPartInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("hasAutoInc")
@@ -49,7 +49,9 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     private TupleMapping updateMapping;
     private List<SqlExpr> updates;
     @JsonProperty("isReplaceInto")
-    private boolean isReplaceInto;
+    private final boolean isReplaceInto;
+    @JsonProperty("isIgnore")
+    private final boolean isIgnore;
 
     public TxnPartInsertParam(
         @JsonProperty("table") CommonId tableId,
@@ -67,7 +69,8 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
         TupleMapping updateMapping,
         List<SqlExpr> updates,
-        boolean isReplaceInto
+        @JsonProperty("isReplaceInto") boolean isReplaceInto,
+        @JsonProperty("isIgnore") boolean isIgnore
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -77,6 +80,7 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         this.updateMapping = updateMapping;
         this.updates = updates;
         this.isReplaceInto = isReplaceInto;
+        this.isIgnore = isIgnore;
     }
 
     @Override

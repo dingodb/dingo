@@ -207,10 +207,14 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param.inc();
                         }
                     } else {
-                        if (!param.isReplaceInto()) {
+                        if (!param.isReplaceInto() && !param.isIgnore()) {
                             throw new DuplicateEntryException("Duplicate entry "
                                 + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                         } else {
+                            if (param.isIgnore()) {
+                                profile.time(start - System.currentTimeMillis());
+                                return true;
+                            }
                             byte[] extraKey = ByteUtils.encode(
                                 CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
                                 key,
@@ -312,6 +316,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
                 );
                 if (localStore.get(rollBackKey) != null) {
+                    if (param.isIgnore()) {
+                        profile.time(start - System.currentTimeMillis());
+                        return true;
+                    }
                     localStore.delete(rollBackKey);
                 }
                 // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
@@ -401,6 +409,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             len);
                         op = Op.PUT;
                     } else {
+                        if (param.isIgnore()) {
+                            profile.time(start - System.currentTimeMillis());
+                            return true;
+                        }
                         if (!param.isReplaceInto()) {
                             throw new DuplicateEntryException("Duplicate entry "
                                 + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
@@ -414,7 +426,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     op = Op.DELETE;
                 }
             } else {
-                if (!context.isDuplicateKey() && (param.isCheckInPlace() || param.isReplaceInto())) {
+                if (!context.isDuplicateKey() && (param.isCheckInPlace()
+                    || param.isReplaceInto() || param.isIgnore())) {
                     byte[] originalKey;
                     if (isVector) {
                         originalKey = codec.encodeKeyPrefix(newTuple, 1);
@@ -432,6 +445,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param.getLockTimeOut()
                     );
                     if (kvKeyValue != null && kvKeyValue.getValue() != null) {
+                        if (param.isIgnore()) {
+                            profile.time(start - System.currentTimeMillis());
+                            return true;
+                        }
                         if (!param.isReplaceInto()) {
                             throw new DuplicateEntryException("Duplicate entry " +
                                 TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");

@@ -37,6 +37,9 @@ public class SqlInsert extends org.apache.calcite.sql.SqlInsert {
     @Getter
     private boolean isReplace;
 
+    @Getter
+    private boolean isIgnore;
+
 
     public SqlInsert(SqlParserPos pos,
                      SqlNodeList keywords,
@@ -55,11 +58,13 @@ public class SqlInsert extends org.apache.calcite.sql.SqlInsert {
                      @Nullable SqlNodeList columnList,
                      @Nullable SqlNodeList sourceExpressionList,
                      @Nullable SqlNodeList targetColumnList,
-                     boolean isReplace) {
+                     boolean isReplace,
+                     boolean isIgnore) {
         super(pos, keywords, targetTable, source, columnList);
         this.sourceExpressionList = sourceExpressionList;
         this.targetColumnList2 = targetColumnList;
         this.isReplace = isReplace;
+        this.isIgnore = isIgnore;
     }
 
 }

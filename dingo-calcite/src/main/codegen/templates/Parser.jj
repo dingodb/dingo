@@ -1904,6 +1904,7 @@ SqlNode SqlInsert() :
     SqlNodeList targetColumnList;
     SqlIdentifier id;
     boolean isReplace = false;
+    boolean isIgnore = false;
 }
 {
     (
@@ -1919,6 +1920,7 @@ SqlNode SqlInsert() :
     SqlInsertKeywords(keywords) {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
+    [ <IGNORE> {isIgnore = true;}]
     <INTO> tableName = CompoundTableIdentifier()
     ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
     [ LOOKAHEAD(5) tableRef = ExtendTable(tableRef) ]
@@ -1951,7 +1953,7 @@ SqlNode SqlInsert() :
     ]
     {
         return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList, sourceExpressionList, targetColumnList, isReplace);
+            columnList, sourceExpressionList, targetColumnList, isReplace, isIgnore);
     }
 }
 
@@ -2015,7 +2017,7 @@ SqlNode SqlReplace() :
     ]
     {
         return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList, sourceExpressionList, targetColumnList, isReplace);
+            columnList, sourceExpressionList, targetColumnList, isReplace, false);
     }
 }
 
