@@ -117,7 +117,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
             lookupCodec = CodecService.getDefault().createKeyValueCodec(
                 table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         } else {
-            this.mapList = index.getColumns().stream().map(table.columns::indexOf).collect(Collectors.toList());
+            this.mapList = table.getColumnIndices2(index.getColumns());
         }
         this.otherRelOp = otherRelOp;
     }

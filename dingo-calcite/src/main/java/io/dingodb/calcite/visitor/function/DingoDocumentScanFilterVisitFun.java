@@ -68,8 +68,8 @@ public final class DingoDocumentScanFilterVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges = metaService
             .getRangeDistribution(idxId);
 
-        List<Column> columnNames = indexTd.getColumns();
-        List<Integer> indexSelectionList = columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList());
+        List<String> columnNames = indexTd.getColumns().stream().map(Column::getName).toList();
+        List<Integer> indexSelectionList = td.getColumnIndices(columnNames);
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(visitor.getPointTs(), rel.getTable());
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList

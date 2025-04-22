@@ -60,6 +60,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
@@ -96,6 +97,7 @@ public final class DingoGetByIndexMergeVisitFun {
                 indexTd.getCodecVersion(), indexTd.version, indexTd.tupleType(), indexTd.keyMapping()
             );
             List<ByteArrayUtils.ComparableByteArray> keyList = new ArrayList<>();
+            List<String> originNames = td.columns.stream().map(Column::getName).toList();
             for (Object[] keyTuple : keyTuples) {
                 byte[] keys = codec.encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple));
                 if (keyList.contains(new ByteArrayUtils.ComparableByteArray(keys))) {
@@ -130,10 +132,7 @@ public final class DingoGetByIndexMergeVisitFun {
                 distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
                 task.putVertex(distributionVertex);
 
-                List<Column> columnNames = indexTd.getColumns();
-                TupleMapping tupleMapping = TupleMapping.of(
-                    columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList())
-                );
+                TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices2(indexTd.getColumns()));
                 lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
                 long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());

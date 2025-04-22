@@ -71,6 +71,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
 
@@ -95,8 +96,7 @@ public final class DingoIndexRangeScanVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges = metaService
             .getRangeDistribution(idxId);
 
-        List<Column> columnNames = indexTd.getColumns();
-        List<Integer> indexSelectionList = columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = td.getColumnIndices2(indexTd.getColumns());
 
         RexNode rexFilter = rel.getFilter();
 

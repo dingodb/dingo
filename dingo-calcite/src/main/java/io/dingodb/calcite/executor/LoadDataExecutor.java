@@ -792,7 +792,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 hasHide = true;
                 break;
             } else if (colDef.getState() == 1 && colDef.isAutoIncrement()) {
-                incColIdx = table.getColumns().indexOf(colDef);
+                incColIdx = table.getColumnIndex(colDef);
                 hasInc = true;
                 break;
             }

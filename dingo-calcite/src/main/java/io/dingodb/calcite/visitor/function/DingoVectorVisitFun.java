@@ -141,8 +141,8 @@ public final class DingoVectorVisitFun {
         List<Integer> indexLookupSelectionList = columnNames
             .stream()
             .filter(col -> !col.isPrimary() && col.getState() == 1)
-            .map(dingoTable.getTable().columns::indexOf)
-            .collect(Collectors.toList());
+            .map($ -> dingoTable.getTable().getColumnIndex($))
+            .toList();
         priKeySecList.addAll(indexLookupSelectionList);
         boolean isLookUp = isNeedLookUp(
             resultSelection,

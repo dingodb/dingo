@@ -130,7 +130,7 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
                     Val val1 = (Val) expr1.getOperand1();
                     int ix = (int) val1.getValue();
                     Column column = table.getColumns().get(ix);
-                    int indexIx = indexTable.getColumns().indexOf(column);
+                    int indexIx = indexTable.getColumnIndex(column);
                     RexInputRef rexInputRef = new RexInputRef(
                         indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
                     );

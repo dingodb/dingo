@@ -60,6 +60,7 @@ import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
 import static io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun.getTargetVector;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
 @Value.Enclosing
@@ -296,6 +297,7 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable, int dimension) {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
+        boolean caseSensitive = caseSensitive();
         for (IndexTable index : indexes) {
 
             if (!index.getIndexType().isVector) {
@@ -312,9 +314,11 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             int vectorIndex = 0;
             for (int i = 0; i < dingoTable.getTable().getColumns().size(); i ++) {
                 Column column = dingoTable.getTable().getColumns().get(i);
-                if (column.getName().equals(vectorIdColName)) {
+                if (caseSensitive ? column.getName().equals(vectorIdColName)
+                    : column.getName().equalsIgnoreCase(vectorIdColName)) {
                     vectorIdIndex = i;
-                } else if (column.getName().equals(vectorColName)) {
+                } else if (caseSensitive ? column.getName().equals(vectorColName)
+                    : column.getName().equalsIgnoreCase(vectorColName)) {
                     vectorIndex = i;
                 }
             }

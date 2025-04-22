@@ -98,7 +98,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         Integer[] mappings = new Integer[selection.size()];
         for (int i = 0; i < selection.size(); i ++) {
             Column column = td.getColumns().get(selection.get(i));
-            mappings[i] = index.getColumns().indexOf(column);
+            mappings[i] = index.getColumnIndex(column);
         }
         return Arrays.asList(mappings);
     }
