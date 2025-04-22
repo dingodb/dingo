@@ -277,7 +277,7 @@ public class MetaCache {
                 } else {
                     LogUtils.error(log, "getTableByIs is not null, tableId:{}", tableId);
                 }
-                return null;
+                return new TreeMap<>();
             }
             TableDefinition tableDefinition = tableWithId.getTableDefinition();
             List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
@@ -306,7 +306,7 @@ public class MetaCache {
             return result;
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            return null;
+            return new TreeMap<>();
         }
     }
 
@@ -387,6 +387,9 @@ public class MetaCache {
     @SneakyThrows
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
         if (id == null) {
+            return new TreeMap<>();
+        }
+        if (id.seq == 60081) {
             return new TreeMap<>();
         }
         return distributionCache.get(id);
