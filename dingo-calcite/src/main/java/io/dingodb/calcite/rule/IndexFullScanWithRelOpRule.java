@@ -63,9 +63,7 @@ public class IndexFullScanWithRelOpRule extends RelRule<RelRule.Config> {
 
         RelOp filterRelOp = null;
         RexNode rexFilter = indexFullScan.getFilter();
-        List<Column> columnNames = indexFullScan.getIndexTable().getColumns();
-        List<Integer> indexSelectionList = columnNames
-            .stream().map(table.columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = table.getColumnIndices2(indexFullScan.getIndexTable().getColumns());
         Mapping mapping = Mappings.target(indexSelectionList, table.getColumns().size());
         if (indexFullScan.getFilter() != null) {
             rexFilter = RexUtil.apply(mapping, rexFilter);
@@ -82,7 +80,7 @@ public class IndexFullScanWithRelOpRule extends RelRule<RelRule.Config> {
             Expr[] exprs = new Expr[mappings.length];
             for (int i = 0; i < mappings.length; i ++) {
                 Column column = table.getColumns().get(mappings[i]);
-                int indexIx = indexFullScan.getIndexTable().getColumns().indexOf(column);
+                int indexIx = indexFullScan.getIndexTable().getColumnIndex(column);
                 RexInputRef rexInputRef = new RexInputRef(indexIx,
                     indexFullScan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
                 exprs[i] = RexConverter.convert(rexInputRef);

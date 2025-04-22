@@ -65,6 +65,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 @Slf4j
 public class DingoGetByIndexRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -115,7 +117,6 @@ public class DingoGetByIndexRule extends ConverterRule {
     ) {
         Set<Map<Integer, RexNode>> set = mapSet.getSet();
         if (set != null) {
-            List<Column> columnList;
             List<Integer> indices;
             Map<CommonId, Set> indexMap = new HashMap<>();
             boolean matchIndex;
@@ -133,8 +134,7 @@ public class DingoGetByIndexRule extends ConverterRule {
                     if (!index.getValue().visible) {
                         continue;
                     }
-                    columnList = index.getValue().getColumns();
-                    indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
+                    indices = td.getColumnIndices2(index.getValue().columns);
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                     for (int k : map.keySet()) {
                         if (selection != null && k >= selection.size()) {

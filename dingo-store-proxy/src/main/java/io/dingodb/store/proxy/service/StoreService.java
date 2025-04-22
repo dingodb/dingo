@@ -358,7 +358,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     Column primaryCol = index.getColumns().get(0);
                     schema.setIsKey(true);
                     schema.setAllowNull(false);
-                    long id = Long.parseLong(String.valueOf(record[table.getColumns().indexOf(primaryCol)]));
+                    long id = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryCol)]));
 
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0L, singletonList(schema));
                     DingoCommonId regionId;
@@ -376,7 +376,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                 } else {
                     List<DingoSchema> schemas = index.keyColumns().stream()
                         .map(k -> io.dingodb.store.proxy.service.CodecService.createSchemaForType(
-                            k.getType(), table.getColumns().indexOf(k), k.isPrimary()
+                            k.getType(), table.getColumnIndex(k), k.isPrimary()
                         )).collect(Collectors.toList());
                     DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0L, schemas);
                     byte[] bytes = indexCodec.encodeKey(record);
@@ -416,10 +416,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0L, singletonList(schema));
 
                     long newLongId = Long.parseLong(
-                        String.valueOf(newRecord[table.getColumns().indexOf(primaryKey)])
+                        String.valueOf(newRecord[table.getColumnIndex(primaryKey)])
                     );
                     long oldLongId = Long.parseLong(
-                        String.valueOf(oldRecord[table.getColumns().indexOf(primaryKey)])
+                        String.valueOf(oldRecord[table.getColumnIndex(primaryKey)])
                     );
                     if (newLongId != oldLongId) {
                         NavigableMap<ComparableByteArray, io.dingodb.common.partition.RangeDistribution> distribution =
@@ -439,7 +439,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
                     List<DingoSchema> schemas = new ArrayList<>();
                     for (Column column : index.getColumns()) {
                         schemas.add(io.dingodb.store.proxy.service.CodecService.createSchemaForType(
-                            column.getType(), table.getColumns().indexOf(column), column.isPrimary()
+                            column.getType(), table.getColumnIndex(column), column.isPrimary()
                         ));
                     }
                     DingoKeyValueCodec indexCodec = new DingoKeyValueCodec(0L, schemas);
@@ -824,7 +824,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             List<DingoSchema> schemas = new ArrayList<>();
             for (Column column : index.getColumns()) {
                 schemas.add(io.dingodb.store.proxy.service.CodecService.createSchemaForType(
-                    column.getType(), table.getColumns().indexOf(column), column.isPrimary())
+                    column.getType(), table.getColumnIndex(column), column.isPrimary())
                 );
             }
 
@@ -859,7 +859,7 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             schema.setIsKey(true);
             schema.setAllowNull(primaryKey.isNullable());
 
-            long longId = Long.parseLong(String.valueOf(record[table.getColumns().indexOf(primaryKey)]));
+            long longId = Long.parseLong(String.valueOf(record[table.getColumnIndex(primaryKey)]));
 
             DingoKeyValueCodec vectorCodec = new DingoKeyValueCodec(0L, singletonList(schema));
             DingoCommonId regionId;
@@ -871,10 +871,10 @@ public final class StoreService implements io.dingodb.store.api.StoreService {
             Column value = index.getColumns().get(1);
             Vector vector;
             if (value.getElementTypeName().equalsIgnoreCase("FLOAT")) {
-                List<Float> values = (List<Float>) record[table.getColumns().indexOf(value)];
+                List<Float> values = (List<Float>) record[table.getColumnIndex(value)];
                 vector = Vector.builder().floatValues(values).valueType(ValueType.FLOAT).build();
             } else {
-                List<byte[]> values = (List<byte[]>) record[table.getColumns().indexOf(value)];
+                List<byte[]> values = (List<byte[]>) record[table.getColumnIndex(value)];
                 vector = Vector.builder().binaryValues(values).valueType(ValueType.UINT8).build();
             }
             VectorTableData tableData;

@@ -429,9 +429,9 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
             int documentIndex = 0;
             for (int i = 0; i < dingoTable.getTable().getColumns().size(); i ++) {
                 Column column = dingoTable.getTable().getColumns().get(i);
-                if (column.getName().equals(documentIdColName)) {
+                if (column.getName().equalsIgnoreCase(documentIdColName)) {
                     documentIdIndex = i;
-                } else if (column.getName().equals(documentColName)) {
+                } else if (column.getName().equalsIgnoreCase(documentColName)) {
                     documentIndex = i;
                 }
             }

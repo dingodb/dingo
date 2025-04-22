@@ -90,7 +90,7 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
                     int ix = getIndexByExpr(indexOpExpr);
                     if (ix >= 0) {
                         Column column = table.getColumns().get(ix);
-                        return indexTable.getColumns().contains(column);
+                        return indexTable.getColumn(column.getName()) != null;
                     }
                     return false;
                 })).collect(Collectors.toList());
@@ -107,7 +107,7 @@ public class DingoFullScanProjectRule extends RelRule<RelRule.Config> {
             Val val1 = (Val) expr1.getOperand1();
             int ix = (int) val1.getValue();
             Column column = table.getColumns().get(ix);
-            int indexIx = indexTable.getColumns().indexOf(column);
+            int indexIx = indexTable.getColumnIndex(column);
             RexInputRef rexInputRef = new RexInputRef(
                 indexIx, scan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
             );

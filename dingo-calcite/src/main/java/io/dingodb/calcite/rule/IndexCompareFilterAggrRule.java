@@ -96,7 +96,7 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
             if (indexTable == null) {
                 return;
             }
-            int indexIx = indexTable.getColumns().indexOf(column);
+            int indexIx = indexTable.getColumnIndex(column);
             Column indexCol = indexTable.getColumns().get(indexIx);
             boolean rangeScan = indexCol.getPrimaryKeyIndex() == 0;
             RexInputRef rexInputRef = new RexInputRef(indexIx,
@@ -108,10 +108,7 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
             RelOp op = new TandemPipeCacheOp(filterOp1, (CacheOp) tandemPipeCacheOp.getOutput());
 
             RexNode rexFilter = dingoScanWithRelOp.getFilter();
-            List<Column> columnNames = indexTable.getColumns();
-            List<Integer> indexSelectionList = columnNames.stream()
-                .map(dingoTable.getTable().columns::indexOf)
-                .collect(Collectors.toList());
+            List<Integer> indexSelectionList = dingoTable.getTable().getColumnIndices2(indexTable.getColumns());
             Mapping mapping = Mappings.target(indexSelectionList,
                 dingoTable.getTable().getColumns().size());
             if (rexFilter != null) {
@@ -173,7 +170,7 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
                 Val val1 = (Val) expr1.getOperand1();
                 int ix = (int) val1.getValue();
                 Column column = dingoTable.getTable().getColumns().get(ix);
-                int indexIx = indexTable.getColumns().indexOf(column);
+                int indexIx = indexTable.getColumnIndex(column);
                 Column ixCol = indexTable.getColumns().get(indexIx);
                 if (!rangeScan.get()) {
                     rangeScan.set(ixCol.primaryKeyIndex == 0);
@@ -188,10 +185,7 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
             RelOp op = new TandemPipeCacheOp(new FilterOp(variadicOpExpr1), (CacheOp) tandemPipeCacheOp.getOutput());
 
             RexNode rexFilter = dingoScanWithRelOp.getFilter();
-            List<Column> columnNames = indexTable.getColumns();
-            List<Integer> indexSelectionList = columnNames.stream()
-                .map(dingoTable.getTable().columns::indexOf)
-                .collect(Collectors.toList());
+            List<Integer> indexSelectionList = dingoTable.getTable().getColumnIndices2(indexTable.getColumns());
             Mapping mapping = Mappings.target(indexSelectionList,
                 dingoTable.getTable().getColumns().size());
             if (rexFilter != null) {
