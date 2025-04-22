@@ -25,6 +25,7 @@ import io.dingodb.partition.PartitionService;
 import java.util.Arrays;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.TreeSet;
 
 public class RangePartitionService implements PartitionService {
 
@@ -49,6 +50,9 @@ public class RangePartitionService implements PartitionService {
         boolean withEnd,
         NavigableMap<ComparableByteArray, RangeDistribution> ranges
     ) {
+        if (ranges.isEmpty()) {
+            return new TreeSet<>();
+        }
         if (startKey == null) {
             startKey = ranges.firstEntry().getValue().getStartKey();
             withStart = true;

@@ -2260,12 +2260,17 @@ void AddSelectItem(List<SqlNode> list) :
     (
         [ <AS> ]
         (
+            LOOKAHEAD(2)
             id = SimpleIdentifier()
         |
             // Mute the warning about ambiguity between alias and continued
             // string literal.
             LOOKAHEAD(1)
             id = SimpleIdentifierFromStringLiteral()
+        |
+           id = ReservedFunctionName()
+        |
+           <FILTER> { id = new SqlIdentifier(unquotedIdentifier(), getPos()); }
         )
         { list.add(SqlStdOperatorTable.AS.createCall(span().end(e), e, id)); }
     |   { list.add(e); }
@@ -7500,6 +7505,7 @@ SqlNode NamedFunctionCall() :
         call = withinGroup(call)
     ]
     [
+        LOOKAHEAD(2)
         <FILTER> { filterSpan = span(); }
         <LPAREN>
         <WHERE>
