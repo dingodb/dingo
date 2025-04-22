@@ -1,0 +1,90 @@
+[
+  {
+    "name": "CONSTRAINT_CATALOG",
+    "type": "varchar",
+    "precision": 512,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "CONSTRAINT_SCHEMA",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "CONSTRAINT_NAME",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "UNIQUE_CONSTRAINT_CATALOG",
+    "type": "varchar",
+    "precision": 512,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "UNIQUE_CONSTRAINT_SCHEMA",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "UNIQUE_CONSTRAINT_NAME",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": true
+  },
+  {
+    "name": "MATCH_OPTION",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "UPDATE_RULE",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "DELETE_RULE",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "TABLE_NAME",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  },
+  {
+    "name": "REFERENCED_TABLE_NAME",
+    "type": "varchar",
+    "precision": 64,
+    "scale": -2147483648,
+    "primary": -1,
+    "nullable": false
+  }
+]
