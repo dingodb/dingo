@@ -228,7 +228,6 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         List<String> targetColumnNames
     ) {
         final Map<String, RexNode> nameToNameMap = new HashMap<>();
-        int j = 0;
 
         final List<ColumnStrategy> strategies = targetTable.getColumnStrategies();
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
@@ -240,7 +239,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                     break;
                 default:
                     nameToNameMap.put(targetColumnName,
-                        rexBuilder.makeFieldAccess(sourceRef, j++));
+                        rexBuilder.makeFieldAccess(sourceRef, i));
             }
         }
         return createBlackboard(null, nameToNameMap, false);
