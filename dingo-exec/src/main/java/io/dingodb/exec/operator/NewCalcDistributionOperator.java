@@ -108,17 +108,23 @@ public class NewCalcDistributionOperator extends SourceOperator {
             }
         }
         boolean parallel = Utils.parallel(param.getKeepOrder());
-        if (!parallel || distributions.size() == 1) {
-            for (RangeDistribution distribution : distributions) {
-                if (log.isTraceEnabled()) {
-                    LogUtils.trace(log, "Push distribution: {}", distribution);
-                }
-                context.setDistribution(distribution);
-                if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                    break;
-                }
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        boolean flag = (!parallel || distributions.size() == 1);
+        while (retry-- > 0 && flag) {
+            try {
+                push(context, vertex, distributions);
+                break;
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, e.getMessage());
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> newDistribution =
+                    MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                param.setRangeDistribution(newDistribution);
+                distributions = getRangeDistributions(param);
+                flag = (distributions.size() == 1 || !parallel);
             }
-        } else {
+        }
+        if (!flag || distributions.size() > 1) {
             try {
                 int concurrencyLevel = param.getConcurrencyLevel();
                 Set<CompletableFuture<Boolean>> futures = new HashSet<>(concurrencyLevel);
@@ -143,6 +149,20 @@ public class NewCalcDistributionOperator extends SourceOperator {
             }
         }
         return false;
+    }
+
+    private static void push(Context context,
+                             @NonNull Vertex vertex,
+                             Set<RangeDistribution> distributions) {
+        for (RangeDistribution distribution : distributions) {
+            if (log.isTraceEnabled()) {
+                LogUtils.trace(log, "Push distribution: {}", distribution);
+            }
+            context.setDistribution(distribution);
+            if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                break;
+            }
+        }
     }
 
     private static CompletableFuture<Boolean> push(
