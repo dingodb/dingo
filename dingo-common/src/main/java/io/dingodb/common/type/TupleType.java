@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.type.DecimalType;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
@@ -50,7 +51,20 @@ public class TupleType extends AbstractDingoType {
         super();
         this.fields = fields;
         setElementIds();
-        type = Types.tuple(Arrays.stream(fields).map(DingoType::getType).toArray(Type[]::new));
+        type = Types.tuple(Arrays.stream(fields).map(
+            item -> {
+                if(item instanceof io.dingodb.common.type.scalar.DecimalType) {
+                    DecimalType decType =  Types.getDecimalType();
+                    long precision = ((io.dingodb.common.type.scalar.DecimalType)item).getPrecision();
+                    long scale = ((io.dingodb.common.type.scalar.DecimalType)item).getScale();
+                    decType.setPrecision(precision);
+                    decType.setScale(scale);
+                    return decType;
+                } else {
+                    return item.getType();
+                }
+            }
+        ).toArray(Type[]::new));
     }
 
     private void setElementIds() {
