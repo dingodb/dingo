@@ -15,6 +15,7 @@
  */
 
 plugins {
+    id 'application'
     id 'org.springframework.boot' version '2.5.15'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
@@ -22,10 +23,8 @@ plugins {
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'io.dingodb.proxy.DingoApplication'
-    }
+application {
+    getMainClass().set('io.dingodb.proxy.DingoApplication')
 }
 
 dependencies {
@@ -73,6 +72,12 @@ dependencies {
 
 bootJar.dependsOn([
     ':dingo-client:fatJar',
+    ':dingo-net-api:jar',
+    ':dingo-net-netty:jar',
+    ':dingo-common:jar',
+    ':dingo-meta-api:jar',
+    ':dingo-verify:jar',
+    ':dingo-client:jar'
 ])
 
 protobuf {
