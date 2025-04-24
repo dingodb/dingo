@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.StringSchema;
@@ -37,6 +38,11 @@ public class DecimalType extends AbstractScalarType {
     @JsonCreator
     public DecimalType(@JsonProperty("nullable") boolean nullable) {
         super(Types.DECIMAL, nullable);
+    }
+
+    @Override
+    public Type getType() {
+        return Types.DECIMAL;
     }
 
     @Override
