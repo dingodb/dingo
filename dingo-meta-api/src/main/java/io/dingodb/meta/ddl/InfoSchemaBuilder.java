@@ -299,8 +299,10 @@ public class InfoSchemaBuilder {
             } else {
                 table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableName());
             }
-            if (table == null && diff.getType() != ActionType.ActionTruncateTable) {
-                LogUtils.error(log, "applyCreateTable error, table is null,diff:{}", diff);
+            if (table == null) {
+                if (diff.getType() != ActionType.ActionTruncateTable) {
+                    LogUtils.error(log, "applyCreateTable error, table is null,diff:{}", diff);
+                }
                 return Pair.of(new ArrayList<>(), null);
             }
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
