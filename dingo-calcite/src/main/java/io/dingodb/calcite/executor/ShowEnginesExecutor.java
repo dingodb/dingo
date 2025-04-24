@@ -31,7 +31,7 @@ public class ShowEnginesExecutor extends QueryExecutor {
     @Override
     public Iterator getIterator() {
         List<Object[]> engineList = new ArrayList<>();
-        engineList.add(new Object[]{"ENG_ROCKSDB", "DEFAULT",
+        engineList.add(new Object[]{"InnoDB", "DEFAULT",
             "Supports transactions, row-level locking", "YES", "NO", "YES"});
         return engineList.iterator();
     }
