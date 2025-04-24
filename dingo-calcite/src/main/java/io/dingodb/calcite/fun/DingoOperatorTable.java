@@ -24,6 +24,7 @@ import io.dingodb.exec.fun.DateFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.StrToDateFun;
+import io.dingodb.exec.fun.ValuesFun;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
@@ -288,13 +289,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(
-            StrToDateFun.NAME,
-            ReturnTypes.DATE,
-            DingoInferTypes.VARCHAR1024_VARCHAR1024,
-            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
-            SqlFunctionCategory.NUMERIC
-        );
-        registerFunction(
             DateFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.TIMESTAMP_VARCHAR1024,
@@ -305,18 +299,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ),
             SqlFunctionCategory.STRING
         );
-
-//        registerFunction(
-//            ConcatFun.NAME,
-//            ReturnTypes.VARCHAR_2000_NULLABLE,
-//            DingoInferTypes.VARCHAR1024_VARCHAR1024_VARCHAR1024,
-//            OperandTypes.or(
-//                OperandTypes.STRING,
-//                OperandTypes.STRING,
-//                OperandTypes.STRING
-//            ),
-//            SqlFunctionCategory.STRING
-//        );
 
         // special
         registerFunction(
@@ -472,6 +454,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DingoInferTypes.VARCHAR1024_VARCHAR1024,
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            ValuesFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.ANY),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.ANY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
     }
 
