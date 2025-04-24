@@ -23,6 +23,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.util.NameCaseUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.entity.Column;
@@ -122,6 +123,11 @@ public final class DefinitionMapper {
                     DingoType keyType = mapToDingoType(Objects.requireNonNull(relDataType.getKeyType()));
                     DingoType valueType = mapToDingoType(Objects.requireNonNull(relDataType.getValueType()));
                     return map(keyType, valueType, relDataType.isNullable());
+                case DECIMAL:
+                    DecimalType decType = new DecimalType(relDataType.isNullable());
+                    decType.setPrecision(relDataType.getPrecision());
+                    decType.setScale(relDataType.getScale());
+                    return decType;
                 case INTERVAL_YEAR:
                 case INTERVAL_MONTH:
                 case INTERVAL_DAY:
