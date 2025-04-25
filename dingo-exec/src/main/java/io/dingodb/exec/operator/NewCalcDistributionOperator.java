@@ -111,6 +111,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
             .find("retry", int.class), __ -> __, () -> 120);
         boolean flag = (!parallel || distributions.size() == 1);
+        boolean isSplit = false;
         while (retry-- > 0 && flag) {
             try {
                 push(context, vertex, distributions);
@@ -121,10 +122,11 @@ public class NewCalcDistributionOperator extends SourceOperator {
                     MetaService.root().getRangeDistribution(param.getTd().getTableId());
                 param.setRangeDistribution(newDistribution);
                 distributions = getRangeDistributions(param);
-                flag = (distributions.size() == 1 || !parallel);
+                isSplit = true;
+                flag = distributions.size() == 1;
             }
         }
-        if (!flag || distributions.size() > 1) {
+        if (!flag || (isSplit && distributions.size() > 1)) {
             try {
                 int concurrencyLevel = param.getConcurrencyLevel();
                 Set<CompletableFuture<Boolean>> futures = new HashSet<>(concurrencyLevel);
