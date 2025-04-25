@@ -107,10 +107,10 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
             SqlKind aggKind = aggCall.getAggregation().getKind();
             if (aggKind == SqlKind.SUM || aggKind == SqlKind.SUM0) {
                 if (aggCall.type.getFamily() != SqlTypeFamily.NUMERIC) {
-                    //throw new IllegalArgumentException(
-                    //    "Aggregation function \"" + aggKind + "\" requires numerical input but \""
-                    //        + aggCall.type + "\" was given."
-                    //);
+                    throw new IllegalArgumentException(
+                        "Aggregation function \"" + aggKind + "\" requires numerical input but \""
+                            + aggCall.type + "\" was given."
+                    );
                 }
             }
         }

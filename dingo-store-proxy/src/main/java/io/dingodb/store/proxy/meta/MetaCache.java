@@ -389,9 +389,6 @@ public class MetaCache {
         if (id == null) {
             return new TreeMap<>();
         }
-        if (id.seq == 60081) {
-            return new TreeMap<>();
-        }
         return distributionCache.get(id);
     }
 
