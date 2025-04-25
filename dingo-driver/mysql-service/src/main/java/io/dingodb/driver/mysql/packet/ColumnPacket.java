@@ -27,7 +27,7 @@ import java.io.UnsupportedEncodingException;
 @Builder
 public class ColumnPacket extends MysqlPacket {
 
-    public final String defaultColumnCharset = "GBK";
+    public final String defaultColumnCharset = "utf8";
 
     public String catalog;
     public String schema;

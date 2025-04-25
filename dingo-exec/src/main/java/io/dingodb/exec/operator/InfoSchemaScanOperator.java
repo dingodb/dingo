@@ -129,6 +129,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     List<Object[]> colRes = new ArrayList<>();
                     for (int i = 0; i < td.getColumns().size(); i++) {
                         Column column = td.columns.get(i);
+                        if (column.state == 2) {
+                            continue;
+                        }
                         String type = column.getSqlTypeName().toLowerCase();
                         if (type.equalsIgnoreCase("integer")) {
                             type = "int";
