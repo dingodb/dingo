@@ -67,6 +67,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
@@ -189,6 +190,9 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, targetColumnNames);
             rexNodeSourceExpressionListBuilder = ImmutableList.builder();
             for (SqlNode n : sqlInsert.getSourceExpressionList()) {
+                if (n.getKind() == SqlKind.LITERAL && ((SqlLiteral) n).toValue() == null) {
+                    n = SqlLiteral.createCharString(n.toString(), n.getParserPosition());
+                }
                 RexNode rn = bb.convertExpression(n);
                 rexNodeSourceExpressionListBuilder.add(rn);
             }
