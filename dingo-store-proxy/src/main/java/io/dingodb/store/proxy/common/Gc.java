@@ -21,7 +21,6 @@ import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -152,6 +151,7 @@ public class Gc {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, request
                 );
+                InfoSchemaService.root().putGlobalVariable("safepoint_ts", request.getSafePoint());
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }

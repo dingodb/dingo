@@ -82,7 +82,6 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.utils.SqlUtil;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
@@ -103,8 +102,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
-import org.apache.calcite.plan.hep.HepProgram;
-import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -113,15 +110,12 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataProvider;
-import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOrderBy;
-import org.apache.calcite.sql.SqlSetOperator;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -134,7 +128,6 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -495,9 +488,7 @@ public class DingoParser {
     }
 
     private static String processKeyWords(String sql) {
-        if (sql.contains("\\r\\n") || sql.contains("\\n")) {
-            sql = StringEscapeUtils.unescapeJson(sql);
-        }
+        sql = io.dingodb.calcite.utils.StringEscapeUtils.unescape(sql);
         if (sql.endsWith(" ")) {
             sql = sql.trim();
         }

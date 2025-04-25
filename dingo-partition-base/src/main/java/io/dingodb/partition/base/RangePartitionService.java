@@ -39,6 +39,9 @@ public class RangePartitionService implements PartitionService {
         if (key == null) {
             throw new RuntimeException("key does not allow NULLs");
         }
+        if (ranges.isEmpty()) {
+            throw new RuntimeException("ranges is empty");
+        }
         return ranges.floorEntry(new ComparableByteArray(key, 1)).getValue().id();
     }
 
