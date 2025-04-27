@@ -118,7 +118,10 @@ public final class DingoTableModifyVisitFun {
                                     isUpdate,
                                     forUpdate,
                                     replaceInto,
-                                    isIgnore
+                                    isIgnore,
+                                    false,
+                                    updateMapping,
+                                    updates
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -231,6 +234,15 @@ public final class DingoTableModifyVisitFun {
                     TupleMapping updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream()
                         .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList())
                     );
+                    boolean updatePrimaryKey = false;
+                    List<String> updateList = rel.getUpdateColumnList();
+                    TupleMapping keyMapping = td.keyMapping();
+                    List<String> keys = keyMapping.stream()
+                        .mapToObj(td.getColumns()::get)
+                        .map(Column::getName).collect(Collectors.toList());
+                    if (updateList != null && updateList.stream().anyMatch(keys::contains)) {
+                        updatePrimaryKey = true;
+                    }
                     if (transaction != null) {
                         boolean pessimisticTxn = transaction.isPessimistic();
                         if (pessimisticTxn) {
@@ -253,7 +265,12 @@ public final class DingoTableModifyVisitFun {
                                     false,
                                     forUpdate,
                                     replaceInto,
-                                    isIgnore
+                                    isIgnore,
+                                    updatePrimaryKey,
+                                    updateMapping,
+                                    rel.getSourceExpressionList().stream()
+                                        .map(SqlExprUtils::toSqlExpr)
+                                        .collect(Collectors.toList())
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -272,7 +289,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     isScan,
-                                    td
+                                    td,
+                                    updatePrimaryKey
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_UPDATE, pessimisticLockParam);
                             }
@@ -299,7 +317,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    updatePrimaryKey
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -329,7 +348,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    updatePrimaryKey
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -393,7 +413,10 @@ public final class DingoTableModifyVisitFun {
                                     false,
                                     forUpdate,
                                     replaceInto,
-                                    isIgnore
+                                    isIgnore,
+                                    false,
+                                    null,
+                                    null
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {

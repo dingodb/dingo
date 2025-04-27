@@ -163,7 +163,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                    byte[] key = wrap(codec::encodeKey).apply(tuple);
+                    byte[] key = wrap(codec::encodeKey).apply(tuple);// new index key and tuple
                     partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
                     LogUtils.info(log, "{} update lock index primary key is{} calcPartId is {}",
                         txnId,
@@ -180,7 +180,24 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             System.arraycopy(tuple, 0, dest, 0, schema.fieldCount());
             dest = (Object[]) schema.convertFrom(dest, ValueConverter.INSTANCE);
 
+            // new index key and old main table key
             byte[] key = wrap(codec::encodeKey).apply(dest);
+            if (updated && param.isUpdatePrimaryKey()) {
+                PartitionService ps = PartitionService.getService(
+                    Optional.ofNullable(param.getTable().getPartitionStrategy())
+                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                dest = newTuple;
+                oldIndexTuple = Arrays.copyOf(tuple, tupleSize);
+                key = wrap(codec::encodeKey).apply(newTuple);
+                partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
+                LogUtils.info(log, "{} update lock index primary key is{} calcPartId is {}",
+                    txnId,
+                    Arrays.toString(key),
+                    partId
+                );
+                calcPartId = true;
+                isUnique = true;
+            }
             CodecService.getDefault().setId(key, partId.domain);
             byte[] originalKey;
             if (isVector) {
@@ -209,6 +226,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             KeyValue oldKeyValue = localStore.get(lockKeyBytes);
             if (oldKeyValue == null) {
                 if (calcPartId) {
+                    // delete old key
                     resolveKeyChange(vertex, param, txnId, tableId, context.getDistribution().getId(), primaryLockKey,
                         codec, oldIndexTuple, txnIdByte, tableIdByte, jobIdByte, len, isVector, isDocument, key);
                 }
@@ -354,7 +372,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     );
                     localStore.put(extraKeyValue);
                 }
-                if (context.getIndexId() != null) {
+                if (context.getIndexId() != null || param.isUpdatePrimaryKey()) {
                     LogUtils.debug(log, "{}, txnPessimisticLock :{} , index is not null", txnId, Arrays.toString(key));
                     vertex.getOutList().forEach(o -> o.transformToNext(context, copyTuple));
                     return true;
@@ -585,7 +603,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             true
         );
         try {
-            TransactionUtil.pessimisticLock(
+            KeyValue kvKeyValue = TransactionUtil.pessimisticLock(
                 txnPessimisticLock,
                 param.getLockTimeOut(),
                 txnId,
@@ -617,34 +635,12 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             } else if (vertex.getTask().getStatus() == Status.CANCEL) {
                 throw new TaskCancelException("task is cancel");
             }
-        } catch (Throwable throwable) {
-            LogUtils.error(log, throwable.getMessage(), throwable);
-            TransactionUtil.resolvePessimisticLock(
-                param.getIsolationLevel(),
-                txnId,
-                tableId,
-                partId,
-                deadLockKeyBytes,
-                oldKey,
-                param.getStartTs(),
-                txnPessimisticLock.getForUpdateTs(),
-                true,
-                throwable
-            );
-        }
-        // get lock success, delete deadLockKey
-        localStore.delete(deadLockKeyBytes);
-        byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
-        // lockKeyValue
-        KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
-        localStore.put(lockKeyValue);
-        KeyValue kvKeyValue = null;
-        try {
-            // index use keyPrefix
-            kvKeyValue = kvStore.txnGet(TsoService.getDefault().tso(), originalKey, param.getLockTimeOut());
-        } catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
-        } finally {
+            // get lock success, delete deadLockKey
+            localStore.delete(deadLockKeyBytes);
+            byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
+            // lockKeyValue
+            KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
+            localStore.put(lockKeyValue);
             if (kvKeyValue != null && kvKeyValue.getValue() != null) {
                 // extraKeyValue
                 KeyValue extraKeyValue = new KeyValue(
@@ -673,6 +669,20 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                 );
                 localStore.put(new KeyValue(deleteKey, kvKeyValue.getValue()));
             }
+        } catch (Throwable throwable) {
+            LogUtils.error(log, throwable.getMessage(), throwable);
+            TransactionUtil.resolvePessimisticLock(
+                param.getIsolationLevel(),
+                txnId,
+                tableId,
+                partId,
+                deadLockKeyBytes,
+                oldKey,
+                param.getStartTs(),
+                txnPessimisticLock.getForUpdateTs(),
+                true,
+                throwable
+            );
         }
     }
 
