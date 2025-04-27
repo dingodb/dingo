@@ -1,0 +1,231 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-23 17:19+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/overview/What 142890373bac4ab89fe92e2548b114fd DingoDB.md:1 is
+msgid "What is DingoDB"
+msgstr "DingoDB简介"
+
+#: ../../source/overview/What 26c3f0e01e204f41bd6cab6ed625cd5d DingoDB.md:3 is
+msgid "Introduction"
+msgstr "产品介绍"
+
+#: ../../source/overview/What DingoDB.md:5 c25c82572ae74d10b587d1e275940fce is
+msgid ""
+"[DingoDB](https://github.com/dingodb/dingo) is a distributed real-time "
+"multi-modal database. It combines the features of a data lake and a "
+"vector database. It can store any type of data (key-value, PDF, audio, "
+"video, etc) with data of any size.Using it, you can build your **Vector "
+"Ocean** (The Next Generation data architecture following data warehouse "
+"and data lake initiated by [DataCanvas](https://www.datacanvas.com/)) and"
+" analyze structured and unstructured data with extremely low latency."
+msgstr ""
+"[DingoDB](https://github.com/dingodb/dingo) 是一款开源的、面向AI-Native的分布式多模态向量数据库，提供关系、向量、文本等多模态强一致性数据存储，提供基于SQL的多模态联合分析能力，融合了数据湖和向量数据库的特点，为存储和分析多种数据模型提供了可靠的基础保障。旨在满足现代应用中对多种类型数据存储、检索和分析的需求，并结合分布式和实时的数据库技术，提供高效、可靠的多模态数据管理和处理能力。DingoDB专注于提供高效、可靠的多模态数据存储和处理解决方案，广泛适用于风险预测、智能客服、智能推荐、智能助手等领域，帮助用户从多模态数据中发现有价值的信息和洞察。"
+
+#: ../../source/overview/What 6ef47d2f9e9447468db499d37244e8b6 DingoDB.md:7 is
+msgid "Key Features"
+msgstr "产品特性"
+
+#: ../../source/overview/What 16a1caa4cd27405896136c94cb7be051 DingoDB.md:9 is
+msgid "**1. Comprehensive Access Interface**"
+msgstr "**1. 多种访问接口支持**"
+
+#: ../../source/overview/What 9c4cb368060c4602be694878ae603176 DingoDB.md:11 is
+msgid ""
+"DingoDB provides comprehensive access interfaces, supporting various "
+"flexible access modes such as SQL, SDK, and API to meet the needs of "
+"different developers. Additionally, it introduces Table and Vector as "
+"first-class citizen data models, providing users with efficient and "
+"powerful data processing capabilities."
+msgstr ""
+"同时提供SQL、SDK、API等多种访问模式，同时支持Table和Vector作为First-Class Citizen."
+
+#: ../../source/overview/What 8e9bababa3414b7f83ab448c38ed7efa DingoDB.md:13 is
+msgid "**2. Built-in data High Availability**"
+msgstr "**2. 内建数据高可用**"
+
+#: ../../source/overview/What 958b897c83f846a5a0fef77d5665ce37 DingoDB.md:15 is
+msgid ""
+"DingoDB provides fully functional and highly available built-in "
+"configurations without the need to deploy any external components, which "
+"can significantly reduce users' deployment and operation and maintenance "
+"costs and significantly improve the efficiency of system operation and "
+"maintenance."
+msgstr ""
+"无需部署任何外部组件，所有功能和高可用全内置，部署和运维成本极低"
+
+#: ../../source/overview/What 682895b01dfe433ab170b6566c30d9cb DingoDB.md:17 is
+msgid "**3. Fully Automatic Elastic Data Sharding**"
+msgstr "**3. 全自动弹性数据分片**"
+
+#: ../../source/overview/What 6ca50dc78c7a4595950a3d7b378e5d08 DingoDB.md:19 is
+msgid ""
+"DingoDB supports dynamic configuration of data shard size, automatic "
+"splitting and merging, realizing efficient and friendly resource "
+"allocation strategies, and easily responding to various business "
+"expansion needs."
+msgstr ""
+"数据分片大小动态配置、自动分裂和合并，同时为用户提供灵活的空间和资源配置策略"
+
+#: ../../source/overview/What 226de834b0924c5e88eb00afb2e331e1 DingoDB.md:21 is
+msgid "**4. Scalar-vector Hybrid Retrieval**"
+msgstr "**4. 联合查询和分布式事务**"
+
+#: ../../source/overview/What 708c6d9d143b4f069cb88f7e43ab4b07 DingoDB.md:23 is
+msgid ""
+"DingoDB supports both traditional database index types and various vector"
+" index types, providing a seamless scalar and vector hybrid retrieval "
+"experience, reflecting industry-leading retrieval capabilities. In "
+"addition, it also supports fusion of scalars and vectors. Distributed "
+"transaction processing."
+msgstr ""
+"同时支持传统数据库索引类型和丰富的向量索引类型，无缝衔接的标量向量混合检索体验，具备领先业界的检索能力，支持融合标量和向量的分布式事务"
+
+#: ../../source/overview/What 3a3b5c02ec9c40f0bd31fa944dc97d3f DingoDB.md:25 is
+msgid "**5. Built-in Real-time index Optimization**"
+msgstr "**5. 实时索引构建优化**"
+
+#: ../../source/overview/What DingoDB.md:27 b94b059fb60142e2b2a8e3944db9b5c6 is
+msgid ""
+"DingoDB can build scalar and vector indexes in real time, providing users"
+" with unconscious background automatic index optimization. At the same "
+"time, it ensures no delays during data retrieval."
+msgstr ""
+"实时构建标量和向量索引，具备用户无感知的后台自动索引优化，提供无延迟的数据检索能力支持"
+
+#: ../../source/overview/What DingoDB.md:29 d3dde7c21f504c7084924906702e201f is
+msgid "**6. Cold-Hot Tiered Retrieval for Massive Datasets**"
+msgstr "**6. 海量数据的冷热分级检索**"
+
+#: ../../source/overview/What DingoDB.md:31 d7826b97f2324394b0ac0d0311baa021 is
+msgid ""
+"DingoDB provides disk-based vector search capabilities to minimize memory"
+" consumption, and supports dynamic switching between different indexes "
+"based on data scale requirements."
+msgstr ""
+"提供基于磁盘的向量检索能力，使得内存消耗降到最低，支持基于数据规模进行不同索引的切换能力"
+
+#: ../../source/overview/What 8788c78ba5164b8a88f12630b8ec3be8 DingoDB.md:34 is
+msgid "Use Cases"
+msgstr "应用场景"
+
+#: ../../source/overview/What DingoDB.md:36 af66ed35e89045dfb125c25bd5563e19 is
+msgid "**1. Enterprise Knowledge Base Construction**"
+msgstr "**1. 企业知识库建设**"
+
+#: ../../source/overview/What DingoDB.md:38 ac9c00f4d80e4126a4faab54a05ec055 is
+msgid ""
+"DingoDB aims to provide vectorized storage for enterprise knowledge bases"
+" and collaborate with large-scale models. Its goal is to help build "
+"intelligent knowledge bases, comprehensively enhancing knowledge-sharing "
+"capabilities. It can significantly improve employee work efficiency by "
+"reducing time spent searching for information; supports governments and "
+"traditional enterprises in constructing enterprise-level knowledge bases "
+"to achieve semantically precise search and federated analysis."
+msgstr ""
+"DingoDB旨在为企业知识库提供向量化存储，并与大规模模型相配合。它的目标是帮助构建智能化的知识库，全面提升知识分享的能力。能够极大地提高员工的工作效率，减少其在搜寻信息方面的时间消耗；支撑政府、传统企业构建企业级的知识库，实现语义的精准搜索与联合分析。"
+
+#: ../../source/overview/What DingoDB.md:40 e70286a9cbb84df7b37457d9a9095ad3 is
+msgid "**2. Large Model Memory System**"
+msgstr "**2. 大模型记忆体**"
+
+#: ../../source/overview/What 645b77e0adef43f3a7790e74cb4e39f7 DingoDB.md:42 is
+msgid ""
+"DingoDB delivers reliable and efficient storage solutions through its "
+"distributed storage system. It manages Prompts before assisting large "
+"model generation, where Prompts store and organize diverse user inputs to"
+" enable rapid retrieval of relevant Prompts as inputs during queries. It "
+"provides high-concurrency search and answer generation capabilities. With"
+" the support of the large model memory system, it enhances query response"
+" speed, user experience, and answer generation efficiency while meeting "
+"query demands in large model application scenarios."
+msgstr ""
+"DingoDB通过分布式存储系统提供可靠且高效的存储解决方案。在辅助大模型生成前进行Prompt管理，Prompt负责存储和组织各种用户输入，以便在查询时能快速检索相关Prompt作为输入。提供高并发的搜索答案能力，通过大模型记忆体的辅助，可以提升查询响应速度、用户体验和答案生成效率，同时满足大模型应用场景下的查询需求。"
+
+#: ../../source/overview/What DingoDB.md:44 a5b3c41bc4ce4440849c8c2cb99c910e is
+msgid "**3. Vector Ocean Data Support Platform**"
+msgstr "**3. Vector Ocean数据支撑平台**"
+
+#: ../../source/overview/What 4bef6e568fbf46928b8cbe736ea98de0 DingoDB.md:46 is
+msgid ""
+"As a powerful data storage platform, DingoDB can store and analyze "
+"structured and unstructured data while providing reliable access and "
+"query interfaces to improve query efficiency. It also features multimodal"
+" data analysis and scientific computing capabilities, enabling the "
+"processing of multimodal data, offering rich analytical algorithms to "
+"explore and mine information from data, and supporting complex data "
+"analysis tasks and application scenarios."
+msgstr ""
+"DingoDB作为一个功能强大的数据存储平台，它能够存储、分析结构化和非结构化数据，并提供可靠的访问和查询接口，提升查询效率。同时具备多模态数据分析和科学计算的能力，能够处理多模态数据，提供丰富的分析算法探索和挖掘数据中的信息，支持各种复杂数据的分析任务和应用场景。"
+
+#: ../../source/overview/What 3e36877853384c11840c76b0ac73eba4 DingoDB.md:48 is
+msgid "**4. Real-Time Decision Metric Calculation Capability**"
+msgstr "**4. 实时决策指标计算能力**"
+
+#: ../../source/overview/What 5baa5af9853d423cb5f9fbd6ed2b4e18 DingoDB.md:50 is
+msgid ""
+"DingoDB’s high-performance and low-latency features allow users to "
+"process and analyze large-scale data within seconds, supporting real-time"
+" risk control decisions. It employs data replication and failover "
+"mechanisms to ensure high availability and uses persistence technology to"
+" prevent data loss. Additionally, DingoDB supports horizontal scaling of "
+"computing and storage resources based on business needs to accommodate "
+"growing data processing demands. Its high-frequency Serving capabilities "
+"meet stringent regulatory standards, enabling sub-second decision-making "
+"scenarios such as real-time risk control, marketing, and recommendation "
+"systems."
+msgstr ""
+"DingoDB 具备高性能和低延迟的特性，使用户能够在秒级时间内处理和分析大规模数据，并支持实时风控决策。它采用数据复制和故障转移机制，提供高可用性，同时通过持久化技术确保数据不丢失。此外，DingoDB还支持根据业务需求进行计算资源和存储资源的水平扩展，以满足不断增长的数据处理需求。满足信创标准的高频Serving计算能力，支撑实时风控、营销、推荐等要求亚秒级决策的场景。"
+
+#: ../../source/overview/What 531422a66e37450bb841581734b500a5 DingoDB.md:52 is
+msgid "**5. Unstructured Data Retrieval**"
+msgstr "**5. 非结构化数据的检索**"
+
+#: ../../source/overview/What DingoDB.md:54 ca8c113970504037a4909f8f3db4237e is
+msgid ""
+"DingoDB supports retrieval of unstructured data such as audio, video, "
+"images, and text. It provides disk-based vector retrieval capabilities "
+"and allows switching between different indexes based on business "
+"scenarios or data scale. It enables real-time, continuous index "
+"reconstruction in the backend as users write data, ensuring "
+"synchronization between data and indexes. DingoDB supports mainstream "
+"vector indexes like Flat and HNSW."
+msgstr ""
+"DingoDB支持对音频、视频、图像、文本等非结构化数据进行检索，提供基于磁盘的向量检索能力，并支持基于业务场景、数据规模等进行不同索引的切换能力。能够根据用户写入的数据在后端实时的、持续的重建索引，确保数据和索引的实时同步。DingoDB支持Flat、HNSW等主流向量索引。"
+
+#: ../../source/overview/What 6dfe9551217a423d8562a8ea556ebfc8 DingoDB.md:56 is
+msgid "**6. Integrated Analysis of Structured and Unstructured Data**"
+msgstr "**6. 结构化与非结构化的融合分析**"
+
+#: ../../source/overview/What DingoDB.md:58 a804e3f54d2d40679b96a8e3c42ec1a6 is
+msgid ""
+"DingoDB supports processing and vectorized storage of diverse "
+"unstructured data types, including audio, video, and text, facilitating "
+"federated analysis and scientific computing. This integrated analysis "
+"capability allows users to leverage both structured data and vector data "
+"to uncover latent information and value from multiple dimensions and "
+"depths. Applications include risk prediction, public opinion monitoring, "
+"intelligent customer service, and recommendation systems. For example, in"
+" finance, structured financial data can be combined with unstructured "
+"news reports for fusion analysis to detect market trends and risk "
+"fluctuations."
+msgstr ""
+"DingoDB支持处理包括音频、视频、文本等非结构化多种数据类型，并将它们向量化存储，从而更便捷地进行联合分析和科学计算。这种融合分析能力使得用户可以同时利用结构化数据和向量数据，从不同维度和深度挖掘数据中的潜在信息和价值。结构化与非结构化的融合分析可以应用于风险预测、舆情监测、智能客服、智能推荐等多个场景。例如：在金融行业，可以将结构化财务数据与非结构化的新闻报道等进行融合分析，以检测市场动向和风险变化。"
+

@@ -1,4 +1,11 @@
-myst-parser
-sphinxcontrib-mermaid
-sphinx-rtd-theme
 sphinx
+sphinx-rtd-theme
+myst-parser
+sphinx-design
+sphinxcontrib-mermaid
+
+# python项目中要用到的依赖
+pathlib
+sparc_me
+numpy
+pandas

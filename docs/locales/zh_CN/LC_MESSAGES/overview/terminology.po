@@ -1,0 +1,159 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-23 17:19+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/overview/Terminology.md:1 97c4b4f7014b4eb1b56605e00aad45bd
+msgid "Terminology"
+msgstr "术语"
+
+#: ../../source/overview/Terminology.md:3 3e548bec7c8043b485783cc711ee5e8f
+msgid "The following terminologies are sorted in alphabetical order."
+msgstr "以下术语基于字母顺序排序"
+
+#: ../../source/overview/Terminology.md:5 673a55181de94e0e88a9c0dfd9b8fe5f
+msgid "**Client**"
+msgstr "**Client**"
+
+#: ../../source/overview/Terminology.md:6 fe14beb36aa446f881beb12b504668a8
+msgid ""
+"Performs data access and operations, supporting connectivity via JDBC, "
+"Java SDK, and Python SDK. It also enables database connections and "
+"operations through command-line tools like `sqlline` or `MySQL Shell`."
+msgstr ""
+"进行数据访问和操作，支持JDBC、JavaSDK、PythonSDK，同时也支持通过sqlline或MySQLShell命令行的方式连接数据库并进行数据操作。"
+
+#: ../../source/overview/Terminology.md:8 82e515e2bd8b452784b29fcdf817b666
+msgid "**Coordinator**"
+msgstr "**Coordinator**"
+
+#: ../../source/overview/Terminology.md:9 320e6d9f1ac14786af173b2ccaf8a8d7
+msgid ""
+"Maintains the status of global and branch transactions, driving global "
+"commits or rollbacks. Additionally, it provides metadata services for the"
+" entire cluster, manages the lifecycle of all cluster nodes, and delivers"
+" globally consistent services required by other database components."
+msgstr ""
+"Coordinator维护全局和分支事务的状态，驱动全局提交或回滚。同时为整个集群提供数据库的元信息服务，负责集群所有节点的生命周期管理，提供其他数据库服务依赖的需要全局一致性的服务。"
+
+#: ../../source/overview/Terminology.md:11 1514b766edc440f88f4d4f88b441ffbf
+msgid "**Dingo-Proxy**"
+msgstr "**Dingo-Proxy**"
+
+#: ../../source/overview/Terminology.md:12 66ee0e9952fb4669aef46a3d86c90a67
+msgid ""
+"Serves as a bridging layer for vector operations and provides HTTP/gRPC "
+"interfaces for the Python SDK."
+msgstr ""
+"Proxy提供向量操作的一个桥接作用，并且为PythonSDK提供HTTP和GRPC接口。"
+
+#: ../../source/overview/Terminology.md:14 8f65ba90980d4c2ea38b09014b16b227
+msgid "**Executor**"
+msgstr "**Executor**"
+
+#: ../../source/overview/Terminology.md:15 9b25807273064430b20211c5d827cc4f
+msgid ""
+"Acts as the computing node for executing job tasks. It handles the "
+"execution of SQL-related distributed tasks, interacts with data storage, "
+"parses and responds to SQL requests from Clients, and manages other "
+"administrative operations. The Executor implements the JDBC protocol, "
+"manages jobs, coordinates distributed task execution, and invects "
+"underlying Meta and Store APIs via SDKs to deliver database "
+"functionalities."
+msgstr ""
+"Executor是运行作业任务的计算节点，负责SQL对应分布式任务的执行与数据存储交互，解析并响应Client端发出的SQL请求和其他管理请求，实现JDBC协议，进行Job管理，实现Task的分布式执行，通过SDK调用下层Meta,StoreAPI实现数据库功能。"
+
+#: ../../source/overview/Terminology.md:17 56fcb898c9284876bc58469b50fc9ff2
+msgid "**Partition**"
+msgstr "**Partition**"
+
+#: ../../source/overview/Terminology.md:18 7c4155fa6ed44c33bc81b08e71d366e3
+msgid ""
+"The minimal unit of data storage in DingoDB, each representing a specific"
+" data range. By default, each Partition maintains three replicas. A "
+"replica of a Partition is termed a Peer. Multiple Peers of the same "
+"Partition replicate data via the Raft consensus algorithm, making them "
+"members of a Raft instance. DingoDB employs Multi-Raft for data "
+"management, ensuring each Partition corresponds to an isolated Raft "
+"group."
+msgstr ""
+"Partition是DingoDB中最小的数据存储块，每个分区表示一个数据范围。默认情况下，每个分区有三个副本。分区的副本称为对等体。同一分区的多个对等体通过Raft共识算法复制数据，因此对等体也是Raft实例的成员。dingdb使用Multi-Raft来管理数据。也就是说，对于每个Partition，都有一个对应的、孤立的Raft组。"
+
+#: ../../source/overview/Terminology.md:20 e18bc941714443a9b26e284fd35b9c69
+msgid "**Partition Split**"
+msgstr "**Partition Split**"
+
+#: ../../source/overview/Terminology.md:21 6ae958af18a6442c9d6cff4ecadeb262
+msgid ""
+"Partitions are dynamically created as data volume grows. The splitting "
+"mechanism uses an initial Partition to cover the entire key space and "
+"generates new Partitions by splitting existing ones when predefined "
+"thresholds (e.g., data size or key count) are reached."
+msgstr ""
+"Partition是随着数据写入的增加而生成的。分裂的过程称为Partitionsplit，Partitionsplit的机制是使用一个初始分区来覆盖整个键值空间，每次分区的大小或键的数量达到一定阈值时，通过分割现有的分区来生成新的分区。"
+
+#: ../../source/overview/Terminology.md:23 3fb688abe7394809833d969e9cd60eb3
+msgid "**Raft**"
+msgstr "**Raft**"
+
+#: ../../source/overview/Terminology.md:24 8abaf6e6130e4d0eb4155c53d9a59b5c
+msgid ""
+"A leader-based consensus algorithm that guarantees data consistency "
+"across multiple nodes. It enhances system fault tolerance even under "
+"partial node failures, network delays, or partitions."
+msgstr ""
+"Raft是一种leader-based的共识算法，保证多个节点的数据一致性，即使是在部分节点故障、网络延时、网络分割的情况下，它能够提高系统的容错性。"
+
+#: ../../source/overview/Terminology.md:26 91faa9be535448e38a42239ae7ce753a
+msgid "**Raft Engine**"
+msgstr "**Raft Engine**"
+
+#: ../../source/overview/Terminology.md:27 1dc7c899aa624377bd2e4da65d46b14a
+msgid ""
+"An embedded persistent storage engine with a log-structured design, "
+"purpose-built for distributed key-value stores to manage multi-Raft logs."
+" DingoDB leverages Raft Engine as its log storage engine."
+msgstr ""
+"RaftEngine是一个具有日志结构设计的嵌入式持久存储引擎，它是为分布式键值存储而构建的，用于存储多raft日志。DingDB支持使用RaftEngine作为日志存储引擎。"
+
+#: ../../source/overview/Terminology.md:29 b88a9c86c1de42aca561ad1c5c412dda
+msgid "**Region**"
+msgstr "**Region**"
+
+#: ../../source/overview/Terminology.md:30 25cdc15cd7b64cd1abd2239d97f82469
+msgid ""
+"Represents a physical data partition. A table is divided into multiple "
+"Regions using configurable splitting strategies. Each Region exclusively "
+"belongs to one Partition and cannot span multiple Partitions."
+msgstr ""
+"Region是实际数据的分区，一个数据表可以通过一些分裂策略分裂成多个Region，一个Region只能属于某一个Partition下，不会跨Partition。"
+
+#: ../../source/overview/Terminology.md:32 c8d6423d954d41b68a13e294a3dfb634
+msgid "**Store**"
+msgstr "**Store**"
+
+#: ../../source/overview/Terminology.md:33 e96009eccc964437b4dd01ac748a0aa2
+msgid ""
+"DingoDB’s storage layer, delivering high-availability, scalable, and "
+"high-performance distributed KV storage for massive datasets. Beyond "
+"standard KV operations, it natively supports vector data types and vector"
+" similarity search."
+msgstr ""
+"Store是DingoDB的存储层，提供数据存储和检索服务，是一个高可用、高扩展、高性能并支持海量数据的分布式KV存储，除了支持场景的KV操作，还支持向量数据类型，支持向量相似度检索。"
+
