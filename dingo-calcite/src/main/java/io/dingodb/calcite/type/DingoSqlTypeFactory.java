@@ -75,6 +75,15 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
 
     @Override
     public RelDataType createSqlType(SqlTypeName typeName, int precision, int scale) {
+        if (typeName == SqlTypeName.DECIMAL) {
+            if (precision < 1 || precision > 65) {
+                throw new IllegalArgumentException("Precision must be between 1 and 65");
+            }
+            if (scale < 0 || scale > 30) {
+                throw new IllegalArgumentException("Scale must be between 0 and 30");
+            }
+        }
+
         return super.createSqlType(typeName, precision, scale);
     }
 
