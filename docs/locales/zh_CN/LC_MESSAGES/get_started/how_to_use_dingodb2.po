@@ -1,0 +1,141 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: 2025-04-24 17:59+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/get_started/how_to_use_dingodb.md:1
+#: aca1ee90e3994afbaca27c4ef4883ca2
+msgid "How to Use DingoDB"
+msgstr "如何使用DingoDB"
+
+#: ../../source/get_started/how_to_use_dingodb.md:3
+#: 732f1076421c4a6eab410fbdb16defef
+msgid ""
+"DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) "
+"Database. It provide three ways to access to DingoDB."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:5
+#: 5997555589a8451e826647a3690377bf
+msgid "JDBC Driver"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:7
+#: d1a5fdaa29994a1bb2a9a17157a08acf
+msgid ""
+"In DingoDB cluster, A JDBC Driver proxy should be start, it will pass "
+"the SQL query to `Executor`."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:13
+#: 29ee8971ced444948f16ac11dd3e7b1d
+msgid ""
+"The usage about SQL can be reference to [Play with DingoDB using SQL](./"
+"play_with_dingo_using_sql.md)"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:16
+#: 4684d28312b041759077048c0a8a42ba
+msgid "Sqlline Mode"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:18
+#: ac521d398bb5466e99693eb52f888069
+msgid "DingoDB"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:20
+#: e1c52e922cf54c37a59d9012aa318752
+msgid ""
+"In DingoDB install path, you can start a sqlline to build connection to "
+"the cluster."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:25
+#: 6420545433f2472a86ba498d1c3304f0
+msgid "![DingoDB Sqlline](../images/dingo_sqlline.png)"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:25
+#: b472bbce5718444e8133d9e903191de3
+msgid "DingoDB Sqlline"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:27
+#: cbe99c3a1f5c4e91a48431d715904755
+msgid "MySQL"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:29
+#: 46fb3fa47f5a471d8b9cc82a0d08f453
+msgid ""
+"In MySQL install path, you can start a sqlline to build connection to "
+"the cluster."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:33
+#: a06900663ff244a481bf8413fe854fb0
+msgid "![MySQL Shell](../images/mysql_shell.png)"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:33
+#: a5b02b891ea9489b9f3f82e356efc14c
+msgid "MySQL Shell"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:35
+#: 24562b6fe0634594a329f398d103c8ae
+msgid "Using Key-Value SDK"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:37
+#: 1f7de6a29f0a4083bc669272bcccb7c2
+msgid ""
+"DingoDB is a distributed real-time multi-modal database. It combines the "
+"features of a data lake and a vector database. It can store any type of "
+"data (key-value, PDF, audio, video, etc) with data of any size.Using it, "
+"you can build your Vector Ocean (The Next Generation data architecture "
+"following data warehouse and data lake initiated by DataCanvas) and "
+"analyze structured and unstructured data with extremely low latency."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:38
+#: b1190208bf174909b098026b405c88a0
+msgid "Java SDK"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:40
+#: af9c12180ed14d1eaa1386e99c6eebd7
+msgid ""
+"The detail about the SDK client can be found in [Play with dingo using "
+"Java SDK](./play_with_dingo_using_dingoclient.md)."
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:41
+#: ee85983b0778467996f799a14217bbb0
+msgid "Python SDK"
+msgstr ""
+
+#: ../../source/get_started/how_to_use_dingodb.md:43
+#: 6d95d6efab0148b58916930cccad0950
+msgid ""
+"The detail about the SDK client can be found in [Play with dingo using "
+"Python SDK](./play_with_dingo_using_Langchain.md)."
+msgstr ""

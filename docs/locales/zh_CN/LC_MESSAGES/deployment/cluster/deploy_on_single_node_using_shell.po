@@ -1,0 +1,101 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:1
+#: c4f9c692654e4cadab62627c494d9f8f
+msgid "Deploy On Single Node Using Shell"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:3
+#: fc85803f9de642fd9449610c84af4c26
+msgid "Deploy Architecture View"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:5
+#: 54a6f787e8db46b1afd1a33e6b80310f
+msgid ""
+"There are many types of roles in the cluster mode of DingoDB, such as "
+"coordinator, executor, dingo-store, and the cluster mode requires at "
+"least three machines. The architecture view can refer [dingo-deploy-"
+"architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html)."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:8
+#: b18812f79ceb4420b38fafee2135a0a6
+msgid "Deploy a 3-node cluster on a single machine"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:19
+#: 5ae48febf68948c4b6481a3f54f02c3d
+msgid "Command-line tool preparation"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:20
+#: 920e7cd672e04223a3009d25f69eafc9
+msgid ""
+"After deployment, first confirm whether the coor_list file exists in the "
+"build/bin directory. The latest deployment script will automatically "
+"generate this file."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:22
+#: 01fc570557c5446fa07e86601977725e
+msgid ""
+"If it does not exist in build/bin, you can find the coor_list file in the"
+" conf directory of the coordinator and store, and copy the file to the "
+"directory where dingodb_client_coordinator is located."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:24
+#: cc0268a98fcd4d9c8bbac7b4142c9554
+msgid ""
+"If you are connecting to a cluster deployed with an old deployment "
+"script, there may not be a coor_list file. You can manually create a "
+"coor_list file with the following content format:"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:30
+#: 7598a657585d41e5a324aac55183be1b
+msgid "With this file, you can proceed with the subsequent operations."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:32
+#: 3efb4ce120d843ad9e314d431f514d0f
+msgid "The command-line parameters for dingodb_client_coordinator are:"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:36
+#: 3f4431f97e25449ab0caf094781cddbb
+msgid "You can also use the --url parameter abbreviation instead of --coor_url."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:38
+#: e6a01c199ca445a7804c809dc4ba556f
+msgid ""
+"If the coor_list file is located in the current directory, you can omit "
+"the --coor_url parameter, as follows:"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_single_node_using_shell.md:43
+#: 796433861f8c4dcfb0387a400efface6
+msgid "View cluster status"
+msgstr ""
+

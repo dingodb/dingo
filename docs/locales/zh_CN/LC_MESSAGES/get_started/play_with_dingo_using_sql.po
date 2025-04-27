@@ -1,0 +1,246 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:1
+#: 8dcf539f43d141aebfba4af634d1e2b4
+msgid "Play with DingoDB using SQL"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:3
+#: 3285a91e3709485eb3b799574798f62c
+msgid "Play DingoDB with SQL Tools"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:5
+#: bc292e9b46794caf96108d35cb9f7a95
+msgid "Setup Connection to DingoDB"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:7
+#: 52ccbce73ca84bd9a25968b8e945becb
+msgid "1.Launch DBeaver tool, navigate to menu Window -> Driver Manager"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:9
+#: 2dd43af4b5064370a41f8309549e96b0
+msgid "![Driver Manager](../images/usage_dbeaver_driver_manager.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:9
+#: 85fe07d352574364bd2b97ce68edb54c
+msgid "Driver Manager"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:11
+#: 1ed09c7748754193b7a41e6037303c89
+msgid "2.In the Driver Manager dialog, click on “New” button,create new driver"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:13
+#: 52a51a5fe4d9428f9b97c09a63526e76
+msgid ""
+"3.In the New Driver dialog, provide the “Driver Name” and “Class Name”, "
+"here please input the class name as "
+"“io.dingodb.driver.client.DingoDriverClient”"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:15
+#: 68e41514c40f42c8ae572d5ae6df0b17
+msgid "![Import driver file](../images/usage_dbeaver_import_driver_file.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:15
+#: 10a473aa96ed44f29116e36c12a25c10
+msgid "Import driver file"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:17
+#: 0ea36cb0d92847d39185c79c34dc8fbf
+msgid "4.Then click on the “library” tab, and click “Add file” button."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:19
+#: 1ff6bb74081c4dc69da9b149ee7607d5
+msgid ""
+"5.Add the DingoDB driver “dingo-driver-client-all.jar”, click “Search” "
+"and select the DingoDB driver "
+"“io.dingodb.driver.client.DingoDriverClient”."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:21
+#: 022a71a6a3b344acb9ad7c1a536c6152
+msgid "![Find class](../images/usage_dbeaver_find_class.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:21
+#: 5ffcc7bd7d964b41b317c6cf8164f795
+msgid "Find class"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:23
+#: c3986afac1f1422486ad7b7daaeca7a2
+msgid "6.Click “OK”, then you will see the DingoDB driver shown in driver list."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:25
+#: 1513f134ede54ed49266384401cf9640
+msgid ""
+"7.Back to DBeaver main screen, click on “New Database Connection” from "
+"the toolbar, and select “DingoDB” item."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:27
+#: b84f5e73ba204661b066f88f173df028
+msgid ""
+"8.In New Database Connection dialog, provide valid JDBC URL, User and "
+"Password, then “Test Connection” and see the Database connected "
+"successfully."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:29
+#: 52e5f3e4b36a4b06900f281ae715cb07
+msgid "![New databases](../images/usage_dbeaver_new_databases.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:29
+#: 7bc5998ca49c45be87ae74f453720ce8
+msgid "New databases"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:31
+#: 5c11f360aa0a4da880480e5e93d73d6a
+msgid ""
+"9.Click Finish and see the DingoDB connection displayed in Database "
+"Connections Navigator on left."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:33
+#: aab2be0fa1c44c41b144a7322e344693
+msgid "![Connection](../images/usage_dbeaver_successful_connection.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:33
+#: 15a1480364b14cb3a2cb153d73954a78
+msgid "Connection"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:35
+#: 67881c9fa52d4cdd8c8fb9831e6a3d31
+msgid "Do Operation using Editor"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:37
+#: d25f1feaf093402c8aef20982db8cf8f
+msgid "You can use dbeaver to view tables and queries."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:40
+#: bf0fcd03528741b5a160621412a090ec
+msgid "Create Table"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:52
+#: a13c56ed1e2a4418917391c549f7dc6d
+msgid "Insert values to Table"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:67
+#: 7481495a8bf6448283b43989ce4319cf
+msgid "Execute Query"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:69
+#: c10e5991b8d0407792de0a08ddf3fe42
+msgid "1.Query table by condition"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:75
+#: 64933b0b9876410fa4c7fc3f7d1d53dd
+msgid "2.Query table by aggregation condition"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:81
+#: 3fe9f97c4843473fadee64c6bd5dc57c
+msgid "3.Query table by `order by`"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:87
+#: 244a04fb938e416d8d30f559e89f080b
+msgid "4.Update table by row or condition"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:94
+#: 13f77ef5da8743f5be8c077c1800477e
+msgid "Play DingoDB Using Java Code"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:96
+#: ac2cf4c76fe04091abd933535049a776
+msgid "Setup Connection"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:98
+#: 9bc5f0020bed46919dd2df02ee5ac70c
+msgid "After starting the server, you can connect to the dingodb database:"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:105
+#: a89d6f13da534bcdaddde64a1db89d63
+msgid "```jdbc:dingo:thin:url=ip:8765``` is the connection string."
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:107
+#: ef996a9128044733919326121992a58c
+msgid ""
+"**The IP address should be the actual server IP address, and the default "
+"port is 8765.**"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:109
+#: 609f662bef2b44e4b93b8822ef8dab20
+msgid "Do Operation using Java"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:111
+#: 8145036a9860469792c78824f8cba7f9
+msgid "Create table"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:125
+#: 6ebe5405df1a406792c8a00e3833e6bd
+msgid "Insert data to table"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:133
+#: afbfbe3a7b504e11bcd39a20752ec018
+msgid "Query data from table"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:144
+#: 1c73e5331c6b4aee810e194a7292aa20
+msgid "Play MySQL Using Java Code"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:146
+#: 56dade21b2504ee2ad16018c11790c47
+msgid "After starting the server, you can connect to the mysql database:"
+msgstr ""
+

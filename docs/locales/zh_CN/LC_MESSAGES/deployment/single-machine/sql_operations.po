@@ -1,0 +1,279 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/single-machine/sql_operations.md:1
+#: e671534fffea4593b29f54a563900fbb
+msgid "SQL基本操作"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:3
+#: f4e0316a0d784515857d12e1a4cf6615
+msgid "DingoDB安装部署成功后，因为DingoDB兼容MySQL语义，您可以通过SQL工具或者MySQL客户端中连接DingoDB，并执行SQL语句。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:5
+#: 25068a147b774115ad8e30f03f8ca8be
+msgid "1、创建表"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:7
+#: 8f033b1789b4493dad3f29031fa7aff8
+msgid "1）参数说明"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: ce8be8de45d14f0aa537f37e0c61c7e8
+msgid "参数"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 172ec0fa13084549b2d4368cd993ceae
+msgid "说明"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 996d7c58f7864aafb66b80e68c322a97
+msgid "详情"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 47a5f7aa2315470bbaa640ea6beaf939
+msgid "语法"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 8c137d5972454a738b9b9a92e534d25d
+msgid "Table Name"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: b30483fcb56b4768908054eaa6b992f0
+msgid "表名"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: b91b596856e9435f9f1c60af3ba29e74
+msgid "表的名称，必须在数据库中唯一，并遵循命名规则。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: a9c7cc75f25e4681805bbc56baaa1aef
+msgid "Table table_name"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: aee312b3991f4f998904f0facf2b3d85
+msgid "Replica"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 3712dcf6478b4df9bb231fd2266fbff5
+msgid "副本数"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 78e16528feb34a53a28f1aa99860b318
+msgid "表的副本数量。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 8e57b3ea68024f73a3f5395031fec3e7
+#, python-brace-format
+msgid "Replica = {replica}"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: d6291cf20ab14fa0b797567a098717f1
+msgid "Autoincrement"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 1a41f933f250455caaab50624686782f
+msgid "自增字段"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 095bbba719f04a7c869fcd041bb171f4
+msgid "指定某字段为自增列，目前仅支持 `int` 类型，并可设置自增初始值。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 7a5368249602494797ec59bc54b0d8b1
+msgid "Auto_increment"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: fcee6b343a96499a9c4d49023fc216ea
+msgid "Partition By"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 44bfc6b3a4cb4e83b5cac086a6ce6492
+msgid "Range分区：按范围分区;"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: fbc62fec5c194334b395d061d314bc5d
+msgid "根据指定范围将数据划分到不同的分区中。可以根据某个列或多列的值进行范围分区。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 29c6604cbbc24a1e9c0d26887cf6c2c1
+msgid "Partition by range values (1,100),(101,200);"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 0921a93fce804bca9015e60ff70f7f7c
+msgid "Hash分区：按Key的Hash值分区；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: a557a942b6bd480188a5947fc49dbd36
+msgid "通过对某列或多列的哈希值进行分区，每个哈希值确定数据所属分区。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 4a15b5562d1942cf9788553b7060230b
+msgid "Engine"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: a1a1831b86dd432b925e5a62d36edd7b
+msgid "存储引擎"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: ea7a1194491341df81f190b0515ae752
+msgid "创建表时指定的存储引擎；Dingo 提供 LSM、BTree、Txn_LSM、Txn_BTree 四种存储引擎。 默认为：Txn_LSM"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: eb79e2665b9846fb905279e8d03bbaa6
+msgid "Engine = Txn_LSM；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: f95640fcccad48bca75cb3098520ca09
+msgid "Index"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 07fd94cd617b4f8fbfd74307557eade7
+msgid "向量索引"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: e885797fb2044b7083f08c90d97fa5e9
+msgid "在向量字段上创建索引，索引类型需指定为 `VECTOR`。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: be2a6b6cfa1b46f7bdcc1b6235cee541
+#, python-brace-format
+msgid "INDEX[index_name ]VECTOR( {index_parameters} )"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: cc5fb6db534e43588156b91f7dc0b88f
+msgid "标量索引"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 7cdf23219bcf489d9d1fb95a8c823739
+msgid "在标量字段上创建的索引，默认索引类型为标量， `Scalar`可写可不写。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md
+#: 13f8e641346d4adfbe4d236bb0416554
+#, python-brace-format
+msgid "INDEX[ index_name ] (SCALAR)( {index_parameters} )"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:19
+#: a3c701f7063a4180987fdcb75f4c71ae
+msgid "2）SQL示例"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:21
+#: 66d34e103c8740b690e0506884af0919
+msgid "创建一张带有标量索引的表；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:38
+#: 98656c96796a4cdfa138d9bcb1a5fefb
+msgid "创建一张带有向量索引的表；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:52
+#: 5149abae9cc547dc9436685b6f9f92b1
+msgid "*说明：*"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:54
+#: bb8e83554731446eb76fd3ee38a0357a
+msgid "创建语句中feature列为向量列，类型为浮点型数组，有向量列之后需要添加向量索引，如果不加向量索引会当做普通的数组类型，向量索引在定义时与标量索引类似，对应定义的方法使用VECTOR，需要的参数有两个一个是向量的id列，目前只支持整型，第二个参数是向量列，目前只有浮点型数组。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:56
+#: 2a6ecc9d493e4a7fac53c69371f05f4b
+msgid "2、插入数据"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:57
+#: e98c61c8263b4274a153a195037b6985
+msgid "这里以‘vectable’为例，因为向量字段维度指定为8，所以插入时array数组中需要包含8个元素。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:66
+#: 324f559b1c854c3b84f7ff40bc21453a
+msgid "3、查询数据"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:67
+#: 223d217138fd4431a5c18545db09bdde
+msgid "全表查询"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:71
+#: 427547e58b06426f85f8de204f5d0b35
+msgid "条件查询，使用`WHERE`条件语句，对数据进行条件筛选"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:75
+#: 81484d2277214c3b87fee4cf57ef1021
+msgid "4、修改数据"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:76
+#: 591e73e66cf8493e9fc879061c60500e
+msgid "使用`UPDATE TABLE`语句对表中数据进行修改"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:80
+#: 22bb70d0ed3e436f88006820af781e93
+msgid "5、删除表"
+msgstr ""
+
+#: ../../source/deployment/single-machine/sql_operations.md:81
+#: 98894f2171b4471f99f0a51e558efb91
+msgid "使用 `DROP TABLE`语句删除表"
+msgstr ""
+
