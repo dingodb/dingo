@@ -33,8 +33,10 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
     @Nullable
     public RelDataType deriveDecimalDivideType(RelDataTypeFactory typeFactory,
                                         RelDataType type1, RelDataType type2) {
-        if(( SqlTypeName.INTEGER.equals(type1.getSqlTypeName()) || SqlTypeName.BIGINT.equals(type1.getSqlTypeName())) &&
-            ( SqlTypeName.INTEGER.equals(type2.getSqlTypeName()) || SqlTypeName.BIGINT.equals(type2.getSqlTypeName()))){
+        if (( SqlTypeName.INTEGER.equals(type1.getSqlTypeName())
+            || SqlTypeName.BIGINT.equals(type1.getSqlTypeName()))
+            && ( SqlTypeName.INTEGER.equals(type2.getSqlTypeName())
+            || SqlTypeName.BIGINT.equals(type2.getSqlTypeName()))) {
             return typeFactory.createSqlType(SqlTypeName.DOUBLE);
         } else {
             return super.deriveDecimalDivideType(typeFactory, type1, type2);
@@ -94,5 +96,9 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
             default:
                 return -1;
         }
+    }
+
+    @Override public int getMaxNumericPrecision() {
+        return 65;
     }
 }
