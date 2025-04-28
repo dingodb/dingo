@@ -33,6 +33,8 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import lombok.extern.slf4j.Slf4j;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 @Slf4j
 public final class IndexUtil {
     public static final IndexUtil INSTANCE = new IndexUtil();
@@ -42,7 +44,8 @@ public final class IndexUtil {
 
     public static TableDefinitionWithId getIndexWithId(Table table, String indexName) {
         long indexId = table.getIndexes().stream()
-            .filter(s -> s.getName().equals(indexName))
+            .filter(s -> caseSensitive() ? s.getName().equals(indexName)
+                : s.getName().equalsIgnoreCase(indexName))
             .map(s -> s.getTableId().seq)
             .findFirst().orElse(0L);
 

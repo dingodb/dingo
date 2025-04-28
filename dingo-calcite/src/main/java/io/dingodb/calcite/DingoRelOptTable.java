@@ -219,7 +219,7 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
             .getColumns()
             .stream()
             .filter(col -> col.getState() == 1)
-            .map(col -> dingoTable.getTable().getColumns().indexOf(col))
+            .map(col -> dingoTable.getTable().getColumnIndex(col))
             .collect(Collectors.toList());
         TupleMapping selection = TupleMapping.of(mapping);
         JavaTypeFactoryImpl dummyTypeFactory = new JavaTypeFactoryImpl();

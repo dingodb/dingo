@@ -717,7 +717,8 @@ public class DdlWorker {
             indexName = job.getArgs().get(0).toString();
         }
         boolean notExists = table.getIndexes().stream()
-            .noneMatch(indexTable -> indexTable.getName().equals(indexName));
+            .noneMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(indexName)
+                : indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "index not exists");
