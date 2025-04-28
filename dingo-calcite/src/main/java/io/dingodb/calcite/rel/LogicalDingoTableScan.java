@@ -153,7 +153,7 @@ public class LogicalDingoTableScan extends TableScan {
             List<Integer> mapping = dingoTable.getTable()
                 .getColumns()
                 .stream()
-                .map(col -> dingoTable.getTable().getColumns().indexOf(col))
+                .map(col -> dingoTable.getTable().getColumnIndex(col))
                 .collect(Collectors.toList());
             this.selection = TupleMapping.of(mapping);
         }

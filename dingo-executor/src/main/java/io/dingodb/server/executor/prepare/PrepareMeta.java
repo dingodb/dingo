@@ -393,7 +393,7 @@ public final class PrepareMeta {
             = tableWithId.getTableDefinition().getColumns();
         Map<String, Object> map = Maps.newLinkedHashMap();
         columnList.forEach(column -> {
-            switch (column.getName()) {
+            switch (column.getName().toUpperCase()) {
                 case "USER":
                     map.put(column.getName(), "root");
                     break;

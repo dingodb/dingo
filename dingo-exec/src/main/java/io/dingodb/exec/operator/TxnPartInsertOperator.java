@@ -25,6 +25,8 @@ import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Edge;
@@ -169,7 +171,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
                     if (context.isDuplicateKey()) {
                         // insert into ... on duplicate key update ...
-                        KeyValue insertUpKv = generateNewKv(
+                        Pair<KeyValue, Long> pair = generateNewKv(
                             tuple,
                             param,
                             partId,
@@ -203,7 +205,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             new TxnPartData(tableId, partId),
                             (!isVector && !isDocument)
                         );
-                        if (localStore.put(insertUpKv) && context.getIndexId() == null) {
+                        if (localStore.put(pair.getKey()) && context.getIndexId() == null) {
                             param.inc();
                         }
                     } else {
@@ -247,9 +249,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         }
                     }
                 } else {
-                    KeyValue insertUpKv = null;
+                    Pair<KeyValue, Long> pair = null;
                     if (context.isDuplicateKey()) {
-                        insertUpKv = generateNewKv(
+                        pair = generateNewKv(
                             tuple,
                             param,
                             partId,
@@ -283,6 +285,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     // delete  ->  insert  convert --> put
                     dataKey[dataKey.length - 2] = (byte) Op.PUT.getCode();
                     // write data
+                    KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
                     if (insertUpKv != null && insertUpKv.getValue() != null) {
                         keyValue.setKey(insertUpKv.getKey());
                         keyValue.setValue(insertUpKv.getValue());
@@ -299,9 +302,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                 }
             } else {
-                KeyValue insertUpKv = null;
+                Pair<KeyValue, Long> pair = null;
                 if (context.isDuplicateKey()) {
-                    insertUpKv = generateNewKv(
+                    pair = generateNewKv(
                         tuple,
                         param,
                         partId,
@@ -335,6 +338,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
                 long num = 1L;
                 // write data
+                KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
                 if (insertUpKv != null && insertUpKv.getValue() != null) {
                     keyValue.setKey(insertUpKv.getKey());
                     keyValue.setValue(insertUpKv.getValue());
@@ -377,7 +381,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
             Op op = Op.NONE;
-            KeyValue insertUpKv = null;
+            Pair<KeyValue, Long> pair = null;
             Object[] oldTuple = null;
             if (param.getUpdateMapping() != null && param.getUpdates() != null) {
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
@@ -397,7 +401,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
                     if (param.getUpdateMapping() != null && param.getUpdates() != null) {
-                        insertUpKv = generateNewKv(
+                        pair = generateNewKv(
                             tuple,
                             param,
                             partId,
@@ -458,7 +462,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                 }
                 if (context.isDuplicateKey()) {
-                    insertUpKv = generateNewKv(
+                    pair = generateNewKv(
                         tuple,
                         param,
                         partId,
@@ -477,6 +481,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     }
                 }
             }
+            KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
             if (insertUpKv != null && insertUpKv.getValue() != null) {
                 keyValue.setKey(insertUpKv.getKey());
                 keyValue.setValue(insertUpKv.getValue());
@@ -506,10 +511,15 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             );
             localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (localStore.put(keyValue) && context.getIndexId() == null) {
-                param.inc(num);
+                if (!context.isDuplicateKey()) {
+                    param.inc(num);
+                }
                 context.addKeyState(true);
                 if (context.isDuplicateKey() && oldTuple != null) {
-                    param.inc();
+                    Long updateNum = Optional.mapOrGet(pair, Pair::getValue, () -> 0L);
+                    if (updateNum > 0) {
+                        param.inc();
+                    }
                 }
             }
         }
@@ -517,24 +527,26 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         return true;
     }
 
-    private static KeyValue generateNewKv(Object[] tuple,
-                                          TxnPartInsertParam param,
-                                          CommonId partId,
-                                          KeyValueCodec codec,
-                                          Object[] newTuple,
-                                          byte[] txnIdByte,
-                                          byte[] tableIdByte,
-                                          byte[] partIdByte,
-                                          int len) {
+    private static Pair<KeyValue, Long> generateNewKv(Object[] tuple,
+                                                      TxnPartInsertParam param,
+                                                      CommonId partId,
+                                                      KeyValueCodec codec,
+                                                      Object[] newTuple,
+                                                      byte[] txnIdByte,
+                                                      byte[] tableIdByte,
+                                                      byte[] partIdByte,
+                                                      int len) {
         KeyValue insertUpKv;
         TupleMapping mapping = param.getUpdateMapping();
         List<SqlExpr> updates = param.getUpdates();
+        long updateNum = 0L;
         for (int i = 0; i < mapping.size(); i++) {
             Object newValue = updates.get(i).eval(tuple);
             int index = mapping.get(i);
             if ((newTuple[index] == null && newValue != null)
                 || (newTuple[index] != null && !newTuple[index].equals(newValue))) {
                 newTuple[index] = newValue;
+                updateNum++;
             }
         }
         DingoType schema = param.getSchema();
@@ -552,7 +564,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         );
         insertUpKv = new KeyValue(
             insertKey, Arrays.copyOf(updateKv.getValue(), updateKv.getValue().length));
-        return insertUpKv;
+        return Pair.of(insertUpKv, updateNum);
     }
 
 
