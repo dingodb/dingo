@@ -1,10 +1,6 @@
 # Play with DingoDB using Langchain
 
-> [Dingo](https://dingodb.readthedocs.io/en/latest/) is a distributed multi-mode vector database, which combines the characteristics of data lakes and vector databases, and can store data of any type and size (Key-Value, PDF, audio, video, etc.). It has real-time low-latency processing capabilities to achieve rapid insight and response, and can efficiently conduct instant analysis and process multi-modal data.
-
-This notebook shows how to use functionality related to the DingoDB vector database.
-
-To run, you should have a [DingoDB instance up and running](https://dingodb.readthedocs.io/en/latest/deployment/index.html).
+Firstly, you should have a [DingoDB instance up and running](https://dingodb.readthedocs.io/en/latest/deployment/index.html).
 
 ```shell
 pip install dingodb

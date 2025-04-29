@@ -6,262 +6,268 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DingoDB \n"
+"Project-Id-Version: DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_CN\n"
+"POT-Creation-Date: 2025-04-27 18:44+0800\n"
+"PO-Revision-Date: 2025-04-27 18:56+0800\n"
+"Last-Translator: \n"
 "Language-Team: zh_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:1
-#: e547bcf1d8814a158b5d8a80fc6ce4e6
+#: 71f7fb4fca5744fe95e1471c65699c13
 msgid "Play with DingoDB using DingoClient"
-msgstr ""
+msgstr "使用 DingoClient 玩转 DingoDB"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:3
-#: 1e964370794c4ed1bc05c0cdd3abc952
-msgid "Introducation"
+#: 0f01ef3db5cc4df0aa0d8c87704586dc
+msgid ""
+"In order to be more faster, DingoDB presents a Java API which is comprehensive "
+"and powerful to do operations on the database, such as DDL or DML operation."
 msgstr ""
+"为提升速度，DingoDB 提供一个功能全面而强大的 Java API，支持对数据库进行 DDL 或 "
+"DML 操作。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:5
-#: 44b5692a4ad44e5d91e8e470951d2447
-msgid ""
-"DingoDB is a distributed real-time multi-modal database. In order to be "
-"more faster, it presents a Java API which is comprehensive and powerful "
-"to do operations on the database, such as DDL or DML operation."
-msgstr ""
+#: 0c1d96202121410db9a705ff0fa3021f
+msgid "Operation using DingoClient"
+msgstr "使用 DingoClient 进行操作"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:7
-#: 5bd6e4ddb4e449168422be2d156e7ade
-msgid "Operation using DingoClient"
-msgstr ""
+#: beba5846f67349d685b6a40f7ea7caec
+msgid "Dependence about DingoClient"
+msgstr "相关依赖"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:9
-#: 71530f272bf94bde9dcb2e64bc7bf17b
-msgid "Dependence about DingoClient"
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:11
-#: 0228eafdfc174012abd6351d8ec11bc0
+#: a0b6fafa20314cf1b8d48a83a35d3d0d
 msgid ""
-"`dingo-sdk` artifactory can be download from maven central using pom "
-"directly."
-msgstr ""
+"`dingo-sdk` artifactory can be download from maven central using pom directly."
+msgstr "dingo-sdk 可以直接使用 pom 从 maven 中央存储库下载。"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:19
+#: 8d664d03573f436b91d254c59898cbe2
+msgid "Function about dingo-client"
+msgstr "dingo-client 的功能"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:21
-#: 970f6a0c04544e6e820fb878a132bcef
-msgid "Function about dingo-client"
-msgstr ""
+#: 9d762605ea5c46429cf4e3808bfffed2
+msgid ""
+"**Function about Dingo API**: [API Documents](https://github.com/dingodb/dingo)"
+msgstr "**Dingo API 的功能**：[API 文档](https://github.com/dingodb/dingo)"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:23
-#: 6bd66464185a4f0091cdc0ab03092d73
-msgid ""
-"**Function about Dingo API**: [API "
-"Documents](https://github.com/dingodb/dingo)"
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:25
-#: 8c593655a9284bcb8de9dc7cf7d12fbf
+#: 9b4934e312b14d87813ecdcede7cff49
 msgid "Examples about dingo-client"
-msgstr ""
+msgstr "用例"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:24
+#: 64bae517018646b694cd05166743ec52
+msgid "Implemented in two ways, as follows:"
+msgstr "通过以下两种方式实现："
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:26
-#: d6423c414535483fa4b0fc02c2815ce3
-msgid "Implemented in two ways, as follows:"
-msgstr ""
+#: ad193288abef4ce9b874c3ee606d6644
+msgid "Mode One"
+msgstr "方式一"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:28
-#: bae52f5f01724d519a43942bdc4a4623
-msgid "Mode One"
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:30
-#: 626a4a36968c4188b89d241677969f50
+#: 8498f25868b44b74ae0b243a9550f478
 msgid "1.Define table Using Pojo"
-msgstr ""
+msgstr "1.使用 Pojo 定义表格"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:56
-#: d9a777f7686b4d629d570db2f7b1d7e9
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:54
+#: 9ea5be38fc7e41beb76195d14c91ea62
 msgid "2.Create table Using DingoClient"
-msgstr ""
+msgstr "2.使用 DingoClient 创建表格"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:66
-#: ac58ec5360f54e86bed45bab3377c3b8
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:64
+#: 54dc667459604d6b8e01878179dffd7d
 msgid "3.Insert records to table"
-msgstr ""
+msgstr "3.向表中插入记录"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:79
-#: 65b1205320744c73a2ee2fbf0fb2d501
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:77
+#: 3756e46fe61349d5a27f5563648e3fca
 msgid "4.Query data"
-msgstr ""
+msgstr "4.查询数据"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:80
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:161
-#: 0bd585fb807345cf9f1f78177183a9ce 6a6f034f53f64876864cacbc94fe93b3
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:78
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:159
+#: 026392ff16354ebc9347243153d07b03 eedbc41f8d4247208165d8f6e4b57b4a
 msgid "Query a single record"
-msgstr ""
+msgstr "查询单条记录"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:84
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:165
-#: 3e6c15bd167d401f8951fada429b61cb 8f163312d7904f8c9f2895d3dd713600
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:82
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:163
+#: 28c7ab130cd34000b61db6dfb761070a aae1126825aa43bcbe58e2bb87c87541
 msgid "Query multiple records 1"
-msgstr ""
+msgstr "查询多条记录 1"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:88
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:169
-#: 206b36c4f17846338f068fe705f6edca aaf1fd5c63054fbba6b4f41bd7f756e7
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:86
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:167
+#: 0643c1aae1a34aea996bd18f92466f53 c4759d2aa08549c8b1a63cc5427a015f
 msgid "Query multiple records 2"
-msgstr ""
+msgstr "查询多条记录 2"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:92
-#: a9446fc442e24e3696fd9ef11911c696
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:90
+#: a4dc93760a8f47fdba1f3c3f27f21a96
 msgid "5.Sample Data of Table"
-msgstr ""
+msgstr "5.表格用例数据"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:116
-#: cc61b5123a6c4aa7b22947d428f62df9
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:114
+#: e8160075b2ee4b10ac93d1e596adb497
 msgid "6.Drop table and close connection"
-msgstr ""
+msgstr "6.删除表格并关闭连接"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:123
-#: 3fbce4ccb01348b09bc5d49b81c04967
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:121
+#: 7d5a6d44946a43c99457560d700dc2ee
 msgid "Mode Two"
-msgstr ""
+msgstr "方式二"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:124
-#: e76946c1f1f9477186da6d4c3ed444e3
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:122
+#: a22f0490399b4faa9964708dd584ad1e
 msgid "1.To create a table using Dingo Client"
-msgstr ""
+msgstr "1.使用 DingoClient 创建表格"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:146
-#: 54256c746a484507856c9606f38a21f2
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:144
+#: 8f6700de245a4b068b67754aae77e441
 msgid "2.Insert records to table"
-msgstr ""
+msgstr "2.在表格中插入记录"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:147
-#: ebcb287d9de74bcc9a4192c59bf99364
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:145
+#: 83debfc4fce647b295b97db092c409da
 msgid "Insert a single record"
-msgstr ""
+msgstr "插入单条记录"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:152
-#: a67ae984de804822aa663a9a4bd7579d
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:150
+#: c23f248ea11249c4b83dbc5afa00b4ff
 msgid "Insert multiple records"
-msgstr ""
+msgstr "插入多条记录"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:160
-#: b5bbc73a5b5943ad8b75e103d4c50d39
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:158
+#: 9ce7da631e7c430699b8b51dda2ed678
 msgid "3.Query data"
-msgstr ""
+msgstr "3.查询数据"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:173
-#: d18c449525064a5eb0e4042433f54483
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:171
+#: 87b6ab80d3a84d53bf38d2efec8a9b35
 msgid "4.Drop table and close connection"
-msgstr ""
+msgstr "4.删除表格并关闭连接"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:178
+#: 501b0bd843c842e192f67f111e587de2
+msgid "Operation using Annotation"
+msgstr "使用标注的操作"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:180
-#: b4203cbb4cd5441580e5671ed55766d2
-msgid "Operation using Annotation"
+#: e96f349a59fb4fb4942f4c626eb4c3e7
+msgid ""
+"DingoDB presents a Java API which is comprehensive and powerful, but requires a "
+"measure of boiler plate code to map the data from Java POJOs to the database. "
+"The Annotation is aim to lower the amount of code required when mapping POJOs "
+"to DingoDB and back as well as reducing some of the brittleness of the code."
 msgstr ""
+"DingoDB提供的Java应用程序接口（API）全面而强大，但需要大量的模板代码才能将数据从"
+"Java POJOs映射到数据库。注释的目的是减少将 POJOs 映射到 DingoDB 时所需的代码量，"
+"同时减少代码的脆弱性。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:182
-#: 4278394cc0974804a80f1c5309403edf
-msgid ""
-"DingoDB presents a Java API which is comprehensive and powerful, but "
-"requires a measure of boiler plate code to map the data from Java POJOs "
-"to the database. The Annotation is aim to lower the amount of code "
-"required when mapping POJOs to DingoDB and back as well as reducing some "
-"of the brittleness of the code."
-msgstr ""
+#: bdd9f7b01ee748c381eda499aee74376
+msgid "Keys"
+msgstr "键"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:184
-#: dddfbb99b3aa4973b356cd39fc15d759
-msgid "Keys"
+#: 6d5fac82ad794e8dba66a60cec31daf5
+msgid ""
+"The key to an DingoDB record can be specified either as a field or a property. "
+"Remember that DingoDB keys can be Strings, numberical types and date types only."
 msgstr ""
+"DingoDB 记录的键可以指定为字段或属性。请注意：DingoDB 的键只能是字符串、数字类型"
+"和日期类型。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:186
-#: f6f2839fd5f04166aa2f7513d30cfedf
+#: 7c3545db76c149e49d3fef2f0c613edd
 msgid ""
-"The key to an DingoDB record can be specified either as a field or a "
-"property. Remember that DingoDB keys can be Strings, numberical types and"
-" date types only."
-msgstr ""
+"To use a field as the key, simply mark the field with the DingoKey annotation:"
+msgstr "要使用某个字段作为键，只需用 DingoKey 注释标记该字段即可。"
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:188
-#: 8a9f27a6c40548078315f12a3a4d4efc
-msgid ""
-"To use a field as the key, simply mark the field with the DingoKey "
-"annotation:"
-msgstr ""
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:195
+#: e43e3324cf464116b11124f01127aea4
+msgid "Column"
+msgstr "列"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:197
-#: b968b04ea3894cc6b04b4e67fd430030
-msgid "Column"
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:199
-#: 1856a66ee189439eb65473f74de4680e
+#: f126265c985249df96170d9ae5473b1a
 msgid ""
-"Fields in Java can be mapped to the database irrespective of the "
-"visibility of the column. To do so, simply specify the column to map to "
-"with the @DingoColumn annotation:"
+"Fields in Java can be mapped to the database irrespective of the visibility of "
+"the column. To do so, simply specify the column to map to with the @DingoColumn "
+"annotation:"
 msgstr ""
+"无论列的可见性如何，Java 中的字段都可以映射到数据库。只需使用 @DingoColumn 注解"
+"指定要映射的列即可："
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:204
+#: 182ce61fa631410fae65782dadcd3539
+msgid ""
+"This will map the contents of the `version` field to a `vrsn` column in DingoDB."
+msgstr "这将把 `version` 字段的内容映射到 DingoDB 中的 `vrsn` 列。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:206
-#: 7aab9e142c004309bba5a3bc528d98da
+#: 71a06d14dcb9461da6d68d8ca9e790a7
 msgid ""
-"This will map the contents of the `version` field to a `vrsn` column in "
-"DingoDB."
-msgstr ""
+"If the name of the column matches the name of the field in Java, the name can "
+"be omitted:"
+msgstr "如果列名与 Java 中的字段名一致，则可以省略列名："
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:208
-#: 358cb3592d164a39b840320bc93451f6
-msgid ""
-"If the name of the column matches the name of the field in Java, the name"
-" can be omitted:"
-msgstr ""
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:213
+#: a1db14b6e2644d8fae8edbce54c6e0d6
+msgid "This will appear in DingoDB as the `age` column."
+msgstr "这将在 DingoDB 中显示为 `age` 列。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:215
-#: 67e0f79805bf491bb5d3f360f1163f82
-msgid "This will appear in DingoDB as the `age` column."
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:217
-#: 8717ce1fdd6a4555845395ff1801b42a
+#: f3c56e549ad64897b63baa856585877a
 msgid ""
-"By default, all fields will be mapped to the database. Fields can be "
-"excluded with the @DingoExclude annotation, and renamed with the "
-"@DingoColumn annotation. For example:"
+"By default, all fields will be mapped to the database. Fields can be excluded "
+"with the @DingoExclude annotation, and renamed with the @DingoColumn "
+"annotation. For example:"
 msgstr ""
+"默认情况下，所有字段都将映射到数据库。可以使用 @DingoExclude 注解排除字段，并使"
+"用 @DingoColumn 注解重命名字段。例如："
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:228
-#: 74e4b5c31ee14ae9a840f7473c3e5e58
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:226
+#: 1e96a2b9f2874997b04e742c5da22b14
 msgid ""
-"This saves the record with 4 columns, `a`,`b`,`c`,`d`. To save only "
-"fields `a`,`b`,`c` you can do either:"
+"This saves the record with 4 columns, `a`,`b`,`c`,`d`. To save only fields "
+"`a`,`b`,`c` you can do either:"
 msgstr ""
+"这样保存的记录有 4 列：`a`,`b`,`c`,`d`。要只保存`a`,`b`,`c`字段，可以选择以下两"
+"种方法："
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:239
+#: ff0cac2b24194b68b02b76c9f506afcb
+msgid ""
+"If a field is marked with both @DingoExclude, the column will not be mapped to "
+"the database."
+msgstr ""
+"如果一个字段同时标记了 @DingoExclude 和 @DingoExclude，该列将不会被映射到数据"
+"库。"
 
 #: ../../source/get_started/play_with_dingo_using_dingoclient.md:241
-#: 4cd3ff3e4ac54341a1b158e7c801f4a4
+#: 5eea99745fa348209feb9fc5a6a41533
 msgid ""
-"If a field is marked with both @DingoExclude, the column will not be "
-"mapped to the database."
-msgstr ""
+"You can force the name of a particular column or columns by specifying them in "
+"an DingoColumn:"
+msgstr "您可以在 DingoColumn 中指定一列或多列的名称："
 
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:243
-#: 9903d5e8e96d41768a27da41b21a2ae7
-msgid ""
-"You can force the name of a particular column or columns by specifying "
-"them in an DingoColumn:"
-msgstr ""
-
-#: ../../source/get_started/play_with_dingo_using_dingoclient.md:256
-#: 0f21900e326846bc80d425836a648a3f
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:254
+#: 63da3f6912754efe8988fbc853b1c1bd
 msgid "This will save 4 fields in the database, `a`, `b`, `longCname`, `d`."
-msgstr ""
+msgstr "这将在数据库中保存 4 个字段，即 `a`、`b`、`longCname` 和 `d`。"
 
+#~ msgid "Introducation"
+#~ msgstr "简介"
