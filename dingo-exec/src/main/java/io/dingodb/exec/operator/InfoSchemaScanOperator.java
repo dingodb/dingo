@@ -96,6 +96,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return getTxnInfo();
             case "ENGINES":
                 return mysqlEngineInfos();
+            case "DINGO_ENGINES":
+                return dingoEngineInfos();
             default:
                 throw new RuntimeException("no source");
         }
@@ -478,6 +480,15 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         List<Object[]> result = new ArrayList<>();
         result.add(new Object[]{"ndbcluster", "Clustered, fault-tolerant tables", null, "NO", null, null});
 
+        return result.stream().iterator();
+    }
+
+    private static Iterator<Object[]> dingoEngineInfos() {
+        List<Object[]> result = new ArrayList<>();
+        result.add(new Object[]{"TXN_LSM", "LSM based engine with transactions.", "NO", "YES", "YES", "YES"});
+        result.add(new Object[]{"TXN_BTREE", "BTREE based engine with transactions.", "NO", "YES", "YES", "YES"});
+        result.add(new Object[]{"LSM", "LSM based engine without transactions.", "NO", "YES", "NO", "NO"});
+        result.add(new Object[]{"BTREE", "BTREE based engine without transactions.", "NO", "YES", "NO", "NO"});
         return result.stream().iterator();
     }
 }

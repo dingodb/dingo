@@ -219,6 +219,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("COLLATIONS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_MDL_VIEW", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_TRX", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("DINGO_ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("PLUGINS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("KEYWORDS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
@@ -546,6 +547,7 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("dingo_mdl_info"), "/mysql-dingoMdlInfo.json");
         TABLE_MAP.put(convertName("DINGO_MDL_VIEW"), "/information-dingoMdlView.json");
         TABLE_MAP.put(convertName("DINGO_TRX"), "/information-dingoTrx.json");
+        TABLE_MAP.put(convertName("DINGO_ENGINES"), "/information-dingo-engines.json");
         TABLE_MAP.put(convertName("dingo_ddl_reorg"), "/mysql-dingoDdlReorg.json");
         TABLE_MAP.put(convertName("gc_delete_range_done"), "/mysql-gcDeleteRangeDone.json");
         TABLE_MAP.put(convertName("sequence"), "/mysql-sequence.json");
