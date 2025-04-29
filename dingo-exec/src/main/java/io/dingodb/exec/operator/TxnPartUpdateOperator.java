@@ -329,6 +329,12 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.put(new KeyValue(deleteKey, Arrays.copyOf(oldKeyValue.getValue(), oldKeyValue.getValue().length)));
                 }
             } else {
+                if (context.getIndexId() == null && param.getUpdateLimit() != -1L) {
+                    if (param.getUpdateScanCount() >= param.getUpdateLimit()) {
+                        return true;
+                    }
+                    param.incUpdateScanCount();
+                }
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                 LogUtils.debug(log, "{} update key is {}, partId is {}",

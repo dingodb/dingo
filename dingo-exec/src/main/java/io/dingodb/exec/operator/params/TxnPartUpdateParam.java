@@ -45,7 +45,8 @@ import java.util.List;
     "updates",
     "hasAutoInc",
     "autoIncColIdx",
-    "updatePrimaryKey"})
+    "updatePrimaryKey",
+    "updateLimit"})
 public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
@@ -62,6 +63,11 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
     @JsonProperty("updatePrimaryKey")
     private final boolean updatePrimaryKey;
 
+    @JsonProperty("updateLimit")
+    private final long updateLimit;
+
+    private long updateScanCount;
+
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -77,7 +83,8 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
-        @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey
+        @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
+        @JsonProperty("updateLimit") long updateLimit
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -86,6 +93,8 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;
         this.updatePrimaryKey =  updatePrimaryKey;
+        this.updateLimit = updateLimit;
+        this.updateScanCount = 0L;
     }
 
     @Override
@@ -96,6 +105,10 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     public void inc() {
         count++;
+    }
+
+    public void incUpdateScanCount() {
+        updateScanCount++;
     }
 
     @Override

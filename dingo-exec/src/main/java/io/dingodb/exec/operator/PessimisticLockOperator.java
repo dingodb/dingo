@@ -86,6 +86,12 @@ public class PessimisticLockOperator extends SoleOutOperator {
             if (transaction == null || (primaryLockKey == null && transaction.getPrimaryKeyLock() != null)) {
                 return false;
             }
+            if (context.getIndexId() == null && param.getUpdateLimit() != -1L) {
+                if(param.getUpdateScanCount() >= param.getUpdateLimit()) {
+                    return false;
+                }
+                param.incUpdateScanCount();
+            }
             DingoType schema = param.getSchema();
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
             KeyValueCodec codec = param.getCodec();

@@ -62,6 +62,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
+import io.dingodb.calcite.grammar.dml.SqlUpdate;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
@@ -396,6 +397,15 @@ public class DingoParser {
         }
         return false;
     }
+
+    public static long getUpdateLimit(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlUpdate) {
+            SqlUpdate sqlUpdate = (SqlUpdate) sqlNode;
+            return sqlUpdate.getLimit();
+        }
+        return -1L;
+    }
+
 
     /**
      * Optimize a {@link RelNode} tree.
