@@ -358,7 +358,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
         Object[] row = new Object[userTd.columns.size()];
         for (int i = 0; i < userTd.getColumns().size(); i++) {
             Column column = userTd.columns.get(i);
-            switch (column.getName()) {
+            switch (column.getName().toUpperCase()) {
                 case "USER":
                     row[i] = user.getUser();
                     break;

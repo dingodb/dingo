@@ -65,6 +65,9 @@ public final class NameCaseUtils {
     }
 
     public static String convertName(String name, int caseValue) {
+        if (name == null) {
+            return null;
+        }
         if (caseValue == 0 || caseValue == 2) {
             return name;
         } else if (caseValue == 1) {
