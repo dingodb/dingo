@@ -34,6 +34,7 @@ import io.dingodb.calcite.utils.IndexRangeMapSet;
 import io.dingodb.calcite.utils.IndexRangeVisitor;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -44,6 +45,7 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.expr.IndexOpExpr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
@@ -83,6 +85,7 @@ import static io.dingodb.calcite.rule.DingoIndexCollationRule.getIndexByExpr;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 
+@Slf4j
 @Value.Enclosing
 public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Config> implements SubstitutionRule {
 
@@ -449,41 +452,45 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 );
                 boolean lookup = isNeedLookUp(TupleMapping.of(secList), tupleMapping, table.columns.size());
 
-                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
-                    scan.getCluster().getRexBuilder(),
-                    DocumentScanFilterOb.builder()
-                        .match(false)
-                        .queryStr("")
-                        .columns(table.columns)
-                        .build()
-                );
-                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-                boolean flag = accept.isMatch();
-                String queryString = accept.getQueryStr();
-                if (flag) {
-                    LogicalDocumentScanFilter logicalDocumentScanFilter = new LogicalDocumentScanFilter(
-                        scan.getCluster(),
-                        scan.getTraitSet(),
-                        scan.getHints(),
-                        scan.getTable(),
-                        scan.getFilter(),
-                        scan.getSelection(),
-                        indexTd,
-                        ixId,
-                        scan.isPushDown(),
-                        lookup,
-                        0,
-                        queryString
+                try {
+                    DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                        scan.getCluster().getRexBuilder(),
+                        DocumentScanFilterOb.builder()
+                            .match(false)
+                            .queryStr("")
+                            .columns(table.columns)
+                            .build()
                     );
-                    return new LogicalProject(
-                        logicalProject.getCluster(),
-                        logicalProject.getTraitSet(),
-                        logicalProject.getHints(),
-                        logicalDocumentScanFilter,
-                        logicalProject.getProjects(),
-                        logicalProject.getRowType(),
-                        logicalProject.getVariablesSet()
-                    );
+                    DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                    boolean flag = accept.isMatch();
+                    String queryString = accept.getQueryStr();
+                    if (flag) {
+                        LogicalDocumentScanFilter logicalDocumentScanFilter = new LogicalDocumentScanFilter(
+                            scan.getCluster(),
+                            scan.getTraitSet(),
+                            scan.getHints(),
+                            scan.getTable(),
+                            scan.getFilter(),
+                            scan.getSelection(),
+                            indexTd,
+                            ixId,
+                            scan.isPushDown(),
+                            lookup,
+                            0,
+                            queryString
+                        );
+                        return new LogicalProject(
+                            logicalProject.getCluster(),
+                            logicalProject.getTraitSet(),
+                            logicalProject.getHints(),
+                            logicalDocumentScanFilter,
+                            logicalProject.getProjects(),
+                            logicalProject.getRowType(),
+                            logicalProject.getVariablesSet()
+                        );
+                    }
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
                 }
             }
         }
@@ -712,47 +719,50 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         boolean needLookup = isNeedLookUp(finalSelection, tupleMapping, table.columns.size());
 
         RelNode relNode;
-//        boolean flag = false;
-//        String queryString = "";
         if (result.isDocumentIndex) {
-            DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
-                scan.getCluster().getRexBuilder(),
-                DocumentScanFilterOb.builder()
-                    .match(false)
-                    .queryStr("")
-                    .columns(table.columns)
-                    .build()
-            );
-            DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-            boolean flag = accept.isMatch();
-            String queryString = accept.getQueryStr();
-            if (flag) {
-                LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
-                    scan.getCluster(),
-                    scan.getTraitSet(),
-                    scan.getHints(),
-                    scan.getTable(),
-                    scan.getFilter(),
-                    finalSelection,
-                    result.matchIndexTable,
-                    result.indexId,
-                    scan.isPushDown(),
-                    needLookup,
-                    0,
-                    queryString);
-                relNode = new LogicalProject(
-                    project.getCluster(),
-                    project.getTraitSet(),
-                    project.getHints(),
-                    indexScan,
-                    newProjectRexNodes,
-                    project.getRowType(),
-                    project.getVariablesSet()
+            try {
+                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                    scan.getCluster().getRexBuilder(),
+                    DocumentScanFilterOb.builder()
+                        .match(false)
+                        .queryStr("")
+                        .columns(table.columns)
+                        .build()
                 );
-                return relNode;
-            } else {
-                return null;
+                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                boolean flag = accept.isMatch();
+                String queryString = accept.getQueryStr();
+                if (flag) {
+                    LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
+                        scan.getCluster(),
+                        scan.getTraitSet(),
+                        scan.getHints(),
+                        scan.getTable(),
+                        scan.getFilter(),
+                        finalSelection,
+                        result.matchIndexTable,
+                        result.indexId,
+                        scan.isPushDown(),
+                        needLookup,
+                        0,
+                        queryString);
+                    relNode = new LogicalProject(
+                        project.getCluster(),
+                        project.getTraitSet(),
+                        project.getHints(),
+                        indexScan,
+                        newProjectRexNodes,
+                        project.getRowType(),
+                        project.getVariablesSet()
+                    );
+                    return relNode;
+                } else {
+                    return null;
+                }
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
             }
+            return null;
         }
         LogicalIndexFullScan indexFullScan = new LogicalIndexFullScan(
             scan.getCluster(),
