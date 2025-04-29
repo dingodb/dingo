@@ -6053,6 +6053,13 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
                                 ]
           <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
     |
+        <TEXT> [<LPAREN> precision = UnsignedIntLiteral()
+           [
+                                           <COMMA>
+                                           scale = UnsignedIntLiteral()
+                               ]
+          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.VARCHAR; }
+    |
         <BIGINT>    [
                          <LPAREN>
                          precision = UnsignedIntLiteral()
