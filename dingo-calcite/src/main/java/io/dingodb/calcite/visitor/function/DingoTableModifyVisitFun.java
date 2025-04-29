@@ -68,7 +68,7 @@ public final class DingoTableModifyVisitFun {
 
     public static Collection<Vertex> visit(Job job, IdGenerator idGenerator, Location currentLocation,
                                            ITransaction transaction, DingoJobVisitor visitor, DingoTableModify rel,
-                                           boolean forUpdate, boolean replaceInto, boolean isIgnore
+                                           boolean forUpdate, boolean replaceInto, boolean isIgnore, long updateLimit
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
         List<Vertex> outputs = new LinkedList<>();
@@ -121,7 +121,8 @@ public final class DingoTableModifyVisitFun {
                                     isIgnore,
                                     false,
                                     updateMapping,
-                                    updates
+                                    updates,
+                                    updateLimit
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -270,7 +271,8 @@ public final class DingoTableModifyVisitFun {
                                     updateMapping,
                                     rel.getSourceExpressionList().stream()
                                         .map(SqlExprUtils::toSqlExpr)
-                                        .collect(Collectors.toList())
+                                        .collect(Collectors.toList()),
+                                    updateLimit
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -290,7 +292,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getLockTimeOut(),
                                     isScan,
                                     td,
-                                    updatePrimaryKey
+                                    updatePrimaryKey,
+                                    updateLimit
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_UPDATE, pessimisticLockParam);
                             }
@@ -318,7 +321,8 @@ public final class DingoTableModifyVisitFun {
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
-                                    updatePrimaryKey
+                                    updatePrimaryKey,
+                                    updateLimit
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -349,7 +353,8 @@ public final class DingoTableModifyVisitFun {
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
-                                    updatePrimaryKey
+                                    updatePrimaryKey,
+                                    updateLimit
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -416,7 +421,8 @@ public final class DingoTableModifyVisitFun {
                                     isIgnore,
                                     false,
                                     null,
-                                    null
+                                    null,
+                                    updateLimit
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {

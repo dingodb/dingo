@@ -32,7 +32,8 @@ import java.util.List;
 @Getter
 @JsonTypeName("pessimistic_lock")
 @JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut",
-    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore", "updatePrimaryKey"})
+    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore",
+    "updatePrimaryKey", "updateLimit"})
 public class PessimisticLockParam extends TxnPartModifyParam {
 
     @JsonProperty("isInsert")
@@ -54,6 +55,10 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     private final TupleMapping mapping;
     @JsonProperty("updates")
     private final List<SqlExpr> updates;
+    @JsonProperty("updateLimit")
+    private final long updateLimit;
+
+    private long updateScanCount;
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -74,7 +79,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         @JsonProperty("isIgnore") boolean isIgnore,
         @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
         @JsonProperty("mapping") TupleMapping mapping,
-        @JsonProperty("updates") List<SqlExpr> updates
+        @JsonProperty("updates") List<SqlExpr> updates,
+        @JsonProperty("updateLimit") long updateLimit
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -88,6 +94,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.updatePrimaryKey = updatePrimaryKey;
         this.mapping = mapping;
         this.updates = updates;
+        this.updateLimit = updateLimit;
+        this.updateScanCount = 0L;
     }
     public void inc() {
         count++;
@@ -99,6 +107,10 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         if (updates != null && !updates.isEmpty()) {
             updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
         }
+    }
+
+    public void incUpdateScanCount() {
+        updateScanCount++;
     }
 
     @Override

@@ -2114,6 +2114,7 @@ SqlNode SqlUpdate() :
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
     final Span s;
+    SqlNode offsetFetch = null;
 }
 {
     <UPDATE> {
@@ -2136,11 +2137,12 @@ SqlNode SqlUpdate() :
         <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     ( where = Where() | { where = null; } )
+    [ <LIMIT> offsetFetch = UnsignedNumericLiteralOrParam()]
     {
         final SqlParserPos pos = s.addAll(targetColumnList)
             .addAll(sourceExpressionList).addIf(where).pos();
-        return new SqlUpdate(pos, tableRef, targetColumnList,
-            sourceExpressionList, where, null, alias);
+        return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, tableRef, targetColumnList,
+                     sourceExpressionList, where, null, alias, offsetFetch);
     }
 }
 

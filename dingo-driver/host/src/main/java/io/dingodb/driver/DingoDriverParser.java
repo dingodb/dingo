@@ -529,7 +529,8 @@ public final class DingoDriverParser extends DingoParser {
             pointTs,
             forUpdate,
             getReplaceInto(sqlNode),
-            getIgnore(sqlNode)
+            getIgnore(sqlNode),
+            getUpdateLimit(sqlNode)
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -815,7 +816,7 @@ public final class DingoDriverParser extends DingoParser {
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
                 transaction, sqlNode.getKind(), executeVariables, 0,
-                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode)
+                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode)
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
