@@ -28,6 +28,7 @@ data: {
     imports: [
       "io.dingodb.common.partition.PartitionDetailDefinition"
       "io.dingodb.common.partition.PartitionDefinition"
+      "io.dingodb.calcite.fun.SqlSubstringFunction"
       "io.dingodb.calcite.grammar.ddl.ColumnOption"
       "io.dingodb.calcite.grammar.ddl.Constraint"
       "io.dingodb.calcite.grammar.ddl.DingoSqlDdlNodes"
@@ -178,6 +179,7 @@ data: {
       "CONCURRENT"
       "INPLACE"
       "UNHEX"
+      "PURGE_RESOURCES"
       "IF"
       "COPY"
       "CODEC_VERSION"
@@ -315,6 +317,7 @@ data: {
       "CARDINALITY"
       "PLUGINS"
       "TENANT"
+      "UUID"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

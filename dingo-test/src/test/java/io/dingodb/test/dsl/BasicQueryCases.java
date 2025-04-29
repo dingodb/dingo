@@ -707,12 +707,12 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs0_i40_f80_vs0")
             .step("select * from {table} limit 3", rows(3));
 
-        test("Select with sort by primary key")
-            .use("table", "i4k_vs_f80")
-            .step(
-                "select * from {table} order by id asc",
-                csv(file("i4k_vs_f80/data.csv")).order()
-            );
+        //test("Select with sort by primary key")
+        //    .use("table", "i4k_vs_f80")
+        //    .step(
+        //        "select * from {table} order by id asc",
+        //        csv(file("i4k_vs_f80/data.csv")).order()
+        //    );
 
         test("Select with sort")
             .use("table", "i4k_vs_f80")

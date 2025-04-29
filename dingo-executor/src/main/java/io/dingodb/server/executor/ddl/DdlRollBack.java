@@ -66,25 +66,25 @@ public final class DdlRollBack {
                 job.setDingoErr(DingoErrUtil.newInternalErr(ErrCancelledDDLJob));
                 error = job.getDingoErr().errorMsg;
         }
-        if (error != null)  {
-            if (job.getError() == null) {
-                job.encodeError(error);
-            }
-            job.addErrorCount(1);
-            if (!"ErrCancelledDDLJob".equals(error)) {
-                if (job.getErrorCount() > DdlUtil.errorCountLimit) {
-                    job.setState(JobState.jobStateCancelled);
-                    //job.setError("[ddl] rollback DDL job error count exceed the limit");
-                }
-            }
-
-            if (job.getState() != JobState.jobStateRollingback && job.getState() != JobState.jobStateCancelled) {
-                LogUtils.error(log, "[ddl] run DDL job failed");
-            } else {
-                LogUtils.info(log, "[ddl] the DDL job is cancelled normally");
-                return Pair.of(ver, null);
+        //if (error != null)  {
+        if (job.getError() == null && error != null) {
+            job.encodeError(error);
+        }
+        job.addErrorCount(1);
+        if (!"ErrCancelledDDLJob".equals(error)) {
+            if (job.getErrorCount() > DdlUtil.errorCountLimit) {
+                job.setState(JobState.jobStateCancelled);
+                //job.setError("[ddl] rollback DDL job error count exceed the limit");
             }
         }
+
+        if (job.getState() != JobState.jobStateRollingback && job.getState() != JobState.jobStateCancelled) {
+            LogUtils.error(log, "[ddl] run DDL job failed");
+        } else {
+            LogUtils.info(log, "[ddl] the DDL job is cancelled normally");
+            return Pair.of(ver, null);
+        }
+        //}
         return res;
     }
 

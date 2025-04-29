@@ -46,8 +46,10 @@ public class SqlTraceSelect extends SqlSelect {
                           @Nullable SqlNode fetch,
                           @Nullable SqlNodeList hints,
                           ExportOptions exportOptions,
-                          boolean trace) {
-        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
+                          boolean trace,
+                          @Nullable SqlNode qualify) {
+        super(pos, keywordList, selectList, from, where, groupBy, having,
+            windowDecls, orderBy, offset, fetch, hints, qualify);
         this.exportOptions =  exportOptions;
         this.trace = trace;
     }

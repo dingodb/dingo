@@ -67,7 +67,6 @@ public class RootCalciteSchema extends CalciteSchema {
         );
     }
 
-    @Override
     protected @Nullable CalciteSchema getImplicitSubSchema(String schemaName, boolean caseSensitive) {
         Schema subSchema = schema.getSubSchema(schemaName);
         if (subSchema == null) {
@@ -76,9 +75,17 @@ public class RootCalciteSchema extends CalciteSchema {
         return SubCalciteSchema.builder().rootCalciteSchema(this).schema(subSchema).name(convertName(schemaName)).build();
     }
 
-    @Override
     protected @Nullable TableEntry getImplicitTable(String tableName, boolean caseSensitive) {
         return null;
+    }
+
+    @Override
+    protected CalciteSchema createSubSchema(Schema schema, String s) {
+        Schema subSchema = this.schema.getSubSchema(s);
+        if (subSchema == null) {
+            return null;
+        }
+        return SubCalciteSchema.builder().rootCalciteSchema(this).schema(subSchema).name(convertName(s)).build();
     }
 
     @Override
@@ -91,8 +98,7 @@ public class RootCalciteSchema extends CalciteSchema {
         return null;
     }
 
-    @Override
-    protected void addImplicitSubSchemaToBuilder(ImmutableSortedMap.Builder<String, CalciteSchema> builder) {
+    public void addImplicitSubSchemaToBuilder(ImmutableSortedMap.Builder<String, CalciteSchema> builder) {
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) schema;
         Set<String> subSchemaNames = schema.getSubSchemaNames();
         subSchemaNames.forEach(name -> {
@@ -104,7 +110,6 @@ public class RootCalciteSchema extends CalciteSchema {
         });
     }
 
-    @Override
     public void addImplicitTableToBuilder(ImmutableSortedSet.Builder<String> builder) {
         schema.getTableNames().forEach(builder::add);
     }

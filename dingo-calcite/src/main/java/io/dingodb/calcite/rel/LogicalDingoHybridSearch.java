@@ -84,7 +84,6 @@ public class LogicalDingoHybridSearch extends TableFunctionScan {
     @Setter
     protected boolean forDml;
 
-    @Getter
     public List<RelHint> hints;
 
     public LogicalDingoHybridSearch(RelOptCluster cluster,

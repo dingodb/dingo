@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.Multimap;
+import io.dingodb.calcite.fun.SqlSubstringFunction;
 import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
@@ -35,7 +36,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
@@ -90,6 +91,21 @@ public final class DingoParserContext implements Context {
     @Getter
     @Setter
     private boolean autoCommit;
+
+    static {
+        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
+        tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
+        tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
+        tableInstance.register(SqlUserDefinedOperators.SCAN);
+        tableInstance.register(SqlUserDefinedOperators.TEXT_SEARCH);
+        tableInstance.register(SqlUserDefinedOperators.HYBRID_SEARCH);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_BUILD);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_LOAD);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_STATUS);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_COUNT_MEMORY);
+        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_RESET);
+        tableInstance.register(SqlSubstringFunction.SQL_SUBSTRING_FUNCTION);
+    }
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
         this(defaultSchemaName, null, null);
@@ -147,26 +163,12 @@ public final class DingoParserContext implements Context {
             this.config
         );
 
-        // Register operators
-        SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
-        tableInstance.register(SqlUserDefinedOperators.LIKE_BINARY);
-        tableInstance.register(SqlUserDefinedOperators.NOT_LIKE_BINARY);
-        tableInstance.register(SqlUserDefinedOperators.SCAN);
-        tableInstance.register(SqlUserDefinedOperators.TEXT_SEARCH);
-        tableInstance.register(SqlUserDefinedOperators.HYBRID_SEARCH);
-        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_BUILD);
-        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_LOAD);
-        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_STATUS);
-        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_COUNT_MEMORY);
-        tableInstance.register(SqlUserDefinedOperators.DISK_ANN_RESET);
         SqlLikeBinaryOperator.register();
         SqlFunctionScanOperator.register(this);
         SqlVectorOperator.register(this);
         SqlDocumentOperator.register(this);
         SqlHybridSearchOperator.register(this);
         SqlDiskAnnOperator.register(this);
-        // select user from user ; user is default special operator
-        eliminateUserOperator(tableInstance);
 
         this.options = options;
 
@@ -181,14 +183,10 @@ public final class DingoParserContext implements Context {
 
     private static void eliminateUserOperator(SqlStdOperatorTable tableInstance) {
         try {
-            Field caseSensitiveOperators = ReflectiveSqlOperatorTable
-                .class.getDeclaredField("caseSensitiveOperators");
-            Field caseInsensitiveOperators = ReflectiveSqlOperatorTable
-                .class.getDeclaredField("caseInsensitiveOperators");
+            Field caseSensitiveOperators = SqlOperatorTables
+                .class.getDeclaredField("operators");
             caseSensitiveOperators.setAccessible(true);
-            caseInsensitiveOperators.setAccessible(true);
             Multimap caseSensitiveMap = (Multimap) caseSensitiveOperators.get(tableInstance);
-            Multimap caseInsensitiveMap = (Multimap) caseInsensitiveOperators.get(tableInstance);
 
             Iterator<Map.Entry> caseSensitiveIterator = caseSensitiveMap.entries().iterator();
             while (caseSensitiveIterator.hasNext()) {
@@ -198,14 +196,8 @@ public final class DingoParserContext implements Context {
                 }
             }
 
-            Iterator<Map.Entry> caseInsensitiveIterator = caseInsensitiveMap.entries().iterator();
-            while (caseInsensitiveIterator.hasNext()) {
-                Map.Entry entry = caseInsensitiveIterator.next();
-                if (entry.getValue() == SqlStdOperatorTable.USER) {
-                    caseInsensitiveIterator.remove();
-                }
-            }
         } catch (Exception ignored) {
+            ignored.printStackTrace();
         }
     }
 

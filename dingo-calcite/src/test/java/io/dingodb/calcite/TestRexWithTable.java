@@ -56,10 +56,10 @@ public class TestRexWithTable {
     private static Stream<Arguments> getParameters() {
         return Stream.of(
             arguments("name = 'Alice'", "_[1] == 'Alice'"),
-            arguments("name = 'Alice' and amount > 2.0", "AND(_[1] == 'Alice', _[2] > 2.0)"),
+            arguments("name = 'Alice' and amount > 2.0", "AND(_[1] == 'Alice', _[2] > CASTDOUBLE(2.0))"),
             arguments(
                 "name = 'Betty' and name = 'Alice' and amount < 1.0",
-                "AND(_[1] == 'Betty', _[1] == 'Alice', _[2] < 1.0)"
+                "AND(_[1] == 'Betty', _[1] == 'Alice', _[2] < CASTDOUBLE(1.0))"
             )
         );
     }

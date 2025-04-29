@@ -86,17 +86,43 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Float convertFloatFrom(@NonNull Object value) {
-        return ((BigDecimal) value).floatValue();
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).floatValue();
+        } else if (value instanceof Float) {
+            return (Float) value;
+        } else if (value instanceof Double) {
+            return ((Double) value).floatValue();
+        } else {
+            try {
+                return new BigDecimal(value.toString()).floatValue();
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     @Override
     public Double convertDoubleFrom(@NonNull Object value) {
-        return ((BigDecimal) value).doubleValue();
+        if (value instanceof Double) {
+            return (Double) value;
+        } else if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).doubleValue();
+        } else {
+            try {
+                return new BigDecimal(value.toString()).doubleValue();
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 
     @Override
     public String convertStringFrom(@NonNull Object value) {
-        return ((NlsString) value).getValue();
+        if (value instanceof NlsString) {
+            return ((NlsString) value).getValue();
+        } else {
+            return value.toString();
+        }
     }
 
     @Override

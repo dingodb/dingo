@@ -74,6 +74,9 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
             return;
         }
         TandemPipeCacheOp tandemPipeCacheOp = (TandemPipeCacheOp) dingoScanWithRelOp.getRelOp();
+        if (!(tandemPipeCacheOp.getInput() instanceof FilterOp)) {
+            return;
+        }
         FilterOp filterOp = (FilterOp) tandemPipeCacheOp.getInput();
         IndexTable indexTable;
         if (filterOp.getFilter() instanceof BinaryOpExpr) {

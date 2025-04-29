@@ -52,8 +52,10 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      @Nullable SqlNodeList orderBy,
                      @Nullable SqlNode offset,
                      @Nullable SqlNode fetch,
-                     @Nullable SqlNodeList hints) {
-        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
+                     @Nullable SqlNodeList hints,
+                     @Nullable SqlNode qualify) {
+        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls,
+            qualify, orderBy, offset, fetch, hints);
     }
 
     public SqlSelect(SqlParserPos pos,
@@ -72,8 +74,10 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      boolean flashbackQuery,
                      String flashBackStr,
                      String flashBackTsoStr,
-                     boolean forUpdate) {
-        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
+                     boolean forUpdate,
+                     @Nullable SqlNode qualify) {
+        super(pos, keywordList, selectList, from, where, groupBy, having,
+            windowDecls, qualify, orderBy, offset, fetch, hints);
         this.exportOptions =  exportOptions;
         this.flashBackQuery = flashbackQuery;
         this.flashBackTimeStr = flashBackStr;
@@ -96,8 +100,10 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
                      @Nullable SqlNode fetch,
                      @Nullable SqlNodeList hints,
                      ExportOptions exportOptions,
-                     boolean trace) {
-        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset, fetch, hints);
+                     boolean trace,
+                     @Nullable SqlNode qualify) {
+        super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls,
+            qualify, orderBy, offset, fetch, hints);
         this.exportOptions =  exportOptions;
         this.trace = trace;
     }

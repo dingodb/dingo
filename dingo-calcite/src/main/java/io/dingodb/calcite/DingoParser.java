@@ -305,7 +305,7 @@ public class DingoParser {
         TupleMapping selection = null;
         if (relRoot.kind == SqlKind.SELECT) {
             selection = TupleMapping.of(
-                relRoot.fields.stream().map(Pair::getKey).collect(Collectors.toList())
+                relRoot.fields.stream().map(fields -> fields.getKey()).collect(Collectors.toList())
             );
 
             if (needExport(sqlNode)) {
@@ -407,8 +407,8 @@ public class DingoParser {
         RelTraitSet traitSet = planner.emptyTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.ROOT);
-        List<RelOptRule> rules = DingoRules.rules();
         ImmutableList.Builder<RelOptRule> builder = ImmutableList.builder();
+        List<RelOptRule> rules = DingoRules.rules();
         builder.addAll(rules);
         if (!context.getConfig().topDownOpt()) {
             // This is needed for `IterativeRuleDriver`.

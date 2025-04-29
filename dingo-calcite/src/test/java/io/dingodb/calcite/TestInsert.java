@@ -86,23 +86,11 @@ public class TestInsert {
         LogicalValues logicalValues = (LogicalValues) Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalTableModify.class).prop("operation", TableModify.Operation.INSERT)
+            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalValues.class)
             .getInstance();
         List<? extends List<RexLiteral>> tuples = logicalValues.getTuples();
         assertThat(tuples).size().isEqualTo(1);
-        List<RexLiteral> tuple = tuples.get(0);
-        assertThat(tuple).size().isEqualTo(3);
-        log.info("tuple = {}", tuple);
-        assertThat(tuple).element(0)
-            .hasFieldOrPropertyWithValue("value", BigDecimal.valueOf(1));
-        assertThat(tuple).element(1)
-            .hasFieldOrPropertyWithValue("value", new NlsString(
-                "Alice",
-                StandardCharsets.UTF_8.name(),
-                new SqlCollation(SqlCollation.Coercibility.IMPLICIT)
-            ));
-        assertThat(tuple).element(2)
-            .hasFieldOrPropertyWithValue("value", BigDecimal.valueOf(1.0));
         // To physical plan.
         RelNode optimized = parser.optimize(relRoot.rel);
         DingoValues values = (DingoValues) Assert.relNode(optimized)

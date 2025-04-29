@@ -335,7 +335,7 @@ public class DdlTest {
         context.execSql("insert into {table} values(1, map['a', 1, 'b', 2.5])");
         Object result = context.querySingleValue("select data from {table}");
         assertThat(result).isInstanceOf(Map.class)
-            .isEqualTo(ImmutableMap.of("a", BigDecimal.valueOf(1), "b", BigDecimal.valueOf(2.5)));
+            .isEqualTo(ImmutableMap.of("a", BigDecimal.valueOf(1.0), "b", BigDecimal.valueOf(2.5)));
     }
 
     @Test

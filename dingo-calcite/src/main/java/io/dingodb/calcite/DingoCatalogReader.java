@@ -18,14 +18,13 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.calcite.utils.DingoSqlValidatorUtil;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.function.Hints;
 import org.apache.calcite.model.ModelHandler;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.type.RelDataType;
@@ -112,7 +111,7 @@ public class DingoCatalogReader implements Prepare.CatalogReader {
     @Override public Prepare.@Nullable PreparingTable getTable(final List<String> names) {
         // First look in the default schema, if any.
         // If not found, look in the root schema.
-        CalciteSchema.TableEntry entry = SqlValidatorUtil.getTableEntry(this, names);
+        CalciteSchema.TableEntry entry = DingoSqlValidatorUtil.getTableEntry(this, names);
         if (entry != null) {
             final Table table = entry.getTable();
             if (table instanceof Wrapper) {

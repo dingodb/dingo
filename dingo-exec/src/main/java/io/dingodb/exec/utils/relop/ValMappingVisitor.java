@@ -19,6 +19,7 @@ package io.dingodb.exec.utils.relop;
 import io.dingodb.expr.common.type.ArrayType;
 import io.dingodb.expr.common.type.BoolType;
 import io.dingodb.expr.common.type.DateType;
+import io.dingodb.expr.common.type.DecimalType;
 import io.dingodb.expr.common.type.DoubleType;
 import io.dingodb.expr.common.type.FloatType;
 import io.dingodb.expr.common.type.IntType;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.List;
 
@@ -93,5 +95,11 @@ class ValMappingVisitor extends TypeVisitorBase<Expr, List<Integer>> {
     @Override
     public Expr visitArrayType(@NonNull ArrayType type, List<Integer> selection) {
         return Exprs.val(val.getValue(), type);
+    }
+
+    @Override
+    public Expr visitDecimalType(@NonNull DecimalType type, List<Integer> obj) {
+        BigDecimal decimal = (BigDecimal) val.getValue();
+        return Exprs.val(decimal, type);
     }
 }

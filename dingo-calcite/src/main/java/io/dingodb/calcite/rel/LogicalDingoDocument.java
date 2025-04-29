@@ -78,7 +78,6 @@ public class LogicalDingoDocument extends TableFunctionScan {
     @Setter
     protected boolean forDml;
 
-    @Getter
     public List<RelHint> hints;
 
     @Getter

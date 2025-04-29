@@ -41,6 +41,8 @@ import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLambda;
+import org.apache.calcite.rex.RexLambdaRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -440,6 +442,7 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                     Exprs.CEIL,
                     call.getOperands().get(0).accept(this)
                 );
+            case CHAR_LENGTH:
             case OTHER_FUNCTION: {
                 OpExpr opExpr = getFunFromFactory(call);
                 if (opExpr != null) {
@@ -491,6 +494,16 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
     @Override
     public @NonNull Expr visitPatternFieldRef(RexPatternFieldRef fieldRef) {
         throw new UnsupportedRexNode(fieldRef);
+    }
+
+    @Override
+    public @NonNull Expr visitLambda(RexLambda rexLambda) {
+        return null;
+    }
+
+    @Override
+    public @NonNull Expr visitLambdaRef(RexLambdaRef rexLambdaRef) {
+        return null;
     }
 
     private @Nullable OpExpr getFunFromFactory(@NonNull RexCall call) {

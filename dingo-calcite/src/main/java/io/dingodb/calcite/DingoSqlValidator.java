@@ -16,9 +16,11 @@
 
 package io.dingodb.calcite;
 
+import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.fun.DingoOperatorTable;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.calcite.rel.type.DynamicRecordType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -27,6 +29,7 @@ import org.apache.calcite.sql.DingoSqlBasicCall;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -34,7 +37,10 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
@@ -42,6 +48,7 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
+import org.apache.calcite.sql.validate.SqlScopedShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
@@ -52,28 +59,25 @@ import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql.validate.implicit.DingoTypeCoercionImpl;
 import org.apache.calcite.sql.validate.implicit.TypeCoercion;
-import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.apache.calcite.util.BitString;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
@@ -88,6 +92,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     private Map<SqlBasicCall, String> hybridSearchMap;
 
     private TypeCoercion typeCoercion1;
+    private final SqlOperatorTable opTab;
+    final DingoCatalogReader catalogReader;
 
     static Config CONFIG = Config.DEFAULT
         .withTypeCoercionFactory(DingoSqlValidator::createTypeCoercion)
@@ -112,6 +118,12 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             typeFactory,
             DingoSqlValidator.CONFIG
         );
+        this.opTab = SqlOperatorTables.chain(
+            SqlStdOperatorTable.instance(),
+            DingoOperatorTable.instance(),
+            catalogReader
+        );
+        this.catalogReader = catalogReader;
         this.hybridSearch = false;
         this.hybridSearchSql = "";
         this.hybridSearchMap = new ConcurrentHashMap<>();
@@ -457,5 +469,112 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         } else {
             return resNode;
         }
+    }
+
+    @Override
+    public SqlNode expand(SqlNode expr, SqlValidatorScope scope) {
+        final Expander expander = new Expander(this, scope);
+        SqlNode newExpr = expander.go(expr);
+        if (expr != newExpr) {
+            setOriginal(newExpr, expr);
+        }
+        return newExpr;
+    }
+
+    private static class Expander extends SqlScopedShuttle {
+        protected final SqlValidatorImpl validator;
+
+        Expander(SqlValidatorImpl validator, SqlValidatorScope scope) {
+            super(scope);
+            this.validator = validator;
+        }
+
+        public SqlNode go(SqlNode root) {
+            return requireNonNull(root.accept(this),
+                () -> this + " returned null for " + root);
+        }
+
+        @Override public @Nullable SqlNode visit(SqlIdentifier id) {
+            // First check for builtin functions which don't have
+            // parentheses, like "LOCALTIME".
+            final SqlCall call = validator.makeNullaryCall(id);
+            if (call != null && !call.getOperator().getName().equalsIgnoreCase("user")) {
+                return call.accept(this);
+            }
+            final SqlIdentifier fqId = getScope().fullyQualify(id).identifier;
+            SqlNode expandedExpr = expandDynamicStar(id, fqId);
+            validator.setOriginal(expandedExpr, id);
+            return expandedExpr;
+        }
+
+        @Override public @Nullable SqlNode visit(SqlLiteral literal) {
+            return validator.resolveLiteral(literal);
+        }
+
+        @Override protected SqlNode visitScoped(SqlCall call) {
+            switch (call.getKind()) {
+                case SCALAR_QUERY:
+                case CURRENT_VALUE:
+                case NEXT_VALUE:
+                case WITH:
+                case LAMBDA:
+                    return call;
+                default:
+                    break;
+            }
+            // Only visits arguments which are expressions. We don't want to
+            // qualify non-expressions such as 'x' in 'empno * 5 AS x'.
+            CallCopyingArgHandler argHandler =
+                new CallCopyingArgHandler(call, false);
+            call.getOperator().acceptCall(this, call, true, argHandler);
+            final SqlNode result = argHandler.result();
+            validator.setOriginal(result, call);
+            return result;
+        }
+
+        protected SqlNode expandDynamicStar(SqlIdentifier id, SqlIdentifier fqId) {
+            if (DynamicRecordType.isDynamicStarColName(Util.last(fqId.names))
+                && !DynamicRecordType.isDynamicStarColName(Util.last(id.names))) {
+                // Convert a column ref into ITEM(*, 'col_name')
+                // for a dynamic star field in dynTable's rowType.
+                return new SqlBasicCall(
+                    SqlStdOperatorTable.ITEM,
+                    ImmutableList.of(fqId,
+                        SqlLiteral.createCharString(Util.last(id.names),
+                            id.getParserPosition())),
+                    id.getParserPosition());
+            }
+            return fqId;
+        }
+    }
+
+    @Override public @Nullable SqlCall makeNullaryCall(SqlIdentifier id) {
+        if (!id.isComponentQuoted(id.names.size() - 1)) {
+            if ("user".equalsIgnoreCase(id.toString())) {
+                return null;
+            }
+            final List<SqlOperator> list = new ArrayList<>();
+            opTab.lookupOperatorOverloads(id, null, SqlSyntax.FUNCTION, list,
+                catalogReader.nameMatcher());
+            for (SqlOperator operator : list) {
+                if (operator.getSyntax() == SqlSyntax.FUNCTION_ID
+                    || operator.getSyntax() == SqlSyntax.FUNCTION_ID_CONSTANT) {
+                    // Even though this looks like an identifier, it is a
+                    // actually a call to a function. Construct a fake
+                    // call to this function, so we can use the regular
+                    // operator validation.
+                    SqlCall sqlCall =
+                        new SqlBasicCall(operator, ImmutableList.of(), id.getParserPosition(), null)
+                            .withExpanded(true);
+                    if (operator.getSyntax() == SqlSyntax.FUNCTION_ID_CONSTANT
+                        && !config().conformance().allowNiladicConstantWithoutParentheses()) {
+                        throw handleUnresolvedFunction(sqlCall, operator,
+                            ImmutableList.of(), null);
+                    }
+                    return sqlCall;
+                }
+            }
+        }
+        return null;
     }
 }

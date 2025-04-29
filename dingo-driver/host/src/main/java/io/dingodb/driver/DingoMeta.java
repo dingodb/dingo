@@ -17,9 +17,11 @@
 package io.dingodb.driver;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.primitives.Longs;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.SubCalciteSchema;
 import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
@@ -69,6 +71,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import org.apache.calcite.util.NameSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.eclipse.jetty.util.StringUtil;
@@ -82,6 +85,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -170,10 +174,20 @@ public class DingoMeta extends MetaImpl {
         @NonNull Pat pat
     ) {
         final Predicate<String> filter = patToFilter(pat, true);
-        if (usedSchema.getSubSchemaMap().isEmpty()) {
+        NavigableMap<String, CalciteSchema> subSchemaMap;
+        ImmutableSortedMap.Builder<String, CalciteSchema> builder =
+            new ImmutableSortedMap.Builder<>(NameSet.COMPARATOR);
+        if (usedSchema instanceof RootCalciteSchema) {
+            ((RootCalciteSchema) usedSchema).addImplicitSubSchemaToBuilder(builder);
+            subSchemaMap = builder.build();
+        } else {
             return Collections.emptyList();
         }
-        return usedSchema.getSubSchemaMap().values().stream()
+
+        if (subSchemaMap.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return subSchemaMap.values().stream()
             .flatMap(s -> Stream.concat(getMatchedSubSchema(s, pat).stream(), Stream.of(s)))
             .filter(s -> filter.test(((SubSnapshotSchema) s.schema).getSchemaName()))
             .filter(s -> verifyPrivilege(((SubSnapshotSchema) s.schema)))

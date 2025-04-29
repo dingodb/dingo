@@ -33,6 +33,7 @@ import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoHybridSearch;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rel.logical.LogicalFunctionScan;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.TableFunctionScan;
+import org.apache.calcite.rex.RexCall;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -182,12 +184,12 @@ public class DingoFunctionScanRule extends ConverterRule {
                 vector.getFilter(),
                 vector.getHints()
             );
-        } else if (rel instanceof DingoFunctionScan) {
-            DingoFunctionScan scan = (DingoFunctionScan) rel;
+        } else if (rel instanceof LogicalFunctionScan) {
+            LogicalFunctionScan scan = (LogicalFunctionScan) rel;
             return new DingoFunctionScan(
                 scan.getCluster(),
                 traits,
-                scan.getCall(),
+                (RexCall) scan.getCall(),
                 scan.getTable(),
                 scan.getOperands()
             );

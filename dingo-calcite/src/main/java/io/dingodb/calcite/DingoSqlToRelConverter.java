@@ -18,7 +18,6 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnLoad;
@@ -26,6 +25,7 @@ import io.dingodb.calcite.rel.LogicalDingoDiskAnnReset;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rel.logical.LogicalFunctionScan;
 import io.dingodb.calcite.rel.logical.LogicalTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.utils.DingoRelOptUtil;
@@ -492,10 +492,14 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             TableFunctionNamespace namespace = (TableFunctionNamespace) validator.getNamespace(call);
             if (operator instanceof SqlFunctionScanOperator) {
                 assert namespace != null;
-                callRel = new DingoFunctionScan(
+                callRel = new LogicalFunctionScan(
                     cluster,
                     traits,
+                    Collections.emptyList(),
                     (RexCall) rexCall,
+                    null,
+                    ((RexCall) rexCall).getType(),
+                    null,
                     namespace.getTable(),
                     call.getOperandList()
                 );

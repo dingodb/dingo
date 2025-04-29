@@ -25,6 +25,7 @@ import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUpdate;
+import org.apache.calcite.sql.type.ArraySqlType;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -64,6 +65,16 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
                 } else if (targetType.getSqlTypeName().getName().equalsIgnoreCase("DOUBLE")
                     && sourceType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
                     continue;
+                } else if (sourceType instanceof ArraySqlType && targetType instanceof ArraySqlType) {
+                    ArraySqlType type0 = (ArraySqlType) sourceType;
+                    ArraySqlType type1 = (ArraySqlType) targetType;
+                    if (type0.getComponentType().getSqlTypeName().getName().equalsIgnoreCase("BOOLEAN")
+                        && type1.getComponentType().getSqlTypeName().getName().equalsIgnoreCase("INTEGER")) {
+                        continue;
+                    } else if (type1.getComponentType().getSqlTypeName().getName().equalsIgnoreCase("BOOLEAN")
+                        && type0.getComponentType().getSqlTypeName().getName().equalsIgnoreCase("INTEGER")) {
+                        continue;
+                    }
                 } else {
                     return false;
                 }

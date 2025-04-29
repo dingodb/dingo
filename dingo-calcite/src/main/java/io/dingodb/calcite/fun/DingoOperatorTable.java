@@ -116,8 +116,9 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("NOW", SqlStdOperatorTable.CURRENT_TIMESTAMP);
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
-        funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
+        funMap.put("SUBSTR", SqlSubstringFunction.SQL_SUBSTRING_FUNCTION);
         funMap.put("CONCAT", SqlConcatFunction.CONCAT);
+        funMap.put("SUBSTRING", SqlSubstringFunction.SQL_SUBSTRING_FUNCTION);
         funMap.put("IF", SqlIfFunction.IF);
 
         // number
@@ -491,7 +492,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         if (syntax != SqlSyntax.FUNCTION) {
             return;
         }
-        Collection<SqlFunction> functions = funMap.get(opName.getSimple().toUpperCase());
+        String opNameSimple;
+        if (opName.names.size() == 1) {
+            opNameSimple = opName.names.get(0);
+        } else {
+            opNameSimple = opName.toString();
+        }
+        Collection<SqlFunction> functions = funMap.get(opNameSimple.toUpperCase());
         operatorList.addAll(functions);
     }
 

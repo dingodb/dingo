@@ -863,6 +863,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         // Get old table and indexes
         TableDefinitionWithId table = Optional.mapOrGet(
             infoSchemaService.getTable(schemaId, tableName), __ -> (TableDefinitionWithId) __, () -> null);
+        if (table == null) {
+            return new Pair<>(true, "checkDropDiskAnnIndex table is null");
+        }
         List<Object> indexList = infoSchemaService.listIndex(schemaId, table.getTableId().getEntityId());
         List<TableDefinitionWithId> indexes = indexList.stream()
             .map(object -> (TableDefinitionWithId) object).toList();

@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.DingoRelOptTable;
+import io.dingodb.calcite.rel.logical.LogicalFunctionScan;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -41,7 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class DingoFunctionScan extends TableFunctionScan implements DingoRel {
+public class DingoFunctionScan extends LogicalFunctionScan implements DingoRel {
 
     @Getter
     private final RexCall call;
@@ -57,7 +58,7 @@ public class DingoFunctionScan extends TableFunctionScan implements DingoRel {
         DingoRelOptTable table,
         List<SqlNode> operands
     ) {
-        super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null);
+        super(cluster, traitSet, Collections.emptyList(), call, null, call.type, null, table, operands);
         this.call = call;
         this.table = table;
         this.operands = operands;

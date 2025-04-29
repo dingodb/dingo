@@ -117,6 +117,14 @@ public class CodeKvTest {
     }
 
     @Test
+    public void decodeHashDataKey() {
+        byte[] kvKey = new byte[]{109, 84, 97, 98, 108, 101, 58, 54, 52, -1, 50, 57, 50, 0, 0, 0, 0, 0, -6, 0, 0, 0, 0, 0, 0, 0, 104, 73, 110, 100, 101, 120, 58, 54, 52, -1, 53, 48, 53, 0, 0, 0, 0, 0, -6};
+        Pair<byte[], byte[]> pair = CodecKvUtil.decodeHashDataKey(kvKey);
+        System.out.println(new String(pair.getKey()));
+        System.out.println(new String(pair.getValue()));
+    }
+
+    @Test
     public void encodeHashDataKey(){
         String key = "DBS";
         String field = "DB:2";

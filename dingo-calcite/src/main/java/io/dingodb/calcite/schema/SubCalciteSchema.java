@@ -20,9 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Optional;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.schema.Function;
@@ -36,8 +36,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class SubCalciteSchema extends CalciteSchema {
+    @Getter
     RootCalciteSchema rootCalciteSchema;
 
     @Builder
@@ -61,12 +64,10 @@ public class SubCalciteSchema extends CalciteSchema {
         this.rootCalciteSchema = rootCalciteSchema;
     }
 
-    @Override
     protected @Nullable CalciteSchema getImplicitSubSchema(String schemaName, boolean caseSensitive) {
         return null;
     }
 
-    @Override
     public @Nullable TableEntry getImplicitTable(String tableName, boolean caseSensitive) {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         boolean forValidate = false;
@@ -92,6 +93,16 @@ public class SubCalciteSchema extends CalciteSchema {
     }
 
     @Override
+    protected CalciteSchema createSubSchema(Schema schema, String name) {
+        if (schema instanceof SubSnapshotSchema) {
+            return SubCalciteSchema.builder().rootCalciteSchema(this.rootCalciteSchema)
+                .schema(schema).name(convertName(name)).build();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
     protected @Nullable TypeEntry getImplicitType(String name, boolean caseSensitive) {
         return null;
     }
@@ -101,12 +112,10 @@ public class SubCalciteSchema extends CalciteSchema {
         return null;
     }
 
-    @Override
     protected void addImplicitSubSchemaToBuilder(ImmutableSortedMap.Builder<String, CalciteSchema> builder) {
 
     }
 
-    @Override
     protected void addImplicitTableToBuilder(ImmutableSortedSet.Builder<String> builder) {
         schema.getTableNames().forEach(builder::add);
     }
@@ -154,6 +163,8 @@ public class SubCalciteSchema extends CalciteSchema {
     public CalciteSchema add(String name, Schema schema) {
         return null;
     }
+
+
 
     public io.dingodb.meta.entity.Table getTable(String tableName) {
         SubSnapshotSchema subSnapshotSchema = (SubSnapshotSchema) schema;

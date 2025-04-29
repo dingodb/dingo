@@ -35,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.dingodb.common.util.Utils.sole;
@@ -48,7 +49,8 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
         SqlKind.SUM0,
         SqlKind.MAX,
         SqlKind.MIN,
-        SqlKind.SINGLE_VALUE
+        SqlKind.SINGLE_VALUE,
+        SqlKind.LITERAL_AGG
     );
 
     protected LogicalSplitAggregateRule(Config config) {
@@ -71,11 +73,14 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
         });
     }
 
-    static @NonNull Expr getAgg(@NonNull AggregateCall agg) {
+    static Expr getAgg(@NonNull AggregateCall agg) {
         SqlKind kind = agg.getAggregation().getKind();
         List<Integer> args = agg.getArgList();
         if (args.isEmpty() && kind == SqlKind.COUNT) {
             return Exprs.op(Exprs.COUNT_ALL_AGG);
+        }
+        if (args.isEmpty()) {
+            return null;
         }
         int index = sole(args);
         Expr var = DingoCompileContext.createTupleVar(index);
@@ -119,6 +124,7 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
             .toArray();
         Expr[] exprs = aggregate.getAggCallList().stream()
             .map(LogicalSplitAggregateRule::getAgg)
+            .filter(Objects::nonNull)
             .toArray(Expr[]::new);
         RelOp relOp;
         if (groupIndices.length == 0) {

@@ -76,7 +76,6 @@ public class LogicalDingoDiskAnn extends TableFunctionScan {
     @Setter
     protected boolean forDml;
 
-    @Getter
     protected List<RelHint> hints;
 
     public LogicalDingoDiskAnn(RelOptCluster cluster,

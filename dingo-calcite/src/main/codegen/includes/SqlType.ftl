@@ -50,18 +50,12 @@ SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
    final SqlTypeNameSpec sqlTypeNameSpec;
    int precision = -1;
     SqlTypeName typeName;
-    boolean withLocalTimeZone = false;
 } {
    <DATETIME>
    { s.add(this); }
     precision = PrecisionOpt()
-    withLocalTimeZone = TimeZoneOpt()
+    typeName = TimeZoneOpt(false)
     {
-        if (withLocalTimeZone) {
-            typeName = SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
-        } else {
-            typeName = SqlTypeName.TIMESTAMP;
-        }
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
     }
 }
@@ -112,5 +106,16 @@ SqlTypeNameSpec SqlTinyintTypeName(Span s) :
     {
         sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, -1, s.end(this));
         return sqlTypeNameSpec;
+    }
+}
+
+SqlLiteral SpecialDateTimeLiteral() :
+{
+    final String p;
+    final Span s;
+}
+{
+    <DATE> { s = span(); } p = SimpleStringLiteral() {
+      return SqlLiteral.createUnknown("DATE", p, s.end(this));
     }
 }

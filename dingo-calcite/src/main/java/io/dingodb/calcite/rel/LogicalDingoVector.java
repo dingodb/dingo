@@ -76,7 +76,6 @@ public class LogicalDingoVector extends TableFunctionScan {
     @Setter
     protected boolean forDml;
 
-    @Getter
     public List<RelHint> hints;
 
     public LogicalDingoVector(RelOptCluster cluster,
