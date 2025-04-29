@@ -6,19 +6,19 @@
 
 1.Launch DBeaver tool, navigate to menu Window -> Driver Manager
 
-![Driver Manager](../images/usage_dbeaver_driver_manager.png)
+![Driver Manager](../../images/usage_dbeaver_driver_manager.png)
 
 2.In the Driver Manager dialog, click on “New” button,create new driver
 
 3.In the New Driver dialog, provide the “Driver Name” and “Class Name”, here please input the class name as “io.dingodb.driver.client.DingoDriverClient”
 
-![Import driver file](../images/usage_dbeaver_import_driver_file.png)
+![Import driver file](../../images/usage_dbeaver_import_driver_file.png)
 
 4.Then click on the “library” tab, and click “Add file” button.
 
 5.Add the DingoDB driver “dingo-driver-client-all.jar”, click “Search” and select the DingoDB driver “io.dingodb.driver.client.DingoDriverClient”.
 
-![Find class](../images/usage_dbeaver_find_class.png)
+![Find class](../../images/usage_dbeaver_find_class.png)
 
 6.Click “OK”, then you will see the DingoDB driver shown in driver list.
 
@@ -26,11 +26,11 @@
 
 8.In New Database Connection dialog, provide valid JDBC URL, User and Password, then “Test Connection” and see the Database connected successfully.
 
-![New databases](../images/usage_dbeaver_new_databases.png)
+![New databases](../../images/usage_dbeaver_new_databases.png)
 
 9.Click Finish and see the DingoDB connection displayed in Database Connections Navigator on left.
   
-![Connection](../images/usage_dbeaver_successful_connection.png)
+![Connection](../../images/usage_dbeaver_successful_connection.png)
 
 ### Do Operation using Editor
 

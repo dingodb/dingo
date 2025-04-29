@@ -1,8 +1,6 @@
 # Play with DingoDB using DingoClient
 
-## Introducation
-
-DingoDB is a distributed real-time multi-modal database. In order to be more faster, it presents a Java API which is comprehensive and powerful to do operations on the database, such as DDL or DML operation.
+In order to be more faster, DingoDB presents a Java API which is comprehensive and powerful to do operations on the database, such as DDL or DML operation.
 
 ## Operation using DingoClient
 

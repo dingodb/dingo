@@ -63,7 +63,9 @@ Product Advantages
    :maxdepth: 3
 
    overview/index
+   get_started/index
    architecture/index
+   operation_and_maintenance/index
    sql/index
    release_notes/index
    faq/index

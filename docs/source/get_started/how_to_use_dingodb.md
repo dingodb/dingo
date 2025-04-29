@@ -1,6 +1,6 @@
 # How to Use DingoDB
 
-DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) Database. It provide three ways to access to DingoDB.
+We provide three ways to access to DingoDB.
 
 ## JDBC Driver
 
@@ -22,7 +22,7 @@ The usage about SQL can be reference to [Play with DingoDB using SQL](./play_wit
 ```shell
    ./bin/sqlline.sh host root
 ```
-![DingoDB Sqlline](../images/dingo_sqlline.png)
+![DingoDB Sqlline](../../images/dingo_sqlline.png)
 
 * MySQL
 
@@ -30,7 +30,7 @@ The usage about SQL can be reference to [Play with DingoDB using SQL](./play_wit
 ```shell
 mysql -h ip -P 3307 -u root -p ******
 ```
-![MySQL Shell](../images/mysql_shell.png)
+![MySQL Shell](../../images/mysql_shell.png)
 
 ## Using Key-Value SDK
 

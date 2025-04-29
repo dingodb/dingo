@@ -9,4 +9,3 @@ Getting Started
    play_with_dingo_using_sql.md
    play_with_dingo_using_dingoclient.md
    play_with_dingo_using_Langchain.md
-   operation_and_maintenance/index
