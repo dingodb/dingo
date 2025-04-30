@@ -6,18 +6,19 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version:  DingoDB\n"
+"Project-Id-Version: DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-28 10:17+0800\n"
-"PO-Revision-Date: 2025-04-27 18:20+0800\n"
+"POT-Creation-Date: 2025-04-30 10:18+0800\n"
+"PO-Revision-Date: 2025-04-30 10:19+0800\n"
 "Last-Translator: \n"
-"Language: zh_CN\n"
 "Language-Team: zh_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
 
 #: ../../source/get_started/how_to_use_dingodb.md:1
 #: 2f4e084fbeab4e56a3d4d014c03ddb91
@@ -26,8 +27,8 @@ msgstr "如何使用DingoDB"
 
 #: ../../source/get_started/how_to_use_dingodb.md:3
 #: 38750f525ee64624abe297219f29a594
-msgid "We provide three ways to access to DingoDB."
-msgstr "我们提供三种方式接入 DingoDB"
+msgid "We provide the following modes to access to DingoDB."
+msgstr "我们提供以下方式接入 DingoDB"
 
 #: ../../source/get_started/how_to_use_dingodb.md:5
 #: ae5d5d43a57148b3b0ee1cffb5352cb6
@@ -37,16 +38,20 @@ msgstr ""
 #: ../../source/get_started/how_to_use_dingodb.md:7
 #: 24825bf62d9d439a9a8ace9bc02a59d8
 msgid ""
-"In DingoDB cluster, A JDBC Driver proxy should be start, it will pass the"
-" SQL query to `Executor`."
-msgstr "在 DingoDB 集群中，需要启动一个 JDBC 驱动代理，它将把 SQL 查询传递给 \"执行器\"。"
+"In DingoDB cluster, A JDBC Driver proxy should be start, it will pass the "
+"SQL query to `Executor`."
+msgstr ""
+"在 DingoDB 集群中，需要启动一个 JDBC 驱动代理，它将把 SQL 查询传递给 \"执"
+"行器\"。"
 
 #: ../../source/get_started/how_to_use_dingodb.md:13
 #: 4610612d54d0475ebe788c95b1137cf7
 msgid ""
-"The usage about SQL can be reference to [Play with DingoDB using "
-"SQL](./play_with_dingo_using_sql.md)"
-msgstr "有关 SQL 的用法，请参阅 [使用 SQL 玩转 DingoDB](./play_with_dingo_using_sql.md)。"
+"The usage about SQL can be reference to [Play with DingoDB using SQL](./"
+"play_with_dingo_using_sql.md)"
+msgstr ""
+"有关 SQL 的用法，请参阅 [使用 SQL 连接 DingoDB](./"
+"play_with_dingo_using_sql.md)。"
 
 #: ../../source/get_started/how_to_use_dingodb.md:16
 #: 250169d255a54e38a16617f4f5fcf75d
@@ -83,8 +88,8 @@ msgstr ""
 #: ../../source/get_started/how_to_use_dingodb.md:29
 #: 8a1591758c494841a0481f6f51b7762d
 msgid ""
-"In MySQL install path, you can start a sqlline to build connection to the"
-" cluster."
+"In MySQL install path, you can start a sqlline to build connection to the "
+"cluster."
 msgstr "在 MySQL 安装路径中，可以启动一个 sqlline 来建立与群集的连接。"
 
 #: ../../source/get_started/how_to_use_dingodb.md:33
@@ -97,65 +102,40 @@ msgstr ""
 msgid "MySQL Shell"
 msgstr ""
 
-#: ../../source/get_started/how_to_use_dingodb.md:35
-#: 0393c11877404803bcd454a461f4bfdf
-msgid "Using Key-Value SDK"
-msgstr "使用 Key-Value SDK"
+#~ msgid ""
+#~ "DingoDB is a real-time Hybrid Serving & Analytical Processing (HSAP) "
+#~ "Database. It provide three ways to access to DingoDB."
+#~ msgstr ""
+#~ "DingoDB 是一个实时混合服务与分析处理（Hybrid Serving & Analytical "
+#~ "Processing，HSAP）数据库。它提供三种访问 DingoDB 的方式。"
 
-#: ../../source/get_started/how_to_use_dingodb.md:37
-#: 660ef2021fd64299839bd307717bedb1
-msgid ""
-"DingoDB is a distributed real-time multi-modal database. It combines the "
-"features of a data lake and a vector database. It can store any type of "
-"data (key-value, PDF, audio, video, etc) with data of any size.Using it, "
-"you can build your Vector Ocean (The Next Generation data architecture "
-"following data warehouse and data lake initiated by DataCanvas) and "
-"analyze structured and unstructured data with extremely low latency."
-msgstr ""
-"DingoDB "
-"是一种分布式实时多模向量数据库。它结合了数据湖和向量数据库的特点。它可以存储任何类型的数据（键值、PDF、音频、视频等）和任何大小的数据。使用它，您可以构建自己的向量海（继"
-" DataCanvas 发起的数据仓库和数据湖之后的下一代数据架构），并以极低的延迟分析结构化和非结构化数据。"
-
-#: ../../source/get_started/how_to_use_dingodb.md:38
-#: 72befb1f783e4f2f930ab587c57ca8bb
-msgid "Java SDK"
-msgstr ""
-
-#: ../../source/get_started/how_to_use_dingodb.md:40
-#: ce18910ddf814d938e39224971b7ded4
-msgid ""
-"The detail about the SDK client can be found in [Play with dingo using "
-"Java SDK](./play_with_dingo_using_dingoclient.md)."
-msgstr ""
-"有关 SDK 客户端的详细信息，请参阅 [使用 Java SDK 玩转 "
-"DingoDB]（./play_with_dingo_using_dingoclient.md）。"
-
-#: ../../source/get_started/how_to_use_dingodb.md:41
-#: 6a992d8aec4b4609b74ea26a9c0c6aaa
-msgid "Python SDK"
-msgstr ""
-
-#: ../../source/get_started/how_to_use_dingodb.md:43
-#: 7e24bdf259f6452d944cf3a9cc1db048
-msgid ""
-"The detail about the SDK client can be found in [Play with dingo using "
-"Python SDK](./play_with_dingo_using_Langchain.md)."
-msgstr ""
-"有关 SDK 客户端的详细信息，请参阅 [使用 Java SDK "
-"玩转DingoDB]（./play_with_dingo_using_dingoclient.md）。"
+#~ msgid "Using Key-Value SDK"
+#~ msgstr "使用 Key-Value SDK"
 
 #~ msgid ""
-#~ "DingoDB is a real-time Hybrid "
-#~ "Serving & Analytical Processing (HSAP) "
-#~ "Database. It provide three ways to "
-#~ "access to DingoDB."
+#~ "DingoDB is a distributed real-time multi-modal database. It combines "
+#~ "the features of a data lake and a vector database. It can store any "
+#~ "type of data (key-value, PDF, audio, video, etc) with data of any "
+#~ "size.Using it, you can build your Vector Ocean (The Next Generation "
+#~ "data architecture following data warehouse and data lake initiated by "
+#~ "DataCanvas) and analyze structured and unstructured data with "
+#~ "extremely low latency."
 #~ msgstr ""
-#~ "DingoDB 是一个实时混合服务与分析处理（Hybrid Serving & "
-#~ "Analytical Processing，HSAP）数据库。它提供三种访问 DingoDB 的方式。"
+#~ "DingoDB 是一种分布式实时多模向量数据库。它结合了数据湖和向量数据库的特"
+#~ "点。它可以存储任何类型的数据（键值、PDF、音频、视频等）和任何大小的数"
+#~ "据。使用它，您可以构建自己的向量海（继 DataCanvas 发起的数据仓库和数据"
+#~ "湖之后的下一代数据架构），并以极低的延迟分析结构化和非结构化数据。"
 
-#~ msgid "![DingoDB Sqlline](../images/dingo_sqlline.png)"
+#~ msgid ""
+#~ "The detail about the SDK client can be found in [Play with dingo using "
+#~ "Java SDK](./play_with_dingo_using_dingoclient.md)."
 #~ msgstr ""
+#~ "有关 SDK 客户端的详细信息，请参阅 [使用 Java SDK 连接 DingoDB]（./"
+#~ "play_with_dingo_using_dingoclient.md）。"
 
-#~ msgid "![MySQL Shell](../images/mysql_shell.png)"
+#~ msgid ""
+#~ "The detail about the SDK client can be found in [Play with dingo using "
+#~ "Python SDK](./play_with_dingo_using_Langchain.md)."
 #~ msgstr ""
-
+#~ "有关 SDK 客户端的详细信息，请参阅 [使用 Java SDK 连接DingoDB]（./"
+#~ "play_with_dingo_using_dingoclient.md）。"
