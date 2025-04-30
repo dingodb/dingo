@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-27 18:44+0800\n"
-"PO-Revision-Date: 2025-04-27 18:56+0800\n"
+"PO-Revision-Date: 2025-04-30 10:20+0800\n"
 "Last-Translator: \n"
 "Language-Team: zh_CN <LL@li.org>\n"
 "Language: zh_CN\n"
@@ -23,7 +23,7 @@ msgstr ""
 #: ../../source/get_started/play_with_dingo_using_Langchain.md:1
 #: e0e88b63fb28417f9a58c432d3b35bc0
 msgid "Play with DingoDB using Langchain"
-msgstr "使用 Langchain 玩转 DingoDB"
+msgstr "使用 Langchain 连接 DingoDB"
 
 #: ../../source/get_started/play_with_dingo_using_Langchain.md:3
 #: b661a12574594c75a520640200304cfc
@@ -66,7 +66,7 @@ msgstr "除了在检索器对象中使用相似性搜索外，还可以使用 MM
 #: ../../source/get_started/play_with_dingo_using_Langchain.md:90
 #: 28b3ec203ea94934a1579da14c85a616
 msgid "Or use 'max_marginal_relevance_search' directly:"
-msgstr "或直接使用 "max_marginal_relevance_search"："
+msgstr "或直接使用 \"max_marginal_relevance_search\"："
 
 #~ msgid ""
 #~ "[Dingo](https://dingodb.readthedocs.io/en/latest/) is a distributed multi-mode vector "

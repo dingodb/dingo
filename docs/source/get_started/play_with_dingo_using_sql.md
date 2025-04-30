@@ -138,7 +138,7 @@ String sql = "select * from exampleTest";
 try (ResultSet resultSet = statement.executeQuery(sql)) {
   while (resultSet.next()) {
     // iterator the result set
-	}
+    }
 }
 ```
 ## Play MySQL Using Java Code
