@@ -570,7 +570,11 @@ public final class PrepareMeta {
                 TableDefinition tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
                 MetaService metaService = MetaService.ROOT;
                 MetaService subMetaService = metaService.getSubMetaService(schema);
-                subMetaService.createTables(tableDefinition, new ArrayList<>());
+                if (!SYSTEM_VIEW.equalsIgnoreCase(tableType)) {
+                    subMetaService.createTables(tableDefinition, new ArrayList<>());
+                } else {
+                    subMetaService.createView(subMetaService.id().domain, tableName, tableDefinition);
+                }
             }
         } catch (Exception e) {
             LogUtils.error(log, "create table failed:{}, schemaName:{}, tableName:{}",
