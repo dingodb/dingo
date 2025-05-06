@@ -133,10 +133,10 @@ public final class DingoDocumentVisitFun {
 
         List<Column> columnNames = indexTable.getColumns();
         for (Column columnName : columnNames) {
-            queryString = queryString.replaceAll(
-                columnName.getName().toLowerCase() + ":",
-                columnName.getName().toUpperCase() + ":"
-            );
+            String name = columnName.getName();
+            String regex = "(?i)\\Q" + name + "\\E:";
+            String replacement = name.toUpperCase() + ":";
+            queryString = queryString.replaceAll(regex, replacement);
         }
         // document index cols in pri table selection
         TupleMapping map1 = indexTable.getMapping();
