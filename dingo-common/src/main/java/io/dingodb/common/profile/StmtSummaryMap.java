@@ -56,6 +56,9 @@ public final class StmtSummaryMap {
             .build(new CacheLoader<String, StmtSummary>() {
                 @Override
                 public @NonNull StmtSummary load(@NonNull String summaryKey) {
+                    if (summaryKey.length() > 1000) {
+                        summaryKey = summaryKey.substring(0, 1000);
+                    }
                     return new StmtSummary(summaryKey);
                 }
             });

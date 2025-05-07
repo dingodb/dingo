@@ -132,6 +132,9 @@ public class StmtSummary {
         this.simpleUser = profile.getSimpleUser();
         this.state = profile.getState();
         this.msg = profile.getMsg();
+        if (this.msg != null && this.msg.length() > 3000) {
+            this.msg = this.msg.substring(0, 3000);
+        }
         if (profile.getStart() < firstSeen) {
             this.firstSeen = profile.start;
         }
@@ -196,9 +199,15 @@ public class StmtSummary {
             this.avgJobLatency = sumJobLatency / execCount;
             if (plan == null) {
                 plan = execProfile.dumpTree(new byte[0]);
+                if (plan != null && plan.length() > 3000) {
+                    plan = plan.substring(0, 3000);
+                }
             }
             if (binaryPlan == null) {
                 binaryPlan = execProfile.binaryPlanOp();
+                if (binaryPlan != null && binaryPlan.length() > 3000) {
+                    binaryPlan = binaryPlan.substring(0, 3000);
+                }
             }
             // foreach profile to calculate avgKvLatency and set
             // foreach profile to calculate operator duration
