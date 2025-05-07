@@ -214,8 +214,6 @@ import static org.apache.calcite.util.Static.RESOURCE;
 public class DingoDdlExecutor extends DdlExecutorImpl {
     public static final DingoDdlExecutor INSTANCE = new DingoDdlExecutor();
 
-    private static final Pattern namePattern = Pattern.compile("^[A-Za-z_][A-Za-z\\d_]*$");
-
     public UserService userService;
 
     private DingoDdlExecutor() {
@@ -2713,9 +2711,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String name = scd.name.getSimple();
-        if (!namePattern.matcher(name).matches()) {
-            throw DINGO_RESOURCE.invalidColumn().ex();
-        }
+        //if (!namePattern.matcher(name).matches()) {
+        //    throw DINGO_RESOURCE.invalidColumn().ex();
+        //}
 
         // Obtaining id from method
         if (scd.isAutoIncrement() && !SqlTypeName.INT_TYPES.contains(typeName)) {
@@ -2928,6 +2926,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return getRecoverJobBySql(sql, true);
     }
 
+    public static DdlJob getRecoverJob(String schemaName) {
+        String sql = "select job_meta from mysql.dingo_ddl_history where lower(schema_name) = %s "
+            + "and type = 2 order by create_time desc limit 10";
+        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName.toLowerCase())));
+        return getRecoverJobBySql(sql, false);
+    }
+
     public static boolean checkDeleteTableJob(DdlJob job) {
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type "
             + "from mysql.gc_delete_range where job_id="
@@ -2942,13 +2947,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } finally {
             SessionUtil.INSTANCE.closeSession(session);
         }
-    }
-
-    public static DdlJob getRecoverJob(String schemaName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s "
-            + "and type = 2 order by create_time desc limit 10";
-        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName)));
-        return getRecoverJobBySql(sql, false);
     }
 
     public static DdlJob getRecoverWithoutTrunJob(String schemaName, String tableName) {

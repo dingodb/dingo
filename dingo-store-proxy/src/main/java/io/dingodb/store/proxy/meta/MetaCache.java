@@ -30,6 +30,7 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.InfoSchema;
@@ -279,35 +280,53 @@ public class MetaCache {
                 }
                 return new TreeMap<>();
             }
-            TableDefinition tableDefinition = tableWithId.getTableDefinition();
-            List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
-            tableDefinition.getTablePartition().getPartitions()
-                .forEach(partition -> {
-                    List<Object> regionList = infoSchemaService
-                        .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
-                    regionList
-                        .forEach(object -> {
-                            ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                            rangeDistributionList.add(
-                                new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
-                            );
-                        });
-                });
-            NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-            Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
-                table.tupleType(), table.keyMapping());
-            boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
-            rangeDistributionList.forEach(scanRegionWithPartId -> {
-                RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
-                result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
-            });
-            return result;
+            NavigableMap<ComparableByteArray, RangeDistribution> result = getRangeDistributions(tableWithId);
+            if (result.isEmpty()) {
+                int retry = 3;
+                while (retry-- > 0) {
+                    result = getRangeDistributions(tableWithId);
+                    if (!result.isEmpty()) {
+                        return result;
+                    }
+                    Utils.sleep(1000);
+                }
+                return result;
+            } else {
+                return result;
+            }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             return new TreeMap<>();
         }
+    }
+
+    @NonNull
+    private NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistributions(TableDefinitionWithId tableWithId) {
+        TableDefinition tableDefinition = tableWithId.getTableDefinition();
+        List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
+        tableDefinition.getTablePartition().getPartitions()
+            .forEach(partition -> {
+                List<Object> regionList = infoSchemaService
+                    .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
+                regionList
+                    .forEach(object -> {
+                        ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                        rangeDistributionList.add(
+                            new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
+                        );
+                    });
+            });
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
+            table.tupleType(), table.keyMapping());
+        boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
+        rangeDistributionList.forEach(scanRegionWithPartId -> {
+            RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
+            result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
+        });
+        return result;
     }
 
 

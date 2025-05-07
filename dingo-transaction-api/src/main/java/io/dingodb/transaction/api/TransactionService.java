@@ -29,13 +29,20 @@ public interface TransactionService {
     }
 
     void begin(Connection connection, boolean pessimistic) throws SQLException;
+
     void commit(Connection connection) throws SQLException;
+
     void rollback(Connection connection) throws SQLException;
-    default void rollback(long txnId) throws SQLException {}
+
+    default void rollback(long txnId) throws SQLException {
+
+    }
 
     void lockTable(Connection connection, List<CommonId> locks, LockType type);
+
     void unlockTable(Connection connection);
 
     Iterator<Object[]> getMdlInfo();
+
     Iterator<Object[]> getTxnInfo();
 }

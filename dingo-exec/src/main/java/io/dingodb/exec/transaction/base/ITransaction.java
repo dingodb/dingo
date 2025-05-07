@@ -118,4 +118,7 @@ public interface ITransaction {
 
     Map<TxnPartData, Boolean> getPartDataMap();
 
+    boolean isBeginTransaction();
+
+    void setBeginTransaction(boolean beginTransaction);
 }

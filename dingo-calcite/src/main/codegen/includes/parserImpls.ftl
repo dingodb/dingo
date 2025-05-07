@@ -311,7 +311,7 @@ void TableElement(List<SqlNode> list) :
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {
             list.add(SqlDdlNodes.primary(s.end(columnList), name, columnList));
-        } [ <USING> <BTREE>]
+        } [ <USING> { String engine1 = getNextToken().image; }]
     |
       [<CONSTRAINT>]
       <FOREIGN><KEY> [ name = SimpleIdentifier() ]

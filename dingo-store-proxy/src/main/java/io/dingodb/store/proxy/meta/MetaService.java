@@ -147,7 +147,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    private static final Pattern pattern = Pattern.compile("^[A-Za-z_][A-Za-z\\d_]*$");
+    //private static final Pattern pattern = Pattern.compile("^[A-Za-z_][A-Za-z\\d_]*$");
     private static final Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
 
     public final DingoCommonId id;
@@ -202,10 +202,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
             name = name.toUpperCase();
         }*/
         name = convertName(name);
-        if (!pattern.matcher(name).matches()) {
-            throw new RuntimeException(source + " name: " + name + " currently only supports uppercase and "
-                + "lowercase letters, digits, and underscores");
-        }
+        //if (!pattern.matcher(name).matches()) {
+        //    throw new RuntimeException(source + " name: " + name + " currently only supports uppercase and "
+        //        + "lowercase letters, digits, and underscores");
+        //}
         return name;
     }
 
@@ -847,14 +847,15 @@ public class MetaService implements io.dingodb.meta.MetaService {
             })
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
-        io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
         createIndexRegion(indexWithId, tableId, directReplica);
+        io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
     }
 
     @Override
     public void dropIndex(CommonId table, CommonId index, long jobId, long startTs) {
         dropRegionByTable(index, jobId, startTs);
         infoSchemaService.dropIndex(table.seq, index.seq);
+        LogUtils.info(log, "drop index tableId:{}, indexId:{}", table, index);
     }
 
     @Override

@@ -573,7 +573,7 @@ public final class PrepareMeta {
                 if (!SYSTEM_VIEW.equalsIgnoreCase(tableType)) {
                     subMetaService.createTables(tableDefinition, new ArrayList<>());
                 } else {
-                    subMetaService.createView(subMetaService.id().domain, tableName, tableDefinition);
+                    subMetaService.createView(subMetaService.id().seq, tableName, tableDefinition);
                 }
             }
         } catch (Exception e) {

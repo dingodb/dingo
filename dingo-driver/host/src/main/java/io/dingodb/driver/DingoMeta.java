@@ -340,7 +340,7 @@ public class DingoMeta extends MetaImpl {
             callback.execute();
 
             // for mysql protocol start
-            addMysqlProtocolState(statement, parser);
+            addMysqlProtocolState(statement);
             // for mysql protocol end
 
             if (signature.statementType == StatementType.OTHER_DDL) {
@@ -430,8 +430,15 @@ public class DingoMeta extends MetaImpl {
         dingoAudit.printIncrementBackup(isDisableIncrementBackup());
     }
 
-    private void addMysqlProtocolState(DingoStatement statement, DingoDriverParser parser) throws SQLException {
-        statement.setInTransaction(false);
+    private void addMysqlProtocolState(DingoStatement statement) throws SQLException {
+        boolean beginTrans = false;
+        if (connection instanceof DingoConnection) {
+            ITransaction iTransaction = ((DingoConnection)connection).getTransaction();
+            if (iTransaction != null) {
+                beginTrans = iTransaction.isBeginTransaction();
+            }
+        }
+        statement.setInTransaction(beginTrans);
         statement.setAutoCommit(connection.getAutoCommit());
         String tranReadOnly = connection.getClientInfo("transaction_read_only");
         tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;

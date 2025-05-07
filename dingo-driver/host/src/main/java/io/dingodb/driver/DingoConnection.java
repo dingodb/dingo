@@ -298,6 +298,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         LogUtils.debug(log, "begin transaction...");
         createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
+        if (transaction != null) {
+            transaction.setBeginTransaction(true);
+        }
     }
 
     @Override
