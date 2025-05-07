@@ -122,6 +122,7 @@ public class IndexAddFiller implements BackFiller {
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
         indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().domain, task.getTableId().seq,
             task.getIndexId().seq);
+        LogUtils.info(log, "index add filler tableId:{}, indexId:{}", task.getTableId(), task.getIndexId());
         initFiller();
         columnIndices = table.getColumnIndices(indexTable.columns.stream()
             .map(Column::getName)

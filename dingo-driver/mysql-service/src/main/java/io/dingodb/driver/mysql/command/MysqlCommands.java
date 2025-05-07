@@ -424,14 +424,14 @@ public class MysqlCommands {
 
     public static int getInitServerStatus(DingoConnection connection) {
         ITransaction transaction = connection.getTransaction();
-        boolean inTransaction = false;
+        boolean beginTransaction = false;
         if (transaction != null) {
-            inTransaction = connection.getTransaction().getType() != TransactionType.NONE;
+            beginTransaction = transaction.isBeginTransaction();
         }
         int initServerStatus = 0;
-        //if (inTransaction) {
-        //    initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
-        //}
+        if (beginTransaction) {
+            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
+        }
         if (connection.getAutoCommit()) {
             initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
         }

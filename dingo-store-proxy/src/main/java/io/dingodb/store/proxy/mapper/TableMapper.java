@@ -119,6 +119,9 @@ public interface TableMapper {
     default List<Partition> partitionsTo(
         List<PartitionDetailDefinition> details, List<DingoCommonId> partIds, RecordEncoder encoder, byte namespace
     ) {
+        if (partIds == null || details == null) {
+            return new ArrayList<>();
+        }
         List<DingoCommonId> ids = new ArrayList<>(partIds);
         return details.stream()
             .peek(partDef -> {
@@ -174,6 +177,9 @@ public interface TableMapper {
     default List<io.dingodb.meta.entity.Partition> partitionFrom(
         List<Partition> partitions, KeyValueCodec codec, String strategy
     ) {
+        if (partitions == null) {
+            return new ArrayList<>();
+        }
         return partitions.stream().map($ -> partitionFrom($, codec, strategy)).collect(Collectors.toList());
     }
 
