@@ -16,11 +16,18 @@
 
 package io.dingodb.exec.fun.mysql;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class JsonExtractFun extends BinaryOp {
     private static final long serialVersionUID = -8343792468386621027L;
@@ -41,6 +48,68 @@ public class JsonExtractFun extends BinaryOp {
 
     @Override
     public Object evalValue(Object value0, Object value1, ExprConfig config) {
-        return "";
+        if (value0 == null) {
+            return null;
+        }
+        if (value1 == null) {
+            return value0;
+        }
+        String path = value1.toString();
+        String[] paths = path.split("\\.");
+        if (!paths[0].startsWith("$")) {
+            return null;
+        }
+        if (paths.length == 1 && paths[0].equals("$")) {
+            return value0;
+        }
+        List<String> pathList = Arrays.asList(paths);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = mapper.readTree(value0.toString());
+            JsonNode node = rootNode;
+            for (int i = 0; i < pathList.size(); i ++) {
+                String pathItem = pathList.get(i);
+                if (i == 0) {
+                    if (pathItem.contains("[") && pathItem.contains("]")) {
+                        int start = pathItem.indexOf("[");
+                        int end = pathItem.indexOf("]");
+                        if (end >= start + 1) {
+                            int item = Integer.parseInt(pathItem.substring(start + 1, end));
+                            node = rootNode.get(item);
+                            if (node == null && !(rootNode instanceof ArrayNode) && item == 0) {
+                                node = rootNode;
+                            }
+                        } else {
+                            return null;
+                        }
+                    } else {
+                        node = rootNode;
+                    }
+                } else {
+                    if (pathItem.contains("[") && pathItem.contains("]")) {
+                        int start = pathItem.indexOf("[");
+                        int end = pathItem.indexOf("]");
+                        if (end >= start + 1) {
+                            int item = Integer.parseInt(pathItem.substring(start + 1, end));
+                            pathItem = pathItem.substring(0, start);
+                            node = node.get(pathItem).get(item);
+                        }
+                    } else {
+                        node = node.get(pathItem);
+                    }
+                }
+
+            }
+            if (node != null) {
+                String res = node.toString();
+                if (res.startsWith("\"") && res.endsWith("\"")) {
+                    return res.substring(1, res.length() - 1);
+                }
+                return node.toString();
+            }
+            return null;
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 }
