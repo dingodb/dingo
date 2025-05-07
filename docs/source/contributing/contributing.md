@@ -40,7 +40,6 @@ little bit helps, and credit will always be given.
       - [Post-merge Responsibility](#post-merge-responsibility)
   - [Managing Issues and PRs](#managing-issues-and-prs)
   - [Setup Local Environment for Development](#setup-local-environment-for-development)
-    - [Documentation](#documentation)
 
 ## Types of Contributions
 
@@ -200,7 +199,3 @@ git clone git@github.com:your-username/dingo.git
 cd dingo
 ./gradlew build
 ```
-
-### Documentation
-
-The latest documentation and tutorial are available at https://dingodb.io/.
