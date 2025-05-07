@@ -68,4 +68,4 @@ Product Advantages
    operation_and_maintenance/index
    sql/index
    release_notes/index
-   faq/index
+   contributing/index
