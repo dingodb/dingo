@@ -5,8 +5,8 @@
 | AVG|Returns the average value|Double
 | COUNT|Returns the number of records|Int
 |SUM|Calculates the sum of values|Double, Int
-|MAX|Returns the maximum value|Float
-|MIN|Returns the minimum value|Float
+|MAX|Returns the maximum value|Object
+|MIN|Returns the minimum value|Object
 
 ## Specification
 
