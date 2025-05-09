@@ -152,6 +152,12 @@ public class SqlProfile extends Profile {
         }
     }
 
+    public void truncateSql() {
+        if (sql != null && sql.length() > 3000) {
+            this.sql = this.sql.substring(0, 3000);
+        }
+    }
+
     @Override
     public String toString() {
         String logSql = sql;

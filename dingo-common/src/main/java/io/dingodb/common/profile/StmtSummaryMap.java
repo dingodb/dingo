@@ -56,9 +56,6 @@ public final class StmtSummaryMap {
             .build(new CacheLoader<String, StmtSummary>() {
                 @Override
                 public @NonNull StmtSummary load(@NonNull String summaryKey) {
-                    if (summaryKey.length() > 1000) {
-                        summaryKey = summaryKey.substring(0, 1000);
-                    }
                     return new StmtSummary(summaryKey);
                 }
             });
@@ -112,6 +109,7 @@ public final class StmtSummaryMap {
         long slowQueryThreshold = 5000;
         boolean ddlInnerProfile = false;
         try {
+            sqlProfile.truncateSql();
             String ddlProfile = connection.getClientInfo("ddl_inner_profile");
             ddlInnerProfile = "on".equalsIgnoreCase(ddlProfile);
             String enable = connection.getClientInfo("sql_profile_enable");
