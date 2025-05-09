@@ -20,10 +20,8 @@ import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
-import springfox.documentation.oas.annotations.EnableOpenApi;
 
 @Configurable
-@EnableOpenApi
 @EnableCaching
 @SpringBootApplication
 public class DingoWebApplication {

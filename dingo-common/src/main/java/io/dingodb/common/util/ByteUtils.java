@@ -16,8 +16,6 @@
 
 package io.dingodb.common.util;
 
-import javax.xml.bind.DatatypeConverter;
-
 public class ByteUtils {
     public static byte[] hexStringToByteArray(String hexStr) {
         hexStr = hexStr.toUpperCase();
@@ -35,7 +33,4 @@ public class ByteUtils {
         return (byte) "0123456789ABCDEF".indexOf(operand);
     }
 
-    public static String byteArrayToHexString(byte[] bytes) {
-        return DatatypeConverter.printHexBinary(bytes);
-    }
 }

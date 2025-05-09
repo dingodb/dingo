@@ -1,14 +1,15 @@
 plugins {
-    id 'org.springframework.boot' version '2.5.15'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
+    id 'application'
+    id 'org.springframework.boot' version '3.3.5' apply false
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'io.dingodb.web.DingoWebApplication'
-    }
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+application {
+    getMainClass().set('io.dingodb.web.DingoWebApplication')
 }
 
 dependencies {
@@ -16,21 +17,23 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
 
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter:3.3.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.3.5'
+    implementation 'org.springframework.boot:spring-boot-starter-aop:3.3.5'
 
-    implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 
     implementation group: 'net.sf.ehcache', name: 'ehcache', version: 'ehcache'.v()
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-cache', version: 'springcache'.v()
+    implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.2.0'
 
     implementation project(":dingo-common")
     implementation project(":dingo-verify")
 
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
     implementation group: 'org.yaml', name: 'snakeyaml', version: 'snakeyaml'.v()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
+    implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()

@@ -27,8 +27,8 @@ import io.dingodb.sdk.common.index.IndexParameter;
 import io.dingodb.sdk.common.index.VectorIndexParameter;
 import io.dingodb.proxy.Result;
 import io.dingodb.proxy.mapper.EntityMapper;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Api("Index")
+@Tag(name = "Index")
 @RestController
 @RequestMapping("/index")
 public class IndexController {
@@ -53,7 +53,7 @@ public class IndexController {
     @Autowired
     private EntityMapper mapper;
 
-    @ApiOperation("Create index")
+    @Operation(summary = "Create index")
     @PostMapping("/api/{schema}")
     public Result<Boolean> crateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
         try {
@@ -66,7 +66,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Update index")
+    @Operation(summary = "Update index")
     @PutMapping("/api/{schema}")
     public Result<Boolean> updateIndex(@PathVariable String schema, @RequestBody IndexDefinition definition) {
         try {
@@ -76,7 +76,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Update hnsw max_elements")
+    @Operation(summary = "Update hnsw max_elements")
     @PutMapping("/api/{schema}/{index}/{maxElements}")
     public Result<Boolean> updateIndex(@PathVariable String schema, @PathVariable String index, @PathVariable Integer maxElements) {
         try {
@@ -109,7 +109,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Drop index")
+    @Operation(summary = "Drop index")
     @DeleteMapping("/api/{schema}/{index}")
     public Result<Boolean> deleteIndex(@PathVariable String schema, @PathVariable String index) {
         try {
@@ -119,7 +119,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Get index")
+    @Operation(summary = "Get index")
     @GetMapping("/api/{schema}/{index}")
     public Result<Index> get(@PathVariable String schema, @PathVariable String index) {
         try {
@@ -129,7 +129,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Get index metrics")
+    @Operation(summary = "Get index metrics")
     @GetMapping("/api/{schema}/{index}/metrics")
     public Result<IndexMetrics> getIndexMetrics(@PathVariable String schema, @PathVariable String index) {
         try {
@@ -139,7 +139,7 @@ public class IndexController {
         }
     }
 
-    @ApiOperation("Get index names")
+    @Operation(summary = "Get index names")
     @GetMapping("/api/{schema}")
     public Result<List<String>> getNames(@PathVariable String schema) {
         try {

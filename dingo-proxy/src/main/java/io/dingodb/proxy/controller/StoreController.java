@@ -21,8 +21,8 @@ import io.dingodb.client.common.Key;
 import io.dingodb.client.common.Record;
 import io.dingodb.client.common.Value;
 import io.dingodb.sdk.common.table.Table;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Api("Store")
+@Tag(name = "Store")
 @RestController
 @RequestMapping("/store")
 public class StoreController {
@@ -44,7 +44,7 @@ public class StoreController {
     @Autowired
     private DingoClient dingoClient;
 
-    @ApiOperation("Put data")
+    @Operation(summary = "Put data")
     @PutMapping("/api/{schema}/{table}")
     public ResponseEntity<List<Boolean>> put(@PathVariable String schema, @PathVariable String table, List<Object[]> records) {
         Table definition = dingoClient.getTableDefinition(table);
@@ -52,7 +52,7 @@ public class StoreController {
         return ResponseEntity.ok(dingoClient.upsert(schema, table, recordList));
     }
 
-    @ApiOperation("Get by primary keys")
+    @Operation(summary = "Get by primary keys")
     @PostMapping("/api/{schema}/{table}")
     public ResponseEntity<List<Record>> get(@PathVariable String schema, @PathVariable String table, List<Object[]> keys) {
         List<Key> keyList = keys.stream().map(k -> new Key(Arrays.stream(k).map(Value::get).collect(Collectors.toList()))).collect(Collectors.toList());
@@ -60,7 +60,7 @@ public class StoreController {
         return ResponseEntity.ok(records);
     }
 
-    @ApiOperation("Delete by primary keys")
+    @Operation(summary = "Delete by primary keys")
     @DeleteMapping("/api/{schema}/{table}")
     public ResponseEntity<List<Boolean>> delete(@PathVariable String schema, @PathVariable String table, List<Object[]> keys) {
         List<Key> keyList = keys.stream().map(k -> new Key(Arrays.stream(k).map(Value::get).collect(Collectors.toList()))).collect(Collectors.toList());

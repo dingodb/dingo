@@ -22,12 +22,10 @@ import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import springfox.documentation.oas.annotations.EnableOpenApi;
 
 import java.util.Map;
 
 @Configurable
-@EnableOpenApi
 @SpringBootApplication
 public class DingoApplication {
 

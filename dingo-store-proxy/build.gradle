@@ -26,6 +26,10 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
+    api group: 'io.grpc', name: 'grpc-api', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-protobuf', version: 'grpc'.v()
 
     implementation project(":dingo-common")
     implementation project(":dingo-store-api")

@@ -26,4 +26,5 @@ dependencies {
     implementation project(':dingo-calcite')
     implementation project(':dingo-verify')
     implementation project(':dingo-meta-api')
+    api group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
 }

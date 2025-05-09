@@ -460,7 +460,8 @@ public final class MysqlInit {
         }
 
         MetaServiceClient informationMetaClient = rootMeta.getSubMetaService(INFORMATION_SCHEMA);
-        boolean informationSchemaCheck = informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
+        boolean informationSchemaCheck =
+            informationMetaClient.getTableDefinitionsBySchema().get("GLOBAL_VARIABLES") != null;
         boolean check = mysqlCheck && informationSchemaCheck;
         return check ? 0 : 1;
     }

@@ -22,12 +22,11 @@ import io.dingodb.web.model.vo.IndexInfo;
 import io.dingodb.web.model.vo.Region;
 import io.dingodb.web.model.vo.RegionDetailInfo;
 import io.dingodb.web.model.vo.StoreDetailInfo;
-import io.dingodb.web.model.vo.StoreInfo;
 import io.dingodb.web.model.vo.TableInfo;
 import io.dingodb.web.model.vo.TreeSchema;
 import io.dingodb.web.service.MonitorServerService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 
-@Api("Monitor")
+@Tag(name = "Monitor")
 @RestController
 @RequestMapping("monitor")
 @Slf4j
@@ -48,20 +47,20 @@ public class MonitorController {
     private MonitorServerService monitorServerService;
 
 
-    @ApiOperation("Get data")
+    @Operation(summary = "Get data")
     @GetMapping("/api/navigation")
     public ResponseEntity<List<TreeSchema>> getNavigation() {
         List<TreeSchema> schemas = monitorServerService.getNavigation("navigation");
         return ResponseEntity.ok(schemas);
     }
 
-    @ApiOperation("Get region detail")
+    @Operation(summary = "Get region detail")
     @GetMapping("/api/queryRegion")
     public ResponseEntity<RegionDetailInfo> queryRegion(long regionId) {
         return ResponseEntity.ok(monitorServerService.getRegion(regionId));
     }
 
-    @ApiOperation("Get table info")
+    @Operation(summary = "Get table info")
     @GetMapping("/api/getTableInfo")
     public ResponseEntity<TableInfo> getTableInfo(String schema, String table) {
         String key = schema + "-" + table;
@@ -70,7 +69,7 @@ public class MonitorController {
     }
 
 
-    @ApiOperation("Get regions by partition ")
+    @Operation(summary = "Get regions by partition ")
     @GetMapping("/api/getPartRegion")
     public ResponseEntity<List<Region>> queryRegionByPart(String schema, String table, Long partId) {
         String key = schema + "-" + table + "-" + partId;
@@ -78,7 +77,7 @@ public class MonitorController {
         return ResponseEntity.ok(regionList);
     }
 
-    @ApiOperation("Get regions by index partition ")
+    @Operation(summary = "Get regions by index partition ")
     @GetMapping("/api/getIndexPartRegion")
     public ResponseEntity<List<Region>> queryRegionByIndexPart(String schema, String table, long indexId, Long partId) {
         String key = schema + "-" + table + "-" + indexId + "-" + partId;
@@ -86,7 +85,7 @@ public class MonitorController {
         return ResponseEntity.ok(regionList);
     }
 
-    @ApiOperation("Get regions by table")
+    @Operation(summary = "Get regions by table")
     @GetMapping("/api/getTableRegion")
     public ResponseEntity<List<Region>> queryRegionByTable(String schema, String table) {
         String key = schema + "-" + table;
@@ -94,7 +93,7 @@ public class MonitorController {
         return ResponseEntity.ok(regionList);
     }
 
-    @ApiOperation("Get index info")
+    @Operation(summary = "Get index info")
     @GetMapping("/api/getIndexInfo")
     public ResponseEntity<IndexInfo> queryIndexInfo(String schema,
                                                     String table,
@@ -104,7 +103,7 @@ public class MonitorController {
         return ResponseEntity.ok(indexInfo);
     }
 
-    @ApiOperation("Get regions by index")
+    @Operation(summary = "Get regions by index")
     @GetMapping("/api/getIndexRegion")
     public ResponseEntity<List<Region>> queryRegionByIndex(String schema, String table, long indexId) {
         String key = schema + "-" + table + "-" + indexId;
@@ -112,38 +111,38 @@ public class MonitorController {
         return ResponseEntity.ok(regionList);
     }
 
-    @ApiOperation("Get cluster info")
+    @Operation(summary = "Get cluster info")
     @GetMapping("/api/clusterStatus")
     public ResponseEntity<ClusterInfo> clusterInfo() {
         ClusterInfo clusterInfo = monitorServerService.getClusterResource("dingo");
         return ResponseEntity.ok(clusterInfo);
     }
 
-    @ApiOperation("Get store region list")
+    @Operation(summary = "Get store region list")
     @GetMapping("/api/queryStoreProcessRegion")
     public ResponseEntity<List<Region>> queryStoreRegions(String host, int port) {
         return ResponseEntity.ok(monitorServerService.getStoreProcessRegions(host, port, host + ":" + port));
     }
 
-    @ApiOperation("Get store region list")
+    @Operation(summary = "Get store region list")
     @GetMapping("/api/queryIndexProcessRegion")
     public ResponseEntity<List<Region>> queryIndexRegions(String host, int port) {
         return ResponseEntity.ok(monitorServerService.getIndexProcessRegions(host, port, host + ":" + port));
     }
 
-    @ApiOperation("Get store process info")
+    @Operation(summary = "Get store process info")
     @GetMapping("/api/queryStoreProcessInfo")
     public ResponseEntity<StoreDetailInfo> queryStoreProcessInfo(long storeId, String host, int port) {
         return ResponseEntity.ok(monitorServerService.getStoreProcessInfo(storeId, new Location(host, port)));
     }
 
-    @ApiOperation("Get index process info")
+    @Operation(summary = "Get index process info")
     @GetMapping("/api/queryIndexProcessInfo")
     public ResponseEntity<StoreDetailInfo> queryIndexProcessInfo(long indexId, String host, int port) {
         return ResponseEntity.ok(monitorServerService.getIndexProcessInfo(indexId, new Location(host, port)));
     }
 
-    @ApiOperation("Get store region list")
+    @Operation(summary = "Get store region list")
     @GetMapping("/api/queryProcessLeaderRegion")
     public ResponseEntity<List<Region>> queryProcessLeaderRegions(long id) {
         return ResponseEntity.ok(monitorServerService.getRegionMap("regionMap").getOrDefault(id, new ArrayList<>()));

@@ -31,9 +31,10 @@ allprojects {
         mavenCentral()
         maven {
             url 'http://packages.confluent.io/maven/'
+            allowInsecureProtocol = true
         }
-        maven {
+        /*maven {
             url 'http://maven.aliyun.com/nexus/content/groups/public/'
-        }
+        }*/
     }
 }

@@ -19,15 +19,15 @@ package io.dingodb.proxy.controller;
 import io.dingodb.client.DingoClient;
 import io.dingodb.client.common.VectorDistanceArray;
 import io.dingodb.client.common.VectorSearch;
-import io.dingodb.sdk.common.DingoClientException;
-import io.dingodb.sdk.common.vector.VectorIndexMetrics;
-import io.dingodb.sdk.common.vector.VectorScanQuery;
 import io.dingodb.proxy.Result;
 import io.dingodb.proxy.mapper.EntityMapper;
 import io.dingodb.proxy.model.dto.VectorGet;
 import io.dingodb.proxy.model.dto.VectorWithId;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.dingodb.sdk.common.DingoClientException;
+import io.dingodb.sdk.common.vector.VectorIndexMetrics;
+import io.dingodb.sdk.common.vector.VectorScanQuery;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Api("Vector")
+@Tag(name = "Vector")
 @RestController
 @RequestMapping("/vector")
 public class VectorController {
@@ -55,7 +55,7 @@ public class VectorController {
     @Autowired
     private EntityMapper mapper;
 
-    @ApiOperation("Vector add")
+    @Operation(summary = "Vector add")
     @PutMapping("/api/{schema}/{index}")
     public Result<List<VectorWithId>> vectorAdd(
         @PathVariable String schema,
@@ -73,7 +73,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector delete")
+    @Operation(summary = "Vector delete")
     @DeleteMapping("/api/{schema}/{index}")
     public Result<List<Boolean>> vectorDelete(
         @PathVariable String schema,
@@ -90,7 +90,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector get")
+    @Operation(summary = "Vector get")
     @PostMapping("/api/{schema}/{index}/get")
     public Result<List<io.dingodb.client.common.VectorWithId>> vectorGet(
         @PathVariable String schema,
@@ -112,7 +112,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Get max vector id")
+    @Operation(summary = "Get max vector id")
     @GetMapping("/api/{schema}/{index}/id")
     public Result<Long> vectorMaxId(
         @PathVariable String schema,
@@ -126,7 +126,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector search")
+    @Operation(summary = "Vector search")
     @PostMapping("/api/{schema}/{index}")
     public Result<List<VectorDistanceArray>> vectorSearch(
         @PathVariable String schema,
@@ -139,7 +139,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector scan query")
+    @Operation(summary = "Vector scan query")
     @PostMapping("/api/{schema}/{index}/scan")
     public Result<List<VectorWithId>> vectorScanQuery(
         @PathVariable String schema,
@@ -155,7 +155,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector get region metrics")
+    @Operation(summary = "Vector get region metrics")
     @GetMapping("/api/{schema}/{index}")
     public Result<VectorIndexMetrics> vectorGetMetrics(@PathVariable String schema, @PathVariable String index) {
         try {
@@ -165,7 +165,7 @@ public class VectorController {
         }
     }
 
-    @ApiOperation("Vector count")
+    @Operation(summary = "Vector count")
     @GetMapping("/api/{schema}/{index}/count")
     public Result<Long> vectorCount(@PathVariable String schema, @PathVariable String index) {
         try {

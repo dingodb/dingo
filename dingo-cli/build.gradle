@@ -37,6 +37,7 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
 
     implementation project(":dingo-client")
     implementation project(":dingo-common")

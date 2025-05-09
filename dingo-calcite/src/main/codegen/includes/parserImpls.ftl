@@ -496,7 +496,7 @@ Number number(): {
           t = <DECIMAL_NUMERIC_LITERAL>
           {
 
-                  return new Double(t.image);
+                  return Double.valueOf(t.image);
           }
        ) | (
          <MINUS>

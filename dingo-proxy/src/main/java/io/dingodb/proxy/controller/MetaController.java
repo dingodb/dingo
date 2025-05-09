@@ -18,10 +18,10 @@ package io.dingodb.proxy.controller;
 
 import io.dingodb.client.DingoClient;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.sdk.common.table.Table;
 import io.dingodb.proxy.mapper.EntityMapper;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.dingodb.sdk.common.table.Table;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api("Meta")
+@Tag(name = "Meta")
 @RestController
 @RequestMapping("/meta")
 public class MetaController {
@@ -43,19 +43,19 @@ public class MetaController {
     @Autowired
     private EntityMapper mapper;
 
-    @ApiOperation("Create table")
+    @Operation(summary = "Create table")
     @PutMapping("/api/{schema}/{table}")
     public ResponseEntity<Boolean> crateTable(@PathVariable String schema, @PathVariable String table, @RequestBody TableDefinition tableDefinition) {
         return ResponseEntity.ok(dingoClient.createTable(schema, mapper.mapping(tableDefinition)));
     }
 
-    @ApiOperation("Drop table")
+    @Operation(summary = "Drop table")
     @DeleteMapping("/api/{schema}/{table}")
     public ResponseEntity<Boolean> deleteTable(@PathVariable String schema, @PathVariable String table) {
         return ResponseEntity.ok(dingoClient.dropTable(schema, table));
     }
 
-    @ApiOperation("Get table")
+    @Operation(summary = "Get table")
     @GetMapping("/api/{schema}/{table}")
     public ResponseEntity<Table> get(@PathVariable String schema, @PathVariable String table) {
         return ResponseEntity.ok(dingoClient.getTableDefinition(schema, table));

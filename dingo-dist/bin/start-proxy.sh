@@ -21,6 +21,7 @@ JAR_PATH=$(find $ROOT -name dingo-proxy*.jar)
 JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"
 
 nohup java ${JAVA_OPTS} \
+     --add-opens java.base/java.util=ALL-UNNAMED \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-proxy.xml \
      -jar ${JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-proxy.yaml \

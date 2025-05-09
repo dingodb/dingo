@@ -3,21 +3,22 @@ plugins {
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id 'maven-publish'
+    id 'signing'
 }
-
-apply plugin: 'maven'
-apply plugin: 'signing'
 
 dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     compileOnly group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()
     compileOnly group: 'javax.validation', name: 'validation-api', version: 'validation'.v()
-    compileOnly group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
+    compileOnly group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.17.2'
+
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
     api group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.grpc', name: 'grpc-protobuf', version: 'grpc'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
 
     api project(":dingo-common")
     implementation project(":dingo-store-api")
@@ -53,6 +54,10 @@ task fatJar(type: Jar) {
     exclude "*.proto"
 }
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 fatJar.dependsOn(
     ':dingo-common:jar',
     ':dingo-store-api:jar',
@@ -61,7 +66,8 @@ fatJar.dependsOn(
     ':dingo-partition-api:jar',
     ':dingo-partition-base:jar',
     ':dingo-meta-api:jar',
-    ':dingo-store-proxy:jar'
+    ':dingo-store-proxy:jar',
+    ':dingo-net-api:jar'
 )
 
 tasks.named("build") { x ->

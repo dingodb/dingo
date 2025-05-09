@@ -15,14 +15,17 @@
  */
 
 plugins {
+    id 'application'
     id 'java-conventions'
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id 'maven-publish'
+    id 'signing'
 }
 
-apply plugin: 'maven'
-apply plugin: 'signing'
+application {
+    applicationDefaultJvmArgs = ["--add-opens", "java.base/java.util=ALL-UNNAMED"]
+}
 
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
@@ -62,6 +65,10 @@ tasks.register('fatJar', Jar) {
     exclude "META-INF/*.RSA"
     // Remove register of avatica driver
     exclude "META-INF/services/java.sql.Driver"
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 fatJar.dependsOn([
