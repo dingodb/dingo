@@ -24,7 +24,7 @@ jdk_group  # Currently, the JDK group and Dingo group are configured the same, a
 
 # Modify installation options
 install_system: true    # Install system environment, must be enabled for the first installation, set file limits
-install_java_sdk: true  # Install JDK environment, enable it during the first installation, required for executing executor and mysql_init
+install_java_jdk: true  # Install JDK environment, enable it during the first installation, required for executing executor and mysql_init
 install_dingo: true     # install executor
 install_dingo_store: true   # install dingo-store,Including coordinator、store、mysql_init
 --The following are the selected configurations for installing monitoring:
@@ -61,9 +61,9 @@ install_system_basicTools: true
 install_system_fileLimits: true
 
 #-----------------------------------------------------
-# 2. Install Java SDK
+# 2. Install Java JDK
 #-----------------------------------------------------
-install_java_sdk: true
+install_java_jdk: true
 jdk_install_path: /opt
 jdk_home: "{{ jdk_install_path }}/jdk"
 

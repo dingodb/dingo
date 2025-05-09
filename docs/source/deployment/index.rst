@@ -6,4 +6,5 @@ Deployment
    :glob:
 
    cluster/index.rst
-   single-machine/index.rst
+   standalone/index.rst
+   sql_operations
