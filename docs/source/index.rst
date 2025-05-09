@@ -64,6 +64,7 @@ Product Advantages
 
    overview/index
    get_started/index
+   deployment/index
    architecture/index
    operation_and_maintenance/index
    sql/index
