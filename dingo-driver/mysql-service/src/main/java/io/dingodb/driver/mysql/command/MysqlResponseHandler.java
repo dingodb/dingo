@@ -31,7 +31,6 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
-import io.dingodb.expr.runtime.utils.CodecUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.SocketChannel;
@@ -39,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.eclipse.jetty.http.HttpStatus;
 
 import java.lang.reflect.Array;
 import java.sql.ResultSet;
@@ -70,7 +68,7 @@ public final class MysqlResponseHandler {
         String connCharSet = null;
         try {
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-            List<ColumnPacket> columnPackets = factory.getColumnPackets(packetId, resultSet, true);
+            List<ColumnPacket> columnPackets = factory.getColumnPackets(packetId, resultSet, true, connCharSet);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             for (ColumnPacket columnPacket : columnPackets) {
                 columnPacket.write(buffer);
@@ -110,7 +108,7 @@ public final class MysqlResponseHandler {
             columnsNumberPacket.columnsNumber = columnCount;
             columnsNumberPacket.write(buffer);
 
-            List<ColumnPacket> columns = factory.getColumnPackets(packetId, resultSet, false);
+            List<ColumnPacket> columns = factory.getColumnPackets(packetId, resultSet, false, connCharSet);
             for (ColumnPacket columnPacket : columns) {
                 columnPacket.write(buffer);
             }
@@ -368,7 +366,7 @@ public final class MysqlResponseHandler {
             columnsNumberPacket.columnsNumber = columnCount;
             columnsNumberPacket.write(buffer);
 
-            List<ColumnPacket> columns = factory.getColumnPackets(packetId, resultSet, false);
+            List<ColumnPacket> columns = factory.getColumnPackets(packetId, resultSet, false, connCharSet);
             for (ColumnPacket columnPacket : columns) {
                 columnPacket.write(buffer);
             }

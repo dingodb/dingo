@@ -22,10 +22,12 @@ import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Builder;
 
+import java.io.UnsupportedEncodingException;
+
 @Builder
 public class ColumnPacket extends MysqlPacket {
 
-    public final String defaultColumnCharset = "GBK";
+    public String columnNmCharset;
 
     public String catalog;
     public String schema;
@@ -100,9 +102,21 @@ public class ColumnPacket extends MysqlPacket {
         i += BufferUtil.getLength(schema.getBytes());
         i += BufferUtil.getLength(table.getBytes());
         i += BufferUtil.getLength(orgTable.getBytes());
-        nameBytes = name.getBytes();
+        try {
+            if (columnNmCharset != null) {
+                nameBytes = name.getBytes(columnNmCharset);
+            }
+        } catch (UnsupportedEncodingException e) {
+            nameBytes = name.getBytes();
+        }
         i += BufferUtil.getLength(nameBytes);
-        orgNameBytes = orgName.getBytes();
+        try {
+            if (columnNmCharset != null) {
+                orgNameBytes = orgName.getBytes(columnNmCharset);
+            }
+        } catch (UnsupportedEncodingException e) {
+            orgNameBytes = orgName.getBytes();
+        }
         i += BufferUtil.getLength(orgNameBytes);
         // 0x0c
         i += 1;

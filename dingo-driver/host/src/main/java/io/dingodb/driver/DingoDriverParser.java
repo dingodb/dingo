@@ -135,6 +135,8 @@ import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
     private final DingoConnection connection;
+    private final String user;
+    private final String host;
     @Getter
     private boolean inTransaction;
     @Getter
@@ -149,6 +151,8 @@ public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
         this.connection = connection;
+        this.user = connection.getContext().getOption("user");
+        this.host = connection.getContext().getOption("host");
         this.planProfile = new PlanProfile();
         this.dingoAudit = new DingoAudit(IsolationLevel.InvalidIsolationLevel.name(), TransactionType.NONE.name());
     }

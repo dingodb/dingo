@@ -36,7 +36,6 @@ import io.dingodb.driver.mysql.packet.PrepareOkPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +86,7 @@ public class MysqlCommands {
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
         String sql;
-        String characterSet = null;
+        String characterSet;
         try {
             characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             characterSet = getCharacterSet(characterSet);
@@ -167,7 +166,7 @@ public class MysqlCommands {
                 numberParams++;
                 i = sql.indexOf(placeholder, i) + placeholder.length();
 
-                paramColumnPackets.add(mysqlPacketFactory.getParamColumnPacket(packetId));
+                paramColumnPackets.add(mysqlPacketFactory.getParamColumnPacket(packetId, connCharSet));
             }
             boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
                 & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
@@ -181,7 +180,7 @@ public class MysqlCommands {
                 }
                 numberFields = statementHandle.signature.columns.size();
                 mysqlPacketFactory.addColumnPacketFromMeta(packetId, preparedStatement.getMetaData(),
-                    fieldColumnPackets, "def");
+                    fieldColumnPackets, "def", connCharSet);
             }
             if (!deprecateEof) {
                 eofResponse = MysqlPacketFactory.getEofPacket(packetId);
@@ -424,12 +423,12 @@ public class MysqlCommands {
 
     public static int getInitServerStatus(DingoConnection connection) {
         ITransaction transaction = connection.getTransaction();
-        boolean beginTransaction = false;
+        boolean autoCommit = true;
         if (transaction != null) {
-            beginTransaction = transaction.isBeginTransaction();
+            autoCommit = !("off".equalsIgnoreCase(connection.getClientInfo("autocommit")));
         }
         int initServerStatus = 0;
-        if (beginTransaction) {
+        if (!autoCommit) {
             initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
         }
         if (connection.getAutoCommit()) {

@@ -298,9 +298,6 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         LogUtils.debug(log, "begin transaction...");
         createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
-        if (transaction != null) {
-            transaction.setBeginTransaction(true);
-        }
     }
 
     @Override
@@ -535,7 +532,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
 
     @Override
     public String getClientInfo(String name) {
-        return sessionVariables.getProperty(name);
+        String val = sessionVariables.getProperty(name);
+        if (name.contains("character_set") && ("utf8mb4".equalsIgnoreCase(val) || "utf8mb3".equalsIgnoreCase(val))) {
+            return "utf8";
+        } else {
+            return val;
+        }
     }
 
     @Override

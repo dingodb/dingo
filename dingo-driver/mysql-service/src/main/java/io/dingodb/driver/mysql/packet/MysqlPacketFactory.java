@@ -188,7 +188,8 @@ public class MysqlPacketFactory {
     @NonNull
     public List<ColumnPacket> getColumnPackets(AtomicLong packetId,
                                                ResultSet resultSet,
-                                               boolean showFields) throws SQLException {
+                                               boolean showFields,
+                                               String columnNmCharset) throws SQLException {
 
         List<ColumnPacket> columns = new ArrayList<>();
         String catalog = "def";
@@ -209,18 +210,19 @@ public class MysqlPacketFactory {
                     getColumnType(dataType),
                     getColumnFlags(resultSet),
                     MysqlPacket.decimals,
-                    (byte) packetId.getAndIncrement()
+                    (byte) packetId.getAndIncrement(),
+                    columnNmCharset
                     );
                 columns.add(columnPacket);
             }
         } else {
-            addColumnPacketFromMeta(packetId, resultSet.getMetaData(), columns, catalog);
+            addColumnPacketFromMeta(packetId, resultSet.getMetaData(), columns, catalog, columnNmCharset);
         }
         return columns;
     }
 
     public void addColumnPacketFromMeta(AtomicLong packetId, ResultSetMetaData metaData,
-                                         List<ColumnPacket> columns, String catalog)
+                                         List<ColumnPacket> columns, String catalog, String columnNmCharset)
         throws SQLException {
         int columnCount = metaData.getColumnCount();
         String table = metaData.getTableName(1);
@@ -245,19 +247,19 @@ public class MysqlPacketFactory {
                 getColumnType(metaData.getColumnTypeName(i)),
                 getColumnFlags(metaData, i),
                 MysqlPacket.decimals,
-                (byte) packetId.getAndIncrement());
+                (byte) packetId.getAndIncrement(), columnNmCharset);
             columns.add(columnPacket);
         }
     }
 
-    public ColumnPacket getParamColumnPacket(AtomicLong packetId) {
+    public ColumnPacket getParamColumnPacket(AtomicLong packetId, String columnNmCharset) {
         return getColumnPacket("def", "", "", "",
             "?", "",
             MysqlPacket.charsetNumber, 0,
             getColumnType("VARCHAR"),
             (short) ColumnStatus.allEmpty,
             MysqlPacket.decimals,
-            (byte) packetId.getAndIncrement());
+            (byte) packetId.getAndIncrement(), columnNmCharset);
     }
 
     public ColumnPacket getColumnPacket(String catalog,
@@ -271,7 +273,8 @@ public class MysqlPacketFactory {
                                         byte type,
                                         short flags,
                                         byte decimals,
-                                        byte packetId
+                                        byte packetId,
+                                        String columnNmCharset
                                         ) {
         ColumnPacket columnPacket =  ColumnPacket.builder()
             .catalog(catalog)
@@ -285,6 +288,7 @@ public class MysqlPacketFactory {
             .type(type)
             .flags(flags)
             .decimals(decimals)
+            .columnNmCharset(columnNmCharset)
             .build();
         columnPacket.packetId = packetId;
         return columnPacket;
