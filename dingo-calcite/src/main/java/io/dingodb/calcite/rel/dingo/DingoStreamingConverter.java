@@ -57,8 +57,9 @@ public final class DingoStreamingConverter extends SingleRel implements DingoRel
         Set<DingoRelPartition> partitions = getStreaming().getPartitions();
         Set<DingoRelPartition> inputPartitions = inputStreaming.getPartitions();
         this.rowCount = rowCount;
-        assert partitions != null && inputPartitions != null;
-        if (partitions.size() > inputPartitions.size()) {
+        if (partitions == null || inputPartitions == null) {
+            return rowCount;
+        } else if (partitions.size() > inputPartitions.size()) {
             for (int i = 0; i < partitions.size() - inputPartitions.size(); ++i) {
                 rowCount /= 1.000001d;
             }

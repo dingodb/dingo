@@ -88,6 +88,7 @@ import io.dingodb.exec.operator.TxnScanWithPipeOpOperator;
 import io.dingodb.exec.operator.ValuesOperator;
 import io.dingodb.exec.operator.VectorPartitionOperator;
 import io.dingodb.exec.operator.VectorPointDistanceOperator;
+import io.dingodb.exec.operator.WindowFunctionOperator;
 import io.dingodb.exec.transaction.operator.CleanCacheOperator;
 import io.dingodb.exec.transaction.operator.CleanExtraDataCacheOperator;
 import io.dingodb.exec.transaction.operator.CommitOperator;
@@ -180,6 +181,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.VALUES;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_PARTITION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.VECTOR_POINT_DISTANCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.DOCUMENT_PRE_FILTER;
+import static io.dingodb.exec.utils.OperatorCodeUtils.WINDOW_FUNCTION;
 
 public final class OperatorFactory {
 
@@ -265,6 +267,7 @@ public final class OperatorFactory {
         OPERATORS.put(TXN_DISK_ANN_LOAD, TxnDiskAnnLoadOperator.INSTANCE);
         OPERATORS.put(FOR_UPDATE, ForUpdateOperator.INSTANCE);
         OPERATORS.put(DOCUMENT_SCAN_FILTER, TxnDocumentScanOperator.INSTANCE);
+        OPERATORS.put(WINDOW_FUNCTION, WindowFunctionOperator.INSTANCE);
     }
 
     private OperatorFactory() {

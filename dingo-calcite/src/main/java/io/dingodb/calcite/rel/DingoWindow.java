@@ -16,7 +16,6 @@
 
 package io.dingodb.calcite.rel;
 
-import com.sun.istack.internal.Nullable;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
@@ -43,14 +42,19 @@ public class DingoWindow extends Window implements DingoRel {
         super(cluster, traitSet, hints, input, constants, rowType, groups);
     }
 
-    private static class WindowRelInputGetter
+    @Override
+    public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new DingoWindow(this.getCluster(), traitSet, this.hints, sole(inputs), constants, rowType, groups);
+    }
+
+    public static class WindowRelInputGetter
         implements RexToLixTranslator.InputGetter {
         private final Expression row;
         private final PhysType rowPhysType;
         private final int actualInputFieldCount;
         private final List<Expression> constants;
 
-        private WindowRelInputGetter(Expression row,
+        public WindowRelInputGetter(Expression row,
                                      PhysType rowPhysType, int actualInputFieldCount,
                                      List<Expression> constants) {
             this.row = row;
@@ -59,7 +63,7 @@ public class DingoWindow extends Window implements DingoRel {
             this.constants = constants;
         }
 
-        @Override public Expression field(BlockBuilder list, int index, @Nullable Type storageType) {
+        @Override public Expression field(BlockBuilder list, int index, Type storageType) {
             if (index < actualInputFieldCount) {
                 Expression current = list.append("current", row);
                 return rowPhysType.fieldReference(current, index, storageType);

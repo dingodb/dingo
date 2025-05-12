@@ -40,6 +40,8 @@ dependencies {
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-coding', version: 'dingo-expr'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
     implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
+    implementation group: 'org.codehaus.janino', name:'janino', version: '3.1.8'
+    implementation group: 'org.codehaus.janino', name:'commons-compiler', version: '3.1.8'
 
     api group: 'io.dingodb.expr', name: 'dingo-expr-parser', version: 'dingo-expr'.v()
     api group: 'io.dingodb.expr', name: 'dingo-expr-rel', version: 'dingo-expr'.v()

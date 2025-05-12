@@ -46,6 +46,7 @@ import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
+import io.dingodb.calcite.rel.DingoWindow;
 import io.dingodb.calcite.rel.DocumentStreamConvertor;
 import io.dingodb.calcite.rel.VectorStreamConvertor;
 import io.dingodb.calcite.rel.dingo.DingoDocumentScanFilter;
@@ -630,6 +631,14 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             "documentScanFilter", indexRangeScan.getRowCount(), "root",
             indexRangeScan.getIndexTable().getName(), filter.toString()
         );
+    }
+
+    @Override
+    public Explain visit(DingoWindow dingoWindow) {
+        Explain explain = dingo(dingoWindow.getInput()).accept(this);
+        Explain explain1 =  new Explain("dingoWindow", dingoWindow.getRowCount(), "root", "", "");
+        explain1.getChildren().add(explain);
+        return explain1;
     }
 
 }

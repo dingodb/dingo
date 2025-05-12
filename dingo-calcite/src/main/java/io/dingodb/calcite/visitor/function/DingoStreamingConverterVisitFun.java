@@ -103,6 +103,9 @@ public final class DingoStreamingConverterVisitFun {
         assert dstPartitions != null && srcPartitions != null;
         final DingoRelPartition dstDistribution = dstStreaming.getDistribution();
         final DingoRelPartition srcDistribution = srcStreaming.getDistribution();
+        if (dstPartitions == null || srcPartitions == null) {
+            return inputs;
+        }
         DingoRelStreaming media = dstStreaming.withPartitions(srcPartitions);
         assert media.getPartitions() != null;
         Collection<Vertex> outputs = inputs;
