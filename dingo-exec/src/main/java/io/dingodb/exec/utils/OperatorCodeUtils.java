@@ -121,6 +121,8 @@ public final class OperatorCodeUtils {
     public static final CommonId TXN_DISK_ANN_BUILD = new CommonId(CommonId.CommonType.OP, SOURCE, 95);
 
     public static final CommonId TXN_DISK_ANN_LOAD = new CommonId(CommonId.CommonType.OP, SOURCE, 96);
+    public static final CommonId WINDOW_FUNCTION = new CommonId(CommonId.CommonType.OP, OP, 97);
+
     private OperatorCodeUtils() {
     }
 }
