@@ -38,9 +38,9 @@ public class SqlFlashBackSchema extends SqlFlashBack {
         this.newSchemaId = newSchemaId;
         if (newSchemaId != null) {
             if (newSchemaId.names.size() > 1) {
-                this.newSchemaName = newSchemaId.names.get(1).toUpperCase();
+                this.newSchemaName = newSchemaId.names.get(1);
             } else {
-                this.newSchemaName = newSchemaId.names.get(0).toUpperCase();
+                this.newSchemaName = newSchemaId.names.get(0);
             }
         }
     }

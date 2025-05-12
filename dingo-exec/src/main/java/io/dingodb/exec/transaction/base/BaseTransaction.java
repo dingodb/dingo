@@ -101,7 +101,6 @@ public abstract class BaseTransaction implements ITransaction {
     protected CommitProfile commitProfile;
     protected InfoSchema is;
     protected Map<TxnPartData, Boolean> partDataMap;
-    protected boolean beginTransaction = false;
 
     protected CompletableFuture<Void> finishedFuture = new CompletableFuture<>();
 

@@ -1442,7 +1442,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         String schemaName = schema.getSchemaName();
-        DdlJob job = getRecoverJob(schemaName, tableName);
+        DdlJob job = getRecoverJob(schemaName, schemaInfo.getSchemaId(), tableName);
         if (job == null) {
             throw DingoErrUtil.newStdErr(ErrNotFoundDropTable, tableName);
         }
@@ -2919,10 +2919,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             null, null, null, null);
     }
 
-    public static DdlJob getRecoverJob(String schemaName, String tableName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s and table_name= %s "
+    public static DdlJob getRecoverJob(String schemaName, long schemaId, String tableName) {
+        String sql = "select job_meta from mysql.dingo_ddl_history where (schema_name = %s or schema_ids = %s) and table_name= %s "
             + "and type in (4,11) order by create_time desc limit 10";
-        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName), Utils.quoteForSql(convertName(tableName))));
+        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName), Utils.quoteForSql(schemaId), Utils.quoteForSql(convertName(tableName))));
         return getRecoverJobBySql(sql, true);
     }
 

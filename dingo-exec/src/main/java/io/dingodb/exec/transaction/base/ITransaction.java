@@ -117,8 +117,4 @@ public interface ITransaction {
     InfoSchema getIs();
 
     Map<TxnPartData, Boolean> getPartDataMap();
-
-    boolean isBeginTransaction();
-
-    void setBeginTransaction(boolean beginTransaction);
 }

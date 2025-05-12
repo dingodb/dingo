@@ -150,6 +150,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Getter
     private long updateLimit;
 
+    @Getter
+    private String user;
+
+    @Getter
+    private String host;
+
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
                             SqlKind kind, ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
                             boolean replaceInto, boolean isIgnore, long updateLimit) {

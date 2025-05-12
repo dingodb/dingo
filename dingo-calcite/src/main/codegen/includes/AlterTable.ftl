@@ -251,7 +251,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     boolean ifNotExists = false;
 } {
  (<INDEX>|<KEY>) ifNotExists = IfNotExistsOpt() { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     (
         <VECTOR> { indexType = "vector"; } columnList = indexColumns()
     |
@@ -304,7 +304,7 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     String indexLockOpt = null;
 } {
  <UNIQUE> [<INDEX>][<KEY>] { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple();  }
     [<SCALAR>] columnList = indexColumns()
     (
        LOOKAHEAD(2)
@@ -351,7 +351,7 @@ SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode
     String indexLockOpt = null;
 } {
    [(<INDEX>|<KEY>)] { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     columnList = indexColumns()
     (
        LOOKAHEAD(2)
@@ -392,7 +392,7 @@ SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
 }
 {
     <INDEX> { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     (
     <SET>
     readProperty(properties)

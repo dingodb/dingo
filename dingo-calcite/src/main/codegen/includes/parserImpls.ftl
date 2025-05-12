@@ -238,7 +238,7 @@ void TableElement(List<SqlNode> list) :
         }
     |
         <INDEX> { s.add(this); }
-        { index = getNextToken().image; }
+        { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
         [ indexTypeName() ]
         (
             <VECTOR>

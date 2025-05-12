@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.service.LoadDataService;
+import io.dingodb.calcite.utils.StringEscapeUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -54,7 +55,6 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -688,7 +688,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 if ("\\N".equalsIgnoreCase(valTmp)) {
                     tupleList.add(valTmp);
                 } else {
-                    tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                    tupleList.add(StringEscapeUtils.unescape(valTmp));
                 }
                 fieldBreakPos = i + 1;
             } else if (!terminatedOnlyByte && b == fieldsTermByte) {
@@ -712,7 +712,7 @@ public class LoadDataExecutor implements DmlExecutor {
                     if ("\\N".equalsIgnoreCase(valTmp)) {
                         tupleList.add(valTmp);
                     } else {
-                        tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                        tupleList.add(StringEscapeUtils.unescape(valTmp));
                     }
                     fieldBreakPos = i + 1;
                 }
@@ -725,7 +725,7 @@ public class LoadDataExecutor implements DmlExecutor {
             if ("\\N".equalsIgnoreCase(valTmp)) {
                 tupleList.add(valTmp);
             } else {
-                tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                tupleList.add(StringEscapeUtils.unescape(valTmp));
             }
         } else if (bytes[len - 1] == fieldsTermByte) {
             if (terminatedOnlyByte) {

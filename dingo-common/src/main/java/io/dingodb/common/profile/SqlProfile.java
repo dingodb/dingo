@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
-import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)

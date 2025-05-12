@@ -431,14 +431,6 @@ public class DingoMeta extends MetaImpl {
     }
 
     private void addMysqlProtocolState(DingoStatement statement) throws SQLException {
-        boolean beginTrans = false;
-        if (connection instanceof DingoConnection) {
-            ITransaction iTransaction = ((DingoConnection)connection).getTransaction();
-            if (iTransaction != null) {
-                beginTrans = iTransaction.isBeginTransaction();
-            }
-        }
-        statement.setInTransaction(beginTrans);
         statement.setAutoCommit(connection.getAutoCommit());
         String tranReadOnly = connection.getClientInfo("transaction_read_only");
         tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;

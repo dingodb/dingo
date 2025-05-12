@@ -203,7 +203,7 @@ public final class Utils {
         if (characterSet == null) {
             return "utf8";
         }
-        if ("utf8mb4".equalsIgnoreCase(characterSet)) {
+        if ("utf8mb4".equalsIgnoreCase(characterSet) || "utf8mb3".equalsIgnoreCase(characterSet)) {
             return "utf8";
         }
         return characterSet;
