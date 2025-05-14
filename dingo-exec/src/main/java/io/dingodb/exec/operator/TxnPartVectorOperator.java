@@ -177,7 +177,7 @@ public class TxnPartVectorOperator extends FilterProjectSourceOperator {
         for (int i = 0; i < vecColSize; i ++) {
             Column column = param.getTableDataColList().get(i);
             if (!column.isPrimary() && !(column.type instanceof ListType)) {
-                int ix1 = param.getTable().getColumns().indexOf(column);
+                int ix1 = param.getTable().getColumnIndex(column);
                 mapping.put(i, ix1);
             }
         }

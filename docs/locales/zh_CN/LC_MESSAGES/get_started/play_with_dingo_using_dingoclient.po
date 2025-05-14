@@ -1,0 +1,498 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-30 10:18+0800\n"
+"PO-Revision-Date: 2025-04-30 11:01+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:1
+#: 71f7fb4fca5744fe95e1471c65699c13
+msgid "Play with DingoDB using DingoClient"
+msgstr "使用 DingoClient 连接 DingoDB"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:3
+#: 0f01ef3db5cc4df0aa0d8c87704586dc
+msgid ""
+"In order to be more faster, DingoDB presents API which is comprehensive and "
+"powerful to do operations on the database, such as DDL or DML operation."
+msgstr ""
+"为提升速度，DingoDB 提供功能全面而强大的API，支持对数据库进行 DDL 或 DML 操"
+"作。"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:5
+#: 5fc41b2d32e945228b567de26050c2d3
+msgid "Examples"
+msgstr "示例"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:7
+#: 9d762605ea5c46429cf4e3808bfffed2
+msgid ""
+"Function about Dingo sdk: [SDK Documents](https://github.com/dingodb/pydingo/"
+"tree/master/examples)"
+msgstr ""
+"**Dingo sdk 的功能**：[SDK 文档](https://github.com/dingodb/pydingo/tree/"
+"master/examples)"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:9
+#: 6b90985e748f46738d4a1c99cfca5839
+msgid "1. Document_index"
+msgstr "1. 全文索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:24
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:155
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:349
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:430
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:451
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:531
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:551
+#: 548e8359139e4fbd9e6d89c3aede7098 ba79c7974ea0470a9ea83275df5e0c83
+msgid "delete_index"
+msgstr "删除索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:30
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:160
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:353
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:455
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:555
+#: 4d3c38997eaf4b63b8ab9cfdfa85e924 8f49c2e62a814a4699c1bae66384c1e1
+msgid "create_index"
+msgstr "创建索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:51
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:175
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:362
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:464
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:560
+#: 2838ff4847054d12bd1e7588cb0782cf 9e58283a41fc43a5baf5d1420417c4c9
+msgid "make dataset"
+msgstr "创建训练数据和查询数据"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:71
+#: 51516265fc6143a39046c1de294cc311
+msgid "document_search"
+msgstr "文档搜索"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:101
+#: 7604c4f34f754d66a8e28a1381ab41aa
+msgid "document_query"
+msgstr "文档查询"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:106
+#: f8776b15de424b37b52fe74d4e021b32
+msgid "document_get_border"
+msgstr "获取文本边框"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:113
+#: 500dd10765574f17a0584bb46d7493a7
+msgid "document_scan_query"
+msgstr "文档扫描查询"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:124
+#: 4a3f7200634b4df0b1e6ff9b7bf7ff3d
+msgid "document_index_metrics"
+msgstr "文档索引度量"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:129
+#: aa6a79e6e5e04ec990c568c0c38bc648
+msgid "document_count_out"
+msgstr "文本数量"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:134
+#: 77fcb46404c7400ab5ce7b764e238b23
+msgid "document_delete"
+msgstr "文本删除"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:140
+#: 3f3cb9625dae47baa3a3e0698c821385
+msgid "2. Document_regex_index"
+msgstr "2. 全文正则索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:141
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:211
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:310
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:436
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:536
+#: 396eddede05241baa3ed487543356286 7e2ad266c3ef45e39947a06a57618080
+#: c7c0b89c85494bdaad5197271ca52ab9 fd032d803c1a41dd83833c4041811280
+#: fd445ba6ab13435c9915a38ed912c935
+msgid "import"
+msgstr "导入"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:187
+#: cc927fcf878a46be963310800af7f17f
+msgid "DocumentRegexSearch"
+msgstr "全文索引的正则查询"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:194
+#: ef40bedffa5548a6968a1456abf38da9
+msgid "DocumentSearchLength"
+msgstr "文本搜索长度"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:201
+#: 6b90985e748f46738d4a1c99cfca5839
+msgid "DocumentSearchAnd"
+msgstr "文件搜索"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:210
+#: 46e44840f3714386ba881920a5c1551a
+msgid "3. Rawkv"
+msgstr "3. Rawkv"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:225
+#: 531b61cad4fd45188cdffdcfec6602cb
+msgid "put"
+msgstr "输入"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:229
+#: 62f007eb941b4bbf9adad5a1b1362bf1
+msgid "batch_put"
+msgstr "批量输入"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:247
+#: 73616f52cf52422e9d0187cfc6f0c173
+msgid "get"
+msgstr "获取"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:251
+#: e989fc4861704dd0b7f5f2bca88184d2
+msgid "kv.to dict"
+msgstr "转为字典输出"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:274
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:383
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:623
+#: ad193288abef4ce9b874c3ee606d6644
+msgid "delete"
+msgstr "删除"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:305
+#: 1073cef7bfb04b0782ccda375d080aaa
+msgid "delete range"
+msgstr "删除分区"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:309
+#: d811bf417d3d4b3098ec98ee6e4dadac
+msgid "4. Region-creator"
+msgstr "4. 区域创建器"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:322
+#: b9ed47678c2842bcb78348a6c153e7c2
+msgid "drop_region"
+msgstr "删除分区"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:326
+#: 8f49c2e62a814a4699c1bae66384c1e1
+msgid "create_region"
+msgstr "创建分区"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:334
+#: ba79c7974ea0470a9ea83275df5e0c83
+msgid "5. Vector_index"
+msgstr "5. 向量索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:378
+#: c055e002cc044f51b1fac73037ba7901
+msgid "add"
+msgstr "新增"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:387
+#: ba0e37ca504f48f6ae41c3cb4b524648
+msgid "get_auto_increment_id"
+msgstr "自增ID获取"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:391
+#: 19eb038fde42423bb0942fe3207dec89
+msgid "update_auto_increment_id"
+msgstr "自增ID更新"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:395
+#: 2f030143671b4125a434ff70ac42801c
+msgid "upsert"
+msgstr "插入"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:399
+#: f490788a62d34271962b1531e0906bf3
+msgid "search"
+msgstr "搜索"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:406
+#: 996d2a7681514fa78d3eebd5d7a7e47a
+msgid "search with pre_filter or post_filter"
+msgstr "使用 pre_filter 或 post_filter 搜索"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:410
+#: 05be9658c214400e9097bb4a4f19b21f
+msgid "get index with id"
+msgstr "用 id 获取索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:414
+#: ef607344b65d441f8c531895de4c2e29
+msgid "Add: scan"
+msgstr "添加：扫描"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:418
+#: 5f8226bbeae64c29bf556260b2a3b32a
+msgid "Add count"
+msgstr "添加计数"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:422
+#: 6e0f888e7ef8441192035df5af939a80
+msgid "metrics"
+msgstr "度量"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:426
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:527
+#: 3935c0437698484d96b8fde38094f67b
+msgid "get_max_index_row"
+msgstr "获取最大索引行数"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:435
+#: 9a98697b2a7548e8b0086b1d3c3d6d09
+msgid "6. Vector_binary_index"
+msgstr "6. 二进制向量索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:480
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:576
+#: 3a0cc42f2634468db1f05ab8d366afec
+msgid "vector_add"
+msgstr "向量添加"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:485
+#: 3a0cc42f2634468db1f05ab8d366afec
+msgid "vector_delete"
+msgstr "向量删除"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:489
+#: ba0e37ca504f48f6ae41c3cb4b524648
+msgid "vector_get_auto_increment"
+msgstr "获取自增"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:493
+#: 19eb038fde42423bb0942fe3207dec89
+msgid "vector_update_auto_increment"
+msgstr "向量序列自增"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:497
+#: 372bb50b71484b848c028a5854475157
+msgid "vector_upsert"
+msgstr "向量插入"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:501
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:595
+#: 3a0cc42f2634468db1f05ab8d366afec
+msgid "vector_search"
+msgstr "向量搜索"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:511
+#: 3a0cc42f2634468db1f05ab8d366afec
+msgid "vector_getS"
+msgstr "向量获取"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:515
+#: 3a0cc42f2634468db1f05ab8d366afec
+msgid "vector_scan"
+msgstr "向量扫描"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:519
+#: 28d7bf0c12334439977c1e9f3904b2d6
+msgid "Add vector count"
+msgstr "添加向量计数"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:523
+#: 5f51430671cd4cd596c5e9d6cbed6d31
+msgid "vector_metrics"
+msgstr "向量度量"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:535
+#: 11b2c3fe2ea34eb683e5b502d2bfbb04
+msgid "7.Vector_diskann_index"
+msgstr "7. DiskANN向量索引"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:583
+#: 08e8eea6f4bf4d92ae460d78794ea9ee
+msgid "vector_build_by_index"
+msgstr "按索引构建向量"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:587
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:599
+#: e989fc4861704dd0b7f5f2bca88184d2
+msgid "r.to_dict"
+msgstr "转为字典输出"
+
+#: ../../source/get_started/play_with_dingo_using_dingoclient.md:591
+#: 7d7db4f0a08b45efa5a593125136badc
+msgid "vector_count_memory"
+msgstr "内存向量计数"
+
+#~ msgid "Introducation"
+#~ msgstr "简介"
+
+#~ msgid "Operation using DingoClient"
+#~ msgstr "使用 DingoClient 进行操作"
+
+#~ msgid "Dependence about DingoClient"
+#~ msgstr "相关依赖"
+
+#~ msgid ""
+#~ "`dingo-sdk` artifactory can be download from maven central using pom "
+#~ "directly."
+#~ msgstr "dingo-sdk 可以直接使用 pom 从 maven 中央存储库下载。"
+
+#~ msgid "Function about dingo-client"
+#~ msgstr "dingo-client 的功能"
+
+#~ msgid "Examples about dingo-client"
+#~ msgstr "用例"
+
+#~ msgid "Implemented in two ways, as follows:"
+#~ msgstr "通过以下两种方式实现："
+
+#~ msgid "Mode One"
+#~ msgstr "方式一"
+
+#~ msgid "1.Define table Using Pojo"
+#~ msgstr "1.使用 Pojo 定义表格"
+
+#~ msgid "2.Create table Using DingoClient"
+#~ msgstr "2.使用 DingoClient 创建表格"
+
+#~ msgid "3.Insert records to table"
+#~ msgstr "3.向表中插入记录"
+
+#~ msgid "4.Query data"
+#~ msgstr "4.查询数据"
+
+#~ msgid "Query a single record"
+#~ msgstr "查询单条记录"
+
+#~ msgid "Query multiple records 1"
+#~ msgstr "查询多条记录 1"
+
+#~ msgid "Query multiple records 2"
+#~ msgstr "查询多条记录 2"
+
+#~ msgid "5.Sample Data of Table"
+#~ msgstr "5.表格用例数据"
+
+#~ msgid "6.Drop table and close connection"
+#~ msgstr "6.删除表格并关闭连接"
+
+#~ msgid "Mode Two"
+#~ msgstr "方式二"
+
+#~ msgid "1.To create a table using Dingo Client"
+#~ msgstr "1.使用 DingoClient 创建表格"
+
+#~ msgid "2.Insert records to table"
+#~ msgstr "2.在表格中插入记录"
+
+#~ msgid "Insert a single record"
+#~ msgstr "插入单条记录"
+
+#~ msgid "Insert multiple records"
+#~ msgstr "插入多条记录"
+
+#~ msgid "3.Query data"
+#~ msgstr "3.查询数据"
+
+#~ msgid "4.Drop table and close connection"
+#~ msgstr "4.删除表格并关闭连接"
+
+#~ msgid "Operation using Annotation"
+#~ msgstr "使用标注的操作"
+
+#~ msgid ""
+#~ "DingoDB presents a Java API which is comprehensive and powerful, but "
+#~ "requires a measure of boiler plate code to map the data from Java POJOs "
+#~ "to the database. The Annotation is aim to lower the amount of code "
+#~ "required when mapping POJOs to DingoDB and back as well as reducing some "
+#~ "of the brittleness of the code."
+#~ msgstr ""
+#~ "DingoDB提供的Java应用程序接口（API）全面而强大，但需要大量的模板代码才能将"
+#~ "数据从Java POJOs映射到数据库。注释的目的是减少将 POJOs 映射到 DingoDB 时所"
+#~ "需的代码量，同时减少代码的脆弱性。"
+
+#~ msgid "Keys"
+#~ msgstr "键"
+
+#~ msgid ""
+#~ "The key to an DingoDB record can be specified either as a field or a "
+#~ "property. Remember that DingoDB keys can be Strings, numberical types and "
+#~ "date types only."
+#~ msgstr ""
+#~ "DingoDB 记录的键可以指定为字段或属性。请注意：DingoDB 的键只能是字符串、数"
+#~ "字类型和日期类型。"
+
+#~ msgid ""
+#~ "To use a field as the key, simply mark the field with the DingoKey "
+#~ "annotation:"
+#~ msgstr "要使用某个字段作为键，只需用 DingoKey 注释标记该字段即可。"
+
+#~ msgid "Column"
+#~ msgstr "列"
+
+#~ msgid ""
+#~ "Fields in Java can be mapped to the database irrespective of the "
+#~ "visibility of the column. To do so, simply specify the column to map to "
+#~ "with the @DingoColumn annotation:"
+#~ msgstr ""
+#~ "无论列的可见性如何，Java 中的字段都可以映射到数据库。只需使用 "
+#~ "@DingoColumn 注解指定要映射的列即可："
+
+#~ msgid ""
+#~ "This will map the contents of the `version` field to a `vrsn` column in "
+#~ "DingoDB."
+#~ msgstr "这将把 `version` 字段的内容映射到 DingoDB 中的 `vrsn` 列。"
+
+#~ msgid ""
+#~ "If the name of the column matches the name of the field in Java, the name "
+#~ "can be omitted:"
+#~ msgstr "如果列名与 Java 中的字段名一致，则可以省略列名："
+
+#~ msgid "This will appear in DingoDB as the `age` column."
+#~ msgstr "这将在 DingoDB 中显示为 `age` 列。"
+
+#~ msgid ""
+#~ "By default, all fields will be mapped to the database. Fields can be "
+#~ "excluded with the @DingoExclude annotation, and renamed with the "
+#~ "@DingoColumn annotation. For example:"
+#~ msgstr ""
+#~ "默认情况下，所有字段都将映射到数据库。可以使用 @DingoExclude 注解排除字"
+#~ "段，并使用 @DingoColumn 注解重命名字段。例如："
+
+#~ msgid ""
+#~ "This saves the record with 4 columns, `a`,`b`,`c`,`d`. To save only "
+#~ "fields `a`,`b`,`c` you can do either:"
+#~ msgstr ""
+#~ "这样保存的记录有 4 列：`a`,`b`,`c`,`d`。要只保存`a`,`b`,`c`字段，可以选择"
+#~ "以下两种方法："
+
+#~ msgid ""
+#~ "If a field is marked with both @DingoExclude, the column will not be "
+#~ "mapped to the database."
+#~ msgstr ""
+#~ "如果一个字段同时标记了 @DingoExclude 和 @DingoExclude，该列将不会被映射到"
+#~ "数据库。"
+
+#~ msgid ""
+#~ "You can force the name of a particular column or columns by specifying "
+#~ "them in an DingoColumn:"
+#~ msgstr "您可以在 DingoColumn 中指定一列或多列的名称："
+
+#~ msgid "This will save 4 fields in the database, `a`, `b`, `longCname`, `d`."
+#~ msgstr "这将在数据库中保存 4 个字段，即 `a`、`b`、`longCname` 和 `d`。"

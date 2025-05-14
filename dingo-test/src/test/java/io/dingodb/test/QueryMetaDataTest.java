@@ -92,8 +92,8 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Arrays.asList(
-                    new Object[]{null, SCHEMA_NAME, "TEST", "BASE TABLE"},
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "test", "BASE TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "test1", "BASE TABLE"}
                 ));
         }
     }
@@ -101,13 +101,13 @@ public class QueryMetaDataTest {
     @Test
     public void testGetTablesWithPattern() throws SQLException {
         DatabaseMetaData metaData = context.getConnection().getMetaData();
-        try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, "TEST_", null)) {
+        try (ResultSet resultSet = metaData.getTables(null, SCHEMA_NAME, "test_", null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Collections.singletonList(
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "test1", "BASE TABLE"}
                 ));
         }
     }
@@ -121,8 +121,8 @@ public class QueryMetaDataTest {
                     new String[]{"TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE"}
                 )
                 .isRecords(Arrays.asList(
-                    new Object[]{null, SCHEMA_NAME, "TEST", "BASE TABLE"},
-                    new Object[]{null, SCHEMA_NAME, "TEST1", "BASE TABLE"}
+                    new Object[]{null, SCHEMA_NAME, "test", "BASE TABLE"},
+                    new Object[]{null, SCHEMA_NAME, "test1", "BASE TABLE"}
                 ));
         }
     }
@@ -130,7 +130,7 @@ public class QueryMetaDataTest {
     @Test
     public void testGetColumns() throws SQLException {
         DatabaseMetaData metaData = context.getConnection().getMetaData();
-        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", null)) {
+        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "test", null)) {
             Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
@@ -141,17 +141,17 @@ public class QueryMetaDataTest {
                 )
                 .isRecords(Arrays.asList(
                     new Object[]{
-                        null, SCHEMA_NAME, "TEST", "ID", 4,
+                        null, SCHEMA_NAME, "test", "id", 4,
                         "INTEGER NOT NULL", -1, null, 10, 0,
                         -1, 1, "NO", "", ""
                     },
                     new Object[]{
-                        null, SCHEMA_NAME, "TEST", "NAME", 12,
+                        null, SCHEMA_NAME, "test", "name", 12,
                         "VARCHAR(32) CHARACTER SET \"UTF-8\" NOT NULL", 32, null, 10, 0,
                         32, 2, "NO", "", ""
                     },
                     new Object[]{
-                        null, SCHEMA_NAME, "TEST", "AMOUNT", 8,
+                        null, SCHEMA_NAME, "test", "amount", 8,
                         "DOUBLE", -1, null, 10, 1,
                         -1, 3, "YES", "", ""
                     }
@@ -162,7 +162,7 @@ public class QueryMetaDataTest {
     @Test
     public void testGetColumnsWithPattern() throws SQLException {
         DatabaseMetaData metaData = context.getConnection().getMetaData();
-        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "TEST", "N%E")) {
+        try (ResultSet resultSet = metaData.getColumns(null, SCHEMA_NAME, "test", "N%E")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
@@ -173,7 +173,7 @@ public class QueryMetaDataTest {
                 )
                 .isRecords(Collections.singletonList(
                     new Object[]{
-                        null, SCHEMA_NAME, "TEST", "NAME", 12,
+                        null, SCHEMA_NAME, "test", "name", 12,
                         "VARCHAR(32) CHARACTER SET \"UTF-8\" NOT NULL", 32, null, 10, 0,
                         32, 2, "NO", "", ""
                     }
@@ -184,7 +184,7 @@ public class QueryMetaDataTest {
     @Test
     public void testGetPrimaryKeys() throws SQLException {
         DatabaseMetaData metaData = context.getConnection().getMetaData();
-        try (ResultSet resultSet = metaData.getPrimaryKeys(null, SCHEMA_NAME, "TEST")) {
+        try (ResultSet resultSet = metaData.getPrimaryKeys(null, SCHEMA_NAME, "test")) {
             Assert.resultSet(resultSet)
                 .columnLabels(
                     new String[]{
@@ -193,7 +193,7 @@ public class QueryMetaDataTest {
                 )
                 .isRecords(Collections.singletonList(
                     new Object[]{
-                        null, SCHEMA_NAME, "TEST", "ID", (short) 1,
+                        null, SCHEMA_NAME, "test", "id", (short) 1,
                     }
                 ));
         }

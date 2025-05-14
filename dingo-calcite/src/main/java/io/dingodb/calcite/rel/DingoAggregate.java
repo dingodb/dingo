@@ -42,18 +42,6 @@ public final class DingoAggregate extends Aggregate implements DingoRel {
         List<AggregateCall> aggCalls
     ) {
         super(cluster, traitSet, hints, input, groupSet, groupSets, aggCalls);
-        // In `Aggregate`, type checks were done but with `assert`, which is not effective in production.
-        for (AggregateCall aggCall : aggCalls) {
-            SqlKind aggKind = aggCall.getAggregation().getKind();
-            if (aggKind == SqlKind.SUM || aggKind == SqlKind.SUM0) {
-                if (aggCall.type.getFamily() != SqlTypeFamily.NUMERIC) {
-                    throw new IllegalArgumentException(
-                        "Aggregation function \"" + aggKind + "\" requires numerical input but \""
-                            + aggCall.type + "\" was given."
-                    );
-                }
-            }
-        }
     }
 
     @Override

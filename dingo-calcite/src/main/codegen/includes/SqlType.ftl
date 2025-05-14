@@ -21,12 +21,15 @@ SqlTypeNameSpec SqlTextTypeName(Span s): {
    SqlTypeName typeName;
 } {
    <TEXT>
+   precision = PrecisionOpt()
     {
         s.add(this);
         typeName = SqlTypeName.VARCHAR;
-        precision = 65535;
+        if (precision == -1) {
+            precision = 65535;
+        }
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlLongTextTypeName(Span s): {
@@ -40,7 +43,7 @@ SqlTypeNameSpec SqlLongTextTypeName(Span s): {
         typeName = SqlTypeName.VARCHAR;
         precision = Integer.MAX_VALUE;
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
@@ -60,7 +63,7 @@ SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
             typeName = SqlTypeName.TIMESTAMP;
         }
         return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
-    }    
+    }
 }
 
 SqlTypeNameSpec SqlFloatTypeName(Span s) :
@@ -73,6 +76,33 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
         s.add(this);
         SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
         int precision = -1;
+        int scale = -1;
+    }
+        [
+            <LPAREN>
+                precision = UnsignedIntLiteral()
+                [
+                <COMMA>
+                    scale = UnsignedIntLiteral()
+                    ]
+            <RPAREN>
+        ]
+    {
+        sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
+        return sqlTypeNameSpec;
+    }
+}
+
+SqlTypeNameSpec SqlTinyintTypeName(Span s) :
+{
+    final SqlTypeNameSpec sqlTypeNameSpec;
+}
+{
+    <TINYINT>
+    {
+        s.add(this);
+        SqlTypeName sqlTypeName = SqlTypeName.TINYINT;
+        int precision = -1;
     }
         [
             <LPAREN>
@@ -80,7 +110,7 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
             <RPAREN>
         ]
     {
-        sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
+        sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, -1, s.end(this));
         return sqlTypeNameSpec;
     }
 }

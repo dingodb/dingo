@@ -32,7 +32,7 @@ import java.util.List;
 @Getter
 @JsonTypeName("pessimistic_lock_update")
 @JsonPropertyOrder({"isolationLevel", "startTs", "lockTtl", "lockTimeOut", "pessimisticTxn",
-    "isScan", "table", "schema", "keyMapping"})
+    "isScan", "table", "schema", "keyMapping", "updatePrimaryKey"})
 public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     @JsonProperty("mapping")
@@ -41,6 +41,12 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
     private final List<SqlExpr> updates;
     @JsonProperty("isScan")
     private final boolean isScan;
+    @JsonProperty("updatePrimaryKey")
+    private final boolean updatePrimaryKey;
+    @JsonProperty("updateLimit")
+    private final long updateLimit;
+
+    private long updateScanCount;
     public PessimisticLockUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -54,13 +60,18 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         @JsonProperty("primaryLockKey") byte[] primaryLockKey,
         @JsonProperty("lockTimeOut") long lockTimeOut,
         @JsonProperty("isScan") boolean isScan,
-        Table table
+        Table table,
+        @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
+        @JsonProperty("updateLimit") long updateLimit
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.mapping = mapping;
         this.updates = updates;
         this.isScan = isScan;
+        this.updatePrimaryKey = updatePrimaryKey;
+        this.updateLimit = updateLimit;
+        this.updateScanCount = 0L;
     }
     @Override
     public void init(Vertex vertex) {
@@ -70,6 +81,10 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
 
     public void inc() {
         count++;
+    }
+
+    public void incUpdateScanCount() {
+        updateScanCount++;
     }
 
     @Override

@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-27 18:44+0800\n"
+"PO-Revision-Date: 2025-04-30 10:20+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:1
+#: e0e88b63fb28417f9a58c432d3b35bc0
+msgid "Play with DingoDB using Langchain"
+msgstr "使用 Langchain 连接 DingoDB"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:3
+#: b661a12574594c75a520640200304cfc
+msgid ""
+"Firstly, you should have a [DingoDB instance up and running](https://"
+"dingodb.readthedocs.io/en/latest/deployment/index.html)."
+msgstr ""
+"要运行该程序，您需要有一个 [DingoDB 实例](https://dingodb.readthedocs.io/en/latest/"
+"deployment/index.html)。"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:10
+#: 46c5a062bcd24415b7ef3c2a6abf692a
+msgid "We want to use OpenAIEmbeddings so we have to get the OpenAI API Key."
+msgstr "我们要使用 OpenAIEmbeddings，因此必须获取 OpenAI API 密钥。"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:70
+#: 5958aacd89df41af84ac6984e0914a0f
+msgid "Adding More Text to an Existing Index"
+msgstr "为现有索引添加更多文本"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:72
+#: e8bbbad660d249af903e49a7bbffb88e
+msgid ""
+"More text can embedded and upserted to an existing Dingo index using the add_texts "
+"function."
+msgstr "使用 add_texts 函数，可以在现有的 Dingo 索引中嵌入或插入更多文本。"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:80
+#: 3f58589bd38c489bbcd2527c5d22eb87
+msgid "Maximal Marginal Relevance Searches"
+msgstr "最大边际相关性搜索（MMR）"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:82
+#: c13440c6dc6745cba5e06f51fbb1a01d
+msgid ""
+"In addition to using similarity search in the retriever object, you can also use mmr as "
+"retriever."
+msgstr "除了在检索器对象中使用相似性搜索外，还可以使用 MMR 作为检索器。"
+
+#: ../../source/get_started/play_with_dingo_using_Langchain.md:90
+#: 28b3ec203ea94934a1579da14c85a616
+msgid "Or use 'max_marginal_relevance_search' directly:"
+msgstr "或直接使用 \"max_marginal_relevance_search\"："
+
+#~ msgid ""
+#~ "[Dingo](https://dingodb.readthedocs.io/en/latest/) is a distributed multi-mode vector "
+#~ "database, which combines the characteristics of data lakes and vector databases, and "
+#~ "can store data of any type and size (Key-Value, PDF, audio, video, etc.). It has real-"
+#~ "time low-latency processing capabilities to achieve rapid insight and response, and can "
+#~ "efficiently conduct instant analysis and process multi-modal data."
+#~ msgstr ""
+#~ "[Dingo](https://dingodb.readthedocs.io/en/latest/)是一个分布式多模向量数据库，它结合了数"
+#~ "据湖和向量数据库的特点，可以存储任何类型和大小的数据（如Key-Value、PDF、音频、视频等）。"
+#~ "它具有实时低延迟处理能力，可实现快速洞察和响应，并能高效地进行实时分析和处理多模数据。"
+
+#~ msgid ""
+#~ "This notebook shows how to use functionality related to the DingoDB vector database."
+#~ msgstr "本篇介绍如何使用与 DingoDB 向量数据库相关的功能。"

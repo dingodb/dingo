@@ -29,6 +29,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.entity.Table;
@@ -87,10 +88,13 @@ import io.dingodb.store.api.transaction.exception.NonAsyncCommitLockException;
 import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
 import io.dingodb.store.api.transaction.exception.OnePcNeedTwoPcCommit;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -135,6 +139,28 @@ public class TransactionStoreInstance {
         this.partitionId = partitionId;
         this.indexService = indexService;
         this.documentService = documentService;
+    }
+
+    private class IteratorProxy implements InvocationHandler {
+
+        private final Iterator iterator;
+
+        private IteratorProxy(Iterator iterator) {
+            this.iterator = iterator;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            try {
+                return method.invoke(iterator, args);
+            } catch (Exception e) {
+                Throwable throwable = Utils.extractThrowable(e);
+                if (throwable instanceof DingoClientException.InvalidRouteTableException) {
+                    throw new RegionSplitException(throwable);
+                }
+                throw throwable;
+            }
+        }
     }
 
     private byte[] setId(byte[] key) {
@@ -538,9 +564,17 @@ public class TransactionStoreInstance {
         Stream.of(range.end).peek(this::setId).forEach($ -> $[0] = 't');
 
         if (ScopeVariables.txnScanByStream()) {
-            return getScanStreamIterator(ts, range, timeOut, coprocessor);
+            return (Iterator<io.dingodb.common.store.KeyValue>) java.lang.reflect.Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[]{Iterator.class},
+                new IteratorProxy(getScanStreamIterator(ts, range, timeOut, coprocessor))
+            );
         } else {
-            return getScanIterator(ts, range, timeOut, coprocessor);
+            return (Iterator<io.dingodb.common.store.KeyValue>) java.lang.reflect.Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[]{Iterator.class},
+                new IteratorProxy(getScanIterator(ts, range, timeOut, coprocessor))
+            );
         }
     }
 

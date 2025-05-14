@@ -23,29 +23,33 @@ import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Data
 public class SchemaTables {
     private SchemaInfo schemaInfo;
-    private Map<String, Table> tables;
+    private NavigableMap<String, Table> tables;
     private Map<String, SequenceDefinition> sequences;
 
     public SchemaTables(SchemaInfo schemaInfo) {
         this.schemaInfo = schemaInfo;
-        this.tables = new ConcurrentHashMap<>();
+        this.tables = caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         this.sequences = new ConcurrentHashMap<>();
     }
 
-    public SchemaTables(SchemaInfo schemaInfo, Map<String, Table> tables) {
+    public SchemaTables(SchemaInfo schemaInfo, NavigableMap<String, Table> tables) {
         this.schemaInfo = schemaInfo;
         this.tables = tables;
         this.sequences = new ConcurrentHashMap<>();
     }
 
     public SchemaTables() {
-        this.tables = new ConcurrentHashMap<>();
+        this.tables = caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         this.sequences = new ConcurrentHashMap<>();
     }
 

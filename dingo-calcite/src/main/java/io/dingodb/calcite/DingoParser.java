@@ -36,6 +36,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
@@ -61,6 +62,7 @@ import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
+import io.dingodb.calcite.grammar.dml.SqlUpdate;
 import io.dingodb.calcite.grammar.dql.ExportOptions;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
@@ -86,6 +88,7 @@ import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
@@ -109,8 +112,10 @@ import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSetOption;
 import org.apache.calcite.sql.ddl.SqlDropSchema;
 import org.apache.calcite.sql.ddl.SqlDropTable;
@@ -123,7 +128,6 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Pair;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -149,6 +153,8 @@ import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_F
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_REL_OP_FROM_PROJECT_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SCAN_WITH_REL_OP_RULE;
 import static io.dingodb.calcite.rule.logical.DingoLogicalRules.LOGICAL_SPLIT_AGGREGATE_RULE;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrSetDiffTime;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 // Each sql parsing requires a new instance.
 @Slf4j
@@ -166,7 +172,7 @@ public class DingoParser {
 
     public static SqlParser.Config PARSER_CONFIG = SqlParser.config()
         .withLex(Lex.MYSQL)
-        .withCaseSensitive(false)
+        .withCaseSensitive(caseSensitive())
         .withIdentifierMaxLength(100000)
         .withParserFactory(DingoDdlParserFactory.INSTANCE)
         .withConformance(new SqlDelegatingConformance(SqlConformanceEnum.MYSQL_5) {
@@ -202,6 +208,12 @@ public class DingoParser {
             public boolean allowCharLiteralAlias() {
                 return true;
             }
+
+            @Override
+            public boolean isPercentRemainderAllowed() {
+                return true;
+            }
+
         });
 
     @Getter
@@ -248,6 +260,9 @@ public class DingoParser {
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
+        if (sqlNode instanceof SqlAlterTableOptions) {
+            ((SqlAlterTableOptions) sqlNode).setSql(sql);
+        }
         if (StringUtils.isEmpty(context.getOption("sql_log"))) {
             SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
         }
@@ -326,6 +341,28 @@ public class DingoParser {
             } else {
                 return sqlSelect.isFlashBackQuery();
             }
+        } else if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            if (sqlOrderBy.query instanceof SqlSelect) {
+                SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
+                if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                    return true;
+                } else {
+                    return sqlSelect.isFlashBackQuery();
+                }
+            }
+        } else if (sqlNode instanceof SqlBasicCall) {
+            SqlBasicCall sqlBasicCall = (SqlBasicCall) sqlNode;
+            sqlBasicCall.getOperandList().forEach(sqlNode1 -> {
+                if (sqlNode1 instanceof SqlSelect) {
+                    SqlSelect sqlSelect = (SqlSelect) sqlNode1;
+                    if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
+                        throw DingoErrUtil.newStdErr(ErrSetDiffTime);
+                    } else if (sqlSelect.isFlashBackQuery()) {
+                        throw DingoErrUtil.newStdErr(ErrSetDiffTime);
+                    }
+                }
+            });
         }
         return false;
     }
@@ -345,6 +382,23 @@ public class DingoParser {
         }
         return false;
     }
+
+    public static boolean getIgnore(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlInsert) {
+            SqlInsert sqlInsert = (SqlInsert) sqlNode;
+            return sqlInsert.isIgnore();
+        }
+        return false;
+    }
+
+    public static long getUpdateLimit(@NonNull SqlNode sqlNode) {
+        if (sqlNode instanceof SqlUpdate) {
+            SqlUpdate sqlUpdate = (SqlUpdate) sqlNode;
+            return sqlUpdate.getLimit();
+        }
+        return -1L;
+    }
+
 
     /**
      * Optimize a {@link RelNode} tree.
@@ -381,10 +435,11 @@ public class DingoParser {
                 builder.add(DINGO_AGGREGATE_SCAN_RULE);
             }
         }
+        builder.add(DingoRules.FILTER_REDUCE_EXPRESSIONS_RULE);
         final Program program = Programs.ofRules(builder.build());
         // Seems the only way to prevent rex simplifying in optimization.
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("decorrelateProgram");
+            Timer.Context timeCtx = DingoMetrics.getTimeContext("deCorrelateProgram");
 
             Program subQueryProgram = Programs.subQuery(cluster.getMetadataProvider());
             RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
@@ -433,9 +488,7 @@ public class DingoParser {
     }
 
     private static String processKeyWords(String sql) {
-        if (sql.contains("\\r\\n") || sql.contains("\\n")) {
-            sql = StringEscapeUtils.unescapeJson(sql);
-        }
+        sql = io.dingodb.calcite.utils.StringEscapeUtils.unescape(sql);
         if (sql.endsWith(" ")) {
             sql = sql.trim();
         }
@@ -446,10 +499,6 @@ public class DingoParser {
         if ((sql.startsWith("use") || sql.startsWith("USE")) && sql.contains("`") ) {
             sql = sql.replace("`", "");
         }
-        //if (sql.contains(",'[") && sql.contains("]'")) {
-        //    sql = sql.replace(",'[", ", array[");
-        //    sql = sql.replace("]'", "]");
-        //}
         // tmp todo replace
         if (sql.startsWith("/*!") && sql.endsWith("*/")) {
             sql = "set session net_write_timeout=10000";
@@ -500,7 +549,9 @@ public class DingoParser {
             || sqlNode instanceof SqlAdminResetAutoInc
             || sqlNode instanceof SqlAlterTableComment
             || sqlNode instanceof SqlAlterDropPart
-            || sqlNode instanceof SqlAlterTruncatePart || sqlNode instanceof SqlAlterExchangePart;
+            || sqlNode instanceof SqlAlterTruncatePart
+            || sqlNode instanceof SqlAlterExchangePart
+            || sqlNode instanceof SqlAlterTableOptions;
     }
 
     public long getGcLifeTime() {

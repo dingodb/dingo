@@ -71,6 +71,7 @@ public final class DingoTypeFactory {
         scalarGenerators.put("VARBINARY", BinaryType::new);
         scalarGenerators.put("OBJECT", ObjectType::new);
         scalarGenerators.put("ANY", ObjectType::new);
+        scalarGenerators.put("SMALLINT", IntegerType::new);
 
         // interval
         intervalGenerators.put("INTERVAL_YEAR", IntervalYearType::new);
@@ -80,6 +81,7 @@ public final class DingoTypeFactory {
         intervalGenerators.put("INTERVAL_HOUR", IntervalHourType::new);
         intervalGenerators.put("INTERVAL_MINUTE", IntervalMinuteType::new);
         intervalGenerators.put("INTERVAL_SECOND", IntervalSecondType::new);
+        intervalGenerators.put("INTERVAL_QUARTER", IntervalMonthType::new);
     }
 
     public static @NonNull TupleType tuple(DingoType[] fields) {
@@ -168,6 +170,9 @@ public final class DingoTypeFactory {
         BiFunction<@NonNull Boolean, Type, NullableType> fun = intervalGenerators.get(typeName);
         if (fun != null) {
             if (elementType != null && elementType.equals("INTERVAL_YEAR_MONTH")) {
+                if (typeName.equals("INTERVAL_QUARTER")) {
+                    return fun.apply(nullable, io.dingodb.expr.common.type.Types.INTERVAL_QUARTER);
+                }
                 return fun.apply(nullable, io.dingodb.expr.common.type.Types.INTERVAL_MONTH);
             }
             if (elementType != null && elementType.equals("INTERVAL_DAY_TIME")) {

@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
@@ -27,31 +28,52 @@ import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.rel.logical.LogicalTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.utils.DingoRelOptUtil;
 import io.dingodb.common.table.DiskAnnTable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttleImpl;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.stream.Delta;
+import org.apache.calcite.rel.stream.LogicalDelta;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSelectKeyword;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -65,15 +87,21 @@ import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
+import org.apache.calcite.util.Litmus;
+import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
 
 class DingoSqlToRelConverter extends SqlToRelConverter {
 
@@ -83,6 +111,8 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         .withInSubQueryThreshold(1000)
         // Disable simplify to use Dingo's own expr evaluation.
         .addRelBuilderConfigTransform(c -> c.withSimplify(false));
+
+    private final HintStrategyTable hintStrategies;
 
     DingoSqlToRelConverter(
         RelOptTable.ViewExpander viewExpander,
@@ -100,6 +130,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             StandardConvertletTable.INSTANCE,
             CONFIG.withExplain(isExplain).withHintStrategyTable(hintStrategyTable)
         );
+        this.hintStrategies = this.config.getHintStrategyTable();
     }
 
     @Override
@@ -159,6 +190,9 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, targetColumnNames);
             rexNodeSourceExpressionListBuilder = ImmutableList.builder();
             for (SqlNode n : sqlInsert.getSourceExpressionList()) {
+                if (n.getKind() == SqlKind.LITERAL && ((SqlLiteral) n).toValue() == null) {
+                    n = SqlLiteral.createCharString(n.toString(), n.getParserPosition());
+                }
                 RexNode rn = bb.convertExpression(n);
                 rexNodeSourceExpressionListBuilder.add(rn);
             }
@@ -198,7 +232,6 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         List<String> targetColumnNames
     ) {
         final Map<String, RexNode> nameToNameMap = new HashMap<>();
-        int j = 0;
 
         final List<ColumnStrategy> strategies = targetTable.getColumnStrategies();
         final List<String> targetFields = targetTable.getRowType().getFieldNames();
@@ -210,10 +243,232 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                     break;
                 default:
                     nameToNameMap.put(targetColumnName,
-                        rexBuilder.makeFieldAccess(sourceRef, j++));
+                        rexBuilder.makeFieldAccess(sourceRef, i));
             }
         }
         return createBlackboard(null, nameToNameMap, false);
+    }
+
+    private SqlValidator validator() {
+        return requireNonNull(validator, "validator");
+    }
+
+    public RelRoot convertQuery(
+        SqlNode query,
+        final boolean needsValidation,
+        final boolean top) {
+        if (needsValidation) {
+            query = validator().validate(query);
+        }
+
+        RelNode result = convertQueryRecursive(query, top, null).rel;
+        if (top) {
+            if (isStream(query)) {
+                result = new LogicalDelta(cluster, result.getTraitSet(), result);
+            }
+        }
+        RelCollation collation = RelCollations.EMPTY;
+        if (!query.isA(SqlKind.DML)) {
+            if (isOrdered(query)) {
+                collation = requiredCollation(result);
+            }
+        }
+        checkConvertedType(query, result);
+
+        if (SQL2REL_LOGGER.isDebugEnabled()) {
+            SQL2REL_LOGGER.debug(
+                RelOptUtil.dumpPlan("Plan after converting SqlNode to RelNode",
+                    result, SqlExplainFormat.TEXT,
+                    SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+        }
+
+        final RelDataType validatedRowType = validator().getValidatedNodeType(query);
+        List<RelHint> hints = new ArrayList<>();
+        if (query.getKind() == SqlKind.SELECT) {
+            final SqlSelect select = (SqlSelect) query;
+            if (select.hasHints()) {
+                hints = SqlUtil.getRelHint(hintStrategies, select.getHints());
+            }
+        }
+
+        if (config.isAddJsonTypeOperatorEnabled()) {
+            result = result.accept(new NestedJsonFunctionRelRewriter());
+        }
+
+        // propagate the hints.
+        result = RelOptUtil.propagateRelHints(result, false);
+        return RelRoot.of(result, validatedRowType, query.getKind())
+            .withCollation(collation)
+            .withHints(hints);
+    }
+
+    private static boolean isStream(SqlNode query) {
+        return query instanceof SqlSelect
+            && ((SqlSelect) query).isKeywordPresent(SqlSelectKeyword.STREAM);
+    }
+
+    private static RelCollation requiredCollation(RelNode r) {
+        if (r instanceof Sort) {
+            return ((Sort) r).collation;
+        }
+        if (r instanceof Project) {
+            return requiredCollation(((Project) r).getInput());
+        }
+        if (r instanceof Delta) {
+            return requiredCollation(((Delta) r).getInput());
+        }
+        throw new AssertionError();
+    }
+
+    private void checkConvertedType(SqlNode query, RelNode result) {
+        if (query.isA(SqlKind.DML)) {
+            return;
+        }
+        // Verify that conversion from SQL to relational algebra did
+        // not perturb any type information.  (We can't do this if the
+        // SQL statement is something like an INSERT which has no
+        // validator type information associated with its result,
+        // hence the namespace check above.)
+        final List<RelDataTypeField> validatedFields =
+            validator().getValidatedNodeType(query).getFieldList();
+        final RelDataType validatedRowType =
+            validator().getTypeFactory().createStructType(
+                Pair.right(validatedFields),
+                SqlValidatorUtil.uniquify(Pair.left(validatedFields),
+                    catalogReader.nameMatcher().isCaseSensitive()));
+
+        final List<RelDataTypeField> convertedFields =
+            result.getRowType().getFieldList().subList(0, validatedFields.size());
+        final RelDataType convertedRowType =
+            validator().getTypeFactory().createStructType(convertedFields);
+
+        if (!DingoRelOptUtil.equal("validated row type", validatedRowType,
+            "converted row type", convertedRowType, Litmus.IGNORE)) {
+            throw new AssertionError("Conversion to relational algebra failed to "
+                + "preserve datatypes:\n"
+                + "validated type:\n"
+                + validatedRowType.getFullTypeString()
+                + "\nconverted type:\n"
+                + convertedRowType.getFullTypeString()
+                + "\nrel:\n"
+                + RelOptUtil.toString(result));
+        }
+    }
+
+    private class JsonFunctionRexRewriter extends RexShuttle {
+
+        private final Set<Integer> jsonInputFields;
+
+        JsonFunctionRexRewriter(Set<Integer> jsonInputFields) {
+            this.jsonInputFields = jsonInputFields;
+        }
+
+        @Override public RexNode visitCall(RexCall call) {
+            if (call.getOperator() == SqlStdOperatorTable.JSON_OBJECT) {
+                final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
+                for (int i = 0; i < call.operands.size(); ++i) {
+                    if ((i & 1) == 0 && i != 0) {
+                        builder.add(forceChildJsonType(call.operands.get(i)));
+                    } else {
+                        builder.add(call.operands.get(i));
+                    }
+                }
+                return rexBuilder.makeCall(SqlStdOperatorTable.JSON_OBJECT, builder.build());
+            }
+            if (call.getOperator() == SqlStdOperatorTable.JSON_ARRAY) {
+                final ImmutableList.Builder<RexNode> builder = ImmutableList.builder();
+                builder.add(call.operands.get(0));
+                for (int i = 1; i < call.operands.size(); ++i) {
+                    builder.add(forceChildJsonType(call.operands.get(i)));
+                }
+                return rexBuilder.makeCall(SqlStdOperatorTable.JSON_ARRAY, builder.build());
+            }
+            return super.visitCall(call);
+        }
+
+        private RexNode forceChildJsonType(RexNode rexNode) {
+            final RexNode childResult = rexNode.accept(this);
+            if (isJsonResult(rexNode)) {
+                return rexBuilder.makeCall(SqlStdOperatorTable.JSON_TYPE_OPERATOR, childResult);
+            }
+            return childResult;
+        }
+
+        private boolean isJsonResult(RexNode rexNode) {
+            if (rexNode instanceof RexCall) {
+                final RexCall call = (RexCall) rexNode;
+                final SqlOperator operator = call.getOperator();
+                return operator == SqlStdOperatorTable.JSON_OBJECT
+                    || operator == SqlStdOperatorTable.JSON_ARRAY
+                    || operator == SqlStdOperatorTable.JSON_VALUE;
+            } else if (rexNode instanceof RexInputRef) {
+                final RexInputRef inputRef = (RexInputRef) rexNode;
+                return jsonInputFields.contains(inputRef.getIndex());
+            }
+            return false;
+        }
+    }
+
+    private class NestedJsonFunctionRelRewriter extends RelShuttleImpl {
+
+        @Override public RelNode visit(LogicalProject project) {
+            final Set<Integer> jsonInputFields = findJsonInputs(project.getInput());
+            final Set<Integer> requiredJsonFieldsFromParent = stack.size() > 0
+                ? requiredJsonOutputFromParent(stack.getLast()) : Collections.emptySet();
+
+            final List<RexNode> originalProjections = project.getProjects();
+            final ImmutableList.Builder<RexNode> newProjections = ImmutableList.builder();
+            JsonFunctionRexRewriter rexRewriter = new JsonFunctionRexRewriter(jsonInputFields);
+            for (int i = 0; i < originalProjections.size(); ++i) {
+                if (requiredJsonFieldsFromParent.contains(i)) {
+                    newProjections.add(rexRewriter.forceChildJsonType(originalProjections.get(i)));
+                } else {
+                    newProjections.add(originalProjections.get(i).accept(rexRewriter));
+                }
+            }
+
+            RelNode newInput = project.getInput().accept(this);
+            return LogicalProject.create(
+                newInput,
+                project.getHints(),
+                newProjections.build(),
+                project.getRowType().getFieldNames(),
+                project.getVariablesSet());
+        }
+
+        private Set<Integer> requiredJsonOutputFromParent(RelNode relNode) {
+            if (!(relNode instanceof Aggregate)) {
+                return Collections.emptySet();
+            }
+            final Aggregate aggregate = (Aggregate) relNode;
+            final List<AggregateCall> aggregateCalls = aggregate.getAggCallList();
+            final ImmutableSet.Builder<Integer> result = ImmutableSet.builder();
+            for (final AggregateCall call : aggregateCalls) {
+                if (call.getAggregation() == SqlStdOperatorTable.JSON_OBJECTAGG) {
+                    result.add(call.getArgList().get(1));
+                } else if (call.getAggregation() == SqlStdOperatorTable.JSON_ARRAYAGG) {
+                    result.add(call.getArgList().get(0));
+                }
+            }
+            return result.build();
+        }
+
+        private Set<Integer> findJsonInputs(RelNode relNode) {
+            if (!(relNode instanceof Aggregate)) {
+                return Collections.emptySet();
+            }
+            final Aggregate aggregate = (Aggregate) relNode;
+            final List<AggregateCall> aggregateCalls = aggregate.getAggCallList();
+            final ImmutableSet.Builder<Integer> result = ImmutableSet.builder();
+            for (int i = 0; i < aggregateCalls.size(); ++i) {
+                final AggregateCall call = aggregateCalls.get(i);
+                if (call.getAggregation() == SqlStdOperatorTable.JSON_OBJECTAGG
+                    || call.getAggregation() == SqlStdOperatorTable.JSON_ARRAYAGG) {
+                    result.add(aggregate.getGroupCount() + i);
+                }
+            }
+            return result.build();
+        }
     }
 
     @Override

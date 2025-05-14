@@ -30,11 +30,23 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 public class DingoTableScanRule extends ConverterRule {
-    public static final List<String> metaSchemaList = Collections.singletonList("INFORMATION_SCHEMA");
+
+    public static Set<String> metaSchemaSet;
+    static {
+        if (caseSensitive()) {
+            metaSchemaSet = Set.of("INFORMATION_SCHEMA");
+        } else {
+            metaSchemaSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            metaSchemaSet.add("INFORMATION_SCHEMA");
+        }
+    }
 
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
@@ -60,7 +72,7 @@ public class DingoTableScanRule extends ConverterRule {
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
         List<String> fullNameList = scan.getTable().getQualifiedName();
-        if (metaSchemaList.contains(fullNameList.get(1))) {
+        if (metaSchemaSet.contains(fullNameList.get(1))) {
             DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
             if (dingoTable != null && "SYSTEM VIEW".equals(dingoTable.getTable().getTableType())) {
                 return new DingoInfoSchemaScan(

@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
@@ -43,6 +44,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -62,6 +64,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
 public class DingoGetByIndexRule extends ConverterRule {
@@ -113,7 +117,6 @@ public class DingoGetByIndexRule extends ConverterRule {
     ) {
         Set<Map<Integer, RexNode>> set = mapSet.getSet();
         if (set != null) {
-            List<Column> columnList;
             List<Integer> indices;
             Map<CommonId, Set> indexMap = new HashMap<>();
             boolean matchIndex;
@@ -128,8 +131,10 @@ public class DingoGetByIndexRule extends ConverterRule {
             for (Map<Integer, RexNode> map : set) {
                 matchIndex = false;
                 for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
-                    columnList = index.getValue().getColumns();
-                    indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
+                    if (!index.getValue().visible) {
+                        continue;
+                    }
+                    indices = td.getColumnIndices2(index.getValue().columns);
                     Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                     for (int k : map.keySet()) {
                         if (selection != null && k >= selection.size()) {
@@ -176,6 +181,22 @@ public class DingoGetByIndexRule extends ConverterRule {
             RelTraitSet traits = scan.getTraitSet()
                 .replace(DingoConvention.INSTANCE)
                 .replace(DingoRelStreaming.of(scan.getTable()));
+            /*boolean forUpdate = scan.getCluster()
+                .getHintStrategies()
+                .validateHint(RelHint.builder("for_update").build());
+            DingoGetByKeys getByKeys = new DingoGetByKeys(
+                scan.getCluster(),
+                traits,
+                scan.getHints(),
+                scan.getTable(),
+                scan.getFilter(),
+                scan.getSelection(),
+                keyMapSet
+            );
+            if (forUpdate) {
+                return new DingoForUpdate(scan.getCluster(), scan.getTraitSet(), getByKeys, scan.getTable());
+            }
+            return getByKeys;*/
             return new DingoGetByKeys(
                 scan.getCluster(),
                 traits,
@@ -277,6 +298,9 @@ public class DingoGetByIndexRule extends ConverterRule {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
         for (IndexTable index : indexes) {
             if (index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                continue;
+            }
+            if (!index.visible) {
                 continue;
             }
             if (index.getProperties() == null) {

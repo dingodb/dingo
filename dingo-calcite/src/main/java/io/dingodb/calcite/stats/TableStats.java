@@ -120,7 +120,7 @@ public class TableStats {
     }
 
     public String getIdentifier() {
-        return schemaName.toUpperCase() + "." + tableName.toUpperCase();
+        return schemaName + "." + tableName;
     }
 
     public void initRowCount() {

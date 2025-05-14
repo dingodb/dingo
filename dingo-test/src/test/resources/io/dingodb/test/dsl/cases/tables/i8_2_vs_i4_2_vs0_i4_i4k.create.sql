@@ -1,4 +1,4 @@
-CREATE TABLE DINGO.{table} (
+CREATE TABLE dingo.{table} (
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL,
     type VARCHAR(255) NOT NULL,

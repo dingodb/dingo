@@ -54,6 +54,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
+
 @Slf4j
 public class DdlHandler {
 
@@ -61,7 +65,6 @@ public class DdlHandler {
     private static final Map<Long, String> insertFailedJobIdList = new ConcurrentHashMap<>();
     private static final BlockingQueue<DdlJob> asyncJobQueue = new LinkedBlockingDeque<>(1000);
 
-    // TODO
     private static final String INSERT_JOB = "insert into mysql.dingo_ddl_job(job_id, reorg, schema_ids, table_ids,"
         + " job_meta, type, processing) values";
 
@@ -101,11 +104,11 @@ public class DdlHandler {
         byte[] meta = job.encode(updateRawArgs);
         String jobMeta = new String(meta);
         String format = "(%d, %b, %s, %s, %s, %d, %b)";
-        String sql = INSERT_JOB + String.format(
+        String sql = convertSql(INSERT_JOB + String.format(
                 format, job.getId(), job.mayNeedReorg(), Utils.quoteForSql(job.job2SchemaIDs()),
                 Utils.quoteForSql(job.job2TableIDs()), Utils.quoteForSql(jobMeta), job.getActionType().getCode(),
                 !job.notStarted()
-            );
+            ));
         String error = SessionUtil.INSTANCE.exeUpdateInTxn(sql);
         if (error != null) {
             LogUtils.error(log, "[ddl-error] insert ddl to table,sql:{}", sql);
@@ -251,6 +254,7 @@ public class DdlHandler {
     }
 
     public void createSchema(String schemaName, long schemaId, String connId) {
+        schemaName = convertName(schemaName);
         SchemaInfo schemaInfo = SchemaInfo.builder()
             .name(schemaName)
             .build();
@@ -278,7 +282,7 @@ public class DdlHandler {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionDropSchema)
             .schemaState(schemaInfo.getSchemaState())
-            .schemaName(schemaInfo.getName())
+            .schemaName(convertName(schemaInfo.getName()))
             .schemaId(schemaInfo.getSchemaId()).build();
         job.setConnId(connId);
         try {
@@ -331,8 +335,8 @@ public class DdlHandler {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaId)
             .tableId(tableId)
-            .schemaName(schemaName)
-            .tableName(tableName)
+            .schemaName(convertName(schemaName))
+            .tableName(convertName(tableName))
             .actionType(ActionType.ActionAddIndex)
             .build();
         List<Object> args = new ArrayList<>();
@@ -359,7 +363,8 @@ public class DdlHandler {
         }
         boolean notExists = table.getIndexes()
             .stream()
-            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
+            .noneMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(indexName)
+                : indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
             throw new RuntimeException("index not exists");
         }

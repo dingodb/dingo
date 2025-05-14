@@ -61,14 +61,13 @@ public class SqlCreateDocumentIndex extends SqlCreate {
         if (columns != null) {
             this.columns = columns.stream()
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase).collect(Collectors.toList());
+                .collect(Collectors.toList());
         }
         if (withColumns != null) {
             this.withColumns = withColumns.getList().stream()
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new));
         }
         this.engine = engine;

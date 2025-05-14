@@ -25,8 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @Data
@@ -69,7 +69,7 @@ public class Profile {
 
     public Profile(String type) {
         this.type = type;
-        this.children = new ArrayList<>();
+        this.children = new CopyOnWriteArrayList<>();
         dagText = new StringBuilder();
     }
 

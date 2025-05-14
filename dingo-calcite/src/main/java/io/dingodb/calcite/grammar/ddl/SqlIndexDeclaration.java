@@ -89,7 +89,6 @@ public class SqlIndexDeclaration extends SqlCall {
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new));
         }
         if (withColumnList != null) {
@@ -97,7 +96,6 @@ public class SqlIndexDeclaration extends SqlCall {
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new));
         }
         this.properties = properties;
@@ -134,7 +132,6 @@ public class SqlIndexDeclaration extends SqlCall {
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new));
         }
         if (withColumnList != null) {
@@ -142,7 +139,6 @@ public class SqlIndexDeclaration extends SqlCall {
                 .filter(Objects::nonNull)
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
-                .map(String::toUpperCase)
                 .collect(Collectors.toCollection(ArrayList::new));
         }
         this.properties = properties;

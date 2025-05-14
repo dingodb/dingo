@@ -465,24 +465,22 @@ JAVACODE SqlParseException convertException(Throwable ex)
             // Checks token.image.equals("1") to avoid recursive call.
             // The SqlAbstractParserImpl#MetadataImpl constructor uses constant "1" to
             // throw intentionally to collect the expected tokens.
-            if (!token.image.equals("1")
-                && getMetadata().isKeyword(token.image)
-                && SqlParserUtil.allowsIdentifier(tokenImage, expectedTokenSequences)) {
+            //if (!token.image.equals("1")
+            //    && getMetadata().isKeyword(token.image)
+            //    && SqlParserUtil.allowsIdentifier(tokenImage, expectedTokenSequences)) {
                 // If the next token is a keyword, reformat the error message as:
 
                 // Incorrect syntax near the keyword '{keyword}' at line {line_number},
                 // column {column_number}.
-                final String expecting = ex.getMessage()
-                    .substring(ex.getMessage().indexOf("Was expecting"));
-                final String errorMsg = String.format("Incorrect syntax near the keyword '%s' "
-                        + "at line %d, column %d.\n%s",
+                String errorFormat = "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '%s' at line %d, column %d.";
+                final String errorMsg = String.format(errorFormat,
                     token.image,
                     token.beginLine,
-                    token.beginColumn,
-                    expecting);
+                    token.beginColumn
+                    );
                 // Replace the ParseException with explicit error message.
                 ex = new ParseException(errorMsg);
-            }
+            //}
             pos = new SqlParserPos(
                 token.beginLine,
                 token.beginColumn,
@@ -1419,7 +1417,7 @@ SqlNode SqlSelect() :
         [ LOOKAHEAD(2) <FOR> <UPDATE> { forUpdate=true; }]
         [ LOOKAHEAD(2) <AS> <OF> { flashbackQuery = true; }
          (
-           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
+           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = SqlParserUtil.trim(token.image, "'"); }
            |
            <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
          ) ]
@@ -1528,10 +1526,10 @@ ExportOptions exportOptions(): {
     <INTO> <OUTFILE> <QUOTED_STRING>
     {
       export = true;
-      outfile = token.image.replace("'", "");
+      outfile = SqlParserUtil.trim(token.image, "'");
     }
     [
-       <CHARACTER> <SET> <QUOTED_STRING> { exportCharset = token.image.replace("'", ""); }
+       <CHARACTER> <SET> { exportCharset = dingoIdentifier(); }
     ]
     [
        <FIELDS>
@@ -1906,6 +1904,7 @@ SqlNode SqlInsert() :
     SqlNodeList targetColumnList;
     SqlIdentifier id;
     boolean isReplace = false;
+    boolean isIgnore = false;
 }
 {
     (
@@ -1921,6 +1920,7 @@ SqlNode SqlInsert() :
     SqlInsertKeywords(keywords) {
         keywordList = new SqlNodeList(keywords, s.addAll(keywords).pos());
     }
+    [ <IGNORE> {isIgnore = true;}]
     <INTO> tableName = CompoundTableIdentifier()
     ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
     [ LOOKAHEAD(5) tableRef = ExtendTable(tableRef) ]
@@ -1953,7 +1953,7 @@ SqlNode SqlInsert() :
     ]
     {
         return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList, sourceExpressionList, targetColumnList, isReplace);
+            columnList, sourceExpressionList, targetColumnList, isReplace, isIgnore);
     }
 }
 
@@ -2017,7 +2017,7 @@ SqlNode SqlReplace() :
     ]
     {
         return new io.dingodb.calcite.grammar.dml.SqlInsert(s.end(source), keywordList, tableRef, source,
-            columnList, sourceExpressionList, targetColumnList, isReplace);
+            columnList, sourceExpressionList, targetColumnList, isReplace, false);
     }
 }
 
@@ -2114,6 +2114,7 @@ SqlNode SqlUpdate() :
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
     final Span s;
+    SqlNode offsetFetch = null;
 }
 {
     <UPDATE> {
@@ -2136,11 +2137,12 @@ SqlNode SqlUpdate() :
         <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     ( where = Where() | { where = null; } )
+    [ <LIMIT> offsetFetch = UnsignedNumericLiteralOrParam()]
     {
         final SqlParserPos pos = s.addAll(targetColumnList)
             .addAll(sourceExpressionList).addIf(where).pos();
-        return new SqlUpdate(pos, tableRef, targetColumnList,
-            sourceExpressionList, where, null, alias);
+        return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, tableRef, targetColumnList,
+                     sourceExpressionList, where, null, alias, offsetFetch);
     }
 }
 
@@ -2258,12 +2260,17 @@ void AddSelectItem(List<SqlNode> list) :
     (
         [ <AS> ]
         (
+            LOOKAHEAD(2)
             id = SimpleIdentifier()
         |
             // Mute the warning about ambiguity between alias and continued
             // string literal.
             LOOKAHEAD(1)
             id = SimpleIdentifierFromStringLiteral()
+        |
+           id = ReservedFunctionName()
+        |
+           <FILTER> { id = new SqlIdentifier(unquotedIdentifier(), getPos()); }
         )
         { list.add(SqlStdOperatorTable.AS.createCall(span().end(e), e, id)); }
     |   { list.add(e); }
@@ -2557,7 +2564,7 @@ SqlNode TableRef3(ExprContext exprContext, boolean lateral) :
           alias = SimpleIdentifier()
          |
           <OF> (
-                <TIMESTAMP> <QUOTED_STRING> { flashBackStr = token.image.replace("'", ""); }
+                <TIMESTAMP> <QUOTED_STRING> { flashBackStr = SqlParserUtil.trim(token.image, "'"); }
                 |
                 <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
                )
@@ -4388,6 +4395,9 @@ SqlNode AtomicRowExpression() :
     (
         e = LiteralOrIntervalExpression()
     |
+        LOOKAHEAD(<DATE> <QUOTED_STRING>)
+        e = SpecialDateTimeLiteral()
+    |
         e = DynamicParam()
     |
         LOOKAHEAD(2)
@@ -4906,9 +4916,9 @@ SqlNode StringLiteral() :
     )
     {
         frags = new ArrayList<SqlLiteral>();
-        p = SqlParserUtil.parseString(token.image);
+        p = DingoSqlParserUtil.parseString(token.image);
         try {
-            literal = SqlLiteral.createCharString(p, charSet, getPos());
+            literal = DingoSqlLiteral.createCharString(p, charSet, getPos());
             frags.add(literal);
         } catch (java.nio.charset.UnsupportedCharsetException e) {
             throw SqlUtil.newContextException(getPos(),
@@ -5049,10 +5059,6 @@ SqlLiteral DateTimeLiteral() :
         return SqlParserUtil.parseTimestampLiteral(p, s.end(this));
     }
 |
-    <DATE> { s = span(); } p = SimpleStringLiteral() {
-      return SqlLiteral.createUnknown("DATE", p, s.end(this));
-    }
-|
     <DATETIME> { s = span(); } p = SimpleStringLiteral() {
         return SqlLiteral.createUnknown("DATETIME", p, s.end(this));
     }
@@ -5068,6 +5074,17 @@ SqlLiteral DateTimeLiteral() :
 |
     <TIMESTAMP> { s = span(); } <WITH> <LOCAL> <TIME> <ZONE> p = SimpleStringLiteral() {
         return SqlLiteral.createUnknown("TIMESTAMP WITH LOCAL TIME ZONE", p, s.end(this));
+    }
+}
+
+SqlLiteral SpecialDateTimeLiteral() :
+{
+    final String p;
+    final Span s;
+}
+{
+    <DATE> { s = span(); } p = SimpleStringLiteral() {
+      return SqlLiteral.createUnknown("DATE", p, s.end(this));
     }
 }
 
@@ -5267,10 +5284,10 @@ SqlNode IntervalLiteralOrExpression() :
     ]
     (
         // literal (with quoted string)
-        p = SimpleStringLiteral()
+        e = UnsignedNumericLiteral()
         intervalQualifier = IntervalQualifier() {
             return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
-                sign, p, intervalQualifier);
+                sign, ((SqlNumericLiteral) e).toValue(), intervalQualifier);
         }
     |
         // To keep parsing simple, any expressions besides numeric literal and
@@ -5279,8 +5296,6 @@ SqlNode IntervalLiteralOrExpression() :
             <LPAREN>
             e = Expression(ExprContext.ACCEPT_SUB_QUERY)
             <RPAREN>
-        |
-            e = UnsignedNumericLiteral()
         |
             e = CompoundIdentifier()
         )
@@ -6036,6 +6051,20 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <SMALLINT> { s.add(this); sqlTypeName = SqlTypeName.SMALLINT; }
     |
+        <BIT> [<LPAREN> precision = UnsignedIntLiteral()
+           [
+                                           <COMMA>
+                                           scale = UnsignedIntLiteral()
+                                ]
+          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
+    |
+        <TEXT> [<LPAREN> precision = UnsignedIntLiteral()
+           [
+                                           <COMMA>
+                                           scale = UnsignedIntLiteral()
+                               ]
+          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.VARCHAR; }
+    |
         <BIGINT>    [
                          <LPAREN>
                          precision = UnsignedIntLiteral()
@@ -6048,7 +6077,15 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; }
     |
-        <DOUBLE> { s.add(this); }
+        <DOUBLE> { s.add(this); } [
+                                                           <LPAREN>
+                                                           precision = UnsignedIntLiteral()
+                                                           [
+                                                               <COMMA>
+                                                               scale = UnsignedIntLiteral()
+                                                           ]
+                                                           <RPAREN>
+                                                       ]
         [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
     )
     {
@@ -6281,12 +6318,16 @@ SqlTypeNameSpec CharacterTypeName(Span s) :
     )
     precision = PrecisionOpt()
     [
+        LOOKAHEAD(2)
         <CHARACTER> <SET>
         charSetName = Identifier()
     ]
     {
         if (charSetName != null) {
             charSetName = charSetName.toUpperCase();
+            if (charSetName.equals("UTF8MB3") || charSetName.equals("UTF8MB4")) {
+                charSetName = "UTF8";
+            }
         }
         return new SqlBasicTypeNameSpec(sqlTypeName, precision, charSetName, s.end(this));
     }
@@ -6488,7 +6529,7 @@ SqlNode BuiltinFunctionCall() :
             return e;
         }
     |
-        <SUBSTRING> { s = span(); }
+        ( <SUBSTR> | <SUBSTRING>)  { s = span(); }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ( <FROM> | <COMMA>)
@@ -7464,6 +7505,7 @@ SqlNode NamedFunctionCall() :
         call = withinGroup(call)
     ]
     [
+        LOOKAHEAD(2)
         <FILTER> { filterSpan = span(); }
         <LPAREN>
         <WHERE>
@@ -7524,7 +7566,7 @@ SqlCall NamedCall() :
         }
     )
     {
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
+        return DingoSqlBasicCall.createCall(qualifiedName, s.end(this), funcType, quantifier, args);
     }
 }
 
@@ -7626,6 +7668,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <CURRENT_DATE>
     |   <CURRENT_TIME>
     |   <CURRENT_TIMESTAMP>
+    |   <DATE>
     |   <DENSE_RANK>
     |   <DUPLICATE>
     |   <ELEMENT>
@@ -7675,6 +7718,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <SUM>
     |   <UPPER>
     |   <USER>
+    |   <VALUES>
     |   <VAR_POP>
     |   <VAR_SAMP>
     |   <YEAR>
@@ -7888,7 +7932,7 @@ SqlBinaryOperator BinaryMultisetOperator() :
 /**
  * Parses a binary row operator like AND.
  */
-SqlBinaryOperator BinaryRowOperator() :
+SqlOperator BinaryRowOperator() :
 {
     SqlBinaryOperator op;
 }
@@ -8604,6 +8648,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SUBMULTISET: "SUBMULTISET" >
 |   < SUBSET: "SUBSET" >
 |   < SUBSTITUTE: "SUBSTITUTE" >
+|   < SUBSTR: "SUBSTR" >
 |   < SUBSTRING: "SUBSTRING" >
 |   < SUBSTRING_REGEX: "SUBSTRING_REGEX" >
 |   < SUBSTRING_INDEX: "SUBSTRING_INDEX" >
@@ -8835,7 +8880,7 @@ void NonReservedKeyWord2of3() :
 // which use single-quote as the escape character.
 <DEFAULT, DQID, BTID> TOKEN :
 {
-    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+    < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''") | ("\\'") )* <QUOTE> >
 |
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
 |
@@ -9112,7 +9157,7 @@ MORE :
 
 <DEFAULT, DQID, BTID, BQID> TOKEN :
 {
-    < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+    < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>|<PARENTHESIS>)* >
 }
 
 <DEFAULT, DQID, BTID, BQID, BQHID> TOKEN :
@@ -9163,6 +9208,12 @@ MORE :
         "\u1040"-"\u1049"
     ]
     >
+|
+   < #PARENTHESIS:
+   [
+      "\uff08"-"\uff09"
+   ]
+   >
 }
 
 /* Special token to throw a wrench in the works. It is never valid in SQL,

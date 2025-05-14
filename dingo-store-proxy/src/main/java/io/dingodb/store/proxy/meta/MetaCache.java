@@ -30,6 +30,7 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Parameters;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.entity.InfoSchema;
@@ -73,6 +74,7 @@ import static io.dingodb.common.CommonId.CommonType.DDL;
 import static io.dingodb.common.CommonId.CommonType.INDEX;
 import static io.dingodb.common.CommonId.CommonType.META;
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_CREATE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_DELETE;
 import static io.dingodb.sdk.service.entity.meta.MetaEventType.META_EVENT_REGION_UPDATE;
@@ -94,7 +96,7 @@ public class MetaCache {
 
     public MetaCache(Set<Location> coordinators) {
         this.metaService = Services.metaService(coordinators);
-        this.infoSchemaService = InfoSchemaService.root();
+        this.infoSchemaService = new io.dingodb.store.service.InfoSchemaService(0L, coordinators);
         this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
         this.distributionCache = buildDistributionCache();
         Executors.execute("watch-meta", () -> {
@@ -276,37 +278,55 @@ public class MetaCache {
                 } else {
                     LogUtils.error(log, "getTableByIs is not null, tableId:{}", tableId);
                 }
-                return null;
+                return new TreeMap<>();
             }
-            TableDefinition tableDefinition = tableWithId.getTableDefinition();
-            List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
-            tableDefinition.getTablePartition().getPartitions()
-                .forEach(partition -> {
-                    List<Object> regionList = infoSchemaService
-                        .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
-                    regionList
-                        .forEach(object -> {
-                            ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                            rangeDistributionList.add(
-                                new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
-                            );
-                        });
-                });
-            NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
-            Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
-            KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
-                tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
-                table.tupleType(), table.keyMapping());
-            boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
-            rangeDistributionList.forEach(scanRegionWithPartId -> {
-                RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
-                result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
-            });
-            return result;
+            NavigableMap<ComparableByteArray, RangeDistribution> result = getRangeDistributions(tableWithId);
+            if (result.isEmpty()) {
+                int retry = 3;
+                while (retry-- > 0) {
+                    result = getRangeDistributions(tableWithId);
+                    if (!result.isEmpty()) {
+                        return result;
+                    }
+                    Utils.sleep(1000);
+                }
+                return result;
+            } else {
+                return result;
+            }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
-            return null;
+            return new TreeMap<>();
         }
+    }
+
+    @NonNull
+    private NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistributions(TableDefinitionWithId tableWithId) {
+        TableDefinition tableDefinition = tableWithId.getTableDefinition();
+        List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
+        tableDefinition.getTablePartition().getPartitions()
+            .forEach(partition -> {
+                List<Object> regionList = infoSchemaService
+                    .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
+                regionList
+                    .forEach(object -> {
+                        ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                        rangeDistributionList.add(
+                            new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
+                        );
+                    });
+            });
+        NavigableMap<ComparableByteArray, RangeDistribution> result = new TreeMap<>();
+        Table table = MAPPER.tableFrom(tableWithId, getIndexes(tableWithId, tableWithId.getTableId()));
+        KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+            tableDefinition.getCodecVersion(), tableDefinition.getVersion(),
+            table.tupleType(), table.keyMapping());
+        boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
+        rangeDistributionList.forEach(scanRegionWithPartId -> {
+            RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
+            result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
+        });
+        return result;
     }
 
 
@@ -349,7 +369,7 @@ public class MetaCache {
         distributionCache.invalidate(tableId);
     }
 
-    public synchronized Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
+    public synchronized NavigableMap<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices() {
         InfoSchema infoSchema = DdlService.root().getIsLatest();
         List<SchemaInfo> schemaInfoList;
         if (infoSchema == null) {
@@ -362,7 +382,7 @@ public class MetaCache {
         return getMetaServices(schemaInfoList);
     }
 
-    public Map<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices(List<SchemaInfo> schemaInfoList) {
+    public NavigableMap<String, io.dingodb.store.proxy.meta.MetaService> getMetaServices(List<SchemaInfo> schemaInfoList) {
         return schemaInfoList
             .stream()
             .filter(schemaInfo -> schemaInfo.getSchemaId() != 0)
@@ -374,9 +394,13 @@ public class MetaCache {
                     .parentEntityId(0)
                     .build();
                 return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
-                    schemaInfo.getName().toUpperCase(), metaService, this);
+                    schemaInfo.getName(), metaService, this);
             })
-            .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
+            .collect(Collectors.toMap(
+                io.dingodb.store.proxy.meta.MetaService::name,
+                Function.identity(),
+                (existing, replacement) -> existing,
+                () -> caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
     }
 
     @SneakyThrows

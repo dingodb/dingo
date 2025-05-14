@@ -965,6 +965,7 @@ public class ErrorCode {
     public static int ErrWarnOptimizerHintParseError      = 8064;
     public static int ErrWarnOptimizerHintInvalidInteger  = 8065;
 
+    public static int ErrSetDiffTime = 8135;
     public static int ErrUnsupportedDDLOperation = 8200;
     public static int ErrUnsupportedModifyVec = 8201;
     public static int ErrModifyColumnNotTran = 8202;

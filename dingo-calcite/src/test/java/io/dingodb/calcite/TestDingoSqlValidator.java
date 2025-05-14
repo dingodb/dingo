@@ -75,12 +75,12 @@ public class TestDingoSqlValidator {
         SqlValidator validator = parser.getSqlValidator();
         validator.validate(sqlNode);
         List<List<String>> fieldOrigins = validator.getFieldOrigins(sqlNode);
-        String tableName = "TEST";
-        String schemaName = "DINGO";
+        String tableName = "test";
+        String schemaName = "dingo";
         assertThat(fieldOrigins).isEqualTo(ImmutableList.of(
-            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "ID"),
-            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "NAME"),
-            ImmutableList.of("DINGO_ROOT", schemaName, tableName, "AMOUNT")
+            ImmutableList.of("dingo_root", schemaName, tableName, "id"),
+            ImmutableList.of("dingo_root", schemaName, tableName, "name"),
+            ImmutableList.of("dingo_root", schemaName, tableName, "amount")
         ));
     }
 }

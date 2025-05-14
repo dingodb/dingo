@@ -29,6 +29,7 @@ import io.dingodb.calcite.executor.KillQuery;
 import io.dingodb.calcite.executor.QueryExecutor;
 import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.dql.FlashBackSqlIdentifier;
@@ -56,6 +57,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.profile.ExecProfile;
@@ -126,11 +128,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
 
 @Slf4j
 public final class DingoDriverParser extends DingoParser {
     private final DingoConnection connection;
+    private final String user;
+    private final String host;
     @Getter
     private boolean inTransaction;
     @Getter
@@ -145,6 +151,8 @@ public final class DingoDriverParser extends DingoParser {
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
         this.connection = connection;
+        this.user = connection.getContext().getOption("user");
+        this.host = connection.getContext().getOption("host");
         this.planProfile = new PlanProfile();
         this.dingoAudit = new DingoAudit(IsolationLevel.InvalidIsolationLevel.name(), TransactionType.NONE.name());
     }
@@ -277,6 +285,8 @@ public final class DingoDriverParser extends DingoParser {
             DingoMetrics.timer("sql-parse").update(sub, TimeUnit.MILLISECONDS);
             if (sqlNode instanceof DingoSqlCreateTable) {
                 ((DingoSqlCreateTable) sqlNode).setOriginalCreateSql(sql);
+            } else if (sqlNode instanceof DingoSqlCreateView) {
+                ((DingoSqlCreateView) sqlNode).setOriginalCreateSql(sql);
             }
         } catch (SqlParseException e) {
             throw ExceptionUtils.toRuntime(e);
@@ -522,7 +532,9 @@ public final class DingoDriverParser extends DingoParser {
             new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
             pointTs,
             forUpdate,
-            getReplaceInto(sqlNode)
+            getReplaceInto(sqlNode),
+            getIgnore(sqlNode),
+            getUpdateLimit(sqlNode)
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -578,7 +590,20 @@ public final class DingoDriverParser extends DingoParser {
     }
 
     private void handleFlashBackQuery(SqlNode sqlNode) {
-        io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = (io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode;
+        if (sqlNode instanceof SqlOrderBy) {
+            SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
+            if (sqlOrderBy.query instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+                validateStartTs((io.dingodb.calcite.grammar.dql.SqlSelect) sqlOrderBy.query);
+            }
+            return;
+        } else if (sqlNode instanceof io.dingodb.calcite.grammar.dql.SqlSelect) {
+            validateStartTs((io.dingodb.calcite.grammar.dql.SqlSelect) sqlNode);
+        }
+        LogUtils.info(log, "flashback query tso:{}", pointTs);
+    }
+
+    private void validateStartTs(io.dingodb.calcite.grammar.dql.SqlSelect sqlNode) {
+        io.dingodb.calcite.grammar.dql.SqlSelect sqlSelect = sqlNode;
         if (sqlSelect.getFrom() instanceof FlashBackSqlIdentifier) {
             FlashBackSqlIdentifier flashBackSqlIdentifier = (FlashBackSqlIdentifier) sqlSelect.getFrom();
             LogUtils.info(log, "flashback query str:{}", flashBackSqlIdentifier.flashBackTimeStr);
@@ -599,8 +624,11 @@ public final class DingoDriverParser extends DingoParser {
         if (getGcLifeTime() > pointTs) {
             throw DingoResource.DINGO_RESOURCE.invalidAsTimestampParam().ex();
         }
+        long tso = TsoService.getDefault().tso();
+        if (pointTs > tso) {
+            throw DingoErrUtil.newStdErr("cannot set read timestamp to a future time", ErrUnknown);
+        }
         this.connection.setPointTs(pointTs);
-        LogUtils.info(log, "flashback query tso:{}", pointTs);
     }
 
     public int getConcurrencyLevel() {
@@ -791,7 +819,8 @@ public final class DingoDriverParser extends DingoParser {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables, 0, forUpdate, getReplaceInto(sqlNode)
+                transaction, sqlNode.getKind(), executeVariables, 0,
+                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode)
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
@@ -1041,7 +1070,7 @@ public final class DingoDriverParser extends DingoParser {
                     || opName.equalsIgnoreCase("schema")
                     || opName.equalsIgnoreCase("user")) {
                     sqlNodes.remove(i);
-                    nodes.add(SqlLiteral.createCharString("DINGO", call.getParserPosition()));
+                    nodes.add(SqlLiteral.createCharString(convertName("dingo"), call.getParserPosition()));
                 } else if (opName.equals("@") || opName.equals("@@")) {
                     sqlNodes.remove(i);
                     nodes.add(call.getOperandList().get(0));
@@ -1120,19 +1149,5 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.error(log, e.getMessage(), e);
         }
     }
-
-    //public static void afterDdl(DingoConnection connection, SqlNode sqlNode) {
-    //    if (!ddlTxn(sqlNode)) {
-    //        return;
-    //    }
-    //    try {
-    //        if (connection.getTransaction() != null) {
-    //            boolean pessimistic = "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"));
-    //            TransactionService.getDefault().begin(connection, pessimistic);
-    //        }
-    //    } catch (SQLException e) {
-    //        LogUtils.error(log, e.getMessage(), e);
-    //    }
-    //}
 
 }

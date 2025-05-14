@@ -1,0 +1,531 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 17:04+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:1
+#: f3b37e4e10ab4502815ae08770b96974
+msgid "QuickStart"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:3
+#: bcae8b600db6454984b6489f4ff19aff
+msgid "1、安装WSL"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:4
+#: ../../source/deployment/single-machine/windows/快速入门.md:65
+#: 547d179af4854a94b1dd8727174eae00
+msgid "1）先决条件"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:5
+#: 9feab739b292422b818b35aeabbc6e09
+msgid "想要成功在Windows 10+ 上运行WSL 2，需要先满足以下硬件条件："
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:7
+#: 1b749e260ee5406bba04e81a2bd2f990
+msgid "具有二级地址转化（SLAT）的64位处理器；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:8
+#: a5bd8c5f22824981a1929d7d08fbc325
+msgid "4GB系统RAM；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:9
+#: c1920ba9c4a84b68b7edebae2b962a8e
+msgid "在BIOS中启用硬件虚拟化；"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:11
+#: f13c0d1905d34175bf0beff1cef94a30
+msgid ""
+"*必须运行在 Windows 10 版本 2004 及更高版本（内部版本 19041 及更高版本）或 Windows 11 "
+"才能使用以下命令，否则需要较为复杂的手动安装，这里主要以自动安装为主。*"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:13
+#: f37862a1b9cc4a3daa8f3e41cd5647f1
+msgid "2）下载安装WSL"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:15
+#: ded4efd5a3c642b6a34d2bb8fe4fccc2
+msgid ""
+"在管理员模式下打开 PowerShell 或 Windows 命令提示符，方法是右键单击并选择“以管理员身份运行”，输入 'wsl "
+"--install' 命令，**安装完成后重启计算机**。此命令将启用运行 WSL 并安装 Linux 的 Ubuntu 发行版所需的功能。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:17
+#: 9c20cd2240a04bf58c70389300d8aa28
+msgid "![Wsl_install](../../images/lite_dingo/wsl_install.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:17
+#: f8294571906446ce8a3d602c7f5c8ad0
+msgid "Wsl_install"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:19
+#: 2aa15630d44942c49dbf13b243de4cab
+msgid "3）重启电脑"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:21
+#: 993c41b49bd54d72af755cd2e573c8be
+msgid "重启计算机后会自动安装Linux子系统（默认是Ubuntu）。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:23
+#: ea70979fe63a4bcd994817201e22e775
+msgid "![linux_install](../../images/lite_dingo/ubuntu_install.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:23
+#: c85f8de537e3419b88cb50a8ccfebfdb
+msgid "linux_install"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:25
+#: c0d6c42ab6e64fe68372afacbe46eb13
+msgid "4）检查系统配置"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:27
+#: f1395bf55ce3414eaa2cf77a2bc69761
+msgid "在控制面板->程序→启用或关闭 Windows 功能中检查是否勾选适用于 Linux 的 Windows 子系统和虚拟机平台。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:29
+#: b413bd5c468c479e8760ec1d5ceaeffd
+msgid "![check_configuration](../../images/lite_dingo/check_Windows_configuration.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:29
+#: caf64e22bcd6482e9791527c6e0cca6e
+msgid "check_configuration"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:31
+#: 86d9e4336743441b8b3c07696936e508
+msgid "5）设置用户名和密码"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:33
+#: 90cff4bc52dc4f26921eb58c4a24db4d
+msgid ""
+"安装 WSL 后，需要为新安装的 Linux 发行版创建用户帐户和密码。点击 “开始” 菜单打开Linux发行版（默认情况下为 Ubuntu）。 "
+"此时，系统将要求你为 Linux 发行版创建“用户名”和“密码”。 需要注意的是："
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:35
+#: d6c7860366184f068099bbabf17b3804
+msgid "此用户名和密码特定于安装的每个单独的 Linux 分发版，与 Windows 用户名无关。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:36
+#: c2eac91a5a514b5ba619197791a361a0
+msgid "输入密码时，屏幕上不会显示任何内容。 这称为盲人键入。 你不会看到你正在键入的内容，这是完全正常的。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:37
+#: 304ef6b327ea4e7da7d7edce946baf62
+msgid "创建用户名和密码后，该帐户将是分发版的默认用户，并将在启动时自动登录。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:38
+#: f417e4809c3b42ed9b869366ea71c1ca
+msgid "此帐户将被视为 Linux 管理员，能够运行 sudo (Super User Do) 管理命令。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:39
+#: 9c222f13c72e439ca58a1d1ce9a9b586
+msgid ""
+"在 WSL 上运行的每个 Linux 发行版都有其自己的 Linux 用户帐户和密码。 每当添加分发版、重新安装或重置时，都必须配置一个 "
+"Linux 用户帐户。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:41
+#: 382113249c3e44fb9e8810e02d7da334
+msgid "若要更改或重置密码，请打开 Linux 发行版并输入命令：passwd。 系统会要求你输入当前密码，然后要求输入新密码，之后再确认新密码。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:43
+#: 1568fef2a8974d20a2e0fd25f6d51e6a
+msgid "_**忘记密码**_"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:45
+#: 876dc35ecbbf4fd18a61471e7d9fc8a6
+msgid "a. 请打开 PowerShell，并使用以下命令进入默认 WSL 分发版的根目录：wsl -u root"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:47
+#: 62f5844295e94c129ebd600c1e480a9b
+msgid "如果需要在非默认分发版中更新忘记的密码，请使用命令：wsl -d Debian -u root，并将 Debian 替换为目标分发版的名称。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:49
+#: 632611e08ba04abdb0cead43dc7ad682
+msgid ""
+"b. 在 PowerShell 内的根级别打开 WSL 发行版后，可使用此命令更新密码：passwd <username>，其中 "
+"<username> 是发行版中帐户的用户名，而你忘记了它的密码。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:51
+#: 97658e8ab4d54defbeaaed23ff7b11c4
+msgid ""
+"c. 系统将提示你输入新的 UNIX 密码，然后确认该密码。 在被告知密码已成功更新后，请使用以下命令在 PowerShell 内关闭 "
+"WSL：exit。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:53
+#: 7a99316a2fea477d9bd283786c3e083f
+msgid "![reset_password](../../images/lite_dingo/reset_unix_passsword.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:53
+#: 8584a47dba514b9f96085df2225b736a
+msgid "reset_password"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:55
+#: 3ea3c88434554ec4851e1c544d4b4b76
+msgid "6）检查WSL版本"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:57
+#: dac0140f9ce342eb83acc1259eed9821
+msgid ""
+"可列出已安装的 Linux 发行版，并通过在 PowerShell 或 Windows 命令提示符中输入以下命令来检查每个发行版的 WSL "
+"版本：wsl -l -v，默认是 WSL 2。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:59
+#: 96d7a6f949fa4cf6979d9618957bbc0e
+msgid "`wsl -l -v`"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:61
+#: 119152bfea2a4960a01081e1254c154e
+msgid "![wsl_version](../../images/lite_dingo/wsl_version.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:61
+#: 14864b5a290b4a34a0fd143e351551a4
+msgid "wsl_version"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:63
+#: 4ffd327944534d2bb0538ab05301f77e
+msgid "2、安装Docker DeskTop"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:66
+#: 768fe860501e427f9cc306aea275a3ad
+msgid "WSL version 1.1.3.0 或者更高版本。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:67
+#: 4c698313960a4202a2ed764485f132fd
+msgid "Windows 11 64位：家庭版、专业版、企业版、教育版需要21H2或更高版本。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:68
+#: 06a0718b260f4c098dea863c2d93713a
+msgid "Windows 10 64bit:"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:69
+#: 4f2dcbecbc7d4757a3ce7ca514f82cf1
+msgid "推家使用家庭版、专业版、企业版、教育版需要22H2（版本 19045）或更高版本。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:70
+#: d86ead6867114ef494dd165c088e69fc
+msgid "最低要求为家庭版、专业版、企业版、教育版需要21H2（版本 19044）或更高版本。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:71
+#: a3a9cc10c5f44458bcc8b51327a2631a
+msgid "在 Windows 上启用 WSL 2 功能"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:73
+#: 47805e485b9f4b4b970c0c05b04116e4
+msgid "2）下载安装Docker DeskTop"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:75
+#: 854bc74312724189bec73b9c45e21897
+msgid ""
+"[Docker "
+"DeskTop下载](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?_gl=1*154qt9t*_ga*MTAyNTc0ODM4My4xNzE1MTUxNTE4*_ga_XJWPQMJYHQ*MTcxNTIzNDg5NC4zLjAuMTcxNTIzNDg5NC42MC4wLjA)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:77
+#: 2798b3e0e9784915be7cb33de67eb519
+msgid "![docker_download](../../images/lite_dingo/dockerDesk_download.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:77
+#: 3c1642c033e945daa322493228a3b152
+msgid "docker_download"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:79
+#: 46a6ddc5c3db4fd2a7366c0c3ddf08ca
+msgid "![docker_install](../../images/lite_dingo/dockerDesk_install.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:79
+#: c4b8f7d1dcc148918c6cc60a1ae43d79
+msgid "docker_install"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:81
+#: 08ed4eacc5754f7eb2ba9ba04f318788
+msgid "![dockerDeskTop](../../images/lite_dingo/dockerDesktop.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:81
+#: 678b88880ade48c69e0228180410cd09
+msgid "dockerDeskTop"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:83
+#: 22e32936b1ed4dca8464e60e0fc33f7f
+msgid "3）启动Docker DeskTop"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:85
+#: f50d9c1d5996452fb50ce453a2023081
+msgid "安装完成。在启动Docker Desktop过程中，如果出现下述报错，可以在 Windows 设置中点击更新 Windows，更新后重启电脑可解决。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:87
+#: 33a44e37e3a14c6489209e8d09d3d386
+msgid "![dockerDesk_error](../../images/lite_dingo/dockerdesk_error.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:87
+#: c9a3b5a475594e9b8e21287b66f8dc82
+msgid "dockerDesk_error"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:89
+#: 4b8f9125b2414f62a3830f88fa42b238
+msgid "![windows_update](../../images/lite_dingo/windows_update.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:89
+#: 1addfcc8ca65452086623a2c7f8491d7
+msgid "windows_update"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:91
+#: 98e2e272654048bfa37dc2b69cea26c4
+msgid "_**特别注意**_"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:93
+#: 79b2167565044ee9b5bccb686f9e512e
+msgid ""
+"Docker desktop 和Ubuntu里的 docker不同不同，他有一套特殊的工作机制：它会在 wsl2 "
+"里面加载一个块设备，然后直接用这个块设备里面的全套 docker 环境，包括 docker 命令、docker proxy、docker "
+"image 目录。ubuntu 里面不要安装 docker，完全使用 docker desktop。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:95
+#: 86a94243cc2a41e7906031480c603c83
+msgid "3、Docker部署单机版DingoDB"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:97
+#: 7158e66a8063434e993fb6dd7cc29d2a
+msgid "1）创建配置文件docker-compose.lite.yml"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:99
+#: 8e4d5c9c793c43a6bdd508fdc14aa4bf
+msgid "在 Windows 目录下新建文件 docker-compose.lite.yml"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:217
+#: 90b0cf9fab1a4e74a39133e734d0cb59
+msgid "docker-compose.lite.yml 重要参数说明"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:231
+#: b51e01f8178c4a7bab515dd73e071e1e
+msgid "2）数据持久化"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:232
+#: 5b0e2562bd47433b88046617a2ac088d
+msgid ""
+"在 docker-compose.lite.yml 中配置 volume 挂载。参数含义为 "
+"宿主机路径：容器内路径。*容器内路径不要修改，宿主机路径使用绝对路径，保证盘符存在，目录不存在会自动创建目录。*"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:252
+#: bca7ef02009842fbbf228838a6e77f1f
+msgid "*启动 Docker Desktop 后,* 在yaml所在目录下打开 Powershell ，输入命令,拉取 dingodb 镜像并启动容器："
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:259
+#: b42b395108b5415796242665e29cec0d
+msgid "3）查看进程"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:260
+#: 0065ed36e0f7435c8888f0539072c0ad
+msgid ""
+"通过Docker Tesktop 查看容器状态和资源使用情况。 "
+"![docker](../../images/lite_dingo/dockerDesktop.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:260
+#: 979302050a804b36ba76291bb8b1dbef
+msgid "docker"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:263
+#: 808f6a29983b404fba9a2d9e0e4d4e45
+msgid ""
+"通过 localhost：22001或者127.0.0.1：22001 查看 Dingo-store 服务信息。 "
+"![dingo_monitor](../../images/lite_dingo/dingo_monitor.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:263
+#: 481f8cbb01e749e286a74bf9f81dd16c
+msgid "dingo_monitor"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:266
+#: 0cb2cef00d814f098c605d4bedd0aa75
+msgid "4、开启DingoDB之旅"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:268
+#: e45496b9a529471dab9d903bc0b8480c
+msgid "以下提供两种使用方式。"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:270
+#: dd0f4d9dba724c8a9666a6579395d4e3
+msgid "_DBeaver_"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:272
+#: 4de23b809fb74f159b071230336666a3
+msgid "1）创建一个连接"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:273
+#: 1812384f5b264f27b01a46418e5083fc
+msgid "![dbeaver_connect](../../images/lite_dingo/dbeaver_create_new_connection.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:273
+#: 323803b4a4df4c3789c273af1b79710f
+msgid "dbeaver_connect"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:275
+#: 6aaaa593dfdf4506ba5f8d8fbbd37e8a
+msgid "2）选择Mysql驱动"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:276
+#: 2e96e8222f5e4fc28727d7da324b1431
+msgid "![dingo_mysql](../../images/lite_dingo/dbeaver_connect_dingodb.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:276
+#: 8951d75509a14a1880d14f51d7cf8be2
+msgid "dingo_mysql"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:278
+#: 7d931f03328f4f8e8646cc0490003a51
+msgid "3）配置连接参数"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:279
+#: b33cd854f43342eab9f34fa9695aa18d
+msgid "![dingo_parameter](../../images/lite_dingo/dbeaver_connect_dingodb_parameter.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:279
+#: 3edbbb06a05b4beda5910220ac852eac
+msgid "dingo_parameter"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:281
+#: 80ffcccbf6bd4b73b03645bc5b6757b6
+msgid "4）测试链接"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:282
+#: 2c04317d9ad340bdbea884579a6530a7
+msgid "![test_connection](../../images/lite_dingo/dbeaver_testConnetion.png)"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:282
+#: 611d1e77a42449ada008d0344609ca03
+msgid "test_connection"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:284
+#: 897e5ac021dd490da8d5e8757cd072c9
+msgid "_Mysql客户端_"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:286
+#: aa798ad962a34364976b7293270cbd79
+msgid "1）安装Mysql客户端"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:291
+#: 05606c44bdec4d27b178203aa11210b1
+msgid "2）查看Mysql版本，建议使用v8.0.36及以上的版本"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:296
+#: 6aa8e9f8f061492ebf6d53ec2b4ed876
+msgid "3）连接DingoDB"
+msgstr ""
+
+#: ../../source/deployment/single-machine/windows/快速入门.md:297
+#: 828d612d982e4fbf883d95de46f7bf58
+msgid "密码默认为：*123123*"
+msgstr ""
+
+#~ msgid "快速入门"
+#~ msgstr ""
+
+#~ msgid "背景"
+#~ msgstr ""
+
+#~ msgid "满足小白用户和PC开发的需求，支持单节点部署，配合 pysdk 实现 PC 级别配置上的快速部署和应用。"
+#~ msgstr ""
+

@@ -124,7 +124,6 @@ public class OperationServiceV2 {
     }
 
     public MetaService getSubMetaService(String schemaName) {
-        schemaName = schemaName.toUpperCase();
         return Parameters.nonNull(metaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 
@@ -829,7 +828,9 @@ public class OperationServiceV2 {
                         0,
                         null,
                         null,
-                        false));
+                        false,
+                        false)
+                );
 
             } else {
                 vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, false, 0));

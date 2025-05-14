@@ -30,6 +30,7 @@ import io.dingodb.meta.entity.Table;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 
 public class LocalInfoSchemaService implements InfoSchemaService {
 
@@ -248,7 +249,7 @@ public class LocalInfoSchemaService implements InfoSchemaService {
     }
 
     @Override
-    public Map<String, Table> listTableDef(long schemaId) {
+    public NavigableMap<String, Table> listTableDef(long schemaId) {
         return null;
     }
 

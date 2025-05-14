@@ -114,7 +114,7 @@ public class MetaServiceApiImpl implements MetaServiceApi {
         leaderId = null;
         leaderChannel = null;
         try {
-            if (ID.type == SDK || !lock.tryLock()) {
+            if ((ID != null && ID.type == SDK) || !lock.tryLock()) {
                 Kv currentLock = lockService.currentLock();
                 String[] ss = new String(currentLock.getKv().getValue()).split("#");
                 CommonId leaderId = CommonId.parse(ss[0]);

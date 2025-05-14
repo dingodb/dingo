@@ -17,9 +17,12 @@
 package io.dingodb.web.bean;
 
 import io.dingodb.common.util.Utils;
+import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.cluster.ClusterServiceClient;
 import io.dingodb.sdk.service.connector.CoordinatorServiceConnector;
 import io.dingodb.sdk.service.meta.MetaServiceClient;
+import io.dingodb.store.proxy.meta.MetaCache;
+import io.dingodb.store.service.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -45,6 +48,18 @@ public class MonitorBean {
     @Bean
     public static MetaServiceClient rootMetaServiceClient(@Value("${server.coordinatorExchangeSvrList}") String coordinator) {
         return new MetaServiceClient(coordinator);
+    }
+
+    @Bean
+    public static MetaCache metaCache(@Value("${server.coordinatorExchangeSvrList}") String coordinator) {
+        System.setProperty("coordinators", coordinator);
+        return new MetaCache(Services.parse(coordinator));
+    }
+
+    @Bean
+    public static InfoSchemaService infoSchemaService(@Value("${server.coordinatorExchangeSvrList}") String coordinator) {
+        System.setProperty("coordinators", coordinator);
+        return new InfoSchemaService(0L, Services.parse(coordinator));
     }
 
     @Bean

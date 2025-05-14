@@ -76,10 +76,30 @@ SqlAlterTable SqlAlterIgnoreTable(Span s, String scope): {
 
 SqlAlterTable SqlAlterTable(Span s, String scope): {
     SqlIdentifier id;
-    SqlAlterTable alterTable = null;
+    SqlAlterTable alterTable;
+    List<SqlAlterTable> alterTableList = new ArrayList<>();
 } {
     <TABLE> id = CompoundIdentifier()
+    alterTable = alterTableOption(s, scope, id)
+    { alterTableList.add(alterTable); }
     (
+     <COMMA>
+     alterTable = alterTableOption(s, scope, id)
+     { alterTableList.add(alterTable); }
+    )*
+    {
+      if (alterTableList.size() > 1) {
+        return new SqlAlterTableOptions(s.end(this), id, alterTableList);
+      } else if (alterTableList.size() == 1) {
+        return alterTableList.get(0);
+      }
+    }
+}
+
+SqlAlterTable alterTableOption(Span s, String scope, SqlIdentifier id): {
+  SqlAlterTable alterTable = null;
+} {
+   (
 	    <ADD>
 	    (
 	        alterTable = addPartition(s, scope, id)
@@ -119,10 +139,6 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
         |
           <MODIFY>
           alterTable = modifyColumn(s, scope, id, alterTable)
-          (
-            <COMMA>
-            <MODIFY> alterTable = modifyColumn(s, scope, id, alterTable)
-          )*
         |
           <CHANGE>
           alterTable = changeColumn(s, scope, id)
@@ -144,8 +160,8 @@ SqlAlterTable SqlAlterTable(Span s, String scope): {
           alterTable = alterColumn(s, scope, id)
          )
         |
-	<CONVERT> <TO>
-	alterTable = convertCharset(s, id)
+	    <CONVERT> <TO>
+	    alterTable = convertCharset(s, id)
     )
     { return alterTable; }
 }
@@ -178,7 +194,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     SqlIdentifier afterCol = null;
     ColumnOption columnOpt = null;
 } {
-    <COLUMN>
+    [<COLUMN>]
     columnId = SimpleIdentifier()
     type = DataType()
     columnOpt = parseColumnOption()
@@ -209,12 +225,12 @@ SqlAlterTable dropIndex(Span s, String scope, SqlIdentifier id): {
 }
 
 SqlAlterTable dropColumn(Span s, String scope, SqlIdentifier id): {
-  String column;
+  SqlIdentifier columnId;
 } {
-   <COLUMN> { s.add(this); }
-   { column = getNextToken().image; }
+   [ <COLUMN> ] { s.add(this); }
+   columnId = SimpleIdentifier()
    {
-     return new SqlAlterDropColumn(s.end(this), id, column);
+     return new SqlAlterDropColumn(s.end(this), id, columnId);
    }
 }
 
@@ -235,7 +251,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     boolean ifNotExists = false;
 } {
  (<INDEX>|<KEY>) ifNotExists = IfNotExistsOpt() { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     (
         <VECTOR> { indexType = "vector"; } columnList = indexColumns()
     |
@@ -245,7 +261,7 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
     )
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -288,11 +304,11 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     String indexLockOpt = null;
 } {
  <UNIQUE> [<INDEX>][<KEY>] { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple();  }
     [<SCALAR>] columnList = indexColumns()
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -335,11 +351,11 @@ SqlAlterTable addIndexByMode(Span s, String scope, SqlIdentifier id, String mode
     String indexLockOpt = null;
 } {
    [(<INDEX>|<KEY>)] { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     columnList = indexColumns()
     (
        LOOKAHEAD(2)
-       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { strIdent(); })
+       <WITH> (withColumnList = ParenthesizedSimpleIdentifierList() | <PARSER> { identifier1(); })
      |
        <ENGINE> <EQ> engine = dingoIdentifier() { if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
      |
@@ -376,11 +392,12 @@ SqlAlterTable alterIndex(Span s, String scope, SqlIdentifier id): {
 }
 {
     <INDEX> { s.add(this); }
-    { index = getNextToken().image; }
+    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple(); }
     (
     <SET>
     readProperty(properties)
     (
+        LOOKAHEAD(2)
         <COMMA>
         readProperty(properties)
     )*
@@ -654,6 +671,7 @@ SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
     <TO>
     { toIndexName = getNextToken().image; }
     (
+         LOOKAHEAD(2)
      <COMMA>
      ( indexAlg = indexAlg()
      |
@@ -666,7 +684,7 @@ SqlAlterTable alterRenameIndex(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable alterTableComment(Span s, String scope, SqlIdentifier id): {
   String comment = null;
 } {
-   <EQ> { s.add(this); } (<IDENTIFIER>|<QUOTED_STRING>) { comment = token.image; }
+   <EQ> { s.add(this); }  comment = identifier1()
    {
      return new SqlAlterTableComment(s.end(this), id, comment);
    }

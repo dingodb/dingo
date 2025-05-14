@@ -64,8 +64,8 @@ public class SqlGrant extends SqlDdl {
         super(OPERATOR, pos);
         this.isAllPrivilege = isAllPrivilege;
         this.privileges = privilege;
-        this.schema = subject.names.get(0).toUpperCase();
-        this.table = subject.names.get(1).toUpperCase();
+        this.schema = subject.names.get(0);
+        this.table = subject.names.get(1);
         if (StringUtils.isBlank(table)) {
             table = "*";
         }

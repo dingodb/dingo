@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.store.proxy.mapper.Mapper.JSON;
 
 public interface IndexMapper {
@@ -146,7 +147,7 @@ public interface IndexMapper {
                 List<ScalarSchemaItem> scalarSchemaItems = new ArrayList<>();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> next = fields.next();
-                    if (!columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList())
+                    if (!columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).toList()
                         .contains(next.getKey().toUpperCase())) {
                         throw new RuntimeException("The field: [" + next.getKey()
                             + "] does not exist in the document index");

@@ -20,6 +20,7 @@ import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.service.LoadDataService;
+import io.dingodb.calcite.utils.StringEscapeUtils;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
@@ -54,7 +55,6 @@ import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -79,6 +79,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.common.util.Utils.getByteIndexOf;
 import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
@@ -167,7 +168,7 @@ public class LoadDataExecutor implements DmlExecutor {
             txnRetryCnt = 0;
         }
 
-        this.schemaName = sqlLoadData.getSchemaName();
+        this.schemaName = convertName(sqlLoadData.getSchemaName());
         this.lineStarting = sqlLoadData.getLineStarting();
         this.ignoreNum = sqlLoadData.getIgnoreNum();
         metaService = MetaService.root();
@@ -175,7 +176,7 @@ public class LoadDataExecutor implements DmlExecutor {
         InfoSchema is = DdlService.root().getIsLatest();
         table = is.getTable(schemaName, sqlLoadData.getTableName());
         if (table == null) {
-            table = is.getTable(schemaName.toUpperCase(), sqlLoadData.getTableName().toUpperCase());
+            table = is.getTable(schemaName, sqlLoadData.getTableName());
             if (table == null) {
                 throw DingoResource.DINGO_RESOURCE.unknownTable(schemaName + "." + sqlLoadData.getTableName()).ex();
             }
@@ -687,7 +688,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 if ("\\N".equalsIgnoreCase(valTmp)) {
                     tupleList.add(valTmp);
                 } else {
-                    tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                    tupleList.add(StringEscapeUtils.unescape(valTmp));
                 }
                 fieldBreakPos = i + 1;
             } else if (!terminatedOnlyByte && b == fieldsTermByte) {
@@ -711,7 +712,7 @@ public class LoadDataExecutor implements DmlExecutor {
                     if ("\\N".equalsIgnoreCase(valTmp)) {
                         tupleList.add(valTmp);
                     } else {
-                        tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                        tupleList.add(StringEscapeUtils.unescape(valTmp));
                     }
                     fieldBreakPos = i + 1;
                 }
@@ -724,7 +725,7 @@ public class LoadDataExecutor implements DmlExecutor {
             if ("\\N".equalsIgnoreCase(valTmp)) {
                 tupleList.add(valTmp);
             } else {
-                tupleList.add(StringEscapeUtils.unescapeJson(valTmp));
+                tupleList.add(StringEscapeUtils.unescape(valTmp));
             }
         } else if (bytes[len - 1] == fieldsTermByte) {
             if (terminatedOnlyByte) {
@@ -791,7 +792,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 hasHide = true;
                 break;
             } else if (colDef.getState() == 1 && colDef.isAutoIncrement()) {
-                incColIdx = table.getColumns().indexOf(colDef);
+                incColIdx = table.getColumnIndex(colDef);
                 hasInc = true;
                 break;
             }

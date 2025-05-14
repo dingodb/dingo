@@ -42,6 +42,8 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 @Slf4j
 @Getter
 @ToString
@@ -112,6 +114,9 @@ public class Table {
     @JsonProperty
     public int codecVersion;
 
+    @JsonProperty
+    public boolean visible;
+
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream()
             .map(col -> {
@@ -178,10 +183,28 @@ public class Table {
         return -1;
     }
 
+    public int getColumnIndex(Column column) {
+        int i = 0;
+        for (Column col : columns) {
+            if (caseSensitive() ? col.getName().equals(column.getName())
+                : col.getName().equalsIgnoreCase(column.getName())) {
+                return i;
+            }
+            ++i;
+        }
+        return -1;
+    }
+
     public List<Integer> getColumnIndices(@NonNull List<String> names) {
         return names.stream()
             .map(this::getColumnIndex)
             .collect(Collectors.toList());
+    }
+
+    public List<Integer> getColumnIndices2(List<Column> columns) {
+        return columns.stream()
+            .map(this::getColumnIndex)
+            .toList();
     }
 
     public Table copyWithColumns(List<Column> columns) {

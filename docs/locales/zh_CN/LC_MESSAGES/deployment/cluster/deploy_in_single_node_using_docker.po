@@ -1,0 +1,295 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:1
+#: 4cf52c0f4ab14a7b8b8122ff20dc8470
+msgid "Deploy In Single Node Using Docker"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:3
+#: 6281be2f0c9145abb979e4175f80a2c8
+msgid ""
+"For the convenience of developers, the deployment of DingoDB can also "
+"choose docker-compse mode."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:6
+#: 892a4e50004744ee821aafd3c2d01dbc
+msgid "Deploy Architecture View"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:8
+#: 1e3ebe8ddce34828937a07671eb45753
+msgid ""
+"There are many types of roles in the cluster mode of DingoDB, such as "
+"coordinator, executor, dingo-store, and the cluster mode requires at "
+"least three machines. The architecture view can refer [dingo-deploy-"
+"architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html)."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:10
+#: 4b92c8d414b345ee9ac9549dbf0b2061
+msgid "Directory Structure Planning"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: ad11f096f0d349b494d9b26756d7c446
+msgid "Directory Types"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: e935ed01f5e1497ca3480f4bd8bfd990
+msgid "Path"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 980c93ac9f8a4289bee76effc1165e78
+msgid "Program installation path"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: ad58506e22444ab997a3d34aa299fcae
+msgid "/opt"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 65801d3dd6cb47ef93524d8562effcb8
+msgid "dingo-store script path"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 0860df80e339486b91612604ef479593
+msgid "/opt/dingo-store/scripts"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 8c8131d647154d3a9a0e4754368885a2
+msgid ""
+"dingo-store deployment path <br/>(including separate data and log "
+"directories)"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: adfc1a5211204cbabfaf73d0202afbe9
+msgid "/opt/dingo-store/dist"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 8ba211f04da64aa094052361bf84995a
+msgid "executor's script path"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: da29332344df492aaa3eb8334aaad9c0
+msgid "/opt/dingo/bin"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: f3feb2aef0a94c45a5e9e2dc6fa835ff
+msgid "executor's log path"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: e5a33718f0af4edca31d610ee5e56210
+msgid "/opt/dingo/log"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:20
+#: 2a6624f32749405992f46a4796265435
+msgid "User group planning"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 04e6865866114d4cacd6169c16b0dbdd
+msgid "Deployment Method"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: cc9874dc10df471cbe71af6b5ec60b1a
+msgid "User name"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 743f5fa8360440b4884244bfacbfc363
+msgid "Gorup name"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 8aa9f5be4cbb47658e8680dbda59ce2f
+msgid "docker deploy"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: cfb2c5a1ab9d4187978cfb5f50a721c2 dd6cfd438bab41e0bab66cf216e8d826
+msgid "root"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:26
+#: 79982246e71640e89f98cee8ca3a36cd
+msgid "Component list and port usage"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 3a99224a6ed54cb1a5360fd6dd47958e
+msgid "Component"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 21d8756370644d64873a60fc1faf8baa
+msgid "Version"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: c8bb38ea833b4b119b11f3a0e899bbc1
+msgid "Port"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: f14e201551114995ad22cd777d5eb06a
+msgid "Remarks"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 8197a614bb184991ac45f3aee467984f
+msgid "DingoDB"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 36e8e38bc4be41a5b611b33c711406a6
+msgid "0.7.0"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 42d8502f6e83496383ea75ffe674de61
+msgid ""
+"raft:22101-22103/20101-20103     <br/>server:22001-22003/20001-20003     "
+"<br/>executor:3307/8765"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
+#: 9b5d1d0723584999ab7a8ee583a07721
+msgid "Real-time analytics database"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:31
+#: ca1400f3a8564887bea19f59309e1459
+msgid "Installation Notes"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:33
+#: 78b97964f3914920af8dc5a30452b494
+msgid "1.Environment Setup"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:34
+#: 10591c3c982c4bb187dabd1d0f68f319
+msgid "(1) Environment Description"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:35
+#: 85af31dd54e945b59c1725f8802cabb6
+msgid ""
+"Currently, docker-compose startup is only supported on Linux "
+"environments. Windows and macOS do not support the host network mode of "
+"Docker."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:37
+#: 36d95026d38e4938a731b118faf51c38
+msgid ""
+"You need to configure the git, Docker, and docker-compose environments in"
+" advance."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:48
+#: 813f727eb1d94a9d914a88e8d7b69f8f
+msgid "1.2 Pull container"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:54
+#: c138b01c5d664e5e8b3b251e305df0ee
+msgid "2. Starting a container based on Docker Compose"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:56
+#: a642b36d51d24b488ca64560b515eadc
+msgid "(1) Pull the corresponding Docker Compose configuration"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:66
+#: 89e4747a77334b08bdb906d7d7f09660
+msgid "(2) Configuration file description"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:67
+#: bd5fa2827be84c2392da4b1344e885e6
+msgid ""
+"The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 "
+"executor, and 1 proxy. You can modify the file to start only a subset of "
+"these nodes or add more nodes based on your actual needs."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:69
+#: 1cd7ce1ae92d4eb9af6f0fab1ceb3018
+msgid ""
+"The coordinators, stores, and indexes use the host network mode, while "
+"the executor and proxy use the bridge network mode."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:71
+#: f5317e9a64f34ed58310c0c510daa7a5
+msgid "(3) Start the corresponding containers"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:81
+#: 97d1c28a16534cc9b43d648daaa6664b
+msgid "3. View the status of cluster"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:83
+#: 313c082fa8974b23bd3715e5ad5a8f94
+msgid "(1) Check the status of the containers"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:84
+#: 91fd7caa4f2d4b8db037cdb42daac6b0
+msgid ""
+"To check if all 11 containers specified in the docker-compose.yml "
+"configuration file are in an \"Up\" state."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:100
+#: a5692cb3b7ac4eacb9b9501d2256867f
+msgid "(2) View the state of dingo-store(coordinator/store/index)"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:101
+#: 1cbb33db815a4ce0852c64c6454add60
+msgid ""
+"In the new version, all the dingodb_client_coordinator instances have "
+"been merged into dingodb_client."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:252
+#: 3297c9072bc44e97b831bf21d3c93dd9
+msgid "(3) View the state of dingo(executor/proxy)"
+msgstr ""
+

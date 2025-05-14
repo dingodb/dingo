@@ -139,6 +139,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+            iterator = getOtherRelIterator(param, iterator);
+
             if (param.getSelection2() != null) {
                 iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
@@ -166,6 +168,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 }
             }
             iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+            iterator = getOtherRelIterator(param, iterator);
             if (param.getSelection2() != null) {
                 iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
@@ -183,8 +186,29 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
         profile.time(start);
         Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
         iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+        iterator = getOtherRelIterator(param, iterator);
         if (param.getSelection2() != null) {
             iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
+        }
+        return iterator;
+    }
+
+    private static Iterator<Object[]> getOtherRelIterator(TxnIndexRangeScanParam param, Iterator<Object[]> iterator) {
+        if (param.getOtherRelOp() != null) {
+            if (param.getOtherRelOp() instanceof PipeOp) {
+                PipeOp op = (PipeOp) param.getOtherRelOp();
+                iterator = Iterators.filter(iterator, tuple -> {
+                    try {
+                        Object[] tmp = op.put(tuple);
+                        return tmp != null;
+                    } catch (Exception e) {
+                        LogUtils.error(log, "otherRelOp {} compute error {}", op, e.getMessage(), e);
+                        return false;
+                    }
+                });
+            } else {
+                LogUtils.error(log, "getOtherRelIterator otherRelOp type is invalidate: {}", param.getOtherRelOp());
+            }
         }
         return iterator;
     }

@@ -4,7 +4,7 @@
       "type": "bigint",
       "scale": -2147483648,
       "precision": -1,
-      "primary": 0,
+      "primary": -1,
       "nullable": false
     },
     {

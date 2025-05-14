@@ -26,6 +26,7 @@ import io.dingodb.calcite.rel.logical.LogicalDocumentScanFilter;
 import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
 import io.dingodb.calcite.rel.logical.LogicalIndexRangeScan;
 import io.dingodb.calcite.traits.DingoRelCollationImpl;
+import io.dingodb.calcite.utils.DingoFilterUtils;
 import io.dingodb.calcite.utils.DocumentScanFilterOb;
 import io.dingodb.calcite.utils.DocumentScanFilterVisitor;
 import io.dingodb.calcite.utils.GlobalVariablesUtil;
@@ -33,6 +34,7 @@ import io.dingodb.calcite.utils.IndexRangeMapSet;
 import io.dingodb.calcite.utils.IndexRangeVisitor;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -43,6 +45,7 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.expr.runtime.expr.IndexOpExpr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
@@ -79,8 +82,10 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getDocumentIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.calcite.rule.DingoIndexCollationRule.getIndexByExpr;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 
+@Slf4j
 @Value.Enclosing
 public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Config> implements SubstitutionRule {
 
@@ -152,8 +157,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
 
         RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
 
-        List<Integer> indexSelectionList = result.matchIndexTable.getColumns().stream()
-            .map(dingoTable.getTable().columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = dingoTable.getTable().getColumnIndices2(result.matchIndexTable.getColumns());
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList
         );
@@ -179,7 +183,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
     }
 
     private static boolean validateNotRemoveSort(Table result, Column orderCol) {
-        int matchSortIx = result.getColumns().indexOf(orderCol);
+        int matchSortIx = result.getColumnIndex(orderCol);
         if (matchSortIx < 0) {
             return true;
         }
@@ -243,7 +247,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             return;
         }
 
-        int matchSortIx = result.matchIndexTable.getColumns().indexOf(orderCol);
+        int matchSortIx = result.matchIndexTable.getColumnIndex(orderCol);
         if (matchSortIx < 0) {
             return;
         }
@@ -253,9 +257,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         }
         RelCollation relCollation = RelCollationImpl.of(new ArrayList<>());
 
-        List<Integer> indexSelectionList = result.matchIndexTable.getColumns().stream()
-            .map(dingoTable.getTable().columns::indexOf)
-            .collect(Collectors.toList());
+        List<Integer> indexSelectionList = dingoTable.getTable().getColumnIndices2(result.matchIndexTable.getColumns());
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList
         );
@@ -318,11 +320,15 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             return null;
         }
         List<Integer> secList = getSelectionList(scan.getFilter(), logicalProject.getProjects());
-        List<Column> columnNames = indexTd.getColumns();
         TupleMapping tupleMapping = TupleMapping.of(
-            columnNames.stream().map(table.columns::indexOf).collect(Collectors.toList())
+            table.getColumnIndices2(indexTd.getColumns())
         );
         boolean lookup = isNeedLookUp(TupleMapping.of(secList), tupleMapping, table.columns.size());
+        if (lookup) {
+            if (!DingoFilterUtils.enableIndexRangeFilter(scan.getFilter())) {
+                return null;
+            }
+        }
 
         LogicalIndexRangeScan logicalIndexRangeScan = new LogicalIndexRangeScan(scan.getCluster(),
             scan.getTraitSet(),
@@ -375,7 +381,6 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                     return null;
                 }
                 TupleMapping selection = scan.getSelection();
-                List<Column> ixColList = indexTd.getColumns();
                 boolean match = true;
                 outer:for (Map<Integer, RexNode> map : set) {
                     for (int k : map.keySet()) {
@@ -385,7 +390,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                         if (column.primaryKeyIndex == 0) {
                             return null;
                         }
-                        if (ixColList.indexOf(column) == 0) {
+                        if (indexTd.getColumnIndex(column) == 0) {
                             match = false;
                         }
                         if (match) {
@@ -442,47 +447,50 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 }
 
                 List<Integer> secList = getSelectionList(scan.getFilter(), logicalProject.getProjects());
-                List<Column> columnNames = indexTd.getColumns();
                 TupleMapping tupleMapping = TupleMapping.of(
-                    columnNames.stream().map(table.columns::indexOf).collect(Collectors.toList())
+                    table.getColumnIndices2(indexTd.getColumns())
                 );
                 boolean lookup = isNeedLookUp(TupleMapping.of(secList), tupleMapping, table.columns.size());
 
-                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
-                    scan.getCluster().getRexBuilder(),
-                    DocumentScanFilterOb.builder()
-                        .match(false)
-                        .queryStr("")
-                        .columns(table.columns)
-                        .build()
-                );
-                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-                boolean flag = accept.isMatch();
-                String queryString = accept.getQueryStr();
-                if (flag) {
-                    LogicalDocumentScanFilter logicalDocumentScanFilter = new LogicalDocumentScanFilter(
-                        scan.getCluster(),
-                        scan.getTraitSet(),
-                        scan.getHints(),
-                        scan.getTable(),
-                        scan.getFilter(),
-                        scan.getSelection(),
-                        indexTd,
-                        ixId,
-                        scan.isPushDown(),
-                        lookup,
-                        0,
-                        queryString
+                try {
+                    DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                        scan.getCluster().getRexBuilder(),
+                        DocumentScanFilterOb.builder()
+                            .match(false)
+                            .queryStr("")
+                            .columns(table.columns)
+                            .build()
                     );
-                    return new LogicalProject(
-                        logicalProject.getCluster(),
-                        logicalProject.getTraitSet(),
-                        logicalProject.getHints(),
-                        logicalDocumentScanFilter,
-                        logicalProject.getProjects(),
-                        logicalProject.getRowType(),
-                        logicalProject.getVariablesSet()
-                    );
+                    DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                    boolean flag = accept.isMatch();
+                    String queryString = accept.getQueryStr();
+                    if (flag) {
+                        LogicalDocumentScanFilter logicalDocumentScanFilter = new LogicalDocumentScanFilter(
+                            scan.getCluster(),
+                            scan.getTraitSet(),
+                            scan.getHints(),
+                            scan.getTable(),
+                            scan.getFilter(),
+                            scan.getSelection(),
+                            indexTd,
+                            ixId,
+                            scan.isPushDown(),
+                            lookup,
+                            0,
+                            queryString
+                        );
+                        return new LogicalProject(
+                            logicalProject.getCluster(),
+                            logicalProject.getTraitSet(),
+                            logicalProject.getHints(),
+                            logicalDocumentScanFilter,
+                            logicalProject.getProjects(),
+                            logicalProject.getRowType(),
+                            logicalProject.getVariablesSet()
+                        );
+                    }
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
                 }
             }
         }
@@ -628,7 +636,6 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         }
         Table table = Objects.requireNonNull(scan.getTable().unwrap(DingoTable.class)).getTable();
         TupleMapping selection = scan.getSelection();
-        List<Column> ixColList = result.matchIndexTable.getColumns();
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
         IndexRangeVisitor indexRangeVisitor = new IndexRangeVisitor(scan.getCluster().getRexBuilder());
         IndexRangeMapSet<Integer, RexNode> indexValueMapSet = rexNode.accept(indexRangeVisitor);
@@ -646,7 +653,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 if (column.primaryKeyIndex == 0) {
                     return null;
                 }
-                if (ixColList.indexOf(column) == 0 && !result.isDocumentIndex) {
+                if (result.matchIndexTable.getColumnIndex(column) == 0 && !result.isDocumentIndex) {
                     match = false;
                 }
                 if (result.isDocumentIndex && match) {
@@ -707,55 +714,55 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
 
         TupleMapping finalSelection = TupleMapping.of(selectedColumns);
-        List<Integer> indexSelectionList = result.matchIndexTable.getColumns().stream()
-            .map(table.columns::indexOf).collect(Collectors.toList());
-        TupleMapping tupleMapping = TupleMapping.of(
-            indexSelectionList
-        );
+        List<Integer> indexSelectionList = table.getColumnIndices2(result.matchIndexTable.getColumns());
+        TupleMapping tupleMapping = TupleMapping.of(indexSelectionList);
         boolean needLookup = isNeedLookUp(finalSelection, tupleMapping, table.columns.size());
 
         RelNode relNode;
-//        boolean flag = false;
-//        String queryString = "";
         if (result.isDocumentIndex) {
-            DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
-                scan.getCluster().getRexBuilder(),
-                DocumentScanFilterOb.builder()
-                    .match(false)
-                    .queryStr("")
-                    .columns(table.columns)
-                    .build()
-            );
-            DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-            boolean flag = accept.isMatch();
-            String queryString = accept.getQueryStr();
-            if (flag) {
-                LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
-                    scan.getCluster(),
-                    scan.getTraitSet(),
-                    scan.getHints(),
-                    scan.getTable(),
-                    scan.getFilter(),
-                    finalSelection,
-                    result.matchIndexTable,
-                    result.indexId,
-                    scan.isPushDown(),
-                    needLookup,
-                    0,
-                    queryString);
-                relNode = new LogicalProject(
-                    project.getCluster(),
-                    project.getTraitSet(),
-                    project.getHints(),
-                    indexScan,
-                    newProjectRexNodes,
-                    project.getRowType(),
-                    project.getVariablesSet()
+            try {
+                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                    scan.getCluster().getRexBuilder(),
+                    DocumentScanFilterOb.builder()
+                        .match(false)
+                        .queryStr("")
+                        .columns(table.columns)
+                        .build()
                 );
-                return relNode;
-            } else {
-                return null;
+                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                boolean flag = accept.isMatch();
+                String queryString = accept.getQueryStr();
+                if (flag) {
+                    LogicalDocumentScanFilter indexScan = new LogicalDocumentScanFilter(
+                        scan.getCluster(),
+                        scan.getTraitSet(),
+                        scan.getHints(),
+                        scan.getTable(),
+                        scan.getFilter(),
+                        finalSelection,
+                        result.matchIndexTable,
+                        result.indexId,
+                        scan.isPushDown(),
+                        needLookup,
+                        0,
+                        queryString);
+                    relNode = new LogicalProject(
+                        project.getCluster(),
+                        project.getTraitSet(),
+                        project.getHints(),
+                        indexScan,
+                        newProjectRexNodes,
+                        project.getRowType(),
+                        project.getVariablesSet()
+                    );
+                    return relNode;
+                } else {
+                    return null;
+                }
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
             }
+            return null;
         }
         LogicalIndexFullScan indexFullScan = new LogicalIndexFullScan(
             scan.getCluster(),
@@ -800,9 +807,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             if (!"range".equalsIgnoreCase(indexTable.getPartitionStrategy())) {
                 continue;
             }
-            List<Integer> indices = indexTable.getColumns()
-                .stream().map(table.getColumns()::indexOf)
-                .collect(Collectors.toList());
+            List<Integer> indices = table.getColumnIndices2(indexTable.getColumns());
             if (indices.containsAll(ixList)) {
                 matchIndex = true;
                 matchIndexTable = indexTable;
@@ -814,9 +819,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
             indexTdMap = getDocumentIndices(scan, relOptTable);
             for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
                 Table indexTable = index.getValue();
-                List<Integer> indices = indexTable.getColumns()
-                    .stream().map(table.getColumns()::indexOf)
-                    .collect(Collectors.toList());
+                List<Integer> indices = table.getColumnIndices2(indexTable.getColumns());
                 if (indices.containsAll(ixList)) {
                     matchIndex = true;
                     isDocumentIndex = true;
@@ -861,15 +864,13 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (set == null) {
             return null;
         }
-        List<Column> columnList;
         List<Integer> indices;
         Map<CommonId, Set> indexMap = new HashMap<>();
         boolean matchIndex;
         for (Map<Integer, RexNode> map : set) {
             matchIndex = false;
             for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
-                columnList = index.getValue().getColumns();
-                indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
+                indices = td.getColumnIndices2(index.getValue().getColumns());
                 Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                 boolean allMatch = true;
                 for (int k : map.keySet()) {
@@ -914,7 +915,6 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (set == null) {
             return null;
         }
-        List<Column> columnList;
         List<Integer> indices;
         Map<CommonId, Set> indexMap = new HashMap<>();
         boolean matchIndex;
@@ -929,8 +929,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         for (Map<Integer, RexNode> map : set) {
             matchIndex = false;
             for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
-                columnList = index.getValue().getColumns();
-                indices = columnList.stream().map(td.getColumns()::indexOf).collect(Collectors.toList());
+                indices = td.getColumnIndices2(index.getValue().getColumns());
                 Map<Integer, RexNode> newMap = new HashMap<>(indices.size());
                 boolean allMatch = true;
                 for (int k : map.keySet()) {

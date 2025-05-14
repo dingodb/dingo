@@ -26,6 +26,10 @@ import io.dingodb.common.privilege.UserDefinition;
 public interface UserService {
     ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
 
+    static UserService getDefault() {
+        return UserServiceProvider.getRoot();
+    }
+
     @ApiDeclaration
     boolean existsUser(UserDefinition userDefinition);
 

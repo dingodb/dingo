@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public final class DdlUtil {
     public static AtomicBoolean timeOutError = new AtomicBoolean(false);
     public static final String DDLGlobalSchemaVersion = "/dingo/ddl/global_schema_version";
@@ -61,8 +63,8 @@ public final class DdlUtil {
 
     public static boolean mdlEnable = true;
     public static boolean delDiff = true;
-    public static String ddlTmpTableName = "replicaTable";
-    public static String ddlTmpIndexName = "replicaIndexTable";
+    public static String ddlTmpTableName = convertName("replicaTable");
+    public static String ddlTmpIndexName = convertName("replicaIndexTable");
 
     public static int errorCountLimit = 5;
 

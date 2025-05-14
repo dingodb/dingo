@@ -1,0 +1,62 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-23 17:19+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/overview/Exploration Database.md:1 Vector
+#: bfb05b6bcdf845bb8fd27279bf13d938 multimode of
+msgid "Exploration of multimode Vector Database"
+msgstr "探索多模向量数据库"
+
+#: ../../source/overview/Exploration Database.md:3 Vector
+#: c358797e034b498b8c1283f7ffe72c59 multimode of
+msgid "Background"
+msgstr "背景"
+
+#: ../../source/overview/Exploration Database.md:4 Vector
+#: c0031fc93a5c490ba0910a7879fc45c5 multimode of
+msgid ""
+"With the rapid advancement of AI and big data technologies, an increasing"
+" number of application scenarios involve diverse data types such as text,"
+" images, audio, and video. The growing diversity and complexity of data "
+"pose unprecedented challenges for data management. Traditional database "
+"systems, designed for specific data types (e.g., relational databases for"
+" structured data), struggle to efficiently store and process these "
+"multimodal formats. To address the need for unified storage and querying "
+"of heterogeneous data, we proudly introduce DingoDB Multimodal Vector "
+"Database, which embraces a \"multimodal + vector\" core philosophy to "
+"deliver a groundbreaking data management solution."
+msgstr ""
+"随着人工智能和大数据技术的快速发展，越来越多的应用场景涉及到多种类型的数据，如文本、图像、音频和视频等，数据的多样性和复杂性给数据管理带来了前所未有的挑战；而传统的数据库系统通常针对特定类型的数据设计，比如关系型数据库主要用于结构化数据的存储和查询，难以高效地存储和处理这些数据。为了有效地应对多种数据类型的存储和查询需求，我们自豪地推出DingoDB多模向量数据库，将“多模+向量”作为核心理念，为用户提供了一种全新的数据管理解决方案。"
+
+#: ../../source/overview/Exploration Database.md:5 Vector
+#: d8f4f89bc4fb4bb496217e895f1bf0f4 multimode of
+msgid "Objective"
+msgstr "目的"
+
+#: ../../source/overview/Exploration Database.md:6 Vector
+#: bc99e8406efd426bb8c784fdf9b460ad multimode of
+msgid ""
+"DingoDB provides a comprehensive and efficient solution for storing, "
+"searching, and analyzing massive volumes of multimodal data (text, "
+"images, audio, video) on a unified platform. It aims to simplify "
+"infrastructure integration, enable interactive data analytics, and "
+"enhance the overall efficiency of data management workflows."
+msgstr ""
+"DingoDB为在统一平台上存储、搜索和分析文本、图像、音频和视频等多种数据类型提供全面、高效的海量存储和数据处理。旨在简化基础设施、实现交互式数据分析并提高数据管理流程的整体效率。"

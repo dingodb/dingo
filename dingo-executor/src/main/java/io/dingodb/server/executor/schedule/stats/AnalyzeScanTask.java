@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.NavigableMap;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class AnalyzeScanTask extends StatsOperator implements Runnable {
     LinkedRunner linkedRunner = new LinkedRunner("analyze");
@@ -50,8 +52,8 @@ public class AnalyzeScanTask extends StatsOperator implements Runnable {
                 return;
             }
             AnalyzeTask analyzeTask = AnalyzeTask.builder()
-                .schemaName((String) v[0])
-                .tableName((String) v[1])
+                .schemaName(convertName((String) v[0]))
+                .tableName(convertName((String) v[1]))
                 .build();
             if (log.isDebugEnabled()) {
                 LogUtils.debug(log, "analyze table task add task queue, detail:{}", analyzeTask.toString());

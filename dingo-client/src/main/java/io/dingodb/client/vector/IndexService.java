@@ -54,6 +54,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class IndexService {
 
@@ -81,7 +83,6 @@ public class IndexService {
         Object parameters,
         VectorContext context
     ) {
-        schemaName = schemaName.toUpperCase();
         Index indexInfo = Parameters.nonNull(cache.getIndex(schemaName, indexName), "Index not found.");
 
         Operation.Fork fork = null;
@@ -210,11 +211,10 @@ public class IndexService {
         if (index.isWithAutoIncrment() && index.getAutoIncrement() <= 0) {
             throw new DingoClientException("Auto-increment id only supports positive integers.");
         }
-        schema = schema.toUpperCase();
         MetaService metaService = Services.metaService(coordinators);
         List<Partition> partitions = index.getIndexPartition().getPartitions();
         DingoCommonId schemaId = metaService
-            .getSchemaByName(GetSchemaByNameRequest.builder().schemaName(schema).build()).getSchema().getId();
+            .getSchemaByName(GetSchemaByNameRequest.builder().schemaName(convertName(schema)).build()).getSchema().getId();
         TableIdWithPartIds tableIdWithPartIds = metaService.generateTableIds(GenerateTableIdsRequest.builder()
             .schemaId(schemaId)
             .count(TableWithPartCount.builder()
@@ -242,7 +242,6 @@ public class IndexService {
 
     public synchronized boolean dropIndex(String schema, String indexName) {
         MetaService metaService = Services.metaService(coordinators);
-        schema = schema.toUpperCase();
         DingoCommonId schemaId = metaService.getSchemaByName(
             GetSchemaByNameRequest.builder().schemaName(schema).build()
         ).getSchema().getId();

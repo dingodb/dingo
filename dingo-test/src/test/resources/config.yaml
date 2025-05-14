@@ -7,3 +7,5 @@ client:
   coordinatorExchangeSvrList: localhost:19181
 security:
   verify: false
+variable:
+  lowerCaseTableNames: 2

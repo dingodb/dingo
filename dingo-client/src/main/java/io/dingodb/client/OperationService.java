@@ -51,6 +51,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class OperationService {
 
@@ -76,7 +78,8 @@ public class OperationService {
     }
 
     public <R> R exec(String schemaName, String tableName, Operation operation, Object parameters) {
-        schemaName = schemaName.toUpperCase();
+        schemaName = convertName(schemaName);
+        tableName = convertName(tableName);
         TableInfo tableInfo = Parameters.nonNull(getRouteTable(schemaName, tableName, false), "Table not found.");
 
         Operation.Fork fork;
@@ -123,7 +126,7 @@ public class OperationService {
                     .filter(DingoClientException.InvalidRouteTableException.class::isInstance)
                     .map(err -> {
                         TableInfo newTableInfo = getRouteTable(
-                            tableInfo.schemaName.toUpperCase(),
+                            tableInfo.schemaName,
                             tableInfo.tableName,
                             true);
                         Operation.Fork newFork = operation.fork(context, newTableInfo);
@@ -162,6 +165,8 @@ public class OperationService {
     }
 
     public synchronized boolean createTable(String schema, String name, Table table) {
+        schema = convertName(schema);
+        name = convertName(name);
         MetaServiceClient metaService = getSubMetaService(schema);
         Optional.ifPresent(table.getPartition(), __ -> checkAndConvertRangePartition(table));
         return metaService.createTable(name, table);
@@ -185,20 +190,23 @@ public class OperationService {
     }
 
     public boolean dropTable(String schema, String tableName) {
+        schema = convertName(schema);
+        tableName = convertName(tableName);
         MetaServiceClient metaService = getSubMetaService(schema);
-        routeTables.remove(schema.toUpperCase() + "." + tableName);
+        routeTables.remove(schema + "." + tableName);
         return metaService.dropTable(tableName);
     }
 
     public boolean dropTables(String schema, List<String> tableNames) {
-        MetaServiceClient metaService = getSubMetaService(schema);
-        tableNames.forEach(t -> routeTables.remove(schema.toUpperCase() + "." + t));
+        String finalSchema = convertName(schema);
+        MetaServiceClient metaService = getSubMetaService(finalSchema);
+        tableNames.forEach(t -> routeTables.remove(finalSchema + "." + convertName(t)));
         return metaService.dropTables(tableNames);
     }
 
     public Table getTableDefinition(String schemaName, String tableName) {
-        return Parameters.nonNull(
-            getRouteTable(schemaName.toUpperCase(), tableName, true), "Table not found.").definition;
+        return Parameters.nonNull(getRouteTable(convertName(schemaName), convertName(tableName), true),
+            "Table not found.").definition;
     }
 
     /**
@@ -218,12 +226,14 @@ public class OperationService {
      * @return indexes
      */
     public List<Table> getTableIndexes(String schemaName, String tableName) {
+        schemaName = convertName(schemaName);
+        tableName = convertName(tableName);
         MetaServiceClient metaService = getSubMetaService(schemaName);
         return (List<Table>) metaService.getTableIndexes(tableName).values();
     }
 
     private MetaServiceClient getSubMetaService(String schemaName) {
-        schemaName = schemaName.toUpperCase();
+        schemaName = convertName(schemaName);
         return Parameters.nonNull(rootMetaService.getSubMetaService(schemaName), "Schema not found: " + schemaName);
     }
 

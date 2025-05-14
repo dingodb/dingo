@@ -23,6 +23,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.CoalesceParam;
 import lombok.extern.slf4j.Slf4j;
@@ -60,32 +61,41 @@ public final class CoalesceOperator extends SoleOutOperator {
             OperatorProfile profile = param.getProfile("coalesce");
             LogUtils.debug(log, "Got FIN from pin {}.", pin);
             Edge edge = vertex.getSoleEdge();
-            if (fin instanceof FinWithException) {
-                param.setFinWithException();
-                param.setFin(fin);
-//                edge.fin(fin);
-//                return;
-            }
-            setFin(pin, fin, param);
-            if (isAllFin(param)) {
-                if (fin instanceof FinWithProfiles) {
-                    FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
-                    profile.getChildren().add(finWithProfiles.getProfile());
-                    profile.mergeChild();
-                    finWithProfiles.addProfile(vertex);
+            try {
+                if (fin instanceof FinWithException) {
+                    param.setFinWithException();
+                    param.setFin(fin);
+                    //edge.fin(fin);
+                    //return;
                 }
-                if (param.getFinWithException().get()) {
-                    edge.fin(param.getFin());
+                setFin(pin, fin, param);
+                if (isAllFin(param)) {
+                    if (fin instanceof FinWithProfiles) {
+                        FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                        profile.getChildren().add(finWithProfiles.getProfile());
+                        profile.mergeChild();
+                        finWithProfiles.addProfile(vertex);
+                    }
+                    if (param.getFinWithException().get()) {
+                        edge.fin(param.getFin());
+                    } else {
+                        edge.fin(fin);
+                    }
+                    param.clear();
                 } else {
-                    edge.fin(fin);
+                    if (fin instanceof FinWithProfiles) {
+                        FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
+                        profile.getChildren().add(finWithProfiles.getProfile());
+                        param.setLastFin(finWithProfiles.getId());
+                    }
                 }
-                param.clear();
-            } else {
-                if (fin instanceof FinWithProfiles) {
-                    FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
-                    profile.getChildren().add(finWithProfiles.getProfile());
-                    param.setLastFin(finWithProfiles.getId());
-                }
+            } catch (Exception e) {
+                LogUtils.error(log, "[task-fin] fin exception:{}", e.getMessage(), e);
+                TaskStatus taskStatus = new TaskStatus();
+                taskStatus.setStatus(false);
+                taskStatus.setTaskId(vertex.getTask().getId().toString());
+                taskStatus.setErrorMsg(e.getMessage());
+                edge.fin(FinWithException.of(taskStatus));
             }
         }
     }

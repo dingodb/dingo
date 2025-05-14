@@ -49,17 +49,17 @@ public class DingoTableModifyRule extends ConverterRule {
     }
 
     private static void checkUpdateInPart(@NonNull LogicalTableModify rel) {
-        Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        List<String> updateList = rel.getUpdateColumnList();
-        TupleMapping keyMapping = td.keyMapping();
-        List<String> keys = keyMapping.stream()
-            .mapToObj(td.getColumns()::get)
-            .map(Column::getName).collect(Collectors.toList());
-        if (updateList != null && updateList.stream().anyMatch(keys::contains)) {
-            throw new IllegalStateException(
-                "Update columns " + updateList + " contain primary columns and are not supported."
-            );
-        }
+        //Table td = rel.getTable().unwrap(DingoTable.class).getTable();
+        //List<String> updateList = rel.getUpdateColumnList();
+        //TupleMapping keyMapping = td.keyMapping();
+        //List<String> keys = keyMapping.stream()
+        //    .mapToObj(td.getColumns()::get)
+        //    .map(Column::getName).collect(Collectors.toList());
+        //if (updateList != null && updateList.stream().anyMatch(keys::contains)) {
+            //throw new IllegalStateException(
+            //    "Update columns " + updateList + " contain primary columns and are not supported."
+            //);
+        //}
     }
 
     @Override

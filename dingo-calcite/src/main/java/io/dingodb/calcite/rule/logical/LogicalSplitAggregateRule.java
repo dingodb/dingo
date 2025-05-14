@@ -101,19 +101,6 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
     @Override
     public void onMatch(@NonNull RelOptRuleCall call) {
         final LogicalAggregate aggregate = call.rel(0);
-        final List<AggregateCall> aggCallList = aggregate.getAggCallList();
-        // In `Aggregate`, type checks were done but with `assert`, which is not effective in production.
-        for (AggregateCall aggCall : aggCallList) {
-            SqlKind aggKind = aggCall.getAggregation().getKind();
-            if (aggKind == SqlKind.SUM || aggKind == SqlKind.SUM0) {
-                if (aggCall.type.getFamily() != SqlTypeFamily.NUMERIC) {
-                    throw new IllegalArgumentException(
-                        "Aggregation function \"" + aggKind + "\" requires numerical input but \""
-                            + aggCall.type + "\" was given."
-                    );
-                }
-            }
-        }
         int[] groupIndices = aggregate.getGroupSet().asList().stream()
             .mapToInt(Integer::intValue)
             .toArray();

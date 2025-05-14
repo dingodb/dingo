@@ -16,9 +16,16 @@
 
 package io.dingodb.calcite.type;
 
+import io.dingodb.common.log.LogUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.util.NlsString;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+@Slf4j
 public final class DingoSqlLiteral {
 
     private DingoSqlLiteral() {
@@ -35,5 +42,22 @@ public final class DingoSqlLiteral {
             intervalQualifier,
             intervalQualifier.typeName(),
             pos);
+    }
+
+    public static SqlCharStringLiteral createCharString(
+        String s,
+        @Nullable String charSet,
+        SqlParserPos pos) {
+        //if (s != null) {
+        //    try {
+        //        if (s.contains("\\'")) {
+        //            s = s.replace("\\'", "'");
+        //        }
+        //    } catch (Exception e) {
+        //        LogUtils.warn(log, e.getMessage(), e);
+        //    }
+        //}
+        NlsString slit = new NlsString(s, charSet, null);
+        return new DingoSqlCharStringLiteral(slit, pos);
     }
 }

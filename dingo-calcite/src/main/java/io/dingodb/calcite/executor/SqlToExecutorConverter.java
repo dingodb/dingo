@@ -88,7 +88,7 @@ public final class SqlToExecutorConverter {
             }
             SqlShowTables sqlShowTables = (SqlShowTables) sqlNode;
             String pattern = sqlShowTables.sqlLikePattern;
-            return Optional.of(new ShowTableExecutor(usedSchema, connection, pattern));
+            return Optional.of(new ShowTableExecutor(usedSchema, connection, pattern, sqlShowTables.only));
         } else if (sqlNode instanceof SqlShowFullTables) {
             SqlShowFullTables showFullTables = (SqlShowFullTables) sqlNode;
             return Optional.of(

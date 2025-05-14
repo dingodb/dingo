@@ -25,6 +25,7 @@ import io.dingodb.partition.PartitionService;
 import java.util.Arrays;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.TreeSet;
 
 public class RangePartitionService implements PartitionService {
 
@@ -38,6 +39,9 @@ public class RangePartitionService implements PartitionService {
         if (key == null) {
             throw new RuntimeException("key does not allow NULLs");
         }
+        if (ranges.isEmpty()) {
+            throw new RuntimeException("ranges is empty");
+        }
         return ranges.floorEntry(new ComparableByteArray(key, 1)).getValue().id();
     }
 
@@ -49,6 +53,9 @@ public class RangePartitionService implements PartitionService {
         boolean withEnd,
         NavigableMap<ComparableByteArray, RangeDistribution> ranges
     ) {
+        if (ranges.isEmpty()) {
+            return new TreeSet<>();
+        }
         if (startKey == null) {
             startKey = ranges.firstEntry().getValue().getStartKey();
             withStart = true;

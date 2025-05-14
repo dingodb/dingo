@@ -108,17 +108,25 @@ public class NewCalcDistributionOperator extends SourceOperator {
             }
         }
         boolean parallel = Utils.parallel(param.getKeepOrder());
-        if (!parallel || distributions.size() == 1) {
-            for (RangeDistribution distribution : distributions) {
-                if (log.isTraceEnabled()) {
-                    LogUtils.trace(log, "Push distribution: {}", distribution);
-                }
-                context.setDistribution(distribution);
-                if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                    break;
-                }
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        boolean flag = (!parallel || distributions.size() == 1);
+        boolean isSplit = false;
+        while (retry-- > 0 && flag) {
+            try {
+                push(context, vertex, distributions);
+                break;
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, e.getMessage());
+                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> newDistribution =
+                    MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                param.setRangeDistribution(newDistribution);
+                distributions = getRangeDistributions(param);
+                isSplit = true;
+                flag = distributions.size() == 1;
             }
-        } else {
+        }
+        if (!flag || (isSplit && distributions.size() > 1)) {
             try {
                 int concurrencyLevel = param.getConcurrencyLevel();
                 Set<CompletableFuture<Boolean>> futures = new HashSet<>(concurrencyLevel);
@@ -145,6 +153,20 @@ public class NewCalcDistributionOperator extends SourceOperator {
         return false;
     }
 
+    private static void push(Context context,
+                             @NonNull Vertex vertex,
+                             Set<RangeDistribution> distributions) {
+        for (RangeDistribution distribution : distributions) {
+            if (log.isTraceEnabled()) {
+                LogUtils.trace(log, "Push distribution: {}", distribution);
+            }
+            context.setDistribution(distribution);
+            if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                break;
+            }
+        }
+    }
+
     private static CompletableFuture<Boolean> push(
         Context context,
         Vertex vertex,
@@ -160,14 +182,15 @@ public class NewCalcDistributionOperator extends SourceOperator {
             return vertex.getSoleEdge().transformToNext(copyContext, null);
         };
         Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
-            .find("retry", int.class), __ -> __, () -> 30);
+            .find("retry", int.class), __ -> __, () -> 120);
         return CompletableFuture.supplyAsync(
             supplier, Executors.executor(
                 "operator-" + vertex.getTask().getJobId() + "-"
                     + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId()))
             .exceptionally(ex -> {
                 if (ex != null) {
-                    if (ex.getCause() instanceof RegionSplitException) {
+                    if (ex.getCause() instanceof RegionSplitException
+                        || (ex.getMessage() != null && ex.getMessage().contains("epoch is not match, region_epoch"))) {
                         int retry;
                         if (param.getSplitRetry().containsKey(distribution.getId())) {
                             int retryCnt = param.getSplitRetry().get(distribution.getId());

@@ -17,7 +17,6 @@
 package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.grammar.SqlUserDefinedOperators;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.common.type.TupleMapping;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -51,7 +50,6 @@ public class DingoDocumentProjectRule extends RelRule<DingoDocumentProjectRule.C
         final LogicalProject project = call.rel(0);
         final LogicalDingoDocument document = call.rel(1);
         final List<Integer> selectedColumns = new ArrayList<>();
-        final List<RexCall> documentSelected = new ArrayList<>();
         final RexVisitorImpl<Void> visitor = new RexVisitorImpl<Void>(true) {
             @Override
             public @Nullable Void visitInputRef(@NonNull RexInputRef inputRef) {
@@ -102,12 +100,7 @@ public class DingoDocumentProjectRule extends RelRule<DingoDocumentProjectRule.C
             document.isDocumentScanFilter()
         );
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
-        if (RexUtil.isIdentity(newProjectRexNodes, newDocument.getSelectedType())) {
-            call.transformTo(newDocument);
-        } else {
-            if (!documentSelected.isEmpty()) {
-                return;
-            }
+        if (!RexUtil.isIdentity(newProjectRexNodes, newDocument.getSelectedType())) {
             call.transformTo(
                 new LogicalProject(
                     project.getCluster(),

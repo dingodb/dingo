@@ -33,8 +33,9 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.dingodb.common.mysql.error.ErrorCode.ErrTableExists;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
 
 @Slf4j
 public final class TableUtil {
@@ -172,16 +173,22 @@ public final class TableUtil {
         return res;
     }
 
-    public static void recoverTable(
+    public static boolean recoverTable(
         DdlJob job,
         RecoverInfo recoverInfo,
         TableDefinitionWithId tableDefinitionWithId,
         List<Object> indexList
     ) {
+        boolean view = false;
+        if (tableDefinitionWithId != null) {
+            view = "VIEW".equalsIgnoreCase(tableDefinitionWithId.getTableDefinition().getTableType());
+        }
         // remove gc_delete_range to gc_delete_range_done
         String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type from mysql.gc_delete_range where job_id="
             + recoverInfo.getDropJobId();
+        sql = convertSql(sql);
         Session session = SessionUtil.INSTANCE.getSession();
+        AtomicInteger cnt = new AtomicInteger();
         try {
             List<Object[]> gcResults = session.executeQuery(sql);
             LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}",
@@ -197,6 +204,8 @@ public final class TableUtil {
                     String eleType = objects[6].toString();
                     if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType)) {
                         LogUtils.error(log, "remove gcDeleteTask failed");
+                    } else {
+                        cnt.getAndIncrement();
                     }
                 } catch (Exception e) {
                     LogUtils.error(log, "gcDeleteRange error, regionId:{}", regionId, e);
@@ -209,6 +218,11 @@ public final class TableUtil {
         }
 
         // create table Info and set autoIncId
-        MetaService.root().recoverTable(job.getSchemaId(), tableDefinitionWithId, indexList);
+        if (view || cnt.get() > 0) {
+            MetaService.root().recoverTable(job.getSchemaId(), tableDefinitionWithId, indexList);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

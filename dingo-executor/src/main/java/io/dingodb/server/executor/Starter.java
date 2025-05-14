@@ -96,6 +96,18 @@ public class Starter {
         ClusterService.DEFAULT_INSTANCE.register();
         // Register cluster heartbeat.
         log.info("Executor Configuration:{}", DingoConfiguration.instance());
+        Integer lowerCaseTableNames = DingoConfiguration.lowerCaseTableNames();
+        if (lowerCaseTableNames == null) {
+            String name = System.getProperty("os.name").toLowerCase();
+            if (name.contains("linux") || name.contains("mac")) {
+                DingoConfiguration.instance().getVariable().setLowerCaseTableNames(0);
+            } else if (name.contains("win")) {
+                DingoConfiguration.instance().getVariable().setLowerCaseTableNames(1);
+            } else {
+                // Upper Case
+                DingoConfiguration.instance().getVariable().setLowerCaseTableNames(2);
+            }
+        }
         Services.initControlMsgService();
         Services.initNetService();
 
@@ -125,7 +137,7 @@ public class Starter {
         ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
         ApiRegistry.getDefault().register(InfoSchemaScanOperator.Api.class, new InfoSchemaScanOperator.Api() { });
 
-        SafePointUpdateTask.run();
+        //SafePointUpdateTask.run();
 
         DdlServer.startDispatchLoop();
     }

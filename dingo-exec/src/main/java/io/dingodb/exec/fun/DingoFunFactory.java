@@ -37,6 +37,7 @@ import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.op.time.CurrentTimestampFun;
 
 public class DingoFunFactory extends DefaultFunFactory {
     public static final String SUBSTRING = "SUBSTRING";
@@ -50,6 +51,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerTertiaryFun("SUBSTR", Exprs.MID3);
         registerBinaryFun(PowFunFactory.NAME, PowFunFactory.INSTANCE);
         registerNullaryFun(ThrowFun.NAME, ThrowFun.INSTANCE);
+        registerNullaryFun("NOW", CurrentTimestampFun.INSTANCE);
 
         registerBinaryFun(AutoIncrementFun.NAME, AutoIncrementFun.INSTANCE);
         registerTertiaryFun(VectorImageFun.NAME, VectorImageFun.INSTANCE);
@@ -67,9 +69,15 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(UserFun.NAME, UserFun.INSTANCE);
         registerBinaryFun(InstrFun.NAME, InstrFun.INSTANCE);
         registerBinaryFun(SchemaFun.NAME, SchemaFun.INSTANCE);
+        registerBinaryFun(StrToDateFun.NAME, StrToDateFun.INSTANCE);
         registerUnaryFun(NextValFun.NAME, NextValFun.INSTANCE);
         registerUnaryFun(CurrValFun.NAME, CurrValFun.INSTANCE);
         registerUnaryFun(LengthFun.NAME, LengthFun.INSTANCE);
+        registerTertiaryFun(ConcatFun.NAME, ConcatFun.INSTANCE);
+        registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);
+        registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
+        registerUnaryFun(DateFun.NAME, DateFun.INSTANCE);
+        registerUnaryFun(ValuesFun.NAME, ValuesFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {

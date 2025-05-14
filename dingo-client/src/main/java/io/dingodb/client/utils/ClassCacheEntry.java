@@ -63,6 +63,7 @@ import javax.validation.constraints.NotNull;
 
 import static io.dingodb.client.utils.TypeUtils.getSqlType;
 import static io.dingodb.common.Common.Engine.ENG_ROCKSDB;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public class ClassCacheEntry<T> {
@@ -126,8 +127,8 @@ public class ClassCacheEntry<T> {
             throw new NotAnnotatedClass("Class " + clazz.getName()
                 + " is not augmented by the @DingoRecord annotation");
         } else if (recordDescription != null) {
-            this.database = ParserUtils.getInstance().get(recordDescription.database());
-            this.tableName = ParserUtils.getInstance().get(recordDescription.table().toUpperCase());
+            this.database = ParserUtils.getInstance().get(convertName(recordDescription.database()));
+            this.tableName = ParserUtils.getInstance().get(convertName(recordDescription.table()));
             this.factoryClass = recordDescription.factoryClass();
             this.factoryMethod = recordDescription.factoryMethod();
         }
@@ -747,7 +748,7 @@ public class ClassCacheEntry<T> {
     }
 
     public String getTableName() {
-        return tableName.toUpperCase();
+        return tableName;
     }
 
     private boolean contains(String[] names, String thisName) {
@@ -926,7 +927,7 @@ public class ClassCacheEntry<T> {
                 primary = pkIndex++;
             }
             ColumnDefinition columnDefinition = ColumnDefinition.builder()
-                .name(columnName.toUpperCase())
+                .name(columnName)
                 .type(sqlTypeInfo.getSqlTypeName())
                 .elementType(elementTypeName)
                 .precision(sqlTypeInfo.getPrecision() == null ? -1 : sqlTypeInfo.getPrecision())

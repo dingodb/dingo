@@ -20,6 +20,7 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -47,5 +48,10 @@ public class SchemaFun extends BinaryOp {
             throw new RuntimeException(e);
         }
         return value0;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
     }
 }

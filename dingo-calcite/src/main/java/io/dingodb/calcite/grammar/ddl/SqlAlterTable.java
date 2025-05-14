@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.sql.SqlAlter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -31,6 +33,10 @@ public class SqlAlterTable extends SqlAlter {
     private final SqlOperator operator;
 
     public final SqlIdentifier table;
+
+    @Getter
+    @Setter
+    private boolean preValidate = false;
 
     public SqlAlterTable(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlOperator operator) {
         super(pos);

@@ -43,12 +43,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class RootSnapshotSchema implements Schema {
-    public static final String ROOT_SCHEMA_NAME = "DINGO_ROOT";
-    public static final String DEFAULT_SCHEMA_NAME = "DINGO";
+    public static final String ROOT_SCHEMA_NAME = convertName("dingo_root");
+    public static final String DEFAULT_SCHEMA_NAME = convertName("dingo");
     @Getter
     protected InfoSchema is;
     CommonId txnId;
@@ -127,7 +128,7 @@ public class RootSnapshotSchema implements Schema {
             if (sub == null) {
                 String schemaStr = String.join(",", isTmp.getSchemaMap().keySet());
                 LogUtils.info(log, "get sub schema null by tmp, isTmp schemaMap:"
-                    + schemaStr + ", isTmp version:" + isTmp.getSchemaMetaVersion());
+                    + schemaStr + ", isTmp version:" + isTmp.getSchemaMetaVersion() + ", schemaName:" + schemaName);
             }
             return sub;
         }
@@ -135,10 +136,11 @@ public class RootSnapshotSchema implements Schema {
     }
 
     public SubSnapshotSchema getSubSchema(InfoSchema isTmp, String schemaName) {
-        if (!isTmp.schemaMap.containsKey(schemaName)) {
+        String schema = convertName(schemaName);
+        if (!isTmp.schemaMap.containsKey(schema)) {
             return null;
         }
-        return new SubSnapshotSchema(isTmp, schemaName, context, ImmutableList.of(ROOT_SCHEMA_NAME, schemaName));
+        return new SubSnapshotSchema(isTmp, schema, context, ImmutableList.of(ROOT_SCHEMA_NAME, schema));
     }
 
     @Override

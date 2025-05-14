@@ -50,7 +50,7 @@ public class LogicalScanWithRelOpRule extends ConverterRule implements Substitut
     public RelNode convert(RelNode rel) {
         LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
         List<String> fullNameList = scan.getTable().getQualifiedName();
-        if (DingoTableScanRule.metaSchemaList.contains(fullNameList.get(1))) {
+        if (DingoTableScanRule.metaSchemaSet.contains(fullNameList.get(1))) {
             return null;
         }
         if (scan.getSelection().size() < scan.getRowType().getFieldCount()) {

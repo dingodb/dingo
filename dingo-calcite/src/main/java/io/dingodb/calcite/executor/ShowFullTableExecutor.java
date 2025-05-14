@@ -47,13 +47,13 @@ public class ShowFullTableExecutor extends QueryExecutor {
     public Iterator getIterator() {
         try {
             List<Object[]> tables = new ArrayList<>();
-            ResultSet rs = connection.getMetaData().getTables(null, schemaName.toUpperCase(),
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName,
                 null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
                 String tableType = rs.getString("TABLE_TYPE");
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
-                    tables.add(new Object[]{tableName.toLowerCase(), tableType});
+                    tables.add(new Object[]{tableName, tableType});
                 }
             }
             return tables.iterator();

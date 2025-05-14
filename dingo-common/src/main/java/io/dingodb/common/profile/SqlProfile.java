@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
-import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -149,6 +148,12 @@ public class SqlProfile extends Profile {
             if (this.execProfile != null) {
                 this.execProfile.clear();
             }
+        }
+    }
+
+    public void truncateSql() {
+        if (sql != null && sql.length() > 3000) {
+            this.sql = this.sql.substring(0, 3000);
         }
     }
 

@@ -1,0 +1,61 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:1
+#: fdd39024275247cc883930a4500c3111
+msgid "Update Configuration about Ansible playbook"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:3
+#: 193a12133bd04d4e99d5bbacb0c28a89
+msgid "Pull git deploy code"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:10
+#: 5c4dbaaba7b64d38a25f2fd699cc5f1a
+msgid "Deployment configuration"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:12
+#: 3f171383359e4c53b6a3e76186221206
+msgid "**Configure installation options**"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:14
+#: 691dd683ca234c01b68228474299f5d4
+msgid "Configuration file address: dingo-deploy/group_vars/all/_shared.yml"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:133
+#: 37237e34e4884523bd448f9cd8d5f0fd
+msgid "Download Package"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:159
+#: 02fea84d190d409a988888ccbfb14fc1
+msgid "Config Hosts"
+msgstr ""
+
+#: ../../source/deployment/cluster/steps_about_deployment_using_ansible/02_configuration.md:160
+#: 548da668efaf464aaec5c6688c0fce58
+msgid "Configuration file address： inventory/hosts"
+msgstr ""
+

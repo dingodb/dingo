@@ -53,7 +53,7 @@ public class ShowTableIndexExecutor extends QueryExecutor {
         this.sqlNode = sqlNode;
         this.schemaName = MetaServiceUtils.getSchemaName(tableName);
         metaService = MetaService.root().getSubMetaService(schemaName);
-        this.tableName = tableName.toUpperCase();
+        this.tableName = tableName;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class ShowTableIndexExecutor extends QueryExecutor {
         }
         tuples = metaService.getTableIndexDefinitions(table.getTableId())
             .values()
-            .stream().filter(i -> !i.getName().equalsIgnoreCase(tableName))
+            .stream().filter(i -> !i.getName().equals(tableName) && i.isVisible())
             .map(index -> {
                 Properties properties = index.getProperties();
                 if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
@@ -75,7 +75,7 @@ public class ShowTableIndexExecutor extends QueryExecutor {
                 }
                 return new Object[] {
                     tableName,
-                    index.getName().toUpperCase(),
+                    index.getName(),
                     properties.getProperty("indexType").toUpperCase(),
                     index.getColumns().stream()
                         .filter(ShowTableIndexExecutor::isNormal)

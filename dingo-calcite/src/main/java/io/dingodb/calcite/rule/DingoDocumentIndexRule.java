@@ -40,6 +40,7 @@ import io.dingodb.calcite.utils.IndexRangeVisitor;
 import io.dingodb.calcite.utils.IndexValueMapSet;
 import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -353,36 +354,40 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
                 if (!match) {
                     return null;
                 }
-                DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
-                    document.getCluster().getRexBuilder(),
-                    DocumentScanFilterOb.builder()
-                        .match(false)
-                        .queryStr(document.getQueryStr() + " AND")
-                        .columns(td.columns)
-                        .build()
-                );
-                DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
-                boolean flag = accept.isMatch();
-                String queryString = accept.getQueryStr();
-                if (flag) {
-                    document.setQueryStr(queryString);
-                    document.setDocumentScanFilter(true);
-                    DingoDocument dingoDocument = new DingoDocument(
-                        document.getCluster(),
-                        document.getTraitSet(),
-                        document.getCall(),
-                        document.getTable(),
-                        document.getOperands(),
-                        document.getIndexTableId(),
-                        document.getIndexTable(),
-                        document.getSelection(),
-                        document.getFilter(),
-                        document.getHints(),
-                        queryString,
-                        true
+                try {
+                    DocumentScanFilterVisitor documentScanFilterVisitor = new DocumentScanFilterVisitor(
+                        document.getCluster().getRexBuilder(),
+                        DocumentScanFilterOb.builder()
+                            .match(false)
+                            .queryStr(document.getQueryStr() + " AND")
+                            .columns(td.columns)
+                            .build()
                     );
-                    dingoDocument.setQueryStr(queryString);
-                    return dingoDocument;
+                    DocumentScanFilterOb accept = rexNode.accept(documentScanFilterVisitor);
+                    boolean flag = accept.isMatch();
+                    String queryString = accept.getQueryStr();
+                    if (flag) {
+                        document.setQueryStr(queryString);
+                        document.setDocumentScanFilter(true);
+                        DingoDocument dingoDocument = new DingoDocument(
+                            document.getCluster(),
+                            document.getTraitSet(),
+                            document.getCall(),
+                            document.getTable(),
+                            document.getOperands(),
+                            document.getIndexTableId(),
+                            document.getIndexTable(),
+                            document.getSelection(),
+                            document.getFilter(),
+                            document.getHints(),
+                            queryString,
+                            true
+                        );
+                        dingoDocument.setQueryStr(queryString);
+                        return dingoDocument;
+                    }
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
                 }
             }
             return null;
@@ -429,9 +434,9 @@ public class DingoDocumentIndexRule extends RelRule<RelRule.Config> {
             int documentIndex = 0;
             for (int i = 0; i < dingoTable.getTable().getColumns().size(); i ++) {
                 Column column = dingoTable.getTable().getColumns().get(i);
-                if (column.getName().equals(documentIdColName)) {
+                if (column.getName().equalsIgnoreCase(documentIdColName)) {
                     documentIdIndex = i;
-                } else if (column.getName().equals(documentColName)) {
+                } else if (column.getName().equalsIgnoreCase(documentColName)) {
                     documentIndex = i;
                 }
             }

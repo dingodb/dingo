@@ -119,7 +119,7 @@ public final class TransactionCacheToMutation {
 
             Column column = index.getColumns().get(0);
             List<String> colNames = index.getColumns().stream().map(Column::getName).collect(Collectors.toList());
-            long longId = Long.parseLong(String.valueOf(record[colNames.indexOf(column.getName())]));
+            long longId = Long.parseLong(String.valueOf(record[index.getColumnIndex(column)]));
             if (index.indexType == IndexType.DOCUMENT) {
                 String json = Optional.mapOrGet(index.getProperties().get("text_fields"), __ -> (String)__, () -> null);
                 ObjectMapper mapper = new ObjectMapper();
@@ -148,27 +148,27 @@ public final class TransactionCacheToMutation {
                     ScalarField scalarField;
                     DocumentValue.ScalarFieldType fieldType;
                     if (type instanceof BinaryType) {
-                        byte[] data = (byte[]) record[colNames.indexOf(columnDef.getName())];
+                        byte[] data = (byte[]) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.BYTES;
                         scalarField = new ScalarField(data);
                     } else if (type instanceof LongType) {
-                        Long data = (Long) record[colNames.indexOf(columnDef.getName())];
+                        Long data = (Long) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.LONG;
                         scalarField = new ScalarField(data);
                     } else if (type instanceof DoubleType) {
-                        Double data = (Double) record[colNames.indexOf(columnDef.getName())];
+                        Double data = (Double) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.DOUBLE;
                         scalarField = new ScalarField(data);
                     } else if (type instanceof TimestampType) {
-                        Timestamp data = (Timestamp) record[colNames.indexOf(columnDef.getName())];
+                        Timestamp data = (Timestamp) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.DATETIME;
                         scalarField = new ScalarField(data != null ? TimeUtils.to(data) : null);
                     } else if (type instanceof BooleanType) {
-                        Boolean data = (Boolean) record[colNames.indexOf(columnDef.getName())];
+                        Boolean data = (Boolean) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.BOOL;
                         scalarField = new ScalarField(data);
                     } else {
-                        String data = (String) record[colNames.indexOf(columnDef.getName())];
+                        String data = (String) record[index.getColumnIndex(columnDef.getName())];
                         fieldType = DocumentValue.ScalarFieldType.STRING;
                         scalarField = new ScalarField(data);
                     }
@@ -185,7 +185,7 @@ public final class TransactionCacheToMutation {
                 Column column1 = index.getColumns().get(1);
                 Vector vector;
                 if (column1.getSqlTypeName().equalsIgnoreCase("BINARY")) {
-                    byte[] values = (byte[]) record[colNames.indexOf(column1.getName())];
+                    byte[] values = (byte[]) record[index.getColumnIndex(column1)];
                     int dimension = Integer.parseInt(index.getProperties().getProperty("dimension"));
                     checkBinaryVector(values, dimension);
                     vector = Vector.builder()
@@ -193,23 +193,23 @@ public final class TransactionCacheToMutation {
                         .binaryValues(getBinaryVectorList(values, dimension))
                         .valueType(Vector.ValueType.UINT8)
                         .build();
-                    record[colNames.indexOf(column1.getName())] = new byte[]{};
+                    record[index.getColumnIndex(column1)] = new byte[]{};
                 } else if (column1.getElementTypeName().equalsIgnoreCase("FLOAT")) {
-                    List<Float> values = (List<Float>) record[colNames.indexOf(column1.getName())];
+                    List<Float> values = (List<Float>) record[index.getColumnIndex(column1)];
                     vector = Vector.builder()
                         .dimension(values.size())
                         .floatValues(values)
                         .valueType(Vector.ValueType.FLOAT)
                         .build();
-                    record[colNames.indexOf(column1.getName())] = Collections.emptyList();
+                    record[index.getColumnIndex(column1)] = Collections.emptyList();
                 } else {
-                    List<byte[]> values = (List<byte[]>) record[colNames.indexOf(column1.getName())];
+                    List<byte[]> values = (List<byte[]>) record[index.getColumnIndex(column1)];
                     vector = Vector.builder()
                         .dimension(values.size())
                         .binaryValues(values)
                         .valueType(Vector.ValueType.UINT8)
                         .build();
-                    record[colNames.indexOf(column1.getName())] = Collections.emptyList();
+                    record[index.getColumnIndex(column1)] = Collections.emptyList();
                 }
                 value = keyValueCodec.encode(record).getValue();
                 VectorTableData vectorTableData = new VectorTableData(key, value);

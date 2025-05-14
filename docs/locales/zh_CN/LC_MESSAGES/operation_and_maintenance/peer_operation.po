@@ -1,0 +1,53 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: 2025-04-28 11:06+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/get_started/operation_and_maintenance/peer_operation.md:1
+#: 4a31bbcf515b4826bd9fa00e8a36db7c
+msgid "Peer Operation"
+msgstr "Peer 操作"
+
+#: ../../source/get_started/operation_and_maintenance/peer_operation.md:3
+#: afa621ae423f4565a573cdb03ac04077
+msgid "ADDPeer"
+msgstr "在指定 Store 添加 Follower"
+
+#: ../../source/get_started/operation_and_maintenance/peer_operation.md:4
+#: d1d89bb0e7a14708b2820e89334b4b1c
+msgid ""
+"The parameter --id specifies the store_id to which you want to expand, "
+"while --region-id specifies the region number you want to expand."
+msgstr ""
+"参数 id 指定要扩展的 Store_id，而 region_id 指定要扩展的 region_id。"
+
+#: ../../source/get_started/operation_and_maintenance/peer_operation.md:11
+#: 71fa9a0db358446b9cad64676477e8c3
+msgid "RemovePeer"
+msgstr "删除一个 Region Peer"
+
+#: ../../source/get_started/operation_and_maintenance/peer_operation.md:12
+#: f182bbd5677e481bbbcef81cdf9916b6
+msgid ""
+"The parameter --id specifies the store_id to be removed from the region, "
+"while --region-id specifies the region number to be scaled down."
+msgstr ""
+"参数 id 指定了要从 region 中删除的 store_id，而 region_id 则指定了要缩减"
+"的 region 编号。"

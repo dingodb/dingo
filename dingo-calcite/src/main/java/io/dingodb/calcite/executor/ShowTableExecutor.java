@@ -31,23 +31,29 @@ public class ShowTableExecutor extends QueryExecutor {
     Connection connection;
 
     private String sqlLikePattern;
+    private boolean only;
 
-    public ShowTableExecutor(String schemaName, Connection connection, String pattern) {
+    public ShowTableExecutor(String schemaName, Connection connection, String pattern, boolean only) {
         this.schemaName = schemaName;
         this.connection = connection;
         this.sqlLikePattern = pattern;
+        this.only = only;
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         try {
             List<Object[]> tables = new ArrayList<>();
-            ResultSet rs = connection.getMetaData().getTables(null, schemaName.toUpperCase(),
+            ResultSet rs = connection.getMetaData().getTables(null, schemaName,
                 null, null);
             while (rs.next()) {
                 String tableName = rs.getString("TABLE_NAME");
+                String tableType = rs.getString("TABLE_TYPE");
+                if (this.only && "VIEW".equalsIgnoreCase(tableType)) {
+                    continue;
+                }
                 if (StringUtils.isBlank(sqlLikePattern) || SqlLikeUtils.like(tableName, sqlLikePattern)) {
-                    Object[] tuples = new Object[] {tableName.toLowerCase()};
+                    Object[] tuples = new Object[] {tableName};
                     tables.add(tuples);
                 }
             }

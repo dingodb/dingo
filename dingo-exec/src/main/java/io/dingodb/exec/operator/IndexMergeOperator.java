@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.IndexMergeParam;
 import io.dingodb.exec.tuple.TupleKey;
@@ -45,6 +46,10 @@ public class IndexMergeOperator extends SoleOutOperator {
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         IndexMergeParam param = vertex.getParam();
+        if (fin instanceof FinWithException) {
+            edge.fin(fin);
+            return;
+        }
         ConcurrentHashMap<TupleKey, Object[]> hashMap = param.getHashMap();
         hashMap.values().forEach(v -> edge.transformToNext(param.getContext(), v));
         edge.fin(fin);

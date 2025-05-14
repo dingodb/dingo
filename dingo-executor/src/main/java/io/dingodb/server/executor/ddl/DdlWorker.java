@@ -54,6 +54,7 @@ import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
+import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -83,6 +84,9 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrInvalidDDLState;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_REORG;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_NONE;
@@ -187,9 +191,8 @@ public class DdlWorker {
         }
         String ids = job.job2TableIDs();
         DingoMetrics.counter("registerMDLInfoNone").inc();
-        // TODO
         String sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
-        sql = String.format(sql, job.getId(), ver, Utils.quoteForSql(ids));
+        sql = convertSql(String.format(sql, job.getId(), ver, Utils.quoteForSql(ids)));
         return session.executeUpdate(sql);
     }
 
@@ -553,7 +556,7 @@ public class DdlWorker {
                 Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
                 List<IndexTable> diskAnnIndex = table.getIndexes().stream()
                     .filter(e -> e.getIndexType() == IndexType.VECTOR_DISKANN)
-                    .collect(Collectors.toList());
+                    .toList();
                 for (IndexTable indexTable : diskAnnIndex) {
                     // check disk ann index status
                     Pair<Boolean, String> checkDropDiskAnn =
@@ -626,7 +629,8 @@ public class DdlWorker {
             return Pair.of(0L, "table not exists");
         }
         boolean exists = table.getIndexes().stream()
-            .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexInfo.getName())
+            .anyMatch(indexTable -> (caseSensitive() ? indexTable.getName().equals(indexInfo.getName())
+                : indexTable.getName().equalsIgnoreCase(indexInfo.getName()))
                 && indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC);
         if (exists) {
             job.setState(JobState.jobStateCancelled);
@@ -713,7 +717,8 @@ public class DdlWorker {
             indexName = job.getArgs().get(0).toString();
         }
         boolean notExists = table.getIndexes().stream()
-            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
+            .noneMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(indexName)
+                : indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "index not exists");
@@ -1059,9 +1064,10 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition oldColDef = modifyingColInfo.getChangingCol();
         io.dingodb.common.table.ColumnDefinition newColDef = modifyingColInfo.getNewCol();
         // If we want to rename the column name, we need to check whether it already exists.
-        if (oldColDef != null && !oldColDef.getName().equals(newColDef.getName())) {
+        if (oldColDef != null && !oldColDef.getName().equalsIgnoreCase(newColDef.getName())) {
             boolean dupColName = tableWithId.getTableDefinition().getColumns()
-                .stream().anyMatch(columnDefinition -> columnDefinition.getName().equals(newColDef.getName()));
+                .stream()
+                .anyMatch(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(newColDef.getName()));
             if (dupColName) {
                 job.setState(JobState.jobStateCancelled);
                 job.setDingoErr(DingoErrUtil.newInternalErr(ErrDupFieldName, newColDef.getName()));
@@ -1436,7 +1442,7 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_ONLY:
-                synchronized (dc) {
+                synchronized (SafePointUpdateTask.safePointUpdateTask) {
                     if (enableGc) {
                         // disableGc
                         InfoSchemaService.root().putGlobalVariable("enable_safe_point_update", "0");
@@ -1457,7 +1463,13 @@ public class DdlWorker {
                     if (recoverInfo.getNewTableName() != null) {
                         tableDefinitionWithId.getTableDefinition().setName(recoverInfo.getNewTableName());
                     }
-                    TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                    boolean recover = TableUtil.recoverTable(job, recoverInfo, tableDefinitionWithId, indexList);
+                    if (!recover) {
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped table '"
+                            + recoverInfo.getOldTableName() + "'"));
+                        job.setState(JobState.jobStateCancelled);
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                    }
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                     return updateSchemaVersion(dc, job);
                 }
@@ -1486,7 +1498,7 @@ public class DdlWorker {
         int colIndex = -1;
         for (int i = 0; i < definitionWithId.getTableDefinition().getColumns().size(); i++) {
             ColumnDefinition col = definitionWithId.getTableDefinition().getColumns().get(i);
-            if (col.getName().equals(modifyColumnInfo.getOldColName())) {
+            if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                 colIndex = i;
                 break;
             }
@@ -1501,7 +1513,7 @@ public class DdlWorker {
             AtomicInteger idx = new AtomicInteger(-1);
             for (int i = 0; i < indexTable.getColumns().size(); i++) {
                 Column col = indexTable.getColumns().get(i);
-                if (col.getName().equals(modifyColumnInfo.getOldColName())) {
+                if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                     idx.set(i);
                     break;
                 }
@@ -1538,7 +1550,7 @@ public class DdlWorker {
                 int colIndex = -1;
                 for (int i = 0; i < definitionWithId.getTableDefinition().getColumns().size(); i++) {
                     ColumnDefinition col = definitionWithId.getTableDefinition().getColumns().get(i);
-                    if (col.getName().equals(modifyColumnInfo.getOldColName())) {
+                    if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                         colIndex = i;
                         break;
                     }
@@ -1561,7 +1573,7 @@ public class DdlWorker {
                     AtomicInteger idx = new AtomicInteger(-1);
                     for (int i = 0; i < indexTable.getColumns().size(); i++) {
                         Column col = indexTable.getColumns().get(i);
-                        if (col.getName().equals(modifyColumnInfo.getOldColName())) {
+                        if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                             idx.set(i);
                             break;
                         }
@@ -1705,8 +1717,12 @@ public class DdlWorker {
                     // recover table
                     InfoSchemaService infoSchemaService
                         = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                    LogUtils.info(log, "flashback schema:{} ts:{}",
+                        recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs());
                     SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
                     if (schemaInfo == null) {
+                        LogUtils.info(log, "flashback schema:{} ts:{}, but found not schemaInfo, new tso:{}",
+                            recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs(), TsoService.getDefault().tso());
                         job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped schema '"
                             + recoverInfo.getOldSchemaName() + "'"));
                         job.setState(JobState.jobStateCancelled);
@@ -1900,7 +1916,7 @@ public class DdlWorker {
                 .map(idxTable -> (TableDefinitionWithId) idxTable)
                 .filter(idxTable ->
                     idxTable.getTableDefinition().getName().endsWith(originName)
-                        || idxTable.getTableDefinition().getName().endsWith(originName.toUpperCase())).findFirst().orElse(null);
+                        || idxTable.getTableDefinition().getName().endsWith(originName)).findFirst().orElse(null);
             if (indexWithId == null) {
                 job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, originName, job.getTableName()));
                 return Pair.of(0L, job.getDingoErr().errorMsg);
@@ -1908,7 +1924,7 @@ public class DdlWorker {
             TableDefinitionWithId toIndex = indexList.stream().map(idxTable -> (TableDefinitionWithId) idxTable)
                 .filter(idxTable ->
                     idxTable.getTableDefinition().getName().endsWith(toName)
-                        || idxTable.getTableDefinition().getName().endsWith(toName.toUpperCase()))
+                        || idxTable.getTableDefinition().getName().endsWith(toName))
                 .findFirst().orElse(null);
             if (toIndex != null) {
                 job.setDingoErr(DingoErrUtil.newInternalErr(ErrDupKeyName, toName));
@@ -1951,7 +1967,7 @@ public class DdlWorker {
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
             return Pair.of(0L, tableRes.getValue());
         }
-        String indexName = job.getArgs().get(0).toString();
+        String indexName = convertName(job.getArgs().get(0).toString());
         String visibleStr = job.getArgs().get(1).toString();
         boolean visible = Boolean.parseBoolean(visibleStr);
         List<Object> indexList = InfoSchemaService.root().allIndex(job.getSchemaId(), job.getTableId());
@@ -1959,7 +1975,7 @@ public class DdlWorker {
             .map(idxTable -> (TableDefinitionWithId)idxTable)
             .filter(idxTable ->
                 idxTable.getTableDefinition().getName().endsWith(indexName)
-                    || idxTable.getTableDefinition().getName().endsWith(indexName.toUpperCase())).findFirst()
+                    || idxTable.getTableDefinition().getName().endsWith(indexName)).findFirst()
                     .orElse(null);
         if (indexWithId == null) {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, indexName, job.getTableName()));

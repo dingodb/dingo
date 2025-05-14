@@ -83,6 +83,10 @@ public class RelOpMappingVisitor extends RelOpVisitorBase<RelOp, List<Integer>> 
 
     @Override
     public RelOp visitTandemOp(@NonNull TandemOp op, @NonNull List<Integer> selection) {
+        if (op.getInput() instanceof ProjectOp && op.getOutput() instanceof ProjectOp) {
+            throw new RuntimeException("Nested projects should not be used in selection optimization.");
+        }
+
         RelOp op1 = visit(op.getInput(), selection);
         RelOp op2 = visit(op.getOutput(), selection);
         RelOp relOp = RelOpBuilder.builder(op1).add(op2).build();

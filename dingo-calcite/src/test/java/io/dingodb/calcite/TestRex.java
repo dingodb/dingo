@@ -78,7 +78,7 @@ public class TestRex {
     @Nonnull
     private static Stream<Arguments> getParametersTemp() {
         return Stream.of(
-            arguments("pow('10', -2)", "POW(DECIMAL('10'), -2)", BigDecimal.valueOf(0.01))
+            arguments("pow('10', -2)", "POW(CASTDECIMAL('10'), -2)", BigDecimal.valueOf(0.01))
         );
     }
 
@@ -140,13 +140,4 @@ public class TestRex {
             .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
     }
 
-    //@ParameterizedTest
-    //@MethodSource("getParametersExprException")
-    //public void testExprException(String str, Class<? extends Exception> exceptionClass) {
-    //    assertThrows(exceptionClass, () -> {
-    //        RexNode rexNode = getRexNode(str);
-    //        Expr expr = RexConverter.convert(rexNode);
-    //        ExprCompiler.ADVANCED.visit(expr).eval();
-    //    });
-    //}
 }

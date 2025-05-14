@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
 import static io.dingodb.partition.DingoPartitionServiceProvider.RANGE_FUNC_NAME;
 import static io.dingodb.sdk.service.entity.meta.PartitionStrategy.PT_STRATEGY_HASH;
@@ -118,6 +119,9 @@ public interface TableMapper {
     default List<Partition> partitionsTo(
         List<PartitionDetailDefinition> details, List<DingoCommonId> partIds, RecordEncoder encoder, byte namespace
     ) {
+        if (partIds == null || details == null) {
+            return new ArrayList<>();
+        }
         List<DingoCommonId> ids = new ArrayList<>(partIds);
         return details.stream()
             .peek(partDef -> {
@@ -173,6 +177,9 @@ public interface TableMapper {
     default List<io.dingodb.meta.entity.Partition> partitionFrom(
         List<Partition> partitions, KeyValueCodec codec, String strategy
     ) {
+        if (partitions == null) {
+            return new ArrayList<>();
+        }
         return partitions.stream().map($ -> partitionFrom($, codec, strategy)).collect(Collectors.toList());
     }
 
@@ -248,6 +255,7 @@ public interface TableMapper {
         builder.schemaState(io.dingodb.common.meta.SchemaState.get(
             tableWithId.getTableDefinition().getSchemaState().number)
         );
+        builder.visible(definition.isVisible());
         MAPPER.setIndex(builder, definition.getIndexParameter());
         return builder.build();
     }
@@ -273,7 +281,7 @@ public interface TableMapper {
                 partitionTo(tableDefinition.getPartDefinition(), ids.getPartIds(), encoder, namespace)
             );
         }
-        definition.setName(definition.getName().toUpperCase());
+        definition.setName(convertName(definition.getName()));
         definition.setSchemaState(convertSchemaState(tableDefinition.getSchemaState()));
         return TableDefinitionWithId.builder().tenantId(tenantId)
             .tableDefinition(definition).tableId(ids.getTableId()).build();

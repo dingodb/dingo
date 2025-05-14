@@ -56,7 +56,7 @@ public class LogicalMergeRelOpScanRule extends RelRule<LogicalMergeRelOpScanRule
                 scan.getLimit()
             )
         );
-        call.getPlanner().prune(scan);
+        // call.getPlanner().prune(scan);
     }
 
     @Value.Immutable

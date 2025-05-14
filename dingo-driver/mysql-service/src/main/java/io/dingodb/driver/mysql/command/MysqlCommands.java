@@ -36,7 +36,6 @@ import io.dingodb.driver.mysql.packet.PrepareOkPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.QueryPacket;
 import io.dingodb.exec.transaction.base.ITransaction;
-import io.dingodb.exec.transaction.base.TransactionType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +86,7 @@ public class MysqlCommands {
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
         String sql;
-        String characterSet = null;
+        String characterSet;
         try {
             characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             characterSet = getCharacterSet(characterSet);
@@ -102,7 +101,22 @@ public class MysqlCommands {
                 characterSet);
             return;
         }
-        executeSingleQuery(sql, packetId, mysqlConnection);
+        if (sql.startsWith(";/* DTS-writer")) {
+            String split = ";/*";
+            String[] sqls = sql.split(split);
+            for (String splitSql : sqls) {
+                try {
+                    if (splitSql.startsWith("* DTS-writer")) {
+                        splitSql = "/" + splitSql;
+                    }
+                    executeSingleQuery(splitSql, packetId, mysqlConnection);
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage() + ",sql:" + splitSql, e);
+                }
+            }
+        } else {
+            executeSingleQuery(sql, packetId, mysqlConnection);
+        }
     }
 
     private static boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {
@@ -152,7 +166,7 @@ public class MysqlCommands {
                 numberParams++;
                 i = sql.indexOf(placeholder, i) + placeholder.length();
 
-                paramColumnPackets.add(mysqlPacketFactory.getParamColumnPacket(packetId));
+                paramColumnPackets.add(mysqlPacketFactory.getParamColumnPacket(packetId, connCharSet));
             }
             boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
                 & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
@@ -166,7 +180,7 @@ public class MysqlCommands {
                 }
                 numberFields = statementHandle.signature.columns.size();
                 mysqlPacketFactory.addColumnPacketFromMeta(packetId, preparedStatement.getMetaData(),
-                    fieldColumnPackets, "def");
+                    fieldColumnPackets, "def", connCharSet);
             }
             if (!deprecateEof) {
                 eofResponse = MysqlPacketFactory.getEofPacket(packetId);
@@ -409,14 +423,14 @@ public class MysqlCommands {
 
     public static int getInitServerStatus(DingoConnection connection) {
         ITransaction transaction = connection.getTransaction();
-        boolean inTransaction = false;
+        boolean autoCommit = true;
         if (transaction != null) {
-            inTransaction = connection.getTransaction().getType() != TransactionType.NONE;
+            autoCommit = !("off".equalsIgnoreCase(connection.getClientInfo("autocommit")));
         }
         int initServerStatus = 0;
-        //if (inTransaction) {
-        //    initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
-        //}
+        if (!autoCommit) {
+            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
+        }
         if (connection.getAutoCommit()) {
             initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
         }

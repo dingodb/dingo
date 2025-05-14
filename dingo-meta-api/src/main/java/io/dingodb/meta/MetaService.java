@@ -55,7 +55,7 @@ public interface MetaService {
         return MetaServiceProvider.getDefault().snapshot(ts);
     }
 
-    String DINGO_NAME = "DINGO";
+    String DINGO_NAME = "dingo";
 
     /**
      * Returns this meta service id.

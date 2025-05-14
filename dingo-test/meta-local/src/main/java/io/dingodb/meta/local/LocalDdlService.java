@@ -32,6 +32,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 public class LocalDdlService implements DdlService {
     LocalMetaService localMetaService = LocalMetaService.ROOT;
@@ -82,7 +86,8 @@ public class LocalDdlService implements DdlService {
         Map<String, MetaService> childrenList = localMetaService.getSubMetaServices();
         childrenList.forEach((k, v) -> {
             SchemaInfo schemaInfo = new SchemaInfo(0, k, v.id().seq, SchemaState.SCHEMA_PUBLIC);
-            Map<String, Table> tableMap = new HashMap<>();
+            NavigableMap<String, Table> tableMap = caseSensitive() ?
+                new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             v.getTables().forEach(table -> {
                 tableMap.put(table.getName(), table);
             });

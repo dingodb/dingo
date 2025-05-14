@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.DingoFilterUtils;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.utils.SqlExprUtils;
@@ -34,6 +35,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -51,13 +53,17 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,6 +71,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
 
@@ -89,15 +96,29 @@ public final class DingoIndexRangeScanVisitFun {
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> indexRanges = metaService
             .getRangeDistribution(idxId);
 
-        List<Column> columnNames = indexTd.getColumns();
-        List<Integer> indexSelectionList = columnNames.stream().map(td.columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = td.getColumnIndices2(indexTd.getColumns());
 
         RexNode rexFilter = rel.getFilter();
 
         RelOp relOp = null;
-
+        RelOp otherRelOp = null;
         Mapping mapping = Mappings.target(indexSelectionList, td.getColumns().size());
         if (rexFilter != null) {
+            if (rel.isLookup()) {
+                Pair<RexNode, RexNode> res = DingoFilterUtils.splitRexFilter(rexFilter, mapping, rel.getCluster().getRexBuilder());
+                if (res != null && res.getKey() != null) {
+                    if (res.getValue() == null) {
+                        rexFilter = res.getKey();
+                    } else {
+                        rexFilter = res.getKey();
+                        RexNode otherFilter = res.getValue();
+                        Expr expr = RexConverter.convert(otherFilter);
+                        otherRelOp = RelOpBuilder.builder()
+                            .filter(expr)
+                            .build();
+                    }
+                }
+            }
             rexFilter = RexUtil.apply(mapping, rexFilter);
             if (rexFilter != null) {
                 Expr expr = RexConverter.convert(rexFilter);
@@ -176,7 +197,8 @@ public final class DingoIndexRangeScanVisitFun {
                 rel.isPushDown(),
                 rel.getSelection(),
                 0,
-                transaction.isAutoCommit()
+                transaction.isAutoCommit(),
+                otherRelOp
             ));
         }
         OutputHint hint = new OutputHint();
@@ -193,4 +215,5 @@ public final class DingoIndexRangeScanVisitFun {
         visitor.setScan(true);
         return outputs;
     }
+
 }

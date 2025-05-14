@@ -34,6 +34,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public class TableModifyMonitorTask extends StatsOperator implements Runnable {
 
@@ -50,9 +52,9 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
         Map<CommonId, Long> commitCountMap = metaService.getTableCommitCount();
         InfoSchema is = DdlService.root().getIsLatest();
         is.getSchemaMap().values().forEach(schemaTables -> {
-            String key = schemaTables.getSchemaInfo().getName();
-            if (key.equalsIgnoreCase("mysql")
-                || key.equalsIgnoreCase("information_schema")) {
+            String key = convertName(schemaTables.getSchemaInfo().getName());
+            if (key.equals(convertName("mysql"))
+                || key.equals(convertName("INFORMATION_SCHEMA"))) {
                 return;
             }
             Collection<Table> tables = schemaTables.getTables().values();
@@ -63,8 +65,9 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
                     commitCount = commitCountMap.get(commonId);
                 }
                 Double totalCount = 0D;
-                if (autoAnalyzeTriggerPolicy(key, t.name, commitCount)) {
-                    analyzeTaskList.add(generateAnalyzeTask(key, t.name, totalCount.longValue(), commitCount));
+                String tableName = convertName(t.name);
+                if (autoAnalyzeTriggerPolicy(key, tableName, commitCount)) {
+                    analyzeTaskList.add(generateAnalyzeTask(key, tableName, totalCount.longValue(), commitCount));
                 }
             });
         });

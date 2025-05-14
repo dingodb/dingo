@@ -50,6 +50,9 @@ public class Configuration {
         if (INSTANCE.coordinators == null) {
             INSTANCE.coordinators = DingoConfiguration.instance().find("coordinators", String.class);
         }
+        if (INSTANCE.coordinators == null) {
+            INSTANCE.coordinators = System.getProperty("coordinators");
+        }
         return INSTANCE.coordinators;
     }
 

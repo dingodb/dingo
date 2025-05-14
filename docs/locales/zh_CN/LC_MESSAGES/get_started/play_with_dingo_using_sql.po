@@ -1,0 +1,206 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-28 10:17+0800\n"
+"PO-Revision-Date: 2025-04-30 10:21+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:1 fa167f97b4f34fab9e691f988aef4276
+msgid "Play with DingoDB using SQL"
+msgstr "使用 SQL 连接 DingoDB"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:3 cf5d4f46e0334f97b42d39488b25999e
+msgid "Play DingoDB with SQL Tools"
+msgstr "使用 SQL 工具"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:5 ccaf6663c2584e08ac4a746fa6ccc9c9
+msgid "Setup Connection to DingoDB"
+msgstr "与 DingoDB 建立连接"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:7 c8dd3595b25d4407a890c2d857fdb95d
+msgid "1.Launch DBeaver tool, navigate to menu Window -> Driver Manager"
+msgstr "1.启动DBeaver工具，导航到菜单窗口->驱动管理器"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:9 9fb5f38fa39b4766939365c082967414
+msgid "![Driver Manager](../../images/usage_dbeaver_driver_manager.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:9 fb5ee7737c51409c942c11f26f38c51a
+msgid "Driver Manager"
+msgstr "驱动管理器"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:11 1b5efef4f9cb452391e852aaad8da446
+msgid "2.In the Driver Manager dialog, click on “New” button,create new driver"
+msgstr "2.在驱动程序管理器对话框中，点击“新建”按钮，创建新的驱动程序"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:13 f1471249452147c284532f382de39a44
+msgid ""
+"3.In the New Driver dialog, provide the “Driver Name” and “Class Name”, here please input "
+"the class name as “io.dingodb.driver.client.DingoDriverClient”"
+msgstr ""
+"3.在“新建驱动程序”对话框中提供“驱动程序名称”和“类名称”，这里请输入类名称"
+"为“io.dingodb.driver.client.DingoDriverClient”。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:15 0e6201b4bc0b408dae22813ca2f1aedf
+msgid "![Import driver file](../../images/usage_dbeaver_import_driver_file.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:15 db7240a70f734d48a420d1b6d943251b
+msgid "Import driver file"
+msgstr "导入驱动文件"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:17 2dcd12054c754df2a93f5544daf93ba2
+msgid "4.Then click on the “library” tab, and click “Add file” button."
+msgstr "4.然后点击“库”选项卡，点击“添加文件”按钮。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:19 e54772e004cf48069b6e8e8a2b4e9641
+msgid ""
+"5.Add the DingoDB driver “dingo-driver-client-all.jar”, click “Search” and select the "
+"DingoDB driver “io.dingodb.driver.client.DingoDriverClient”."
+msgstr ""
+"5.添加DingoDB驱动程序“dingo-driver-client-all.jar”，点击“Search”，选择DingoDB驱动程"
+"序“io.dingodb.driver.client.DingoDriverClient”。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:21 f7691f5cfdc04815b5392bb724f27419
+msgid "![Find class](../../images/usage_dbeaver_find_class.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:21 6b29f7a1e3a8468887578f628712674d
+msgid "Find class"
+msgstr "查找类名"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:23 e96f01d85c0240ff9e054f7d94583fc9
+msgid "6.Click “OK”, then you will see the DingoDB driver shown in driver list."
+msgstr "6.点击“OK”，将在驱动列表中显示DingoDB驱动程序。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:25 45221fc3be534efbb18963bd821608b0
+msgid ""
+"7.Back to DBeaver main screen, click on “New Database Connection” from the toolbar, and "
+"select “DingoDB” item."
+msgstr "7.回到DBeaver主界面，点击工具栏中的“新建数据库连接”，选择“DingoDB”项。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:27 7e7fc5255c034f96ba9eeb0f1d0813b8
+msgid ""
+"8.In New Database Connection dialog, provide valid JDBC URL, User and Password, then “Test "
+"Connection” and see the Database connected successfully."
+msgstr ""
+"8.在“新建数据库连接”对话框中，提供有效的JDBC URL、用户和密码，然后单击“测试连接”，即可看到数"
+"据库连接成功。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:29 ee46a244cb2546848b8cc028f29e745e
+msgid "![New databases](../../images/usage_dbeaver_new_databases.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:29 9c1f7288fbbe4a858660fc1e66ae31f9
+msgid "New databases"
+msgstr "新数据库"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:31 9e6309d55cd44955903eccd962bcfd63
+msgid ""
+"9.Click Finish and see the DingoDB connection displayed in Database Connections Navigator on "
+"left."
+msgstr "9.单击Finish，在左侧的数据库连接导航器中看到DingoDB连接。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:33 040b074f4b3044d4b8ca0b6c32110213
+msgid "![Connection](../../images/usage_dbeaver_successful_connection.png)"
+msgstr ""
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:33 a15d03bb8b534eb0a5e7f48fdad4e850
+msgid "Connection"
+msgstr "连接"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:35 9f57b48eb55d429794e8a3aea2726a0b
+msgid "Do Operation using Editor"
+msgstr "使用编辑器操作"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:37 dc99ba62b32744b995ba5e9036274b8e
+msgid "You can use dbeaver to view tables and queries."
+msgstr "可以使用dbeaver查看表和查询。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:40 3fc5fed40f1d44e5a7540f813ad52964
+msgid "Create Table"
+msgstr "创建表格"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:52 6ed904fd92a74228843469476e7f59bd
+msgid "Insert values to Table"
+msgstr "向表中插入值"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:67 350a321413ed46deb8460b4439e20675
+msgid "Execute Query"
+msgstr "执行查询"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:69 f3acc8313f8f408996d9f532aa123ec0
+msgid "1.Query table by condition"
+msgstr "1.条件查询"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:75 da4fbeb640e54608bc12218303c45555
+msgid "2.Query table by aggregation condition"
+msgstr "2.按聚合条件查询表"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:81 853cc43922cd4924ac2488858d50b771
+msgid "3.Query table by `order by`"
+msgstr "3.排序查询"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:87 60dd142770594ceb99c8a1f24de12454
+msgid "4.Update table by row or condition"
+msgstr "4.按行或条件更新表"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:94 e8832bba24ca413f80af6959e46ab797
+msgid "Play DingoDB Using Java Code"
+msgstr "使用 Java 连接 DingoDB"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:96 b39d8bc5d3044587b046bad0beb06f1a
+msgid "Setup Connection"
+msgstr "建立连接"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:98 910285081fb74faf88e44d481ccc4fa4
+msgid "After starting the server, you can connect to the dingodb database:"
+msgstr "启动服务器后连接到dingodb数据库："
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:105 11ca2f0b798040588e60f8bf68076266
+msgid "```jdbc:dingo:thin:url=ip:8765``` is the connection string."
+msgstr "```jdbc:dingo:thin:url=ip:8765``` 是连接字符串。"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:107 6ea17fa041604a6c999aad393585ce8b
+msgid ""
+"**The IP address should be the actual server IP address, and the default port is 8765.**"
+msgstr "** IP地址以服务器实际IP地址为准，默认端口号为8765"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:109 a3fe1846bdcb48b284962013afd5b714
+msgid "Do Operation using Java"
+msgstr "使用 JAVA 操作"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:111 c70019ecebe44808a18139843e3e84cc
+msgid "Create table"
+msgstr "创建表格"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:125 7de9d71f8516474d9ad139a442b78807
+msgid "Insert data to table"
+msgstr "向表中插入数据"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:133 e90221349af14604927817f4b8a0f219
+msgid "Query data from table"
+msgstr "从表中查询数据"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:144 b07997599d6a47c0849d701e6534b1c5
+msgid "Play MySQL Using Java Code"
+msgstr "使用Java代码连接MySQL"
+
+#: ../../source/get_started/play_with_dingo_using_sql.md:146 67b104a5c1214a379056e247722c4513
+msgid "After starting the server, you can connect to the mysql database:"
+msgstr "启动服务器后，可以连接到mysql数据库："

@@ -26,8 +26,10 @@ import org.apache.calcite.rel.RelNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 public final class DingoConvention extends Convention.Impl {
-    public static Convention INSTANCE = new DingoConvention("DINGO", DingoRel.class);
+    public static Convention INSTANCE = new DingoConvention(convertName("dingo"), DingoRel.class);
 
     private DingoConvention(String name, Class<? extends RelNode> relClass) {
         super(name, relClass);

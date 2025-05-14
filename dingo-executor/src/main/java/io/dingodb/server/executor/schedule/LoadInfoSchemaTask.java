@@ -49,6 +49,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import static io.dingodb.common.util.NameCaseUtils.convertSql;
+
 @Slf4j
 public final class LoadInfoSchemaTask {
 
@@ -163,6 +165,7 @@ public final class LoadInfoSchemaTask {
                 infoSchemaService, currentSchemaVersion, neededSchemaVersion
             );
             if (loadSchemaDiffs.getError() == null) {
+                LogUtils.info(log, "[ddl] load schema diff done");
                 infoCache.insert(loadSchemaDiffs.getIs(), startTs);
                 DdlContext.INSTANCE.incrementNewVer(loadSchemaDiffs.getIs().getSchemaMetaVersion());
                 return new LoadIsResponse(loadSchemaDiffs.getIs(), false, currentSchemaVersion,
@@ -214,6 +217,7 @@ public final class LoadInfoSchemaTask {
         List<Long> actionTypes = new ArrayList<>();
         for (SchemaDiff schemaDiff : schemaDiffList) {
             Pair<List<Long>, String> diff = builder.applyDiff(infoSchemaService, schemaDiff);
+            LogUtils.info(log, "schemaDiff apply done:{}", schemaDiff);
             if (diff.getValue() != null) {
                 return new LoadSchemaDiffs(null, null, diff.getValue());
             }
@@ -248,7 +252,7 @@ public final class LoadInfoSchemaTask {
         try {
             schemaVer = is.schemaMetaVersion;
             String sql = "select job_id, version, table_ids from mysql.dingo_mdl_info where version <= %d";
-            sql = String.format(sql, schemaVer);
+            sql = convertSql(String.format(sql, schemaVer));
             mdlCheckTableInfo = ExecutionEnvironment.INSTANCE.mdlCheckTableInfo;
             resList = session.executeQuery(sql);
             if (resList.isEmpty()) {

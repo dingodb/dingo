@@ -19,6 +19,7 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.DingoFilterUtils;
 import io.dingodb.calcite.utils.MetaServiceUtils;
 import io.dingodb.calcite.utils.TableInfo;
 import io.dingodb.calcite.utils.VisitUtils;
@@ -30,6 +31,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -119,10 +121,25 @@ public final class DingoIndexFullScanVisitFun {
         );
 
         RexNode rexFilter = rel.getFilter();
-
         RelOp relOp = null;
+        RelOp otherRelOp = null;
         Mapping mapping = Mappings.target(indexSelectionList, td.getColumns().size());
         if (rexFilter != null) {
+            if (rel.isLookup()) {
+                Pair<RexNode, RexNode> res = DingoFilterUtils.splitRexFilter(rexFilter, mapping, rel.getCluster().getRexBuilder());
+                if (res != null && res.getKey() != null) {
+                    if (res.getValue() == null) {
+                        rexFilter = res.getKey();
+                    } else {
+                        rexFilter = res.getKey();
+                        RexNode otherFilter = res.getValue();
+                        Expr expr = RexConverter.convert(otherFilter);
+                        otherRelOp = RelOpBuilder.builder()
+                            .filter(expr)
+                            .build();
+                    }
+                }
+            }
             rexFilter = RexUtil.apply(mapping, rexFilter);
             if (rexFilter != null) {
                 Expr expr = RexConverter.convert(rexFilter);
@@ -149,7 +166,8 @@ public final class DingoIndexFullScanVisitFun {
                 rel.isPushDown(),
                 rel.getSelection(),
                 0,
-                transaction.isAutoCommit()
+                transaction.isAutoCommit(),
+                otherRelOp
             ));
         }
         assert indexScanvertex != null;

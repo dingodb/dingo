@@ -60,6 +60,7 @@ dependencies {
     api project(':dingo-store-api')
     api project(':dingo-tool-api')
     api project(':dingo-tso-api')
+    api project(':dingo-verify')
 
     implementation project(':dingo-partition-api')
     implementation project(':dingo-transaction-api')

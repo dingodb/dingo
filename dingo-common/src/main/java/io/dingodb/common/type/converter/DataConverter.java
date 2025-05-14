@@ -16,6 +16,7 @@
 
 package io.dingodb.common.type.converter;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.common.type.Type;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -24,6 +25,8 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -92,46 +95,131 @@ public interface DataConverter {
     }
 
     default Integer convertIntegerFrom(@NonNull Object value) {
-        return (Integer) value;
+        if (value instanceof Integer) {
+            return (Integer) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString()).intValue();
+            } catch (Exception e) {
+                return 0;
+            }
+        }
     }
 
     default Long convertLongFrom(@NonNull Object value) {
         if (value instanceof Integer) {
             return ((Integer) value).longValue();
+        } else if (value instanceof Long) {
+            return (Long) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString()).longValue();
+            } catch (Exception e) {
+                return 0L;
+            }
         }
-        return (Long) value;
     }
 
     default Float convertFloatFrom(@NonNull Object value) {
-        return (Float) value;
+        if (value instanceof Float) {
+            return (Float) value;
+        } else if (value instanceof Double) {
+            Double valDouble = (Double) value;
+            return valDouble.floatValue();
+        } else {
+            try {
+                return new BigDecimal(value.toString()).floatValue();
+            } catch (Exception e) {
+                return 0F;
+            }
+        }
     }
 
     default Double convertDoubleFrom(@NonNull Object value) {
-        return (Double) value;
+        if (value instanceof Float) {
+            Float valFloat = (Float) value;
+            return valFloat.doubleValue();
+        } else if (value instanceof Double) {
+            return (Double) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString()).doubleValue();
+            } catch (Exception e) {
+                return 0D;
+            }
+        }
     }
 
     default Boolean convertBooleanFrom(@NonNull Object value) {
+        if (value instanceof BigDecimal) {
+            BigDecimal bigDecimal = (BigDecimal) value;
+            int val = bigDecimal.intValue();
+            return val != 0;
+        } else if (value instanceof Integer) {
+            Integer intValue = (Integer) value;
+            return intValue != 0;
+        } else if (value instanceof Number) {
+            Number number = (Number) value;
+            return number.intValue() != 0;
+        }
         return (Boolean) value;
     }
 
     default String convertStringFrom(@NonNull Object value) {
-        return (String) value;
+        if (value instanceof String) {
+            return (String) value;
+        } else {
+            return value.toString();
+        }
     }
 
     default BigDecimal convertDecimalFrom(@NonNull Object value) {
-        return (BigDecimal) value;
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString());
+            } catch (Exception e) {
+                return new BigDecimal(0);
+            }
+        }
     }
 
     default Date convertDateFrom(@NonNull Object value) {
-        return (Date) value;
+        if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            LocalDateTime localDateTime = timestamp.toLocalDateTime();
+            return new Date(localDateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli());
+        } else if (value instanceof Date) {
+            return (Date) value;
+        } else {
+            return new Date(System.currentTimeMillis());
+        }
     }
 
     default Time convertTimeFrom(@NonNull Object value) {
-        return (Time) value;
+        if (value instanceof Time) {
+            return (Time) value;
+        } else if (value instanceof Date) {
+            Date date = (Date) value;
+            return new Time(date.getTime());
+        } else if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            return new Time(timestamp.getTime());
+        } else {
+            return new Time(System.currentTimeMillis());
+        }
     }
 
     default Timestamp convertTimestampFrom(@NonNull Object value) {
-        return (Timestamp) value;
+        if (value instanceof Timestamp) {
+            return (Timestamp) value;
+        } else if (value instanceof Date) {
+            Date date = (Date) value;
+            return new Timestamp(date.getTime());
+        } else {
+            return new Timestamp(System.currentTimeMillis());
+        }
     }
 
     default byte[] convertBinaryFrom(@NonNull Object value) {

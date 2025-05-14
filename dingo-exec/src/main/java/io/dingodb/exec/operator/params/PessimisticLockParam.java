@@ -22,13 +22,18 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+
+import java.util.List;
 
 @Getter
 @JsonTypeName("pessimistic_lock")
 @JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut",
-    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto"})
+    "pessimisticTxn", "isInsert", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore",
+    "updatePrimaryKey", "updateLimit"})
 public class PessimisticLockParam extends TxnPartModifyParam {
 
     @JsonProperty("isInsert")
@@ -42,6 +47,18 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     private boolean forUpdate;
     @JsonProperty("isReplaceInto")
     private final boolean isReplaceInto;
+    @JsonProperty("isIgnore")
+    private final boolean isIgnore;
+    @JsonProperty("updatePrimaryKey")
+    private final boolean updatePrimaryKey;
+    @JsonProperty("mapping")
+    private final TupleMapping mapping;
+    @JsonProperty("updates")
+    private final List<SqlExpr> updates;
+    @JsonProperty("updateLimit")
+    private final long updateLimit;
+
+    private long updateScanCount;
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -58,7 +75,12 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         Table table,
         boolean isDuplicateUpdate,
         boolean forUpdate,
-        boolean isReplaceInto
+        @JsonProperty("isReplaceInto") boolean isReplaceInto,
+        @JsonProperty("isIgnore") boolean isIgnore,
+        @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
+        @JsonProperty("mapping") TupleMapping mapping,
+        @JsonProperty("updates") List<SqlExpr> updates,
+        @JsonProperty("updateLimit") long updateLimit
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -68,8 +90,34 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.isDuplicateUpdate = isDuplicateUpdate;
         this.forUpdate = forUpdate;
         this.isReplaceInto = isReplaceInto;
+        this.isIgnore = isIgnore;
+        this.updatePrimaryKey = updatePrimaryKey;
+        this.mapping = mapping;
+        this.updates = updates;
+        this.updateLimit = updateLimit;
+        this.updateScanCount = 0L;
     }
     public void inc() {
         count++;
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        if (updates != null && !updates.isEmpty()) {
+            updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
+    }
+
+    public void incUpdateScanCount() {
+        updateScanCount++;
+    }
+
+    @Override
+    public void setParas(Object[] paras) {
+        super.setParas(paras);
+        if (updates != null && !updates.isEmpty()) {
+            updates.forEach(e -> e.setParas(paras));
+        }
     }
 }

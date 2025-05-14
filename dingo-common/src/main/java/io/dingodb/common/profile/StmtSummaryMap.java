@@ -109,6 +109,7 @@ public final class StmtSummaryMap {
         long slowQueryThreshold = 5000;
         boolean ddlInnerProfile = false;
         try {
+            sqlProfile.truncateSql();
             String ddlProfile = connection.getClientInfo("ddl_inner_profile");
             ddlInnerProfile = "on".equalsIgnoreCase(ddlProfile);
             String enable = connection.getClientInfo("sql_profile_enable");

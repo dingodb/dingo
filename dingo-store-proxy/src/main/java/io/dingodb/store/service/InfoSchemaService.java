@@ -73,12 +73,16 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_BEGIN;
 import static io.dingodb.common.mysql.InformationSchemaConstant.GLOBAL_VAR_PREFIX_END;
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -87,7 +91,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TxStructure txn;
     private VersionService versionService;
-    Set<Location> coordinators;
+    public Set<Location> coordinators;
     private static final long tenantId = TenantConstant.TENANT_ID;
     public static final InfoSchemaService ROOT = new InfoSchemaService();
 
@@ -107,6 +111,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     public InfoSchemaService(Long startTs) {
         this.coordinators = Services.parse(Configuration.coordinators());
+        this.versionService = Services.versionService(coordinators);
+        this.txn = new TxStructure(startTs);
+    }
+
+    public InfoSchemaService(Long startTs, Set<Location> coordinators) {
+        this.coordinators = coordinators;
         this.versionService = Services.versionService(coordinators);
         this.txn = new TxStructure(startTs);
     }
@@ -152,9 +162,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     public boolean checkSchemaNameExists(String schemaName) {
+        String schema = convertName(schemaName);
         List<SchemaInfo> schemaInfoList = listSchema();
         return schemaInfoList.stream()
-            .anyMatch(schemaInfo -> schemaInfo.getName().equalsIgnoreCase(schemaName));
+            .anyMatch(schemaInfo -> caseSensitive() ? schemaInfo.getName().equals(schema)
+                : schemaInfo.getName().equalsIgnoreCase(schema));
     }
 
     @Override
@@ -301,9 +313,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public SchemaInfo getSchema(String schemaName) {
+        String schema = convertName(schemaName);
         List<SchemaInfo> schemaList = listSchema();
         return schemaList.stream()
-            .filter(schemaInfo1 -> schemaInfo1.getName().equalsIgnoreCase(schemaName))
+            .filter(schemaInfo1 -> !caseSensitive() ? schemaInfo1.getName().equalsIgnoreCase(schema)
+                : schemaInfo1.getName().equals(schema))
             .findFirst().orElse(null);
     }
 
@@ -385,10 +399,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public Object getTable(long schemaId, String tableName, long tenantId) {
+        String table = convertName(tableName);
         List<Object> tableList = listTable(schemaId, tenantId);
         return tableList.stream().map(object -> (TableDefinitionWithId)object)
-            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition()
-                .getName().equalsIgnoreCase(tableName))
+            .filter(tableDefinitionWithId -> !caseSensitive()
+                ? tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(table)
+                : tableDefinitionWithId.getTableDefinition().getName().equals(table))
             .findFirst().orElse(null);
     }
 
@@ -420,7 +436,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return withIdList.stream()
             .filter(obj -> {
                 TableDefinitionWithId withId = (TableDefinitionWithId) obj;
-                return withId.getTableDefinition().getName().equalsIgnoreCase(DdlUtil.ddlTmpTableName);
+                String name = withId.getTableDefinition().getName();
+                return caseSensitive() ? name.equals(DdlUtil.ddlTmpTableName)
+                    : name.equalsIgnoreCase(DdlUtil.ddlTmpTableName);
             }).findFirst()
             .orElse(null);
     }
@@ -544,7 +562,6 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return valueList.stream()
                 .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
                 .map(objWithId -> (TableDefinitionWithId)objWithId)
-                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();
@@ -583,7 +600,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .map(objWithId -> (TableDefinitionWithId)objWithId)
                 .anyMatch(indexWithId -> {
                     String ixName = indexWithId.getTableDefinition().getName();
-                    return ixName.endsWith(indexName) || ixName.endsWith(indexName.toUpperCase());
+                    return ixName.endsWith(convertName(indexName));
                 });
         }
         return false;
@@ -710,7 +727,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
     }
 
     @Override
-    public Map<String, Table> listTableDef(long schemaId) {
+    public NavigableMap<String, Table> listTableDef(long schemaId) {
         List<Object> tableObjList = listTable(schemaId);
         // check duplicate key TableName
         List<TableDefinitionWithId> duplicateTableList = tableObjList.stream()
@@ -719,14 +736,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .values().stream()
             .filter(tableDefinitionWithIds -> tableDefinitionWithIds.size() > 1)
             .map(tableDefinitionWithIds -> tableDefinitionWithIds.get(0))
-            .collect(Collectors.toList());
+            .toList();
         if (!duplicateTableList.isEmpty()) {
             LogUtils.error(log, "duplicate key Table");
             try {
-                duplicateTableList.forEach(e -> {
-                    io.dingodb.meta.MetaService.root()
-                        .dropTable(tenantId, schemaId, e.getTableDefinition().getName(), -1);
-                });
+                duplicateTableList.forEach(e -> io.dingodb.meta.MetaService.root()
+                    .dropTable(tenantId, schemaId, e.getTableDefinition().getName(), -1));
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
             }
@@ -742,17 +757,25 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                     return null;
                 }
             }).filter(Objects::nonNull)
-            .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
+            .collect(Collectors.toMap(
+                t -> t.name,
+                t -> t,
+                (existing, replacement) -> existing,
+                () -> caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
     }
 
     @Override
-    public Map<String, Table> listTableDef(long schemaId, long tenantId) {
+    public NavigableMap<String, Table> listTableDef(long schemaId, long tenantId) {
         List<Object> objList = listTable(schemaId, tenantId);
         return objList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
                 getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
-            .collect(Collectors.toConcurrentMap(t -> t.name, t -> t));
+            .collect(Collectors.toMap(
+                t -> t.name,
+                t -> t,
+                (existing, replacement) -> existing,
+                () -> caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
     }
 
     @Override
@@ -912,7 +935,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         genSchemaVersion(100);
         ver = getSchemaVer();
 
-        versionService.kvPut(putRequest(globalSchemaVer, "100"));
+        PutRequest request = putRequest(globalSchemaVer, "100");
+        versionService.kvPut(System.identityHashCode(request), request);
         LogUtils.info(log, "prepare done current ver:" + ver);
     }
 
@@ -921,7 +945,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         long ver = this.getSchemaVer();
         LogUtils.info(log, "prepareStart, current ver:" + ver);
         if (ver == 0) {
-            versionService.kvPut(putRequest(globalSchemaVer, "1"));
+            PutRequest request = putRequest(globalSchemaVer, "1");
+            versionService.kvPut(System.identityHashCode(request), request);
             LogUtils.info(log, "prepare start");
         } else {
             LogUtils.error(log, "prepare already started");
@@ -1010,12 +1035,15 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .listIndex(tableId.getParentEntityId(), tableId.getEntityId(), tenantId);
             return indexList.stream()
                 .map(object -> (TableDefinitionWithId) object)
-                .filter(indexTable -> indexTable.getTableDefinition().isVisible())
                 .peek(indexWithId -> {
                     String name1 = indexWithId.getTableDefinition().getName();
                     String[] split = name1.split("\\.");
                     if (split.length > 1) {
                         name1 = split[split.length - 1];
+                    }
+                    int codecVersion = indexWithId.getTableDefinition().getCodecVersion();
+                    if (codecVersion < 2) {
+                        indexWithId.getTableDefinition().setVisible(true);
                     }
                     indexWithId.getTableDefinition().setName(name1);
                 })

@@ -36,6 +36,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
+
 @Slf4j
 public final class PrivilegeVerify {
 
@@ -87,7 +90,9 @@ public final class PrivilegeVerify {
         if (prefilter(user)) {
             return true;
         }
-        if ("INFORMATION_SCHEMA".equalsIgnoreCase(schema)) {
+        schema = convertName(schema);
+        String informationSchema = convertName("INFORMATION_SCHEMA");
+        if (caseSensitive() ? informationSchema.equals(schema) : informationSchema.equalsIgnoreCase(schema)) {
             return accessType == DingoSqlAccessEnum.SELECT;
         }
         PrivilegeGather privilegeGather = env.getPrivilegeGatherMap().get(user + "#"
@@ -105,7 +110,10 @@ public final class PrivilegeVerify {
     }
 
     public static boolean verifyInformationSchema(String schema, DingoSqlAccessEnum accessType) {
-        if ("INFORMATION_SCHEMA".equalsIgnoreCase(schema) && accessType == DingoSqlAccessEnum.SELECT) {
+        String informationSchema = convertName("INFORMATION_SCHEMA");
+        if ((caseSensitive() ? informationSchema.equals(convertName(schema))
+            : informationSchema.equalsIgnoreCase(convertName(schema)))
+            && accessType == DingoSqlAccessEnum.SELECT) {
             return true;
         } else {
             return false;
@@ -131,7 +139,7 @@ public final class PrivilegeVerify {
         if (schema == null) {
             return false;
         }
-        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema.toUpperCase());
+        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
         if (schemaDef != null && schemaDef.getPrivileges()[index]) {
             return true;
         }
@@ -173,6 +181,8 @@ public final class PrivilegeVerify {
 
     public static boolean verify(String schema, String table,
                                  PrivilegeGather privilegeGather, String command) {
+        String schema1 = convertName(schema);
+        table = convertName(table);
         if (privilegeGather == null) {
             return false;
         }
@@ -186,11 +196,11 @@ public final class PrivilegeVerify {
                 }
             }
         }
-        if (schema == null) {
+        if (schema1 == null) {
             return false;
         }
 
-        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema);
+        SchemaPrivDefinition schemaDef = privilegeGather.getSchemaPrivDefMap().get(schema1);
         if (schemaDef != null) {
             for (int i = 0; i < schemaDef.getPrivileges().length; i ++) {
                 boolean privilege = schemaDef.getPrivileges()[i];
@@ -203,8 +213,9 @@ public final class PrivilegeVerify {
         if (table == null) {
             Collection<TablePrivDefinition> definitionCollection = privilegeGather.getTablePrivDefMap().values();
             return definitionCollection.stream().anyMatch(tableDef -> {
-                if (schema.equalsIgnoreCase(tableDef.getSchemaName())) {
-                    log.info("schema verify:" + schema);
+                if (caseSensitive() ? schema1.equals(tableDef.getSchemaName())
+                    : schema1.equalsIgnoreCase(tableDef.getSchemaName())) {
+                    log.info("schema verify:{}", schema1);
                     for (int i = 0; i < tableDef.getPrivileges().length; i ++) {
                         boolean privilege = tableDef.getPrivileges()[i];
                         if (privilege && isFilter(command, i)) {

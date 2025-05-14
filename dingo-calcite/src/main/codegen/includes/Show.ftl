@@ -81,8 +81,8 @@ SqlShow SqlShowTable(Span s): {
    <TABLE>
    (
     LOOKAHEAD(2)
-    <STATUS> [ <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { schema = token.image.toUpperCase(); } ]
-     [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+    <STATUS> [ <FROM> (<QUOTED_STRING> | <IDENTIFIER>) { schema = token.image; } ]
+     [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
      {
        return new SqlShowTableStatus(s.end(this), schema, pattern);
      }
@@ -101,7 +101,7 @@ SqlShow SqlShowColumns(Span s): {
    String pattern = null;
 } {
    <COLUMNS> <FROM> tableName = CompoundTableIdentifier()
-   [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+   [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
    { return new SqlShowColumns(s.end(this), tableName, pattern); }
 }
 
@@ -110,7 +110,7 @@ SqlShow SqlShowFields(Span s): {
   String pattern = null;
 } {
    <FIELDS> <FROM> tableName = CompoundTableIdentifier()
-   [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+   [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
    { return new SqlShowColumns(s.end(this), tableName, pattern); }
 }
 
@@ -134,15 +134,17 @@ SqlShow SqlShowCreate(Span s): {
 SqlShow SqlShowDatabases(Span s): {
    String pattern = null;
 } {
-  <DATABASES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  <DATABASES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
   { return new SqlShowDatabases(s.end(this), pattern); }
 }
 
 SqlShow SqlShowTables(Span s): {
    String pattern = null;
+   boolean only = false;
 } {
-  <TABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
-  { return new SqlShowTables(s.end(this), pattern); }
+  <TABLES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); } ]
+  [<ONLY> { only = true;} ]
+  { return new SqlShowTables(s.end(this), pattern, only); }
 }
 
 SqlShow SqlShowFullTables(Span s): {
@@ -152,7 +154,7 @@ SqlShow SqlShowFullTables(Span s): {
 } {
   <FULL>
   <TABLES> [ <FROM> (<BACK_QUOTED_IDENTIFIER> { schema = token.image; } | <IDENTIFIER> { schema = token.image; })]
-  [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); }  ]
+  [ <LIKE> <QUOTED_STRING> { pattern = token.image.replace("'", ""); }  ]
   [ condition = Where() ]
   { return new SqlShowFullTables(s.end(this), schema, pattern, condition); }
 }
@@ -222,9 +224,15 @@ SqlShow SqlShowLocks(Span s): {
 
 SqlShow SqlShowEngines(Span s): {
   String pattern = null;
+  String keyWord = null;
 } {
-  <DINGOENGINES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
-  { return new SqlShowEngines(s.end(this), pattern); }
+  <IDENTIFIER> { keyWord = token.image;} [ <LIKE> <QUOTED_STRING> { pattern = SqlParserUtil.trim(token.image,"'"); } ]
+  {
+    if (!"engines".equalsIgnoreCase(keyWord)) {
+       throw new ParseException("not excepted token:" + keyWord);
+    }
+    return new SqlShowEngines(s.end(this), pattern);
+  }
 }
 
 SqlShow SqlShowCollation(Span s): {

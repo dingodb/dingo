@@ -22,6 +22,8 @@ import io.dingodb.meta.entity.Column;
 
 import java.util.List;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 public final class SchemaStateUtils {
 
     private SchemaStateUtils() {
@@ -35,7 +37,7 @@ public final class SchemaStateUtils {
         String tableName = originList.get(2);
         String colName = originList.get(3);
         SubCalciteSchema subCalciteSchema
-            = (SubCalciteSchema) connection.getContext().getRootSchema().getSubSchema(schemaName, true);
+            = (SubCalciteSchema) connection.getContext().getRootSchema().getSubSchema(schemaName, caseSensitive());
         if (subCalciteSchema == null) {
             return false;
         }

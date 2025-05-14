@@ -12,6 +12,19 @@ jar {
 }
 
 dependencies {
+    implementation project(':dingo-store-proxy')
+    implementation project(':dingo-meta-api')
+    implementation project(':dingo-codec-api')
+    implementation project(':dingo-partition-base')
+    implementation project(':dingo-partition-api')
+    implementation project(':dingo-tso-api')
+    implementation project(':dingo-net-api')
+    implementation project(':dingo-net-netty')
+    implementation group: 'io.grpc', name: 'grpc-core', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-api', version: 'grpc'.v()
+    implementation group: 'io.grpc', name: 'grpc-protobuf', version: 'grpc'.v()
     implementation group: 'org.slf4j', name: 'slf4j-api', version: 'slf4j'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
@@ -29,7 +42,9 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-verify")
 
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation ('io.dingodb:dingo-sdk:2.0.0-SNAPSHOT') {
+        exclude group: 'io.grpc', module: 'grpc-netty-shaded'
+    }
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
     implementation group: 'org.yaml', name: 'snakeyaml', version: 'snakeyaml'.v()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: 'commons-lang3'.v()

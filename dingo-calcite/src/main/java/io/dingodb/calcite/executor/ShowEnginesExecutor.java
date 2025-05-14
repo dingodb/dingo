@@ -31,8 +31,8 @@ public class ShowEnginesExecutor extends QueryExecutor {
     @Override
     public Iterator getIterator() {
         List<Object[]> engineList = new ArrayList<>();
-        engineList.add(new Object[]{"ENG_ROCKSDB", "DEFAULT",
-            "Supports transactions, row-level locking", "YES", "NO", "YES"});
+        engineList.add(new Object[]{"ndbcluster", "NO",
+            "Clustered, fault-tolerant tables", "NULL", "NULL", "NULL"});
         return engineList.iterator();
     }
 

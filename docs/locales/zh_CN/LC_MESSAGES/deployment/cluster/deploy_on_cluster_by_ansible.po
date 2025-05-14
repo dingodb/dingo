@@ -1,0 +1,227 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, Wangpy
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:1
+#: 1fd0ed8e984c4102ab4c8b3638f4a783
+msgid "Deploy DingoDB Cluster By Ansible"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:3
+#: 3e07d72129bc4d18823ae0b6dc919359
+msgid ""
+"[DingoDB](https://github.com/dingodb/dingo) is a real-time Hybrid Serving"
+" & Analytical Processing (HSAP) Database. It can execute high-frequency "
+"queries and upsert, interactive analysis, multi-dimensional analysis in "
+"extremely low latency. To achieve high concurrency and high throughput, "
+"DingoDB uses an elastic distributed deployment mode."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:5
+#: 8f8a71a9a7dc4866af4ae5ff61492122
+msgid ""
+"In order to simplify the deployment, this project introduces the "
+"deployment of DingoDB using [ansible](https://www.ansible.com/)."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:7
+#: 3b8c17acb3b648aea1f54b6bb7ebff1e
+msgid "1. Cluster Mode"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:9
+#: 378c52c18ed045828cd85df54e4f9f0e
+msgid "![Cluster Topology](../images/cluster_topology.png)"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:9
+#: fbf6326d69a14d7da85dd4e58e0a9c99
+msgid "Cluster Topology"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:11
+#: 199305d1cace4485b1679da5975b4d66
+msgid "The roles in the cluster are mainly divided into:"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:13
+#: 04509fdaacb04d4c8de5f4fc6ecb3699
+msgid "Coordinator"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:15
+#: d21fdbf3733143e388d25ad7792bc98e
+msgid ""
+"Coordinator act as the master of the cluster. It is responsible for the "
+"management and scheduler of data replications of DingoDB cluster."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:17
+#: 665adc13b5ad4d7f869014b3f4b3ac51
+msgid "Store"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:19
+#: ea0d417b59f3415b8df45452ac7ad4b2
+msgid ""
+"Store act as the storage of the cluster,  It is responsible for managing "
+"the entire storage"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:21
+#: e0ea70978cfb433dadd28664f00e03d0
+msgid "Executor"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:23
+#: ff2a6796d8514ba1a177a3b0d2f9d89a
+msgid ""
+"Executor act as the worker of the cluster. It is responsible for "
+"executing the physical execution plan of  SQL to scan and compute the "
+"data."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:25
+#: 5ba51867b54041979b28d55611170c01
+msgid "Driver-MySQL/Driver-Dingo"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:27
+#: c88f4b8ad4ee40369b189dded93a5b26
+msgid ""
+"DingoDB uses JDBC driver to perform table-level data operations, such as "
+"create, insert, update, delete, etc. Driver Proxy act as the proxy of "
+"JDBC Connection."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:29
+#: bb6a7a54c52d4c55ba02f9a6c74e1cc1
+msgid "1.1 Installation prerequisites"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:30
+#: bf58dacc5c644d69bc9f48f9aa473954
+msgid "Version of OS"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:32
+#: f5cd629c2f604a0bb874ac7cb08e7d0f
+msgid "CentOS 8.x."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:34
+#: ca0a5c8821434840b8a132c089ec939b
+msgid "Repository of Yum works fine"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:36
+#: a2fe2acca2774b848e8f9c8ef557c454
+msgid ""
+"The repository will be used to install basic tools needed by the cluster,"
+" such as `python3`."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:38
+#: 540f9ba560024fb380f0d935e050397c
+msgid "Ansible Host"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:40
+#: 7ac2b52e8eb447d6afbed9e4a3451f86
+msgid ""
+"A host installed with `ansible` is required to  distribute cluster "
+"configuration and related software modules about DingoDB. This machine "
+"can also be replaced by one node in DingoDB cluster such as `Store-1` or "
+"`Coordinator-1`."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:41
+#: 6cba303fce784ea29560a03d57616d09
+msgid "1.2 Deployment Guidelines"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:42
+#: 274f2b3156814fc0b22a627bb2cf5675
+msgid ""
+"In the cluster mode, `ansible` is selected as the deployment tools. You "
+"can use this guide to install a DingoDB cluster."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:44
+#: fe0eaeb3f3614181bd07176f885a43f4
+msgid "1.2.1 Install Steps"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:45
+#: 851731574a2948af8da3aca0071c523d
+msgid ""
+"You can follow this guide to install a dingo cluster: "
+"[![asciicast](https://asciinema.org/a/kpqwIfdN2NcyUIqHC5RJrmMjK.svg)](https://asciinema.org/a/kpqwIfdN2NcyUIqHC5RJrmMjK)"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:45
+#: c9a33f521a094991b473f41062a5f053
+msgid "asciicast"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:48
+#: 128f506616f34ec0a996518e0ad4abdb
+msgid "1.2.2 Installation Notes"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:49
+#: 670942b88fe7482690978637aebc802f
+msgid "define cluster configuration"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:51
+#: 85d474027c1042ae8c1e52169a723e9c
+msgid ""
+"Edit the configuration inventory/hosts, use the real host, user, password"
+" to replace the item."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:82
+#: 70d4c51ce7b6412f8a2453581381dfe8
+msgid "Check Python3 is installed"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:84
+#: a53f56b455794c7292d1c2b01d2fca86
+msgid ""
+"Check Python3 is installed or not on DingoDB cluster, if `Python3` is not"
+" installed, We can use ansible to install `Python3` using such command."
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:89
+#: a3db7e44947e4044b868381c4e73b5bd
+msgid "Start to install"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:90
+#: 87fb3782aed742c1ada64c2221ac5ca4
+msgid "Copy artifacts"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible.md:96
+#: b6b027d29f6445459da521244a51f019
+msgid "Executor ansible script"
+msgstr ""
+

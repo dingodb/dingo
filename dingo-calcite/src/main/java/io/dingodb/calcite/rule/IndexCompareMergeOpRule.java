@@ -85,7 +85,7 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
                 }
                 int ix = (int) val1.getValue();
                 Column column = table.getColumns().get(indexRangeScan.getSelection().get(ix));
-                return indexTable.getColumns().contains(column);
+                return indexTable.getColumn(column.getName()) != null;
             });
             if (!noLookup) {
                 return;
@@ -95,7 +95,7 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
                 Val val1 = (Val) expr1.getOperand1();
                 int ix = (int) val1.getValue();
                 Column column = table.getColumns().get(indexRangeScan.getSelection().get(ix));
-                int indexIx = indexTable.getColumns().indexOf(column);
+                int indexIx = indexTable.getColumnIndex(column);
                 RexInputRef rexInputRef = new RexInputRef(
                     indexIx, indexRangeScan.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER)
                 );
@@ -112,9 +112,7 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
 
         RelOp filterRelOp = null;
         RexNode rexFilter = indexRangeScan.getFilter();
-        List<Column> columnNames = indexTable.getColumns();
-        List<Integer> indexSelectionList = columnNames.stream()
-            .map(table.columns::indexOf).collect(Collectors.toList());
+        List<Integer> indexSelectionList = table.getColumnIndices2(indexTable.getColumns());
         Mapping mapping = Mappings.target(indexSelectionList, table.getColumns().size());
         if (indexRangeScan.getFilter() != null) {
             rexFilter = RexUtil.apply(mapping, rexFilter);

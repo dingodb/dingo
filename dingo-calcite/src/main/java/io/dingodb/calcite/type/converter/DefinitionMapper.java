@@ -23,6 +23,8 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.util.NameCaseUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 
 import static io.dingodb.common.type.DingoTypeFactory.list;
 import static io.dingodb.common.type.DingoTypeFactory.map;
+import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public final class DefinitionMapper {
@@ -120,6 +123,11 @@ public final class DefinitionMapper {
                     DingoType keyType = mapToDingoType(Objects.requireNonNull(relDataType.getKeyType()));
                     DingoType valueType = mapToDingoType(Objects.requireNonNull(relDataType.getValueType()));
                     return map(keyType, valueType, relDataType.isNullable());
+                case DECIMAL:
+                    DecimalType decType = new DecimalType(relDataType.isNullable());
+                    decType.setPrecision(relDataType.getPrecision());
+                    decType.setScale(relDataType.getScale());
+                    return decType;
                 case INTERVAL_YEAR:
                 case INTERVAL_MONTH:
                 case INTERVAL_DAY:
@@ -133,6 +141,13 @@ public final class DefinitionMapper {
                     if (timeUnitRange == TimeUnitRange.WEEK) {
                         return DingoTypeFactory.INSTANCE.interval(
                             "INTERVAL_WEEK",
+                            relDataType.getSqlTypeName().getFamily().name(),
+                            relDataType.isNullable()
+                        );
+                    }
+                    if (timeUnitRange == TimeUnitRange.QUARTER) {
+                        return DingoTypeFactory.INSTANCE.interval(
+                            "INTERVAL_QUARTER",
                             relDataType.getSqlTypeName().getFamily().name(),
                             relDataType.isNullable()
                         );
@@ -214,7 +229,7 @@ public final class DefinitionMapper {
         List<ColumnDefinition> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(ColumnDefinition::getName).map(String::toUpperCase).collect(Collectors.toList())
+            columns.stream().map(ColumnDefinition::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
         );
     }
 
@@ -223,7 +238,7 @@ public final class DefinitionMapper {
         List<Column> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(Column::getName).map(String::toUpperCase).collect(Collectors.toList())
+            columns.stream().map(Column::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
         );
     }
 
