@@ -128,21 +128,6 @@ public class ExceptionCases extends SqlTestCaseJavaBuilder {
         test("By `thrown` function")
             .step("select throw()", exception(sql(TEST_ERROR_CODE, CUSTOM_ERROR_STATE)));
 
-        // Other
-        test("Type mismatch")
-            .use("table", "i4k_vs0_i40_f80_vs0")
-            .custom(context -> {
-                // Disable assert in `Aggregate` to allow our own check in `DingoAggregate`.
-                // but `gradle test` seems not respect to this and throws AssertionError occasionally.
-                Aggregate.class.getClassLoader().clearAssertionStatus();
-                Aggregate.class.getClassLoader().setClassAssertionStatus(Aggregate.class.getName(), false);
-                assertFalse(Aggregate.class.desiredAssertionStatus());
-            })
-            .step(
-                "select avg(name) from {table}",
-                exception(sql(UNKNOWN_ERROR_CODE, CUSTOM_ERROR_STATE))
-            );
-
         test("Null in array")
             .step("create table {table} (id int, data varchar array, primary key(id))")
             .step(

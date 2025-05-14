@@ -37,7 +37,7 @@ public class ShowTableStatusExecutor extends QueryExecutor {
 
     public ShowTableStatusExecutor(String schema, String sqlLikePattern) {
         this.schema = schema;
-        if (sqlLikePattern.contains("\\_")) {
+        if (sqlLikePattern != null && sqlLikePattern.contains("\\_")) {
             sqlLikePattern = sqlLikePattern.replace("\\", "");
         }
         this.sqlLikePattern = sqlLikePattern;
