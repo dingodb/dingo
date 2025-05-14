@@ -136,6 +136,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     List<Object[]> colRes = new ArrayList<>();
                     for (int i = 0; i < td.getColumns().size(); i++) {
                         Column column = td.columns.get(i);
+                        if (column.state == 2) {
+                            continue;
+                        }
                         colRes.add(new Object[]{
                             "def",
                             schemaTables.getSchemaInfo().getName(),
