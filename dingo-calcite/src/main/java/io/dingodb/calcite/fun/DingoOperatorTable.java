@@ -255,6 +255,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             // Because if there are any optional operands, casting is disabled.
             OperandTypes.or(
                 family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
                 OperandTypes.DATE
             ),
             SqlFunctionCategory.STRING

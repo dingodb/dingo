@@ -22,7 +22,6 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
 
 import java.io.Serial;
-import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.DateTimeException;
 import java.time.LocalDate;
@@ -35,6 +34,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -142,7 +142,7 @@ public class DateFun extends UnaryOp {
     }
 
     private static String handleLegacyDate(Date date) {
-        return date.toInstant()
+        return new java.util.Date(date.getTime()).toInstant()
             .atZone(SERVER_ZONE)
             .toLocalDate()
             .toString();

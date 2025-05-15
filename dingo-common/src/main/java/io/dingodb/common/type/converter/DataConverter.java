@@ -19,6 +19,7 @@ package io.dingodb.common.type.converter;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -192,6 +193,8 @@ public interface DataConverter {
             return new Date(localDateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli());
         } else if (value instanceof Date) {
             return (Date) value;
+        } else if (value instanceof String) {
+            return DateTimeUtils.parseDate((String) value);
         } else {
             return new Date(System.currentTimeMillis());
         }
@@ -206,6 +209,8 @@ public interface DataConverter {
         } else if (value instanceof Timestamp) {
             Timestamp timestamp = (Timestamp) value;
             return new Time(timestamp.getTime());
+        } else if (value instanceof String) {
+            return DateTimeUtils.parseTime((String) value);
         } else {
             return new Time(System.currentTimeMillis());
         }
@@ -217,6 +222,8 @@ public interface DataConverter {
         } else if (value instanceof Date) {
             Date date = (Date) value;
             return new Timestamp(date.getTime());
+        } else if (value instanceof String) {
+            return DateTimeUtils.parseTimestamp((String) value);
         } else {
             return new Timestamp(System.currentTimeMillis());
         }
