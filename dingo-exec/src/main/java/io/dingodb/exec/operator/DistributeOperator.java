@@ -64,10 +64,11 @@ public class DistributeOperator extends SoleOutOperator {
                     Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                 CommonId partId;
+                CommonId tablePartId = null;
                 if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
                     && indexTable != null) {
                     context.setIndexId(param.getTableId());
-                    ps = PartitionService.getService(
+                    PartitionService indexPs = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                     Object[] indexTuple = new Object[indexTable.columns.size()];
@@ -80,12 +81,16 @@ public class DistributeOperator extends SoleOutOperator {
                     KeyValueCodec indexCodec = CodecService.getDefault()
                         .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
                         indexTable.tupleType(), indexTable.keyMapping());
-                    partId = ps.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+                    partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
+                        MetaService.root().getRangeDistribution(param.getTable().tableId);
+                    tablePartId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), distribution);
                 } else {
                     partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
                 }
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
                 context.setDistribution(distribution);
+                context.setTablePartId(tablePartId);
 
                 return vertex.getSoleEdge().transformToNext(context, tuple);
             } catch (RegionSplitException e) {
