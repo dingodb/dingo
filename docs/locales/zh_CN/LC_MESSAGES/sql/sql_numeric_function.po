@@ -1,0 +1,291 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 17:53+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_numeric_function.md:1 832ef25556454fbcb462ee14473ab164
+msgid "Numberical Function"
+msgstr "数值函数"
+
+#: ../../source/sql/sql_numeric_function.md:2 8292094a814c4c498d512982ac9d72f7
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_numeric_function.md e0944ea2586e47c4a10a7103298f5129
+msgid "Function Type"
+msgstr "功能类型"
+
+#: ../../source/sql/sql_numeric_function.md ba84fcb6c48a4ff696c5134f19cc9263
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_numeric_function.md a6bb1f7772d84029a21ee9b64d2914aa
+msgid "Return Value Type"
+msgstr "返回值类型"
+
+#: ../../source/sql/sql_numeric_function.md 3ab9c8fdda044fe98334519acde21dae
+msgid "Pow(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 42ec58e0fbf14da2b13375767f0f7014
+msgid "Finds the Yth power of the parameter X"
+msgstr "查找参数 X 的 Y 次幂"
+
+#: ../../source/sql/sql_numeric_function.md 2120b0cb10ee4e4f8dae7e916f32fc35
+msgid "Decimal"
+msgstr "十进制"
+
+#: ../../source/sql/sql_numeric_function.md 4ee5ed8a6df841f3a83535d230cec363
+msgid "Round(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 23bec198394641f5a0d99694148c2066
+msgid "Used for rounding data"
+msgstr "用于数据四舍五入"
+
+#: ../../source/sql/sql_numeric_function.md 0f6fbbe6bda3454eafd3838f4f3ec3af
+msgid "Int、Double、Float"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md c18a131dd3b740099bd325416eb7c1db
+msgid "Ceiling(X)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md a0cc1c07e6024696a9c83c2d3a725031
+msgid "Returns the largest integer value greater than parameter X"
+msgstr "返回大于参数 X 的最大整数值"
+
+#: ../../source/sql/sql_numeric_function.md 50c6683378d242b983757eff9af5ac3d
+#: 514c0c9edb614217a47874b5d78a6c81 c0c8335b2e3c4606904769d98a2db149
+#: c693a930dd5a4ec58695852bfb7d4fe2
+msgid "Int"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 17ad353dd8b54b6c971d7564d2a50b77
+msgid "Floor(X)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md a0cc1c07e6024696a9c83c2d3a725031
+msgid "Returns the largest integer value less than the parameter X"
+msgstr "返回小于参数 X 的最大整数值"
+
+#: ../../source/sql/sql_numeric_function.md 7bc5c5bb15cd4775bba788793a1df2d2
+msgid "Mod(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 897a13ed90d342daae199e372760ff25
+msgid "Returns the remainder of X divided by Y"
+msgstr "返回 X 除以 Y 的余数"
+
+#: ../../source/sql/sql_numeric_function.md 2fc1178ec1dd47f8832b1f33bef3278a
+msgid "Abs()"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 95bd59301d504d0eaa4cede395955a3d
+msgid "Returns the absolute value of X"
+msgstr "返回 X 的绝对值"
+
+#: ../../source/sql/sql_numeric_function.md:11 ba84fcb6c48a4ff696c5134f19cc9263
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_numeric_function.md:12 a4cf35977cb74d0baaff38d4fe972de0
+msgid "1. Pow(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:14
+#: ../../source/sql/sql_numeric_function.md:81
+#: ../../source/sql/sql_numeric_function.md:116
+#: ../../source/sql/sql_numeric_function.md:147
+#: ../../source/sql/sql_numeric_function.md:179 3f573f2448874330ae007a5bc1b65184
+msgid "Definition and Usage"
+msgstr "定义和用法"
+
+#: ../../source/sql/sql_numeric_function.md:16 ecd87cc967dc42578776704dd7259ae5
+msgid ""
+"Returns the Yth power of the argument X. When X or Y is null, null is "
+"returned."
+msgstr "当 X 或 Y 为空时，返回空值。"
+
+#: ../../source/sql/sql_numeric_function.md:18 59bbbeb253b6436398b3ea7eba1225cc
+msgid "Note: This function is equal to the POW() function."
+msgstr "注：该函数等同于 POW() 函数。"
+
+#: ../../source/sql/sql_numeric_function.md:21
+#: ../../source/sql/sql_numeric_function.md:53
+#: ../../source/sql/sql_numeric_function.md:88
+#: ../../source/sql/sql_numeric_function.md:120
+#: ../../source/sql/sql_numeric_function.md:151
+#: ../../source/sql/sql_numeric_function.md:183 b2fc6a2cad3c4e2ca22bf629ffc26a26
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_numeric_function.md:27
+#: ../../source/sql/sql_numeric_function.md:59
+#: ../../source/sql/sql_numeric_function.md:94
+#: ../../source/sql/sql_numeric_function.md:126
+#: ../../source/sql/sql_numeric_function.md:157
+#: ../../source/sql/sql_numeric_function.md:189 535f14f65c8e47fba52d088e1b9c6181
+msgid "Parameter Values"
+msgstr "参数值"
+
+#: ../../source/sql/sql_numeric_function.md a6a680b4125047e593587a67337575af
+msgid "Parameter"
+msgstr "参数"
+
+#: ../../source/sql/sql_numeric_function.md 41a2756b0b1842b984fe7f41b8cbdb0d
+#: 50d780d369f34842a07d3bba8d32a08a 67d6653c2d994335a210415ff23105fc
+#: 7cd70a73b1894260b9c16667f6b37093 bdd521402fcf4133ac47d1066493e50e
+#: d906636e69d74afc804cf9117016eadf
+msgid "Type"
+msgstr "类型"
+
+#: ../../source/sql/sql_numeric_function.md 084f364801274522b0ebfcde557086a1
+#: 2a079b134f744d83aba271953f2a3d96 313dd53cb5e34040934c0b6f24e2f542
+#: 8c0d2be76b264a3b980b5eb05c577818 d7c203b76f57479eadcddcb7e787b1c2
+#: fe9d8fe8a2cf4af1ac4374f8458fd394
+msgid "X"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 8057e1744ad34a25959647481c29c897
+#: b733ac07ea06411aa422605a305c3047 cd0356079a6e4ad4b19898c235b24a64
+msgid "Int, Double, Float, Long"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 4b1ff5a36b0f4ba4ae43429a91549ab2
+msgid "Required. A number (the base)"
+msgstr "必须填写。一个数字（基数）"
+
+#: ../../source/sql/sql_numeric_function.md 2584eca50984459c8ba23c24cefe5cf7
+#: 626b658998164f5d8029107dac2478ee d12de540f4174042b9c3d10e9e9ba6a4
+msgid "Y"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 1cce77fcac394cf0886e9ee5d56ed617
+msgid "Required. A number (the exponent)"
+msgstr "必须填写。一个数字（指数）"
+
+#: ../../source/sql/sql_numeric_function.md:34 a652a0804e7d4260a2c020e3ff38f61e
+msgid "Example"
+msgstr "示例"
+
+#: ../../source/sql/sql_numeric_function.md:46 f22a331bbfb24ff1b60e5e8514f407b4
+msgid "2. Round(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:48 c5abd959b3a1410ba2c4c962def64e3d
+msgid ""
+"Definition and Usage Used for data rounding; Y parameter can be ignored, the "
+"default is 0; When the parameter Y is a negative integer is, X in the decimal "
+"point to the left of the Y rounding (from right to left); If the parameter Y "
+"is negative and greater than the number of digits before the decimal point, "
+"Round returns 0."
+msgstr ""
+"定义和用法 用于数据舍入；Y 参数可以忽略，默认为 0；当参数 Y 为负整数时，X 在小"
+"数点左侧对 Y 舍入（从右到左）；如果参数 Y 为负数且大于小数点前的位数，Round 返"
+"回 0。"
+
+#: ../../source/sql/sql_numeric_function.md 805bf53a11cb44e2b7dbf3191cba6fc5
+msgid "Int, Double, Float"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md 15c90c88543847359d57cb95e5b173ef
+msgid "Required. The number to be rounded"
+msgstr "必须填写。四舍五入的数字"
+
+#: ../../source/sql/sql_numeric_function.md 070991cc7aac43f9ab3e7f676f501ea5
+msgid ""
+"Optional. The number of decimal places to round number to. If omitted, it "
+"returns the integer (no decimals)"
+msgstr "可选项。四舍五入的小数位数。如果省略，则返回整数（无小数）。"
+
+#: ../../source/sql/sql_numeric_function.md:66
+#: ../../source/sql/sql_numeric_function.md:102
+#: ../../source/sql/sql_numeric_function.md:133
+#: ../../source/sql/sql_numeric_function.md:165
+#: ../../source/sql/sql_numeric_function.md:196 f0e5546439b0488fa0aff6ca4853d010
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_numeric_function.md:78 39f869ec234b4b5fbf7c444c4cf86a5b
+msgid "3. Ceiling(X)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:83 1ffce7fc1b3d4fdbb37cae2a35545938
+msgid ""
+"Returns the largest integer value greater than the argument X, or null if X "
+"is null; The abbreviation Ceil(X) may also be used."
+msgstr ""
+"返回大于参数 X 的最大整数值，如果 X 为空，则返回空值；也可以使用缩写 Ceil(X)。"
+
+#: ../../source/sql/sql_numeric_function.md:86 23913cbe3de54870b69e6847d59e57c6
+msgid "Note: This function is equal to the CEIL() function."
+msgstr "注：该函数等同于 CEIL() 函数。"
+
+#: ../../source/sql/sql_numeric_function.md 04dd4786dee14c708e8971ec3e804956
+#: 3a96c1007b3e49aa9301d35a2287573b
+msgid "Double, Float"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md a6bb1f7772d84029a21ee9b64d2914aa
+msgid "Required. A numeric value"
+msgstr "必须填写。数值"
+
+#: ../../source/sql/sql_numeric_function.md:114 131c468929fe4f5fb64627722b3d24a9
+msgid "4. Floor(X)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:118 a0cc1c07e6024696a9c83c2d3a725031
+msgid ""
+"Returns the largest integer value less than the argument X, or null if X is "
+"null."
+msgstr "返回小于参数 X 的最大整数值，如果 X 为空，则返回空值。"
+
+#: ../../source/sql/sql_numeric_function.md:145 7e78ae8fee244236b32316ac9f13903f
+msgid "5. Mod(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:149 23dd2344b56a47978cde83c5c652f594
+msgid ""
+"Returns the remainder of X divided by Y. Returns null if any of the arguments "
+"X and Y is null."
+msgstr "如果参数 X 和 Y 均为空，则返回空值。"
+
+#: ../../source/sql/sql_numeric_function.md 938e36cd823e4504bd2cc2ffe92ccc5f
+msgid "Required. A value that will be divided by y"
+msgstr "必须填写。将被 y 除以的值"
+
+#: ../../source/sql/sql_numeric_function.md 0057168b9a8e4d0a8ab61288aa823913
+msgid "Required. The divisor"
+msgstr "必须填写。被除数"
+
+#: ../../source/sql/sql_numeric_function.md:177 aa2271f4bef248529370b385d0c91fe6
+msgid "6. Abs(X,Y)"
+msgstr ""
+
+#: ../../source/sql/sql_numeric_function.md:181 473d02b2c3714f7cb17d6ea51618a483
+msgid ""
+"Returns the absolute value of parameter X; if parameter X is null, returns "
+"null."
+msgstr "返回参数 X 的绝对值；如果参数 X 为空，则返回空值。"
+
+#: ../../source/sql/sql_numeric_function.md 18924dba1d7142e8a111df344645a01a
+msgid "Int, BigInt, Double, Float"
+msgstr ""

@@ -1,0 +1,383 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 18:11+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_string_function.md:1 a4c7cd5f2e904129a5198cd20d0ccebd
+msgid "String Function"
+msgstr "字符串函数"
+
+#: ../../source/sql/sql_string_function.md:2 0a939b03501148778efa175818b7e853
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_string_function.md 6be42f9eba3a419297b59cb5a952a793
+msgid "Function Type"
+msgstr "功能类型"
+
+#: ../../source/sql/sql_string_function.md c4138506dc884ca69b9214fea730b968
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_string_function.md 6be42f9eba3a419297b59cb5a952a793
+msgid "Return Value Type"
+msgstr "返回值类型"
+
+#: ../../source/sql/sql_string_function.md 1ab0bfd332dc4a59b397b4ff6301db16
+msgid "Concat( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 3d422bf6cd5f477da985f25157d6f8dd
+msgid "Returns a spliced string."
+msgstr "返回拼接后的字符串。"
+
+#: ../../source/sql/sql_string_function.md
+#: ../../source/sql/sql_string_function.md:305 5b34b5e1eebe429b925c74815c427bf4
+#: eac992f70b9e45d2a376e86e097ec23a
+msgid "String"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 7c138f8c2861470db96fde8077e3b301
+msgid "Format( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 819870e1828d45a8aea4bb1b4d2f4e6e
+msgid "Returns a number formatted to the specified number of decimal places."
+msgstr "返回格式化为指定小数位数的数字。"
+
+#: ../../source/sql/sql_string_function.md 1d2314efccf34232ba78c41031baed23
+msgid "Decimal"
+msgstr "十进制"
+
+#: ../../source/sql/sql_string_function.md 4e35561e5c0c4ff1b515f452b8e967f9
+msgid "Locate( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md a3e2c069a22d463b8575f0f4afacc24c
+msgid "Returns the position of the first occurrence of the substring."
+msgstr "返回子串首次出现的位置。"
+
+#: ../../source/sql/sql_string_function.md a511ffdce0da4cc7ba98e702fce0bc8c
+msgid "Int"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md e4a0dd91a44b40fb94c0544ac1fc6649
+msgid "Lower( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md cdd1c78e40974b8b9cf8e1b9b7bb30eb
+msgid "Returns the argument in lowercase."
+msgstr "返回参数的小写字母。"
+
+#: ../../source/sql/sql_string_function.md 91e23985d79a4062a9bb2d788bd0db1b
+msgid "Lcase( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 132a1489c34a4d3296c21ffdcdb5b4dc
+msgid "Upper( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md e70b61d5ca4240659cd57cec71b6bc65
+msgid "Returns a parameter in uppercase."
+msgstr "返回大写的参数。"
+
+#: ../../source/sql/sql_string_function.md fe93bfb8d5ae447b927ff8ffcebc0d23
+msgid "Ucase( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md e70b61d5ca4240659cd57cec71b6bc65
+msgid "Returns the argument in uppercase."
+msgstr "以大写形式返回参数。"
+
+#: ../../source/sql/sql_string_function.md ea634cb3a9664d54ac789102f44525fa
+msgid "Left( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md c73408d1a5e449b68e75bd65fe9022ca
+msgid "Returns the specified number of leftmost characters."
+msgstr "返回指定的最左字符数。"
+
+#: ../../source/sql/sql_string_function.md 90f8e3245de1449aa0286d7c07fd4111
+msgid "Right( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md c73408d1a5e449b68e75bd65fe9022ca
+msgid "Returns the specified number of rightmost characters."
+msgstr "返回最右侧字符的指定数目。"
+
+#: ../../source/sql/sql_string_function.md e9cf66c7862141c38c1c41c787733cf4
+msgid "Repeat( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 810e7bafc55b457d897dafbbc4cf9cec
+msgid "Repeats a string the specified number of times."
+msgstr "重复指定次数的字符串。"
+
+#: ../../source/sql/sql_string_function.md db1cd0251a2742ac905cd79bf8efcebf
+msgid "Replace( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 43431ae066d64c5dbee8793abeb29149
+msgid "Replaces occurrences of the specified string."
+msgstr "替换指定字符串的出现次数。"
+
+#: ../../source/sql/sql_string_function.md c85e4e0439184a44bfac586de45b87e6
+msgid "Trim( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 9b3f57b158e84fd8b58138a589b46065
+msgid "Removes leading and trailing spaces."
+msgstr "删除前导空格和尾部空格。"
+
+#: ../../source/sql/sql_string_function.md cc763626df1247aab6201fdc252b3a4a
+msgid "Ltrim( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 232ede7d242c4664b88b58912ea8af9d
+msgid "Removes leading spaces."
+msgstr "删除前导空格。"
+
+#: ../../source/sql/sql_string_function.md 57a36ec6cac34c6c914f9a709f96f14e
+msgid "Rtrim( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 4ab0d8d423ff477cb3ba890dfecbe2ae
+msgid "Removes trailing spaces."
+msgstr "删除尾部空格。"
+
+#: ../../source/sql/sql_string_function.md becc61ba4fe344658a4915dc8d0bdf0c
+msgid "Mid( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md cc67c91edaa2483aab919a4a066958db
+msgid "Returns a substring starting at the specified position."
+msgstr "返回从指定位置开始的子串。"
+
+#: ../../source/sql/sql_string_function.md eac992f70b9e45d2a376e86e097ec23a
+msgid "SubString( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md c546570c65004665aa586fb4fd221dbe
+msgid "Reverse( )"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md 41552625a18f4cbeaf2da90297bece93
+msgid "Reverses characters in a string."
+msgstr "反转字符串中的字符。"
+
+#: ../../source/sql/sql_string_function.md:22 afbacc4e3f7b477ca8c114afa2d55f76
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_string_function.md:23 1ab0bfd332dc4a59b397b4ff6301db16
+msgid "1. Concat"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:25 3d422bf6cd5f477da985f25157d6f8dd
+msgid "Return concatenated string."
+msgstr "返回连接字符串。"
+
+#: ../../source/sql/sql_string_function.md:27
+#: ../../source/sql/sql_string_function.md:54
+#: ../../source/sql/sql_string_function.md:81
+#: ../../source/sql/sql_string_function.md:108
+#: ../../source/sql/sql_string_function.md:135
+#: ../../source/sql/sql_string_function.md:162
+#: ../../source/sql/sql_string_function.md:189
+#: ../../source/sql/sql_string_function.md:216
+#: ../../source/sql/sql_string_function.md:243
+#: ../../source/sql/sql_string_function.md:270
+#: ../../source/sql/sql_string_function.md:297
+#: ../../source/sql/sql_string_function.md:323
+#: ../../source/sql/sql_string_function.md:351
+#: ../../source/sql/sql_string_function.md:378
+#: ../../source/sql/sql_string_function.md:405
+#: ../../source/sql/sql_string_function.md:432
+#: ../../source/sql/sql_string_function.md:459 0a9a16120cb945fea94b55420a651103
+#: 2ed8fd226b854ba8b068e14c118d3cab 995e89f7b5614896a463a12d1d393825
+#: b163ec0e34e34101ba67c5a898961dbe b274404f7b0343eea06dc03e48129e5d
+#: f646c94eaa444e2191da71af8f60579b f6b99dd05102410c9aa93a9a95818703
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_string_function.md:33
+#: ../../source/sql/sql_string_function.md:60
+#: ../../source/sql/sql_string_function.md:87
+#: ../../source/sql/sql_string_function.md:114
+#: ../../source/sql/sql_string_function.md:141
+#: ../../source/sql/sql_string_function.md:168
+#: ../../source/sql/sql_string_function.md:195
+#: ../../source/sql/sql_string_function.md:222
+#: ../../source/sql/sql_string_function.md:249
+#: ../../source/sql/sql_string_function.md:276
+#: ../../source/sql/sql_string_function.md:303
+#: ../../source/sql/sql_string_function.md:329
+#: ../../source/sql/sql_string_function.md:357
+#: ../../source/sql/sql_string_function.md:384
+#: ../../source/sql/sql_string_function.md:411
+#: ../../source/sql/sql_string_function.md:438
+#: ../../source/sql/sql_string_function.md:465 0986cb560d384d8b9723e0490b562691
+#: 23088ccfccc94f38830ba687a867ea9d 6be42f9eba3a419297b59cb5a952a793
+#: 94cd81b736434c3195d00e02b92fc723 bcc43543191f4703838833e20650f561
+#: c7047f191e9242d3b1f0fabcf8edd120 dda7a5fcd51e42358552f70bb2133783
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_string_function.md:39
+#: ../../source/sql/sql_string_function.md:66
+#: ../../source/sql/sql_string_function.md:93
+#: ../../source/sql/sql_string_function.md:120
+#: ../../source/sql/sql_string_function.md:147
+#: ../../source/sql/sql_string_function.md:174
+#: ../../source/sql/sql_string_function.md:201
+#: ../../source/sql/sql_string_function.md:228
+#: ../../source/sql/sql_string_function.md:255
+#: ../../source/sql/sql_string_function.md:282
+#: ../../source/sql/sql_string_function.md:308
+#: ../../source/sql/sql_string_function.md:335
+#: ../../source/sql/sql_string_function.md:363
+#: ../../source/sql/sql_string_function.md:390
+#: ../../source/sql/sql_string_function.md:417
+#: ../../source/sql/sql_string_function.md:444
+#: ../../source/sql/sql_string_function.md:471 03c1bec0e46e45b6a717874f1039fc7d
+#: 34f091f200f840d6b37e4be4a6da065e 3a4bc06ace554d9a93b3a1d6335b54cc
+#: 59704527f0914a1dab8fddcd570f9abe 5a81791233114922890782ebc6c765b1
+#: 8ed1c8bdf1e6468fb2dec006bcf05ab9 aed22d818bee49a9b67cff0578485f72
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_string_function.md:50 7c138f8c2861470db96fde8077e3b301
+msgid "2. Format"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:52 819870e1828d45a8aea4bb1b4d2f4e6e
+msgid "Return a number formatted to specified number of decimal places."
+msgstr "返回格式化为指定小数位数的数字。"
+
+#: ../../source/sql/sql_string_function.md:77 4e35561e5c0c4ff1b515f452b8e967f9
+msgid "3. Locate"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:79 a3e2c069a22d463b8575f0f4afacc24c
+msgid "Return the position of the first occurrence of substring."
+msgstr "返回子串第一次出现的位置。"
+
+#: ../../source/sql/sql_string_function.md:104 e4a0dd91a44b40fb94c0544ac1fc6649
+msgid "4. Lower"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:106
+#: ../../source/sql/sql_string_function.md:133 cdd1c78e40974b8b9cf8e1b9b7bb30eb
+msgid "Return the argument in lowercase."
+msgstr "以小写返回参数。"
+
+#: ../../source/sql/sql_string_function.md:131 91e23985d79a4062a9bb2d788bd0db1b
+msgid "5. Lcase"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:158 132a1489c34a4d3296c21ffdcdb5b4dc
+msgid "6. Upper"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:160
+#: ../../source/sql/sql_string_function.md:187 e70b61d5ca4240659cd57cec71b6bc65
+msgid "Return the argument in uppercase."
+msgstr "返回大写参数。"
+
+#: ../../source/sql/sql_string_function.md:185 fe93bfb8d5ae447b927ff8ffcebc0d23
+msgid "7. Ucase"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:212 23bcf407128046b1aa61dd88cfeea1f2
+msgid "8. Left"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:214 87e8085a4d6c4e52a47a308f5d14f988
+msgid "Return the leftmost number of characters as specified."
+msgstr "返回指定的最左侧字符数。"
+
+#: ../../source/sql/sql_string_function.md:239 90f8e3245de1449aa0286d7c07fd4111
+msgid "9. Right(str,x)"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:241 c73408d1a5e449b68e75bd65fe9022ca
+msgid "Return the specified rightmost number of characters."
+msgstr "返回指定的最右边字符数。"
+
+#: ../../source/sql/sql_string_function.md:266 10ac1ea144374d5b90870359781eae4a
+msgid "10. Repeat"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:268 810e7bafc55b457d897dafbbc4cf9cec
+msgid "Repeat a string the specified number of times."
+msgstr "重复指定次数的字符串。"
+
+#: ../../source/sql/sql_string_function.md:293 db1cd0251a2742ac905cd79bf8efcebf
+msgid "11. Replace"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:295 43431ae066d64c5dbee8793abeb29149
+msgid "Replace occurrences of a specified string."
+msgstr "替换指定字符串的出现次数。"
+
+#: ../../source/sql/sql_string_function.md:319 a03f94bab34b4bffbedb1761f1c4be54
+msgid "12. Trim"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:321 9b3f57b158e84fd8b58138a589b46065
+msgid "Remove leading and trailing spaces."
+msgstr "删除前导空格和尾部空格。"
+
+#: ../../source/sql/sql_string_function.md:347 f7e0af4dafc74db8ab50a88c9ddc957a
+msgid "13. Ltrim"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:349 232ede7d242c4664b88b58912ea8af9d
+msgid "Remove leading spaces."
+msgstr "删除前导空格。"
+
+#: ../../source/sql/sql_string_function.md:374 9994f7939de046c9a38e99d9e8cdb20d
+msgid "14. Rtrim"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:376 4ab0d8d423ff477cb3ba890dfecbe2ae
+msgid "Remove trailing spaces."
+msgstr "删除尾部空格。"
+
+#: ../../source/sql/sql_string_function.md:401 251fb2b8ba05412c8c1a7ef9dcb099d1
+msgid "15. Mid"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:403
+#: ../../source/sql/sql_string_function.md:430 cc67c91edaa2483aab919a4a066958db
+msgid "Return a substring starting from the specified position."
+msgstr "返回从指定位置开始的子串。"
+
+#: ../../source/sql/sql_string_function.md:428 eac992f70b9e45d2a376e86e097ec23a
+msgid "16. SubString"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:455 c546570c65004665aa586fb4fd221dbe
+msgid "17. Reverse"
+msgstr ""
+
+#: ../../source/sql/sql_string_function.md:457 41552625a18f4cbeaf2da90297bece93
+msgid "Reverse the characters in a string."
+msgstr "反转字符串中的字符。"

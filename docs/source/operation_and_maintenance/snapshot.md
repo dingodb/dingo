@@ -32,8 +32,8 @@ raft:
 
 ## View Snapshot
 
-### Mode one:using the browser function provided in Brpc
-
+### Mode one
+using the browser function provided in Brpc
 Access the browser address： http://ip:20101/raft_stat
 
 ```

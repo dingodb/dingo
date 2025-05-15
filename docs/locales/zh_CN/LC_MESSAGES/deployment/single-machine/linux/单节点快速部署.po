@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025, Wangpy
+# Copyright (C) 2025, DataCanvas
 # This file is distributed under the same license as the DingoDB package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: DingoDB \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"POT-Creation-Date: 2025-04-27 18:44+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,126 +20,126 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:1
-#: 7e6a2a07b6b940249036747b2b50af3f
+#: 24f7f5343d8946228db13bc2a40e4c44
 msgid "Docker容器单节点快速部署"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:3
-#: 5265a34a422346139464009815876077
+#: 2d33e08e3e1e41e4aa6f89f3d2c3ac00
 msgid "首先，在Linux环境中成功部署和安装Docker之后，为了进行Docker容器的单节点快速部署，你需要遵循以下步骤执行部署过程："
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:4
-#: 739c8365861d4902adadb6fa76b97133
+#: d2f04630a21b4909a692148cb809ac75
 msgid "1、先决条件"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:5
-#: cef9f8d004f44e6aa4fefa382d38fe95
+#: d731c5e0b74549ba9cf6fc3a62db8401
 msgid "确保你的Linux系统已经成功安装了Docker容器引擎，并且Docker服务正在正常运行。"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:7
-#: 5f80f7b0067045259fe1685070fc0914
+#: c0174075f6ed4d67a685f814c5252f50
 msgid "2、环境准备"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:8
-#: d13a34593ee74a3bb89361b02a2d39d0
+#: 28cc8d9d2e2241c889fadf2a836c51c3
 msgid "1）环境说明"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:9
-#: c61bf5699de14dbf9f17b89a5bfafb0e
+#: d1b897f53c89497397fbb8572ce820be
 msgid "提前配置好 git docker docker-compose环境；"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:19
-#: 0cd529a305784687b08b0e955c7ccdb7
+#: 1a85e251963e41f68d93e1ad5691a698
 msgid "2）拉取容器"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:26
-#: f0a3187b4b2f45bf804aff65e4f9c244
+#: a91d6dae47e94c92b8035e1614a7b6e4
 msgid "3、启动容器"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:27
-#: 18204be4343e445cade3a2b142d0b475
+#: 3840cbfd6d204875a2f1134dff0b6374
 msgid "这里需要基于docker-compose启动容器，所以，我们首先去拉取：docker-compose。"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:28
-#: 0c1f366fa9b545329a27868a41cf1e42
+#: f6a6915a04e348b6a1ebc3ef37ceeaff
 msgid "1）拉取对应的docker-compose配置"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:37
-#: 19e563a9722c4867b9ccd9fd732c543f
+#: 24927d88e07d4e0596c8e8bbfdd5bb36
 msgid "**配置文件说明：**"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:38
-#: 92d40475306d40d49be0babc98f2372a
+#: 430e7160b84e43feb2a95e2ee4b48ca3
 msgid ""
 "docker-"
 "compose.yml为单节点多服务，其中完整启动包含了3个coordinator、3个store、3个index、1个executor、1个web(proxy);"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:39
-#: a83adb2ae6ca45cfb57698b67eac93bb
+#: 7055d33db6104f77b344744033033ed9
 msgid ""
 "docker-"
 "compose.single.yml为单节点单服务，其中完整启动包含了1个coordinator、1个store、1个index、1个executor、1个web(proxy);"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:40
-#: 86905366a92f4ed195eb23b71e7fa514
+#: 011c9bcdf88840bd9775a7f21cc25d18
 msgid "coordinator、store、index采用了host网络， executor、web(proxy)使用了net网络"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:41
-#: 1a531c7fb01b43c5b2378704ddea5396
+#: 2f3dd3a2d66a4343ac2972c9d0a4caa8
 msgid "2）启动对应容器"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:47
-#: e899e5528d55401fa3c1d49ea84a2738
+#: 1d8bbedd3bde48f1a3c8b13c97bce648
 msgid "4、查看集群状态"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:48
-#: 9f9794c3de2d42608783b2a80f6eabe6
+#: 25fb9f98e8bd4d0585691a83e7a48f4c
 msgid "1）查看容器状态"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:49
-#: 40610b764f7b41da9975440735f42116
+#: 7dadf4d59bf34845a98d8bb5d1214148
 msgid "检查yml配置文件中的容器是否全部处于Up状态。"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:53
-#: 5ee2cc066fa441e0add2ad2a08e6b83b
+#: d38429ed935442568a55f839e1207afd
 msgid "2）查看进程状态"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:54
-#: 4b50a67c93784bfc9c16355051f960c4
+#: 7fd047d45d8f4930a2a94283366a3a1f
 msgid "查看coordinator状态"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:63
-#: 93a25a17daaa4251bf5874034d970e23
+#: 77cbe941458242a7accf0d25193c3a2c
 msgid "查看Store状态"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:72
-#: b2c959b1d5e7462f9720e41ef73d4fec
+#: f7c3776cae47484884e4b63b4ec713f3
 msgid "查看Executor状态 查看executor,通过查看log,确保mysql init是成功状态即可。"
 msgstr ""
 
 #: ../../source/deployment/single-machine/linux/单节点快速部署.md:78
-#: 49aa1fc472b34368bca4bb36d7ce7b00
+#: 84a3c747a5ac4d6a926a2ca81ff379c7
 msgid "查看Proxy状态 Web(Proxy)通过swagger来查看， 需要将URL中的IP替换为自己的IP地址。"
 msgstr ""
 

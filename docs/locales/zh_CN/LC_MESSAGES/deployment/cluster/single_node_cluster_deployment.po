@@ -1,0 +1,112 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-14 18:56+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:1
+#: 6fd19d9f51b14064a3f1a03b86b4f33e
+msgid "Deploy On Single Node Using Shell"
+msgstr "使用 Shell 在单节点上部署"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:3
+#: 8c3c14a4dd384507bd0759b73e1f92cd
+msgid "Deploy Architecture View"
+msgstr "部署架构视图"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:5
+#: 39971f8e9d61403d9650a9dbc698b753
+msgid ""
+"There are many types of roles in the cluster mode of DingoDB, such as "
+"coordinator, executor, dingo-store, and the cluster mode requires at least "
+"three machines. The architecture view can refer [dingo-deploy-architecture]"
+"(https://dingodb.readthedocs.io/en/latest/deployment/"
+"deploy_on_cluster_by_ansible.html)."
+msgstr ""
+"在集群模式下，DingoDB 有多种类型的角色，如 coordinator、executor、dingo-"
+"store，集群模式至少需要三台机器。架构视图可参考 [dingo-deploy-architecture]"
+"(https://dingodb.readthedocs.io/en/latest/deployment/"
+"deploy_on_cluster_by_ansible.html)。"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:8
+#: fbf513e736c045a692265fc896ee1dde
+msgid "Deploy a 3-node cluster on a single machine"
+msgstr "在一台机器上部署 3 节点集群"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:19
+#: 39c6c24fa61240f6a07545bf9c49f15d
+msgid "Command-line tool preparation"
+msgstr "命令行工具准备"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:20
+#: 8605789093c64ea085133214a365bda8
+msgid ""
+"After deployment, first confirm whether the coor_list file exists in the "
+"build/bin directory. The latest deployment script will automatically generate "
+"this file."
+msgstr ""
+"部署后，首先确认 build/bin 目录中是否存在 coor_list 文件。最新的部署脚本会自动"
+"生成该文件。"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:22
+#: 6153f42ac65446f09b5797e8aca3e8bc
+msgid ""
+"If it does not exist in build/bin, you can find the coor_list file in the "
+"conf directory of the coordinator and store, and copy the file to the "
+"directory where dingodb_client_coordinator is located."
+msgstr ""
+"如果 build/bin 中不存在该文件，可以在coordinator 和store的 conf 目录中找到 "
+"coor_list 文件，然后将该文件复制到 dingodb_client_coordinator 所在的目录。"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:24
+#: cf02a52f060e4fe68c3428ce0685a231
+msgid ""
+"If you are connecting to a cluster deployed with an old deployment script, "
+"there may not be a coor_list file. You can manually create a coor_list file "
+"with the following content format:"
+msgstr ""
+"如果连接的是使用旧部署脚本部署的群集，则可能没有 coor_list 文件。您可以手动创"
+"建内容格式如下的 coor_list 文件："
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:30
+#: 2672bf1de110498d9ce13b0c46889561
+msgid "With this file, you can proceed with the subsequent operations."
+msgstr "有了这个文件，您就可以进行后续操作了。"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:32
+#: dd782a6f4e924736b9e79291618b1e5e
+msgid "The command-line parameters for dingodb_client_coordinator are:"
+msgstr "dingodb_client_coordinator 的命令行参数为："
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:36
+#: 8a2d13a08b4447178714392219245159
+msgid "You can also use the --url parameter abbreviation instead of --coor_url."
+msgstr "也可以使用 --url 参数缩写代替 --coor_url。"
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:38
+#: ef07d75570b042198d473d021d168783
+msgid ""
+"If the coor_list file is located in the current directory, you can omit the --"
+"coor_url parameter, as follows:"
+msgstr "如果 coor_list 文件位于当前目录下，可以省略 --coor_url 参数，如下所示："
+
+#: ../../source/deployment/cluster/single_node_cluster_deployment.md:43
+#: fef9fd01b4194621ade1a6bcf633e36e
+msgid "View cluster status"
+msgstr "查看群集状态"

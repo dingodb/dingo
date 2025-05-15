@@ -1,0 +1,425 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 15:55+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/executor.md:1 4ca4e60196144150aa774abf296b153b
+msgid "Executor"
+msgstr ""
+
+#: ../../source/architecture/executor.md:3 9c7e99083cb94b05b7779e9a12991a9f
+msgid "1. Architecture Diagram"
+msgstr "1.架构图"
+
+#: ../../source/architecture/executor.md:4 0a9d64a0fa814f59aedd2da7d8611344
+msgid ""
+"![Executor architecture](../../images/Executor_architecture.png) **The "
+"characteristics of the system are as follows:**"
+msgstr ""
+"![Executor architecture](../../images/Executor_architecture.png) **系统的特"
+"点如下：**"
+
+#: ../../source/architecture/executor.md:4 f5c5afad2ead424f99dd95de9a04af52
+msgid "Executor architecture"
+msgstr "Executor 架构"
+
+#: ../../source/architecture/executor.md:6 3426afb1da1c4a22b44d1f3cbaf69a6e
+msgid ""
+"Start Executor processes on each node in the cluster to provide JDBC "
+"services to users. Users can connect to any node."
+msgstr ""
+"在群集中的每个节点上启动 Executor 进程，为用户提供 JDBC 服务。用户可以连接"
+"到任何节点。"
+
+#: ../../source/architecture/executor.md:7 8a9a8c800e5249558d91c4b8940e37bc
+msgid ""
+"Executors provide TaskExec services to each other for task distribution, "
+"management, and execution."
+msgstr "Executor 相互提供 TaskExec 服务，以进行任务分配、管理和执行。"
+
+#: ../../source/architecture/executor.md:8 2fe4864c18fc45acaa20c28684056ace
+msgid ""
+"DDL and DCL operations directly call the corresponding interfaces in the "
+"Dingo SDK."
+msgstr "DDL 和 DCL 操作直接调用 Dingo SDK 中的相应接口。"
+
+#: ../../source/architecture/executor.md:9 214c3a9a09814c0d8c02fe2900ce19f8
+msgid ""
+"DML and DQL operations are transformed into tasks, and the operators in "
+"the tasks call the read and write operations in the Dingo SDK."
+msgstr ""
+"DML 和 DQL 操作被转化为任务，任务中的操作符调用 Dingo SDK 中的读写操作。"
+
+#: ../../source/architecture/executor.md:11 a4b516a14ba7425f9c2c3e9bf0791096
+msgid "2. Role in Dingo"
+msgstr "2.在 Dingo 中的作用"
+
+#: ../../source/architecture/executor.md:12 595bda8f1c874b7ab67bdc44ee94e6b0
+msgid ""
+"Act as a SQL Server, parsing and responding to SQL requests and other "
+"management requests from the client side, and implementing the JDBC "
+"protocol."
+msgstr ""
+"充当 SQL 服务器，解析和响应来自客户端的 SQL 请求和其他管理请求，并执行 "
+"JDBC 协议。"
+
+#: ../../source/architecture/executor.md:13 69be9a2d2e184c2da7ab84da6546b168
+msgid "Manage jobs and implement distributed execution of tasks."
+msgstr "管理任务并实现任务的分布式执行。"
+
+#: ../../source/architecture/executor.md:14 60ffec05fcb4462090b129a5250dbf31
+msgid ""
+"Implement database functionality by calling the underlying Meta and Store "
+"APIs through the SDK."
+msgstr "通过 SDK 调用底层 Meta 和 Store API，实现数据库功能。"
+
+#: ../../source/architecture/executor.md:16 2cafcd5dbacc4e92b3f3cb840c586737
+msgid "3. The SQL Execution Procedure"
+msgstr "3.SQL 执行程序"
+
+#: ../../source/architecture/executor.md:17 f99054891499438c9d01033e91525120
+msgid ""
+"The APP initiates a connection to the JDBC Server through the Driver "
+"Client."
+msgstr "APP 通过驱动程序客户端启动与 JDBC 服务器的连接。"
+
+#: ../../source/architecture/executor.md:18 e6e5ec65635e4a7a98dff247db990fc4
+msgid "The APP sends an SQL execution request to the JDBC Server."
+msgstr "APP 向 JDBC 服务器发送 SQL 执行请求。"
+
+#: ../../source/architecture/executor.md:19 809f3df4d6774a609a76404671b427d2
+msgid ""
+"The JDBC Server parses, validates, and optimizes the received SQL command, "
+"gradually generating logical execution plans, physical execution plans, "
+"and jobs."
+msgstr ""
+"JDBC 服务器会对接收到的 SQL 命令进行解析、验证和优化，逐步生成逻辑执行计"
+"划、物理执行计划和任务。"
+
+#: ../../source/architecture/executor.md:20 34859d865c394e25a6fa7125ac78d29e
+msgid ""
+"The JDBC Server distributes the tasks in the job to the TaskExec Service "
+"and returns the ResultSet."
+msgstr "JDBC 服务器会将作业中的任务分配给 TaskExec 服务，并返回 ResultSet。"
+
+#: ../../source/architecture/executor.md:21 04c5f3430f584b8f9dbe8aa1d08ab604
+msgid "The APP initiates a data retrieval request."
+msgstr "APP 发起数据检索请求。"
+
+#: ../../source/architecture/executor.md:22 13627b859c8a424aa04aed58b89b246e
+msgid "JThe JDBC Server sends a run command to the TaskExec Service."
+msgstr "JDBC 服务器向 TaskExec 服务发送运行命令。"
+
+#: ../../source/architecture/executor.md:23 cca58278dc034a82b5abe41ef4d7883d
+msgid ""
+"The task starts running, and the resulting data is pushed downstream to "
+"the JDBC Server."
+msgstr "任务开始运行，生成的数据被推送到下游的 JDBC 服务器。"
+
+#: ../../source/architecture/executor.md:24 98e6669aa63946d087da6c845c89fda4
+msgid "The JDBC Server returns the data to the APP."
+msgstr "JDBC 服务器会将数据返回给 APP。"
+
+#: ../../source/architecture/executor.md:25 37e805c409fa4655aee41d4c7b4aedfc
+msgid ""
+"If the data is not returned completely, the APP initiates another data "
+"retrieval request, and steps 5, 7, and 8 are repeated until all the data "
+"is returned (the run command does not need to be sent again). The complete "
+"timing diagram for a user to connect to a database, execute an SQL "
+"statement, and then exit is shown below: ![SQL execution sequence](../../"
+"images/sql_execution_sequence.png)"
+msgstr ""
+"如果数据没有完全返回，APP 会启动另一个数据检索请求，然后重复步骤 5、7 和 8，直到所有数据都返回为止（运行命令无需再次发送）。 用户连接数据库、执行 "
+"SQL 语句、然后退出的完整时序图如下所示：![SQL execution sequence](../../"
+"images/sql_execution_sequence.png)"
+
+#: ../../source/architecture/executor.md:25 3c1e10711c7e4e4c9b069962cb160745
+msgid "SQL execution sequence"
+msgstr "SQL 执行顺序"
+
+#: ../../source/architecture/executor.md:29 b521e89bf6344ef8b7c1bbdb313729f8
+msgid ""
+"Statement and Job do not have a one-to-one relationship. A Statement can "
+"be used multiple times to execute multiple SQL statements, each of which "
+"corresponds to a separate Job. At any given time, Statement is only "
+"associated with one Job."
+msgstr ""
+"语句和作业并不是一对一的关系。一个 Statement 可以多次用于执行多个 SQL 语"
+"句，每个语句对应一个单独的作业。在任何时候，Statement 都只与一个作业相关"
+"联。"
+
+#: ../../source/architecture/executor.md:31 8c5a8abb872f4f43b58eb9177a3d57d3
+msgid "*There are two ways for users to initiate SQL execution:*"
+msgstr "*用户有两种方式启动 SQL 执行：*"
+
+#: ../../source/architecture/executor.md:32 91e5234c89a84042be3132e8b46fbf63
+msgid ""
+"Direct execution refers to using the JDBC interface's "
+"Statement#execute(String sql) method to execute an SQL statement."
+msgstr ""
+"直接执行是指使用 JDBC 接口的 Statement#execute(String sql) 方法来执行 SQL "
+"语句。"
+
+#: ../../source/architecture/executor.md:34 1c593768e2484edbbd9dde0312b65d14
+msgid "![Direct Execute](../../images/SQL_direct_execute.png)"
+msgstr ""
+
+#: ../../source/architecture/executor.md:34 83f023c7c3d5476caaacf17b8303c7e2
+msgid "Direct Execute"
+msgstr "直接执行"
+
+#: ../../source/architecture/executor.md:36 a7e1433f4f4a451692f701ded7d96097
+msgid ""
+"Prepare and execute refers to executing parameterized SQL statements. This "
+"method corresponds to the JDBC interface's "
+"Connection#prepareStatement(String sql) method."
+msgstr ""
+"准备和执行是指执行参数化 SQL 语句。该方法对应于 JDBC 接口的 "
+"Connection#prepareStatement(String sql) 方法。"
+
+#: ../../source/architecture/executor.md:38 2154dad9eb8d4f62b489eb065b5d2e88
+msgid "![Prepare Execute](../../images/SQL_prepare_execute.png)"
+msgstr ""
+
+#: ../../source/architecture/executor.md:38
+#: ../../source/architecture/executor.md:42 5eba5f20711248b1aea4c72e206b46dc
+#: fbec84d1a07c414891c4fdba09ca2bbd
+msgid "Prepare Execute"
+msgstr "准备执行"
+
+#: ../../source/architecture/executor.md:40 215b8951bcf14af3927a657d1ae3159d
+msgid ""
+"Translation: The processing flow of executing SQL statements using the "
+"JDBC interface Statement#execute() method is as follows:"
+msgstr "使用 JDBC 接口 Statement#execute() 方法执行 SQL 语句的处理流程如下："
+
+#: ../../source/architecture/executor.md:42 35170a56ceb54758ad6d78fb4be42b93
+msgid "![Prepare Execute](../../images/SQL_prepare_execute_statement.png)"
+msgstr ""
+
+#: ../../source/architecture/executor.md:44 0d7de7917df24e78832b658a8ee29c15
+msgid ""
+"The TaskExec Service caches the distributed tasks, so the already "
+"distributed Job can be found by ID without the need for redistribution."
+msgstr ""
+"TaskExec 服务会缓存已分发的任务，因此可以通过 ID 找到已分发的任务，而无需重"
+"新分发。"
+
+#: ../../source/architecture/executor.md:46 bb32ac99385649c7b40279a7d3278536
+msgid "The \"Run task\" command passes the bound parameters to each Task."
+msgstr "“运行任务”命令将绑定参数传递给每个任务。"
+
+#: ../../source/architecture/executor.md:48 a247a04dcc66473b8635cf9873001060
+msgid "4. Data Structure"
+msgstr "4.数据结构"
+
+#: ../../source/architecture/executor.md:49 aefdeed2b78e49fdbe7724734efbcc73
+msgid ""
+"A Job is generated by a physical plan. A Job contains multiple Tasks, and "
+"each Task has a Location property that indicates the node address where "
+"the Task will be executed."
+msgstr ""
+"一个任务由一个物理计划生成。一个任务包含多个任务，每个任务都有一个位置属"
+"性，用于指示执行任务的节点地址。"
+
+#: ../../source/architecture/executor.md:51 79f7de3ab0a149a4bd51e81401d0b6a5
+msgid ""
+"Each Task is composed of multiple Operators, and each Operator has one or "
+"more input ports, called Pins, which are numbered starting from 0. The "
+"Operator also has an Outputs property, which represents all output ports "
+"and is a list of Outputs. Outputs can contain zero to multiple Outputs, "
+"and each Output indicates the ID and Pin number of the next level Operator "
+"it is connected to, forming a directed acyclic graph."
+msgstr ""
+"每个任务由多个操作符组成，每个操作符有一个或多个输入端口，称为Pins，从 0 开"
+"始编号。 操作符还有一个输出属性，代表所有输出端口，是一个输出列表。输出口可"
+"包含 0 到多个输出口，每个输出口都标明与之相连的下一级操作器的 ID 和Pins编"
+"号，从而形成一个有向无环图。"
+
+#: ../../source/architecture/executor.md:53 877c62f813e846328d630c7768f1a5d9
+msgid "5. Run Task"
+msgstr "5.运行任务"
+
+#: ../../source/architecture/executor.md:55 b07b0b57077d40f4bf45a068adee1daf
+msgid ""
+"The Task runs by \"pushing data\" method. Generally, the push method of an "
+"Operator indicates inputting data to one of its ports. After processing "
+"the data, the Operator can directly call the push method of Output to "
+"output the data, and Output directly calls the push method of the next-"
+"level Operator."
+msgstr ""
+"任务通过 “推送数据 ”方法运行。一般来说，操作符的 push 方法表示向其某个端口"
+"输入数据。在处理完数据后，操作符可以直接调用 Output 的推送方法输出数据，而 "
+"Output 则直接调用下一级操作符的推送方法。"
+
+#: ../../source/architecture/executor.md:57 a13718021f1c42e29979bade33a71923
+msgid ""
+"Some Operators do not require input data and are called SourceOperators. "
+"In this case, their push method serves as the entry point for starting the "
+"Task. When the Task is launched, it needs to call the push method of each "
+"SourceOperator in parallel."
+msgstr ""
+"有些操作符不需要输入数据，称为源操作符。在这种情况下，它们的 push 方法是启"
+"动任务的入口点。任务启动时，需要并行调用每个源操作符的 push 方法。"
+
+#: ../../source/architecture/executor.md:59 faf943bed9cd412286524e1c8e13f965
+msgid "Some Operators do not output data and are called SinkOperators."
+msgstr "有些操作符不输出数据，称为 SinkOperators。"
+
+#: ../../source/architecture/executor.md:61 9c913e9306334b409bd98f2204b46ea1
+msgid ""
+"The push method of an Operator returns a boolean value. If it is false, it "
+"means that the next-level Operator does not need more data. At this point, "
+"data processing needs to be stopped and false needs to be returned. When "
+"the push method of a SourceOperator returns false, the thread it is in "
+"will call its fin method once and then exit. The execution logic of the "
+"fin method is the same as that of the push method but without a return "
+"value. When all threads of the Task exit, the Task execution ends."
+msgstr ""
+"操作符的 push 方法返回一个布尔值。如果为 false，则表示下一级操作符不需要更"
+"多数据。此时，需要停止数据处理并返回 false。当 SourceOperator 的 push 方法"
+"返回 false 时，它所在的线程将调用一次 fin 方法，然后退出。fin 方法的执行逻"
+"辑与 push 方法相同，但没有返回值。当任务的所有线程都退出时，任务执行结束。"
+
+#: ../../source/architecture/executor.md:63 755c28a6695e43adafb289cff8a9f0cb
+msgid "Here is the sequence diagram for its execution:"
+msgstr "下面是执行顺序图："
+
+#: ../../source/architecture/executor.md:65 81ca338382aa4ba8a56639198e950a0e
+msgid "![Execute Sequence](../../images/simple_job_execution_sequence.png)"
+msgstr ""
+
+#: ../../source/architecture/executor.md:65 416a554e7f9c4cd7987e144a1486236f
+msgid "Execute Sequence"
+msgstr "执行序列"
+
+#: ../../source/architecture/executor.md:67 eb456cd0615b4153b765e4da766b32f4
+msgid ""
+"The thread starts by calling the push method of Scan. In the push method, "
+"Scan loops through all the data and pushes it to the next level. When the "
+"data is exhausted, it returns false, and the Task thread calls the fin "
+"method and ends. If the push method of Root returns false (for example, "
+"when there is a LIMIT clause in the SQL statement), the false return value "
+"is propagated to the upper level and causes Scan to terminate the "
+"enumeration loop prematurely."
+msgstr ""
+"线程首先调用 Scan 的 push 方法。在 push 方法中，Scan 会循环处理所有数据，并"
+"将其推送到下一级。当数据用完时，它会返回 false，然后任务线程调用 fin 方法并"
+"结束。如果 Root 的 push 方法返回 false（例如，当 SQL 语句中有 LIMIT 子句"
+"时），则 false 返回值会传播到上一级，并导致 Scan 提前终止枚举循环。"
+
+#: ../../source/architecture/executor.md:69 375a2bc2d53b44529f2df79a5905383a
+msgid "6. Network Transmission"
+msgstr "6.网络传输"
+
+#: ../../source/architecture/executor.md:70 3136c3526d394fdd9b924f7f94c3fc78
+msgid ""
+"Using a pair of Send and Receive operators, data can be transmitted "
+"between nodes. Send belongs to the data SinkOperator, and Receive belongs "
+"to the SourceOperator. Here is the sequence diagram for transmitting data "
+"between nodes:"
+msgstr ""
+"通过一对发送和接收操作符，数据可以在节点之间传输。发送属于数据 "
+"SinkOperator，接收属于数据 SourceOperator。以下是在节点间传输数据的序列图："
+
+#: ../../source/architecture/executor.md:72 c686c6fedb4540c8a885ef262f420502
+msgid ""
+"![Data Transmission Sequence](../../images/"
+"Execute_data_transmission_sequence.png)"
+msgstr ""
+
+#: ../../source/architecture/executor.md:72 9dad1e0f15fa43b38d29b7f1ddcfc9fa
+msgid "Data Transmission Sequence"
+msgstr "数据传输顺序"
+
+#: ../../source/architecture/executor.md:74 af0b75e63af848c7a37c7d3e6a3eb65f
+msgid ""
+"To improve transmission efficiency, both Send and Receive have "
+"corresponding data queues. After Send is pushed with data once, it is not "
+"immediately sent, but is placed in the sending queue. It is packaged and "
+"sent as a whole when certain conditions are met."
+msgstr ""
+"为了提高传输效率，发送和接收都有相应的数据队列。发送队列推送一次数据后，不"
+"会立即发送，而是将其放入发送队列。当满足特定条件时，数据会被打包并作为一个"
+"整体发送。"
+
+#: ../../source/architecture/executor.md:77 646efaa44b4b48d2b00d75dbb929062c
+msgid ""
+"Data is transmitted through the logical Channel established between Send "
+"and Receive, and the receiving thread unpacks the received data and puts "
+"it into the receiving queue. Receive retrieves data from the receiving "
+"queue and pushes it to the downstream operator."
+msgstr ""
+"数据通过发送和接收之间建立的逻辑通道传输，接收线程将接收到的数据拆包并放入"
+"接收队列。接收线程从接收队列中检索数据，并将其推送给下游操作员。"
+
+#: ../../source/architecture/executor.md:79 26ec69d5fd414ba48119cafdbf640b76
+msgid "The receiving thread has the following three responses to the sender:"
+msgstr "接收线程对发送方有以下三个回复："
+
+#: ../../source/architecture/executor.md 979fff9c738d46d58027a8507cd952eb
+msgid "Response"
+msgstr "Response"
+
+#: ../../source/architecture/executor.md 5f1c1fa49156499fba281c2b826c9b49
+msgid "Meaning"
+msgstr "Meaning"
+
+#: ../../source/architecture/executor.md 7888e32609b648c4a5a2fb08b3b6414c
+msgid "Operations after Send receives the response"
+msgstr "发送接收到响应后的操作"
+
+#: ../../source/architecture/executor.md e38a986f67324ccdb018ca7f3b59c42c
+msgid "READY"
+msgstr "READY"
+
+#: ../../source/architecture/executor.md a6ed31bdfa8e44e5966459c78c2a0d0f
+msgid "Indicates that the sender can continue to send data"
+msgstr "表示发送方可以继续发送数据"
+
+#: ../../source/architecture/executor.md fb85d507228148e2a8ad2a8f57de8f9f
+msgid "Continue running and return true to the upstream operator"
+msgstr "继续运行并向上游操作员返回 true"
+
+#: ../../source/architecture/executor.md 8fbf1a67f8444e86bf53431e634c2287
+msgid "STOP"
+msgstr "STOP"
+
+#: ../../source/architecture/executor.md 9fca9b32bf2b48a6a0d3b3054f0ca3f0
+msgid "Indicates a pause in sending data"
+msgstr "表示发送数据暂停"
+
+#: ../../source/architecture/executor.md ae2221f2dc794ff58f73b9c4ebf4f766
+msgid "The thread is suspended until it receives READY or QUIT"
+msgstr "线程暂停，直到收到 READY 或 QUIT"
+
+#: ../../source/architecture/executor.md efcd3356a3d846e7b2b084ffd8a928c9
+msgid "QUIT"
+msgstr "QUIT"
+
+#: ../../source/architecture/executor.md bffc2f6bf5684fc49bfaa377e70c2405
+msgid "Indicates that no more data is needed"
+msgstr "表示不需要更多数据"
+
+#: ../../source/architecture/executor.md 3d1abcd214a244119cead33a4fab65f9
+msgid ""
+"Clear the sending queue and return false to the upstream operator (FIN "
+"will also be sent at the end)."
+msgstr "清除发送队列并向上游操作员返回 false（最后也会发送 FIN）。"

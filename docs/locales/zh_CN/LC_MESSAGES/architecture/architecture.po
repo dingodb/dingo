@@ -1,0 +1,200 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 15:24+0800\n"
+"PO-Revision-Date: 2025-05-14 17:45+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/architecture.md:1 f1b68c3590634b7d8a01a213d51fb329
+msgid "Overall Architecture"
+msgstr "总体结构"
+
+#: ../../source/architecture/architecture.md:3 b0806dc7d42345b9a23e90c49a663571
+msgid "Architecture Diagram"
+msgstr "架构图"
+
+#: ../../source/architecture/architecture.md:4 847b0daf869d48d3b7140351eaff2e1a
+msgid ""
+"As a distributed database, DingoDB is designed to consist of multiple "
+"components. These components communicate with each other and form a complete "
+"DingoDB system. The architecture is as follows:"
+msgstr ""
+"作为一个分布式数据库，DingoDB 由多个组件组成。这些组件相互通信，组成一个完整的"
+"系统。其架构如下："
+
+#: ../../source/architecture/architecture.md:6 aa3e9334fbeb408e9e3f07c05bf9f47b
+msgid "![Architecture about DingoDB](../../images/dingodb-architecture.png)"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:6 e017f959ce234701933ea35dd31ec1d1
+msgid "Architecture about DingoDB"
+msgstr "关于 DingoDB 的架构"
+
+#: ../../source/architecture/architecture.md:8 035f4b20aa97429ea6aa73da5ed33709
+msgid "Component List"
+msgstr "组件"
+
+#: ../../source/architecture/architecture.md:9 5dedb66a3e4a468c95090dfbb5a4d827
+msgid "1. Computer Layer"
+msgstr "1.计算层"
+
+#: ../../source/architecture/architecture.md:10 610e2e1309664fbca8b27254eb86089c
+msgid ""
+"The computer layer is a stateless SQL layer that exposes the connection "
+"endpoint of DingoDB using JDBC protocol to the outside. The Coordinator "
+"receives SQL requests, performs SQL parsing and optimization, and ultimately "
+"generates a distributed execution plan. It is horizontally scalable and "
+"provides the unified interface to the outside through the load balancing "
+"components such as Linux Virtual Server (LVS), HAProxy, or F5. The computer "
+"layer does not store data and is only for computing and SQL analyzing, "
+"transmitting actual data read requests to the storage layer."
+msgstr ""
+"计算层是一个无状态 SQL 层，使用 JDBC 协议向外部公开 DingoDB 的连接端点。 "
+"Coordinator 接收 SQL 请求，执行 SQL 解析和优化，并最终生成分布式执行计划。 "
+"Coordinator 可水平扩展，并通过负载均衡组件（如 Linux 虚拟服务器 (LVS)、HAProxy "
+"或 F5）向外部提供统一接口。 计算层不存储数据，仅用于计算和 SQL 分析，并将实际数"
+"据读取请求传送到存储层。"
+
+#: ../../source/architecture/architecture.md:12 54d40747afd84d68a44de8a7bea50b45
+msgid "Executor"
+msgstr "Executor"
+
+#: ../../source/architecture/architecture.md:13 84199e4dd1a64cc1b75965f4aee9b000
+msgid ""
+"Executor acts as a SQL Server, parsing and responding to SQL requests and "
+"other management requests from the Client side, realizing the JDBC protocol;  "
+"performs Job management, realizing distributed execution of Tasks;  calls the "
+"lower Meta, Store APIs through the SDK to realize database functions."
+msgstr ""
+"Executor 充当 SQL 服务器，解析并响应来自客户端的 SQL 请求和其他管理请求，实现 "
+"JDBC 协议；执行任务管理，实现任务的分布式执行；通过 SDK 调用下层 Meta、Store "
+"API，实现数据库功能。"
+
+#: ../../source/architecture/architecture.md:16 c2ef746e4371478ab36affef05e13f50
+msgid "Dingo Proxy"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:17 5d5879dc51894071b1ce6b14e3eb3d3e
+msgid ""
+"Serves as a bridging layer for vector operations and provides HTTP/gRPC "
+"interfaces for the Python SDK."
+msgstr "作为矢量操作的桥接层，为 Python SDK 提供 HTTP/gRPC 接口。"
+
+#: ../../source/architecture/architecture.md:19 f1968a021d614c0c9abff3c6bf46052b
+msgid "2. Storage Layer"
+msgstr "2.存储层"
+
+#: ../../source/architecture/architecture.md:20 3c6d9d1fdc3549a0aa9c5dd8fda33c4f
+msgid ""
+"The storage layer supports row and column storage mode. Row mode supports high-"
+"frequency insert and update scenarios; Column mode supports interactive "
+"analysis and multi-dimensional aggregation analysis in real-time and so on."
+msgstr ""
+"存储层支持行存储和列存储模式。行模式支持高频插入和更新，列模式支持交互式分析和"
+"多维实时聚合分析等。"
+
+#: ../../source/architecture/architecture.md:22 3b01e1b96a6d43e2845a3bd2117d5a8a
+msgid "Coordinator"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:23 249be3ca98634a90958a32a37e5b3973
+msgid ""
+"Coordinator is responsible for metadata management, recording the table "
+"structure and deciding the distribution of data in store nodes; scheduling "
+"management, responsible for allocating and managing data slices; monitoring "
+"the status of the cluster by receiving heartbeats from store nodes; in "
+"addition to providing global services."
+msgstr ""
+"Coordinator 负责元数据管理，记录表结构并决定数据在存储节点中的分布；执行调度管"
+"理，负责分配和管理数据片；通过接收存储节点的心跳来监控集群状态；此外还提供全局"
+"服务。"
+
+#: ../../source/architecture/architecture.md:24 ae45edc85c4545fe9fde42fde01a9795
+msgid "Store"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:25 c8732780a4b7400c8300e5245ac5f28d
+msgid ""
+"In row storage mode, the store is a distributed key-value storage engine "
+"embedded in Executor. The region is the basic unit to store and replicate "
+"data. Each Region stores the data for a particular Key Range which is a left-"
+"cleosed and right-open interval from StartKey to EndKey. Multiple Regions "
+"exist in each Executor node. Executor APIs provide native support to operator "
+"data,  such as get, put, scan, iterator, and so on."
+msgstr ""
+"在行存储模式下，store 是嵌入 Executor 的分布式键值存储引擎。region 是存储和复制"
+"数据的基本单位。每个 region 存储特定 \"键范围 \"的数据。\"键范围 \"是从 "
+"StartKey 到 EndKey 之间的一个左闭右开的区间。每个 Executor 节点都有多个region。"
+"Executor API 为操作符数据提供本地支持，如 get、put、scan、iterator等。"
+
+#: ../../source/architecture/architecture.md:27 f0d4ae0565dd4f538dad2ecda374494e
+msgid "3. Clients"
+msgstr "3.客户端"
+
+#: ../../source/architecture/architecture.md:28 0be731adebae40f79e7df3d51b993ba1
+msgid ""
+"Outside the DingoDB cluster, you can use clients to connect to DingoDB to do "
+"analysis. The client has Jdbc-driver and Sqlline mode."
+msgstr ""
+"在 DingoDB 集群之外，你可以使用客户端连接到 DingoDB 进行分析。客户端有 Jdbc 驱"
+"动和 Sqlline 模式。"
+
+#: ../../source/architecture/architecture.md:30 3ab2ccd0704442dcaa2d5c754d894365
+msgid "JDBC Driver"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:31 29da4136766f458d94038303ad9d0f97
+msgid ""
+"JDBC stands for Java Database Connectivity, which is a standard Java API for "
+"database-independent connectivity between the Java programming language and a "
+"wide range of databases. DingoDB is a flexible distributed database, you can "
+"use any database tool embedded [dingo-thin-client](/get_started/"
+"how_to_use_dingodb.md) to connect to DingoDB such as the universal database "
+"tool [dbeaver](https://dbeaver.io/) ."
+msgstr ""
+"JDBC 是 Java Database Connectivity（Java 数据库连接）的缩写，它是一种标准的 "
+"Java API，用于在 Java 编程语言和各种数据库之间建立独立于数据库的连接。DingoDB是"
+"一个灵活的分布式数据库，你可以使用任何嵌入[dingo-thin-client](/get_started/"
+"how_to_use_dingodb.md)的数据库工具来连接DingoDB，比如通用数据库工具[dbeaver]"
+"(https://dbeaver.io/)。"
+
+#: ../../source/architecture/architecture.md:33 8a857ded6adc4e7cae143891d14c9c93
+msgid "Sqlline"
+msgstr ""
+
+#: ../../source/architecture/architecture.md:34 7aedeb91377a43dfa45d302b09fc27eb
+msgid ""
+"SQLLine is a pure-Java console based utility for connecting to DingoDB and "
+"executing SQL commands,you can use it like `sqlplus `for Oracle,`mysql` for "
+"MySQL. It is implemented with the open source project [sqlline](https://"
+"github.com/julianhyde/sqlline)."
+msgstr ""
+"SQLLine 是一款基于纯 Java 的控制台工具，用于连接 DingoDB 并执行 SQL 命令。它是"
+"通过开源项目 [sqlline](https://github.com/julianhyde/sqlline) 实现的。"
+
+#~ msgid ""
+#~ "The Executor is responsible for storing data. After processing SQL "
+#~ "statements, the `Coordinator` server converts the SQL execution plan to an "
+#~ "actual call to the Executor API. All the data in Executor is automatically "
+#~ "maintained in multiple replicas (three replicas by default), so Executor "
+#~ "has native high availability and supports automatic failover."
+#~ msgstr ""
+#~ "Executor负责存储数据。在处理完 SQL 语句后，Coordinator 服务器会将 SQL 执行计"
+#~ "划转换为对 Executor API 的实际调用。Executor 中的所有数据都会自动保存在多个"
+#~ "副本中（默认情况下有三个副本），因此 Executor 具有本地高可用性并支持自动故障"
+#~ "转移。"

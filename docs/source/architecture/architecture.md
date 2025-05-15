@@ -3,15 +3,16 @@
 ## Architecture Diagram
 As a distributed database, DingoDB is designed to consist of multiple components. These components communicate with each other and form a complete DingoDB system. The architecture is as follows:
 
-![Architecture about DingoDB](../../images/dingo-architecture_old.png)
+![Architecture about DingoDB](../../images/dingodb-architecture.png)
 
 ## Component List
 ### 1. Computer Layer
 The computer layer is a stateless SQL layer that exposes the connection endpoint of DingoDB using JDBC protocol to the outside. The Coordinator receives SQL requests, performs SQL parsing and optimization, and ultimately generates a distributed execution plan. It is horizontally scalable and provides the unified interface to the outside through the load balancing components such as Linux Virtual Server (LVS), HAProxy, or F5. The computer layer does not store data and is only for computing and SQL analyzing, transmitting actual data read requests to the storage layer.
 
 #### Executor
-The Executor is responsible for storing data. After processing SQL statements, the `Coordinator` server converts the SQL execution plan to an actual call to the Executor API. All the data in Executor is automatically maintained in multiple replicas (three replicas by default), so Executor has native high availability and supports automatic failover.
-
+Executor acts as a SQL Server, parsing and responding to SQL requests and other management requests from the Client side, realizing the JDBC protocol; 
+performs Job management, realizing distributed execution of Tasks; 
+calls the lower Meta, Store APIs through the SDK to realize database functions.
 #### Dingo Proxy
 Serves as a bridging layer for vector operations and provides HTTP/gRPC interfaces for the Python SDK.
 
@@ -19,8 +20,7 @@ Serves as a bridging layer for vector operations and provides HTTP/gRPC interfac
 The storage layer supports row and column storage mode. Row mode supports high-frequency insert and update scenarios; Column mode supports interactive analysis and multi-dimensional aggregation analysis in real-time and so on.
 
 #### Coordinator
-The Coordinator is the metadata managing component of the entire cluster using raft consensus protocol. It stores metadata of real-time data distribution on `Executor` and the topology structure of the entire DingoDB cluster. The Coordinator server is "the brain" of the entire DingoDB cluster because it not only stores metadata of the cluster, but also sends data scheduling commands to specific `Executor` nodes according to the data distribution state reported by `Executor` nodes in real-time. In addition, the Coordinator server consists of three nodes at least and has high availability. It is recommended to deploy an odd number of Coordinator nodes.
-
+Coordinator is responsible for metadata management, recording the table structure and deciding the distribution of data in store nodes; scheduling management, responsible for allocating and managing data slices; monitoring the status of the cluster by receiving heartbeats from store nodes; in addition to providing global services.
 #### Store
 In row storage mode, the store is a distributed key-value storage engine embedded in Executor. The region is the basic unit to store and replicate data. Each Region stores the data for a particular Key Range which is a left-cleosed and right-open interval from StartKey to EndKey. Multiple Regions exist in each Executor node. Executor APIs provide native support to operator data,  such as get, put, scan, iterator, and so on. 
 

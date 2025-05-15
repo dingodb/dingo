@@ -1,0 +1,153 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 17:57+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_query_document.md:1 0b042e1dbb254999b88c38a2a9df466d
+msgid "Document Index"
+msgstr "文件索引"
+
+#: ../../source/sql/sql_query_document.md:2 dc9e168bd32846ce8daf8d23bb771c99
+msgid "The relevant syntax for DingoDB document indexing is designed as follows:"
+msgstr "DingoDB 文档索引的相关语法设计如下："
+
+#: ../../source/sql/sql_query_document.md:3 c3a588cb10e345b796a277cb61368516
+msgid "Create Table"
+msgstr "创建表格"
+
+#: ../../source/sql/sql_query_document.md:20 847298d4eb6e454aa30f3c1539f02d5e
+msgid "Parameters for full text index when building table:"
+msgstr "建表时的全文索引参数："
+
+#: ../../source/sql/sql_query_document.md:22 e5df895327614e409891be38ace7c189
+msgid ""
+"text_id is required, full-text index unique identification ID, ID > 0, text_id "
+"can be feature_id, if it is INT64 type, if you want to index text_id, you need "
+"to add one more parameter with the same name in TEXT()."
+msgstr ""
+"text_id 是必填项，全文索引唯一标识 ID，ID > 0，text_id 可以是 feature_id，如果"
+"是 INT64 类型，如果要索引 text_id，需要在 TEXT() 中再添加一个同名参数。"
+
+#: ../../source/sql/sql_query_document.md:24 058d38fe1a6f4a7fbe3faa4919bd74ca
+msgid ""
+"description, category, rating are the fields of full text index, only 4 types "
+"are allowed: INT64, DOUBLE, STRING, BYTES, the fields of full text index "
+"should include at least two fields, one of the two fields must be text_id."
+msgstr ""
+"description、category、rating 是全文本索引的字段，只允许使用 4 种类型： 全文本"
+"索引的字段至少应包括两个字段，其中一个字段必须是 text_id。"
+
+#: ../../source/sql/sql_query_document.md:26 c129d95fbafb476d8881413535ea32c4
+msgid ""
+"Note: text_fields in parameters is the user filled in about the full-text "
+"indexed fields of the word splitter parameters, must be full-text indexed "
+"fields are filled in."
+msgstr ""
+"注：text_fields 中的参数是用户填写的有关全文索引字段的分词器参数，必须是全文索"
+"引字段中填写的内容。"
+
+#: ../../source/sql/sql_query_document.md:28 6cef63033e3147168c6d5abf05f3d008
+msgid "Insert"
+msgstr "插入"
+
+#: ../../source/sql/sql_query_document.md:32 f8cdf6de84e4485f98cd170cac14fb1d
+msgid "Query"
+msgstr "查询"
+
+#: ../../source/sql/sql_query_document.md:33
+#: ../../source/sql/sql_query_document.md:62 4f3f7e6785a94dd1a4715efad0518f3e
+#: f78b2785ed01446cbbf8ddebc8f0461e
+msgid "Sample 1"
+msgstr "样本 1"
+
+#: ../../source/sql/sql_query_document.md:43 e79d1a2818544a8faf978f91fe18d98f
+msgid ""
+"New text_search function for full-text index bm25 recall, the first parameter "
+"is the table name, the second parameter is the full-text index name, the third "
+"parameter is the expression used for retrieval, need to comply with the "
+"Tantivy requirements of the expression, please note that whether the "
+"expression is legal or not, it is Tantivy check. If the third parameter is not "
+"written, the default is a null character. The fourth parameter is similar to "
+"the vector's top 5, returning the top 5 rows with the highest scores. If the "
+"four parameters are not written, the default is 1."
+msgstr ""
+"新增 text_search 函数，用于全文索引 bm25 的调用，第一个参数是表名，第二个参数是"
+"全文索引名，第三个参数是用于检索的表达式，需要符合 Tantivy 对表达式的要求，请注"
+"意表达式是否合法，这需要 Tantivy 检查。如果未写入第三个参数，则默认为空字符。第"
+"四个参数类似于向量的 top 5，返回得分最高的前 5 行。如果未写入这四个参数，默认值"
+"为 1。"
+
+#: ../../source/sql/sql_query_document.md:44 912fd67052474560b03cc17ac170a728
+msgid ""
+"Note: The third parameter retrieves the expression used to retrieve multiple "
+"clauses is when the logical operation OR, AND will be used, which must be used "
+"in uppercase. If it is lowercase, there will be different semantics. tantivy "
+"will be treated as multiple words in the corresponding field to match, rather "
+"than multiple clauses to match."
+msgstr ""
+"注意：当使用逻辑运算 OR、AND 时，第三个参数将检索用于检索多个条款的表达式，该表"
+"达式必须使用大写。如果是小写，则语义不同。tantivy 将被视为相应字段中的多个要匹"
+"配的单词，而不是多个要匹配的条款。"
+
+#: ../../source/sql/sql_query_document.md:46
+#: ../../source/sql/sql_query_document.md:81 6392436656134e76954d2e1491b4ab05
+#: db22a5afc20e45ee9b4095bb3cc7862d
+msgid "Sample 2"
+msgstr "样本 2"
+
+#: ../../source/sql/sql_query_document.md:59 9d9f6c22fc54409f87b436ae62b61fca
+msgid "Get the 5 rows with the highest scores and sort them by rank_bm25 score."
+msgstr "获取得分最高的 5 行，并按 rank_bm25 分数排序。"
+
+#: ../../source/sql/sql_query_document.md:61 b6ff4aefb7ca4d5493632986829e88f9
+msgid "Multi-way Recall"
+msgstr "多路召回"
+
+#: ../../source/sql/sql_query_document.md:79 789702531c054ad4ac4ccbe02acb0574
+msgid ""
+"Support hybrid_search function, realize the full-text index and vector hybrid "
+"search, the first parameter is the full-text index query, the second parameter "
+"is the vector index query, the third parameter is the weight of the full-text "
+"index search, the fourth parameter is the weight of the vector search. The "
+"third and fourth parameters if omitted, the default is 0.5. which such as "
+"paradeDB in similarity_limit_n, bm25_limit_n, Dingo is through the "
+"corresponding function in the top parameter specified."
+msgstr ""
+"支持 hybrid_search 函数，实现全文索引和向量混合搜索，第一个参数是全文索引查询，"
+"第二个参数是向量索引查询，第三个参数是全文索引搜索的权重，第四个参数是向量搜索"
+"的权重。其中如 paradeDB 中的 similarity_limit_n、bm25_limit_n、Dingo 等都是通过"
+"相应函数中的顶层参数指定的。"
+
+#: ../../source/sql/sql_query_document.md:104 603529d134ec488e80997edb5b9ae9fe
+msgid "Sample 3"
+msgstr "样本 3"
+
+#: ../../source/sql/sql_query_document.md:127 d10eea77d99640dabfe318a123f7ed9e
+msgid "Support for `Join` in Mixed Checks"
+msgstr "支持混合检索中的 `连接`"
+
+#: ../../source/sql/sql_query_document.md:129 8da154721fb147a1baac3142aef895c2
+msgid ""
+"Specific syntax support, you need to modify Dingo related syntax extension "
+"file parser.jj, config.fmpp, note that you need to add text_search function "
+"parsing."
+msgstr ""
+"具体的语法支持，需要修改 Dingo 相关的语法扩展文件 parser.jj、config.fmpp，注意"
+"需要添加 text_search 函数解析。"

@@ -1,0 +1,230 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 18:04+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_query_operator.md:1 1b59c2d0f5144412b82b36b55320a604
+msgid "Query Operators"
+msgstr "查询操作符"
+
+#: ../../source/sql/sql_query_operator.md:3 3de3f1c9e3364e7993bd01a4b34a8d31
+msgid "SELECT"
+msgstr "选择"
+
+#: ../../source/sql/sql_query_operator.md:5 9949d00342e34b7b99fb5189e7873d42
+msgid "Retrieves data from a table."
+msgstr "从表中读取数据。"
+
+#: ../../source/sql/sql_query_operator.md:7 d86234340aad44ad9c502c8d6107d654
+msgid "1. SELECT  all"
+msgstr "1. 选择所有"
+
+#: ../../source/sql/sql_query_operator.md:26 f81e9e9623bc4d67b38c12a47465c90f
+msgid "2. SELECT vector"
+msgstr "2. 选择向量"
+
+#: ../../source/sql/sql_query_operator.md:31 c9fbe38ad1d341a889f0904ffb755a72
+msgid "Paramter"
+msgstr "参数"
+
+#: ../../source/sql/sql_query_operator.md 7ad0f5cc760b4e2baf4a0f22de20073e
+msgid "paramter"
+msgstr "参数"
+
+#: ../../source/sql/sql_query_operator.md f95837c8421f4c8da27e83f0cfebe522
+msgid "description"
+msgstr "描述"
+
+#: ../../source/sql/sql_query_operator.md 76dfc3bf79134c86bcd3b8e0568101b4
+msgid "table_name"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md 8691689de1d84fb38ab00a8a5f90f34a
+msgid "Table‘s name."
+msgstr "表名。"
+
+#: ../../source/sql/sql_query_operator.md 1c6cf15b8758490b9e15e37eb7f1f857
+msgid "vector_index"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md 03bfb10b60084f97b8c1123339728291
+msgid "Vector index."
+msgstr "向量指数。"
+
+#: ../../source/sql/sql_query_operator.md c20d028ee74143688d8be4ce8cab83b6
+msgid "m"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md e85cdcb52b3543d18e475382507276db
+msgid "The vector to be queried."
+msgstr "要查询的向量。"
+
+#: ../../source/sql/sql_query_operator.md 8752f929282746868ae1ca9e998dfa52
+msgid "n"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md 374c273bfecf4acc97f57d60c47011f8
+msgid "Refers to the number of rows to be queried."
+msgstr "指要查询的行数。"
+
+#: ../../source/sql/sql_query_operator.md 77798eeb4973445986c1da4e119a9500
+msgid "y"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md 3c1c4d779b4543d4a84115d341828d47
+msgid "Refers to additional query parameters, such as efSearch in HNSW algorithm."
+msgstr "指附加查询参数，如 HNSW 算法中的 efSearch。"
+
+#: ../../source/sql/sql_query_operator.md:41 8c1ff2735ac24d03abf5d2b8994271cb
+msgid "3. SELECT clause"
+msgstr "3. SELECT 子句"
+
+#: ../../source/sql/sql_query_operator.md:61 f911572b129f44429fb0e83a124bee2d
+msgid "4. WHERE"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md:75 01f4b0ce632b4046ba07c8f83ac90358
+msgid "5. Distinct"
+msgstr "5. 去重"
+
+#: ../../source/sql/sql_query_operator.md:118 cc6cf53bb10449ec823dc6e40ca08780
+msgid "6. LIKE"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md:141 e8ed507ef4b7466db2cada0dfcf68f7b
+msgid "7. GROUP BY"
+msgstr ""
+
+#: ../../source/sql/sql_query_operator.md:153 2d09bac8265549ce91b19923251f40f1
+msgid "Join"
+msgstr "连接"
+
+#: ../../source/sql/sql_query_operator.md:155 ff8f53bba4cd4dba9b81c0ee13d45f9d
+msgid "1. Inner Join"
+msgstr "1. 内连接"
+
+#: ../../source/sql/sql_query_operator.md:157 e68059d83c1644959025897a2658ec2a
+msgid ""
+"The relationship in the inner join condition is an equal-quantity relation, "
+"returning all data that satisfies the join condition. If no match is found, the "
+"query result returns an empty result set."
+msgstr ""
+"内部连接条件中的关系是等量关系，返回满足连接条件的所有数据。如果找不到匹配的数"
+"据，查询结果将返回空结果集。"
+
+#: ../../source/sql/sql_query_operator.md:159
+#: ../../source/sql/sql_query_operator.md:194
+#: ../../source/sql/sql_query_operator.md:227
+#: ../../source/sql/sql_query_operator.md:261
+#: ../../source/sql/sql_query_operator.md:299
+#: ../../source/sql/sql_query_operator.md:333 17974189cf264d2cad7fe2bd606dbb86
+#: 58646e516fd64766baf81bfaeb3c6374 5de5919983e448f2a15dad663313467d
+#: 6f889ad3133d491486da21dd3dddfb50 ab44b44d2f2a482b9a18c10f3bfd61e6
+#: ae271c89d3f849e28d54bcadb7d46d65
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_query_operator.md:168
+#: ../../source/sql/sql_query_operator.md:203
+#: ../../source/sql/sql_query_operator.md:236
+#: ../../source/sql/sql_query_operator.md:274
+#: ../../source/sql/sql_query_operator.md:308
+#: ../../source/sql/sql_query_operator.md:342 15b1dfcefcf04f12bd7ee8a7a209c299
+#: 320d2d6754414f2688cfd9f5d3fb8e9c 571f339a05954e478cc0c49d518f53b6
+#: 59164f3459e840f5b6d0b1870a98e636 8d7e2b0859e149c9862f71fb90fa30a8
+#: be0b98e7dbf5489fa25d4ac08b58e7e8
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_query_operator.md:174
+#: ../../source/sql/sql_query_operator.md:209
+#: ../../source/sql/sql_query_operator.md:240
+#: ../../source/sql/sql_query_operator.md:280
+#: ../../source/sql/sql_query_operator.md:314
+#: ../../source/sql/sql_query_operator.md:348 0f9076c90e794690ab4d431d26e892c6
+#: 3c094721926e4a1d864e8829681f8a55 66f044165ea74c8493616cfb6d298869
+#: 818941d1311b47b0949cf3213b316660 abe907eae4c94607870e962bc436e5b3
+#: c55376e9884c43a882ea4f989cf07bef
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_query_operator.md:190 cdfb3154df074a4482ee2efac47356cf
+msgid "2. Inner Join (non-equivalent)"
+msgstr "2. 内连接（非等价）"
+
+#: ../../source/sql/sql_query_operator.md:192 59a365cd0dd148598dd1d7a74fe87d9b
+msgid ""
+"The relationship in the inner join condition is a non-equivalent relationship, "
+"returning all data that satisfies the join condition. If no match is found, the "
+"query result returns an empty result set."
+msgstr ""
+"内连接条件中的关系是一种非等价关系，会返回满足连接条件的所有数据。如果找不到匹配"
+"数据，查询结果将返回空结果集。"
+
+#: ../../source/sql/sql_query_operator.md:223 86eeceb1510049b5ac7f490aa1abfb96
+msgid "3. Full join"
+msgstr "3. 全连接"
+
+#: ../../source/sql/sql_query_operator.md:225 288a70046690463e8181bc82b850ef7a
+msgid ""
+"The join table will contain all the records from the two tables. The join "
+"statement is equivalent to multiplying the two tables and using the NULL value "
+"as the result of missing matches on both sides."
+msgstr ""
+"连接表将包含两个表中的所有记录。连接语句相当于将两个表相乘，并使用 NULL 值作为双"
+"方缺失匹配的结果。"
+
+#: ../../source/sql/sql_query_operator.md:238 ca5dd749374a445094adefc64a4145ef
+msgid "Result set"
+msgstr "结果集"
+
+#: ../../source/sql/sql_query_operator.md:257 beb77cba7f6c41b790011a08ea83a81f
+msgid "4. Cross join"
+msgstr "4. 交叉连接"
+
+#: ../../source/sql/sql_query_operator.md:259 9671c0e719004a268435765096ab582b
+msgid "Returns the Cartesian product of joined tables."
+msgstr "返回连接表的笛卡尔乘积。"
+
+#: ../../source/sql/sql_query_operator.md:295 e7e1f763a1564938aed444f38e36415e
+msgid "5. Left join"
+msgstr "5. 左连接"
+
+#: ../../source/sql/sql_query_operator.md:297 809e17bd6a7b4932bf5ce6f2e6dbe90e
+msgid ""
+"Get all records in the left table, even if there is no corresponding matching "
+"data in the right table. If no match is found, the query result returns an "
+"empty result set."
+msgstr ""
+"获取左表中的所有记录，即使右表中没有相应的匹配数据。如果未找到匹配数据，查询结果"
+"将返回空结果集。"
+
+#: ../../source/sql/sql_query_operator.md:329 8913c7b6ef84488ba2c62f95d80d31c0
+msgid "6. Right join"
+msgstr "6. 右连接"
+
+#: ../../source/sql/sql_query_operator.md:331 ee3f8b7511224a11a97d0fee9826070b
+msgid ""
+"Get all the data in the data table on the right, even if there is no "
+"corresponding data in the table on the left. If no match is found, the query "
+"result returns an empty result set."
+msgstr ""
+"获取右侧数据表中的所有数据，即使左侧数据表中没有相应数据。如果未找到匹配数据，查"
+"询结果将返回空结果集。"

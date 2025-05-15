@@ -1,0 +1,290 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-14 10:58+0800\n"
+"PO-Revision-Date: 2025-05-15 09:25+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:1 d1ec99f2466f465cad1de727e96fb159
+msgid "Release Notes v2.0.0"
+msgstr "版本说明 v2.0.0"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:3 8c90f71571614e0487761f77292e104f
+msgid "New Features"
+msgstr "新增特性"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:4 f2588c68600f497db217d74df03a3633
+msgid "1. Rich Vector Index Types, New DiskANN Disk Index"
+msgstr "1.丰富的向量索引类型，新增DiskANN磁盘索引"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:5 00e050b2f22a4254aa34750633d356b9
+msgid ""
+"New DiskANN Disk Index is added to support efficient disk storage vector search. It "
+"improves the efficiency of large-scale vector data retrieval through approximate nearest-"
+"neighbor search, which is suitable for machine learning and recommendation system "
+"application scenarios."
+msgstr ""
+"新增DiskANN 磁盘索引，支持高效的磁盘存储向量检索。 通过近似最近邻搜索，提高大规模向量数据的"
+"检索效率，适用于机器学习和推荐系统等应用场景。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:6 f3fa2b7e94b846b29c14a700d911e8bb
+msgid ""
+"Python SDK has integrated DiskANN to create interfaces, which makes it easy for developers "
+"to implement high-performance vector search in applications."
+msgstr "Python SDK 已集成 DiskANN 创建接口，便于开发者在应用中实现高性能向量搜索。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:7 36e47e52c2394da5a8da81da9a666b0a
+msgid "2. Full-text indexing enhancements"
+msgstr "2.全文索引功能增强"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:8 01910ea66ad047af9847bf1850c5129d
+msgid ""
+"Introduced full-text search engine, which supports BM25 search algorithm and optimizes the "
+"relevance and efficiency of document searching."
+msgstr "引入全文检索引擎，支持 BM25 检索算法，优化了文档搜索的相关性和效率。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:9 15db90d6a98c44e387ce2e1179114099
+msgid ""
+"C++ SDK and Python SDK now provide a complete full-text index search interface, supporting "
+"multiple query modes to meet different search needs."
+msgstr ""
+"C++ SDK and Python SDK 现提供完整的全文索引检索接口，支持多种查询模式，满足不同的检索需求。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:10 1d03d788c61f4688a8de4b8b1d960105
+msgid ""
+"SQL syntax layer supports full-text index search, allowing users to access full-text index "
+"data through standard SQL statements, simplifying the development process and lowering the "
+"threshold for users."
+msgstr ""
+"SQL 语法层支持全文索引检索，允许用户通过标准SQL 语句访问全文索引数据，简化开发过程，降低用户"
+"使用门槛。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:11 f1535af0e5f44dd7ad0a2b44765c90b7
+msgid ""
+"Full-text indexing supports pre & post filtering, improving query performance and response "
+"speed."
+msgstr "全文索引支持前置和后置过滤功能，提升查询性能和响应速度。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:12 2266a85aec62429db5d215fcd50da2a1
+msgid "3. Multi-Recall Query"
+msgstr "3.多路召回查询"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:13 ca7addb7e66b4feb92a584a6d32441fa
+msgid ""
+"Provides the ability of multi-recall query, supports vector+scalar+full-text index multi-"
+"query, meets complex query scenarios, and improves the query performance."
+msgstr ""
+"提供多路召回查询的能力，支持向量+标量+全文索引的多路查询，满足复杂查询场景，提升查询性能。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:14 1c6cb01e40c04efbb3a92064a9a5ce34
+msgid "4. Multi-tenant Management"
+msgstr "4.多租户管理"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:15 28dfee7892494ac88f8fe16e6df28e87
+msgid ""
+"Realizes a comprehensive multi-tenant management architecture, ensures isolation of "
+"Executor resources among different tenants, and enhances the system's security and "
+"stability."
+msgstr ""
+"实现全面的多租户管理架构，确保不同租户之间的 Executor 资源隔离，增强系统的安全性和稳定性。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:16 990b25f216e14e6da20b08dcd7b615cd
+msgid "5. MVCC RawKV Implementation"
+msgstr "5.MVCC RawKV 实现"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:17 5a4c9f4e375743468bd10775287b59c3
+msgid ""
+"MVCC (Multi-Version Concurrency Control) transformation of RawKV interfaces for scalar "
+"table, vector table and document table, which improves concurrency performance and data "
+"consistency."
+msgstr ""
+"对标量表、向量表及文档表的 RawKV 接口进行了 MVCC （多版本并发控制）改造，提升了并发性能与数"
+"据一致性。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:18 21bee65808c34b778fb08ade934cba4c
+msgid ""
+"New TTL (Time to Live) support for RawKV, which allows users to set the expiration time of "
+"the data, optimizes data storage management, and cleans up the expired data automatically "
+"to save storage space."
+msgstr ""
+"新增 RawKV 的 TTL （生存时间）支持，允许用户设置数据的过期时间，优化数据存储管理，自动清理过"
+"期数据，节省存储空间。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:19 136e67b4577d4331bcd1d15744f0247c
+msgid "6. Online Schema Change"
+msgstr "6.Online Schema Change在线变更"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:20 2fa9b5ab0c7b423cb887f193c1e6efd1
+msgid ""
+"Provides online schema change function, which supports dynamic changes of indexes and "
+"columns without affecting system availability. Users can add, delete or modify columns and "
+"indexes at runtime without downtime during the change period, which significantly improves "
+"system flexibility and maintainability."
+msgstr ""
+"提供在线模式变更功能，支持在不影响系统可用性的情况下进行索引与列的动态变更。用户可以在运行时"
+"添加、删除或修改列及索引，变更期间无需停机，显著提高了系统的灵活性和可维护性。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:21 8e07cdbeb1004b4b848479e8de487ae3
+msgid "7. SQL Syntax Expansion"
+msgstr "7.SQL 语法功能扩展"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:22 7f941bee9902478b9f083dc730f079f9
+msgid ""
+"New Version() function allows developers to quickly get the current version information of "
+"DingoDB, which facilitates the version management."
+msgstr "新增 Version() 函数，允许开发者快速获取 DingoDB 当前版本信息，方便版本管理。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:23 0346ab733a434e4795f28d8c5a91d14b
+msgid ""
+"Supports to check the status of the current transaction in the cluster through SQL query, "
+"using the statement: SELECT * FROM INFORMATION_SCHEMA.DINGODB_TRX, which facilitates the "
+"monitoring and management of transactions, and improves the efficiency of troubleshooting."
+msgstr ""
+"支持通过 SQL 查询查看当前集群中的事务状态，使用语句：SELECT * FROM "
+"INFORMATION_SCHEMA.DINGODB_TRX，便于监控和管理事务，提高了故障排查的效率。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:24 75217c21e9cf4a1bac2f5270fd618a6b
+msgid ""
+"Fully supports SQL syntax related to full-text indexing, which allows developers to query "
+"full-text indexes using standard SQL to support complex query requirements and lower the "
+"threshold of database usage."
+msgstr ""
+"全面支持全文索引相关的 SQL 语法，开发者可以使用标准 SQL 查询全文索引，支持复杂的查询需求，降"
+"低数据库的使用门槛。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:25 80ca32dd755946ac87522665b81fbbe7
+msgid ""
+"Provides multi-tenant SQL syntax support, making data operations in multi-tenant "
+"environments more convenient and efficient, and simplifying cross-tenant data management."
+msgstr ""
+"提供多租户 SQL 语法支持，使得在多租户环境中数据操作更加便捷与高效，简化了跨租户的数据管理。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:27 219afe7e325241c9b12102cf04fec150
+msgid "Feature Optimizations"
+msgstr "优化特性"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:28 185a7936d474427aacf286a444f7838c
+msgid "1. Distributed Transaction Optimization"
+msgstr "1.分布式事务优化"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:29 3b78c4d3fbd84dbd8dfdbc2f703dcbab
+msgid ""
+"Single Region Transaction Support: Support submitting transactions in a single Region, "
+"simplifying transaction management"
+msgstr "单 Region 事务支持：支持在单个 Region 内提交事务，简化事务管理"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:30 5c1bd8d6b8864022afdc559b09c6301a
+msgid ""
+"Pessimistic Transaction Performance Optimization: Support reading data when locking, allow "
+"reading locked data when executing a pessimistic lock, reduce transaction waiting time, "
+"thus improving concurrent performance"
+msgstr ""
+"悲观事务性能优化：加锁时支持读取数据，允许在执行悲观锁时读取被锁定的数据，减少事务等待时间，"
+"从而提升并发性能"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:31 851b0f82e2194d959ac36ef1a574750a
+msgid "2. Refactoring Dingo-Client"
+msgstr "2.重构 Dingo-Client"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:32 f4d27f5a61c041baac444d1c0e6ab59b
+msgid ""
+"Dingo-Client has been completely refactored to improve the interface design and "
+"performance, and enhance the user experience"
+msgstr "Dingo-Client 经过全面重构，改善了接口设计与性能，增强了用户体验"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:33 dc2f3b407ac34eab9df690a79b101061
+msgid "3. Executor layer Task execution mechanism optimization"
+msgstr "3.Executor 层 Task 执行机制优化"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:34 ece1b74a5af64fc38fd9c1ceedf22c4b
+msgid ""
+"Manual task cancellation: support for manual task cancellation during task execution, which "
+"provides more flexible task management capabilities for developers. task management "
+"capabilities, and can effectively handle tasks that run for a long time."
+msgstr ""
+"手动取消任务：支持在任务执行过程中手动取消任务，为开发者提供了更灵活的任务管理能力，能够有效"
+"处理长时间运行的任务。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:35 295d59a6094049eaad7875205e671cf3
+msgid ""
+"Abnormal Task Handling: Implemented an abnormal task monitoring and handling mechanism to "
+"ensure that the task can be recovered or retried in a timely manner when it fails, which "
+"improves the robustness of the internal system."
+msgstr ""
+"异常任务处理：实现了异常任务的监控与处理机制，确保在任务失败时能够及时恢复或重试，提升内部系"
+"统的健壮性。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:36 34d33eca68c24ea7b9d0a51fc3ad3584
+msgid "4. Shared Raft Log Storage"
+msgstr "4.实现共享 Raft 日志存储"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:37 2e949cc56c60493e92b439026cf7512e
+msgid ""
+"Implemented a shared Raft log storage mechanism, which reduces storage overhead. storage "
+"overhead."
+msgstr "实现共享 Raft 日志存储机制，减少了存储开销。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:38 96a7a5aec57043cd9dbd50cf00fd53d9
+msgid "5. Optimize the use of Region"
+msgstr "5.Region 使用优化"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:39 eb025bf28b35449d873fa816d6a44d46
+msgid ""
+"support for viewing the current Region information: Users can view the status and "
+"information of the current Region, which improves the user's visual management of the "
+"system."
+msgstr ""
+"支持查看当前 Region 信息：用户能够查看当前 Region 的状态与信息，提升了用户对系统的可视化管理"
+"能力。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:40 9cf228653bd642f0b0b41841c34738f5
+msgid ""
+"support for querying the Region to which the row data belongs: Users can query the Region "
+"information to which the data belongs to a certain row of a table, which facilitates data "
+"location and management of the system. Region information: Users can query the information "
+"of the Region to which a row of data belongs in a table, which is convenient for data "
+"positioning and problem troubleshooting."
+msgstr ""
+"支持查询行数据所属的 Region ：用户可以查询表中某行数据所属的 Region 信息，便于进行数据定位和"
+"问题排查。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:41 73518da39bc54e20a93aee99357cfa41
+msgid ""
+"Manual Modification of Region Status: Supports manual modification of the Region status, "
+"which allows users to manually intervene under the necessary conditions, making the use of "
+"Region more flexible."
+msgstr ""
+"手动修改 Region 状态：支持手动修改 Region 状态，允许用户在必要条件下进行手动干预，使Region "
+"使用更加灵活。"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:42 ce9b624b78a74090b689e94fc8cbb0de
+msgid "6. GC Mechanism Optimization"
+msgstr "6.GC 机制优化"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:43 c257b7d53f064815a78b4ad73192d32c
+msgid ""
+"adds the new function of MVCC Multi-Version Control to add the GC mechanism. GC mechanism"
+msgstr "新增功能MVCC 多版本控制添加GC 机制"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:44 6982e128cb554286ba29e99b3948e9b2
+msgid "new multi-tenant management add GC mechanism"
+msgstr "新增多租户管理添加GC 机制"
+
+#: ../../source/release_notes/dingodb_2_0_0_rn.md:45 ff2bd0de85ee40d0985588cb3b155fd8
+msgid "new feature full text index add GC mechanism"
+msgstr "新增功能全文索引添加GC 机制"

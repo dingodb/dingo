@@ -1,0 +1,46 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 18:37+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/03_deploy_on_ansible.md:1
+#: 88e27b6f0dbc4ec8a1cfff7440255a68
+msgid "Deploy On Ansible"
+msgstr "在 Ansible 上部署"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/03_deploy_on_ansible.md:3
+#: 572b54005bd24ca097b1ccee3ea89687
+msgid "Start to Deploy DingoDB"
+msgstr "开始部署 DingoDB"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/03_deploy_on_ansible.md:13
+#: fc2999b87fbd42e09571d89e070f6732
+msgid "Ansible usage"
+msgstr "Ansible 的使用"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/03_deploy_on_ansible.md:15
+#: c6c75ef9f5884a17b003a068c25f768d
+msgid "**Command-line usage**"
+msgstr "**命令行使用**"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/03_deploy_on_ansible.md:26
+#: 9db76ef0666f480f96b814c7835852ca
+msgid "**Management tool DingoControl**"
+msgstr "**管理工具 DingoControl**"

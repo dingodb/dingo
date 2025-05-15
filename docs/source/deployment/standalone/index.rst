@@ -1,4 +1,4 @@
-Single-machine
+standalone
 ========
 
 .. toctree::

@@ -6,11 +6,11 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DingoDB \n"
+"Project-Id-Version:  DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2025-05-14 10:34+0800\n"
+"PO-Revision-Date: 2025-05-12 18:17+0800\n"
+"Last-Translator: \n"
 "Language: zh_CN\n"
 "Language-Team: zh_CN <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
@@ -20,276 +20,282 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:1
-#: 4cf52c0f4ab14a7b8b8122ff20dc8470
+#: ead03bee6b2a4862b8af6dbbb564051c
 msgid "Deploy In Single Node Using Docker"
-msgstr ""
+msgstr "使用 Docker 在单节点中部署"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:3
-#: 6281be2f0c9145abb979e4175f80a2c8
+#: 41ef9ab62de64a8d8829c8736a387607
 msgid ""
 "For the convenience of developers, the deployment of DingoDB can also "
 "choose docker-compse mode."
-msgstr ""
+msgstr "为了方便开发者，DingoDB 的部署还可以选择 docker-compse 模式。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:6
-#: 892a4e50004744ee821aafd3c2d01dbc
+#: 9eba4a73d7ed4673b3fae80b8860fe2c
 msgid "Deploy Architecture View"
-msgstr ""
+msgstr "部署架构视图"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:8
-#: 1e3ebe8ddce34828937a07671eb45753
+#: f6a07dea5062426c9588565e7578a2a0
 msgid ""
 "There are many types of roles in the cluster mode of DingoDB, such as "
 "coordinator, executor, dingo-store, and the cluster mode requires at "
 "least three machines. The architecture view can refer [dingo-deploy-"
 "architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html)."
 msgstr ""
+"在集群模式下，DingoDB 有多种类型的角色，如 coordinator、executor、dingo-"
+"store，集群模式至少需要三台机器。架构视图可参考 [dingo-deploy-"
+"architecture](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html)。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:10
-#: 4b92c8d414b345ee9ac9549dbf0b2061
+#: 14ecce3f6c6244279da9b93f52c308ce
 msgid "Directory Structure Planning"
-msgstr ""
+msgstr "目录结构规划"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: ad11f096f0d349b494d9b26756d7c446
+#: e4d2be3669754b16930b98aa3781db51
 msgid "Directory Types"
-msgstr ""
+msgstr "目录类型"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: e935ed01f5e1497ca3480f4bd8bfd990
+#: b3c330734e63473bbd4a0aa34d6e8d1e
 msgid "Path"
-msgstr ""
+msgstr "路径"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 980c93ac9f8a4289bee76effc1165e78
+#: f741fb8c1e2a4c39a620c671631fe243
 msgid "Program installation path"
-msgstr ""
+msgstr "程序安装路径"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: ad58506e22444ab997a3d34aa299fcae
+#: 883a5eecba88424ab6a5ed7b2b62f51c
 msgid "/opt"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 65801d3dd6cb47ef93524d8562effcb8
+#: 6fb7ffeae893461a8c5758d51d5c0723
 msgid "dingo-store script path"
-msgstr ""
+msgstr "dingo-store 脚本路径"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 0860df80e339486b91612604ef479593
+#: 1db930447c7146d0a245552f016c66f1
 msgid "/opt/dingo-store/scripts"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 8c8131d647154d3a9a0e4754368885a2
+#: 479dcfa2d0cd447aadb834daf0580f81
 msgid ""
 "dingo-store deployment path <br/>(including separate data and log "
 "directories)"
-msgstr ""
+msgstr "dingo-store 部署路径 <br/>（包括单独的数据和日志目录）"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: adfc1a5211204cbabfaf73d0202afbe9
+#: b3d7cb1de5094b30b91fb31c417e2bbb
 msgid "/opt/dingo-store/dist"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 8ba211f04da64aa094052361bf84995a
+#: 3ce636cac7b14f80970479d8eedba21f
 msgid "executor's script path"
-msgstr ""
+msgstr "执行程序的脚本路径"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: da29332344df492aaa3eb8334aaad9c0
+#: 8d3e7a3fa372459481d800165c3516e1
 msgid "/opt/dingo/bin"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: f3feb2aef0a94c45a5e9e2dc6fa835ff
+#: 21c3baf91db34c519c056c178ade2c5f
 msgid "executor's log path"
-msgstr ""
+msgstr "executor日志路径"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: e5a33718f0af4edca31d610ee5e56210
+#: d6bfa4558cf74a899700c5c4e01f96ea
 msgid "/opt/dingo/log"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:20
-#: 2a6624f32749405992f46a4796265435
+#: 9f3751d2dd534f0182da469fe6a97905
 msgid "User group planning"
-msgstr ""
+msgstr "用户组规划"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 04e6865866114d4cacd6169c16b0dbdd
+#: 87dcba2ba0ff49efb9be29f0798b8144
 msgid "Deployment Method"
-msgstr ""
+msgstr "部署方法"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: cc9874dc10df471cbe71af6b5ec60b1a
+#: 15f5a33b4da84f6887f4421abec3f81e
 msgid "User name"
-msgstr ""
+msgstr "用户名"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 743f5fa8360440b4884244bfacbfc363
-msgid "Gorup name"
-msgstr ""
+#: c10b875a11524687a6cf17e7b270738c
+#, fuzzy
+msgid "Group name"
+msgstr "群组名称"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 8aa9f5be4cbb47658e8680dbda59ce2f
+#: b2efc1a840c040debcc7daba283f36c6
 msgid "docker deploy"
-msgstr ""
+msgstr "docker 部署"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: cfb2c5a1ab9d4187978cfb5f50a721c2 dd6cfd438bab41e0bab66cf216e8d826
+#: 00819790ba744f03a1ad739c99908a75 b96a7c8aefd4496baced7dade9a7af1e
 msgid "root"
-msgstr ""
+msgstr "root"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:26
-#: 79982246e71640e89f98cee8ca3a36cd
+#: c0615fd205fc49f2b6070f4450fff704
 msgid "Component list and port usage"
-msgstr ""
+msgstr "组件清单和端口使用情况"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 3a99224a6ed54cb1a5360fd6dd47958e
+#: 035ac5101d2f4105b614a01154cdbf9f
 msgid "Component"
-msgstr ""
+msgstr "组件"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 21d8756370644d64873a60fc1faf8baa
+#: 5d6425496dd247deaea7145d1b147bb4
 msgid "Version"
-msgstr ""
+msgstr "版本"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: c8bb38ea833b4b119b11f3a0e899bbc1
+#: 6de3c413c03345b78069b3a123c9fb80
 msgid "Port"
-msgstr ""
+msgstr "root"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: f14e201551114995ad22cd777d5eb06a
+#: 4573821453c74e399a092360c8d16aec
 msgid "Remarks"
-msgstr ""
+msgstr "备注"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 8197a614bb184991ac45f3aee467984f
+#: b52c009bf43c4fdeba589e0bef300ff9
 msgid "DingoDB"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 36e8e38bc4be41a5b611b33c711406a6
+#: 39fbf86e3f434937aa4ec7516d3fcd84
 msgid "0.7.0"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 42d8502f6e83496383ea75ffe674de61
+#: 23678652d1e741a8bd97800700dbaf5f
 msgid ""
 "raft:22101-22103/20101-20103     <br/>server:22001-22003/20001-20003     "
 "<br/>executor:3307/8765"
 msgstr ""
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md
-#: 9b5d1d0723584999ab7a8ee583a07721
+#: a8f5a83093464aab8ab2ce095b1b0b4c
 msgid "Real-time analytics database"
-msgstr ""
+msgstr "实时分析数据库"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:31
-#: ca1400f3a8564887bea19f59309e1459
+#: 9b0f98153c8540afad18a28a3b0065c3
 msgid "Installation Notes"
-msgstr ""
+msgstr "安装说明"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:33
-#: 78b97964f3914920af8dc5a30452b494
+#: 97f8348b14144d64821f1f91333e68b4
 msgid "1.Environment Setup"
-msgstr ""
+msgstr "1.环境设置"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:34
-#: 10591c3c982c4bb187dabd1d0f68f319
+#: 3ee14ae9acfe49e3871083d25750cc15
 msgid "(1) Environment Description"
-msgstr ""
+msgstr "(1) 环境描述"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:35
-#: 85af31dd54e945b59c1725f8802cabb6
+#: 23eb813526de4fe58566209f4176ebdf
 msgid ""
 "Currently, docker-compose startup is only supported on Linux "
 "environments. Windows and macOS do not support the host network mode of "
 "Docker."
-msgstr ""
+msgstr "目前，只有 Linux 环境支持 docker-compose 启动。Windows 和 macOS 不支持 Docker 的主机网络模式。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:37
-#: 36d95026d38e4938a731b118faf51c38
+#: 9b88cbbaed084d0d8cadef5649436c59
 msgid ""
 "You need to configure the git, Docker, and docker-compose environments in"
 " advance."
-msgstr ""
+msgstr "您需要事先配置好 git、Docker 和 docker-compose 环境。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:48
-#: 813f727eb1d94a9d914a88e8d7b69f8f
+#: f2efc6e3b3fd4854b9ad308bfe25ab5e
 msgid "1.2 Pull container"
-msgstr ""
+msgstr "1.2 拉取容器"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:54
-#: c138b01c5d664e5e8b3b251e305df0ee
+#: 4b1c2afe16a345be8e8a2b0c4e5b4abb
 msgid "2. Starting a container based on Docker Compose"
-msgstr ""
+msgstr "2. 基于 Docker Compose 启动容器"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:56
-#: a642b36d51d24b488ca64560b515eadc
+#: f7b601ed102b4fbb9189543bff4f8f35
 msgid "(1) Pull the corresponding Docker Compose configuration"
-msgstr ""
+msgstr "(1) 提取相应的 Docker Compose 配置"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:66
-#: 89e4747a77334b08bdb906d7d7f09660
+#: 474665622ab84927b5509283b27673ea
 msgid "(2) Configuration file description"
-msgstr ""
+msgstr "(2) 配置文件说明"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:67
-#: bd5fa2827be84c2392da4b1344e885e6
+#: 2a555f23aa354900b2254e9bc5dd7698
 msgid ""
 "The docker-compose file includes 3 coordinators, 3 stores, 3 indexes, 1 "
 "executor, and 1 proxy. You can modify the file to start only a subset of "
 "these nodes or add more nodes based on your actual needs."
 msgstr ""
+"docker-compose 文件包括 3 个coordinators、3 个store、3 个index、1 个executor和 1 "
+"个proxy。你可以修改文件，只启动这些节点中的一部分，或者根据实际需要添加更多节点。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:69
-#: 1cd7ce1ae92d4eb9af6f0fab1ceb3018
+#: 86839a96726f4213b290db50cae56822
 msgid ""
 "The coordinators, stores, and indexes use the host network mode, while "
 "the executor and proxy use the bridge network mode."
-msgstr ""
+msgstr "coordinator、store和 index使用主机网络模式，而executor 和proxy 使用桥接网络模式。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:71
-#: f5317e9a64f34ed58310c0c510daa7a5
+#: f3cd3772552441f1be4c48ee635c423f
 msgid "(3) Start the corresponding containers"
-msgstr ""
+msgstr "(3) 启动相应的容器"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:81
-#: 97d1c28a16534cc9b43d648daaa6664b
+#: 1cb6862f03c8485e8511dfaae9d8119e
 msgid "3. View the status of cluster"
-msgstr ""
+msgstr "3. 查看集群状态"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:83
-#: 313c082fa8974b23bd3715e5ad5a8f94
+#: c6e7b6d505b04082bcdba908d51bc514
 msgid "(1) Check the status of the containers"
-msgstr ""
+msgstr "(1) 检查容器状态"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:84
-#: 91fd7caa4f2d4b8db037cdb42daac6b0
+#: f4bc3f15c64c415c9576c77d032cb234
 msgid ""
 "To check if all 11 containers specified in the docker-compose.yml "
 "configuration file are in an \"Up\" state."
-msgstr ""
+msgstr "检查 docker-compose.yml 配置文件中指定的 11 个容器是否都处于 “Up ”状态。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:100
-#: a5692cb3b7ac4eacb9b9501d2256867f
+#: 8df4f488e8fa4789a001d2eafaffc9ed
 msgid "(2) View the state of dingo-store(coordinator/store/index)"
-msgstr ""
+msgstr "(2) 查看 dingo-store 的状态（coordinator/store/index）"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:101
-#: 1cbb33db815a4ce0852c64c6454add60
+#: 2235789cb1f843e7b938c25a91b3e2cc
 msgid ""
 "In the new version, all the dingodb_client_coordinator instances have "
 "been merged into dingodb_client."
-msgstr ""
+msgstr "在新版本中，所有的 dingodb_client_coordinator 实例都被合并到了 dingodb_client。"
 
 #: ../../source/deployment/cluster/deploy_in_single_node_using_docker.md:252
-#: 3297c9072bc44e97b831bf21d3c93dd9
+#: 02dfd3248b4a412bb507d5b29cdc3bb3
 msgid "(3) View the state of dingo(executor/proxy)"
-msgstr ""
+msgstr "(3) 查看 dingo（executor/proxy）的状态"
 

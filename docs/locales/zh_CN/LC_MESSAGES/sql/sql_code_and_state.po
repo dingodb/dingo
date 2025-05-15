@@ -1,0 +1,252 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-29 14:51+0800\n"
+"PO-Revision-Date: 2025-05-13 14:44+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_code_and_state.md:1 21b4b1e9768e4dcb97948bddfff05d10
+msgid "SQLCODE and SQLSTATE"
+msgstr "SQLCODE 和 SQLSTATE"
+
+#: ../../source/sql/sql_code_and_state.md:3 cb717a9476ab4858bb4821707f641dba
+msgid ""
+"SQLCODE is an integer value returned by DingoDB driver indicating the "
+"error occurs during a database operation."
+msgstr ""
+"SQLCODE 是 DingoDB 驱动程序返回的整数值，表示数据库操作过程中发生的错误。"
+
+#: ../../source/sql/sql_code_and_state.md:5 553133d0deb0440499ad172f76133531
+msgid ""
+"SQLSTATE is a code which identifies SQL error conditions. It composed by "
+"five characters, which can be numbers or uppercase ASCII letters. An "
+"SQLSTATE value consists of a class (first two characters) and a subclass "
+"(last three characters). The following SQLSTATE classes are defined in SQL "
+"standards:"
+msgstr ""
+"SQLSTATE 是识别 SQL 错误条件的代码。它由五个字符组成，可以是数字或大写 "
+"ASCII 字母。SQLSTATE 值由一个类（前两个字符）和一个子类（后三个字符）组成。"
+"SQL 标准中定义了以下 SQLSTATE 类："
+
+#: ../../source/sql/sql_code_and_state.md:9 d4f5e7210f91428f994ab7999c86302a
+msgid "'00' means 'success'"
+msgstr "'00'表示 '成功'"
+
+#: ../../source/sql/sql_code_and_state.md:10 bc36239bb479428d9aaed85d29d40d7c
+msgid "'01' contains all 'warnings'"
+msgstr "'01' 包含所有'警告'"
+
+#: ../../source/sql/sql_code_and_state.md:11 0a7a50ba265349cdb4baa9e040261089
+msgid "'02' is the 'NOT FOUND' class"
+msgstr "'02'是'未找到'类"
+
+#: ../../source/sql/sql_code_and_state.md:13 4d16e78e6fc044f28c58cb189eb1d39a
+msgid ""
+"DingoDB try to make returned SQLCODE and SQLSTATE compatible with MySQL, "
+"if the error is not compatible with MySQL, its SQLSTATE is \"45000\"."
+msgstr ""
+"DingoDB 尝试使返回的 SQLCODE 和 SQLSTATE 与 MySQL 兼容，如果错误与 MySQL 不"
+"兼容，则其 SQLSTATE 为 “45000”。"
+
+#: ../../source/sql/sql_code_and_state.md:16 f91e1110de314b82a9e37527943bffbc
+msgid "SQLCODE and SQLSTATE of DingoDB"
+msgstr "DingoDB 的 SQLCODE 和 SQLSTATE"
+
+#: ../../source/sql/sql_code_and_state.md:18 de3a2760d92c431cb3ee49634ec55589
+msgid "MySQL compatible errors"
+msgstr "与 MySQL 兼容的错误"
+
+#: ../../source/sql/sql_code_and_state.md 31a0b39a6e3c4703b93674ca0290f8c1
+#: fb93bb2fa26b4775a43197e30df8ff5c
+msgid "SQLCODE"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 449b3b8a7f8e4b22b3d61171777c81a1
+#: dda097c8cb814d0aa251bc190f9a5e91
+msgid "SQLSTATE"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 23035cfc689b4475a6bf6f19ffc49170
+#: 3e6ef8b73ac3494ba18761e7e497abe3
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_code_and_state.md 81e69ee21b684c58941fabf303ac7e57
+msgid "1152"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md c6a87ae72a9c4ae885f3b443c6f272f3
+msgid "08S01"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md e3d6d11de5af4bc49bae156cfa2137c4
+msgid "Connection refused"
+msgstr "连接被拒绝"
+
+#: ../../source/sql/sql_code_and_state.md 363317a4647b4ddc98c425ac65d738fe
+msgid "1064"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 3e38d18585e74e7085d971c17765c03d
+msgid "42000"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md d6fb901a7c0a4b92ae2b71909c179b9a
+msgid "SQL parse error"
+msgstr "SQL 解析错误"
+
+#: ../../source/sql/sql_code_and_state.md 72e1e7d64178458d872df332dcc54080
+msgid "1050"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 7d90bc5d12684423a80a814ca6a9055b
+msgid "42S01"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md dc2e74060f6240e8b9d1a61e7b5af0be
+msgid "Table already exists"
+msgstr "表格已存在"
+
+#: ../../source/sql/sql_code_and_state.md ab318ab30fba4e2e91aa9abab416dfea
+msgid "4028"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 6e838cc2204043ae8a33f3972c3af21c
+#: 84cba092a27e4dd7b8d62bcb856459e0
+msgid "HY000"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 4a904300c8944bd4b6cefd19900be5c8
+msgid "Missing column list"
+msgstr "缺少栏目列表"
+
+#: ../../source/sql/sql_code_and_state.md 6c20a0d746ab45af9690aed16878b8c4
+msgid "1146"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 221a3a005ef84704b7500087031d0be9
+msgid "42S02"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md bbc26af8347f4760a66912139d3041cd
+msgid "Table not found"
+msgstr "未找到表格"
+
+#: ../../source/sql/sql_code_and_state.md 108447d4ba5a4860b73cf17b4e83ffc1
+msgid "1054"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md f41760d95f30416c953b6976e1dd46e2
+msgid "42S22"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md f5f5c07fb3704b6e991e8128bbac6658
+msgid "Column not found"
+msgstr "未找到列"
+
+#: ../../source/sql/sql_code_and_state.md 5104c5f63a6840f5bd555bf8adfca8c7
+msgid "1364"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 5ddfdb84181040b39b8acc96cd63a789
+msgid "Value of column can not be NULL"
+msgstr "列值不能为空"
+
+#: ../../source/sql/sql_code_and_state.md:30 284cd1dd74b24d2dac27b3608b28bcc5
+msgid "DingoDB specified errors"
+msgstr "DingoDB 指定错误"
+
+#: ../../source/sql/sql_code_and_state.md 4f5f80e577d24bd09096f83c5466015c
+msgid "1001"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 0d8fb39245d640e280a29c252e3c6253
+#: 120444db4df64220bd987660af711d30 76aec261bb3d46f683a7b1af64b098cd
+#: a8b61ec1ea9e44c293fb8ebdf233d2c7 ad57e77ce6214a138516f1c73c4801eb
+#: cc950939ee0e4d849ddab7209d48f7c9 cf8cb71e44414a87888a9803e0417026
+#: e449894389674b749a51fdc5bf108da7 e74569562b264676b76e1c1f24a96381
+msgid "45000"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 389b3ce053744cf8802ff05651901f8d
+msgid "Primary keys are required"
+msgstr "需要主键"
+
+#: ../../source/sql/sql_code_and_state.md 8d302154818b449c9b7db1e300aafb13
+msgid "1002"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 2b0c9b94130b425c9fb811213bc322ff
+msgid "Specified primary key does not exist in table"
+msgstr "表中不存在指定的主键"
+
+#: ../../source/sql/sql_code_and_state.md 10eabc59bbf14cb897191b21aa0782c0
+msgid "2001"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 28d145e7362d4f8a8a793e3defde6d6e
+msgid "Illegal use of dynamic parameter"
+msgstr "非法使用动态参数"
+
+#: ../../source/sql/sql_code_and_state.md 047bd2db48f7471887ad9f64e26e820b
+msgid "2002"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md b53eb84dfc0d4201bc976fd4dc7ee2f9
+msgid "Illegal expression in context"
+msgstr "上下文中的非法表达"
+
+#: ../../source/sql/sql_code_and_state.md 9ea788b265a94d73920594632ec22c43
+msgid "2003"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md c7965a8ae37e47bab6559f1d5af5f345
+msgid "Unknown identifier"
+msgstr "未知标识符"
+
+#: ../../source/sql/sql_code_and_state.md f298870e8bf841efa834454a7dd521e9
+msgid "3001"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md d46f10a25c0f4d8fa44876b7fcfb0d38
+msgid "Number format error"
+msgstr "数字格式错误"
+
+#: ../../source/sql/sql_code_and_state.md e31147a2b1614a35b952db482452d990
+msgid "5001"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md b842fccb313a494e9672bf6dff68d6e0
+msgid "Task execution failed"
+msgstr "任务执行失败"
+
+#: ../../source/sql/sql_code_and_state.md c2d4f3fc5c77481ea3949aaa114c9da5
+msgid "9001"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md ecfb1ad1f6ca4880ba7d7bedb15802af
+msgid "Unknown error"
+msgstr "未知错误"
+
+#: ../../source/sql/sql_code_and_state.md 24e654cd3dfc4b1b8717f5dd6010ab3f
+msgid "9002"
+msgstr ""
+
+#: ../../source/sql/sql_code_and_state.md 426d61de284643cd8e587cb5191a037a
+msgid "Intentional error thrown by function `throw` (for testing)"
+msgstr "函数 `throw` 引发的错误（用于测试）"

@@ -1,0 +1,324 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-14 19:02+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/store.md:1 17e203bc5d11432b9b6078a949253dcd
+msgid "Store"
+msgstr ""
+
+#: ../../source/architecture/store.md:3 bcf37f2334c7459f84fe6ac95885d273
+msgid "1.Architecture Diagram"
+msgstr "1.架构图"
+
+#: ../../source/architecture/store.md:4 868935b9b2c847a0afaf1beefcb957a3
+msgid "![Storage architecture](../../images/Storage.png)"
+msgstr ""
+
+#: ../../source/architecture/store.md:4 bcdf69b3c8c148e0a2dd1dbaec9b9120
+msgid "Storage architecture"
+msgstr "存储架构"
+
+#: ../../source/architecture/store.md:6 73b58bd57a824a92a02edc1144c05c50
+msgid ""
+"The Storage class is responsible for managing the entire storage system, "
+"which consists of two layers of storage engines: the upper layer is the "
+"Engine, and the lower layer is the RawEngine. Engine and RawEngine are "
+"abstract interface classes that can have multiple implementations, such as "
+"RocksEngine, RaftKvEngine, MemEngine, etc."
+msgstr ""
+"存储类负责管理整个存储系统，该系统由两层存储引擎组成：上层是 Engine，下层是 "
+"RawEngine。 Engine 和 RawEngine 都是抽象接口类，可以有多个实现，如 "
+"RocksEngine、RaftKvEngine、MemEngine 等。"
+
+#: ../../source/architecture/store.md:8 fa717531f7a848368032a2f3aed53fef
+msgid ""
+"RawEngine is the underlying engine, acting as a wrapper, and can also have "
+"multiple implementations. Engine can contain RawEngine internally."
+msgstr ""
+"RawEngine 是底层引擎，充当封装器，也可以有多个实现。 引擎内部可以包含 "
+"RawEngine。"
+
+#: ../../source/architecture/store.md:10 87faad3fd80b465394ec2987c769b23e
+msgid ""
+"RaftKvEngine is a distributed storage engine based on Raft and is used in "
+"production environments."
+msgstr "RaftKvEngine 是基于 Raft 的分布式存储引擎，用于生产环境。"
+
+#: ../../source/architecture/store.md:11 c4942760f561479f970227e68b7160c0
+msgid ""
+"RocksEngine is a single-node storage engine with a single replica, which can "
+"be used in both production and testing environments."
+msgstr ""
+"RocksEngine 是一个具有单一副本的单节点存储引擎，既可用于生产环境，也可用于测"
+"试环境。"
+
+#: ../../source/architecture/store.md:12 27dbbb5803614d7085389e0d0eeba57c
+msgid "MemEngine is a memory-based storage engine mainly used for testing."
+msgstr "MemEngine 是一个基于内存的存储引擎，主要用于测试。"
+
+#: ../../source/architecture/store.md:13 ecc25e873d0c4a0d83a9d1295aee9f81
+msgid ""
+"RawRocksEngine is a direct wrapper of RocksDB, encapsulating the "
+"implementation details of RocksDB and providing easy-to-use interfaces to "
+"the upper layer."
+msgstr ""
+"RawRocksEngine 是 RocksDB 的直接封装器，封装了 RocksDB 的实现细节，并为上层提"
+"供了易于使用的接口。"
+
+#: ../../source/architecture/store.md:15 00a2233c3b754147ab40d6e627a254a9
+msgid "2. Storage Process"
+msgstr "2.存储流程"
+
+#: ../../source/architecture/store.md:17 620fa1ace15a4ca1974d3b93865de056
+msgid ""
+"Using Key/Value memory storage, since Key/Value is a binary byte array, it "
+"is not very appropriate to store it directly with std::string. You can use "
+"RocksDB's Slice class to represent it, which can reduce data copying during "
+"data transfer."
+msgstr ""
+"这里使用Key/Value内存存储，由于Key/Value是一个二进制字节数组，因此直接用"
+"std::string存储不是很合适。您可以使用RocksDB的Slice类来表示它，这可以减少数据"
+"传输过程中的数据复制。"
+
+#: ../../source/architecture/store.md:19 22f3cf14c1cf4ae7ad1140fcda3f26b3
+msgid "KvPUT"
+msgstr ""
+
+#: ../../source/architecture/store.md:21 c623276626ee4003ae58e52270d4d369
+msgid "![KvPut](../../images/store_kvPut.png)"
+msgstr ""
+
+#: ../../source/architecture/store.md:21 c79aaa0b16554c7da1092aa1f03d916b
+msgid "KvPut"
+msgstr ""
+
+#: ../../source/architecture/store.md:23 ../../source/architecture/store.md:25
+#: 4273167e4e00494485aa94db61bd5df5 9a92abb665c74f1caf2434987712a46a
+msgid "KvGet"
+msgstr ""
+
+#: ../../source/architecture/store.md:25 c791ee720e8c499ca90e6d84fa05d7a1
+msgid "![KvGet](../../images/store_kvGet.png)"
+msgstr ""
+
+#: ../../source/architecture/store.md:29 6f78b513a5da41d4b1fe6a5640a740c4
+msgid "3. Metadata Management"
+msgstr "3.元数据管理"
+
+#: ../../source/architecture/store.md:30 6a09c1c74a94454ba5dd5f1e958b075e
+msgid ""
+"*StoreServerMeta：* Manage the state of the store node, without persistence, "
+"it can be obtained from the configuration file when the store node starts."
+msgstr ""
+"*StoreServerMeta：* 管理存储节点的状态，无需持久化，可在存储节点启动时从配置"
+"文件中获取。"
+
+#: ../../source/architecture/store.md:32 65854d26fda2422d98ea22b6cf955552
+msgid ""
+"*StoreRegionMeta：* Manage all the region meta information on the store "
+"node, which needs to be persisted and reported to the coordinator regularly."
+msgstr ""
+"*存储区域元信息（StoreRegionMeta）：* 管理存储节点上的所有区域元信息，这些信"
+"息需要持久保存并定期报告给协调器。"
+
+#: ../../source/architecture/store.md:34 34ec624c22e64c6fa0497a813c440e9b
+msgid "Persistence"
+msgstr "持久化"
+
+#: ../../source/architecture/store.md:35 eba4b4b33931464b9f2c2a1a7e7421e1
+#, python-brace-format
+msgid "key: META_REGION_{region_id}"
+msgstr ""
+
+#: ../../source/architecture/store.md:36 e3e365740421427488a667c6644c3531
+msgid "value: pb protocol pb::common::Region serialization"
+msgstr "value: pb协议pb::common::Region序列化"
+
+#: ../../source/architecture/store.md:37 3b0d163ef3014b4395742878a9447082
+msgid "keep only the latest version"
+msgstr "只保留最新版本"
+
+#: ../../source/architecture/store.md:38 6e5d9c968f9845f79e9b64cf127c884f
+msgid "Persist immediately when the state of the region changes"
+msgstr "当region状态有变化时立即持久化"
+
+#: ../../source/architecture/store.md:39 d2be4dfa04cd41d9872089f512e3fc2e
+msgid ""
+"The version of the region is represented by the epoch field. When the state "
+"of the region changes, the epoch will also change, and the epoch will "
+"increase monotonically."
+msgstr ""
+"region 的版本由 epoch field表示。 当region 的状态发生变化时，epoch 也会发生变"
+"化、并且单调增加。"
+
+#: ../../source/architecture/store.md:41 a9efce7cfa644643b175b92fc9830c43
+msgid ""
+"*StoreMetaManager：*Manage all metadata of store, including StoreServerMeta "
+"and StoreRegionMeta."
+msgstr ""
+"*StoreMetaManager：*管理store所有的元数据，包括StoreServerMeta和"
+"StoreRegionMeta。"
+
+#: ../../source/architecture/store.md:42 f494b01bffb0442cbc6dc7390da61243
+msgid "4.Implementation Process"
+msgstr "4.实施过程"
+
+#: ../../source/architecture/store.md:44 5c01572dd9914b13a7f3a0c909d746b5
+msgid "Create Table/Region ![Create Table](../../images/store_createTable.png)"
+msgstr "创建 Table/Region ![Create Table](../../images/store_createTable.png)"
+
+#: ../../source/architecture/store.md:44 f5919fefec1044e79c1d9f9a65918109
+msgid "Create Table"
+msgstr "Create Table"
+
+#: ../../source/architecture/store.md:46 73c8d560f6b3429eb7dd9d8846885a77
+msgid "Verify that partitions can be created."
+msgstr "验证是否可以创建分区。"
+
+#: ../../source/architecture/store.md:47 5bbcd2b3d1784075a2e3daac88da8561
+msgid "epoch==0&&state=NEW && NotExist(region)"
+msgstr ""
+
+#: ../../source/architecture/store.md:48 cfa0b1f61d1f479fa2ad0d77823dfc85
+msgid "whether Range is legal."
+msgstr "Region是否合法。"
+
+#: ../../source/architecture/store.md:49 07f5d7bce40644e5b8f6563d24859152
+msgid "peers contains the current store node."
+msgstr "节点包含当前存储节点。"
+
+#: ../../source/architecture/store.md:50 c4a0e31dd1fd43929b3eabb5188f1dc3
+msgid "Save Region metadata"
+msgstr "保存 Region元数据"
+
+#: ../../source/architecture/store.md:51 dda17c4dd93644c2ba63bf530a53c0b8
+msgid "Create Raft peers."
+msgstr "创建 Raft Peers。"
+
+#: ../../source/architecture/store.md:52 51c1df8a8b0b48508118a6fe0ab22728
+msgid "Initialize Raft peer."
+msgstr "初始化 Raft Peer。"
+
+#: ../../source/architecture/store.md:53 7a53711dad8f4f51864252da3d9d2601
+msgid "Add to Raft node manager."
+msgstr "添加到 Raft 节点管理器。"
+
+#: ../../source/architecture/store.md:54 2fada97e0503408081a9f688370755f5
+msgid "Update the Region status."
+msgstr "更新 Region状态。"
+
+#: ../../source/architecture/store.md:55 5454a21fb22d47bcac1353c0af11ca2b
+msgid "If it is a Raft leader, notify the coordinator"
+msgstr "如果是Raft leader，通知coordinator"
+
+#: ../../source/architecture/store.md:57 f7032d790ee74c3290eba54764751d44
+msgid "*Annotation:*"
+msgstr "*注释:*"
+
+#: ../../source/architecture/store.md:59 ae11a8bf358e456bb0aab8b45806b896
+msgid ""
+"Region should have two states, one is the state of the Peer corresponding to "
+"the Region (Region-Peer-State), and the other is the state of the Region "
+"(Region-State). Region-State is maintained by Coordinator, and Region-Peer-"
+"State is maintained by Store."
+msgstr ""
+"Region 应该有两个状态，一个是与Region 相对应的 Peer 的状态（Region-Peer-"
+"State），另一个是Region 的状态（Region-State）。 Region-State 由 Coordinator "
+"维护，Region-Peer-State 由 Store 维护。"
+
+#: ../../source/architecture/store.md:61 5bb08d4b69104654a49351ff70bdfcb3
+msgid "Delete Table/Region ![Delete Table](../../images/store_deleteTable.png)"
+msgstr ""
+"Delete Table/Region ![Delete Table](../../images/store_deleteTable.png)"
+
+#: ../../source/architecture/store.md:61 df7e0eecd764489594b38cea7988de07
+msgid "Delete Table"
+msgstr "Delete Table"
+
+#: ../../source/architecture/store.md:64 8a4048c7fa984cb48aa35207ba5a9d53
+msgid "Verify if the Region can be destroyed."
+msgstr "验证是否可以销毁Region 。"
+
+#: ../../source/architecture/store.md:65 ../../source/architecture/store.md:69
+#: 4ceb60eca4314dd399c087df49b295ed e31c561111e94fe1ac0e4f88146ef708
+msgid "Update the Region metadata."
+msgstr "更新Region 元数据。"
+
+#: ../../source/architecture/store.md:66 01e2ae1afb20419f81718816a6602c80
+msgid "Prepare to destroy the Region."
+msgstr "准备销毁该Region。"
+
+#: ../../source/architecture/store.md:67 2d40ff2db9984416a5e261f67105f534
+msgid "Remove from the Raft node manager."
+msgstr "从 Raft 节点管理器中移除。"
+
+#: ../../source/architecture/store.md:68 4341b11b515f4531b27b62b7a46e1763
+msgid "Shut down the Raft node."
+msgstr "关闭 Raft 节点。"
+
+#: ../../source/architecture/store.md:70 78626c5b36254659bd9ec552b8469577
+msgid "Notify the Coordinator."
+msgstr "通知 Coordinator."
+
+#: ../../source/architecture/store.md:72 cc315679768144f3b2c25e18291b3e31
+msgid ""
+"*Annotation:* The Coordinator considers the deletion of the table successful "
+"only when it receives confirmation of successful deletion from more than "
+"half of the Stores."
+msgstr ""
+"*注释:* Coordinator 只有在收到半数以上Store 的成功删除确认后，才会认为表格删"
+"除成功。"
+
+#: ../../source/architecture/store.md:75 b77732f6bbda4a3a9fd9b06c4167ecde
+msgid "Store Initialization:"
+msgstr "Store 初始化："
+
+#: ../../source/architecture/store.md:76 461cd72b6121415c831ec1cbd98bb13c
+msgid "Initialize configuration files."
+msgstr "初始化配置文件。"
+
+#: ../../source/architecture/store.md:77 cb124fd4aa744dd8b6bc7779bb26f0a5
+msgid "Initialize service logs."
+msgstr "初始化服务日志。"
+
+#: ../../source/architecture/store.md:78 7a3866ff54434902846bf085fecbe425
+msgid "Verify if the Coordinator exists and is valid."
+msgstr "验证Coordinator 是否存在且有效。"
+
+#: ../../source/architecture/store.md:79 0e9e024375f443f083b96a0a771a02b0
+msgid ""
+"Initialize the service ID by first reading from the local file. If it does "
+"not exist, obtain it from the Coordinator."
+msgstr "首先读取本地文件，初始化服务 ID。 如果不存在，则从Coordinator中获取。"
+
+#: ../../source/architecture/store.md:80 474c81f7ae5f4a3c91472a3c52f158d2
+msgid ""
+"Initialize the region for the current service node obtained from the "
+"Coordinator."
+msgstr "初始化从Coordinator获取的当前服务节点的region 。"
+
+#: ../../source/architecture/store.md:81 26274d8a3b7a475abae4a0c615957934
+msgid "Initialize the storage engine."
+msgstr "初始化存储引擎。"
+
+#: ../../source/architecture/store.md:82 a15a391535db43d0871d66d1980ff1f1
+msgid "Initialize the StoreService."
+msgstr "初始化 StoreService。"

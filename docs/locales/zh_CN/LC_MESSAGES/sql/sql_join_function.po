@@ -1,0 +1,138 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-29 14:51+0800\n"
+"PO-Revision-Date: 2025-05-13 17:40+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_join_function.md:1 d75af6288516439db405f2a34979459d
+msgid "Join"
+msgstr "连接"
+
+#: ../../source/sql/sql_join_function.md:3 e1b4997faf6f4a759c8704c2cdaab00f
+msgid "Inner Join"
+msgstr "内连接"
+
+#: ../../source/sql/sql_join_function.md:5 ec45ac2d3f1d42458336ca8184391e88
+msgid ""
+"The relationship in the inner join condition is an equal-quantity "
+"relation, returning all data that satisfies the join condition. If no "
+"match is found, the query result returns an empty result set."
+msgstr ""
+"内连接条件中的关系是等量关系，返回满足连接条件的所有数据。如果找不到匹配的"
+"数据，查询结果将返回空结果集。"
+
+#: ../../source/sql/sql_join_function.md:7
+#: ../../source/sql/sql_join_function.md:42
+#: ../../source/sql/sql_join_function.md:75
+#: ../../source/sql/sql_join_function.md:109
+#: ../../source/sql/sql_join_function.md:147
+#: ../../source/sql/sql_join_function.md:181 25855fa398284dc1b76b1459b13a64bb
+#: 4d87f903b0534507b2a14b71842755e1 802fc31ca3514334934f52d7b1516327
+#: e2a10d5c245d457a941e153c2cd5b0b0 e76380bb0a8d4987af3f49539bedcac5
+#: ee8526a92c554511aaa2cd88edf041dd
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_join_function.md:16
+#: ../../source/sql/sql_join_function.md:51
+#: ../../source/sql/sql_join_function.md:84
+#: ../../source/sql/sql_join_function.md:122
+#: ../../source/sql/sql_join_function.md:156
+#: ../../source/sql/sql_join_function.md:190 24bbe3dd829143db9c5f23d34925e1ea
+#: b63588de92c245d7a7e31185289d017d d58826670d7049b6a113f7502a716ca4
+#: dafb5f12327244a9bc725a581ec96dd6 f3256233272c4f12852df2754348467a
+#: ff238a3f390d456f8c88e2f0ce55dc64
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_join_function.md:22
+#: ../../source/sql/sql_join_function.md:57
+#: ../../source/sql/sql_join_function.md:88
+#: ../../source/sql/sql_join_function.md:128
+#: ../../source/sql/sql_join_function.md:162
+#: ../../source/sql/sql_join_function.md:196 59748dcd90d0433e898c239647afbf75
+#: 70e7ca9d1c0d482da88c9b45f88b6d89 73d27f1feb1a499c8adea991b2701661
+#: 81fe141784544cd895729c123274b997 bce7d50059cd4ff1b197f5d09111db26
+#: f71b5fa452ca4cd286eee5ca4a6aec7c
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_join_function.md:38 39bc8a9f94ae439f825a7dff537d924d
+msgid "Inner Join (non-equivalent)"
+msgstr "内连接（非等价）"
+
+#: ../../source/sql/sql_join_function.md:40 35c39ced57aa4615a03c1aacea174547
+msgid ""
+"The relationship in the inner join condition is a non-equivalent "
+"relationship, returning all data that satisfies the join condition. If no "
+"match is found, the query result returns an empty result set."
+msgstr ""
+"内连接条件中的关系是一种非等价关系，会返回满足连接条件的所有数据。如果找不"
+"到匹配数据，查询结果将返回空结果集。"
+
+#: ../../source/sql/sql_join_function.md:71 8e48bbefc35c422c953666f9296d8b3a
+msgid "Full join"
+msgstr "全外连接"
+
+#: ../../source/sql/sql_join_function.md:73 dc4de6be2cd847ca884004f15a9648d8
+msgid ""
+"The join table will contain all the records from the two tables. The join "
+"statement is equivalent to multiplying the two tables and using the NULL "
+"value as the result of missing matches on both sides."
+msgstr ""
+"连接表将包含两个表中的所有记录。连接语句相当于将两个表相乘，并使用 NULL 值"
+"作为双方缺失匹配的结果。"
+
+#: ../../source/sql/sql_join_function.md:86 22d08083bd9f4787b92fcc1ec37e60b2
+msgid "Result set"
+msgstr "结果集"
+
+#: ../../source/sql/sql_join_function.md:105 2d3fe5b3d3a441daa26b5ec5d6151cd2
+msgid "Cross join"
+msgstr "交叉连接"
+
+#: ../../source/sql/sql_join_function.md:107 bd6763669eba4a1f81453a5b0fe5125e
+msgid "Returns the Cartesian product of joined tables."
+msgstr "返回连接表的笛卡尔乘积。"
+
+#: ../../source/sql/sql_join_function.md:143 a24f4758ddaa4245a31ab1b83ebd5fd8
+msgid "Left join"
+msgstr "左连接"
+
+#: ../../source/sql/sql_join_function.md:145 f2bb300d9ab34070a3d74ab4482aba7c
+msgid ""
+"Get all records in the left table, even if there is no corresponding "
+"matching data in the right table. If no match is found, the query result "
+"returns an empty result set."
+msgstr ""
+"获取左表中的所有记录，即使右表中没有相应的匹配数据。如果未找到匹配数据，查"
+"询结果将返回空结果集。"
+
+#: ../../source/sql/sql_join_function.md:177 3e041c9dbab94dc5bee66f869076faf4
+msgid "Right join"
+msgstr "右连接"
+
+#: ../../source/sql/sql_join_function.md:179 665973033aa142f2ad1c165e9893bee5
+msgid ""
+"Get all the data in the data table on the right, even if there is no "
+"corresponding data in the table on the left. If no match is found, the "
+"query result returns an empty result set."
+msgstr ""
+"获取右侧数据表中的所有数据，即使左侧数据表中没有相应的数据。如果未找到匹配"
+"数据，查询结果将返回空结果集。"

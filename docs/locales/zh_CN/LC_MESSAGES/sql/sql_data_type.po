@@ -1,0 +1,318 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-29 14:51+0800\n"
+"PO-Revision-Date: 2025-05-13 16:50+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_data_type.md:1 3e335c9120b04b50a3de074f55d48c3a
+msgid "Data Types"
+msgstr "数据类型"
+
+#: ../../source/sql/sql_data_type.md:3 e5ea15cd3622413394bf306b24eeb550
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_data_type.md 02dd127256fa44cabcee07fd2f69fbaa
+#: 1c18e973d51e4d0a8983c5f11a6aa91c 1cb4f875089746b2b82e05a1c82b69a2
+#: 2c0de3000c7f47008a13a2d8398b9cbb 518289ac4a83474bafa2f909797fda2d
+#: 56527b6bf7e8427282ebf384d38fe376 605c881df4b14c8c937e19c0d6410a0d
+#: 625b5d88c2d64a0880ee4b6c41bc23d9 73a616bb6c904503925c40f8d3d67ea4
+#: 75b6d90cb7f7446c85d7fc7b880f8e2b 99a32f1c2a9b4aef945aeca74dfa0827
+#: be46dfa91bc9494585345f8d9afa7a27
+msgid "Data Type"
+msgstr "数据类型"
+
+#: ../../source/sql/sql_data_type.md a8d5be7af9484b98999ba669bf586efc
+msgid "Sample"
+msgstr "用例"
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:20
+#: 1a4d52da0acd423a90a85efaaa5f49d7 6a33260553fa4c699b854346b69bb27b
+#: 93184472b222488a8faa8e14a5641730
+msgid "Int"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 140ed84d1f6640fc8858045cfffd7741
+#: 6726a0a8c0974fc38385e69d6a0a7da0
+msgid "123"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:25
+#: 0e3da877ac0a4feebc7fde87e2f04cff 36952ad148a548c09fb7879775681b32
+#: 6aea8d46a62c4b38880d18f2bf6ebe45
+msgid "BigInt"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:30
+#: 3bdf188cf6924600acc9522b8acd84fc 3e541b284a99450fb42bbaf423680bf0
+#: 8d587f513bef4bebb68a0a484c17ec3d
+msgid "Blob"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:35
+#: bd56b75680064f85ac06368b1d2753cd e3c38a88728443d28a6225a26ca47e0b
+msgid "Float"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 9d3eda638f8a434394d8ff23819e83e6
+msgid "12.234"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:40
+#: 00ebb7b0e04540f3a69845877977d510 3dea3eb3df4945538083fe36193ef509
+msgid "Double"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 747c9eb1a6a043249769dbecb20a3ac0
+msgid "12.00"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:45
+#: 5b874ed7a5bd4f038bc3248abba88dd1 6c92d3e805b544ceb2492189b24af4a4
+#: 723419bf71db437bad6bbeee79a974a2
+msgid "Varchar"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 261fc21f1d904ee7bbfd1f6c0cea4240
+msgid "‘abc’"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:50
+#: 3cfd9b78d65e497db3852e0f9aaa0b92 84be9e11d43e4e8d88b66c88dfa1cc06
+#: 9577fce590064118a0a6de3587f4ca40
+msgid "Date"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md f798b19764d24d25a26f194e9ecf5674
+msgid "‘2022-03-07’"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:55
+#: 2cd3b899226c4a548d24861335eb83c5 3599f3dab2c4497cba14b319d79a0f0e
+#: 755cd61f67f74e839c896fa2c7b1a693 9123087642f2474a85bfdd12c4036018
+msgid "Time"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 7a7d897ca7454f7db6fddd24db224ac2
+msgid "‘18:00:00.000’"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:60
+#: 1735d6bdb2204d198a18be06cff6c21f 69b5c44e65ee4ebfa80f0e677770529e
+msgid "TimeStamp"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md e32c956b1fea4dc5a7f5af4e8e94ada4
+msgid "‘2022-03-01 18:00:00.000’"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:65
+#: 0a3e42d7f54642168621c87b116c550c 418ead7478c94e3486d2ddd3e1e63b28
+#: bdf5af22b9d14f9aa8f70208f9239ee1
+msgid "Boolean"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md c9b4e12a3cb94bdc9e89fe62d1f7d646
+msgid "‘true’"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:70
+#: 0822ad9651864a9ab06bcd9bda966019 169fdfcba0bc4247976c809873d00251
+#: fb0a1b739d374d358b03e84dea269697
+msgid "Array"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 20804ac6dc674d96b5f912f26be0068c
+msgid "array['v1','v2','v3']"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md ../../source/sql/sql_data_type.md:75
+#: 46b023a7813e4ac3aea4acd09f3a1373 563319f49cf34245a465cd7201ed8ab4
+#: 9469e11910454ad0b4c7ce55b537a451
+msgid "Map"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md a8af972b14eb406abbb5cf00fd61fa5e
+msgid "map['k1','v1','k2','v2']"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md:19 bac3732dc58748adbb45c7ff7d1ba9c2
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_data_type.md 0ad648c4a7344be69f4abbc6c201d43e
+#: 583b8b34c54f47158d3fe24e7088fc87 65d357731cd5410682107fa44b697965
+#: 66fd425698e24e0c9812c487c0899863 95e3ec2cfc764a1c9d1305e49ba7fd29
+#: ada80c1fc1bf4f33895a401ac81ba3f1 d648df1f23f443caaf8522e155a011d9
+#: e4e79f6f492f4450b67a2a0e2b6e0f5a
+msgid "Size"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 23e65f526fb94d5e9b51ce434faec145
+#: 36e4301b48984fd787c033cef931aae6 5a7941173bbf49dfa7b8a5112990ddae
+#: 7c77bbe3512148c0b0a4c1769a2d8701 f562e8ff6a324e69b5a12a4c13044a0e
+msgid "Min Value"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 2a22f6ddf79c490ba51ee56ed7bb6c59
+#: 38402130fa7b46e595119b4e8dcf9e2f 6e0ef4f176474a37bd3e0c26d7a3ab10
+#: bb0c7fb3b1ec483db3ae849adbb93010 f80e8e96ce0148b5b65dcc7e0211f5c7
+msgid "Max Value"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 1110b2f3d0744c9f878e4a7319b546b8
+#: 4b1eb964330b4cfd85025ad91419e52e 55358dc9a30b42da99232c882edb6e5a
+#: 8f455d4980844876921c762729825740 f8e1a7e4d2684e92845f540f8ccbc3cd
+msgid "4 byte"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 5da87ecb39f5400687e357b3310ff16b
+msgid "-2^31"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 9b4fc8e43f3b41cd8e823ef519a0b194
+msgid "2^31-1"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 1dd9dabde44747e08d2aae24b50b46b2
+#: c037266d895a4c7d83276a38eb5adad1
+msgid "8 byte"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 6f4fbc49ab194c738e255f4b98f9d5d3
+msgid "-2^63"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md a8f40bbb170d4a4ab8057ef584c4211a
+msgid "2^63-1"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 6899c8bb23714d01922df293202b5ed6
+msgid "65535 byte"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 4b2daac40ed04ed5a79a46f6777e8547
+#: 594d4f766dd843d9b6db20161a0c1308 7a7a75437ab543df81cf46c3e1f76924
+#: 86a3a101db0f4a039020e0ea2b2b7761 c5ec00f1ab784285ac8c4a7b0e13b0d2
+msgid "Precision"
+msgstr "精确度"
+
+#: ../../source/sql/sql_data_type.md 031c0301d9114f58a2439461ab29b5fe
+#: 03c71afeeb7d41279b9641369370dcbf 20a2b897813a496a92298eebbf023062
+#: 256e9179845e4b4999963e32e61fe0d1 775f1a0890e04b66b1c0bc35045fc650
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_data_type.md 0911bf6929454c2dbb483c0233222b6d
+msgid "Float32"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md e06cb396ad0f4d4a9f48cc6c553d25f9
+msgid "23 bits"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md c558e7b967994a43916bea4e55ed2c50
+msgid "FLOAT"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 64a0cb19ba054a1f976ef0ddf1efc162
+msgid "Float64"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md e7aafa797d484319856fc5d924425c95
+msgid "53 bits"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 03985d0645114d19a218f6d1c8038b49
+msgid "DOUBLE"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 61e2114681b94580a05b93bc0b4ce83b
+msgid "String"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 4a3df358a76741d6828aebc73a744c7f
+#: 8ac7897d44b04b6ca2c176b9c5090ca5 c79c2fd92db14af3a00fe701f9a52555
+msgid "Resolution"
+msgstr "解决方案"
+
+#: ../../source/sql/sql_data_type.md 6a04dc14af594fa784b3290f3e5385c5
+msgid "day"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 281d1c277c804fe5938c709351bd144c
+msgid "1000-01-01"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 4c2c0eb59bf84bcaaab5394adc05d2d4
+msgid "9999-12-31"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md e33d83ff63e84b3e8995c54d797daf72
+msgid "yyyy-MM-dd"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 8cbded63136543f3bdafcad951bc1577
+msgid "00:00:00.000"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md c33fa6afb1034483a649758d40016a63
+msgid "59:59:59.999"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md c1582e590f384eaf8c72cf1e12ced2cf
+msgid "HH:mm:ss.sss"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 59e38e11a9ba4b5eaba9aaa64630f20d
+#: cb20648532a940bdb3a9caa09b43d202
+msgid "Timestamp"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md a2d61f03e2f346d485a7bea6d17ff1a8
+msgid "1000-01-01 00:00:00.000"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 9eb05f5e7a6d4c78bf8211fe3095ac34
+msgid "9999-12-31 59:59:59.999"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md c695946fee544d168b9e08dec5c0c7dc
+msgid "yyyy-MM-dd HH:mm:ss.sss"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 46164ba69ac94a848e773b628f6aa724
+msgid "Date Type"
+msgstr "日期类型"
+
+#: ../../source/sql/sql_data_type.md 86ad0e11e94e4e0aa956caf3fc9f336e
+msgid "Value"
+msgstr "值"
+
+#: ../../source/sql/sql_data_type.md 24fd700fe87c444488323ffebab37b09
+msgid "ture/false"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md 0a546457ae7b40ff9a8e146d076f2cfa
+msgid "Array [value1,value2,value3]"
+msgstr ""
+
+#: ../../source/sql/sql_data_type.md b1d5de0a685b4cbc9770038b3e705a0d
+msgid "Map [key,value]"
+msgstr ""

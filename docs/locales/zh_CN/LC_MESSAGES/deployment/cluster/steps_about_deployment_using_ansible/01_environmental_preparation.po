@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025, Wangpy
+# Copyright (C) 2025, DataCanvas
 # This file is distributed under the same license as the DingoDB package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: DingoDB \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"POT-Creation-Date: 2025-04-27 18:44+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,22 +20,22 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:1
-#: 87ed07d31d8540d791bb2835fd206468
+#: aa29370f9f8d4628b7c5e238a4cb6bb5
 msgid "Environment Preparation"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:3
-#: 7bce56d5e28542da82379166e85087b2
+#: bee611e95ac34ccea02d15d1613cef57
 msgid "Requirement Operating system：centos8.x"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:6
-#: 5ffe9d10f11843c9bc2b13cf2b05fa0d
+#: 748c8eb8bac748dfa9e36fdbd4941381
 msgid "Libc Requirement"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:14
-#: e440c81ae11b442c8119a791e61ca2eb
+#: d10730de2c5743eea42b06f012951c53
 msgid ""
 "Determine the main operating IP, and all Ansible deployment operations "
 "will be performed on the main operating IP. In this example, the main "
@@ -43,24 +43,24 @@ msgid ""
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:16
-#: b571184623be428294d4a33cbec0955a
+#: ec1df278fa414b69a1a6d06579d2696e
 msgid "Set up passwordless sudo login for non-sudo users"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:18
-#: 9f90bf75b65241aea17c92e6d7b9c989
+#: 6c4523944b9c46578426aea9e918bbfd
 msgid ""
 "If the password is the same for each machine and the root username and "
 "password are used in inventory/hosts, then this step is not necessary."
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:27
-#: 54ef1c1680334cc4ae917c4f481c388b
+#: 43b69c121a524625aa9e2e39e75c7b20
 msgid "Passwordless login using IP address"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:29
-#: 12ecb9df9d77459a8e4684d64848bb2e
+#: 43546b485e5f4cb59c82884f233b4965
 msgid ""
 "If the password is the same for each machine and the root username and "
 "password are used in inventory/hosts, then the following steps are not "
@@ -68,259 +68,259 @@ msgid ""
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:31
-#: b74a00aac8f64633a015e1c3edafbb5d
+#: 2ec7d83e9b894866a92d8e5c0a7a1448
 msgid "Generate SSH public and private keys"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:35
-#: 731d5b2449754d969d093228604ed7cc
+#: 62a8aa8017414ba7bd82925ec0ab43a2
 msgid "Copy the public key to all host nodes, including the local node"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:42
-#: 69370f7a8b4748d782179ff9a7f74928
+#: 984c165cdc254c009e1b0050956b05c5
 msgid "Test if passwordless login is successful"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:47
-#: 324089cb0ca2461db5aad33c0f97d97f
+#: 6a542b269c9444e2a5458ac51978c69d
 msgid "Directory Structure Planning"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: ec3bce778d9847009fcf45817801e9cf
+#: f0be57b9932143beb963f7a3abc9a16e
 msgid "Directory Types"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: c26dbe9511c24189b03fff410e7e40c7
+#: 391eeca79a3244c9aeb8215b687e79ca
 msgid "Path"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: dee030d524a4471992cd6af7d7be817f
+#: 28f0670d1b004d41ae24761f6613c97b
 msgid "Program installation path"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 27a6f206558f49e88d2dffbe132c963f
+#: 1adcdbf16f874f28b7ae1beb1242e47e
 #, python-brace-format
 msgid "${installer_root_path}"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: cd4987ffd05f48a3965fed1c0bf3d6d7
+#: 2dbf4f9ca72b46969ef0f93823e15be4
 msgid "Data path"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: e642bc8fbb0142b79a5fde0934c60162
+#: 248579176105421daba754a6ca7f8547
 #, python-brace-format
 msgid "${installer_root_path}/data"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: ed4d0b4c9bbe4efd83b5d0323f8b724d
+#: 33da9a03419243f9a86aecd0cd98c71d
 msgid "Log path"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: e7b235ea31c44140a0e52e11770fa6ad
+#: 33d36401f6e34792833cdfe607a30cf0
 #, python-brace-format
 msgid "${installer_root_path}/log"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: d7258780cdc448bbaa278d12083d2220
+#: 497cb6f80dff4908982aac27109c1d68
 msgid "dingo-store script path"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 5856ea85267346e2bda12a98e358907f
+#: 2234a5b634bd437e8387f84698bba40c
 #, python-brace-format
 msgid "${installer_root_path}/dingo-store/scripts"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 9f6dec903fe3439a8c1d18bfddf8a3d7
+#: 8fb1aa7533244bd4bd1f2d0d9fa8e061
 msgid ""
 "dingo-store deployment path <br/>(including separate data and log "
 "directories)"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: f03ac10a15094dac8d050481c38527b6
+#: 448f5d212aca40dfa01dc558fa8bb656
 #, python-brace-format
 msgid "${installer_root_path}/dingo-store/dist"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:57
-#: 4fab01cd6af24c1f9c8faa884557fdbe
+#: 748542065037403e87a49c6f38a5d5d4
 msgid "User group planning"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: f70da33ddb8046e4831430a1b30c1a8b
+#: 432642b02da64fda9114a28f47dfc656
 msgid "Deployment Method"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 57c24afccdd14c34b80fe8915def7d0c
+#: 98e1f79146154621a9ff3d2c74cf1e7d
 msgid "User name"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: efa970ae6e2b46609deb18864a89e8dd
+#: 125cd7692fdc4f7cad28d53f10fbf9ea
 msgid "Gorup name"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 918de9a44c7d4f18982876500ce2bce3
+#: 3dde2d95627d428b9c27e8db4d788f0b
 msgid "ansible deploy"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 29352ecdb7114457ae4fdf1cd7f0b603 dcd7f728007044c89b3bd00155495772
+#: 34fd329dfc2642dda998c5abb1bb3c17 ecee0c5555e341109845299ca86ec51c
 msgid "dingodb"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:63
-#: e6ac562d407b4cea9b9d6009049ce3a0
+#: f63607275cc444ea956d9af56b229a51
 msgid "Component list and port usage"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 83a61fdd00d14ae493f3ad2865b6f972
+#: d5aa2d40ae9940daa3507499c4d76da5
 msgid "Component"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 2926446955d9486997fc4286b60a4066
+#: ce2afa13936648a49becea1493c2db2d
 msgid "Version"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 86f8c7a78d864c7ab2dce72aea66acf8
+#: 2960c3ad654e460fbc000f1bfe7ff386
 msgid "Port"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 617cc6bd396e4cfa8cbb73818101d948
+#: c4333d3a1c684c04a47b5dbed0930e69
 msgid "Remarks"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: fde53e7936284e20b1d8e72e8df0cd92
+#: 12d07acc1fa547f2ba10ad2e46196f5c
 msgid "DingoDB"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 97ab7ef3ec154b07b09a7c730869d973
+#: fe85e96413b84c2f86e1cd97ff0ff723
 msgid "0.6.0"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: fbc555d30b374f4fa4db0bc2f1cdbcb3
+#: c6b96a9d6c9d42e0bc76c584dabe21d5
 msgid "raft:22101/20101  <br/>server:22001/20001  <br/>executor:3307/8765"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 91ecdde4f5404e5ca2852a603f2c7eef
+#: 1b39873e2c1b4c238ebc88f412e4c467
 msgid "Real-time analytics database"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: f4fc84978d084eb3a703dc4f6e564674
+#: 2ad0d16ed0f64973bae0c02bb1ed1ce0
 msgid "Prometheus"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 4a5efafe42bd4935ba2fe5e413c752ca
+#: e15e322256f447318cd4d29ca35c8db8
 msgid "2.14.0"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 3343da4052e24ecab860dd6617f04022
+#: 15c857851e9742b38823347e3025b2fe
 msgid "19115"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 84f7d067d01f4deb943c731c9bda3e1e
+#: 6ba88637e16a43d28455bdd462f18dcc
 msgid "Real-time analytics databaseTime-series database, metric monitoring"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 6da4d2b8fa31458b86d665562970aecf
+#: 6ccca1412fcc480098e51d9295492aed
 msgid "node_exporter"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 9e13110ca1324376afe99db5b5ed0cfa
+#: 6ae1845eee46471d8749914aee6dcd36
 msgid "0.18.1"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 35e0ad866bc64061a385acfc0f60e5a5
+#: d3309ec8624e4ed5a5d3c34525bd59ff
 msgid "19100"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 430ca00f754a4a8a89e3515e74eff512
+#: d5bf594ada0d422b91931fbef9f47077
 msgid "Prometheus component, monitoring node information"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: d6bd0ed4477442ec9de52a6c7fbca1ea
+#: 53e746e007a64969bcd59d709e186d81
 msgid "process_exporter"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: bc72a298ff15497d80e12429488048c5
+#: e2aa4e6868644c1090f5711777b92cdf
 msgid "0.7.10"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 65db82d68ae945fca9c3e3b6d387b0c7
+#: cad1c3dda8744393a9a1105ea294dea6
 msgid "19090"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 1bc0e0c3cb9e43c2ac7d174879edc31b
+#: cef7221e85264676be2b06dd64c1cc5a
 msgid "Prometheus component, monitoring process information"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: ac678a55890247a8843e666210e4cfc8
+#: 64c52038138a4b21b0180c0f7860bb04
 msgid "grafana"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: c9e391c2b34644cc82b3ce11ab43cd16
+#: 305e402dd22e4685bcd56ec00dc31876
 msgid "8.3.3"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 739ecd0c1fad4bee85446ed527e4cbdd
+#: ed4517c791f349fdbde9f86b6dd888ca
 msgid "3000"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md
-#: 14e09273638d4f15b4b2b50cf0e9ff65
+#: af89da7da84742ca9ac61480ddc4e7f3
 msgid "Data visualization platform"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:73
-#: 342cda1c580444f9b601af4470ca95c6
+#: 0deb5a4d230148ccbeb54d003198f393
 msgid "Ansible install"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:75
-#: 5471bc29b3ca413bb4d8342d0d3cb35e
+#: e49bd8cf9b574e31a83bd4eb1c57b183
 msgid "Online install"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/01_environmental_preparation.md:86
-#: 58cc8d190d474e37a654566e1056f0cb
+#: bf2f022aa06a47c089d8e5ff4bad0af2
 msgid "Offline machine install"
 msgstr ""
 

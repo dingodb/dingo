@@ -6,809 +6,603 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DingoDB \n"
+"Project-Id-Version: DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_CN\n"
+"POT-Creation-Date: 2025-05-14 10:34+0800\n"
+"PO-Revision-Date: 2025-05-14 10:37+0800\n"
+"Last-Translator: \n"
 "Language-Team: zh_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
 
-#: ../../source/contributing/contributing.md:19
-#: d8b38db25e5e48e9b6afed7a10bd464a
+#: ../../source/contributing/contributing.md:19 4e3fac1139ac4e5eacc04d80f7cb1fd8
 msgid "Contributing"
-msgstr ""
+msgstr "贡献指南"
 
-#: ../../source/contributing/contributing.md:21
-#: 015d4e55a51246cdb78b7fdc028236b9
-msgid ""
-"Contributions are welcome and are greatly appreciated! Every little bit "
-"helps, and credit will always be given."
-msgstr ""
+#: ../../source/contributing/contributing.md:21 fcf844b5a57d40b7b597bc0c1a3b0d80
+msgid "Contributions are welcome and are greatly appreciated! Every little bit helps, and credit will always be given."
+msgstr "欢迎大家踊跃投稿，我们将不胜感激！点滴之助，必有回报。"
 
-#: ../../source/contributing/contributing.md:24
-#: adf08859d42d41c98d71d8f319880913
+#: ../../source/contributing/contributing.md:24 e813301417c948d382e06ccd32e4fa23
 msgid "Table of Contents"
-msgstr ""
+msgstr "目录"
 
-#: ../../source/contributing/contributing.md:26
-#: f86cd80a1daa44b6a332101bdd0a06eb
+#: ../../source/contributing/contributing.md:26 35aa50b637594e049d0da12c5d49fd61
 msgid "[Contributing](#contributing)"
-msgstr ""
+msgstr "[贡献](#contributing)"
 
-#: ../../source/contributing/contributing.md:27
-#: b8836895bd80401d855b7f79539ccaee
+#: ../../source/contributing/contributing.md:27 80e8d8a419dd46f1b32b18aeda3ef5b8
 msgid "[Table of Contents](#table-of-contents)"
-msgstr ""
+msgstr "[目录](#table-of-contents)"
 
-#: ../../source/contributing/contributing.md:28
-#: 004b736455084b65a790ed0a1affbcb0
+#: ../../source/contributing/contributing.md:28 b0814d89f92a4da0ac72cc07fe0753cb
 msgid "[Types of Contributions](#types-of-contributions)"
-msgstr ""
+msgstr "[贡献类型](#types-of-contributions)"
 
-#: ../../source/contributing/contributing.md:29
-#: ecbbccf0b831436a9ed34d3fc8eedf5d
+#: ../../source/contributing/contributing.md:29 02c5fc2c992f4f2c9ed8c93ac6887bc3
 msgid "[Report Bug](#report-bug)"
-msgstr ""
+msgstr "[报告错误](#report-bug)"
 
-#: ../../source/contributing/contributing.md:30
-#: 571dbbad9c22421986ed5b21f2c8aa3a
+#: ../../source/contributing/contributing.md:30 c2feff0e26e04eb18a327e11748590a3
 msgid "[Submit Ideas or Feature Requests](#submit-ideas-or-feature-requests)"
-msgstr ""
+msgstr "[提交想法或功能请求](#submit-ideas-or-feature-requests)"
 
-#: ../../source/contributing/contributing.md:31
-#: f9bde24c796a455b9e9bc563d3388054
+#: ../../source/contributing/contributing.md:31 04c05e23bcc9425faa1a55ab596602ac
 msgid "[Fix Bugs](#fix-bugs)"
-msgstr ""
+msgstr "[修复错误](#fix-bugs)"
 
-#: ../../source/contributing/contributing.md:32
-#: af5f42250d5442c8b6bdf4b68c0d75ec
+#: ../../source/contributing/contributing.md:32 3822d7bcc83b47839b9d4d51bb59b416
 msgid "[Implement Features](#implement-features)"
-msgstr ""
+msgstr "[实施功能](#implement-features)"
 
-#: ../../source/contributing/contributing.md:33
-#: 3aea41f6a3fd4e78b59971e39e82fd9b
+#: ../../source/contributing/contributing.md:33 5fd598f8a8374c27a3d7cb6f269eb04f
 msgid "[Improve Documentation](#improve-documentation)"
-msgstr ""
+msgstr "[改进文档](#improve-documentation)"
 
-#: ../../source/contributing/contributing.md:34
-#: 7e7e4564bea04835bd3908aafd93f29c
+#: ../../source/contributing/contributing.md:34 d03672976c144f6392bb060abab1aac1
 msgid "[Ask Questions](#ask-questions)"
-msgstr ""
+msgstr "[提问](#ask-questions)"
 
-#: ../../source/contributing/contributing.md:35
-#: d368118060bd4b6e9a2eab1860096068
+#: ../../source/contributing/contributing.md:35 8a6da0b5f2794296b110356e7d80d08f
 msgid "[Pull Request Guidelines](#pull-request-guidelines)"
-msgstr ""
+msgstr "[拉取请求指南](#pull-request-guidelines)"
 
-#: ../../source/contributing/contributing.md:36
-#: 02590a65097246ce9c3d214ffe18b03c
+#: ../../source/contributing/contributing.md:36 2dc2c6cea9d14963a8fa24f11d39e5d4
 msgid "[Protocol](#protocol)"
-msgstr ""
+msgstr "[规程](#protocol)"
 
-#: ../../source/contributing/contributing.md:37
-#: a36b5602d93242ed967f3d304f7bf77b
+#: ../../source/contributing/contributing.md:37 73c3f5e2cb5c4471a77c876f75970812
 msgid "[Authoring](#authoring)"
-msgstr ""
+msgstr "[编写](#authoring)"
 
-#: ../../source/contributing/contributing.md:38
-#: 55574d18b47242e49f52c1e2d2d1bf0c
+#: ../../source/contributing/contributing.md:38 53d16ccbd826420c8ccd01334e0dc9b5
 msgid "[Reviewing](#reviewing)"
-msgstr ""
+msgstr "[检查](#reviewing)"
 
-#: ../../source/contributing/contributing.md:39
-#: 1cabf7de605b404785a1a21975691622
+#: ../../source/contributing/contributing.md:39 e9c7c8bb0d024275960bee6cf7a6b686
 msgid "[Merging](#merging)"
-msgstr ""
+msgstr "[合并](#merging)"
 
-#: ../../source/contributing/contributing.md:40
-#: bf9bcac5ce9f41ef9c63fb7e4b46be2d
+#: ../../source/contributing/contributing.md:40 d07523a7c0ae4930beb32dd34366f157
 msgid "[Post-merge Responsibility](#post-merge-responsibility)"
-msgstr ""
+msgstr "[合并后的任务](#post-merge-responsibility)"
 
-#: ../../source/contributing/contributing.md:41
-#: 41d6c22d4d634af0b15683f02d5ce69b
+#: ../../source/contributing/contributing.md:41 08a190df48764b61ace53f40bec33a22
 msgid "[Managing Issues and PRs](#managing-issues-and-prs)"
-msgstr ""
+msgstr "[管理问题和 PR](#managing-issues-and-prs)"
 
-#: ../../source/contributing/contributing.md:42
-#: 862972db63a646de893ba344e70bb9c1
-msgid ""
-"[Setup Local Environment for Development](#setup-local-environment-for-"
-"development)"
-msgstr ""
+#: ../../source/contributing/contributing.md:42 771eb546651248ae950c8cdd11ca9b9d
+msgid "[Setup Local Environment for Development](#setup-local-environment-for-development)"
+msgstr "[设置本地开发环境](#setup-local-environment-for-development)"
 
-#: ../../source/contributing/contributing.md:43
-#: 0430d2024ab6401a8448fdaa9d02429e
-msgid "[Documentation](#documentation)"
-msgstr ""
-
-#: ../../source/contributing/contributing.md:45
-#: 0b1e82da61ad40c0ab980d45608e745b
+#: ../../source/contributing/contributing.md:44 456e49f880824370bc0bd2b7de534665
 msgid "Types of Contributions"
-msgstr ""
+msgstr "贡献类型"
 
-#: ../../source/contributing/contributing.md:47
-#: e6ce87b896f64d8d9d8e046836671c16
+#: ../../source/contributing/contributing.md:46 3dfd9e2aef2b4310aa2b62a6b689a8e9
 msgid "Report Bug"
-msgstr ""
+msgstr "报告错误"
 
-#: ../../source/contributing/contributing.md:49
-#: f100bc99fd6b4748a742d4d1d5e2557b
-msgid ""
-"The best way to report a bug is to file an issue on GitHub. Please "
-"include:"
-msgstr ""
+#: ../../source/contributing/contributing.md:48 b35d7a3873154c3f959113ba7b2fc3df
+msgid "The best way to report a bug is to file an issue on GitHub. Please include:"
+msgstr "报告错误的最佳方式是在 GitHub 上提交问题。请包括："
 
-#: ../../source/contributing/contributing.md:51
-#: def345d9fe644b5999b6c08cecf5fb7b
+#: ../../source/contributing/contributing.md:50 23c64859d9aa4bbcafd6aa98b89dd644
 msgid "Your operating system name and version."
-msgstr ""
+msgstr "您的操作系统名称和版本。"
 
-#: ../../source/contributing/contributing.md:52
-#: 0c503f3b52ad4260a8e13127e8db9042
+#: ../../source/contributing/contributing.md:51 9edc40010ade4f66a0eb45ef543037f5
 msgid "Dingo database version."
-msgstr ""
+msgstr "Dingo 数据库版本。"
 
-#: ../../source/contributing/contributing.md:53
-#: e97ac319bea74f0b8aa315bbb50abc77
+#: ../../source/contributing/contributing.md:52 ba7b73e5a5744b448f591e7fba6ff21e
 msgid "Detailed steps to reproduce the bug."
-msgstr ""
+msgstr "重现错误的详细步骤。"
 
-#: ../../source/contributing/contributing.md:54
-#: 6192a0fc89164ba19c1113c552a45996
-msgid ""
-"Any details about your local setup that might be helpful in "
-"troubleshooting."
-msgstr ""
+#: ../../source/contributing/contributing.md:53 df3288a93a05410cbdbc9d45aed2841f
+msgid "Any details about your local setup that might be helpful in troubleshooting."
+msgstr "有关您本地设置的任何详细信息，这些信息可能有助于故障排除。"
 
-#: ../../source/contributing/contributing.md:56
-#: 6fe640906a884a67b1a49db712c9b839
+#: ../../source/contributing/contributing.md:55 f54441db45a44946b6c0d0a64025afdf
 msgid "Submit Ideas or Feature Requests"
-msgstr ""
+msgstr "提交想法或功能请求"
 
-#: ../../source/contributing/contributing.md:58
-#: 7e1ee898bbe3456aa8ed513eea3966f9
+#: ../../source/contributing/contributing.md:57 b52a261361da4c7e84ce0474a8a45679
 msgid "The best way is to file an issue on GitHub:"
-msgstr ""
+msgstr "最好的方法是在 GitHub 上提交问题："
 
-#: ../../source/contributing/contributing.md:60
-#: 1524d7e28d1d486da1da43f3e350b1ba
+#: ../../source/contributing/contributing.md:59 d11b0afee4264bb3b836aee27b1c070e
 msgid "Explain in detail how it would work."
-msgstr ""
+msgstr "请详细解释如何操作。"
 
-#: ../../source/contributing/contributing.md:61
-#: fb8dedfabc2549d9a60081dede601092
+#: ../../source/contributing/contributing.md:60 faea5022794a49529cc74ae77cc2a541
 msgid "Keep the scope as narrow as possible, to make it easier to implement."
-msgstr ""
+msgstr "尽可能缩小范围，以便于实施。"
 
-#: ../../source/contributing/contributing.md:62
-#: 6ec3ccc644174aee96a0ac927e164090
+#: ../../source/contributing/contributing.md:61 6267704344ee4d3b87e4d54dd33811b7
+msgid "Remember that this is a volunteer-driven project, and that contributions are welcome :)"
+msgstr "请记住，这是一个由参与者推动的项目，欢迎大家踊跃投稿：)"
+
+#: ../../source/contributing/contributing.md:63 823e647d6eb845f4a4dd53737a5787cd
 msgid ""
-"Remember that this is a volunteer-driven project, and that contributions "
-"are welcome :)"
-msgstr ""
+"For large features or major changes to codebase, please create **DingoDB Improvement Proposal (DIP)**. See template from [DIP-0](https://github.com/"
+"dingodb/dingo/issues/1)"
+msgstr "对于大型功能或代码库的重大变更，请创建 **DingoDB 改进提案 (DIP)**。请参见 [DIP-0](https://github.com/dingodb/dingo/issues/1) 中的模板。"
 
-#: ../../source/contributing/contributing.md:64
-#: 5b55cc32e17a45e79a37a8a9d6c32b0d
-msgid ""
-"For large features or major changes to codebase, please create **DingoDB "
-"Improvement Proposal (DIP)**. See template from "
-"[DIP-0](https://github.com/dingodb/dingo/issues/1)"
-msgstr ""
-
-#: ../../source/contributing/contributing.md:66
-#: 472b86dd18404a308345bd222ff4a743
+#: ../../source/contributing/contributing.md:65 217e88f1c76f44c39547852fc3d56e67
 msgid "Fix Bugs"
-msgstr ""
+msgstr "修复错误"
 
-#: ../../source/contributing/contributing.md:68
-#: 5892a7e48a004776bbd3f2485cc34455
-msgid ""
-"Look through the GitHub issues. Issues tagged with `#bug` are open to "
-"whoever wants to implement them."
-msgstr ""
+#: ../../source/contributing/contributing.md:67 429bc304df684e259bf19741cd430a8d
+msgid "Look through the GitHub issues. Issues tagged with `#bug` are open to whoever wants to implement them."
+msgstr "查看 GitHub 上的问题。标有` #bug` 的问题对任何想实现它们的人开放。"
 
-#: ../../source/contributing/contributing.md:71
-#: 64286db7d8bf4237a6e03a3079842831
+#: ../../source/contributing/contributing.md:70 a8ec007709334eb08e066efd60c06c3d
 msgid "Implement Features"
-msgstr ""
+msgstr "实施功能"
 
-#: ../../source/contributing/contributing.md:73
-#: 3ec38df3032748959b83e59a27b6ca46
-msgid ""
-"Look through the GitHub issues. Issues tagged with `#feature` is open to "
-"whoever wants to implement it."
-msgstr ""
+#: ../../source/contributing/contributing.md:72 35412e6e11284d889def679a40e433d8
+msgid "Look through the GitHub issues. Issues tagged with `#feature` is open to whoever wants to implement it."
+msgstr "查看 GitHub 上的问题。标有 ` #feature` 的问题对任何想实现它的人开放。"
 
-#: ../../source/contributing/contributing.md:76
-#: 2ae243068b9542129380de2ac9da623e
+#: ../../source/contributing/contributing.md:75 ea6ea9a58f24486a9360494855124513
 msgid "Improve Documentation"
-msgstr ""
+msgstr "改进文档"
 
-#: ../../source/contributing/contributing.md:78
-#: cc8c561cc4644ba499d798b4925f0f61
+#: ../../source/contributing/contributing.md:77 d85a48dd1f00487ab435809b555efbc4
 msgid ""
-"DingoDB could always use better documentation, whether as part of the "
-"official docs or even on the web as blog posts or articles. See "
-"[Documentation](#documentation) for more details."
-msgstr ""
+"DingoDB could always use better documentation, whether as part of the official docs or even on the web as blog posts or articles. See [Documentation]"
+"(#documentation) for more details."
+msgstr "DingoDB 需要更好的文档，无论是作为官方文档的一部分，还是作为博文或文章在网络上发布。"
 
-#: ../../source/contributing/contributing.md:82
-#: 4205069ffcf3488ab3e875b4bbd5e2ce
+#: ../../source/contributing/contributing.md:81 8ed9ddc5f9ca45e3833a28b91ac40e46
 msgid "Ask Questions"
-msgstr ""
+msgstr "提问"
 
-#: ../../source/contributing/contributing.md:84
-#: 976fd82c11504990b1e7c29713502138
-msgid ""
-"There is a dedicated on [Slack](https://dingodb.slack.com) or [Mailing "
-"list](mailto:dingodb@zetyun.com). Please use it when asking questions."
-msgstr ""
+#: ../../source/contributing/contributing.md:83 b85d6326b7c448feb3c1233208fb801d
+msgid "There is a dedicated on [Mailing list](mailto:dingodb@zetyun.com). Please use it when asking questions."
+msgstr "在 [Mailing list](mailto:dingodb@zetyun.com) 上有专人负责解答您的问题。"
 
-#: ../../source/contributing/contributing.md:86
-#: 6d650ddf13324777a3f3285dbc9a588e
+#: ../../source/contributing/contributing.md:85 1edef7701ffb437b9db3112f8523824a
 msgid "Pull Request Guidelines"
-msgstr ""
+msgstr "拉取请求指南"
 
-#: ../../source/contributing/contributing.md:88
-#: 5b2df09a92904b688a926cdcc049caba
+#: ../../source/contributing/contributing.md:87 f71633b092dd4f598e27ab1b161e7be3
 msgid "A philosophy we would like to strongly encourage is"
-msgstr ""
+msgstr "我们要大力提倡的理念是"
 
-#: ../../source/contributing/contributing.md:90
-#: 2964af8fec9047e4a89c7e6da34f0dcb
+#: ../../source/contributing/contributing.md:89 d68d76d0fbf542378d50e5449426a595
 msgid "Before creating a PR, create an issue."
-msgstr ""
+msgstr "在创建 PR 之前，先创建一个问题。"
 
-#: ../../source/contributing/contributing.md:92
-#: e5b8e2f203534adaa6b6d5e7c72ae1ef
+#: ../../source/contributing/contributing.md:91 eeb03174d3f44ee7b5d594b77e245881
 msgid "The purpose is to separate problem from possible solutions."
-msgstr ""
+msgstr "目的是将问题与可能的解决方案区分开来。"
 
-#: ../../source/contributing/contributing.md:94
-#: 1ab0e48c17dc4a04ba5ac8a3dcb72519
+#: ../../source/contributing/contributing.md:93 558ba077933542f4b62e78fb74921b87
 msgid ""
-"**Bug fixes:** If you’re only fixing a small bug, it’s fine to submit a "
-"pull request right away but we highly recommend to file an issue "
-"detailing what you’re fixing. This is helpful in case we don’t accept "
-"that specific fix but want to keep track of the issue. Please keep in "
-"mind that the project maintainers reserve the rights to accept or reject "
-"incoming PRs, so it is better to separate the issue and the code to fix "
-"it from each other. In some cases, project maintainers may request you to"
-" create a separate issue from PR before proceeding."
+"**Bug fixes:** If you’re only fixing a small bug, it’s fine to submit a pull request right away but we highly recommend to file an issue detailing what "
+"you’re fixing. This is helpful in case we don’t accept that specific fix but want to keep track of the issue. Please keep in mind that the project "
+"maintainers reserve the rights to accept or reject incoming PRs, so it is better to separate the issue and the code to fix it from each other. In some "
+"cases, project maintainers may request you to create a separate issue from PR before proceeding."
 msgstr ""
+"**错误修复：** 如果您只是修复一个小错误，立即提交拉取请求即可，但我们强烈建议您提交一个问题，详细说明您要修复的问题。如果我们不接受该特定修复，但又想跟"
+"踪该问题，这将很有帮助。请记住，项目维护者有权接受或拒绝收到的 PR，因此最好将问题和修复代码分开。在某些情况下，项目维护者可能会要求您在继续之前创建一个"
+"独立于 PR 的问题。"
 
-#: ../../source/contributing/contributing.md:96
-#: 6c49411dc07e436fb582a58f42567ae8
+#: ../../source/contributing/contributing.md:95 c18f9d2ea772471ba7b4979b2ea3c37e
 msgid ""
-"**Refactor:** For small refactors, it can be a standalone PR itself "
-"detailing what you are refactoring and why. If there are concerns, "
-"project maintainers may request you to create a `#DIP` for the PR before "
-"proceeding."
-msgstr ""
+"**Refactor:** For small refactors, it can be a standalone PR itself detailing what you are refactoring and why. If there are concerns, project "
+"maintainers may request you to create a `#DIP` for the PR before proceeding."
+msgstr "**重构：** 对于小规模的重构，可以是一个独立的 PR，详细说明重构的内容和原因。如果有疑虑，项目维护者可能会要求你在继续之前为 PR 创建一个 `#DIP`。"
 
-#: ../../source/contributing/contributing.md:98
-#: ff5c9c363139460296f566bba0c034ef
+#: ../../source/contributing/contributing.md:97 b42abf8f30d449debc576a3beeeea349
 msgid ""
-"**Feature/Large changes:** If you intend to change the public API, or "
-"make any non-trivial changes to the implementation, we require you to "
-"file a new issue as `#DIP` (DingoDB Improvement Proposal). This lets us "
-"reach an agreement on your proposal before you put significant effort "
-"into it. You are welcome to submit a PR along with the DIP (sometimes "
-"necessary for demonstration), but we will not review/merge the code until"
-" the DIP is approved."
+"**Feature/Large changes:** If you intend to change the public API, or make any non-trivial changes to the implementation, we require you to file a new "
+"issue as `#DIP` (DingoDB Improvement Proposal). This lets us reach an agreement on your proposal before you put significant effort into it. You are "
+"welcome to submit a PR along with the DIP (sometimes necessary for demonstration), but we will not review/merge the code until the DIP is approved."
 msgstr ""
+"**功能/大改动：** 如果您打算更改公共 API，或者对实现进行任何非小规模的改动，我们要求您提交一个新的问题作为 `#DIP` (DingoDB Improvement Proposal)。这可以"
+"让我们在您投入大量精力之前就您的提议达成一致。我们也欢迎您在提交 DIP 的同时提交 PR（有时是演示所必需的），但在 DIP 被批准之前，我们不会审核/合并代码。"
 
-#: ../../source/contributing/contributing.md:100
-#: 8eda0b9af74a4dbea2ae3164a679d966
+#: ../../source/contributing/contributing.md:99 98679d024176408bab624fa11a948309
 msgid ""
-"In general, small PRs are always easier to review than large PRs. The "
-"best practice is to break your work into smaller independent PRs and "
-"refer to the same issue. This will greatly reduce turnaround time."
-msgstr ""
+"In general, small PRs are always easier to review than large PRs. The best practice is to break your work into smaller independent PRs and refer to the "
+"same issue. This will greatly reduce turnaround time."
+msgstr "一般来说，小型公关总是比大型公关更容易审核。最好的做法是将您的工作分成较小的独立公关，并提及同一问题。这将大大缩短周转时间。"
 
-#: ../../source/contributing/contributing.md:102
-#: aa7f19a5fd5d4c99b118971f60abc954
+#: ../../source/contributing/contributing.md:101 daba7bcb43074bf1988962ce52a8c21c
 msgid ""
-"If you wish to share your work which is not ready to merge yet, create a "
-"[Draft PR](https://github.blog/2019-02-14-introducing-draft-pull-"
-"requests/). This will enable maintainers and the CI runner to prioritize "
-"mature PR's."
+"If you wish to share your work which is not ready to merge yet, create a [Draft PR](https://github.blog/2019-02-14-introducing-draft-pull-requests/). "
+"This will enable maintainers and the CI runner to prioritize mature PR's."
 msgstr ""
+"如果您想分享尚未准备好合并的工作，请创建一个 [Draft PR](https://github.blog/2019-02-14-introducing-draft-pull-requests/)。这将有助于维护者和 CI 运行人员"
+"优先处理成熟的 PR。"
 
-#: ../../source/contributing/contributing.md:104
-#: 21fbb987f2ba43b6a6bd76650078ec8c
+#: ../../source/contributing/contributing.md:103 23697757e64449aea3ac68f1a569013a
 msgid ""
-"Finally, never submit a PR that will put master branch in broken state. "
-"If the PR is part of multiple PRs to complete a large feature and cannot "
-"work on its own, you can create a feature branch and merge all related "
-"PRs into the feature branch before creating a PR from feature branch to "
-"master."
+"Finally, never submit a PR that will put master branch in broken state. If the PR is part of multiple PRs to complete a large feature and cannot work "
+"on its own, you can create a feature branch and merge all related PRs into the feature branch before creating a PR from feature branch to master."
 msgstr ""
+"最后，千万不要提交会使主分支处于崩溃状态的 PR。如果 PR 是为完成一个大型功能而提交的多个 PR 的一部分，且无法独立运行，那么可以创建一个功能分支，将所有相"
+"关的 PR 合并到功能分支中，然后再创建从功能分支到主分支的 PR。"
 
-#: ../../source/contributing/contributing.md:106
-#: 0f0b88962c134acd916717dccd78b384
+#: ../../source/contributing/contributing.md:105 043f02be79884f2ebaed9b34f031b8dc
 msgid "Protocol"
-msgstr ""
+msgstr "规程"
 
-#: ../../source/contributing/contributing.md:108
-#: c8b78278d91a4301bd6bc2dde8f288ca
+#: ../../source/contributing/contributing.md:107 951d60972ce641c28ce6f538a36c69c9
 msgid "Authoring"
-msgstr ""
+msgstr "编写"
 
-#: ../../source/contributing/contributing.md:110
-#: fdf87c4f4a6442e98e8362c3d21fd4e1
+#: ../../source/contributing/contributing.md:109 f6f823b507bc4d0b8c92a4481beeca86
 msgid "Fill in all sections of the PR template."
-msgstr ""
+msgstr "填写 PR 模板的所有部分。"
 
-#: ../../source/contributing/contributing.md:111
-#: 3e1fca87508e4a5699ad33231dca959a
-msgid ""
-"Title the PR with one of the following semantic prefixes (inspired by "
-"[Karma](http://karma-runner.github.io/0.10/dev/git-commit-msg.html])):"
-msgstr ""
+#: ../../source/contributing/contributing.md:110 e05e5161ac5e4caca26683bd32351b77
+msgid "Title the PR with one of the following semantic prefixes (inspired by [Karma](http://karma-runner.github.io/0.10/dev/git-commit-msg.html])):"
+msgstr "用以下语义前缀之一为 PR 命题（受 [Karma](http://karma-runner.github.io/0.10/dev/git-commit-msg.html])启发）："
 
-#: ../../source/contributing/contributing.md:113
-#: bc29fdc8691e4d6896ff948f77b9d32d
+#: ../../source/contributing/contributing.md:112 8f793aeb56e046bbba72853f89806820
 msgid "`feat` (new feature)"
-msgstr ""
+msgstr "`feat`（新功能）"
 
-#: ../../source/contributing/contributing.md:114
-#: 2ebc07c2079e4b089149c8fe28ce0b55
+#: ../../source/contributing/contributing.md:113 ac335b4f49fa41caa5ec7635e67b44f7
 msgid "`fix` (bug fix)"
-msgstr ""
+msgstr "`fix` (错误修复)"
 
-#: ../../source/contributing/contributing.md:115
-#: 45fa6686acd04982a199cf744f8f171a
+#: ../../source/contributing/contributing.md:114 9a959f0ba6984cde94440a5639637b7e
 msgid "`docs` (changes to the documentation)"
-msgstr ""
+msgstr "`文档`（对文档的修改）"
 
-#: ../../source/contributing/contributing.md:116
-#: 98b3eaf789544f9a94bcd66e03e8c67f
-msgid ""
-"`style` (formatting, missing semi colons, etc; no application logic "
-"change)"
-msgstr ""
+#: ../../source/contributing/contributing.md:115 45326d98299741c39dbe9f13822e943f
+msgid "`style` (formatting, missing semi colons, etc; no application logic change)"
+msgstr "`style`（格式化、缺少分号等；不改变应用程序逻辑）"
 
-#: ../../source/contributing/contributing.md:117
-#: f4395673111745a1848171afd85da9ac
+#: ../../source/contributing/contributing.md:116 72b70371849c469289a942d773f64930
 msgid "`refactor` (refactoring code)"
-msgstr ""
+msgstr "`refactor` (重构代码)"
 
-#: ../../source/contributing/contributing.md:118
-#: 2c9ff3b01b914a049791bf02528b9bbd
-msgid ""
-"`test` (adding missing tests, refactoring tests; no application logic "
-"change)"
-msgstr ""
+#: ../../source/contributing/contributing.md:117 0176db5abde844fe80cfa3e841e7dfb5
+msgid "`test` (adding missing tests, refactoring tests; no application logic change)"
+msgstr "`test` （添加缺失的测试、重构测试；不改变应用程序逻辑）"
 
-#: ../../source/contributing/contributing.md:119
-#: e488f94f06e4460e9ba3fd8e916fad7c
+#: ../../source/contributing/contributing.md:118 12203d44a35243c5966644b65f2479a1
 msgid "`chore` (updating tasks etc; no application logic change)"
-msgstr ""
+msgstr "`chore` （更新任务等；不改变应用程序逻辑）"
 
-#: ../../source/contributing/contributing.md:120
-#: 7ec3048648a24624b777826337f92e5e
+#: ../../source/contributing/contributing.md:119 ee6a75b91d9c4f2380217cf0b243adeb
 msgid "`perf` (performance-related change)"
-msgstr ""
+msgstr "`perf` （与绩效有关的变化）"
 
-#: ../../source/contributing/contributing.md:121
-#: 19bbc5efe2814bca9607a00e91990632
+#: ../../source/contributing/contributing.md:120 8eeea8ec4054442c9be953d5a846ca90
 msgid "`build` (build tooling, Docker configuration change)"
-msgstr ""
+msgstr "`build` （构建工具、Docker 配置更改）"
 
-#: ../../source/contributing/contributing.md:122
-#: 97965d2eda514b6ca6c95f33acb699dc
+#: ../../source/contributing/contributing.md:121 7811f510b2524b6f8fef2967056a6ea7
 msgid "`ci` (test runner, Github Actions workflow changes)"
-msgstr ""
+msgstr "`ci` （测试运行器、Github 操作工作流程变更）"
 
-#: ../../source/contributing/contributing.md:123
-#: aa1fbf4d506d4c85b1b2802b20534118
+#: ../../source/contributing/contributing.md:122 d199115e460240d4a4a126f0bd664c48
 msgid "`other` (changes that don't correspond to the above -- should be rare!)"
-msgstr ""
+msgstr "`other`（与上述内容不一致的更改 -- 应该很少见！）。"
 
-#: ../../source/contributing/contributing.md:124
-#: 6f4577b432214a56bcfc3cd52fc8a2b4
+#: ../../source/contributing/contributing.md:123 5d0ffbd73dd048038b629b37fafe3e2c
 msgid "Examples:"
-msgstr ""
+msgstr "示例："
 
-#: ../../source/contributing/contributing.md:125
-#: 2ada071bf36040c3bdbf08250890439c
+#: ../../source/contributing/contributing.md:124 74c097cf081d407a9986f7e8488f5224
 msgid "`feat: export charts as ZIP files`"
-msgstr ""
+msgstr "特征：将图表导出为 ZIP 文件"
 
-#: ../../source/contributing/contributing.md:126
-#: 12ec85fa44964696877eab28b4836410
+#: ../../source/contributing/contributing.md:125 83537c1cce574a7a999bf11e303a11a1
 msgid "`perf(api): improve API info performance`"
-msgstr ""
+msgstr "`perf(api): 提高应用程序接口信息的性能`"
 
-#: ../../source/contributing/contributing.md:127
-#: 4f1d4f3544084383ae1c69005c0ad033
+#: ../../source/contributing/contributing.md:126 17fbf9ee92de45cc8e464629887d0e3f
 msgid "`fix(chart-api): cached-indicator always shows value is cached`"
-msgstr ""
+msgstr "修正(chart-api)：缓存指示器始终显示已缓存的值"
 
-#: ../../source/contributing/contributing.md:129
-#: bd9e79d8f98e4646a7deb3d13a962662
+#: ../../source/contributing/contributing.md:128 606132dc73c54586920e0bd3babd00c7
 msgid ""
-"Add prefix `[WIP]` to title if not ready for review (WIP = work-in-"
-"progress). We recommend creating a PR with `[WIP]` first and remove it "
-"once you have passed CI test and read through your code changes at least "
-"once."
+"Add prefix `[WIP]` to title if not ready for review (WIP = work-in-progress). We recommend creating a PR with `[WIP]` first and remove it once you have "
+"passed CI test and read through your code changes at least once."
 msgstr ""
+"如果尚未准备好接受审核，请在标题中添加前缀 `[WIP]`（WIP = 进行中的工作）。我们建议先创建 PR，并在通过 CI 测试并至少通读一次代码更改后删除前缀`[WIP]`。"
 
-#: ../../source/contributing/contributing.md:130
-#: fe3ab17ac303453b90a0d757b8037682
+#: ../../source/contributing/contributing.md:129 854e994c1dfb409e8f574f109dca8291
 msgid ""
-"If you believe your PR contributes a potentially breaking change, put a "
-"`!` after the semantic prefix but before the colon in the PR title, like "
-"so: `feat!: Added foo functionality to bar`"
-msgstr ""
+"If you believe your PR contributes a potentially breaking change, put a `!` after the semantic prefix but before the colon in the PR title, like so: "
+"`feat!: Added foo functionality to bar`"
+msgstr "如果您认为您的 PR 有可能带来破坏性改动，请在语义前缀之后、PR 标题的冒号之前加上 `！`，就像这样： feat！：为 bar 添加 foo 功能"
 
-#: ../../source/contributing/contributing.md:131
-#: fd1754605c1345cda09ab6d8303d6697
+#: ../../source/contributing/contributing.md:130 6254ad64962b4f41ba1da2cec836c80a
+msgid "**Screenshots/GIFs:** Changes to user interface require before/after screenshots, or GIF for interactions"
+msgstr "**屏幕截图/GIF：** 更改用户界面需要截图前/后，或 GIF 进行交互"
+
+#: ../../source/contributing/contributing.md:131 27e38f89d7db4fb8824f01f605397f18
 msgid ""
-"**Screenshots/GIFs:** Changes to user interface require before/after "
-"screenshots, or GIF for interactions"
+"Recommended capture tools ([Kap](https://getkap.co/), [LICEcap](https://www.cockos.com/licecap/), [Skitch](https://download.cnet.com/Skitch/"
+"3000-13455_4-189876.html))"
 msgstr ""
+"推荐的捕捉工具（[Kap](https://getkap.co/)、[LICEcap](https://www.cockos.com/licecap/)、[Skitch](https://download.cnet.com/Skitch/"
+"3000-13455_4-189876.html)）"
 
-#: ../../source/contributing/contributing.md:132
-#: cd85a9e007b0436c9f71f59dff0ae0bd
+#: ../../source/contributing/contributing.md:132 39927c45a3ca467b80f0a10c08e2b813
+msgid "If no screenshot is provided, the committers will mark the PR with `need:screenshot` label and will not review until screenshot is provided."
+msgstr "如果没有提供截图，提交者会在 PR 上标注 `need:screenshot`（需要截图）标签，在提供截图之前不会进行审核。"
+
+#: ../../source/contributing/contributing.md:133 f9f4cd98b1944913a919aa1d1f67ff49
+msgid "**Dependencies:** Be careful about adding new dependency and avoid unnecessary dependencies."
+msgstr "**依赖关系：** 添加新的依赖关系时要小心谨慎，避免不必要的依赖关系。"
+
+#: ../../source/contributing/contributing.md:134 8501c25365004607828b007c2c6cd622
+msgid "**Tests:** The pull request should include tests, either as doctests, unit tests, or both. Make sure to resolve all errors and test failures."
+msgstr "**测试：** 拉取请求应包括测试，可以是 doctests、单元测试，或两者兼而有之。确保解决所有错误和测试失败。"
+
+#: ../../source/contributing/contributing.md:135 b4ad5e572cdd4788a403defa7bab51e4
+msgid "**Documentation:** If the pull request adds functionality, the docs should be updated as part of the same PR."
+msgstr "**文档：** 如果拉取请求增加了功能，文档应作为同一 PR 的一部分进行更新。"
+
+#: ../../source/contributing/contributing.md:136 47cd156f5f494d689516a87dbdf383f1
 msgid ""
-"Recommended capture tools ([Kap](https://getkap.co/), "
-"[LICEcap](https://www.cockos.com/licecap/), "
-"[Skitch](https://download.cnet.com/Skitch/3000-13455_4-189876.html))"
+"**CI:** Reviewers will not review the code until all CI tests are passed. Sometimes there can be flaky tests. You can close and open PR to re-run CI "
+"test. Please report if the issue persists. After the CI fix has been deployed to `master`, please rebase your PR."
 msgstr ""
+"**CI：** 审核人员在所有 CI 测试通过之前不会审核代码。有时，测试可能会出现问题。您可以关闭并打开 PR 以重新运行 CI 测试。如果问题仍然存在，请报告。在 CI "
+"修复被部署到 “master ”后，请重置您的 PR。"
 
-#: ../../source/contributing/contributing.md:133
-#: 537a83df1284402db8090403e8a26b7d
-msgid ""
-"If no screenshot is provided, the committers will mark the PR with "
-"`need:screenshot` label and will not review until screenshot is provided."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:134
-#: 2d5342abfe3744788d27a1b13c794865
-msgid ""
-"**Dependencies:** Be careful about adding new dependency and avoid "
-"unnecessary dependencies."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:135
-#: 348fbab43fdb4f5087c169bb125a4a8c
-msgid ""
-"**Tests:** The pull request should include tests, either as doctests, "
-"unit tests, or both. Make sure to resolve all errors and test failures."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:136
-#: 6b87ec5a541742849f1681c08c35fbe4
-msgid ""
-"**Documentation:** If the pull request adds functionality, the docs "
-"should be updated as part of the same PR."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:137
-#: c5040c5a96394b6e920e5e17d2b9f281
-msgid ""
-"**CI:** Reviewers will not review the code until all CI tests are passed."
-" Sometimes there can be flaky tests. You can close and open PR to re-run "
-"CI test. Please report if the issue persists. After the CI fix has been "
-"deployed to `master`, please rebase your PR."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:138
-#: 91c4ddd979784e87bae79e36d3c3a52e
+#: ../../source/contributing/contributing.md:137 50ac150794694e3d8904f2985fb1b81e
 msgid "**Code coverage:** Please ensure that code coverage does not decrease."
-msgstr ""
+msgstr "**代码覆盖率：** 请确保代码覆盖率不降低。"
 
-#: ../../source/contributing/contributing.md:139
-#: d674d55219544499b9ea03a14dce029f
+#: ../../source/contributing/contributing.md:138 91a8f32411994dd4a78af81ecd7648a9
 msgid ""
-"Remove `[WIP]` when ready for review. Please note that it may be merged "
-"soon after approved so please make sure the PR is ready to merge and do "
-"not expect more time for post-approval edits."
-msgstr ""
+"Remove `[WIP]` when ready for review. Please note that it may be merged soon after approved so please make sure the PR is ready to merge and do not "
+"expect more time for post-approval edits."
+msgstr "准备就绪后，删除 `[WIP]`。请注意，批准后可能很快就会合并，因此请确保 PR 已准备好合并，且不要期望有更多时间进行批准后的编辑。"
 
-#: ../../source/contributing/contributing.md:140
-#: 0a2b323b591c4099bed8ba0fe5734e58
-msgid ""
-"If the PR was not ready for review and inactive for > 30 days, we will "
-"close it due to inactivity. The author is welcome to re-open and update."
-msgstr ""
+#: ../../source/contributing/contributing.md:139 62eba48ff14c4eb3b643a08d84869ba9
+msgid "If the PR was not ready for review and inactive for > 30 days, we will close it due to inactivity. The author is welcome to re-open and update."
+msgstr "如果 PR 尚未准备好接受审核，且静止时间超过 30 天，我们将以静止为由关闭 PR。欢迎作者重新打开并更新。"
 
-#: ../../source/contributing/contributing.md:142
-#: 946b8ba1a686423b96d4905748b4f23e
+#: ../../source/contributing/contributing.md:141 38c3169928c2446da256aeecdcd32660
 msgid "Reviewing"
-msgstr ""
+msgstr "检查"
 
-#: ../../source/contributing/contributing.md:144
-#: 232abacb55764786821eba69c93cfcf9
+#: ../../source/contributing/contributing.md:143 94a056dc738a4e3da26ceca821d7458b
 msgid "Use constructive tone when writing reviews."
-msgstr ""
+msgstr "在撰写评论时使用建设性的语气。"
 
-#: ../../source/contributing/contributing.md:145
-#: 6d8c3cb78aaa4eec9dcb9922478cb795
-msgid ""
-"If there are changes required, state clearly what needs to be done before"
-" the PR can be approved."
-msgstr ""
+#: ../../source/contributing/contributing.md:144 bc61759f29c341a982cbef6f42b7dabf
+msgid "If there are changes required, state clearly what needs to be done before the PR can be approved."
+msgstr "如果需要修改，应明确说明在批准 PR 之前需要做哪些工作。"
 
-#: ../../source/contributing/contributing.md:146
-#: 9ee8ef7c6ceb424eaf08fdc73dd7b911
-msgid ""
-"If you are asked to update your pull request with some changes there's no"
-" need to create a new one. Push your changes to the same branch."
-msgstr ""
+#: ../../source/contributing/contributing.md:145 a9f8b98f1a2842409e41c611af5bbb1b
+msgid "If you are asked to update your pull request with some changes there's no need to create a new one. Push your changes to the same branch."
+msgstr "如果您被要求更新您的拉取请求，并做出一些修改，您无需创建一个新的拉取请求。将您的更改推送到同一分支即可。"
 
-#: ../../source/contributing/contributing.md:147
-#: 6824e4f05710469a8e829fe9cebd50b3
-msgid ""
-"The committers reserve the right to reject any PR and in some cases may "
-"request the author to file an issue."
-msgstr ""
+#: ../../source/contributing/contributing.md:146 94bfabd8ce8c4fffb8f17f084fe98d44
+msgid "The committers reserve the right to reject any PR and in some cases may request the author to file an issue."
+msgstr "提交者保留拒绝任何 PR 的权利，在某些情况下可能会要求作者提交问题。"
 
-#: ../../source/contributing/contributing.md:149
-#: 86994e55592e45cbb0376558dcabff11
+#: ../../source/contributing/contributing.md:148 339ab78ff32e4109ae302d0d55eb151c
 msgid "Merging"
-msgstr ""
+msgstr "合并"
 
-#: ../../source/contributing/contributing.md:151
-#: 9ed74f64b9494a589e03fe7e8d4220a7
+#: ../../source/contributing/contributing.md:150 16679440d187455b86d30dbd5f5f9f92
 msgid "At least one approval is required for merging a PR."
-msgstr ""
+msgstr "合并 PR 至少需要一个批准。"
 
-#: ../../source/contributing/contributing.md:152
-#: 2ba8da2a0d2a4efda743c01f1ccf2d0a
+#: ../../source/contributing/contributing.md:151 da42ebbb28c5498e830d996b637b11fa
 msgid "PR is usually left open for at least 24 hours before merging."
-msgstr ""
+msgstr "在合并前，PR 通常至少要开放 24 小时。"
 
-#: ../../source/contributing/contributing.md:153
-#: 08a5230bceb9487f9fab672990298681
-msgid ""
-"After the PR is merged, [close the corresponding "
-"issue(s)](https://help.github.com/articles/closing-issues-using-"
-"keywords/)."
-msgstr ""
+#: ../../source/contributing/contributing.md:152 3524c1ba57814d82a46704ad8a50ba39
+msgid "After the PR is merged, [close the corresponding issue(s)](https://help.github.com/articles/closing-issues-using-keywords/)."
+msgstr "合并 PR 后，[关闭相应的问题](https://help.github.com/articles/closing-issues-using-keywords/)。"
 
-#: ../../source/contributing/contributing.md:155
-#: b1efd1fd12894259af1a03fa48715451
+#: ../../source/contributing/contributing.md:154 979c226227c24904bfd9afbb29477d6b
 msgid "Post-merge Responsibility"
-msgstr ""
+msgstr "合并后的任务"
 
-#: ../../source/contributing/contributing.md:157
-#: 336d22a88bbf458db5a435f4adb58c15
-msgid ""
-"Project maintainers may contact the PR author if new issues are "
-"introduced by the PR."
-msgstr ""
+#: ../../source/contributing/contributing.md:156 cee63d28d0c04f7aa5882fd6df568c3e
+msgid "Project maintainers may contact the PR author if new issues are introduced by the PR."
+msgstr "如果 PR 引发了新问题，项目维护者可以联系 PR 作者。"
 
-#: ../../source/contributing/contributing.md:158
-#: a55a2d58ec6c4bd282f07f4b862692c6
-msgid ""
-"Project maintainers may revert your changes if a critical issue is found,"
-" such as breaking master branch CI."
-msgstr ""
+#: ../../source/contributing/contributing.md:157 f8af699832a349159a4fef84c9a31f3e
+msgid "Project maintainers may revert your changes if a critical issue is found, such as breaking master branch CI."
+msgstr "如果发现关键问题，如破坏主分支 CI，项目维护人员可能会还原你的更改。"
 
-#: ../../source/contributing/contributing.md:160
-#: cb48a99bb5ae43a8a58243bdb45cce54
+#: ../../source/contributing/contributing.md:159 7366f983a3de4eb8a2f09464ce5ef6d1
 msgid "Managing Issues and PRs"
-msgstr ""
+msgstr "管理问题和 PR"
 
-#: ../../source/contributing/contributing.md:162
-#: b4c30ceb9c69462d98cb191e416922f4
+#: ../../source/contributing/contributing.md:161 b787f37232294886a8acf843ab06aa07
 msgid ""
-"To handle issues and PRs that are coming in, committers read issues/PRs "
-"and flag them with labels to categorize and help contributors spot where "
-"to take actions, as contributors usually have different expertises."
-msgstr ""
+"To handle issues and PRs that are coming in, committers read issues/PRs and flag them with labels to categorize and help contributors spot where to "
+"take actions, as contributors usually have different expertises."
+msgstr "为了处理收到的问题和 PR，提交者会阅读问题/PR，并用标签对其进行标记，以进行分类并帮助贡献者发现应采取的行动，因为贡献者通常具有不同的专业知识。"
 
-#: ../../source/contributing/contributing.md:164
-#: 7992853b054b460f9c0d068414c30130
+#: ../../source/contributing/contributing.md:163 cc18091ba32d46fd91119e72c70d5c24
 msgid "Triaging goals"
-msgstr ""
+msgstr "分流目标"
 
-#: ../../source/contributing/contributing.md:166
-#: fa77b9634b1c45738c73bdc4955df31a
+#: ../../source/contributing/contributing.md:165 2c89b99c526740d38c70110f78368a86
+msgid "**For issues:** Categorize, screen issues, flag required actions from authors."
+msgstr "**针对问题：** 对问题进行分类、筛选，标记作者需要采取的行动。"
+
+#: ../../source/contributing/contributing.md:166 5295a996a6e1477fb0127018674174b4
+msgid "**For PRs:** Categorize, flag required actions from authors. If PR is ready for review, flag required actions from reviewers."
+msgstr "**对于 PR：** 进行分类，标记作者需要采取的行动。如果 PR 已准备好接受审核，则标记审核人员的必要操作。"
+
+#: ../../source/contributing/contributing.md:168 eed17d3f179f4916b1f425b52cf7d531
 msgid ""
-"**For issues:** Categorize, screen issues, flag required actions from "
-"authors."
-msgstr ""
+"First, add **Category labels (a.k.a. hash labels)**. Every issue/PR must have one hash label (except spam entry). Labels that begin with `#` defines "
+"issue/PR type:"
+msgstr "首先，添加**类别标签（又称哈希标签）**。每个问题/PR 必须有一个哈希标签（垃圾邮件条目除外）。以 `#` 开头的标签定义了问题/PR 类型："
 
-#: ../../source/contributing/contributing.md:167
-#: 260114156388478991231023ecb9ec6e
-msgid ""
-"**For PRs:** Categorize, flag required actions from authors. If PR is "
-"ready for review, flag required actions from reviewers."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:169
-#: 57891efe15964a7998da3114dc6a785f
-msgid ""
-"First, add **Category labels (a.k.a. hash labels)**. Every issue/PR must "
-"have one hash label (except spam entry). Labels that begin with `#` "
-"defines issue/PR type:"
-msgstr ""
-
-#: ../../source/contributing/contributing.md 53b9671fbb204242b6846e06888bc023
+#: ../../source/contributing/contributing.md dfd57744fbd24eca9d924520e79bc22d
 msgid "Label"
-msgstr ""
+msgstr "标签"
 
-#: ../../source/contributing/contributing.md aee1171115b447b0a97b02a48b206aac
+#: ../../source/contributing/contributing.md 17abbbd0e4774e99a42208dcb15667e8
 msgid "for Issue"
-msgstr ""
+msgstr "供发布"
 
-#: ../../source/contributing/contributing.md 378230a728ce4ec0bd31cfef2c4b102f
+#: ../../source/contributing/contributing.md acb36104e4544ea583ec87058d7492db
 msgid "for PR"
-msgstr ""
+msgstr "供提交 PR"
 
-#: ../../source/contributing/contributing.md 3de9f87fb0c9432c99c8eefb8c6d50df
+#: ../../source/contributing/contributing.md 0aba54c710e844afb54b78bd73accef2
 msgid "`#bug`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md e7386f2182e442269a2185eae111e307
+#: ../../source/contributing/contributing.md 7e0f8fe6b0944daea3efde4fadfb164a
 msgid "Bug report"
-msgstr ""
+msgstr "错误报告"
 
-#: ../../source/contributing/contributing.md 03d53bcc26c3494b99f002fb67aeb573
+#: ../../source/contributing/contributing.md 5a3ed6f6f93e4d639606529356de13d6
 msgid "Bug fix"
-msgstr ""
+msgstr "错误修复"
 
-#: ../../source/contributing/contributing.md 4a0b617701f5494eb9ed998e75b0a0b3
+#: ../../source/contributing/contributing.md 77c283d42a6343a59db893f1a5c14706
 msgid "`#code-quality`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md b8036d19929047b0934bf949506b0de2
+#: ../../source/contributing/contributing.md dc216fb026ab4c4288988ba708428554
 msgid "Describe problem with code, architecture or productivity"
-msgstr ""
+msgstr "描述代码、架构或效率方面的问题"
 
-#: ../../source/contributing/contributing.md 51b38b029ad24023aa894e20c18089f9
+#: ../../source/contributing/contributing.md 110b243bce524f79b724d6cec8eeddaa
 msgid "Refactor, tests, tooling"
-msgstr ""
+msgstr "重构、测试、工具"
 
-#: ../../source/contributing/contributing.md b1a799d700d1446c9118d95cb7e40977
+#: ../../source/contributing/contributing.md b54872ff89d5497dbd1b74cfd3b55f06
 msgid "`#feature`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md 6aef880900f34c6a99bfe464f059ef37
+#: ../../source/contributing/contributing.md 44f93243b5344bc29e862cba0b1d1f9e
 msgid "New feature request"
-msgstr ""
+msgstr "新功能请求"
 
-#: ../../source/contributing/contributing.md 1b7947c09bfc4ce4b8643fc5fb2226e9
+#: ../../source/contributing/contributing.md 56c83496853f4a6d811591f5aef48e2e
 msgid "New feature implementation"
-msgstr ""
+msgstr "新功能的实施"
 
-#: ../../source/contributing/contributing.md 2d3f163ab45c469da9849bc729e41853
+#: ../../source/contributing/contributing.md e04a7468603d4295a59a9c9bbabb5851
 msgid "`#refine`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md e6fba484c4c74062b49cb9ba354f2293
-msgid ""
-"Propose improvement that does not provide new features and is also not a "
-"bug fix nor refactor, such as adjust padding, refine UI style."
-msgstr ""
+#: ../../source/contributing/contributing.md 1e1f994c7f6345dab6e0b2463c16a69b
+msgid "Propose improvement that does not provide new features and is also not a bug fix nor refactor, such as adjust padding, refine UI style."
+msgstr "提出不提供新功能，也不是错误修复或重构的改进建议，如调整 padding、改进 UI 风格。"
 
-#: ../../source/contributing/contributing.md e8aa45dda8174167976955c29f2f8f4b
-msgid ""
-"Implementation of improvement that does not provide new features and is "
-"also not a bug fix nor refactor, such as adjust padding, refine UI style."
-msgstr ""
+#: ../../source/contributing/contributing.md 8656c9e513a64d2babf4e854ebc39dee
+msgid "Implementation of improvement that does not provide new features and is also not a bug fix nor refactor, such as adjust padding, refine UI style."
+msgstr "实施不提供新功能的改进，也不是错误修复或重构，如调整填充、改进用户界面风格。"
 
-#: ../../source/contributing/contributing.md de47a81ac7bb4fe4b3152312c92b766b
+#: ../../source/contributing/contributing.md c16d9bd5fde040c49dc3dea488cccf67
 msgid "`#doc`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md
-#: ../../source/contributing/contributing.md:204
-#: 0a5249856aaf48f690362fa461fc7d31 2be639ecf64a475181e508c996ee258f
-#: 4fe70da3337d4b05adad8814f1367db4
+#: ../../source/contributing/contributing.md e560afd63292446cbe5489ceb8234b83 fa7e89eeb275467e8ee9f7aa50b84d79
 msgid "Documentation"
-msgstr ""
+msgstr "文档"
 
-#: ../../source/contributing/contributing.md 5575f53fa3b34fa2a70dfa98a198e314
+#: ../../source/contributing/contributing.md c4c0bcf27f06460c9006f0a1805eabaa
 msgid "`#question`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md 81475605e1ce454a941665cfe6e23150
-msgid ""
-"Troubleshooting: Installation, Running locally, Ask how to do something. "
-"Can be changed to `#bug` later."
-msgstr ""
+#: ../../source/contributing/contributing.md 3f487a3a2c5b4d729366e20524648199
+msgid "Troubleshooting: Installation, Running locally, Ask how to do something. Can be changed to `#bug` later."
+msgstr "故障排除： 安装、本地运行、询问如何操作。稍后可改为 `#bug`。"
 
-#: ../../source/contributing/contributing.md 48568af9f1544cdaad2d774b814394fe
-#: 7f7fb24a8e8e468eba62d6cd69ff856e
+#: ../../source/contributing/contributing.md 0ab39d9dbc4b43849df307a8c2192213
 msgid "N/A"
 msgstr ""
 
-#: ../../source/contributing/contributing.md 66b4591615a1460cbb81a2355b1f5d9f
+#: ../../source/contributing/contributing.md 64f392f3dccd4ea39880379a5702d434
 msgid "`#DIP`"
 msgstr ""
 
-#: ../../source/contributing/contributing.md 13f0c9adc6a74e0bb6d1d5d2eeafcac7
+#: ../../source/contributing/contributing.md f854fcfb9f17484b8bdf8f1a3a16dce1
 msgid "DingoDB Improvement Proposal"
-msgstr ""
+msgstr "DingoDB 改进建议"
 
-#: ../../source/contributing/contributing.md:181
-#: 65936a85e37d42bd8cd7efc697c41917
+#: ../../source/contributing/contributing.md:180 fb9b7d0895ba41f49dc9eb38e1980407
 msgid "Then add other types of labels as appropriate."
-msgstr ""
+msgstr "然后酌情添加其他类型的标签。"
 
-#: ../../source/contributing/contributing.md:183
-#: a73f58c1cace4404b47b76c4d8e30f9e
+#: ../../source/contributing/contributing.md:182 e2e42bd2a143446e97b7e310eba4ecf9
 msgid ""
-"**Need labels:** These labels have pattern `need:xxx`, which describe the"
-" work required to progress, such as `need:rebase`, `need:update`, "
+"**Need labels:** These labels have pattern `need:xxx`, which describe the work required to progress, such as `need:rebase`, `need:update`, "
 "`need:screenshot`."
-msgstr ""
+msgstr "**需求标签：** 这些标签的模式为 `need:xxx`，描述了进展所需的工作，如 `need:rebase`、`need:update`、`need:screenshot`。"
 
-#: ../../source/contributing/contributing.md:184
-#: 901055299083483c92c58cbb3d91902c
+#: ../../source/contributing/contributing.md:183 a2760e5ae6f14d0d96a1acaca47ed0f2
 msgid ""
-"**Risk labels:** These labels have pattern `risk:xxx`, which describe the"
-" potential risk on adopting the work, such as `risk:db-migration`. The "
-"intention was to better understand the impact and create awareness for "
-"PRs that need more rigorous testing."
+"**Risk labels:** These labels have pattern `risk:xxx`, which describe the potential risk on adopting the work, such as `risk:db-migration`. The "
+"intention was to better understand the impact and create awareness for PRs that need more rigorous testing."
 msgstr ""
+"**风险标签：** 这些标签的模式为 “risk:xxx”，描述了采用该工作的潜在风险，如 “risk:db-migration”。这样做的目的是为了更好地了解影响，并为需要更严格测试的 "
+"PR 创建意识。"
 
-#: ../../source/contributing/contributing.md:185
-#: 5ab19975408544f1b002642e2643ff62
+#: ../../source/contributing/contributing.md:184 72fdee46795a421db78d22e60075f0b7
 msgid ""
-"**Status labels:** These labels describe the status (`abandoned`, "
-"`wontfix`, `cant-reproduce`, etc.) Issue/PRs that are rejected or closed "
-"without completion should have one or more status labels."
-msgstr ""
+"**Status labels:** These labels describe the status (`abandoned`, `wontfix`, `cant-reproduce`, etc.) Issue/PRs that are rejected or closed without "
+"completion should have one or more status labels."
+msgstr "**状态标签：** 这些标签描述了状态（“放弃”、“不想修复”、“可以重新生成 ”等）。被拒绝或未完成就关闭的问题/PR 应具有一个或多个状态标签。"
 
-#: ../../source/contributing/contributing.md:186
-#: a7210c9b52e5472b92899f5a79caef69
+#: ../../source/contributing/contributing.md:185 fd18e0ec4c5d470b9be85653d02826a5
 msgid ""
-"**Version labels:** These have the pattern `vx.x` such as `v0.28`. "
-"Version labels on issues describe the version the bug was reported on. "
-"Version labels on PR describe the first release that will include the PR."
-msgstr ""
+"**Version labels:** These have the pattern `vx.x` such as `v0.28`. Version labels on issues describe the version the bug was reported on. Version "
+"labels on PR describe the first release that will include the PR."
+msgstr "**版本标签：** 这些标签的模式为 `vx.x`，如 `v0.28`。问题上的版本标签描述了错误报告的版本。PR 上的版本标签描述的是包含 PR 的第一个版本。"
 
-#: ../../source/contributing/contributing.md:188
-#: 1f67faf34e004742aa66d0a89a6ecaa0
-msgid ""
-"Committers may also update title to reflect the issue/PR content if the "
-"author-provided title is not descriptive enough."
-msgstr ""
+#: ../../source/contributing/contributing.md:187 178bcbfb29d8400798e58d98a3e451c1
+msgid "Committers may also update title to reflect the issue/PR content if the author-provided title is not descriptive enough."
+msgstr "如果作者提供的标题描述性不够，提交者也可以更新标题以反映问题/PR 的内容。"
 
-#: ../../source/contributing/contributing.md:190
-#: 899c9c397143465e8191e88e0a54439e
-msgid ""
-"If the PR passes CI tests and does not have any `need:` labels, it is "
-"ready for review, add label `review` and/or `design-review`."
-msgstr ""
+#: ../../source/contributing/contributing.md:189 e752cfef0d3f45248b46cc2f90e0c1c9
+msgid "If the PR passes CI tests and does not have any `need:` labels, it is ready for review, add label `review` and/or `design-review`."
+msgstr "如果 PR 通过了 CI 测试，且没有任何 “need: ”标签，则可以进行审核，添加标签 “review ”和/或 “design-review”。"
 
-#: ../../source/contributing/contributing.md:192
-#: dbe095b29ea443aa939355f0ace5babd
-msgid ""
-"If an issue/PR has been inactive for >=30 days, it will be closed. If it "
-"does not have any status label, add `inactive`."
-msgstr ""
+#: ../../source/contributing/contributing.md:191 19abfa2e9a194b68a5522d0545de2d0c
+msgid "If an issue/PR has been inactive for >=30 days, it will be closed. If it does not have any status label, add `inactive`."
+msgstr "如果某个问题/PR 在 >=30 天内一直处于非活动状态，则会被关闭。如果没有任何状态标签，则添加 “未激活”。"
 
-#: ../../source/contributing/contributing.md:194
-#: 7c0e6f3e5fbe4aac888a4f53b49cbd12
+#: ../../source/contributing/contributing.md:193 f1758852890e48d38305b52c3058f84c
 msgid "Setup Local Environment for Development"
-msgstr ""
+msgstr "设置本地开发环境"
 
-#: ../../source/contributing/contributing.md:196
-#: 44df5fa713d746d283b60fecca77d08d
+#: ../../source/contributing/contributing.md:195 b9daaf445e5845169346dbed75aea7fd
 msgid ""
-"First, [fork the repository on GitHub](https://help.github.com/articles"
-"/about-forks/), then clone it. You can clone the main repository "
-"directly, but you won't be able to send pull requests."
-msgstr ""
-
-#: ../../source/contributing/contributing.md:206
-#: 1e6ce837c43b4d1eb20967336de12480
-msgid ""
-"The latest documentation and tutorial are available at "
-"https://dingodb.io/."
-msgstr ""
-
+"First, [fork the repository on GitHub](https://help.github.com/articles/about-forks/), then clone it. You can clone the main repository directly, but "
+"you won't be able to send pull requests."
+msgstr "首先，[fork GitHub 上的仓库](https://help.github.com/articles/about-forks/)，然后克隆它。你可以直接克隆主仓库，但不能发送拉取请求。"

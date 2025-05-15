@@ -1,0 +1,74 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 11:55+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/network.md:1 1fe86ca90e2a48c4990826c62dcac01d
+msgid "Network Protocols"
+msgstr "网络协议"
+
+#: ../../source/architecture/network.md:3 7849fa090b8340edb17f2686723ed9de
+msgid "Data Messages and Control Messages"
+msgstr "数据报文和控制报文"
+
+#: ../../source/architecture/network.md:5 4ed54f5e189341b39c26a2619bc6cae6
+msgid ""
+"There are two types of messages transferred among the cluster nodes: "
+"data messages and control messages. Data messages contains encoded "
+"tuples delivered by the \"send operators\", including \"FIN\". Control "
+"messages are used to coordinate the job running. The following is the "
+"control message types currently implemented"
+msgstr ""
+"集群节点之间传输两种类型的信息：数据信息和控制信息。数据信息包含由 \"发送"
+"操作员\"（包括 \"FIN\"）发送的编码元组。控制信息用于协调作业运行。目前实"
+"现的控制信息类型如下"
+
+#: ../../source/architecture/network.md:9 b2388249d33943b3b5612a32d0bc06f2
+msgid ""
+"Task delivery message: tasks are serialized and delivered from the "
+"coordinator to executors."
+msgstr "任务交付消息：任务被序列化并从协调器交付给执行器。"
+
+#: ../../source/architecture/network.md:10 0f664fe0e66c46a19565ceed244a30b6
+msgid ""
+"Receiving ready message: the \"receive operators\" send messages to the "
+"corresponding \"send operators\" to notify that they are properly "
+"started and ready to receive data messages."
+msgstr ""
+"接收就绪信息：\"接收操作符 \"向相应的 \"发送操作符 \"发送信息，通知它们已"
+"正确启动并准备好接收数据信息。"
+
+#: ../../source/architecture/network.md:13 dba66dce5b3b4f5e81a558c43d37c30d
+msgid ""
+"The interaction between two tasks which exchanging data with each other "
+"is illustrated in the following figure."
+msgstr "下图展示了两个相互交换数据的任务之间的互动。"
+
+#: ../../source/architecture/network.md:26 395883579b7c4a27a93d30d838b7498f
+msgid "Serialize and Deserialize"
+msgstr "序列化和反序列化"
+
+#: ../../source/architecture/network.md:28 a2e2fb124c284d82a5af667118fa719b
+msgid "The tuples are encoded in Avro format into data messages."
+msgstr "元组以 Avro 格式编码成数据信息。"
+
+#: ../../source/architecture/network.md:30 37996c8ef5364f2ea263fb18314b35ff
+msgid "The tasks are encoded in JSON format."
+msgstr "任务以 JSON 格式编码。"
