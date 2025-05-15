@@ -1,0 +1,226 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-15 09:28+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:1
+#: d990724df51146d4a61ab63b6cf0018b
+msgid "Release Notes v0.9.0"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:3
+#: e253d4dc87174ac0a286c8ca9694447a
+msgid "New Features"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:4
+#: f2b421849d6943fa94abf2e9b57a4f96
+msgid "1. License Management Mechanism"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:5
+#: 8c7ec12204ca4e7c8c2a12a52070380a
+msgid ""
+"Introduced a License management feature to protect DingoDB's intellectual"
+" property. With the License activation and management tools, users can "
+"easily manage and monitor software usage, ensuring legal and compliant "
+"use."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:6
+#: 6db4d66b182046cf97413a182f8b4d5d
+msgid "2. Single Machine Lite Version of DingoDB"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:7
+#: 35b666e708fd456da747091c6cecb9e3
+msgid ""
+"Implemented a Single Machine Lite version of DingoDB, lowering the usage "
+"threshold for users. This version can run on a single machine without "
+"complex distributed deployment, making it ideal for development, testing,"
+" and small-scale application scenarios, helping users quickly get started"
+" and validate DingoDB's capabilities."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:8
+#: 7e6e0a4d8f78479cbdffb5d5e1fe66b4
+msgid "3. New C++ SDK"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:9
+#: 38d2d49b1daf4d01b627b22dc9aa7b22
+msgid ""
+"Provided a new C++ SDK to facilitate secondary development and "
+"integration for developers. The SDK offers a rich set of APIs that "
+"support efficient data operations and management, enhancing development "
+"efficiency."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:11
+#: e97f27bc0e2d48d990b67535153ab7ba
+msgid "Feature Optimizations"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:12
+#: a6f82c2b4ab446b5b4fcedcd1c6e1273
+msgid "Storage Layer Optimization"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:13
+#: 7577ad5d11304b8a9ba2f3d7da622ec1
+msgid "1. Braft Modification"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:14
+#: b020174782cb442db5e85989c9745150
+msgid ""
+"Added support for controlling election priority among peers, addressing "
+"the vector index Leader balancing issue. This helps improve cluster "
+"stability and performance, avoiding single-point overloads."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:15
+#: 64ea9112428e4a0a8dddc92a03ea06dd
+msgid "2. Prefilter Performance Enhancement"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:16
+#: 0401d51bbf0546f0961727c5d40a0ad5
+msgid ""
+"Adjusted the data structure of ScalarData to improve pre-filtering rates."
+" Through data structure optimization, DingoDB can process data filtering "
+"faster, reducing query latency."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:17
+#: 3a9be88078254733b8228c1955b0dc7b
+msgid "3. Instruction Set Expansion"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:18
+#: 08ede07723dc4c9fba95aa0bf2d6e5bf
+msgid ""
+"In addition to the default SSE instructions for vector distance "
+"calculation functions FAISS and HNSWLIB, added support for AVX2/AVX512 "
+"instruction sets. By expanding the instruction set, vector computation "
+"efficiency is improved, particularly in high-performance computing "
+"environments."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:19
+#: 12f9f2257e214848b640d7e0ba1ba1b6
+msgid "4. Vector Distance Calculation Performance Improvement"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:20
+#: d6e616f77ddf4838ac1596b091727997
+msgid ""
+"Implemented runtime CPU instruction set acceleration switching, "
+"significantly enhancing vector distance calculation performance. The "
+"system automatically switches instruction sets (e.g., SSE, AVX2, AVX512) "
+"as needed, especially effective in handling large-scale datasets."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:21
+#: b97bbed9ae9a45a18ef2574eae31c2d2
+msgid "5. Leader Balance Rate Improvement"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:22
+#: 89c6552d69d44fe68a52d4a2f11f5161
+msgid ""
+"Optimized algorithms to improve the balance rate of Leaders in the "
+"cluster. The improved election algorithm ensures a more balanced "
+"distribution of Leaders, enhancing the overall system performance."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:23
+#: 16519c90d4e54540ace3f77f5cf70817
+msgid "6. Vector Index Data Insertion Performance Improvement"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:24
+#: 52332a80d6c545d8aaf3c5cb345884de
+msgid ""
+"Optimized the insertion performance of IVF_FLAT and IVF_PQ vector "
+"indexes. The improved insertion algorithm increases data insertion "
+"efficiency, reducing index build time."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:25
+#: 07cf0e3944fc4b29b495a0e8d6b9c1ac
+msgid "7. Synchronization Operation Performance Optimization"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:26
+#: ac59247166944ba5ab42c3ffc381ddfa
+msgid ""
+"Optimized the synchronization performance of BThread and PThread. By "
+"reducing the overhead of thread synchronization, the performance in "
+"multi-threaded environments is enhanced."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:27
+#: 17a02f60b28f4461bf5c7ce5a19bb86d
+msgid "8. Vector Search Performance Improvement"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:28
+#: 18e35ea9e5154be99f3ad31f66089b54
+msgid ""
+"Adjusted parameters such as Region size, Region count, and number of "
+"threads to effectively improve vector search performance. Optimized "
+"resource allocation significantly boosts search response speed and "
+"efficiency."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:30
+#: 2ed97e0f6c8d44868977622a9b96f2a5
+msgid "Computation Layer Optimization"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:31
+#: e34f6706751e488fbbf879fc4c66c749
+msgid "1. Log System Optimization"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:32
+#: 7bc8bafae9194c54b86494d53cd9df68
+msgid ""
+"Revamped the Executor layer log system to provide full-link log "
+"information, enhancing log traceability. The improved log system records "
+"more detailed information, helping users comprehensively monitor and "
+"analyze various events during task execution."
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:33
+#: 0b3a67b999de40918682038cdb41afb9
+msgid "2. Observable Metrics"
+msgstr ""
+
+#: ../../source/release_notes/dingodb_0_9_0_rn.md:34
+#: 5a44baeeb468467a893cf944870b5312
+msgid ""
+"Introduced a new Metric information statistics feature to monitor job "
+"metrics at various stages, enhancing task observability. By monitoring "
+"performance metrics in real time, users can better understand task "
+"execution and performance bottlenecks, improving system operation and "
+"maintenance efficiency."
+msgstr ""
+

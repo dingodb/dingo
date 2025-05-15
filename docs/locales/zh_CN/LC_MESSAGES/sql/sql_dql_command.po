@@ -1,0 +1,284 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-15 11:19+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_dql_command.md:1 56b6b4435f1b411c9d562709c61f59df
+msgid "DQL Commands"
+msgstr "DQL 命令"
+
+#: ../../source/sql/sql_dql_command.md:2 2839c8d6ddb24e9d8d684d6338ed1241
+msgid "DQL are used to retrieve or query data from the database."
+msgstr "DQL 用于检索或查询数据库中的数据。"
+
+#: ../../source/sql/sql_dql_command.md:3 a2a2bada1aab45ceb1f41b6151c01c1a
+msgid "1. Full table query"
+msgstr "1.全表查询"
+
+#: ../../source/sql/sql_dql_command.md:22 b8d6e6f521cd4939ae628a4eab4cec9d
+msgid "2. Vector index query"
+msgstr "2.向量索引查询"
+
+#: ../../source/sql/sql_dql_command.md:29 778e2dd743044a3cb726f4a2168970a3
+msgid ""
+"In the example, `test` is the table name, `feature` is the vector index, "
+"`array` is the vector to be queried, `10` is the number of rows to be "
+"queried, and `map` is an additional parameter to the query (e.g., "
+"`efSearch` for hnsw)."
+msgstr ""
+"在示例中，`test` 是表名，`feature` 是向量索引，`array` 是要查询的向量，"
+"`10` 是要查询的行数，`map` 是查询的附加参数（例如，hnsw 的 `efSearch`）。"
+
+#: ../../source/sql/sql_dql_command.md:30 a8a02f9441b14b9c94ff186530207681
+msgid "3. Full-text index query"
+msgstr "3.全文索引查询"
+
+#: ../../source/sql/sql_dql_command.md:31 b6be99a0ebc8426f9476ea2e99782a94
+msgid "New `text_search` function for full-text indexing `bm25` recall;"
+msgstr "新的 `text_search` 函数，用于全文索引 `bm25` 的调用；"
+
+#: ../../source/sql/sql_dql_command.md:32 9cd32d24243245828e6729689beaef1d
+msgid "`Text_search` parameter description:"
+msgstr "`Text_search` 参数说明："
+
+#: ../../source/sql/sql_dql_command.md:33 ef94fcb9991148cfb39d99b4f31ba7c2
+msgid "The first parameter is the table name;"
+msgstr "第一个参数是表名；"
+
+#: ../../source/sql/sql_dql_command.md:34 fe2f4b13a95a41caba85561792f0b791
+msgid "the second parameter is the full-text index name."
+msgstr "第二个参数是全文索引名称。"
+
+#: ../../source/sql/sql_dql_command.md:35 c6279e641e8d4d968be65cb751353264
+msgid ""
+"The third parameter is the expression used for retrieval, which needs to "
+"meet the `Tantivy` requirements, please note that whether the expression "
+"is legal or not, is checked by `Tantivy`. (If the third parameter is not "
+"written, it defaults to a null character.)"
+msgstr ""
+"第三个参数是用于检索的表达式，需要满足 `Tantivy` 的要求，请注意，表达式是"
+"否合法由 `Tantivy` 检查。(如果未写入第三个参数，则默认为空字符）。"
+
+#: ../../source/sql/sql_dql_command.md:36 e5910e7d37454eacb15674c7348df798
+msgid ""
+"The fourth argument is similar to the vector's `top 5`, returning the "
+"top 5 rows with the highest scores. (If the four parameters are left "
+"out, the default is 1.)"
+msgstr ""
+"第四个参数类似于向量的 “top 5”，返回得分最高的前 5 行。(如果不包含这四个"
+"参数，默认值为 1）。"
+
+#: ../../source/sql/sql_dql_command.md:37 340d4cc58f1b490da9e93a17e1c829f5
+msgid ""
+"Note: The third parameter retrieves the expression used to retrieve "
+"multiple clauses is when the logical operations `OR`, `AND` will be "
+"used, which must be in uppercase. If it is lowercase, there will be "
+"different semantics. tantivy will be treated as multiple words of the "
+"corresponding field to match, rather than multiple clauses to match."
+msgstr ""
+"注意：当使用逻辑运算 “OR”、“AND ”时，第三个参数将检索用于检索多个条款的表"
+"达式，该表达式必须大写。如果是小写，语义将有所不同。tantivy 将被视为要匹"
+"配的相应字段的多个单词，而不是要匹配的多个子句。"
+
+#: ../../source/sql/sql_dql_command.md:41 8b57d4b622d545ddb988061b06704e63
+msgid "4. Multi-way recall query"
+msgstr "4.多路召回查询"
+
+#: ../../source/sql/sql_dql_command.md:42 bc54a2e719404671b5c2ef25632eb903
+msgid ""
+"Provides the `hybrid_search` function, which implements a hybrid search "
+"of full-text indexes and vectors;"
+msgstr "提供 “hybrid_search ”函数，用于实现全文索引和向量的混合搜索；"
+
+#: ../../source/sql/sql_dql_command.md:43 6d10b72dfb434d79894b7471441eaec1
+msgid "The first argument is a full-text index query;"
+msgstr "第一个参数是全文索引查询；"
+
+#: ../../source/sql/sql_dql_command.md:44 28e6c21ea7664c76b1cbefbb777f43c1
+msgid "the second argument is a vector index query;"
+msgstr "第二个参数是一个向量索引查询；"
+
+#: ../../source/sql/sql_dql_command.md:45 fc153ebd7c174fc284ce8cbc3f1c26ee
+msgid "The third parameter is the weight of the full-text indexed search;"
+msgstr "第三个参数是全文索引搜索的权重；"
+
+#: ../../source/sql/sql_dql_command.md:46 ff30ce3f53d743379717fcbf1093b548
+msgid ""
+"The fourth parameter is the weight of the vector search. (If the third "
+"and fourth parameters are omitted, the default is 0.5.)"
+msgstr ""
+"第四个参数是向量搜索的权重。(如果省略第三和第四参数，默认值为 0.5）。"
+
+#: ../../source/sql/sql_dql_command.md:48 f5d03be6fa354ea9aa992ee8f868fbd6
+msgid ""
+"The `similarity_limit_n`, `bm25_limit_n`, Dingo is specified by the "
+"`top` parameter in the corresponding function."
+msgstr ""
+"`相似度_限制_n`、`bm25_限制_n`、Dingo 由相应函数中的`top`参数指定。"
+
+#: ../../source/sql/sql_dql_command.md:63 31b8c1718faf46fb997cd6ffd43ceef8
+msgid "5. Index-front filtering query"
+msgstr "5.索引前过滤查询"
+
+#: ../../source/sql/sql_dql_command.md:64 34d67cb7824249a3b18fc85ad51eb192
+msgid ""
+"First filter the result set by scalar fields for the whole table, then "
+"vector query on the basis of this result set."
+msgstr "首先根据整个表的标量字段过滤结果集，然后根据该结果集进行向量查询。"
+
+#: ../../source/sql/sql_dql_command.md:73 dbdecdbc75dc4529939b7988e90f9cf9
+msgid "6. Index backward filtering query"
+msgstr "6.索引后向过滤查询"
+
+#: ../../source/sql/sql_dql_command.md:74 6a910e967b914e74b0f212eab5a2e749
+msgid ""
+"Advanced row vector query to produce a result set, then scalar field "
+"filtering on the basis of this result set."
+msgstr "高级行向量查询生成结果集，然后根据该结果集进行标量字段筛选。"
+
+#: ../../source/sql/sql_dql_command.md:84 438592627f2143ecb94ddeaede1329df
+msgid "7. Query specified columns"
+msgstr "7.查询指定列"
+
+#: ../../source/sql/sql_dql_command.md:103 7f08299bb4b144f79fefa95140e93e52
+msgid "8. Conditional Filtering Query"
+msgstr "8.条件筛选查询"
+
+#: ../../source/sql/sql_dql_command.md:104 c70a5daa43494209b66d7ae1ff70884e
+msgid "Single Condition Filtering"
+msgstr "单一条件筛选"
+
+#: ../../source/sql/sql_dql_command.md:119 49c8725afa334f2693caff4eaf145262
+msgid "Multiple Condition Filtering"
+msgstr "多种条件筛选"
+
+#: ../../source/sql/sql_dql_command.md:130 0c31feb5adae4214a976752acf24b18d
+msgid "9. De-duplication query"
+msgstr "9.重复数据删除查询"
+
+#: ../../source/sql/sql_dql_command.md:131 b44b96aa8aba493b88eacdcb6576f48e
+msgid "De-duplication query for the specified columns"
+msgstr "对指定列进行重复数据删除查询"
+
+#: ../../source/sql/sql_dql_command.md:143 fbf96e4be3274848b4fd13e3ef4af607
+msgid "10. LIKE"
+msgstr "10.内容匹配"
+
+#: ../../source/sql/sql_dql_command.md:144 4488ffeefc7146cc82e7085ebf62f8fb
+msgid "Common Usage"
+msgstr "常见用法"
+
+#: ../../source/sql/sql_dql_command.md:145 057ebc8bbbbb44feac663bfffa455e74
+msgid ""
+"LIKE 'specified string': used to search for matching the specified "
+"content in the field."
+msgstr "LIKE “指定字符串”：用于在字段中搜索与指定内容匹配的内容。"
+
+#: ../../source/sql/sql_dql_command.md:146 2c10e2622b634f8d91cb2b59cdbe7bf3
+msgid ""
+"NOT LIKE 'specified string': used to search for the content of the field "
+"does not match the specified string of data."
+msgstr "NOT LIKE'指定字符串'：用于搜索字段内容与指定数据字符串不匹配。"
+
+#: ../../source/sql/sql_dql_command.md:147 5f79c828476a47a58c63aec531b4e825
+msgid ""
+"LIKE BINARY 'specified string': BINARY is used for case-sensitive, LIKE "
+"keyword ignores case by default, if you only need to search for A "
+"characters, use the BINARY keyword to execute the search command."
+msgstr ""
+"LIKE BINARY “指定字符串”： BINARY 用于区分大小写，LIKE 关键字默认忽略大小"
+"写，如果只需搜索 A 字符，则使用 BINARY 关键字执行搜索命令。"
+
+#: ../../source/sql/sql_dql_command.md:148 fa06c7f526224b3b97c5d4301ca914f0
+msgid "wildcard"
+msgstr "通配符"
+
+#: ../../source/sql/sql_dql_command.md:150 f57865203eab43dc84d005a67d2ef507
+#, python-format
+msgid ""
+"Example:  Query the value of the beginning of the specified string: LIKE "
+"'% of the specified string'. LIKE '%SpecifiedString' for values ending "
+"with the specified string. LIKE '%SpecifiedString%' for values "
+"containing the specified string. Query the value of a specified "
+"intermediate string: LIKE '%specified string' Query the value of a "
+"specified string: LIKE '%specified string%specified string%specified "
+"string'"
+msgstr ""
+"示例：查询指定字符串开头的值： LIKE '% of the specified string'。LIKE "
+"'%SpecifiedString' 查询以指定字符串结尾的值。LIKE '%SpecifiedString%' 查"
+"询包含指定字符串的值。查询指定中间字符串的值：LIKE '%specified string' 查"
+"询指定字符串的值： LIKE'%指定字符串%指定字符串%指定字符串"
+
+#: ../../source/sql/sql_dql_command.md:156 00ff9e0d86f54ac2b069828622b55273
+#, python-format
+msgid ""
+"_: can only represent a single character, the length of the character "
+"can not be 0; wildcard _ is generally used in specific cases, how many "
+"bits are needed to have a few wildcards, can be used in combination with "
+"the % wildcard. Syntax: LIKE '%specified string_specified string%'"
+msgstr ""
+"_：只能表示单个字符，字符长度不能为 0；通配符 _ 一般用于特定情况，需要多"
+"少位就有几个通配符，可与 % 通配符结合使用。语法 LIKE '%specified "
+"string_specified string%'"
+
+#: ../../source/sql/sql_dql_command.md:158 359832cae7364006b7b1f44f4b2a6fbd
+msgid ""
+"[ ]: Indicates one of the characters listed in parentheses. Specifies a "
+"character, string, or range that requires the match to be any one of "
+"them. Syntax: LIKE '[specified string]specified string' Example: select "
+"* from table where name like '[Zhang Li Wang] San' ; Zhang San, Li San, "
+"Wang San"
+msgstr ""
+"[ ]: 表示括号中列出的字符之一。指定需要匹配的字符、字符串或范围。语法： "
+"LIKE '[指定字符串]指定字符串' 例： select * from table where name like "
+"'[Zhang Li Wang] San' ; Zhang San, Li San, Wang San"
+
+#: ../../source/sql/sql_dql_command.md:161 6090d6e9cb7544f292d68630836e389e
+msgid ""
+"[^]: Indicates a single character that is not included in the "
+"parentheses. The value is the same as [ ], but it requires the matched "
+"object to be any one of the specified characters. Syntax: LIKE "
+"'[^specified string]specified string' Example: select * from table where "
+"name like '[^ZhangLiWang]San'; LiuSan, YangSan"
+msgstr ""
+"[^]: 表示未包含在括号中的单个字符。其值与 [ ]相同，但要求匹配的对象必须是"
+"指定字符中的任意一个。语法： LIKE '[^specified string]specified string' "
+"示例： select * from table where name like '[^ZhangLiWang]San'; LiuSan, "
+"YangSan"
+
+#: ../../source/sql/sql_dql_command.md:164 b31f047a40924e13a7ee6b8c94a26a65
+msgid "Remarks"
+msgstr "备注"
+
+#: ../../source/sql/sql_dql_command.md:165 43b5fd71587b4f289b4b88e27a42f950
+msgid ""
+"If the fuzzy match string contains some regular symbols (e.g.. ? * +), "
+"you need to escape with the escape character “\\”."
+msgstr ""
+"如果模糊匹配字符串包含一些正则符号（例如：? * +），则需要使用转义字"
+"符“\\”来转义。"
+
+#: ../../source/sql/sql_dql_command.md:166 94d3b21ed3b14a8d98ecb0a237d65037
+msgid "Sample"
+msgstr "用例"
+
+#: ../../source/sql/sql_dql_command.md:207 bd11e153a9df446d81d9c60651056170
+msgid "11. GROUP BY"
+msgstr "11.分组"

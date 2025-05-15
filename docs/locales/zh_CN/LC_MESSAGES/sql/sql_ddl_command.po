@@ -1,0 +1,494 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 17:12+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_ddl_command.md:1 87031b42f0f444fdaf8c6925e255df4b
+msgid "DDL Commands"
+msgstr "DDL 命令"
+
+#: ../../source/sql/sql_ddl_command.md:2 6c26c10a188b4ad48ce58444531d9f60
+msgid "DDL statements are used to create database objects."
+msgstr "DDL 语句用于创建数据库对象。"
+
+#: ../../source/sql/sql_ddl_command.md:3 3e7dba02eeb647cea1e0342632620e36
+msgid "1. Table"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:4 ff2d5daef2db4434a5bfe5bb3187e31a
+msgid "Parameter description"
+msgstr "参数说明"
+
+#: ../../source/sql/sql_ddl_command.md 9f27be78fe9f457e934335353a395ca8
+#: f6dcbf6b52894fdd962ef718a648f956
+msgid "parameter"
+msgstr "规范"
+
+#: ../../source/sql/sql_ddl_command.md c626ed1aa2844dc9949dd040b61605ff
+msgid "description"
+msgstr "描述"
+
+#: ../../source/sql/sql_ddl_command.md 3daf54f9589a41059f4a24ec3d5d5576
+msgid "details"
+msgstr "详情"
+
+#: ../../source/sql/sql_ddl_command.md 5b988963269b4a4fa5c9ef3664351123
+msgid "syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_ddl_command.md b851f0b4207e4f95bdc95b23f23b769d
+msgid "TableName"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md b851f0b4207e4f95bdc95b23f23b769d
+msgid "Table name"
+msgstr "表格名称"
+
+#: ../../source/sql/sql_ddl_command.md 36fc9f177b574319aaa84e94883df7d7
+msgid ""
+"The name of the table to be created, which must be unique in the database and follow the "
+"naming convention."
+msgstr "要创建的表的名称，在数据库中必须是唯一的，并遵循命名约定。"
+
+#: ../../source/sql/sql_ddl_command.md eaee551993ad4f04beab8d946e717fb0
+msgid "Table table_name"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 6093414d5e0d4e5c8a4683dd52a2182d
+msgid "Replica"
+msgstr "副本"
+
+#: ../../source/sql/sql_ddl_command.md eb1698e5e7794c8db29b442c42318180
+msgid "Number of replicas"
+msgstr "副本数量"
+
+#: ../../source/sql/sql_ddl_command.md 1c245c1277954a00bbe0d518c14d98dd
+msgid "Sets the replica value."
+msgstr "设置副本值。"
+
+#: ../../source/sql/sql_ddl_command.md eb1698e5e7794c8db29b442c42318180
+#, python-brace-format
+msgid "Replica = {replica}"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 378b70e03fe9489aba99c4f87596814f
+msgid "AutoIncrement"
+msgstr "自动增加"
+
+#: ../../source/sql/sql_ddl_command.md 4913782fd0e848ce80a1342f003b3311
+msgid "Self-Incrementing Fields"
+msgstr "自增领域"
+
+#: ../../source/sql/sql_ddl_command.md af3249724b7a40309419d9d2405d0125
+msgid ""
+"A field column can be specified as a self-incrementing column, currently only int type field "
+"columns are supported, and you can specify the self-incrementing column start value."
+msgstr "字段列可以指定为自递增列，目前只支持 int 类型的字段列，而且可以指定自递增列的起始值。"
+
+#: ../../source/sql/sql_ddl_command.md 9c1aace9fbe440c7afff24ad68866ba0
+msgid "filed field_type auto_increment"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 3daf54f9589a41059f4a24ec3d5d5576
+msgid "Default"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md e0024455ca0949fab7feb305f393a625
+msgid "default_name"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 9f5e69e673ee482483aadb1b3f540907
+msgid "Specifies the default value for a column in the table."
+msgstr "指定表格中某一列的默认值。"
+
+#: ../../source/sql/sql_ddl_command.md e0024455ca0949fab7feb305f393a625
+msgid "Default default_name"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 8de0b7ecd9754f13b464ebfab0b7a865
+#: b8be4e17ded9488a9111feceb6a1f15f
+msgid "Not null"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md caa6ca2541e4421f8859b24c77422f75
+msgid ""
+"Used to ensure that the value in a column cannot be null. not null must follow the end of "
+"the field in Dingo."
+msgstr "用于确保列中的值不能为空。在 Dingo 中，not null 必须跟在字段末尾。"
+
+#: ../../source/sql/sql_ddl_command.md 0e2be1561cfe4363abea964f0c05c7cb
+msgid "NOT NULL"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 0e6c19df9bb54fa69b581e901af41bc1
+#: 84d7c0a5a7a94f6f9284d183dc1f758b
+msgid "Primary key"
+msgstr "主键"
+
+#: ../../source/sql/sql_ddl_command.md 5cb50744ff9342068da0ca164da7cece
+msgid ""
+"Used to uniquely identify one or more columns for each row in a table. Primary key "
+"constraints enforce that the value of the column or combination of columns is unique in the "
+"table and cannot be NULL. in Dingo you cannot set a primary key directly after a field, you "
+"need to set the primary key on a separate line."
+msgstr ""
+"用于唯一标识表中每一行的一列或多列。在 Dingo 中，不能直接在字段后设置主键，需要在单独的一行中"
+"设置主键。"
+
+#: ../../source/sql/sql_ddl_command.md f17f4dae2b7b4a7589d82eb42cb7238c
+msgid "Priamry Key(field_name)"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 3219bdfa0865444a94d0972b57b6f916
+msgid "Partition by"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 3ad347c356b04000a513e2d5b0d50761
+msgid "Range Partitioning"
+msgstr "范围分区"
+
+#: ../../source/sql/sql_ddl_command.md ca6f4ece523d4a939dd575af6c0a1d25
+msgid ""
+"Partition by range; divide the data into different partitions according to the specified "
+"range. You can partition by range based on the values of one or more columns."
+msgstr "按范围分区；根据指定的范围将数据分成不同的分区。您可以根据一列或多列的值按范围分区。"
+
+#: ../../source/sql/sql_ddl_command.md 4aa3cf96e161429fb030b92c0225ddc8
+msgid "Partition by range values(1,100),(101,200);"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md c6cb9e516bef4ed9917f4694f2561c76
+msgid "Hash Partitioning"
+msgstr "哈希分区"
+
+#: ../../source/sql/sql_ddl_command.md a1d798abe97144e4a0d662c3097e5143
+msgid ""
+"Partition by Key's hash value; Partition by the hash value of a column or multiple columns. "
+"Each hash determines the partition to which the data belongs."
+msgstr "按键的哈希值分区；按一列或多列的哈希值分区。每个哈希值决定数据所属的分区。"
+
+#: ../../source/sql/sql_ddl_command.md 955cc721b0854e6387b705e6179a6f1c
+#, python-brace-format
+msgid "Partition by hash partitions={partitions}"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 783dc9a5af1f4c3889b4ee2dec197e33
+msgid "Engine"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md bea8e47c96514d7fab6f3dadc1a74e5a
+msgid "Storage engine"
+msgstr "存储引擎"
+
+#: ../../source/sql/sql_ddl_command.md 6c7624218db741d1b0724ff8b3bb3946
+msgid ""
+"When creating a table, you can specify the corresponding storage engine; Dingo provides two "
+"kinds of storage engine: LSM BTree, Txn_LSM, Txn_BTree; the system defaults to: Txn_LSM"
+msgstr ""
+"创建表格时，可以指定相应的存储引擎；Dingo 提供了两种存储引擎： LSM BTree、Txn_LSM、"
+"Txn_BTree： Txn_LSM"
+
+#: ../../source/sql/sql_ddl_command.md c1d6c10e8893426684c3abbc3024a56a
+#, python-brace-format
+msgid "Engine = {engine_name}"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md be9f55b58f504dfd95ab38599443efa9
+msgid "Index"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 07617e83fc3e41568db849ef9f691b25
+msgid "vector index field"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 01046ecd454940e3ac6a11e2944a6a8e
+msgid ""
+"refers to creating an index on a vector field, you need to specify the index type Vector "
+"when creating the index."
+msgstr "是指在向量字段上创建索引时，需要在创建索引时指定索引类型为向量。"
+
+#: ../../source/sql/sql_ddl_command.md 2dfb2f48343d4d34b39a16ac1558ba99
+#, python-brace-format
+msgid ""
+"INDEX [index_name] (vector) ({index_parameters}) [WITH ({columns})] (PARAMETERS) (vector_ "
+"parameters)"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md 9d2ac6f2384a4bd985c23d3a50395ccd
+msgid "scalar index field"
+msgstr "标量索引字段"
+
+#: ../../source/sql/sql_ddl_command.md 91558441874d42db90e500428fcd6dde
+msgid ""
+"refers to an index created on a scalar field. When creating an index, it is specified as a "
+"scalar index by default, and Scalar may or may not be written."
+msgstr "是指在标量字段上创建的索引。创建索引时，默认将其指定为标量索引，可以写入或不写入标量。"
+
+#: ../../source/sql/sql_ddl_command.md 40b5a1d5e94f41e8b94359ef82dfe30c
+#, python-brace-format
+msgid ""
+"INDEX [index_name] (scalar) ({index_parameters}) [WITH ({columns})] (PARAMETERS) "
+"(vector_parameters)"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:19 b7e6b77aa18e4ef5aa88733582544087
+msgid "Create Table"
+msgstr "创建表格"
+
+#: ../../source/sql/sql_ddl_command.md:21 ../../source/sql/sql_ddl_command.md:45
+#: ../../source/sql/sql_ddl_command.md:58 ../../source/sql/sql_ddl_command.md:121
+#: ../../source/sql/sql_ddl_command.md:136 ../../source/sql/sql_ddl_command.md:179
+#: 16c1a6c68b3943bea67c715fe429d85c 5b988963269b4a4fa5c9ef3664351123
+#: bd4a723636774dc6913ae0fa36ad6a85
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_ddl_command.md:31 ../../source/sql/sql_ddl_command.md:127
+#: ../../source/sql/sql_ddl_command.md:142 ../../source/sql/sql_ddl_command.md:185
+#: ../../source/sql/sql_ddl_command.md:237 ccf2f39dd35a4237a40a9d8b00ddf7ca
+msgid "Sample"
+msgstr "用例"
+
+#: ../../source/sql/sql_ddl_command.md:44 ../../source/sql/sql_ddl_command.md:117
+#: 3e7dba02eeb647cea1e0342632620e36
+msgid "Drop Table"
+msgstr "删除表格"
+
+#: ../../source/sql/sql_ddl_command.md:50 ccf2f39dd35a4237a40a9d8b00ddf7ca
+msgid "Examples"
+msgstr "用例"
+
+#: ../../source/sql/sql_ddl_command.md:56 be9f55b58f504dfd95ab38599443efa9
+msgid "2. Index"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:57 07617e83fc3e41568db849ef9f691b25
+msgid "Creat IndexTable"
+msgstr "创建 IndexTable"
+
+#: ../../source/sql/sql_ddl_command.md:59 48f7e78d8739420295fc8676aca95c98
+msgid "Creates a table with Scalar Index"
+msgstr "使用标量索引创建表格"
+
+#: ../../source/sql/sql_ddl_command.md:77 a7f1711501bc4de5bedbe8d7a8154d93
+msgid "Creates a table with Vector Index"
+msgstr "使用向量索引创建表格"
+
+#: ../../source/sql/sql_ddl_command.md:94 e9e6aa632bf6434abc4406b4b601d90a
+msgid ""
+"In `SQL`, the `feature` column is a vector column, and the type is a floating-point array. "
+"With vector columns need to add vector index, otherwise it will be treated as an ordinary "
+"array type, vector index in the definition and scalar index is similar to the corresponding "
+"definition of the method using `VECTOR`, the need for two parameters: one is the `id` column "
+"of the vector, at present only supports the integer type; the second is the vector column, "
+"at present only supports the floating-point type."
+msgstr ""
+"在 `SQL` 中，`feature` 列是向量列，类型是浮点数组。使用向量列时需要添加向量索引，否则将被视为"
+"普通数组类型，向量索引中的定义与标量索引中使用`VECTOR`方法的相应定义类似，需要两个参数：一是"
+"`id`列的向量，目前只支持整数类型；二是该列的向量，目前只支持浮点类型。"
+
+#: ../../source/sql/sql_ddl_command.md:96 48f7e78d8739420295fc8676aca95c98
+msgid "Creates a table with Full-Text Index"
+msgstr "创建带全文索引的表格"
+
+#: ../../source/sql/sql_ddl_command.md:112 154001d81df34148a4d270e90e34e1bd
+msgid ""
+"`text_id` is required, full-text indexing unique identification `ID`, ID > 0, text_id can be "
+"`feature_id`, is if the `INT64` type can be, if you want to `text_id` index, you need to add "
+"a parameter with the same name in `TEXT ()`. `description`, `category`, `rating` are the "
+"fields of full text index, only 4 types are allowed: `INT64`, `DOUBLE`, `STRING`, `BYTES`, "
+"the fields of full text index should include at least two fields, one of the two fields must "
+"be `text_id`. Note: `text_fields` in `parameters` is the user fill in about the full-text "
+"index field of the word splitter parameters, must be full-text index fields are filled in."
+msgstr ""
+"`text_id`是必填项，全文索引唯一标识`ID`，ID>0，text_id可以是`feature_id`，也就是如果是`INT64`"
+"类型即可，如果要对`text_id`进行索引，需要在`TEXT()`中添加一个同名参数。`description`、"
+"`category`、`rating`是全文索引的字段，只允许使用 4 种类型： 全文本索引的字段至少应包括两个字"
+"段，其中一个字段必须是 `text_id`。注意： `text_fields`中的`parameters`是用户填写有关全文索引"
+"字段的分词器参数，必须是全文索引字段被填写。"
+
+#: ../../source/sql/sql_ddl_command.md:119 22bdccb45f29450caa44b0af9fb4a26c
+msgid "Deletes the table."
+msgstr "删除表格。"
+
+#: ../../source/sql/sql_ddl_command.md:133 3219bdfa0865444a94d0972b57b6f916
+msgid "3. Partition"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:135 50a654185dc84101b27dcba47cea6cd7
+msgid "Hash"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:146 955cc721b0854e6387b705e6179a6f1c
+msgid "partitions represents the number of partitions;"
+msgstr "表示分区的数量；"
+
+#: ../../source/sql/sql_ddl_command.md:147 955cc721b0854e6387b705e6179a6f1c
+msgid "Create Hash Partitioned Table"
+msgstr "创建哈希分区表"
+
+#: ../../source/sql/sql_ddl_command.md:148 d2867f51f12549e694e2dbd6307b2003
+msgid ""
+"Create Hash partitioned table, support `scalar index partitioning + vector index "
+"partitioning + table partitioning`"
+msgstr "创建哈希分区表，支持 `标量索引分区 + 向量索引分区 + 表分区`"
+
+#: ../../source/sql/sql_ddl_command.md:173 ../../source/sql/sql_ddl_command.md:223
+#: 955cc721b0854e6387b705e6179a6f1c
+msgid "Viewing Partition Information"
+msgstr "查看分区信息"
+
+#: ../../source/sql/sql_ddl_command.md:177 ad600b69d3344216824737447dc9e1a8
+msgid "![Import sql_hash](../../images/sql_hash.png)"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:177 83fbf70634594857b7343a3e19de3db1
+msgid "Import sql_hash"
+msgstr "导入 sql_hash"
+
+#: ../../source/sql/sql_ddl_command.md:178 7e6526a211614235b25dc126ff2809e9
+msgid "Range"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:191 d5e67eaa195c45bd9dde91104b23a8bf
+msgid ""
+"The value after \"VALUES\" indicates that there will be three partitions; The partition "
+"range is as follows:"
+msgstr "VALUES \"后面的值表示将有三个分区；分区范围如下："
+
+#: ../../source/sql/sql_ddl_command.md:192 5a8233598e6b4a22a3d587d48fd8bc7a
+msgid "[Infinity, key(1,100));"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:193 093ea28831d14742b1ead52ba4820d3e
+msgid "[key(1,100), key(2,100));"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:194 bba7202e9ca247acb3489ad2231923ef
+msgid "[key(2,100), Infinity);"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:196 1baa38a772fc478584fcc2162f5d920e
+msgid ""
+"Infinity means infinite; on the left it means infinitely small, on the right it means "
+"infinitely large."
+msgstr "Infinity（无限）表示无限大；在左边是指无限小，在右边是指无限大。"
+
+#: ../../source/sql/sql_ddl_command.md:198 48f7e78d8739420295fc8676aca95c98
+msgid "Create Range Partitioned Table"
+msgstr "创建范围分区表"
+
+#: ../../source/sql/sql_ddl_command.md:199 d289e5901dd64563898360ada2662105
+msgid ""
+"Create Range partitioned table, support `scalar index partitioning + vector index "
+"partitioning + table partitioning`"
+msgstr "创建范围分区表，支持 \"标量索引分区 + 向量索引分区 + 表分区"
+
+#: ../../source/sql/sql_ddl_command.md:227 3e678edac9f74e4aa7d678098f866061
+msgid "![Import sql_range](../../images/sql_range.png)"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:227 f5018e201c7944f4af4cc7a9403847e8
+msgid "Import sql_range"
+msgstr "导入 sql_range"
+
+#: ../../source/sql/sql_ddl_command.md:229 6ab45cbd93974560b6694200194a3cc8
+msgid "4. Region"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:230 eb1698e5e7794c8db29b442c42318180
+msgid "Region Split"
+msgstr "Region Split"
+
+#: ../../source/sql/sql_ddl_command.md:232 ccf6cac8e460433b9fd2407745d845a2
+msgid "Parameter Description"
+msgstr "参数 描述"
+
+#: ../../source/sql/sql_ddl_command.md b851f0b4207e4f95bdc95b23f23b769d
+msgid "table_name"
+msgstr ""
+
+#: ../../source/sql/sql_ddl_command.md:241 f4be209bcee54458b4e9505eb18a35bd
+msgid "5. Online Schema Change"
+msgstr "5. 在线模式更改"
+
+#: ../../source/sql/sql_ddl_command.md:242 07617e83fc3e41568db849ef9f691b25
+msgid "Add Index"
+msgstr "添加索引"
+
+#: ../../source/sql/sql_ddl_command.md:243 07617e83fc3e41568db849ef9f691b25
+msgid "Scalar Index"
+msgstr "标量指数"
+
+#: ../../source/sql/sql_ddl_command.md:247 07617e83fc3e41568db849ef9f691b25
+msgid "Vector Indexing"
+msgstr "向量索引"
+
+#: ../../source/sql/sql_ddl_command.md:251 8cd1181f7d49467d99888ffe82262a3c
+msgid "Full-Text Index"
+msgstr "全文索引"
+
+#: ../../source/sql/sql_ddl_command.md:255 362b3b7bc19a41729fa72e7e1d5b96f9
+msgid "Add index with overridden index fields"
+msgstr "添加带有覆盖索引字段的索引"
+
+#: ../../source/sql/sql_ddl_command.md:259 356f8c25a07d42428746e6d3b797a032
+msgid "Add index support for specifying the number of copies, and storage engine"
+msgstr "为指定副本数量和存储引擎添加索引支持"
+
+#: ../../source/sql/sql_ddl_command.md:263 edc5946fd703414780ac1e5c999d797f
+msgid "Add scalar indexes to support uniqueness constraints"
+msgstr "添加标量索引以支持唯一性约束"
+
+#: ../../source/sql/sql_ddl_command.md:267 3e7dba02eeb647cea1e0342632620e36
+msgid "Drop Index"
+msgstr "删除索引"
+
+#: ../../source/sql/sql_ddl_command.md:268 5b988963269b4a4fa5c9ef3664351123
+msgid "Syntax 1"
+msgstr "语法 1"
+
+#: ../../source/sql/sql_ddl_command.md:272 5b988963269b4a4fa5c9ef3664351123
+msgid "Syntax 2"
+msgstr "语法 2"
+
+#: ../../source/sql/sql_ddl_command.md:276 6bf9dfd199e248bb934891ff058b2d30
+msgid "Add Column"
+msgstr "添加列"
+
+#: ../../source/sql/sql_ddl_command.md:277 cd42814527c84192a462e28b7a388c7c
+msgid "Currently only supports adding a single column"
+msgstr "目前仅支持添加单列"
+
+#: ../../source/sql/sql_ddl_command.md:278 0983616bd36b46249204daa4db7d561a
+msgid "Adding a specified column"
+msgstr "添加指定列"
+
+#: ../../source/sql/sql_ddl_command.md:282 e33f343b75164bb1a743457bdeb7e37e
+msgid "Specify default values when adding columns"
+msgstr "添加列时指定默认值"
+
+#: ../../source/sql/sql_ddl_command.md:286 57e0962923284684a0cd02ef4ad53e61
+msgid "Specify non-null when adding a column"
+msgstr "添加列时指定非空"
+
+#: ../../source/sql/sql_ddl_command.md:291 3e7dba02eeb647cea1e0342632620e36
+msgid "Drop Column"
+msgstr "删除列"

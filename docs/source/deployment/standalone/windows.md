@@ -1,4 +1,4 @@
-# QuickStart
+# Windows
 
 ## Install WSL
 ### 1. Prerequisites

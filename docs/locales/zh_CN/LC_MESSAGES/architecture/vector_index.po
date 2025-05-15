@@ -1,0 +1,311 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-15 11:12+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/vector_index.md:1 0a14452ab2654927996e42a5192910c3
+msgid "Vector Index"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md:3 d73efb15d6534b99863a9b75b66aa7c7
+msgid "Noun Definition"
+msgstr "名词定义"
+
+#: ../../source/architecture/vector_index.md 4b81ef63195e4551bc32c71331a95373
+msgid "Noun"
+msgstr "名词"
+
+#: ../../source/architecture/vector_index.md 2d2e29a7df66481596afb2fa3e23a6c3
+msgid "Definition"
+msgstr "定义"
+
+#: ../../source/architecture/vector_index.md 561e181da0ac47f992c38d975ace3b5c
+msgid "Table"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md 013a9b8123d44f0694830944e0ed8cc1
+msgid "Dingo's Table."
+msgstr "Dingo's Table."
+
+#: ../../source/architecture/vector_index.md 3a8dd47228514aae8c07c859c8c40d81
+msgid "IndexDefinition"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md a61853e17a474477a2b0949a51265a31
+msgid "Dingo's index definition."
+msgstr "Dingo 的索引定义。"
+
+#: ../../source/architecture/vector_index.md f3df9d6ebd0a4121b96eda6138df144e
+msgid "Index"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md 77d4c027f930400fa37e07162d78d3ec
+msgid ""
+"Dingo's index is equivalent to a key-value storage, specifically for vector-"
+"type indexes. For vector indexes, it stores the complete vector, vector "
+"UUID, and vector metadata. It utilizes third-party libraries like Faiss to "
+"generate vector indexes."
+msgstr ""
+"Dingo 的索引相当于键值存储，特别适用于向量类型的索引。对于向量索引，它会存储"
+"完整的向量、向量 UUID 和向量元数据。它利用 Faiss 等第三方库生成向量索引。"
+
+#: ../../source/architecture/vector_index.md:10
+#: 201cfadcce2a4b60bc7a0c633abb5912
+msgid "Architecture Design"
+msgstr "架构设计"
+
+#: ../../source/architecture/vector_index.md:11
+#: ad90eb4cec334a67a1f84611da3543fb
+msgid ""
+"The overall component diagram of the new DingoDB after adding Dingo-Index: !"
+"[Index Architecture.png](../../images/index-architecture.png) In the overall "
+"semantics of DingoDB, a new Index concept is added at the same level as "
+"Table, and the Coordinator is correspondingly enhanced with Index management "
+"and gRPC interface."
+msgstr ""
+"添加 Dingo-Index 后的新 DingoDB 整体组件图： ![Index Architecture.png](../../"
+"images/index-architecture.png) 在DingoDB的整体语义中，新增了与Table同级的"
+"Index概念，Coordinator也相应地增强了Index管理和gRPC接口。"
+
+#: ../../source/architecture/vector_index.md:11
+#: 431877ea726c4cc2992eddc85ae5c954
+msgid "Index Architecture.png"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md:15
+#: 94bfd73d76b645b49d8965d20a909ca0
+msgid ""
+"In the first iteration, only VectorIndex is temporarily considered to be "
+"supported. Scalar Index will be supported in the subsequent iterations."
+msgstr "在第一次迭代中，暂时只支持 VectorIndex。随后的迭代将支持标量索引。"
+
+#: ../../source/architecture/vector_index.md:17
+#: bef0ca15c22c47288b163fe415783b1f
+msgid ""
+"Support for simultaneous creation of Index is added when creating a table "
+"using CreateTable."
+msgstr "使用 CreateTable 创建表格时，增加了对同时创建索引的支持。"
+
+#: ../../source/architecture/vector_index.md:19
+#: 9c1b30ab14934f34815f9b18576ed2d7
+msgid ""
+"Support for CreateIndex is added, allowing users to use Index directly as a "
+"Collection concept in general Vector Databases, just like using purely "
+"Vector Databases such as Milvus and Chroma."
+msgstr ""
+"新增了对 CreateIndex 的支持，允许用户在一般向量数据库中直接使用 Index 作为集"
+"合概念，就像使用 Milvus 和 Chroma 等纯向量数据库一样。"
+
+#: ../../source/architecture/vector_index.md:21
+#: c39ab877f6e44b96a4fc2f85fc2a569e
+msgid ""
+"This design enables DingoDB to implement SQL on Vector like pgvector and "
+"clickhouse, while also using Vector as a First Class Citizen like Milvus."
+msgstr ""
+"通过这种设计，DingoDB 可以像 pgvector 和 clickhouse 一样在 Vector 上实现 "
+"SQL，同时也可以像 Milvus 一样将向量作为一等公民使用。"
+
+#: ../../source/architecture/vector_index.md:23
+#: 60a8ab5045c640f1a95f9f635d618311
+msgid ""
+"DW Proxy is a component used to implement double-write of Table+Index whose "
+"independent existence remains to be determined."
+msgstr ""
+"DW Proxy 是一个用于实现 Table+Index 双写法的组件，其独立存在性尚待确定。"
+
+#: ../../source/architecture/vector_index.md:25
+#: b76180d70a734ed4b20262b1edbb9aa5
+msgid "New I/O Workflow"
+msgstr "新的输入/输出工作流程"
+
+#: ../../source/architecture/vector_index.md:27
+#: c2f5a9c175df4587a9bb75abcf629ac6
+msgid "Table Creation Process"
+msgstr "表格创建过程"
+
+#: ../../source/architecture/vector_index.md:29
+#: 85b3cd066a4b414eb3dff311bf11aa29
+msgid ""
+"The CreateTable process without an index is the same as in version 0.6.0. "
+"The CreateTable process with an index is as follows:"
+msgstr ""
+"不带索引的 CreateTable 进程与 0.6.0 版相同。带索引的 CreateTable 进程如下："
+
+#: ../../source/architecture/vector_index.md:31
+#: d0046cbf073c41d4bb5994d62fed17c9
+msgid ""
+"In simple terms, the Coordinator drives the creation of Regions for both "
+"Store and Index components. ![CreateTable.png](../../images/index-"
+"createTable.png)"
+msgstr ""
+"简单地说，Coordinator 为存储和索引组件创建 Region。![CreateTable.png](../../"
+"images/index-createTable.png)"
+
+#: ../../source/architecture/vector_index.md:31
+#: a6a297f041aa497b90a39587d5c5c573
+msgid "CreateTable.png"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md:34
+#: 516d0f5202654f7cbc1efaba2f9e4881
+msgid "**The specific process is as follows:**"
+msgstr "**具体流程如下：**"
+
+#: ../../source/architecture/vector_index.md:36
+#: 9252cbef892e48629d1df1d777ef49ec
+msgid ""
+"Due to the current design limitations of DingoDB, if a user wants to use a "
+"Table with an Index, the user must declare the index at the time of creating "
+"the table."
+msgstr ""
+"由于 DingoDB 目前的设计限制，如果用户想使用带有索引的表，就必须在创建表时声明"
+"索引。"
+
+#: ../../source/architecture/vector_index.md:38
+#: adf7285496e74dc5ad58830f7ca5a6c1
+msgid ""
+"The user executes an SQL statement through an SQL client, similar to the "
+"following statement (the specific format of the SQL statement needs to be "
+"designed later, and the following statement is only for illustration "
+"purposes):"
+msgstr ""
+"用户通过 SQL 客户端执行 SQL 语句，类似于以下语句（SQL 语句的具体格式需要稍后"
+"设计，以下语句仅供参考）："
+
+#: ../../source/architecture/vector_index.md:48
+#: 80ae5253984f4033887243bf0a807d99
+msgid ""
+"In the SQL statement above, the user creates a table with three fields, "
+"where the 'embedding' field is a 1024-dimensional vector. At the same time, "
+"the user declares the creation of two indexes - one vector index based on "
+"the 'embedding' field, using the Ivfflat index type, Euclidean distance, and "
+"1024 nlists; and the other is a scalar index based on the 'name' field, "
+"using the LSM index type."
+msgstr ""
+"在上面的 SQL 语句中，用户创建了一个包含三个字段的表，其中 “embedding ”字段是"
+"一个 1024 维向量。同时，用户声明创建两个索引：一个是基于 “embedding ”字段的向"
+"量索引，使用 Ivfflat 索引类型、欧氏距离和 1024 nlists；另一个是基于 “name ”字"
+"段的标量索引，使用 LSM 索引类型。"
+
+#: ../../source/architecture/vector_index.md:50
+#: 1cfb5b0e9bf24e8082ef1e52989dafab
+msgid ""
+"The Executor generates a gRPC message to call the CreateTable interface of "
+"the Coordinator according to the create table statement passed in by the "
+"user. Since the user requests to create an index, in addition to the "
+"TableDefinition, an IndexDefinition also needs to be generated. For the "
+"example above, two IndexDefinitions need to be generated."
+msgstr ""
+"Executor 根据用户传入的创建表语句生成 gRPC 消息，调用Coordinator 的 "
+"CreateTable 接口。由于用户要求创建一个索引，因此除了 TableDefinition 之外，还"
+"需要生成一个 IndexDefinition。在上面的示例中，需要生成两个 IndexDefinition。"
+
+#: ../../source/architecture/vector_index.md:52
+#: 0b69c05ecfc84a3a9652763048d4948a
+msgid ""
+"After receiving the gRPC request for CreateTable, the Coordinator parses the "
+"TableDefinition and IndexDefinition and calls the Store and Index nodes "
+"respectively to perform the CreateRegion and CreateIndexRegion operations."
+msgstr ""
+"接收到 CreateTable 的 gRPC 请求后，Coordinator 会解析 TableDefinition 和 "
+"IndexDefinition，并分别调用存储节点和索引节点来执行 CreateRegion 和 "
+"CreateIndexRegion 操作。"
+
+#: ../../source/architecture/vector_index.md:54
+#: b54c253ad25748e1b70fef262806ae79
+msgid ""
+"The Store follows the same CreateRegion process as in version 0.6.0, while "
+"the Index completes the CreateIndexRegion process as shown in the figure "
+"above."
+msgstr ""
+"存储区遵循与 0.6.0 版相同的 CreateRegion 流程，而索引则完成 "
+"CreateIndexRegion 流程，如上图所示。"
+
+#: ../../source/architecture/vector_index.md:56
+#: 4ef45e2fd5be446ab80b04a4bad28e79
+msgid "Data Read and Write Process (SQL on Vector)"
+msgstr "数据读写过程（向量检索 SQL）"
+
+#: ../../source/architecture/vector_index.md:58
+#: 51ed2b8cfa9b4cae8245d011dd77f2e7
+msgid ""
+"The read and write process for tables without indexes is completely the same "
+"as in version 0.6.0."
+msgstr "无索引表的读写过程与 0.6.0 版完全相同。"
+
+#: ../../source/architecture/vector_index.md:60
+#: 1a4d8c2d513a4d679e69f22e1dd283db
+msgid ""
+"For tables with indexes, the Executor needs to handle the issue of dual "
+"write. When querying data, the Executor generates an execution plan based on "
+"the definition of the Table to determine if an index query is needed. If an "
+"index query is required, the Executor initiates a query to the Index "
+"component. ![Sql on vector.png](../../images/index-rw-sql-on-vector.png)"
+msgstr ""
+"对于有索引的表，Executor 需要处理双重写入问题。在查询数据时，Executor 会根据"
+"表的定义生成一个执行计划，以确定是否需要进行索引查询。如果需要索引查询，"
+"Executor 就会向索引组件发起查询。![Sql on vector.png](../../images/index-rw-"
+"sql-on-vector.png)"
+
+#: ../../source/architecture/vector_index.md:60
+#: 54ef8d2a5c52478eb44cbc67b13ee034
+msgid "Sql on vector.png"
+msgstr ""
+
+#: ../../source/architecture/vector_index.md:63
+#: d93f6d83364846b0bc8285eb51b21194
+msgid "Data Read and Write Process (Vector only)"
+msgstr "数据读写过程（仅向量）"
+
+#: ../../source/architecture/vector_index.md:65
+#: 0040115cf2af492fb79d8837254101ce
+msgid ""
+"For scenarios that solely involve langchain, the SQL component is not "
+"necessary. Therefore, if users only require the capabilities of Vector, they "
+"can directly use Index."
+msgstr ""
+"对于只涉及链的情况，则不需要 SQL 组件。因此，如果用户只需要向量的功能，可以直"
+"接使用索引。"
+
+#: ../../source/architecture/vector_index.md:67
+#: e9463a5577c84b3994bbc661deb1193d
+msgid ""
+"The diagram below illustrates that the SDK client can directly use Index-"
+"Vector storage by utilizing the CreateIndex function. During the read and "
+"write process, data manipulation is performed using Index-specific "
+"interfaces such as Get and Put."
+msgstr ""
+"下图说明，SDK 客户端可以利用 CreateIndex 函数直接使用索引向量存储。在读写过程"
+"中，数据操作使用特定于索引的接口（如 Get 和 Put）进行。"
+
+#: ../../source/architecture/vector_index.md:69
+#: dcb1a41844634248a68e9a9c1734b707
+msgid ""
+"In this case, we can refer to the various APIs implemented by major Vector "
+"Databases to meet the requirements of various Vector Search operations. !"
+"[Vector only.png](../../images/index-rw-vector-only.png)"
+msgstr ""
+"在这种情况下，我们可以参考主要向量数据库实现的各种 API，以满足各种向量搜索操"
+"作的要求。![Vector only.png](../../images/index-rw-vector-only.png)"
+
+#: ../../source/architecture/vector_index.md:69
+#: fa510cb3e21d44069c1aee06a9739cbd
+msgid "Vector only.png"
+msgstr ""

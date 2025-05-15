@@ -1,0 +1,157 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-29 14:51+0800\n"
+"PO-Revision-Date: 2025-05-13 14:50+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/mysql_protocol.md:1 840b2091431c43179a156dc6d4996d92
+msgid "MySQL Protocol"
+msgstr "MySQL 协议"
+
+#: ../../source/sql/mysql_protocol.md:3 53cb8a2380074461bf41c078513360f5
+msgid ""
+"MySQL protocol is the protocol used for communication between MySQL "
+"database server and client. It is a binary protocol based on TCP/IP "
+"protocol, used for transferring data between client and server. The main "
+"purpose of MySQL protocol is to allow clients to connect to MySQL server "
+"and perform various operations."
+msgstr ""
+"MySQL 协议是 MySQL 数据库服务器与客户端之间的通信协议。它是基于 TCP/IP 协"
+"议的二进制协议，用于在客户端和服务器之间传输数据。MySQL 协议的主要目的是"
+"允许客户端连接到 MySQL 服务器并执行各种操作。"
+
+#: ../../source/sql/mysql_protocol.md:6 cae087f78d75463ea2748e4db37da1a0
+msgid "Support data manipulation operations (CRUD)."
+msgstr "支持数据操作（CRUD）。"
+
+#: ../../source/sql/mysql_protocol.md:7 d170a7596e824e8ca176ce0d58956246
+msgid "View system variables:"
+msgstr "查看系统变量："
+
+#: ../../source/sql/mysql_protocol.md:8 51154e8cc70547268b92fb1192e9fe6b
+msgid "View global variables."
+msgstr "查看全局变量。"
+
+#: ../../source/sql/mysql_protocol.md:9 72869dd2952344c0a492101c6c33bc9d
+msgid "View all session variables."
+msgstr "查看所有会话变量。"
+
+#: ../../source/sql/mysql_protocol.md:10 26bca445416a4a4698938980654dc7a3
+msgid "View some system variables."
+msgstr "查看一些系统变量。"
+
+#: ../../source/sql/mysql_protocol.md:11 7d6a46668e47458d953755f1e082607c
+msgid "View some session variables."
+msgstr "查看一些会话变量。"
+
+#: ../../source/sql/mysql_protocol.md:12 762aa0e9f5054089a66ef730d20d2c1b
+msgid "View specified system variables."
+msgstr "查看指定的系统变量。"
+
+#: ../../source/sql/mysql_protocol.md:13 27c251d579494f808c39794d7598f031
+msgid "View executor variables."
+msgstr "查看executor 变量。"
+
+#: ../../source/sql/mysql_protocol.md:14 98b9b927662c409cb75de4654bc3fc10
+msgid "Modify system variables:"
+msgstr "修改系统变量。"
+
+#: ../../source/sql/mysql_protocol.md:15 e4ae3b9e44944f04ba305c3b959ef7b0
+msgid "Modify global system variables."
+msgstr "修改全局系统变量。"
+
+#: ../../source/sql/mysql_protocol.md:16 16e0ba4c44ec4824ba03bf3e415c2133
+msgid "Modify session system variables."
+msgstr "修改会话系统变量。"
+
+#: ../../source/sql/mysql_protocol.md:17 53db57ea220942119908528437be9044
+msgid "Modify executor variables."
+msgstr "修改executor 变量。"
+
+#: ../../source/sql/mysql_protocol.md:18 7dda127b409d4f109b70b12ae2718d18
+msgid "Set interactive_timeout variable."
+msgstr "设置 interactive_timeout 变量。"
+
+#: ../../source/sql/mysql_protocol.md:19 9b6d507a7e4444b1a23ce9d09a930cbd
+msgid "Set wait_timeout variable."
+msgstr "设置 wait_timeout 变量。"
+
+#: ../../source/sql/mysql_protocol.md:20 de7c16d79fb2497a8bc55172e54672f5
+msgid "Support setting idle timeout for mysql-driver."
+msgstr "支持为 mysql-driver 设置空闲超时。"
+
+#: ../../source/sql/mysql_protocol.md:21 cdda56c9599f48f88ad700b965a58690
+msgid "Support specifying database when connecting with JDBC."
+msgstr "支持在使用 JDBC 连接时指定数据库。"
+
+#: ../../source/sql/mysql_protocol.md:22 393543bd92da4ad9a2909b07f0573ef2
+msgid "Support server to obtain database status information."
+msgstr "支持服务器获取数据库状态信息。"
+
+#: ../../source/sql/mysql_protocol.md:23 6a4ea9ebe60245048f19e9b8fdf94d3d
+msgid "Display table information:"
+msgstr "显示表格信息："
+
+#: ../../source/sql/mysql_protocol.md:24 f5662a85e53d440d97a8dd847a41cb6d
+msgid "View table structure."
+msgstr "查看表格结构。"
+
+#: ../../source/sql/mysql_protocol.md:25 b5c9fd99478041b19f0b21e281e98bed
+msgid "View specified table."
+msgstr "查看指定表格。"
+
+#: ../../source/sql/mysql_protocol.md:26 5b90ac26753b4a879d1e7a891bc51e24
+msgid "View columns and data types in specified table."
+msgstr "查看指定表格中的列和数据类型。"
+
+#: ../../source/sql/mysql_protocol.md:27 2438b6b996f8468fbc61e5d658a677b2
+msgid "View Region information."
+msgstr "查看 Region 信息。"
+
+#: ../../source/sql/mysql_protocol.md:28 1eed6665a6f24dc1a9cb887ffb4ad758
+msgid "View creation statements:"
+msgstr "查看创建声明："
+
+#: ../../source/sql/mysql_protocol.md:29 53b35ca156c4490aa63d1bd7cecc879f
+msgid "View create table statements."
+msgstr "查看创建表格语句。"
+
+#: ../../source/sql/mysql_protocol.md:30 cb48667e800543c0b2ab5b4862a6a276
+msgid "View create database statements."
+msgstr "查看创建数据库语句。"
+
+#: ../../source/sql/mysql_protocol.md:31 1e6fc3ab810c412d94d3349ccd1a21ad
+msgid "View create user statements."
+msgstr "查看创建用户声明。"
+
+#: ../../source/sql/mysql_protocol.md:32 3fa163aa53b6443bb02543f0fcbe4fb7
+msgid "Support SQL prepared statements."
+msgstr "支持 SQL 准备语句"
+
+#: ../../source/sql/mysql_protocol.md:33 e4d0e6884f154f6b9962be987caaaa4d
+msgid "Support testing server availability and connection."
+msgstr "支持测试服务器的可用性和连接。"
+
+#: ../../source/sql/mysql_protocol.md:34 e5d84c2d91a64ee0abf154ccb58675af
+msgid "Support creating users with SSL."
+msgstr "支持使用 SSL 创建用户。"
+
+#: ../../source/sql/mysql_protocol.md:35 306b2ed874874b2ab2db22187028d71d
+msgid "Support processing alter user syntax."
+msgstr "支持处理更改用户语法。"

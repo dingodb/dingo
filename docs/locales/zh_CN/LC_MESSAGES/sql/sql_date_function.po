@@ -1,0 +1,277 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 16:57+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_date_function.md:1 782b7a6cdc654377819aefdb9261b760
+msgid "Datetime Function"
+msgstr "日期时间函数"
+
+#: ../../source/sql/sql_date_function.md:2 8dd4d739a3fb44cab9cf9305ee7abaa7
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_date_function.md e669e2ff98864636923bd2f5087f75e2
+msgid "Function Type"
+msgstr "功能类型"
+
+#: ../../source/sql/sql_date_function.md 8e02182274e64811a3e587ee7172be3b
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_date_function.md 2cac9f756fcc43fd802cb2473d1a81ab
+msgid "Return Value Type"
+msgstr "返回值类型"
+
+#: ../../source/sql/sql_date_function.md 0d3f0734181e41b69ce86d5c2ad38025
+msgid "Now( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 489bf4e512d5442799d542b80b9295f8
+msgid "Returns the current datetime."
+msgstr "返回当前日期时间。"
+
+#: ../../source/sql/sql_date_function.md e070edb71ef64e83a7efbd4804288441
+msgid "Timestamp"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 36a26d6ca9b74a83a58b00351a4670ea
+msgid "CurDate( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 2cac9f756fcc43fd802cb2473d1a81ab
+#: d673469cfdab4d78997b300cd8547d9f
+msgid "Returns the current date."
+msgstr "返回当前日期。"
+
+#: ../../source/sql/sql_date_function.md 36a26d6ca9b74a83a58b00351a4670ea
+msgid "Date"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md a8bc1703a70940aca5eedf5c96cbc188
+msgid "Current_Date( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 3985c0bf1dd34ec4b53760212069bb21
+msgid "CurTime( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 8afca5b67a5d47e88062526623050c3f
+msgid "Returns the current time."
+msgstr "返回当前时间。"
+
+#: ../../source/sql/sql_date_function.md 3985c0bf1dd34ec4b53760212069bb21
+msgid "Time"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md c50207024d4b49dc85c970e06de5cdd7
+msgid "Current_Time( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 8b4bbd48279542e6b9ea2875e28ee4fd
+msgid "Current_Timestamp( )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 861e81596ae642d897e797be8ebc6590
+msgid "From_UnixTime(expr)"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md
+#: ../../source/sql/sql_date_function.md:184 ee75182d045b48008b5b0f455586da6b
+msgid "Format Unix Timestamp."
+msgstr "Unix 时间戳格式。"
+
+#: ../../source/sql/sql_date_function.md e070edb71ef64e83a7efbd4804288441
+msgid "Unix_TimeStamp([expr])"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md ee75182d045b48008b5b0f455586da6b
+msgid "Returns the Unix timestamp."
+msgstr "返回 Unix 时间戳。"
+
+#: ../../source/sql/sql_date_function.md 7a3a74a799b34ea18c95380f25e4d60a
+msgid "Long"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md
+#: ../../source/sql/sql_date_function.md:282 2b7ad5676eea463d9324d3cd7ffb40d0
+#: bad63b64117942ad927265f92b9225c5
+msgid "Timestamp_format(timestamp,[format] )"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md
+#: ../../source/sql/sql_date_function.md:283 32b5d2f4558c4eb18e0f623377d64c28
+msgid "Format Time Date."
+msgstr "格式 时间 日期。"
+
+#: ../../source/sql/sql_date_function.md 2ec4258f882b48c2a7f4851b7aff5b89
+#: a4a1ae184b854afaaece584a6ce5a859 d63dddd57c274adc9dc38bdeb2e1afdd
+msgid "String"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 170c8f2ad4f049ab97b83db5fc205788
+msgid "Date_format(date,[format])"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 32b5d2f4558c4eb18e0f623377d64c28
+msgid "Formats a date."
+msgstr "格式化日期。"
+
+#: ../../source/sql/sql_date_function.md
+#: ../../source/sql/sql_date_function.md:341 918dd0c296774939ac53e73f1bcfcd4b
+#: f0e3850adc4e4cbcbd01ef5ab74964bd
+msgid "Time_Fomat(time,[format])"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 32b5d2f4558c4eb18e0f623377d64c28
+msgid "Formats a time."
+msgstr "格式化时间。"
+
+#: ../../source/sql/sql_date_function.md 26b0d025f5684a4790e686d36082a8d5
+msgid "DateDiff（expr1，expr2）"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md 38e4b96c4262417aba9347da47479f67
+msgid "Finds the difference between two dates."
+msgstr "查找两个日期之间的差值。"
+
+#: ../../source/sql/sql_date_function.md ecf149b3f0e24b32b308b6e38fc8872c
+msgid "Int"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:19 a31be572a19d4912933fb311fc3001c6
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_date_function.md:20 218bd421dcc542f3b59c2d1ac50cacd2
+msgid "Now"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:22
+#: ../../source/sql/sql_date_function.md:157 489bf4e512d5442799d542b80b9295f8
+msgid "Return the current date and time."
+msgstr "返回当前日期和时间。"
+
+#: ../../source/sql/sql_date_function.md:24
+#: ../../source/sql/sql_date_function.md:51
+#: ../../source/sql/sql_date_function.md:78
+#: ../../source/sql/sql_date_function.md:105
+#: ../../source/sql/sql_date_function.md:132
+#: ../../source/sql/sql_date_function.md:159
+#: ../../source/sql/sql_date_function.md:186
+#: ../../source/sql/sql_date_function.md:213
+#: ../../source/sql/sql_date_function.md:290
+#: ../../source/sql/sql_date_function.md:319
+#: ../../source/sql/sql_date_function.md:343
+#: ../../source/sql/sql_date_function.md:377 999e4a5a53ad4c81b64427163efa84eb
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_date_function.md:30
+#: ../../source/sql/sql_date_function.md:57
+#: ../../source/sql/sql_date_function.md:84
+#: ../../source/sql/sql_date_function.md:111
+#: ../../source/sql/sql_date_function.md:138
+#: ../../source/sql/sql_date_function.md:165
+#: ../../source/sql/sql_date_function.md:192
+#: ../../source/sql/sql_date_function.md:231
+#: ../../source/sql/sql_date_function.md:284
+#: ../../source/sql/sql_date_function.md:325
+#: ../../source/sql/sql_date_function.md:347
+#: ../../source/sql/sql_date_function.md:383 e669e2ff98864636923bd2f5087f75e2
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_date_function.md:36
+#: ../../source/sql/sql_date_function.md:63
+#: ../../source/sql/sql_date_function.md:90
+#: ../../source/sql/sql_date_function.md:117
+#: ../../source/sql/sql_date_function.md:144
+#: ../../source/sql/sql_date_function.md:171
+#: ../../source/sql/sql_date_function.md:198
+#: ../../source/sql/sql_date_function.md:237
+#: ../../source/sql/sql_date_function.md:295
+#: ../../source/sql/sql_date_function.md:331
+#: ../../source/sql/sql_date_function.md:353
+#: ../../source/sql/sql_date_function.md:389 d9dd5fa2446a4519b3a8a17d9980bf06
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_date_function.md:47 36a26d6ca9b74a83a58b00351a4670ea
+msgid "CurDate"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:49
+#: ../../source/sql/sql_date_function.md:76 2cac9f756fcc43fd802cb2473d1a81ab
+msgid "Return the current date."
+msgstr "返回当前日期。"
+
+#: ../../source/sql/sql_date_function.md:74 a8bc1703a70940aca5eedf5c96cbc188
+msgid "Current_Date"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:101 3985c0bf1dd34ec4b53760212069bb21
+msgid "CurTime"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:103
+#: ../../source/sql/sql_date_function.md:130 8afca5b67a5d47e88062526623050c3f
+msgid "Return the current time."
+msgstr "返回当前时间。"
+
+#: ../../source/sql/sql_date_function.md:128 c50207024d4b49dc85c970e06de5cdd7
+msgid "Current_Time"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:155 8b4bbd48279542e6b9ea2875e28ee4fd
+msgid "Current_TimeStamp"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:182 861e81596ae642d897e797be8ebc6590
+msgid "From_UnixTime"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:209 e070edb71ef64e83a7efbd4804288441
+msgid "Unix_TimeStamp"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:211 ee75182d045b48008b5b0f455586da6b
+msgid "Return a Unix timestamp."
+msgstr "返回 Unix 时间戳。"
+
+#: ../../source/sql/sql_date_function.md:219 64a1441ba9044bc9bfda6fd06f248a3e
+msgid "Parameter"
+msgstr "参数"
+
+#: ../../source/sql/sql_date_function.md:315 c723ac7209ef4064945503ff2b25b380
+msgid "Date_Format"
+msgstr ""
+
+#: ../../source/sql/sql_date_function.md:317 32b5d2f4558c4eb18e0f623377d64c28
+msgid "Format date as specified."
+msgstr "按指定格式设置日期。"
+
+#: ../../source/sql/sql_date_function.md:342 32b5d2f4558c4eb18e0f623377d64c28
+msgid "Format time as specified."
+msgstr "按指定格式设置时间。"
+
+#: ../../source/sql/sql_date_function.md:371 83185d6b9d7c47488166929a1a103a8a
+msgid "DateDiff"
+msgstr ""

@@ -1,0 +1,81 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-15 10:18+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_dml_command.md:1 f59381d314ee471a8e0afebdcf0dc013
+msgid "DML Commands"
+msgstr "DML 命令"
+
+#: ../../source/sql/sql_dml_command.md:2 f4332826a6ff407194657e89b38c0844
+msgid "DML statements are used to manipulate business-related records."
+msgstr "DML 语句用于操作与业务相关的记录。"
+
+#: ../../source/sql/sql_dml_command.md:3 494833f25c224511a9aa3463000d7ab0
+msgid "1. Insert"
+msgstr "1.插入"
+
+#: ../../source/sql/sql_dml_command.md:4 3d2225bad6934febb61ef5288d74e03c
+msgid ""
+"executing a single multi-row INSERT statement is faster than multiple "
+"single-row INSERT statements. So when a large amount of data needs to be "
+"inserted into a table, it is recommended to use a multi-row INSERT "
+"statement."
+msgstr ""
+"执行一条多行 INSERT 语句要比多条单行 INSERT 语句快。因此，当需要向表中插"
+"入大量数据时，建议使用多行 INSERT 语句。"
+
+#: ../../source/sql/sql_dml_command.md:5 4dc70a09e4be4942b64c1549b396d7f8
+msgid ""
+"he IMPORT statement performs better than the INSERT statement when the "
+"amount of data is larger."
+msgstr "当数据量较大时，IMPORT 语句比 INSERT 语句执行得更好。"
+
+#: ../../source/sql/sql_dml_command.md:6 2ae25cb732d447e4bc25c5a3cbacdc11
+msgid "Insert a single row"
+msgstr "插入单行"
+
+#: ../../source/sql/sql_dml_command.md:17 ba5f3215c18d47cc9f57e0e968927383
+msgid "Insert multiple rows"
+msgstr "插入多行"
+
+#: ../../source/sql/sql_dml_command.md:38 2ae25cb732d447e4bc25c5a3cbacdc11
+msgid "Insert vector data"
+msgstr "插入向量数据"
+
+#: ../../source/sql/sql_dml_command.md:45 1cf207a3e3524b40948530c542910db2
+msgid "2. Delete"
+msgstr "2.删除"
+
+#: ../../source/sql/sql_dml_command.md:46 a43cd20d1b5b4747a022815bd5df01a7
+msgid "Delete specified data"
+msgstr "删除指定数据"
+
+#: ../../source/sql/sql_dml_command.md:61 0bbcf0de9c4946f093a155414d35c834
+msgid "Delete all data"
+msgstr "删除所有数据"
+
+#: ../../source/sql/sql_dml_command.md:70 2cd6c271f7ee4dc8aa18277e6989a986
+msgid "3. Update"
+msgstr "3.更新"
+
+#: ../../source/sql/sql_dml_command.md:71 794b587d2d1f4350a95c3735498735c7
+msgid "Update specified data"
+msgstr "更新指定数据"

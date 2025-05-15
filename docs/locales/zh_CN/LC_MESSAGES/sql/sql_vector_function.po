@@ -1,0 +1,330 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 18:19+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_vector_function.md:1 1c8727a18d8847d9bd5d32a7eb12f878
+msgid "Vector Function"
+msgstr "向量函数"
+
+#: ../../source/sql/sql_vector_function.md:2 30882b963f1d49c79b5ac21c98dac523
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_vector_function.md c808665e313341cead5d69f7f62fdd83
+msgid "Function Type"
+msgstr "功能类型"
+
+#: ../../source/sql/sql_vector_function.md c950544cca2b46d4a132eab43d5662fd
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_vector_function.md c808665e313341cead5d69f7f62fdd83
+msgid "Return Value Type"
+msgstr "返回值类型"
+
+#: ../../source/sql/sql_vector_function.md b676b09c459f41f8b2256aa5a7db82ce
+msgid "txt2vec( host,test)"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 2cdee8d0493c49fbb9fca98839f8d675
+msgid "Extract vectors from text, measure vectors as 1024 dimensions"
+msgstr "从文本中提取向量，以 1024 维测量向量"
+
+#: ../../source/sql/sql_vector_function.md 0349f64277c24a69b5c5f832c433fd24
+#: 13041c7de1d04a1dad6de7046abf4c89 1638bbed338f4d11aab8dd6283199957
+#: 6053578d254340d89a522bc56bbcb0ac 7b03a89c26084fbf968224ccc830dcb3
+#: 89ff57ca7c8b4700a24fd4370cf9520b f7c6f85d96b940e18b49e2774591ce4b
+#: f8bdc4bb17684f88894d2e879f999f6d
+msgid "Float"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md c88673693652473f83055d9cbab7570f
+msgid "Img2vec(host,img_url,local_path)"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 02d606ec35614916a21a9b97629abee1
+msgid "Extracts vectors from images, the measurement vector is 512 dimensional"
+msgstr "从图像中提取向量，测量向量为 512 维"
+
+#: ../../source/sql/sql_vector_function.md dd63a4a2c21d41a6be60907411e7e164
+msgid "distance(vector_column, txt2vec( host,test))"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md f257c1ad6c364fb1adc381c0b5bfc2b3
+msgid ""
+"Calculate the distance between two vectors, the distance type is the "
+"distance type of the specified vector column in the vector table."
+msgstr "计算两个向量之间的距离，距离类型是向量表中指定向量列的距离类型。"
+
+#: ../../source/sql/sql_vector_function.md dd63a4a2c21d41a6be60907411e7e164
+msgid "ipDistance(vector_column, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 5257c4b3341f4faf86a6a80bd47b74dc
+msgid ""
+"The inner product distance function, a method to calculate the similarity "
+"between vectors. A larger distance means the vectors are less similar, a "
+"smaller distance means the vectors are more similar."
+msgstr ""
+"内积距离函数是一种计算向量间相似度的方法。距离越大，表示向量之间的相似度越"
+"低，距离越小，表示向量之间的相似度越高。"
+
+#: ../../source/sql/sql_vector_function.md dd63a4a2c21d41a6be60907411e7e164
+msgid "l2distance(vector_column, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 3397709e2b4b4bbba46dd56b29b67456
+msgid ""
+"Euclidean distance function, used to measure the distance between two points "
+"in a straight line, it is more commonly used for vectors with continuous "
+"values. The shorter the distance, the more similar."
+msgstr ""
+"欧氏距离函数，用于测量直线上两点之间的距离，更常用于连续值向量。距离越短，相"
+"似度越高。"
+
+#: ../../source/sql/sql_vector_function.md dd63a4a2c21d41a6be60907411e7e164
+msgid "cosineDistance(vector_column, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 8e127115ed164ea9992cf6684597851a
+msgid ""
+"The cosine distance function, a common measure of the similarity of vectors, "
+"the closer the value to 1, the more similar the vectors are, and the closer "
+"the value to 0, the less similar the vectors are."
+msgstr ""
+"余弦距离函数是衡量向量相似度的常用指标，其值越接近 1，向量的相似度越高，而其"
+"值越接近 0，向量的相似度越低。"
+
+#: ../../source/sql/sql_vector_function.md:11 c950544cca2b46d4a132eab43d5662fd
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_vector_function.md:12 b676b09c459f41f8b2256aa5a7db82ce
+msgid "1. txt2vec(host,text)"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:14 2cdee8d0493c49fbb9fca98839f8d675
+msgid "Extract vectors from the text, with a test vector of 1024 dimensions."
+msgstr "从文本中提取向量，测试向量的维数为 1024。"
+
+#: ../../source/sql/sql_vector_function.md:16
+#: ../../source/sql/sql_vector_function.md:45
+#: ../../source/sql/sql_vector_function.md:74 aeb03cc18f9a4d8caf365ffcaabee4c3
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_vector_function.md
+#: ../../source/sql/sql_vector_function.md:22
+#: ../../source/sql/sql_vector_function.md:51
+#: ../../source/sql/sql_vector_function.md:80
+#: ../../source/sql/sql_vector_function.md:103
+#: ../../source/sql/sql_vector_function.md:135
+#: ../../source/sql/sql_vector_function.md:167 38aa241f41564cd39342c180d812ce64
+#: a6257a94509142eba6154a5827b4e58a
+msgid "Parameter"
+msgstr "参数"
+
+#: ../../source/sql/sql_vector_function.md 758cc1805dac4021b3dc2e10b70f9acf
+msgid "Type"
+msgstr "类型"
+
+#: ../../source/sql/sql_vector_function.md 34c1d9745fd343a1815024f67d1e1536
+msgid "Required"
+msgstr "必需"
+
+#: ../../source/sql/sql_vector_function.md 30882b963f1d49c79b5ac21c98dac523
+msgid "host"
+msgstr "host"
+
+#: ../../source/sql/sql_vector_function.md 39299ab7bc944248a30624f1fcd88608
+msgid "String"
+msgstr "字符串"
+
+#: ../../source/sql/sql_vector_function.md 5660b710c32e4d38bd3cbac7c9d3af20
+msgid "The specific IP: port of the model service needs to include ''"
+msgstr "模型服务的具体 IP：端口需要包含''"
+
+#: ../../source/sql/sql_vector_function.md e2ea08dc110149359706b4736e6bbb9c
+msgid "Y"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 7085d29afe4744cd8fca681fae8cb95c
+msgid "text"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 5fb1177067ee40babd976cfff61f8175
+msgid ""
+"Indicates the text that needs to extract vectors, which needs to contain ''"
+msgstr "表示需要提取向量的文本，其中需要包含 ''"
+
+#: ../../source/sql/sql_vector_function.md:29
+#: ../../source/sql/sql_vector_function.md:58
+#: ../../source/sql/sql_vector_function.md:87 c808665e313341cead5d69f7f62fdd83
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_vector_function.md:35
+#: ../../source/sql/sql_vector_function.md:64
+#: ../../source/sql/sql_vector_function.md:93 c6cc38a94ac849d3aabc68c499a68d29
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_vector_function.md:41 c88673693652473f83055d9cbab7570f
+msgid "2. img2vec(host,img_url,local_path)"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:43 02d606ec35614916a21a9b97629abee1
+msgid "Extract vectors from the image, with a test vector of 512 dimensions."
+msgstr "从图像中提取向量，测试向量的维数为 512。"
+
+#: ../../source/sql/sql_vector_function.md a9d2babcad8340a698b933a6223947b9
+msgid "img_url"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 46612edf03d8445693598bdd790814ab
+msgid ""
+"The network address or local address (server) representing the image needs "
+"to include ''"
+msgstr "代表图像的网络地址或本地地址（服务器）需要包含''"
+
+#: ../../source/sql/sql_vector_function.md 19cf3162aa154fce9610648bdb6db1c4
+msgid "local_path"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 0dea9892031c47729c24c681342b4a38
+msgid "Boolean"
+msgstr "布尔型"
+
+#: ../../source/sql/sql_vector_function.md d7591fdeeeec4364b15df0a1fc17448c
+msgid ""
+"Indicates whether to obtain local image resources, including '';Default "
+"value: false"
+msgstr "表示是否获取本地图像资源，包括'';默认值：false"
+
+#: ../../source/sql/sql_vector_function.md b9235e914d414895ac7884042dbf0159
+msgid "N"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:70 dd63a4a2c21d41a6be60907411e7e164
+msgid "3. distance(vector_column,txt2vec(host,text))"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:72 f257c1ad6c364fb1adc381c0b5bfc2b3
+msgid ""
+"Calculate the distance between two vectors, using the distance metric "
+"specified for the vector column in the vector table. The two vectors must "
+"have the same dimensions."
+msgstr ""
+"使用为向量表中的向量列指定的距离度量，计算两个向量之间的距离。两个向量的尺寸"
+"必须相同。"
+
+#: ../../source/sql/sql_vector_function.md f2241bdf650a42f3bc35645c23729893
+msgid "vector_column"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md ea1318ebedc5414f9ffc3f93a7ae2f22
+msgid ""
+"The column name of the vector column used for distance calculation, without "
+"quotation marks."
+msgstr "用于计算距离的向量列的列名，不含引号。"
+
+#: ../../source/sql/sql_vector_function.md b676b09c459f41f8b2256aa5a7db82ce
+msgid "txt2vec(host,text)"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 661fd2a880de45a18c5700f954c2c03b
+msgid "The vector function used for distance calculation."
+msgstr "用于计算距离的向量函数。"
+
+#: ../../source/sql/sql_vector_function.md:99 dd63a4a2c21d41a6be60907411e7e164
+msgid "4. ipDistance(vector_colume, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:101 bb8ae2b6a9fb4b268b27fc66ed669925
+msgid ""
+"The inner product distance calculation function, a method for calculating "
+"the similarity between vectors. A larger distance means the vectors are less "
+"similar, and a smaller distance means the vectors are more similar."
+msgstr ""
+"内积距离计算函数，是一种计算向量间相似度的方法。距离越大，表示向量之间的相似"
+"度越低，距离越小，表示向量之间的相似度越高。"
+
+#: ../../source/sql/sql_vector_function.md ea1318ebedc5414f9ffc3f93a7ae2f22
+msgid ""
+"Indicates the name of the column for which the distance is to be "
+"requested,without quotation marks."
+msgstr "表示计算距离的列名，不含引号。"
+
+#: ../../source/sql/sql_vector_function.md c9e69c9d08674aa58f968d7d49a45d89
+#: f20a570cc69c42fe98042b22a235c313
+msgid "array[1,2…]"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md 5fb1177067ee40babd976cfff61f8175
+msgid "Indicates the distance value to be calculated"
+msgstr "表示要计算的距离值"
+
+#: ../../source/sql/sql_vector_function.md:110
+#: ../../source/sql/sql_vector_function.md:142
+#: ../../source/sql/sql_vector_function.md:174 aeb03cc18f9a4d8caf365ffcaabee4c3
+msgid "Syntax 1"
+msgstr "语法 1"
+
+#: ../../source/sql/sql_vector_function.md:116
+#: ../../source/sql/sql_vector_function.md:147
+#: ../../source/sql/sql_vector_function.md:179 c6cc38a94ac849d3aabc68c499a68d29
+msgid "Examples 1"
+msgstr "实例 1"
+
+#: ../../source/sql/sql_vector_function.md:120
+#: ../../source/sql/sql_vector_function.md:152
+#: ../../source/sql/sql_vector_function.md:184 aeb03cc18f9a4d8caf365ffcaabee4c3
+msgid "Syntax 2"
+msgstr "语法 2"
+
+#: ../../source/sql/sql_vector_function.md:125
+#: ../../source/sql/sql_vector_function.md:157
+#: ../../source/sql/sql_vector_function.md:190 c6cc38a94ac849d3aabc68c499a68d29
+msgid "Examples 2"
+msgstr "实例 2"
+
+#: ../../source/sql/sql_vector_function.md:131 dd63a4a2c21d41a6be60907411e7e164
+msgid "5. l2Distance(vector_colume, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:133 6f2b0cd8851143128f11aefb737c9818
+msgid ""
+"Measures the L2 distance between 2 points. That is, the length of the line "
+"between the points represented by the vectors; the shorter the distance, the "
+"more similar the source objects are conceptually."
+msgstr ""
+"测量两点之间的 L2 距离。也就是说，矢量所代表的点之间的直线长度；距离越短，说"
+"明源对象在概念上越相似。"
+
+#: ../../source/sql/sql_vector_function.md:163 dd63a4a2c21d41a6be60907411e7e164
+msgid "6. cosDistance(vector_colume, array[1,2,3…])"
+msgstr ""
+
+#: ../../source/sql/sql_vector_function.md:165 13530a6edfb7458698bbf8ed366f8b17
+msgid ""
+"Measures the cosine of the angle between two vectors, i.e., the dot product "
+"divided by the length."
+msgstr "测量两个向量间夹角的余弦值，即点积除以长度。"

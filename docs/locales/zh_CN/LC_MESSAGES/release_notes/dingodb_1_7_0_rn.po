@@ -1,0 +1,258 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-14 10:34+0800\n"
+"PO-Revision-Date: 2025-05-15 09:24+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:1
+#: e414787d223c43449e82acee15cf20ae
+msgid "Release Notes v1.7.0"
+msgstr "版本说明 v1.7.0"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:3
+#: bd34b4e0c9f2413dbdfe32c8b6bfb9cb
+msgid "New Features"
+msgstr "新增特性"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:4
+#: 7df75a1b47194bb8a244d8ec0906841f
+msgid "1. License Management Mechanism"
+msgstr "1.License管理机制"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:5
+#: f97561f85e9e4d90953bc921c5b81245
+msgid ""
+"provides License management function to protect the intellectual "
+"property rights of DingoDB. Through the License activation and "
+"management tool, users can conveniently manage and monitor the use of "
+"the software to ensure legal compliance."
+msgstr ""
+"提供了 License 管理功能，保障 DingoDB 的知识产权。通过 License 激活和管理"
+"工具，用户可以方便地管理和监控软件的使用情况，确保合法合规使用。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:6
+#: bd8c21b1d67d465fbf40bbee96ecca0e
+msgid "2. Stand-alone Lite version DingoDB"
+msgstr "2.单机Lite版DingoDB"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:7
+#: df5a0dc2c854412c8e9346fb4d09565b
+msgid ""
+"realizes stand-alone Lite version DingoDB, which reduces the threshold "
+"of users. This version can be run on a single machine without complex "
+"distributed deployment, and is suitable for development testing and "
+"small-scale application scenarios, helping users to quickly get started "
+"and verify the functions of DingoDB."
+msgstr ""
+"实现了单机 Lite 版 DingoDB，降低用户的使用门槛。该版本无需复杂的分布式部"
+"署，即可在单台机器上运行，适用于开发测试和小规模应用场景，帮助用户快速上"
+"手和验证 DingoDB 的功能。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:8
+#: 08ad2e1baa6648de8fc77aa1a90cbd22
+msgid "3. New C++ SDK"
+msgstr "3.新增C++SDK"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:9
+#: b77bec82945b4e0eab25478321dd07b8
+msgid ""
+"provides a new C++ SDK, which is convenient for developers to carry out "
+"secondary development and integration. Rich API interfaces are provided "
+"to support efficient data operation and management and improve "
+"development efficiency."
+msgstr ""
+"提供了新的 C++ SDK，方便开发者进行二次开发和集成。提供了丰富的 API 接口，"
+"支持高效的数据操作和管理，提升开发效率。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:11
+#: 778b25cd8731459482094538a85f2a6e
+msgid "Feature Optimizations"
+msgstr "优化特性"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:12
+#: 2fda27c3b9f8425ca02da45cfba2d2ab
+msgid "Storage Layer Optimization"
+msgstr "存储层优化"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:13
+#: 6ab5269883fa4f8fb8a54178055c88a2
+msgid "1. Braft Transformation"
+msgstr "1.Braft改造"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:14
+#: a01db108475a43e28926b8bea430202c
+msgid ""
+"Supports election priority control between peers to solve the vector "
+"index Leader balancing problem. It helps to improve the stability and "
+"performance of the cluster and avoid single-point overload."
+msgstr ""
+"支持 peer 之间的选举优先级控制，解决向量索引 Leader 均衡问题。有助于提高"
+"集群的稳定性和性能，避免单点过载。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:15
+#: f5c3552629a64651b79455dc2b75f736
+msgid "2. Prefilter Performance Improvement"
+msgstr "2.Prefilter性能提升"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:16
+#: 9e9703532f6440dda68199b8bf2cfece
+msgid ""
+"Adjust the data structure of ScalarData to improve the rate of "
+"prefilter. By optimizing the data structure, DingoDB can process data "
+"filtering faster and reduce query latency."
+msgstr ""
+"调整 ScalarData 的数据结构，提升前置过滤速率。通过优化数据结构，DingoDB "
+"能够更快地处理数据过滤，减少查询延迟。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:17
+#: ac9fba24338345df8f1aa98f64ccd0ea
+msgid "3. Instruction Set Extension"
+msgstr "3.指令集扩展"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:18
+#: 531450d59ed042b9828f1a978fdb94e4
+msgid ""
+"In addition to the default SSE instruction of vector distance "
+"calculation function FAISS and HNSWLIB, the instruction set AVX2/AVX512 "
+"is supported. By expanding the instruction set, the efficiency of vector "
+"computation is improved, especially in high-performance computing "
+"environments."
+msgstr ""
+"在向量距离计算函数 FAISS 和 HNSWLIB 默认的 SSE 指令基础上，新增支持 AVX2/"
+"AVX512 指令集。通过扩展指令集，提高了向量计算的效率，特别是在高性能计算环"
+"境中效果显著。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:19
+#: 6fe947600b30427aa8480f6a78c4274a
+msgid "4. Vector Distance Calculation Performance Improvement"
+msgstr "4.向量距离计算性能提升"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:20
+#: 42793a5ccbf3451b8112d60dccc73644
+msgid ""
+"realizes CPU instruction set acceleration switching at runtime, which "
+"significantly improves the performance of vector distance calculation. "
+"It automatically switches instruction sets (e.g. SSE, AVX2, AVX512) as "
+"needed, which is especially effective in processing large-scale data "
+"sets."
+msgstr ""
+"实现运行时的 CPU 指令集加速切换，显著提升向量距离计算性能。根据需要自动切"
+"换指令集（如 SSE、AVX2、AVX512），特别是在处理大规模数据集时效果显著。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:21
+#: b8c330ac4aaa46b8bd643af13d6da2f9
+msgid "5. Leader Balancing Rate Improvement"
+msgstr "5.Leader均衡率提升"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:22
+#: bc36aecab2d542a8ad18ad8ee9007f72
+msgid ""
+"improves the balancing rate of Leader in the cluster by optimizing the "
+"algorithm. The improved election algorithm ensures a more balanced "
+"distribution of Leaders and enhances the overall performance of the "
+"system."
+msgstr ""
+"通过优化算法，提升 Leader 在集群中的均衡率。改进的选举算法确保 Leader 的"
+"分布更加均衡，增强了系统的整体性能。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:23
+#: be6a13490b8140a6b5125aacc1a629ca
+msgid "6. Vector Index Data Insertion Performance Improvement"
+msgstr "6.向量索引数据插入性能提升"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:24
+#: ffa418d79df24b04a2ac49a7fd04c9c1
+msgid ""
+"Optimizes the insertion performance of IVF_FLAT and IVF_PQ vector "
+"indexes. The improved insertion algorithm improves the data insertion "
+"efficiency and shortens the index construction time."
+msgstr ""
+"优化 IVF_FLAT 和 IVF_PQ 向量索引的插入性能。改进的插入算法提高了数据插入"
+"的效率，缩短了索引构建时间。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:25
+#: eb9117ed55664f0da26e2aec0a50e55b
+msgid "7. Synchronous Operation Performance Optimization"
+msgstr "7.同步操作性能优化"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:26
+#: 9dd1bae8cc4f4676a1bb44f0fe3cf196
+msgid ""
+"Optimizes the synchronous operation performance of BThread and PThread. "
+"By reducing the overhead of thread synchronization, it improves the "
+"performance in a multi-threaded environment."
+msgstr ""
+"优化 BThread 和 PThread 的同步操作性能。通过减少线程同步的开销，提升了多"
+"线程环境下的性能表现。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:27
+#: 11e57e38ceb34714bcac13defdaf5a71
+msgid "8. Vector Search Performance Improvement"
+msgstr "8.向量Search性能提升"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:28
+#: fd639e6382444d50b179a2aea508dfc2
+msgid ""
+"Adjust the parameters such as Region size, Region number and thread "
+"number to effectively improve the performance of Vector Search. Optimize "
+"system resource allocation to significantly improve the response speed "
+"and efficiency of search."
+msgstr ""
+"调整 Region 大小、Region 数量及线程数等参数，有效提升向量 Search 性能。优"
+"化系统资源配置，显著提升搜索的响应速度和效率。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:29
+#: 22b9c4430c5945a58fd3dde5232d5322
+msgid "Computing Layer Optimization"
+msgstr "计算层优化"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:30
+#: bf4293ed91324c8d8c651d869030d366
+msgid "1. Logging System Optimization"
+msgstr "1.日志系统优化"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:31
+#: 67641b75d4a14180b7593119e01e0e2c
+msgid ""
+"Modify the Executor layer logging system to provide full-link logging "
+"information and improve log traceability. The improved logging system "
+"records more detailed information, helping users to comprehensively "
+"monitor and analyze all kinds of events in the process of task execution."
+msgstr ""
+"改造 Executor 层日志系统，提供全链路日志信息，提升日志可追溯性。改进后的"
+"日志系统记录更加详细，帮助用户全面监控和分析任务执行过程中的各类事件。"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:32
+#: 02b9837d836f47a2aaed27ce0316cd70
+msgid "2. Observable Metrics"
+msgstr "2.可观测Metirc"
+
+#: ../../source/release_notes/dingodb_1_7_0_rn.md:33
+#: 21cb42fddca24c40b1d68fe9f009ee71
+msgid ""
+"adds a new Metric information statistics function, which monitors the "
+"Metric information of the job at each stage and improves the "
+"observability of the task. By monitoring performance indicators in real "
+"time, users can better understand the execution of tasks and performance "
+"bottlenecks, and improve the efficiency of system operation and "
+"maintenance."
+msgstr ""
+"新增Metric 信息统计功能，监测作业在各个阶段的 Metric 信息，提升任务的可观"
+"测性。通过实时监测性能指标，用户可以更好地了解任务执行情况和性能瓶颈，提"
+"升系统的运维效率。"

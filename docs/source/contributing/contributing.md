@@ -80,7 +80,7 @@ articles. See [Documentation](#documentation) for more details.
 
 ### Ask Questions
 
-There is a dedicated on [Slack](https://dingodb.slack.com) or [Mailing list](mailto:dingodb@zetyun.com). Please use it when asking questions.
+There is a dedicated on [Mailing list](mailto:dingodb@zetyun.com). Please use it when asking questions.
 
 ## Pull Request Guidelines
 

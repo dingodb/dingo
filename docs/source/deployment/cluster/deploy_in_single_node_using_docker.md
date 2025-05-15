@@ -19,7 +19,7 @@ There are many types of roles in the cluster mode of DingoDB, such as coordinato
 
 ## User group planning
 
-| Deployment Method | User name | Gorup name |
+| Deployment Method | User name | Group name |
 |-------------------|-----------|------------|
 | docker deploy     | root      | root       |
 

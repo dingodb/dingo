@@ -1,0 +1,907 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 16:12+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/architecture/expression.md:1 f390b7a9bbdd4edc991272ff9a6d5923
+msgid "Dingo Expression"
+msgstr "Dingo 表达式"
+
+#: ../../source/architecture/expression.md:3 4ef3647f8151421d95e7afe209d7596e
+msgid ""
+"Dingo Expression is the expression engine used by DingoDB. It is special for "
+"its runtime codebase is separated from the parsing and compiling codebase. "
+"The classes in runtime are serializable so that they are suitable for "
+"runtime of distributed computing system, like [Apache Flink](https://"
+"flink.apache.org/)."
+msgstr ""
+"Dingo Expression 是 DingoDB 使用的表达式引擎。它的特殊之处在于其运行时代码库"
+"与解析和编译代码库是分开的。运行时的类是可序列化的，因此适用于分布式计算系统"
+"的运行时，如[Apache Flink](https://flink.apache.org/)。"
+
+#: ../../source/architecture/expression.md:7 95c53d0b16d740f7887b8d1918015b73
+msgid "Getting Started"
+msgstr "快速入门"
+
+#: ../../source/architecture/expression.md:9 c1a1544d451340aabf53647edb28b1b7
+msgid "Here is an example to use Dingo Expression."
+msgstr "下面是一个使用 Dingo Expression 的示例。"
+
+#: ../../source/architecture/expression.md:27 fa25d603791541599b2291f1e19be6d7
+msgid "Operators"
+msgstr "操作"
+
+#: ../../source/architecture/expression.md bab2eb0abb0f41a2a1b9b1b1751aedc4
+msgid "Category"
+msgstr "类别"
+
+#: ../../source/architecture/expression.md 3b59123516464fdab0f7821a937f9e31
+msgid "Operator"
+msgstr ""
+
+#: ../../source/architecture/expression.md ba6759cff39840dd8d13385dbfec5a9e
+msgid "Associativity"
+msgstr "关联性"
+
+#: ../../source/architecture/expression.md 08f938d4e74543b7a36f15976b2bddc0
+msgid "Parenthesis"
+msgstr ""
+
+#: ../../source/architecture/expression.md 0cd6bac0e5b64a0298eeab5d78c80643
+#: 4dc190e9e6e64d5a8bacb3cbdc59e2d9
+msgid "`( )`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 2b1443438c064164af2246d9dcb21dcd
+msgid "Function Call"
+msgstr ""
+
+#: ../../source/architecture/expression.md 02fa44418dde471d94a3c4846fa38e74
+#: 068e91ab2b44401da070e8511fc894be 4dbc470817f54561b01537b011deae33
+#: 73bfeb3d3d224e9fbea98aa420be18ee c07fe98cfab040d89ce606b45200d540
+#: c910ecce21704f43aa0a52e873083a66 d7b500a78a7f40a096f5dedf3fce75d5
+#: ec09349bbecf445b873b7b97a9654ab2 fd62700ae6c34ac3a4a8b8b9b9c37fbc
+#: ffb789ab5bc94b348f8b5e1923a72b0b
+msgid "Left to right"
+msgstr "从左至右"
+
+#: ../../source/architecture/expression.md 849390103eba4da2ad864326fbabd6d4
+msgid "Name Index"
+msgstr ""
+
+#: ../../source/architecture/expression.md 192347513d0f431794a82a58e9b07666
+msgid "`.`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 042eb85361214f6784597627afedbf62
+msgid "Array Index"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5cb83b0086d04fb38a4751a87f69645e
+msgid "`[ ]`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 94329bea90204895ac8db0ffe76b9302
+msgid "Unary"
+msgstr ""
+
+#: ../../source/architecture/expression.md 88555516fb694560abceea0112507b15
+#: e4ae48da0d534534adc933383d151039
+msgid "`+` `-`"
+msgstr ""
+
+#: ../../source/architecture/expression.md fc625c03fe094711ac4b66d4e931a00e
+msgid "Right to left"
+msgstr "从右到左"
+
+#: ../../source/architecture/expression.md d7dca8e9c74d49f581ba0e27b9707170
+msgid "Multiplicative"
+msgstr ""
+
+#: ../../source/architecture/expression.md 7a9e014b265049bab144e778c4459626
+msgid "`*` `/`"
+msgstr ""
+
+#: ../../source/architecture/expression.md dce7b579d446478ba6c93163f9fa286d
+msgid "Additive"
+msgstr ""
+
+#: ../../source/architecture/expression.md 0a5a48a4f02c484b96119a937bbcf921
+msgid "Relational"
+msgstr ""
+
+#: ../../source/architecture/expression.md 186ca61987774f879f50e7e1066824a0
+msgid "`<` `<=` `>` `>=` `==` `=` `!=` `<>`"
+msgstr ""
+
+#: ../../source/architecture/expression.md
+#: ../../source/architecture/expression.md:142 205b0615bbfb4c5c9f4f33e1249eb1d1
+#: cd26199506e34fbba72ed7cca1bd81a9
+msgid "String"
+msgstr "字符串"
+
+#: ../../source/architecture/expression.md 0c3f72399bb74a41853649b34e82ad69
+msgid "`startsWith` `endsWith` `contains` `matches`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 16eedd53fef548659e4535cf0b7cb5ad
+msgid "Logical NOT"
+msgstr ""
+
+#: ../../source/architecture/expression.md 95625cac6a2e479bba6782c52bc0f7b4
+msgid "`!` `not`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3a119664ce4d4811884b91bd95df2b15
+msgid "Logical AND"
+msgstr ""
+
+#: ../../source/architecture/expression.md 7f50feacdbae49bd8c48d81e1065ff5f
+msgid "`&&` `and`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 01eb79ecf56f4b1e8c34d8207d6b0c21
+msgid "Logical OR"
+msgstr ""
+
+#: ../../source/architecture/expression.md d32f6261c3904247a3b05863b73a1734
+msgid "<code>&#x7c;&#x7c;</code> `or`"
+msgstr ""
+
+#: ../../source/architecture/expression.md:44 0bbc9301803249398f54de6cc7c1d5a4
+msgid "Data Types"
+msgstr "数据类型"
+
+#: ../../source/architecture/expression.md d53a6a4497d9495690fa10427e7ce6fb
+msgid "Type Name"
+msgstr ""
+
+#: ../../source/architecture/expression.md b3b796f2edfd4cce84dd71dd716fd4ee
+msgid "SQL type"
+msgstr ""
+
+#: ../../source/architecture/expression.md c9dde0e65b314ffda91c4c2293d04ab7
+msgid "JSON Schema Type"
+msgstr "JSON 模式类型"
+
+#: ../../source/architecture/expression.md 83712614bf5d41cb8c5738cd3065c6fc
+msgid "Hosting Java Type"
+msgstr "Hosting Java 类型"
+
+#: ../../source/architecture/expression.md 5642549a91f840d5bf30479116c0ae69
+msgid "Literal in Expression"
+msgstr "文字表达"
+
+#: ../../source/architecture/expression.md 04df6e00f1d44ce8a52f11a20a479c9b
+#: c61331ea85cb49bfb20dcd7b53aac893
+msgid "NULL"
+msgstr ""
+
+#: ../../source/architecture/expression.md 02ecb45af81548fdafaa0d233093c127
+#: 4e88f0a2094a40f5949dbc798aee62b5
+msgid "`null`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5ac4a3f30fda4784a20f42dac2d8abec
+msgid "INT"
+msgstr ""
+
+#: ../../source/architecture/expression.md d5aa5f8aff2842c593d66cccfe74029d
+msgid "INTEGER"
+msgstr ""
+
+#: ../../source/architecture/expression.md 40e71e5a3ee94afc90ffa20ab1fa73bf
+msgid "`int` or `java.lang.Integer`"
+msgstr "int 或 java.lang.Integer"
+
+#: ../../source/architecture/expression.md 96a1d4655cd24b1aac32a1498b7c5b1b
+msgid "`0` `20` `-375`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 07781a5d66164e0b9f683c4c86900e8d
+#: dc685ac26f774d20bf37244b509d912a
+msgid "LONG"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5b70c6671f334ecaa2c4e558b9a31188
+msgid "integer"
+msgstr ""
+
+#: ../../source/architecture/expression.md df566c9771024ecba1b6b91820fa03c4
+msgid "`long` or `java.lang.Long`"
+msgstr "long 或 java.lang.Long"
+
+#: ../../source/architecture/expression.md 6de3511763c6494283bb0ecd1036a53d
+#: 9c3a6ff765054acba750b669363cd052
+msgid "DOUBLE"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5840b2df9c1d466e84ff7736332b86ed
+msgid "number"
+msgstr ""
+
+#: ../../source/architecture/expression.md 0e91298b6da04128a10e209bd771cf8d
+msgid "`double` or `java.lang.Double`"
+msgstr "double 或 java.lang.Double"
+
+#: ../../source/architecture/expression.md 22ce72665f6749809da98b07e100bf48
+msgid "`2.0` `-6.28` `3e-4`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3c10317fd301471a8c15480e4a1d61e9
+msgid "BOOL"
+msgstr ""
+
+#: ../../source/architecture/expression.md fee7182692e341bcbb21e7e6cf2e5d5d
+msgid "BOOLEAN"
+msgstr ""
+
+#: ../../source/architecture/expression.md 9e83110291294d299e5e4b02a81bbf5b
+msgid "boolean"
+msgstr ""
+
+#: ../../source/architecture/expression.md bb965acb979f49cfb5d7edcda7d6a444
+msgid "`boolean` or `java.lang.Boolean`"
+msgstr "boolean 或 java.lang.Boolean"
+
+#: ../../source/architecture/expression.md 766167be622f40948a7ef8d72a0e2870
+msgid "`true` `false`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3a8d676d3f53457caf913d47bda0d422
+msgid "STRING"
+msgstr ""
+
+#: ../../source/architecture/expression.md 01d137f380994fdabdd4de2b588c9007
+msgid "VARCHAR"
+msgstr ""
+
+#: ../../source/architecture/expression.md f8ed5e9b904a4a86972e5aa5e0f41be9
+msgid "string"
+msgstr ""
+
+#: ../../source/architecture/expression.md a5305ce7f9764ad5a20f425796889013
+msgid "`java.lang.String`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 91aaf514040e4e44b5ee4f8d048efb58
+msgid "`\"hello\"` `'world'`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 2135758b1ad547bfabf30b4090ee40a2
+msgid "BINARY"
+msgstr ""
+
+#: ../../source/architecture/expression.md 8c0b72715d3a4c588866cf274a5d20cb
+msgid "BLOB"
+msgstr ""
+
+#: ../../source/architecture/expression.md dfa9a0e86aa6458a8362c765fabdf0d7
+msgid "`byte[]`"
+msgstr ""
+
+#: ../../source/architecture/expression.md a06db09ea08a4d599c9a8e91b896194b
+#: f585d1bf3ffd4e6887a56f8514f0c5ec
+msgid "DECIMAL"
+msgstr ""
+
+#: ../../source/architecture/expression.md da252b87ba2b415287dc5d7be42a12cd
+msgid "`java.math.BigDecimal`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3eaa66217c5f44d3b59280c82ca2c1d3
+#: 5c8bf4b7578e49a493f24c7173cc2ccf
+msgid "DATE"
+msgstr ""
+
+#: ../../source/architecture/expression.md 4cf90124f8f7433fa404c3f900462ab4
+msgid "`java.sql.Date`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 439846a9afc940e0a3a5d0d08bbc4c83
+#: b57324d919b34f958275c191796583cd
+msgid "TIME"
+msgstr ""
+
+#: ../../source/architecture/expression.md 11aed5d9adc04d44b60aff78555d5737
+msgid "`java.sql.Time`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 14fef4aa027a4d6980e83921aff795ca
+#: 70bd0a285cb344f8b139b820f1dc8cc5
+msgid "TIMESTAMP"
+msgstr ""
+
+#: ../../source/architecture/expression.md 85eea57b97b14e6ca222aa9c7cc6e543
+msgid "`java.sql.Timestamp`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 103ed62437ff46728d9fa904417e6cdb
+msgid "OBJECT"
+msgstr ""
+
+#: ../../source/architecture/expression.md bedddd43299244b4ab0a6b23598142c8
+msgid "ANY"
+msgstr ""
+
+#: ../../source/architecture/expression.md 47da999034ff4672a77d61c09b40ac0f
+#: 6f689c5b6f7c4b5fb59028375a728cdd
+msgid "object"
+msgstr ""
+
+#: ../../source/architecture/expression.md dd9b9599fc9b4e858c078725313a5627
+msgid "`java.lang.Object`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 38bdd1ce7b2741779cf84912afc2d10e
+#: b7fff8f872c54d53bdf7f1c2c9cc2e86
+msgid "ARRAY"
+msgstr ""
+
+#: ../../source/architecture/expression.md 2adb0e9cfaf04956bab2d4850ebacec6
+msgid "`java.lang.Object[]`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5e045d0d6140416887ead1d8d4ae929e
+msgid "LIST"
+msgstr ""
+
+#: ../../source/architecture/expression.md 1c990286f8164cef946b37113ea3f909
+msgid "array"
+msgstr ""
+
+#: ../../source/architecture/expression.md 99df5e67388343f097caaf38beb77af5
+msgid "`java.util.List`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 206f85dfda3749bba9d01aaf5b4fad48
+#: 32847b192a484fc7a802b8d4ebbc28f2
+msgid "MAP"
+msgstr ""
+
+#: ../../source/architecture/expression.md 4a7a737856bd425bb6a6d1ef562a6515
+msgid "`java.util.Map`"
+msgstr ""
+
+#: ../../source/architecture/expression.md:64 82c778c950694d9bb4ca238f84a4eb4e
+msgid ""
+"Dingo Expression parses integer literals adaptively, if an integer literal's "
+"value exceeds the range of Java `int` type, it will be parsed to `LONG`; if "
+"the value exceeds the range of Java type `long`, it will be parsed to "
+"`DECIMAL`. On the contrary, float literals are parsed to `DECIMAL` to keep "
+"the precision of value, you can then get a `DOUBLE` value by casting "
+"functions."
+msgstr ""
+"Dingo 表达式自适应地解析整型字面量，如果整型字面量的值超出了 Java `int` 类型"
+"的范围，则解析为 `LONG`；如果超出了 Java `long` 类型的范围，则解析为 "
+"`DECIMAL`。相反，为了保持数值的精度，浮点数字面会被解析为 `DECIMAL`，然后您可"
+"以通过转换函数得到 `DOUBLE` 值。"
+
+#: ../../source/architecture/expression.md:69 5051261bb42b450cb944b5d4a626da9f
+msgid "Three-valued Logic"
+msgstr "三值逻辑"
+
+#: ../../source/architecture/expression.md:71 26b5551a58a542858e7fff7fc5aabb82
+msgid ""
+"Dingo Expression has `NULL` type and support three-valued logic as in SQL. "
+"Generally, operators or functions evaluates to `NULL` if any of its operands "
+"is `NULL` except some logical operators/functions."
+msgstr ""
+"Dingo 表达式具有 `NULL` 类型，支持 SQL 中的三值逻辑。一般来说，除了某些逻辑运"
+"算符或函数外，如果运算符或函数的任何操作数为`NULL`，则其值为`NULL`。"
+
+#: ../../source/architecture/expression.md:74 e227bb4a8a414d2f837f1970d0a8a22f
+msgid "Constants"
+msgstr "常数"
+
+#: ../../source/architecture/expression.md 350f47cf2a7441e38909dc3d35d49fe8
+msgid "Name"
+msgstr "名称"
+
+#: ../../source/architecture/expression.md 34e487ee2b6940b6bacaa95457a246ff
+msgid "Value"
+msgstr "值"
+
+#: ../../source/architecture/expression.md 040caa83e8f348b58e6cfcc8cae9be9e
+msgid "TAU"
+msgstr ""
+
+#: ../../source/architecture/expression.md 41450e6812ee45e3a28009af233d54df
+msgid "6.283185307179586476925"
+msgstr ""
+
+#: ../../source/architecture/expression.md b9c414cfda0b4f52acbe9662f1b79e4c
+msgid "E"
+msgstr ""
+
+#: ../../source/architecture/expression.md 750f7b4fcb084a9ca8adcf350a912d1d
+msgid "2.7182818284590452354"
+msgstr ""
+
+#: ../../source/architecture/expression.md:81 da9fa4714a7b4f3cb2f4b560fc591f6d
+msgid ""
+"There is not \"3.14159265\" but `TAU`. See [The Tau Manifesto](https://"
+"tauday.com/tau-manifesto)."
+msgstr ""
+"不是 “3.14159265”，而是 “TAU”。见 [The Tau Manifesto](https://tauday.com/tau-"
+"manifesto)。"
+
+#: ../../source/architecture/expression.md:83 3e238341881d437da0003d5334d2d3af
+msgid "Functions"
+msgstr "功能"
+
+#: ../../source/architecture/expression.md:85 f779c65cdfb74188a7690b8e3d7f8aed
+msgid "Function names are case-insensitive."
+msgstr "函数名称不区分大小写。"
+
+#: ../../source/architecture/expression.md:87 f86d9bd2374f4bc5be3a983080f645d6
+msgid "Casting"
+msgstr "数据类型转换"
+
+#: ../../source/architecture/expression.md 489c2897fd634d25a488f9a70373b827
+#: 72a01a35527445eb95d530ed6638f27a d76a2a1d61894a67afe95f8fe5782c7e
+#: f22d3b4190244cba844c74128e4213ca
+msgid "Function"
+msgstr "功能"
+
+#: ../../source/architecture/expression.md 0f01dfe0d1414894811941e19d939b31
+#: 57777e2e4e4c4093a1b2b1439bdea888 b23db8643c084e26b2dbd853dafab217
+msgid "Java function based on"
+msgstr "Java 函数基于"
+
+#: ../../source/architecture/expression.md 0f5996cd6d1442e5b31138b23d47ee62
+#: 13e2fa8b9b014fb48418c1174fc6a784 1ca5bd9d18dd4df1b584240a3d61b247
+#: 89b525944da245808d77ff32c7545c38
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/architecture/expression.md 5a0c464a570343aa9f868d044e3a8706
+msgid "`int(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md f6d4e30f390040b894258574652a6286
+msgid "Convert `x` to INT"
+msgstr "将 `x` 转换为 INT"
+
+#: ../../source/architecture/expression.md b9de5a9d38f4427594973cf9a3aa1ed9
+msgid "`long(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 697d7ed5a6c14dd9ac69186132e3f527
+#: c3897d949cf84b52a5ed3db70ff0375a
+msgid "Convert `x` to LONG"
+msgstr "将 `x` 转换为 LONG"
+
+#: ../../source/architecture/expression.md b61c86b90b4942bab9f8d13d9ce9d128
+msgid "`bool(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md ff4e053596e344199b5da9a285878a18
+msgid "`double(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md fc33c570fa6f4ed6ab39fc675776f3d5
+msgid "Convert `x` to DOUBLE"
+msgstr "将 `x` 转换为 DOUBLE"
+
+#: ../../source/architecture/expression.md c28703d23c204147b89a96654c56ab0e
+msgid "`decimal(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md ce77a1a466ed492497392fa90393d2cd
+msgid "Convert `x` to DECIMAL"
+msgstr "将 `x` 转换为十进制数"
+
+#: ../../source/architecture/expression.md 2fa5e055519542758fe4ec691ce5c54f
+msgid "`string(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md f25178d800dc474191aa5a43731609bc
+msgid "Convert `x` to STRING"
+msgstr "将 `x` 转换为 STRING"
+
+#: ../../source/architecture/expression.md 03f12a44daa94d78897610f63f9922ea
+msgid "`date(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md fc7cdabe2ec64e39809201b0bf857eb3
+msgid "Convert `x` to DATE"
+msgstr "将 `x` 转换为日期"
+
+#: ../../source/architecture/expression.md 5fc9faebc085463880ee7669d9027286
+msgid "`time(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 77664e6bda044d3b98b0197b5110abf6
+msgid "Convert `x` to TIME"
+msgstr "将 `x` 转换为时间"
+
+#: ../../source/architecture/expression.md 3fd8478162374ce89ae6b52538f2c719
+msgid "`timestamp(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md c5f43b1b37d3431b88721f8bba16349f
+msgid "Convert `x` to TIMESTAMP"
+msgstr "将 `x` 转换为 时间戳"
+
+#: ../../source/architecture/expression.md 925814fc3eed43c3be55ad7ca8118856
+msgid "`binary(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 5cf1142c3cb740ee8aa749e834f356ff
+msgid "Convert `x` to BINARY"
+msgstr "将 `x` 转换为二进制数"
+
+#: ../../source/architecture/expression.md:102 71d2015657264f1ba4962a3227805244
+msgid ""
+"**NOTE**: there are no `DATE`, `TIME` and `TIMESTAMP` literals, but you can "
+"write `TIMESTAMP('2020-12-21')`, etc."
+msgstr ""
+"**注意**：没有 `DATE`、`TIME` 和 `TIMESTAMP` 字面，但可以写成 "
+"`TIMESTAMP('2020-12-21')`等。"
+
+#: ../../source/architecture/expression.md:104 ad25a85dbde145fdbe350913f0adf52c
+msgid "Logical"
+msgstr "逻辑"
+
+#: ../../source/architecture/expression.md a2471bd3a70f4b1f920b9069aa892a61
+msgid "`and(a, b)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 2b5f960eff334f9398a771f870b610fb
+msgid "The same as `AND` operator"
+msgstr "与 `AND` 运算符相同"
+
+#: ../../source/architecture/expression.md 963ac6750b1647ea95fe5cdf20166beb
+msgid "`or(a, b)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 53d570dd4b804b28b2a10cf6f5363344
+msgid "The same as `OR` operator"
+msgstr "与 `OR` 运算符相同"
+
+#: ../../source/architecture/expression.md 73209c13e17e4c3ea6c3cf87876a5fe7
+msgid "`not(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 924783704668476c97710c4ac1433673
+msgid "The same as `NOT` operator"
+msgstr "与 `NOT` 运算符相同"
+
+#: ../../source/architecture/expression.md 069f0e2b392944d7891b26c7ddd6f330
+msgid "`is_true(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3670cd24509d4a319bf63935dd6d2f23
+msgid "Test if `x` is `true`"
+msgstr "测试 `x` 是否为 `true"
+
+#: ../../source/architecture/expression.md e6d0d775558d4abfafc1189c7cf256b2
+msgid "`is_not_true(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md e9e6c91b7aab43ecafb6f7730931a536
+msgid "Test if `x` is not `true`"
+msgstr "测试 `x` 是否为 `true"
+
+#: ../../source/architecture/expression.md 3b3c238fe79b45c0b1148b8cdf1d617a
+msgid "`is_false(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 8ffdfc7f53b340bc80da90c0abcef677
+msgid "Test if `x` is `false`"
+msgstr "测试 `x` 是否为 `false"
+
+#: ../../source/architecture/expression.md 4f7e55b9fb9244bb9df05d1b57eb8f03
+msgid "`is_not_false(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md dab9cbea1e504031a30fccb6e0fd6080
+msgid "Test if `x` is not `false`"
+msgstr "测试 `x` 是否为 `false"
+
+#: ../../source/architecture/expression.md cb73547131d246a0b98270143643942b
+msgid "`is_null(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3e3b8be1883a406b82881bffa5476806
+msgid "Test if `x` is `null`"
+msgstr "测试 `x` 是否为 `null`"
+
+#: ../../source/architecture/expression.md 9c65d1278d824353af41315197b0834f
+msgid "`is_not_null(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md c9a36d51589b4b69afd3863496ce4019
+msgid "Test if `x` is not `null`"
+msgstr "测试 `x` 是否不是 `null`"
+
+#: ../../source/architecture/expression.md:118 ece516a2be194ffcbfc805f1d9c43b70
+msgid ""
+"**NOTE**: `null` is not `true` or `false` and you can not test if a value is "
+"`null` by `x == null` because it returns `null`."
+msgstr ""
+"**注意**： null “不是 ”true “或 ”false“，不能用 ”x == null “来测试一个值是否"
+"为 ”null“，因为它会返回 ”null\"。"
+
+#: ../../source/architecture/expression.md:121 e1d43f622f7f48e690f0f78fa9472878
+msgid "Mathematical"
+msgstr "数学运算"
+
+#: ../../source/architecture/expression.md:123 ac61c28b08504fada5aba3af02d14fe2
+msgid ""
+"See [Math (Java Platform SE 8)](https://docs.oracle.com/javase/8/docs/api/"
+"java/lang/Math.html)."
+msgstr ""
+"请参见 [Math (Java Platform SE 8)](https://docs.oracle.com/javase/8/docs/api/"
+"java/lang/Math.html)。"
+
+#: ../../source/architecture/expression.md 84d0cfd40000448db9c9be229fe92466
+msgid "`min(a, b)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md e59affdbab864cb687ff9ad205f16432
+msgid "Min value of `a`, `b`"
+msgstr ""
+
+#: ../../source/architecture/expression.md d10b4defe45d41c0b6e866fd8403ff48
+msgid "`max(a, b)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 190ac0835df7416a94033b3b743dfa8d
+msgid "Max value of `a`, `b`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 8108b8a5f6714fa9874f01f73faa881f
+msgid "`abs(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 2670dd135b5946bca179d3e404e6b2f1
+msgid "`java.lang.Math.abs`"
+msgstr ""
+
+#: ../../source/architecture/expression.md ade5f99cd20e4c25812c94455324a0c0
+msgid "`sin(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md c316a6e432204f45bfba209409f31a82
+msgid "`java.lang.Math.sin`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 9e6dcfb1504b40f8b68bf1ce8a7fa08d
+msgid "`cos(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 3c93d446f1814179af40d1bafb9f3672
+msgid "`java.lang.Math.cos`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 9acd3bf0fd7f4686a98e5f173d7c92e6
+msgid "`tan(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 07f26f01910f42a98319e93415819dbd
+msgid "`java.lang.Math.tan`"
+msgstr ""
+
+#: ../../source/architecture/expression.md b6fe4a2c3c7343a594d45a60a60f8d86
+msgid "`asin(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 1364d519918b493eabbe503d6ce49f3f
+msgid "`java.lang.Math.asin`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 7835b25db88b462cab6b759462a79e22
+msgid "`acos(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 8ca64897b3be4d76911260574af38c21
+msgid "`java.lang.Math.acos`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 0c32743d438848b8af8d8d8b534e9329
+msgid "`atan(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md cfdad07dfdb94bbf9a8008a3999a7e26
+msgid "`java.lang.Math.atan`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 30dfa0520fbb48de8b9d8342b621c85c
+msgid "`cosh(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 136ad85f5ed9439494c5f128c042764a
+msgid "`java.lang.Math.cosh`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 1578496a65f44655b034f895dbf91450
+msgid "`sinh(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md a81f5409783d4aa38d790cde4293df14
+msgid "`java.lang.Math.sinh`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 6b1155afe5da431a890b843bc3152c97
+msgid "`tanh(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md bf0700f42c8b48d1917a6a4e31323458
+msgid "`java.lang.Math.tanh`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 4f53ee023603462e9986650ee4d8276d
+msgid "`log(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md e446f49e050c4b18b682b5a09b89ac9c
+msgid "`java.lang.Math.log`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 4baf1d08f2124ea1aa49785bf57708d2
+msgid "`exp(x)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 7f3bb8b89f7d4de7a3cf52b73ade4abd
+msgid "`java.lang.Math.exp`"
+msgstr ""
+
+#: ../../source/architecture/expression.md:144 bb9a434f68e6480db36dc435c73b666b
+msgid ""
+"See [String (Java Platform SE 8)](https://docs.oracle.com/javase/8/docs/api/"
+"java/lang/String.html)."
+msgstr ""
+"请参见 [String (Java Platform SE 8)](https://docs.oracle.com/javase/8/docs/"
+"api/java/lang/String.html)."
+
+#: ../../source/architecture/expression.md de417d1a93fb4a3b8c9f0d94ef04e705
+msgid "`lower(s)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md efa0a13ee95745ccbe52f7c066a07f68
+msgid "`String::toLowerCase`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 9d52756c7574475185c615523fc490a4
+msgid "`upper(s)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 867f5d66dadf433d8256643b260ce8b9
+msgid "`String::toUpperCase`"
+msgstr ""
+
+#: ../../source/architecture/expression.md d053ad049ad24f2d8e30058daa284f2f
+msgid "`trim(s)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md c27f0c8ddab04704acd34424895a10d8
+msgid "`String::trim`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 9bcbb787c4284f81942ddfcc55fe3bb8
+msgid "`replace(s, a, b)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 1e14455fb967407f8b14b8365dc1c169
+msgid "`String::replace`"
+msgstr ""
+
+#: ../../source/architecture/expression.md a3a6ad0bee6440ab8689cddd6c89e39f
+msgid "`substr(s, i)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 043c10fe213347f69d147e1253515d6e
+#: d1a5e82f79f8494e96456f87ed526e74
+msgid "`String::substring`"
+msgstr ""
+
+#: ../../source/architecture/expression.md 66f93d72c40a439ea0ffec3ef929e749
+msgid "`substr(s, i, j)`"
+msgstr ""
+
+#: ../../source/architecture/expression.md:155 1c1d565f78c64e959b30716f5e02c128
+msgid "Variables and Contexts"
+msgstr "变量和上下文"
+
+#: ../../source/architecture/expression.md:157 54538db18a82492dbd0a67e3725860f0
+msgid ""
+"Variables can be used in expressions. In order to compile an expression "
+"containing variables, A `CompileContext` must be provided to define the "
+"types of variables. A [JSON Schema](http://json-schema.org/) definition can "
+"be used as a source of `CompileContext`. For example (in YAML format for "
+"simplicity, but you can surely use JSON format)"
+msgstr ""
+"变量可在表达式中使用。为了编译包含变量的表达式，必须提供一个 "
+"`CompileContext` 来定义变量的类型。JSON Schema](http://json-schema.org/)定义"
+"可用作 “编译上下文 ”的来源。例如（为简单起见使用 YAML 格式，但也可以使用 "
+"JSON 格式）"
+
+#: ../../source/architecture/expression.md:175 0905049240f74296b37a66365d2cf20c
+msgid ""
+"where variables `a`, `b`, `c`, `d` are defined with specified types. "
+"According to the schema, you can provide a data source as (in YAML format)"
+msgstr ""
+"其中变量 `a`、`b`、`c`、`d` 是以指定类型定义的。根据模式，您可以提供以下数据"
+"源（YAML 格式）"
+
+#: ../../source/architecture/expression.md:182 e4ceea7ccaf344e4b78f5c0ae854bc47
+msgid "Then an `RtExpr` can be compiled and evaluated as following"
+msgstr "那么，一个 `RtExpr` 的编译和评估过程如下"
+
+#: ../../source/architecture/expression.md:200 6dba6d0416cc4044a079d33e10b12468
+msgid "Nested Context"
+msgstr "嵌套上下文"
+
+#: ../../source/architecture/expression.md:202 4ceb7c888b184cd38323d7403ee09303
+msgid ""
+"In a JSON Schema definition, objects and arrays can be nested into each "
+"other, for example"
+msgstr "在 JSON 模式定义中，对象和数组可以相互嵌套，例如"
+
+#: ../../source/architecture/expression.md:224 976409592969448ab84cc9adfc935a85
+msgid ""
+"For JSON Schema of type `array`, if its `additionalItems` is set to `true`, "
+"the number and types of its elements are determined, so each of its elements "
+"will be compiled to a standalone variable. This also happens to JSON Schema "
+"of type `object` with a non-null `properties`, if its `properties` is not "
+"null and `additionalProperties` is set to `false` , each of its properties "
+"will be compiled to a standalone variable. Otherwise, an `array` is compiled "
+"to `LIST` and a `map` to `MAP`."
+msgstr ""
+"对于 `array` 类型的 JSON Schema，如果其 `additionalItems` 设置为 `true`，其元"
+"素的数量和类型将被确定，因此其每个元素将被编译为一个独立变量。如果 JSON "
+"Schema 的 `properties` 不为空，且 `additionalProperties` 设置为 `false`，那么"
+"它的每个属性都将被编译为一个独立变量。否则，\"数组 \"将被编译为 \"LIST\"，"
+"\"映射 \"将被编译为 \"MAP\"。"
+
+#: ../../source/architecture/expression.md:230 d881674e1f404787b8ca6a13d40c05b8
+msgid ""
+"If an `object` type does not have `properties` defined, it is compiled to "
+"`OBJECT`."
+msgstr ""
+"如果一个 `object` 类型没有定义 `properties` 属性，它将被编译为 `OBJECT` 类"
+"型。"
+
+#: ../../source/architecture/expression.md:232 ee4aa66836014f23aaa09afab734af6c
+msgid ""
+"As in the JSON schema above, you can use `a.b` and `a.c` to access the "
+"variables of `number` and `boolean` types, separately. The syntax looks the "
+"same as map index, but they are really different variables and `a` is not an "
+"existing variable at all in runtime. Also, you can use `d[0]` and `d[1]` to "
+"access the `integer` and the `string` variables and `d` is not an existing "
+"variable."
+msgstr ""
+"在上面的 JSON 模式中，可以使用 `a.b` 和 `a.c` 分别访问 `number` 和 `boolean` "
+"类型的变量。语法看起来与 map 索引相同，但它们实际上是不同的变量，而且 `a` 在"
+"运行时根本不是一个现有变量。此外，您可以使用 `d[0]` 和 `d[1]` 访问 `integer` "
+"和 `string` 变量，而 `d` 并不是一个现有变量。"
+
+#: ../../source/architecture/expression.md:237 c266a019b437452aaed0df4cf3e30035
+msgid ""
+"The special variable `$` can be used to access the whole context, so `$.a` "
+"is the same as `a`. `$` is useful for a context with an array as root. The "
+"parser also looks on `a.b` as `a['b']`, so the syntax to access variables is "
+"much like JSONPath."
+msgstr ""
+"特殊变量 `$` 可用来访问整个上下文，因此 `$.a` 与 `a` 相同。对于以数组为根的上"
+"下文，`$` 非常有用。解析器也会将 `a.b` 视为 `a['b']`，因此访问变量的语法与 "
+"JSONPath 很相似。"

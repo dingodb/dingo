@@ -1,0 +1,273 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-14 17:47+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/sql_operations.md:1 7e610c22f13742eaafe31ae4ca288f35
+msgid "Basic SQL"
+msgstr "SQL基本操作"
+
+#: ../../source/deployment/sql_operations.md:3 8a9e9cf249e64ad98e283357966f2fbe
+msgid ""
+"After DingoDB is installed and deployed successfully, because DingoDB is "
+"compatible with MySQL semantics, you can connect to DingoDB and execute SQL "
+"statements through SQL tools or MySQL client."
+msgstr ""
+"安装并部署成功后，由于 DingoDB 与 MySQL 语义兼容，因此可以通过 SQL 工具或 "
+"MySQL 客户端连接 DingoDB 并执行 SQL 语句。"
+
+#: ../../source/deployment/sql_operations.md:5 d15671120aa0439eb8158e7ebeff3d01
+msgid "1. Create Table"
+msgstr "1.创建表格"
+
+#: ../../source/deployment/sql_operations.md:7 e9953294ed724361afeeb70f04a5278a
+msgid "Parameter Description"
+msgstr "参数描述"
+
+#: ../../source/deployment/sql_operations.md f6ce293f24874e99aabd64fe33fcc905
+msgid "parameter"
+msgstr "规范"
+
+#: ../../source/deployment/sql_operations.md 7430a5486a4b4b799ecf0a8316bf8f44
+msgid "description"
+msgstr "描述"
+
+#: ../../source/deployment/sql_operations.md 44180b23fa294f96b49aa34b8a9e0146
+msgid "details"
+msgstr "详情"
+
+#: ../../source/deployment/sql_operations.md 87489f7e40b2417b8205d9b98ef4ef85
+msgid "syntax"
+msgstr "语法"
+
+#: ../../source/deployment/sql_operations.md 40721c2e89fb44788ff340ce225377c3
+#: a659f80dd8d64801b1f40dfb4033d2f4
+msgid "Table Name"
+msgstr "表名"
+
+#: ../../source/deployment/sql_operations.md 20948d921eef43d5a4159c5115e2720c
+msgid ""
+"The name of the table, which must be unique in the database and follow the "
+"naming convention."
+msgstr "表名在数据库中必须是唯一的，并遵循命名约定。"
+
+#: ../../source/deployment/sql_operations.md aebfa8e57c734456be40e2cdfcc4eed4
+msgid "Table table_name"
+msgstr "表名"
+
+#: ../../source/deployment/sql_operations.md e34bc46a6c434e1a8210f6637f75a5de
+msgid "Replica"
+msgstr "副本"
+
+#: ../../source/deployment/sql_operations.md 4225b6d9b04841339e8763a4c93d5310
+msgid "Number of copies"
+msgstr "副本数"
+
+#: ../../source/deployment/sql_operations.md 49b06e1cfd00456fae5f02e52e8b44ce
+msgid "The number of copies of the table."
+msgstr "表格的副本数。"
+
+#: ../../source/deployment/sql_operations.md 82754d6344de48a281ec0cea102bbec8
+#, python-brace-format
+msgid "Replica = {replica}"
+msgstr ""
+
+#: ../../source/deployment/sql_operations.md 64a5406d5bae458092ad83cba07c2981
+msgid "Autoincrement"
+msgstr "自动增量"
+
+#: ../../source/deployment/sql_operations.md 1d6eb0d6b50e468ca2eb7f6ccd3b5699
+msgid "Autoincrement Fields"
+msgstr "自动递增字段"
+
+#: ../../source/deployment/sql_operations.md af8ef10460ca4d4eb9c61d74de34a2c9
+msgid ""
+"Specifies that a field is a self-incrementing column, currently only the "
+"`int` type is supported, and you can set the initial self-increment value."
+msgstr "指定字段为自递增列，目前只支持 `int` 类型，可以设置初始自增值。"
+
+#: ../../source/deployment/sql_operations.md b84208ceec324cb8b828f8125d4bb05a
+msgid "Auto_increment"
+msgstr "自动增加"
+
+#: ../../source/deployment/sql_operations.md 870cfde1b81e462a8bccf718c1a474cd
+msgid "Partition By"
+msgstr "分区"
+
+#: ../../source/deployment/sql_operations.md f017f869ba404c33874356ea07f6d8ac
+msgid "Range Partition: partition by range;"
+msgstr "Range 分区：按Range 分区；"
+
+#: ../../source/deployment/sql_operations.md aac200c88a9848a2b508a126108ff78e
+msgid ""
+"Partition the data into different partitions based on the specified range. "
+"You can partition by range values for one or more columns."
+msgstr ""
+"根据指定的范围将数据划分为不同的range。您可以根据一个或多个列的范围值进行分"
+"区。"
+
+#: ../../source/deployment/sql_operations.md 7ce8408492d74060933fe989bec11492
+msgid "Hash partition: partition by Key's hash value;"
+msgstr "哈希分区：按密钥的哈希值分区；"
+
+#: ../../source/deployment/sql_operations.md f74d166bd11d4e209c184b9906db456e
+msgid ""
+"Partition by hash value of a column or multiple columns, each hash value "
+"determines the partition to which the data belongs."
+msgstr "按列或多列的哈希值进行分区，每个哈希值决定数据所属的分区。"
+
+#: ../../source/deployment/sql_operations.md a9b483ed00fb461fad2e98b554551dbf
+msgid "Engine"
+msgstr "引擎"
+
+#: ../../source/deployment/sql_operations.md 04f7718fe293401d87c59cd3d21a6962
+msgid "Storage Engine"
+msgstr "存储引擎"
+
+#: ../../source/deployment/sql_operations.md 5bc3f44d6763479488a0b5a64552624d
+msgid ""
+"The storage engine specified when creating the table; Dingo provides LSM, "
+"BTree, Txn_LSM, Txn_BTree storage engines. The default is: Txn_LSM"
+msgstr ""
+"创建表格时指定的存储引擎；Dingo 提供 LSM、BTree、Txn_LSM、Txn_BTree 存储引"
+"擎。默认值为 Txn_LSM"
+
+#: ../../source/deployment/sql_operations.md 31e80caa493348098db495639c02cc5a
+msgid "Engine = Txn_LSM;"
+msgstr ""
+
+#: ../../source/deployment/sql_operations.md e4823e4f6bfe4ac395ffa09b8bc4c021
+msgid "Index"
+msgstr "索引"
+
+#: ../../source/deployment/sql_operations.md 84716caa7386471f8aa7eeff18bd811f
+msgid "Vector Index"
+msgstr "向量索引"
+
+#: ../../source/deployment/sql_operations.md c03664df30824acca2e582d4e9cda0af
+msgid ""
+"Creates an index on a vector field, the index type should be specified as "
+"`VECTOR`."
+msgstr "为向量场创建索引，索引类型应指定为 `VECTOR`。"
+
+#: ../../source/deployment/sql_operations.md df39df7c0a374e7898fcb5f2deaacf95
+#, python-brace-format
+msgid "INDEX[index_name ]VECTOR( {index_parameters} )"
+msgstr ""
+
+#: ../../source/deployment/sql_operations.md f20939ae46fe4639a9a942bcf020df81
+msgid "Scalar Index"
+msgstr "标量索引"
+
+#: ../../source/deployment/sql_operations.md e782b3cd888b4844ae251a0c884c6996
+msgid ""
+"Index created on a scalar field, default index type is scalar, `Scalar` is "
+"optional."
+msgstr "在标量字段上创建索引，默认索引类型为标量，“Scalar ”为可选项。"
+
+#: ../../source/deployment/sql_operations.md:19
+#: 598c2e0b57a949838f38a594a82cd5f5
+msgid "SQL Example"
+msgstr "SQL 示例"
+
+#: ../../source/deployment/sql_operations.md:21
+#: a71bc399bbcb4c2590d16c76cd970451
+msgid "Create a table with a scalar index"
+msgstr "创建带有标量索引的表"
+
+#: ../../source/deployment/sql_operations.md:38
+#: 2001e34c8572451992b0663f1f2d9a3d
+msgid "Create table with vector indexes"
+msgstr "创建带向量索引的表"
+
+#: ../../source/deployment/sql_operations.md:52
+#: cda38b4e2f4145d49ecdcb823dba52cd
+msgid "*Description:*"
+msgstr "*说明:*"
+
+#: ../../source/deployment/sql_operations.md:54
+#: 2a4fa890c06343919593a48f3664324b
+msgid ""
+"Create statement in the feature column vector column, type for the floating-"
+"point array, vector columns need to be added after the vector index, if you "
+"do not add the vector index will be treated as an ordinary array type, "
+"vector index in the definition of the scalar index is similar to that of the "
+"corresponding definition of the method to use VECTOR, the need for the "
+"parameters have two a vector id column, currently only supports integer, the "
+"second parameter is the vector column, the second parameter is the vector "
+"column, the vector column. Currently only floating point arrays are "
+"supported."
+msgstr ""
+"创建语句中的特征列为向量列，类型为浮点数组，向量列后需要添加向量索引，如果不"
+"添加向量索引将被视为普通数组类型，向量索引中标量索引的定义类似于使用 VECTOR "
+"方法的相应定义，需要的参数有两个，一个是向量 id 列，目前只支持整数．目前只支"
+"持浮点数组。"
+
+#: ../../source/deployment/sql_operations.md:56
+#: efe2f752a87f444e9997b7590484579a
+msgid "2. Insert Data"
+msgstr "2.插入数据"
+
+#: ../../source/deployment/sql_operations.md:57
+#: abf132becd64461985cec6325fb390be
+msgid ""
+"Take 'vectable' as an example, because the vector field dimension is "
+"specified as 8, so the array array needs to contain 8 elements when "
+"inserting."
+msgstr ""
+"以 “vectable ”为例，由于向量字段的维数指定为 8，因此插入时数组需要包含 8 个元"
+"素。"
+
+#: ../../source/deployment/sql_operations.md:66
+#: 37c57120913547f497f9b6282db826ac
+msgid "3. Query Data"
+msgstr "3.查询数据"
+
+#: ../../source/deployment/sql_operations.md:67
+#: bd62a56bb3bd4b048cb14716e61a413f
+msgid "Full table query"
+msgstr "全表查询"
+
+#: ../../source/deployment/sql_operations.md:71
+#: 077aa52f3d004ca88f800b9ef658a563
+msgid ""
+"Conditional query, use `WHERE` conditional statement to filter the data "
+"conditionally."
+msgstr "条件查询，使用 `WHERE` 条件语句有条件地过滤数据。"
+
+#: ../../source/deployment/sql_operations.md:75
+#: badee313303d49eb9d1e2c3c42a51ea8
+msgid "4. Modify Data"
+msgstr "4.修改数据"
+
+#: ../../source/deployment/sql_operations.md:76
+#: 17d9631e138740f19d025fc9b47f1532
+msgid "Use `UPDATE TABLE` statement to modify the data in the table"
+msgstr "使用 “UPDATE TABLE ”语句修改表中的数据"
+
+#: ../../source/deployment/sql_operations.md:80
+#: 7ee95ff28c0f4da8a7a225b07662af40
+msgid "5. Drop Table"
+msgstr "5.删除表"
+
+#: ../../source/deployment/sql_operations.md:81
+#: abc77d05ddc64ef68e1f7cfb51dfc6f6
+msgid "Use the `DROP TABLE` statement to delete a table."
+msgstr "使用 `DROP TABLE` 语句删除表。"

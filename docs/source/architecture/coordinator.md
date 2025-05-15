@@ -2,8 +2,8 @@
 
 ## 1. Data Structure
 ![Coordinator Data Structure](../../images/CoordinatoreDataStructure.png)
-Coordinator mainly maintains 6 main Maps:
 
+Coordinator mainly maintains 6 main Maps:
 - IdEpochMap: Save all Map epochs, and all instance ids (coordinator, store, schema, table)
 - CoordinatorMap:Save all Coordinators information and state
 - StoreMap: Save information and state of all Stores

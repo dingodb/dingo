@@ -1,0 +1,184 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-13 14:29+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_aggregate_function.md:1
+#: 78df9969263d455ab0e124832defdd3a
+msgid "Aggregate Function"
+msgstr "聚合函数"
+
+#: ../../source/sql/sql_aggregate_function.md:2
+#: 292c7c79b8f44f3cb83fc14e1e133b11
+msgid "List"
+msgstr "清单"
+
+#: ../../source/sql/sql_aggregate_function.md fa18178cfa14463193580246f6f2c36a
+msgid "Function Type"
+msgstr "函数类型"
+
+#: ../../source/sql/sql_aggregate_function.md f05ad72c0b844eeabcca409cf5e1f424
+msgid "Description"
+msgstr "说明"
+
+#: ../../source/sql/sql_aggregate_function.md fa18178cfa14463193580246f6f2c36a
+msgid "Return Value Type"
+msgstr "返回值类型"
+
+#: ../../source/sql/sql_aggregate_function.md 5edc6a53f415453698a18bee9a1be8c9
+msgid "AVG"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md 65b0f587a7514a9bafecabee9b928f93
+msgid "Returns the average value"
+msgstr "返回平均值"
+
+#: ../../source/sql/sql_aggregate_function.md 3f9d8d314a72426daa9a6945e8a1af30
+msgid "Double"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md 6abc4832c2b248ca918af578ce35063b
+msgid "COUNT"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md cee8d7b3b0e14b8596e5ef2a0de5c5c8
+msgid "Returns the number of records"
+msgstr "返回记录数"
+
+#: ../../source/sql/sql_aggregate_function.md 6288045c08a2479cac831605c43ec21d
+msgid "Int"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md 181396c3305f409f8ace2bc0736ae152
+msgid "SUM"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md b72900597b694bc3943ccee2afb6a118
+msgid "Calculates the sum of values"
+msgstr "计算数值之和"
+
+#: ../../source/sql/sql_aggregate_function.md a43dea3d120749ae8a33af3cbd091109
+msgid "Double, Int"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md b12f99ae4b33417cad4ba75c42a7fe39
+msgid "MAX"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md f8eb02bcf1a244c6b24d8fb3de94e88d
+msgid "Returns the maximum value"
+msgstr "返回最大值"
+
+#: ../../source/sql/sql_aggregate_function.md b0551d3bfd434a8a8e4854cc03caa412
+#: d4f628f43fde4e6cb750a9caf23d2cec
+msgid "Object"
+msgstr "对象"
+
+#: ../../source/sql/sql_aggregate_function.md 912d7c96edb44a9097ca75635dc3fefc
+msgid "MIN"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md 11baf48a5cd94a7b99319dc8bc4227ea
+msgid "Returns the minimum value"
+msgstr "返回最小值"
+
+#: ../../source/sql/sql_aggregate_function.md:11
+#: 06c53089f44847fc9735c6a8045606c3
+msgid "Specification"
+msgstr "规格"
+
+#: ../../source/sql/sql_aggregate_function.md:13
+#: b3b4503937ad44878c379d5fe0a341db
+msgid "1. AVG"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md:15
+#: 65b0f587a7514a9bafecabee9b928f93
+msgid "The AVG() function returns the average value of an expression."
+msgstr "函数 AVG() 返回表达式的平均值。"
+
+#: ../../source/sql/sql_aggregate_function.md:17
+#: ../../source/sql/sql_aggregate_function.md:44
+#: ../../source/sql/sql_aggregate_function.md:71
+#: ../../source/sql/sql_aggregate_function.md:105
+#: ../../source/sql/sql_aggregate_function.md:132
+#: 2a428be25a764f33837421df6f71a06c
+msgid "Syntax"
+msgstr "语法"
+
+#: ../../source/sql/sql_aggregate_function.md:23
+#: ../../source/sql/sql_aggregate_function.md:50
+#: ../../source/sql/sql_aggregate_function.md:77
+#: ../../source/sql/sql_aggregate_function.md:111
+#: ../../source/sql/sql_aggregate_function.md:138
+#: fa18178cfa14463193580246f6f2c36a
+msgid "Return Type"
+msgstr "返回类型"
+
+#: ../../source/sql/sql_aggregate_function.md:29
+#: ../../source/sql/sql_aggregate_function.md:56
+#: ../../source/sql/sql_aggregate_function.md:83
+#: ../../source/sql/sql_aggregate_function.md:117
+#: ../../source/sql/sql_aggregate_function.md:144
+#: 9239fe36cf814de6a77dc4c485f397db
+msgid "Examples"
+msgstr "实例"
+
+#: ../../source/sql/sql_aggregate_function.md:40
+#: 6abc4832c2b248ca918af578ce35063b
+msgid "2. COUNT"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md:42
+#: cee8d7b3b0e14b8596e5ef2a0de5c5c8
+msgid ""
+"The COUNT() function returns the number of records returned by a SELECT "
+"query."
+msgstr "COUNT() 函数返回 SELECT 查询返回的记录数。"
+
+#: ../../source/sql/sql_aggregate_function.md:67
+#: 96ffcfcdc57941f6a51b5efd454962c4
+msgid "3. SUM"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md:69
+#: b72900597b694bc3943ccee2afb6a118
+msgid "The SUM() function calculates the sum of values."
+msgstr "SUM() 函数计算数值之和。"
+
+#: ../../source/sql/sql_aggregate_function.md:101
+#: 7651988dddc84851a88c974f781027fb
+msgid "4. MAX"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md:103
+#: f8eb02bcf1a244c6b24d8fb3de94e88d
+msgid "The MAX() function returns the maximum value."
+msgstr "函数 MAX() 返回最大值。"
+
+#: ../../source/sql/sql_aggregate_function.md:128
+#: ac7cb0fbae6c4de2b3a22eb49caae4ac
+msgid "5. MIN"
+msgstr ""
+
+#: ../../source/sql/sql_aggregate_function.md:130
+#: 11baf48a5cd94a7b99319dc8bc4227ea
+msgid "The MIN() function returns the minimum value."
+msgstr "MIN() 函数返回最小值。"

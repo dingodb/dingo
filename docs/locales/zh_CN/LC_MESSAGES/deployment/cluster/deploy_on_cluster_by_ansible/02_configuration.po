@@ -1,0 +1,61 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 18:36+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:1
+#: 3dfb0b3056a54dea9d336468cade089f
+msgid "Update Configuration about Ansible playbook"
+msgstr "更新有关 Ansible playbook 的配置"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:3
+#: 612bcfdcc19f4418bf83a5cb88b1b55d
+msgid "Pull git deploy code"
+msgstr "拉取 git 部署代码"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:10
+#: 77fcf31aca5c475480572bb0766817df
+msgid "Deployment configuration"
+msgstr "部署配置"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:12
+#: 330af31c6ac64af28ab9a355be46f00b
+msgid "**Configure installation options**"
+msgstr "**配置安装选项**"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:14
+#: ec4b3b82ff4d4e8fa124f1ceb62be8fb
+msgid "Configuration file address: dingo-deploy/group_vars/all/_shared.yml"
+msgstr "配置文件地址：dingo-deploy/group_vars/all/_shared.yml"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:133
+#: 3b25bf1ffa714def9af08fa8801c7946
+msgid "Download Package"
+msgstr "下载软件包"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:159
+#: 89fa178f5edd41289d650e64e6eeabd1
+msgid "Config Hosts"
+msgstr "配置主机"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/02_configuration.md:160
+#: 08db6cfc426c47a19bcb773a9dae1c2d
+msgid "Configuration file address： inventory/hosts"
+msgstr "配置文件地址： inventory/hosts"

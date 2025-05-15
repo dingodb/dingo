@@ -6,18 +6,19 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DingoDB \n"
+"Project-Id-Version: DingoDB\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-25 09:31+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_CN\n"
+"PO-Revision-Date: 2025-05-14 09:51+0800\n"
+"Last-Translator: \n"
 "Language-Team: zh_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
 
 #: ../../source/index.rst:7 a09cea390f56431dbc0ddfdd0b95b865
 msgid "Welcome to DingoDB Docs!"
@@ -27,7 +28,9 @@ msgstr "欢迎来到 DingoDB 产品手册！"
 msgid ""
 "Here you will learn about what DingoDB is, and how to install and deploy "
 "DingoDB to build an application according to your need."
-msgstr "在这里，您将了解到 DingoDB 的概况和特性，以及如何安装部署 DingoDB 以根据实际需求构建应用程序。"
+msgstr ""
+"在这里，您将了解到 DingoDB 的概况和特性，以及如何安装部署 DingoDB 以根据实"
+"际需求构建应用程序。"
 
 #: ../../source/index.rst:15 a1649a1e8b0d410384d903d00869fbf7
 msgid "About DingoDB"
@@ -35,11 +38,12 @@ msgstr "关于DingoDB"
 
 #: ../../source/index.rst:20 dd475fb8bc214f039759784be7cf1a47
 msgid ""
-"The AI-Native multimodal database provides strongly consistent storage "
-"for relational, vector, text, and other multimodal data, while offering "
-"SQL-based unified analysis capabilities across multiple modalities."
+"The AI-Native multimodal database provides strongly consistent storage for "
+"relational, vector, text, and other multimodal data, while offering SQL-"
+"based unified analysis capabilities across multiple modalities."
 msgstr ""
-"面向AI-Native的多模数据库，提供关系、向量、文本等多模态强一致性数据存储，提供基于SQL的多模态联合分析能力"
+"面向AI-Native的多模数据库，提供关系、向量、文本等多模态强一致性数据存储，提"
+"供基于SQL的多模态联合分析能力。"
 
 #: ../../source/index.rst:23 b2ce2c893c5c48f195b7e70ce4c37232
 msgid "Product Advantages"
@@ -53,8 +57,7 @@ msgstr "企业级存储可靠性"
 msgid ""
 "Based on Multi-Raft multi-copy storage, ensuring data strong consistency "
 "and meeting enterprise-level disaster recovery requirements."
-msgstr ""
-"基于Multi-Raft多副本存储，确保数据强一致性，满足企业级容灾需求。"
+msgstr "基于Multi-Raft多副本存储，确保数据强一致性，满足企业级容灾需求。"
 
 #: ../../source/index.rst:30 4b4f26bbf26f45c7a7b76ba95c37f92d
 msgid "Scalar-Vector Joint Retrieval"
@@ -66,7 +69,8 @@ msgid ""
 "variety of vector index types, simplifies the development complexity of "
 "RAG applications, and meets various scenario requirements."
 msgstr ""
-"支持SQL执行标量与向量的联合检索，并提供丰富的向量索引类型，简化RAG应用的开发复杂度，满足各种场景需求。"
+"支持SQL执行标量与向量的联合检索，并提供丰富的向量索引类型，简化RAG应用的开"
+"发复杂度，满足各种场景需求。"
 
 #: ../../source/index.rst:34 5a6a3a96a4d943d396104b4e5f4869b4
 msgid "Multi-Modal Database Capabilities"
@@ -74,12 +78,13 @@ msgstr "多模数据库能力"
 
 #: ../../source/index.rst:36 1b6af0d53df34d1fa6769727ae0d15d9
 msgid ""
-"Deploying a set of DingoDB can have the service capabilities of Key-Value"
-" cache acceleration, relational database, and vector database, reduce the"
-" maintenance and management costs of multiple database systems, and "
-"improve the efficiency and flexibility of the overall system."
+"Deploying a set of DingoDB can have the service capabilities of Key-Value "
+"cache acceleration, relational database, and vector database, reduce the "
+"maintenance and management costs of multiple database systems, and improve "
+"the efficiency and flexibility of the overall system."
 msgstr ""
-"部署一套DingoDB即可拥有Key-Value缓存加速、关系数据库和向量数据库的服务能力，减少多个数据库系统的维护和管理成本，提高整体系统的效率和灵活性。"
+"部署一套DingoDB即可拥有Key-Value缓存加速、关系数据库和向量数据库的服务能"
+"力，减少多个数据库系统的维护和管理成本，提高整体系统的效率和灵活性。"
 
 #: ../../source/index.rst:38 1576ff0357ce413aa8b71ccb237dcf0f
 msgid "Compatible with MySQL Protocol"
@@ -91,7 +96,8 @@ msgid ""
 "DingoDB using the MySQL client, without the need to learn new database "
 "syntax and tools, reducing user learning costs and usage thresholds."
 msgstr ""
-"DingoDB兼容MySQL协议，用户可以直接使用MySQL客户端访问DingoDB，无需学习新的数据库语法和工具，降低用户的学习成本和使用门槛。"
+"DingoDB兼容MySQL协议，用户可以直接使用MySQL客户端访问DingoDB，无需学习新的"
+"数据库语法和工具，降低用户的学习成本和使用门槛。"
 
 #: ../../source/index.rst:42 4d5756aa76b64d98a6591835f6eb3d95
 msgid "Horizontal Expansion and Contraction"
@@ -105,7 +111,8 @@ msgid ""
 "database scale according to business needs and effectively respond to "
 "traffic changes."
 msgstr ""
-"基于存算分离的架构设计，DingoDB能够实现对性能和资源的一键水平扩容和缩容，使得企业能够根据业务需求快速调整数据库规模，有效应对流量变化。"
+"基于存算分离的架构设计，DingoDB能够实现对性能和资源的一键水平扩容和缩容，使"
+"得企业能够根据业务需求快速调整数据库规模，有效应对流量变化。"
 
 #: ../../source/index.rst:46 5d84d8b47c474be6b3d597c1e07cbc44
 msgid "Compatible with Multiple Storage Engines"
@@ -113,11 +120,12 @@ msgstr "多存储引擎兼容"
 
 #: ../../source/index.rst:48 858c9662488e41b2b6882a782a4b17a0
 msgid ""
-"DingoDB supports multiple storage engines, enabling enterprises to choose"
-" the most suitable storage engine according to business characteristics, "
+"DingoDB supports multiple storage engines, enabling enterprises to choose "
+"the most suitable storage engine according to business characteristics, "
 "maximizing performance benefits."
 msgstr ""
-"DingoDB支持多种存储引擎，使得企业可以根据业务特点选择最适合的存储引擎，最大化性能效益。"
+"DingoDB支持多种存储引擎，使得企业可以根据业务特点选择最适合的存储引擎，最大"
+"化性能效益。"
 
 #: ../../source/index.rst:50 5a84110535b1417d9b6f136a5ef0ac3d
 msgid "Distributed Transaction Support"
@@ -125,12 +133,13 @@ msgstr "分布式事务支持"
 
 #: ../../source/index.rst:52 f637c6f7372648fd888b47a08d78528d
 msgid ""
-"DingoDB supports distributed transactions that combine scalar and vector,"
-" and provides multiple isolation levels, compatible with optimistic "
+"DingoDB supports distributed transactions that combine scalar and vector, "
+"and provides multiple isolation levels, compatible with optimistic "
 "transactions and pessimistic transactions, ensuring the integrity and "
 "consistency of transactions in a distributed environment"
 msgstr ""
-"DingoDB支持标量向量融合的分布式事务，同时提供多种隔离级别，既兼容乐观事务和悲观事务，确保事务在分布式环境下的完整性和一致性。"
+"DingoDB支持标量向量融合的分布式事务，同时提供多种隔离级别，既兼容乐观事务和"
+"悲观事务，确保事务在分布式环境下的完整性和一致性"
 
 #: ../../source/index.rst:54 30119af97f80430fa267aae4fc7858ac
 msgid "Multi-Tenant Support"
@@ -138,29 +147,17 @@ msgstr "多租户支持"
 
 #: ../../source/index.rst:56 1e36ac52b22d4e69a3a3771a10d184a5
 msgid ""
-"DingoDB natively supports multi-tenancy, service isolation to prevent "
-"data leakage and interference. Supports request-level dynamic flow "
-"control, flexible resource allocation. Supports mixed storage and "
-"isolation by tenant and resource group to ensure reasonable allocation "
-"and efficient use of resources."
+"DingoDB natively supports multi-tenancy, service isolation to prevent data "
+"leakage and interference. Supports request-level dynamic flow control, "
+"flexible resource allocation. Supports mixed storage and isolation by "
+"tenant and resource group to ensure reasonable allocation and efficient "
+"use of resources."
 msgstr ""
-"DingoDB原生支持多租户，服务隔离防止数据泄露与干扰。支持请求级动态流控，灵活分配资源。支持混合存储与按租户和资源组隔离，确保资源的合理分配和高效利用。"
+"DingoDB原生支持多租户，服务隔离防止数据泄露与干扰。支持请求级动态流控，灵活"
+"分配资源。支持混合存储与按租户和资源组隔离，确保资源的合理分配和高效利用。"
 
 #~ msgid "Contents:"
 #~ msgstr "内容"
 
 #~ msgid "Architecture"
 #~ msgstr "架构设计"
-
-#~ msgid "The entire card can be clicked to navigate to https://example.com."
-#~ msgstr ""
-
-#~ msgid "Clickable Card (internal)"
-#~ msgstr ""
-
-#~ msgid ""
-#~ "The entire card can be clicked to"
-#~ " navigate to the ``cards-clickable`` "
-#~ "reference target."
-#~ msgstr ""
-

@@ -1,0 +1,609 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version:  DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-15 09:28+0800\n"
+"PO-Revision-Date: 2025-05-14 17:49+0800\n"
+"Last-Translator: \n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/deployment/standalone/windows.md:1
+#: eb1c872850d3442eb7b370fc8ec59784
+#, fuzzy
+msgid "Windows"
+msgstr "windows_update"
+
+#: ../../source/deployment/standalone/windows.md:3
+#: f838c295cd6b4c5fb972194701a55b5d
+msgid "Install WSL"
+msgstr "安装 WSL"
+
+#: ../../source/deployment/standalone/windows.md:4
+#: ../../source/deployment/standalone/windows.md:63
+#: 15b63bd3280244c18f284e1e0652e773 9674c82e706d4cfab49547a591d23e97
+msgid "1. Prerequisites"
+msgstr "1.安装前提"
+
+#: ../../source/deployment/standalone/windows.md:5
+#: a2a82dd9a69149cda610924c65c42a0b
+msgid ""
+"To successfully run WSL 2 on Windows 10+, the following hardware "
+"conditions need to be met first:"
+msgstr "要在 Windows 10+ 上成功运行 WSL 2，首先需要满足以下硬件条件："
+
+#: ../../source/deployment/standalone/windows.md:7
+#: f512b5f045c3410d976ece8b4fb2cad3
+msgid "64-bit processor with Secondary Level Address Translation (SLAT);"
+msgstr "64 位处理器，带二级地址转换 (SLAT)；"
+
+#: ../../source/deployment/standalone/windows.md:8
+#: 21f8b923f8d3422fa0cf600dc842f02b
+msgid "4GB of system RAM;"
+msgstr "4GB 系统内存；"
+
+#: ../../source/deployment/standalone/windows.md:9
+#: 435976238f9b46ceb88e8407aba85dd7
+msgid "Enable hardware virtualization in the BIOS;"
+msgstr "在 BIOS 中启用硬件虚拟化；"
+
+#: ../../source/deployment/standalone/windows.md:11
+#: 36ef33e45eda4bdaa687aed260412e5b
+msgid ""
+"You must be running Windows 10 version 2004 and higher (internal version "
+"19041 and higher) or Windows 11 in order to use the following commands, "
+"otherwise a more complex manual installation is required, which is mainly"
+" automated here. *## 2) Download and install Windows 10"
+msgstr ""
+"您必须运行 Windows 10 2004 及以上版本（内部版本 19041 及以上）或 Windows "
+"11，才能使用以下命令，否则需要进行更复杂的手动安装，这里主要是自动安装。*## 2) 下载并安装 Windows 10"
+
+#: ../../source/deployment/standalone/windows.md:13
+#: ffd6dae31d5a4962a36c5e503da4897a
+msgid "2. Download and install WSL"
+msgstr "2.下载并安装 WSL"
+
+#: ../../source/deployment/standalone/windows.md:15
+#: 7cfdfec4018e4f53a845479bbc5fb42c
+msgid ""
+"Open PowerShell or Windows Command Prompt in administrator mode by right-"
+"clicking and selecting “Run as administrator”, enter the command 'wsl "
+"--install', and restart the computer after the installation is "
+"complete**. This command will enable the features needed to run WSL and "
+"install the Ubuntu distribution of Linux."
+msgstr ""
+"通过右键单击并选择 “以管理员身份运行”，以管理员模式打开 PowerShell 或 Windows 命令提示符，输入命令 “wsl "
+"--install”，并在安装完成后重新启动计算机**。该命令将启用运行 WSL 和安装 Ubuntu Linux 发行版所需的功能。"
+
+#: ../../source/deployment/standalone/windows.md:17
+#: 18ca422ebfa54d04ac0d03fc4c6343cf
+msgid "![Wsl_install](../../../images/wsl_install.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:17
+#: 2e621e7448b24868a6ed6777f4bdce91
+msgid "Wsl_install"
+msgstr "Wsl_install"
+
+#: ../../source/deployment/standalone/windows.md:19
+#: 55deaf32b8be4e658ac8e6d380835590
+msgid "3. Reboot your computer"
+msgstr "3.重启电脑"
+
+#: ../../source/deployment/standalone/windows.md:21
+#: e394c1e64b0c4c358de876ddecf3c522
+msgid ""
+"Restarting your computer will automatically install the Linux subsystem "
+"(Ubuntu by default)."
+msgstr "重启电脑将自动安装 Linux 子系统（默认为 Ubuntu）。"
+
+#: ../../source/deployment/standalone/windows.md:23
+#: e613a99d4da34c78a456f7de2fb77892
+msgid "![linux_install](../../../images/ubuntu_install.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:23
+#: b61dced16b5c49b9b01d11191f8c8bb9
+msgid "linux_install"
+msgstr "linux_install"
+
+#: ../../source/deployment/standalone/windows.md:25
+#: 0c12486765244865a6b1a302ca3ebe3a
+msgid "4. Check system configuration"
+msgstr "4.检查系统配置"
+
+#: ../../source/deployment/standalone/windows.md:27
+#: fa9ceb1099ad4ad784c07078eeb5ad30
+msgid ""
+"Check that Windows subsystems and virtual machine platforms for Linux are"
+" checked in Control Panel -> Programs → Enable or Disable Windows "
+"Features."
+msgstr "检查是否已在控制面板 -> 程序 → 启用或禁用 Windows 功能中勾选 Windows 子系统和 Linux 虚拟机平台。"
+
+#: ../../source/deployment/standalone/windows.md:29
+#: 742a61bfa3df402ca79567932bd463d7
+msgid "![check_configuration](../../../images/check_Windows_configuration.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:29
+#: b278b15baa3441b8ab70fee0bb7abf79
+msgid "check_configuration"
+msgstr "检查配置"
+
+#: ../../source/deployment/standalone/windows.md:31
+#: a8de191f40e64505a0bc56fbc3236184
+msgid "5. Setting up a username and password"
+msgstr "5.设置用户名和密码"
+
+#: ../../source/deployment/standalone/windows.md:33
+#: df7419f3615b457ca54a5aa785066b94
+msgid ""
+"After installing WSL, you need to create a user account and password for "
+"the newly installed Linux distribution. Click on the “Start” menu to open"
+" the Linux distribution (Ubuntu by default). At this point, you will be "
+"asked to create a username and password for the Linux distribution. Note "
+"that:"
+msgstr ""
+"安装完 WSL 后，你需要为新安装的 Linux 发行版创建一个用户账户和密码。点击 “开始 ”菜单打开 Linux 发行版（默认为 "
+"Ubuntu）。此时，系统会要求你为 Linux 发行版创建一个用户名和密码。请注意："
+
+#: ../../source/deployment/standalone/windows.md:35
+#: 610b2ba7322f4ca3816df83b2225dd90
+msgid ""
+"This username and password is specific to each individual Linux "
+"distribution installed, and is not related to the Windows username."
+msgstr "该用户名和密码是每个已安装的 Linux 发行版所特有的，与 Windows 用户名无关。"
+
+#: ../../source/deployment/standalone/windows.md:36
+#: 40f2c5b04bcd45fc8dbc4ba514dbca4c
+msgid ""
+"Nothing is displayed on the screen when you type your password. This is "
+"called blind typing. You will not see what you are typing, and this is "
+"perfectly normal."
+msgstr "输入密码时，屏幕上不会显示任何内容。这叫做盲打。您看不到自己在输入什么，这很正常。"
+
+#: ../../source/deployment/standalone/windows.md:37
+#: bea43751e1a649e0ba2011a9899ee4f2
+msgid ""
+"After you create a username and password, this account will be the "
+"distribution's default user and will be automatically logged in at "
+"startup."
+msgstr "创建用户名和密码后，该账户将成为发行版的默认用户，并在启动时自动登录。"
+
+#: ../../source/deployment/standalone/windows.md:38
+#: 14988ce4361b4ea6bf7b7c47a8119664
+msgid ""
+"This account will be treated as a Linux administrator and will be able to"
+" run sudo (Super User Do) administrative commands."
+msgstr "该账户将被视为 Linux 管理员，可以运行 sudo（超级用户操作）管理命令。"
+
+#: ../../source/deployment/standalone/windows.md:39
+#: 49a2b956f18e421abc13dcd815b31149
+msgid ""
+"Each Linux distribution running on WSL has its own Linux user account and"
+" password. A Linux user account must be configured whenever a "
+"distribution is added, reinstalled, or reset."
+msgstr ""
+"在 WSL 上运行的每个 Linux 发行版都有自己的 Linux 用户账户和密码。每当添加、重新安装或重置一个发行版时，都必须配置一个 "
+"Linux 用户账户。"
+
+#: ../../source/deployment/standalone/windows.md:41
+#: 37fef5c73ee34d5781bc0ce946647dfd
+msgid ""
+"To change or reset the password, open the Linux distribution and enter "
+"the command: passwd. You will be asked for your current password, then "
+"asked for a new password, and later to confirm the new password."
+msgstr "要更改或重置密码，请打开 Linux 发行版并输入命令：passwd。系统会要求你输入当前密码，然后要求你输入新密码，之后再要求你确认新密码。"
+
+#: ../../source/deployment/standalone/windows.md:43
+#: 762a5ad3ad1d447f8396baa47a94fa98
+msgid "**Forgot Password**"
+msgstr "**忘记密码**"
+
+#: ../../source/deployment/standalone/windows.md:45
+#: 5ff7e07d0c6b4af48ccdd2ef08b98a2b
+msgid ""
+"a. Please open PowerShell and enter the root directory of the default WSL"
+" distribution with the following command: wsl -u root"
+msgstr "a.请打开 PowerShell 并使用以下命令进入默认 WSL 发布的根目录：wsl -u root"
+
+#: ../../source/deployment/standalone/windows.md:47
+#: 97d54d16ab9c4e2791b204219cb9194d
+msgid ""
+"If you need to update the forgotten password in a non-default "
+"distribution, use the command: wsl -d Debian -u root and replace Debian "
+"with the name of the target distribution."
+msgstr "如果需要更新非默认发行版中被遗忘的密码，请使用以下命令：wsl -d Debian -u root，并用目标发行版的名称替换 Debian。"
+
+#: ../../source/deployment/standalone/windows.md:49
+#: 7cbbfcacae5d4021abd167667f794b73
+msgid ""
+"b. After opening the WSL distribution at the root level within "
+"PowerShell, you can update the password using this command: passwd "
+"<username>, where <username> is the username of the account in the "
+"distribution for which you have forgotten the password."
+msgstr ""
+"b.在 PowerShell 的根级别打开 WSL 发布后，可以使用以下命令更新密码：passwd <username>，其中 "
+"<username> 是发布中忘记密码的账户的用户名。"
+
+#: ../../source/deployment/standalone/windows.md:51
+#: 8232773d37a74441966e6546adb5ed78
+msgid ""
+"c. You will be prompted for a new UNIX password, which you can then "
+"confirm. After you have been told that the password has been successfully"
+" updated, close the WSL from within PowerShell using the following "
+"command: exit."
+msgstr ""
+"c.系统将提示您输入新的 UNIX 密码，然后您可以确认该密码。在收到密码已成功更新的提示后，在 PowerShell 中使用以下命令关闭 "
+"WSL：exit。"
+
+#: ../../source/deployment/standalone/windows.md:53
+#: 7e6fe67c592b4ff08d3d50d08b724274
+msgid "![reset_password](../../../images/reset_unix_passsword.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:53
+#: eddc35648ec44398acbe80c49c3e0869
+msgid "reset_password"
+msgstr "重置密码"
+
+#: ../../source/deployment/standalone/windows.md:55
+#: f064dec25f234c2d82ef1307ac750999
+msgid "6. Checking the WSL version"
+msgstr "6.检查 WSL 版本"
+
+#: ../../source/deployment/standalone/windows.md:57
+#: ab05cd56eef643cdaa41a13496d71a23
+msgid ""
+"You can list the installed Linux distributions and check the WSL version "
+"of each distribution by entering the following command in PowerShell or "
+"at a Windows command prompt: wsl -l -v, default is WSL 2."
+msgstr ""
+"在 PowerShell 或 Windows 命令提示符下输入以下命令，即可列出已安装的 Linux 发行版，并检查每个发行版的 WSL "
+"版本：wsl -l -v，默认为 WSL 2。"
+
+#: ../../source/deployment/standalone/windows.md:59
+#: 88023d8eaf434401ba3702ac6d84923b
+msgid "![wsl_version](../../../images/wsl_version.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:59
+#: 6eba5bf8eb12490798e6b588cb2e83bc
+msgid "wsl_version"
+msgstr "wsl_version"
+
+#: ../../source/deployment/standalone/windows.md:61
+#: a824be1758c34d1d898f029c41e52568
+msgid "Install Docker DeskTop"
+msgstr "安装 Docker DeskTop"
+
+#: ../../source/deployment/standalone/windows.md:64
+#: 406d957627fa48f38af077ef66a28301
+msgid "WSL version 1.1.3.0 or higher."
+msgstr "WSL 1.1.3.0 或更高版本。"
+
+#: ../../source/deployment/standalone/windows.md:65
+#: 2b3ff2680ab74379af5149f2c36bd22c
+msgid ""
+"Windows 11 64bit: Home, Professional, Enterprise, and Education editions "
+"require version 21H2 or higher."
+msgstr "Windows 11 64 位： 家庭版、专业版、企业版和教育版需要 21H2 或更高版本。"
+
+#: ../../source/deployment/standalone/windows.md:66
+#: 82eb1f3e850346e587cc1609e8797314
+msgid "Windows 10 64bit."
+msgstr "Windows 10 64 位。"
+
+#: ../../source/deployment/standalone/windows.md:67
+#: d5960aad14cf4b999e6742b6043db8ce
+msgid ""
+"Push Home requires 22H2 (version 19045) or later for Home, Professional, "
+"Enterprise, Education editions."
+msgstr "家庭版、专业版、企业版和教育版的 Push Home 需要 22H2（版本 19045）或更高版本。"
+
+#: ../../source/deployment/standalone/windows.md:68
+#: 5cb7a8b7839b483f8ab6f1a387b65012
+msgid ""
+"Minimum requirement is 21H2 (version 19044) or later required for Home, "
+"Professional, Enterprise, and Education editions."
+msgstr "家庭版、专业版、企业版和教育版最低要求为 21H2（版本 19044）或更高版本。"
+
+#: ../../source/deployment/standalone/windows.md:69
+#: 9d948ea9a0194fb18a33fbe81a76e62e
+msgid "Enable WSL 2 feature on Windows"
+msgstr "在 Windows 上启用 WSL 2 功能"
+
+#: ../../source/deployment/standalone/windows.md:71
+#: 57c9302d49664c7d888954fb353951b3
+msgid "2. Download and install Docker DeskTop"
+msgstr "2.下载并安装 Docker DeskTop"
+
+#: ../../source/deployment/standalone/windows.md:73
+#: 0c88e403fa2d4f3f821176eb7770103d
+msgid ""
+"[Docker DeskTop "
+"Download](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?_gl=1*154qt9t*_ga*MTAyNTc0ODM4My4xNzE1MTUxNTE4*_ga_XJWPQMJYHQ*MTcxNTIzNDg5NC4zLjAuMTcxNTIzNDg5NC42MC4wLjA)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:75
+#: aa470bd8d7e8474e9d95f1605ae1c616
+msgid "![docker_download](../../../images/dockerDesk_download.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:75
+#: 8f8c88a5410c4e7ab9323af5247ea90b
+msgid "docker_download"
+msgstr "docker_download"
+
+#: ../../source/deployment/standalone/windows.md:77
+#: 39ac9537ffa642c5bffc0a414bc9adbd
+msgid "![docker_install](../../../images/dockerDesk_install.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:77
+#: 005e6200c1c44122bbbe16dd1aed07e6
+msgid "docker_install"
+msgstr "docker_install"
+
+#: ../../source/deployment/standalone/windows.md:79
+#: ab7798a215e647b1863aa969e045fb4e
+msgid "![dockerDeskTop](../../../images/dockerDesktop.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:79
+#: c48ff6a0a22d471d8370786b0308d81f
+msgid "dockerDeskTop"
+msgstr "dockerDeskTop"
+
+#: ../../source/deployment/standalone/windows.md:81
+#: e38b8e89bbf94cbdbcf4250b04c35eb5
+msgid "3. Starting Docker DeskTop"
+msgstr "3.启动 Docker DeskTop"
+
+#: ../../source/deployment/standalone/windows.md:83
+#: 70b95782d6f34ebfa147dc48729e5b57
+msgid ""
+"Installation is complete. If the following error occurs during the "
+"startup of Docker Desktop, you can click Update Windows in Windows "
+"Settings and restart your computer after the update to resolve the issue."
+msgstr ""
+"安装已完成。如果在启动 Docker Desktop 时出现以下错误，可以点击 Windows 设置中的更新 "
+"Windows，并在更新后重启电脑以解决问题。"
+
+#: ../../source/deployment/standalone/windows.md:85
+#: 169e6a465bb447478fb3fb67c75cdbe6
+msgid "![dockerDesk_error](../../../images/dockerdesk_error.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:85
+#: b42cb2eb5b03451ca8da3b958a4f3f76
+msgid "dockerDesk_error"
+msgstr "dockerDesk_error"
+
+#: ../../source/deployment/standalone/windows.md:87
+#: 5bd0cae3f73745cdaa7e5ab29fac16b1
+msgid "![windows_update](../../../images/windows_update.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:87
+#: 9fc6e7a9492a42dab47f6516a33d3d15
+msgid "windows_update"
+msgstr "windows_update"
+
+#: ../../source/deployment/standalone/windows.md:89
+#: dfe171a5951f41ea82d7fa72cf9830e9
+msgid "_**Special Note**_"
+msgstr "_***特别提醒**_"
+
+#: ../../source/deployment/standalone/windows.md:91
+#: a8c0f3a4839847dc9c7d8fa5b0f8badc
+msgid ""
+"Docker desktop is different from docker in Ubuntu in that it has a "
+"special mechanism: it loads a block device inside wsl2, and then uses the"
+" full docker environment directly from this block device, including the "
+"docker commands, docker proxy, and docker image directory. ubuntu Do not "
+"install docker on ubuntu, use docker desktop."
+msgstr ""
+"Docker desktop 与 Ubuntu 中的 docker 不同，它有一个特殊的机制：它会在 wsl2 "
+"中加载一个块设备，然后直接从这个块设备使用完整的 docker 环境，包括 docker 命令、docker 代理和 docker 镜像目录。 "
+"ubuntu 不要在 ubuntu 上安装 docker，请使用 docker desktop。"
+
+#: ../../source/deployment/standalone/windows.md:93
+#: e095e289d74a4495bdd45a2b7130adfa
+msgid "Docker deployment of standalone DingoDB"
+msgstr "通过 Docker 部署独立的 DingoDB"
+
+#: ../../source/deployment/standalone/windows.md:95
+#: c2ac771a8cb042cba207351a6f72c8f2
+msgid "1. Create docker-compose.lite.yml"
+msgstr "1.创建 docker-compose.lite.yml"
+
+#: ../../source/deployment/standalone/windows.md:97
+#: 55c2aadb54504e37a7253b28799e8801
+msgid "Create a new file docker-compose.lite.yml in your Windows directory."
+msgstr "在 Windows 目录中新建一个文件 docker-compose.lite.yml。"
+
+#: ../../source/deployment/standalone/windows.md:215
+#: a710caf9f78b46c384e01808a16e4fde
+msgid "docker-compose.lite.yml Description of important parameters"
+msgstr "docker-compose.lite.yml 重要参数描述"
+
+#: ../../source/deployment/standalone/windows.md:229
+#: 51972933d02b46829d6ad04617e8759a
+msgid "2. Data persistence"
+msgstr "2.数据持久性"
+
+#: ../../source/deployment/standalone/windows.md:230
+#: e5e39e28d22c4a41be939f6ae9ee9548
+msgid ""
+"Configure volume mounting in docker-compose.lite.yml. The meaning of the "
+"parameter is Path to host: Path inside the container."
+msgstr "在 docker-compose.lite.yml 中配置卷挂载。参数的含义是 Path to host：容器内的路径。"
+
+#: ../../source/deployment/standalone/windows.md:231
+#: 65f124bb5ca04f569c67d914111693d8
+msgid ""
+"Don't modify the path in the container, use an absolute path for the host"
+" path, make sure the disk drive exists, and the directory will be created"
+" automatically if it doesn't exist."
+msgstr "不要修改容器中的路径，主机路径使用绝对路径，确保磁盘驱动器存在，如果不存在，目录将自动创建。"
+
+#: ../../source/deployment/standalone/windows.md:251
+#: 354e4a11e8ec483bbf28508a73379059
+msgid ""
+"*After starting Docker Desktop,* open Powershell in the yaml directory "
+"and enter the command to pull the dingodb image and start the container:"
+msgstr "*启动 Docker Desktop 后，*在 yaml 目录中打开 Powershell，输入命令调出 dingodb 映像并启动容器："
+
+#: ../../source/deployment/standalone/windows.md:258
+#: 02c09d6e377843b7b3921fc460d941f7
+msgid "3. Viewing Processes"
+msgstr "3.查看流程"
+
+#: ../../source/deployment/standalone/windows.md:259
+#: f1cbc048439740ebac7cdf8929346fb1
+msgid ""
+"View container status and resource usage via Docker Tesktop. "
+"![docker](../../../images/dockerDesktop.png)"
+msgstr ""
+"通过 Docker Tesktop "
+"查看容器状态和资源使用情况。![docker](../../../images/dockerDesktop.png)"
+
+#: ../../source/deployment/standalone/windows.md:259
+#: b5435d079fe7426baeb3073b168b4ad8
+msgid "docker"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:262
+#: 202ba80d19a94084a62e0a5413b7ae29
+msgid ""
+"View Dingo-store service information via localhost: 22001 or 127.0.0.1: "
+"22001. ![dingo_monitor](../../../images/dingo_monitor.png)"
+msgstr ""
+"通过 localhost: 22001 或 127.0.0.1: 22001 查看 Dingo-store "
+"服务信息。![dingo_monitor](../../../images/dingo_monitor.png)"
+
+#: ../../source/deployment/standalone/windows.md:262
+#: 6199692fd0fb4e328161c1d6d3da759c
+msgid "dingo_monitor"
+msgstr "dingo_monitor"
+
+#: ../../source/deployment/standalone/windows.md:265
+#: 8e2c5aa466244cb99ec5114db1ac2600
+msgid "Starting the DingoDB Journey"
+msgstr "开始 DingoDB 之旅"
+
+#: ../../source/deployment/standalone/windows.md:267
+#: ff181a48e19747acb48006cbed2f7808
+msgid "The following provides two ways to use it."
+msgstr "下面提供了两种使用方法。"
+
+#: ../../source/deployment/standalone/windows.md:269
+#: d5b9a3ce4b2440189e52a6814b9e9cbc
+msgid "DBeaver"
+msgstr "DBeaver"
+
+#: ../../source/deployment/standalone/windows.md:271
+#: 83e1096c808f4201a20bb67427f49d62
+msgid "1. Create a connection"
+msgstr "1.创建连接"
+
+#: ../../source/deployment/standalone/windows.md:272
+#: 140fbc2a93f245b1a0386d89bc1f139d
+msgid "![dbeaver_connect](../../../images/dbeaver_create_new_connection.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:272
+#: bbccfa194c044e83a18e56c94ebdab3e
+msgid "dbeaver_connect"
+msgstr "dbeaver_connect"
+
+#: ../../source/deployment/standalone/windows.md:274
+#: f7ed1e51c22a4279afb00a7b9daa37d2
+msgid "2. Select the Mysql driver"
+msgstr "2.选择 Mysql 驱动程序"
+
+#: ../../source/deployment/standalone/windows.md:275
+#: cba277f4ad76424aba1eab6bfc372977
+msgid "![dingo_mysql](../../../images/dbeaver_connect_dingodb.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:275
+#: 1fbd786932ee4fbca8474e02f3347657
+msgid "dingo_mysql"
+msgstr "dingo_mysql"
+
+#: ../../source/deployment/standalone/windows.md:277
+#: 9acc18b20e694c18962d085a0adcde65
+msgid "3. Configure connection parameters"
+msgstr "3.配置连接参数"
+
+#: ../../source/deployment/standalone/windows.md:278
+#: 9bba1d14f192473c8e03f93dec6081be
+msgid "![dingo_parameter](../../../images/dbeaver_connect_dingodb_parameter.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:278
+#: f2781afacf0d44eeb234ea6eff892943
+msgid "dingo_parameter"
+msgstr "dingo_parameter"
+
+#: ../../source/deployment/standalone/windows.md:280
+#: a80196f20ff34a69b623100b6dc4cf94
+msgid "4. Test the link"
+msgstr "4.测试链接"
+
+#: ../../source/deployment/standalone/windows.md:281
+#: 08e1e48e2283434b93fd1846a289c1ca
+msgid "![test_connection](../../../images/dbeaver_testConnetion.png)"
+msgstr ""
+
+#: ../../source/deployment/standalone/windows.md:281
+#: 1ff93c37963a4d8f879acebbbda00706
+msgid "test_connection"
+msgstr "测试连接"
+
+#: ../../source/deployment/standalone/windows.md:283
+#: 3fc4cd4f45884611b6048648893f64f7
+msgid "Mysql client"
+msgstr "Mysql 客户端"
+
+#: ../../source/deployment/standalone/windows.md:285
+#: 96c0db76ec5a4ed5a9dfbb772a5b769c
+msgid "1. Install the Mysql client"
+msgstr "1.安装 Mysql 客户端"
+
+#: ../../source/deployment/standalone/windows.md:290
+#: 7c183308c79c4a01bab740f04e39d8ff
+msgid "2. Check the Mysql version,"
+msgstr "2.检查 Mysql 版本、"
+
+#: ../../source/deployment/standalone/windows.md:291
+#: 0676961e305144428842472401205373
+msgid "recommended to use v8.0.36 or above"
+msgstr "建议使用 v8.0.36 或更高版本"
+
+#: ../../source/deployment/standalone/windows.md:296
+#: be761b13ff9746e5bdaecdec6bc5e3f1
+msgid "3. Connecting to DingoDB"
+msgstr "3.连接到 DingoDB"
+
+#: ../../source/deployment/standalone/windows.md:297
+#: 12dfc72e3ce74ddaa85cae3d94184eeb
+msgid "Password defaults to *123123*."
+msgstr "密码默认为 *123123*。"
+
+#~ msgid "QuickStart"
+#~ msgstr "快速开始"
+

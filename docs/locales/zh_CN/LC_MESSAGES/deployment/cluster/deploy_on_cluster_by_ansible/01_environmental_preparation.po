@@ -1,0 +1,332 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-12 18:31+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:1
+#: 4ebc1f5e6f3c4717abe057e2a944e12b
+msgid "Environment Preparation"
+msgstr "环境准备"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:3
+#: dbc72ab6456e4ca88e875f63d8577b7b
+msgid "Requirement Operating system：centos8.x"
+msgstr "操作系统要求：centos8.x"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:6
+#: efca2aa486b64c36ad966a22ea230cc0
+msgid "Libc Requirement"
+msgstr "Libc 要求"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:14
+#: c3d714097c954a2ba853b1db8abe5ddb
+msgid ""
+"Determine the main operating IP, and all Ansible deployment operations "
+"will be performed on the main operating IP. In this example, the main "
+"operating IP is 172.20.3.200."
+msgstr ""
+"确定主运行 IP，所有 Ansible 部署操作都将在主运行 IP 上执行。在本例中，主"
+"运行 IP 为 172.20.3.200。"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:16
+#: 5c0f350bb13b4748a61c1ad54530514c
+msgid "Set up passwordless sudo login for non-sudo users"
+msgstr "为非 sudo 用户设置无密码 sudo 登录"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:18
+#: ff4483afd70c45649d9c39f919ee9223
+msgid ""
+"If the password is the same for each machine and the root username and "
+"password are used in inventory/hosts, then this step is not necessary."
+msgstr ""
+"如果每台机器的密码都相同，并且在清单/主机中使用了根用户名和密码，则不需要"
+"此步骤。"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:27
+#: 84b9092527594931b5d1950e3c1f77ca
+msgid "Passwordless login using IP address"
+msgstr "使用 IP 地址无密码登录"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:29
+#: 6754ca1ba7f045ebb00a174d6109f27c
+msgid ""
+"If the password is the same for each machine and the root username and "
+"password are used in inventory/hosts, then the following steps are not "
+"necessary."
+msgstr ""
+"如果每台机器的密码相同，并且在清单/主机中使用了根用户名和密码，则无需执行"
+"以下步骤。"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:31
+#: e4fa77f2d6764538bcd470d01ce302ed
+msgid "Generate SSH public and private keys"
+msgstr "生成 SSH 公钥和私钥"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:35
+#: 473ad5fdd4444c2e879194b4b2e34921
+msgid "Copy the public key to all host nodes, including the local node"
+msgstr "将公钥复制到所有主机节点，包括本地节点"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:42
+#: b108487b81a54c80b46c8ef00251cfc5
+msgid "Test if passwordless login is successful"
+msgstr "测试无密码登录是否成功"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:47
+#: 9ab5cf322c1c4416beec4fd32f6bc09a
+msgid "Directory Structure Planning"
+msgstr "目录结构规划"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 528bc7e36559492b8154471db958b62e
+msgid "Directory Types"
+msgstr "目录类型"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: fb8db7e7a0d24bb1a446c80a109ea6c3
+msgid "Path"
+msgstr "路径"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 0e181b75e520422d98097b921253afce
+msgid "Program installation path"
+msgstr "程序安装路径"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 8a03703c50e24444896b91a08f7fcf45
+#, python-brace-format
+msgid "${installer_root_path}"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: f4cef5a4ee7e42678b91866afdb62ee2
+msgid "Data path"
+msgstr "数据路径"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 383dfcdb477844a0ad7d9e0bb29fe0ce
+#, python-brace-format
+msgid "${installer_root_path}/data"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 0817cae498464203a9f19f8b968027d8
+msgid "Log path"
+msgstr "日志路径"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 5bbd81ed352646bdaa5876f7062872cd
+#, python-brace-format
+msgid "${installer_root_path}/log"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 2592e2d2791e49cea6a52f23ecd0c244
+msgid "dingo-store script path"
+msgstr "dingo-store 脚本路径"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 879f8a26c3b04ac7adcb99553b16f051
+#, python-brace-format
+msgid "${installer_root_path}/dingo-store/scripts"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: e5adcf6cba494cdaa19e575db13d8acc
+msgid ""
+"dingo-store deployment path <br/>(including separate data and log "
+"directories)"
+msgstr "dingo-store 部署路径 <br/>（包括单独的数据和日志目录）"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 89e23eaa6340486a91443a7802ae8fdc
+#, python-brace-format
+msgid "${installer_root_path}/dingo-store/dist"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:57
+#: 0cd56f1fcc9a417aa08ee4466d20f367
+msgid "User group planning"
+msgstr "用户组规划"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 4f84c6854a2b4290854d74e24bf7aea4
+msgid "Deployment Method"
+msgstr "部署方法"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: bbbf2857619546eaa2ed365e6696aa2a
+msgid "User name"
+msgstr "用户名称"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 38912136455143748eea38209f41e5bd
+msgid "Gorup name"
+msgstr "群组名称"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 785ebcbfb69b4ff3a0119d2985a7799c
+msgid "ansible deploy"
+msgstr "ansible 部署"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 7591a2086a264b7dbe281a18ed156c0a 7dc76654e1c2484b817ae64da1ac4c42
+msgid "dingodb"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:63
+#: a7c69411bdd94c268becc408fee4d5df
+msgid "Component list and port usage"
+msgstr "组件清单和端口使用情况"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 4d8f996c0f964bada6621d3561d94248
+msgid "Component"
+msgstr "组件"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 037d9d441faf4cac877afd7eff363f5b
+msgid "Version"
+msgstr "版本"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 18baf181a8104736b29b91efd80e4e23
+msgid "Port"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 0ca005464f3a4d849c35f74d618d2fa1
+msgid "Remarks"
+msgstr "备注"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 11725509393c45db81de394b4d28a6a7
+msgid "DingoDB"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 694a2c277ecc42e4bdee5621f83f79ce
+msgid "0.6.0"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 017f6bbb6d8140258bedd5f3959ddaee
+msgid "raft:22101/20101  <br/>server:22001/20001  <br/>executor:3307/8765"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 738549bc5a5f4d008db4b5eab28e2afc
+msgid "Real-time analytics database"
+msgstr "实时分析数据库"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 5e63fcaefb6b43eb9e191dfc1f973045
+msgid "Prometheus"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: b4562e9cb84c4312a07c12162119424a
+msgid "2.14.0"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: ae734b173ac645fcb139372d487232f9
+msgid "19115"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 2f7789a3250a4a9380d896c7cb834ec2
+msgid "Real-time analytics databaseTime-series database, metric monitoring"
+msgstr "实时分析数据库时间序列数据库，指标监测"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: f5e419c46f7d4a018db555c92daba546
+msgid "node_exporter"
+msgstr "节点输出器"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 4a78bc03d16842da9ccac6d7418a1984
+msgid "0.18.1"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: a1ad4f2aec7e488ab32b2249ee8a9347
+msgid "19100"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 3ad5a31ef64046a985b4649bf586f61e
+msgid "Prometheus component, monitoring node information"
+msgstr "监视节点信息的 Prometheus 组件"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 0202f8d6d7c344a48013b2c1e6b9422a
+msgid "process_exporter"
+msgstr "进程输出"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: c7186864cfa64e8fa17281b6a6bf77b0
+msgid "0.7.10"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: fb6ee07c902a44a5b91ff4f2e153d67c
+msgid "19090"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 14af6fbb701e4c7082d60411f30f07a6
+msgid "Prometheus component, monitoring process information"
+msgstr "Prometheus 组件，监控进程信息"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 728595eef199451eacee0604419f3df1
+msgid "grafana"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: b88c8921dbf24a299459f6492995773b
+msgid "8.3.3"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 5694253ce94e4678a1bb41a6fc9e1d42
+msgid "3000"
+msgstr ""
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md
+#: 9c7ae9a0ec02467b95a5dd73414d78ce
+msgid "Data visualization platform"
+msgstr "数据可视化平台"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:73
+#: 2f4b81e9967746689e929ce88def9a3f
+msgid "Ansible install"
+msgstr "Ansible 安装"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:75
+#: 4e606a7e26cf4bb1b164e32239d334cb
+msgid "Online install"
+msgstr "在线安装"
+
+#: ../../source/deployment/cluster/deploy_on_cluster_by_ansible/01_environmental_preparation.md:86
+#: d8cd385265c34c6dae243e68961e2b61
+msgid "Offline machine install"
+msgstr "脱机安装"

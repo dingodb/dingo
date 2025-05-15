@@ -1,0 +1,117 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version:  DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-15 11:23+0800\n"
+"PO-Revision-Date: 2025-05-14 17:46+0800\n"
+"Last-Translator: \n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../source/architecture/coordinator.md:1 fe87b123175a45b8ba6c40ac0287fcd2
+msgid "Coordinator"
+msgstr ""
+
+#: ../../source/architecture/coordinator.md:3 4cf3d8a44e6c4d42b63cf4e348a6b7de
+msgid "1. Data Structure"
+msgstr "1.数据结构"
+
+#: ../../source/architecture/coordinator.md:4 413d968982364d3ab01e09b59d683e3b
+#, fuzzy
+msgid "![Coordinator Data Structure](../../images/CoordinatoreDataStructure.png)"
+msgstr ""
+"![Coordinator Data Structure](../../images/CoordinatoreDataStructure.png)"
+" Coordinator 主要维护 6 个主要Map："
+
+#: ../../source/architecture/coordinator.md:4 2e24457538084e4388cb1db81c3e58bb
+msgid "Coordinator Data Structure"
+msgstr "Coordinator 数据结构"
+
+#: ../../source/architecture/coordinator.md:6 a70e2e2edced4bdabba746601a772407
+msgid "Coordinator mainly maintains 6 main Maps:"
+msgstr ""
+
+#: ../../source/architecture/coordinator.md:7 01a073b09fc8470899def9a03bc8328d
+msgid ""
+"IdEpochMap: Save all Map epochs, and all instance ids (coordinator, "
+"store, schema, table)"
+msgstr "IdEpochMap：保存所有地图和所有实例 ID（coordinator, store, schema, table）"
+
+#: ../../source/architecture/coordinator.md:8 a70e2e2edced4bdabba746601a772407
+msgid "CoordinatorMap:Save all Coordinators information and state"
+msgstr "CoordinatorMap：保存所有Coordinator的信息和状态"
+
+#: ../../source/architecture/coordinator.md:9 6492fb534e1d4fa48e62e009fa6892f9
+msgid "StoreMap: Save information and state of all Stores"
+msgstr "StoreMap保存所有Store的信息和状态"
+
+#: ../../source/architecture/coordinator.md:10 c4e1ab2995784af29584c997973b62fa
+msgid ""
+"RegionMap: The most important Map, which saves the information and status"
+" of all Regions"
+msgstr "区域地图：最重要的地图，保存所有区域的信息和状态"
+
+#: ../../source/architecture/coordinator.md:11 3b7f34dfa2574397aa940c2208c1e8b2
+msgid ""
+"SchemaMap & TableMap: Save the information of schema and table "
+"respectively. For table, the mapping relationship of table→region is "
+"saved"
+msgstr "SchemaMap 和 TableMap：分别保存模式和表的信息。对于表，保存表→区域的映射关系"
+
+#: ../../source/architecture/coordinator.md:13 9b95e294708e495e9979ab32cb65336b
+msgid "2. Code Modules"
+msgstr "2.代码模块"
+
+#: ../../source/architecture/coordinator.md:14 d5a24c6a62e64567976cd7a902064e93
+msgid "![Coordinator Modules](../../images/CoordinatorModules.png)"
+msgstr ""
+
+#: ../../source/architecture/coordinator.md:14 7e5502054c6f4d459e9c055e994d5ccd
+msgid "Coordinator Modules"
+msgstr "Coordinator 模块"
+
+#: ../../source/architecture/coordinator.md:16 b182d48960224219b166ea70d152fd90
+msgid ""
+"MetaService: Database Schema and Table related services, use "
+"server_location"
+msgstr "MetaService：数据库模式和表相关服务，使用 server_location"
+
+#: ../../source/architecture/coordinator.md:17 09f876f47dfc4afdbef1a2abff75636b
+msgid ""
+"CoordinatorService: For services related to cluster management, use "
+"server_location"
+msgstr "CoordinatorService：对于与群集管理相关的服务，使用 server_location"
+
+#: ../../source/architecture/coordinator.md:18 43982f0db9c34acdaef7b9ea00aa6c92
+msgid ""
+"NodeService: The service for querying node information in the cluster, "
+"using raft_location"
+msgstr "NodeService：使用 raft_location 查询集群中节点信息的服务"
+
+#: ../../source/architecture/coordinator.md:19 7ef71da9aa444a3698cb1e65cf7a96b1
+msgid "RaftService: Raft data synchronization service, using raft_location"
+msgstr "RaftService：数据同步服务，使用 raft_location"
+
+#: ../../source/architecture/coordinator.md:21 170516ec7e4240938528ef7e4948ebd3
+msgid "3. Start Process"
+msgstr "3.启动程序"
+
+#: ../../source/architecture/coordinator.md:22 413d968982364d3ab01e09b59d683e3b
+msgid "![Coordinator Start Process](../../images/CoordinatorStartProcess.png)"
+msgstr ""
+
+#: ../../source/architecture/coordinator.md:22 d5d9683d381e48ab99b1fd40a0ac0ec7
+msgid "Coordinator Start Process"
+msgstr "Coordinator 启动程序"
+

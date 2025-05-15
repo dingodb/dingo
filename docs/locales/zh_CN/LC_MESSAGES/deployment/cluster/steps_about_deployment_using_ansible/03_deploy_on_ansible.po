@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2025, Wangpy
+# Copyright (C) 2025, DataCanvas
 # This file is distributed under the same license as the DingoDB package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: DingoDB \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-24 16:47+0800\n"
+"POT-Creation-Date: 2025-04-27 18:44+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,27 +20,27 @@ msgstr ""
 "Generated-By: Babel 2.17.0\n"
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/03_deploy_on_ansible.md:1
-#: b23378d151b2459b806d27d4e0d6cd5e
+#: a999ba8c509b4df4b546efec981d0da7
 msgid "Deploy On Ansible"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/03_deploy_on_ansible.md:3
-#: df7878c81a884f2fa0a7e1e434f46e25
+#: 3bfb515b018e413a8ac402c3582abf66
 msgid "Start to Deploy DingoDB"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/03_deploy_on_ansible.md:13
-#: ad6a40c0eea64ae1b7cc6f5e0bed9235
+#: 2c2ca89d1605417ba97c5746b0a2f1df
 msgid "Ansible usage"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/03_deploy_on_ansible.md:15
-#: a683bd0d4ab74cfeb0ddb534e5db9b12
+#: 9a1ba03bd7834c0785cceca2472d18f9
 msgid "**Command-line usage**"
 msgstr ""
 
 #: ../../source/deployment/cluster/steps_about_deployment_using_ansible/03_deploy_on_ansible.md:26
-#: d2a69070299748dd9c7bcff17cac111e
+#: 71cd63e491504ee1baa0b7116f2c891c
 msgid "**Management tool DingoControl**"
 msgstr ""
 

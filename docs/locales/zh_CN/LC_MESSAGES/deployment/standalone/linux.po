@@ -1,0 +1,178 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-14 17:56+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/deployment/standalone/linux.md:1
+#: 3e7625c684fa40a282ce862f5d92f232
+msgid "Single Node Rapid Deployment of Docker Containers"
+msgstr "单节点快速部署 Docker 容器"
+
+#: ../../source/deployment/standalone/linux.md:3
+#: a0ab8ddd07aa441285e720ec31929688
+msgid ""
+"First of all, after successfully deploying and installing Docker in a "
+"Linux environment, in order to perform a single-node rapid deployment of "
+"Docker containers, you need to follow the steps below to perform the "
+"deployment process:"
+msgstr ""
+"首先，在 Linux 环境中成功部署和安装 Docker 后，为了执行 Docker 容器的单节"
+"点快速部署，需要按照以下步骤执行部署过程："
+
+#: ../../source/deployment/standalone/linux.md:4
+#: 565fc9f7a0fa42af997eb4c908d440ce
+msgid "1. Prerequisites"
+msgstr "1.部署前提"
+
+#: ../../source/deployment/standalone/linux.md:5
+#: fbb4b5fff0c04d99a50b36f7bf9c4d43
+msgid ""
+"Ensure that your Linux system has successfully installed the Docker "
+"container engine and that the Docker service is running normally."
+msgstr ""
+"确保 Linux 系统已成功安装 Docker 容器引擎，且 Docker 服务运行正常。"
+
+#: ../../source/deployment/standalone/linux.md:7
+#: 856498b04cf445bcb892c9ce37b10dc3
+msgid "2. Environment preparation"
+msgstr "2.环境准备"
+
+#: ../../source/deployment/standalone/linux.md:8
+#: 78ae598d36d84231b26dfb646050cb1e
+msgid "Environment description"
+msgstr "环境描述"
+
+#: ../../source/deployment/standalone/linux.md:9
+#: cf2bf07a61e240e8b212352932c56afa
+msgid "Configure the git docker docker-compose environment in advance;"
+msgstr "提前配置 git docker docker-compose 环境；"
+
+#: ../../source/deployment/standalone/linux.md:19
+#: a8e373a265f8455f88d03b3d7ddcc683
+msgid "Pull-out Container"
+msgstr "拉取容器"
+
+#: ../../source/deployment/standalone/linux.md:26
+#: 8a79070a612044a69cf7ba75a8f98d7e
+msgid "3. Starting containers"
+msgstr "3.启动容器"
+
+#: ../../source/deployment/standalone/linux.md:27
+#: 03ebe336fdb249048cd3af30dfdd64f9
+msgid ""
+"Here we need to start containers based on docker-compose, so let's first "
+"go pull: docker-compose."
+msgstr ""
+"在这里，我们需要基于 docker-compose 启动容器，所以先拉一下：docker-"
+"compose。"
+
+#: ../../source/deployment/standalone/linux.md:28
+#: c947110abeae4e0a8a1cb0e67304ac86
+msgid "Pull the corresponding docker-compose configuration"
+msgstr "提取相应的 docker-compose 配置"
+
+#: ../../source/deployment/standalone/linux.md:37
+#: 6151423005da4386882398104a5fba97
+msgid "**Configuration file description:**"
+msgstr "**配置文件描述：**"
+
+#: ../../source/deployment/standalone/linux.md:38
+#: 59fad33986d5456e84c72dcb3d46b98d
+msgid ""
+"docker-compose.yml for single-node multi-service, where the full startup "
+"contains 3 coordinator, 3 store, 3 index, 1 executor, 1 web (proxy);"
+msgstr ""
+"用于单节点多服务的 docker-compose.yml，其中完整的启动包含 3 个"
+"coordinator, 3 个store, 3个 index, 1 个executor, 1 个web (proxy);"
+
+#: ../../source/deployment/standalone/linux.md:39
+#: 4a67a735900d4a1f80d59ad88d4e8b2d
+msgid ""
+"docker-compose.single.yml is a single node, single service, where the "
+"full startup contains 1 coordinator, 1 store, 1 index, 1 executor, 1 web "
+"(proxy); * coordinator, store, index use host network, executor, web "
+"(proxy) use net network."
+msgstr ""
+"docker-compose.single.yml 是一个单节点、单服务，其中完整的启动包含 1 个"
+"coordinator, 1 个store, 1个 index, 1 个executor, 1 个web (proxy)；* "
+"coordinator, store, index 使用主机网络，executor, web (proxy) 使用网络。"
+
+#: ../../source/deployment/standalone/linux.md:40
+#: 5bb601095c534551889450c0bd638084
+msgid ""
+"The coordinator, store, and index use the host network, and the executor "
+"and web(proxy) use the net network."
+msgstr ""
+"coordinator、store和index 使用主机网络，executor 和 web(proxy)使用网络。"
+
+#: ../../source/deployment/standalone/linux.md:41
+#: a313fe2600b34396a20bfedf141b7cc5
+msgid "Start the corresponding container"
+msgstr "启动相应的容器"
+
+#: ../../source/deployment/standalone/linux.md:47
+#: 1bd19a18d5fc4d9287fece6118f389e5
+msgid "4. Viewing cluster status"
+msgstr "4.查看群集状态"
+
+#: ../../source/deployment/standalone/linux.md:48
+#: 6d962d2c69574fc5a33b64c464798a58
+msgid "Check container status"
+msgstr "检查容器状态"
+
+#: ../../source/deployment/standalone/linux.md:49
+#: 98ce44a93556456a85c693c181582e47
+msgid ""
+"Checks if all containers in the yml configuration file are in the Up "
+"state."
+msgstr "检查 yml 配置文件中的所有容器是否都处于 “启动 ”状态。"
+
+#: ../../source/deployment/standalone/linux.md:53
+#: bc81ecd5d2b642228cba30704acd38f3
+msgid "View process status"
+msgstr "查看流程状态"
+
+#: ../../source/deployment/standalone/linux.md:54
+#: 58351edfcc384ce78d8927682df4261b
+msgid "View coordinator status"
+msgstr "查看coordinator 状态"
+
+#: ../../source/deployment/standalone/linux.md:63
+#: 34ec5f12ffa5482897d99b01920d9279
+msgid "Check the Store status"
+msgstr "检查Store 状态"
+
+#: ../../source/deployment/standalone/linux.md:72
+#: 27788711d3784a5ba0ded9161fb05117
+msgid ""
+"Checking the status of the Executor. To check the status of executor, "
+"just check the log and make sure mysql init is successful."
+msgstr ""
+"检查Executor的状态。要检查Executor的状态，只需查看日志并确保 mysql init "
+"成功即可。"
+
+#: ../../source/deployment/standalone/linux.md:77
+#: 1cd1ec033ff6414da7304c082fb0ba86
+msgid ""
+"Check the status of the Proxy. Web(Proxy) can be viewed through swagger, "
+"you need to replace the IP in the URL with your own IP address."
+msgstr ""
+"检查Proxy的状态。可以通过 swagger 查看 Web（Proxy），但需要用自己的 IP 地"
+"址替换 URL 中的 IP。"

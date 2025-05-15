@@ -1,0 +1,253 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, DataCanvas
+# This file is distributed under the same license as the DingoDB package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: DingoDB\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-05-12 11:38+0800\n"
+"PO-Revision-Date: 2025-05-15 11:21+0800\n"
+"Last-Translator: \n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Generated-By: Babel 2.17.0\n"
+"X-Generator: Poedit 3.6\n"
+
+#: ../../source/sql/sql_multi_tenant.md:1 47ed965def174b6abdb771e410d0b25d
+msgid "Multi-Tenant"
+msgstr "多租户"
+
+#: ../../source/sql/sql_multi_tenant.md:3 c85b0651dd914e54b576b5a8e24b329f
+msgid "1. Create Tenants"
+msgstr "1.创建租户"
+
+#: ../../source/sql/sql_multi_tenant.md:7 ffa80a7cd0d04f50950ab1f7d4464c9f
+msgid "2. View Tenants"
+msgstr "2.查看租户"
+
+#: ../../source/sql/sql_multi_tenant.md:11 3c41f0eab7004027960321ad47aa65d6
+msgid "![View Tenants](../../images/sql_multi_tenant_view.png)"
+msgstr ""
+
+#: ../../source/sql/sql_multi_tenant.md:11 6fdc2028ceb644d784be7c4f90857ef6
+msgid "View Tenants"
+msgstr "查看租户"
+
+#: ../../source/sql/sql_multi_tenant.md:12 6e8396a913cf4daca69aa38ae2e6820f
+msgid "3. Start Tenants"
+msgstr "3.启动租户"
+
+#: ../../source/sql/sql_multi_tenant.md:13 90369517d2f14ad1a8e8ae7b912b046a
+msgid "Executor is started using the created tenant."
+msgstr "使用创建的租户启动 Executor。"
+
+#: ../../source/sql/sql_multi_tenant.md:14 9674610889c3461b88ee9ba64f809fae
+msgid ""
+"Note: When a regular tenant is created and starts Executor, it initializes "
+"all the same metadata tables as the root tenant, and connects to the regular "
+"tenant by logging in with the root user and the same default password."
+msgstr ""
+"注意：创建普通租户并启动 Executor 时，它会初始化与根租户相同的所有元数据表，"
+"并使用根用户和相同的默认密码登录，连接到普通租户。"
+
+#: ../../source/sql/sql_multi_tenant.md:15 1a99596e75f04c229e36fc160a8a97a3
+msgid "Mode 1"
+msgstr "模式 1"
+
+#: ../../source/sql/sql_multi_tenant.md:16 86e4e703b1e8449fb72612c650b91e99
+msgid ""
+"Through the environment variables (can be system variables, user variables, "
+"or session temporary variables), here we take system variables as an example:"
+msgstr ""
+"通过环境变量（可以是系统变量、用户变量或会话临时变量），这里我们以系统变量为"
+"例："
+
+#: ../../source/sql/sql_multi_tenant.md:17 111786661d544fe6814c00c5e91bcf45
+msgid "Step 1: Edit the /etc/profile file to add system environment variables."
+msgstr "步骤 1：编辑 /etc/profile 文件，添加系统环境变量。"
+
+#: ../../source/sql/sql_multi_tenant.md:21 bd81c3e374314fc1bb1135af63ffbdad
+msgid "Step 2: Save and exit and execute source /etc/profile"
+msgstr "第 2 步：保存并退出，执行源文件 /etc/profile"
+
+#: ../../source/sql/sql_multi_tenant.md:22 d412a33a2f6044838660cff3052dccd2
+msgid ""
+"If the current Executor is started through 0 tenant, restart the Executor, "
+"then connect to the Executor of that tenant, and check the tenants: non-0 "
+"tenant, show tenants only shows the current tenant itself. It means that the "
+"startup with normal tenant is successful."
+msgstr ""
+"如果当前执行器是通过 0 租户启动的，请重启执行器，然后连接到该租户的执行器，检"
+"查租户：非 0 租户，show tenants 只显示当前租户本身。这说明通过普通租户启动成"
+"功。"
+
+#: ../../source/sql/sql_multi_tenant.md:24 001c6eea6ad5418e801191fd283fe72f
+msgid "![Start Tenants](../../images/sql_multi_tenant_start_mode1.png)"
+msgstr ""
+
+#: ../../source/sql/sql_multi_tenant.md:24
+#: ../../source/sql/sql_multi_tenant.md:31
+#: ../../source/sql/sql_multi_tenant.md:34 94c99b1ece9e45e5b021ec4fee66eaf4
+#: c083457f11394943a618b24cbceba4ef c5d92ea3087841b6bcabe9f81167259f
+msgid "Start Tenants"
+msgstr "启动新租户"
+
+#: ../../source/sql/sql_multi_tenant.md:26 9e5050f6c8ac4449b0eb0faf54283b5e
+msgid "Mode 2"
+msgstr "模式 2"
+
+#: ../../source/sql/sql_multi_tenant.md:27 01aa6c93fdc24b488bd8071bbede2b93
+msgid ""
+"Step 1: Start by specifying the tenant parameter (specified in the start-"
+"executor.sh script) and again create a new tenant (1002)"
+msgstr ""
+"第 1 步：首先指定租户参数（在 start-executor.sh 脚本中指定），然后再次创建一"
+"个新租户 (1002)"
+
+#: ../../source/sql/sql_multi_tenant.md:29 7dfef6e5370349d38f3c763c88a16a7c
+msgid ""
+"Step 2: Specify the tenant id in start-executor.sh: -tenant 1002 \\ As "
+"follows:"
+msgstr ""
+"步骤 2：在 start-executor.sh 中指定租户 id： -tenant 1002 \\ 如下所示："
+
+#: ../../source/sql/sql_multi_tenant.md:31 f0a7cf372741483c9ef6e4085de5fc91
+msgid "![Start Tenants](../../images/sql_multi_tenant_start_mode2_1.png)"
+msgstr ""
+
+#: ../../source/sql/sql_multi_tenant.md:32 d5c841741fd14712a18b0ddbeca8af4d
+msgid ""
+"Step 3: Restart Executor and then connect to the address of that node to see "
+"that the current tenant is the specified tenant ID."
+msgstr ""
+"步骤 3：重新启动 Executor，然后连接到该节点的地址，查看当前租户是否为指定的租"
+"户 ID。"
+
+#: ../../source/sql/sql_multi_tenant.md:34 2538f6cd29a94a56933a57d57891cf91
+msgid "![Start Tenants](../../images/sql_multi_tenant_start_mode2_2.png)"
+msgstr ""
+
+#: ../../source/sql/sql_multi_tenant.md:35 e63600cd89794f42b67d4ef57ef1c509
+msgid "4. Update Tenants"
+msgstr "4.更新租户信息"
+
+#: ../../source/sql/sql_multi_tenant.md:36 e4d505eb1c9042858081c22f6c139634
+msgid ""
+"Only the root tenant has the privilege to update the tenant. Operating from "
+"the shell command line only provides the ability to update the tenant name. "
+"Execute the command:"
+msgstr ""
+"只有根租户才有更新租户的权限。通过 shell 命令行操作只能更新租户名称。执行命"
+"令："
+
+#: ../../source/sql/sql_multi_tenant.md:41 09e4b4d124e644e0a20a424881506a7c
+msgid ""
+"After the update, you can see that the tenant name has been updated, "
+"UPDATE_TIME is the time at which the update was made, and the tenant ID "
+"remains unchanged. ![Update Tenants](../../images/"
+"sql_multi_tenant_update.png)"
+msgstr ""
+"更新后，可以看到租户名称已更新，UPDATE_TIME 是更新的时间，租户 ID 保持不变。"
+"更新租户](.../../images/sql_multi_tenant_update.png)"
+
+#: ../../source/sql/sql_multi_tenant.md:41 ae60a267fc024848bb82fbba2f121712
+msgid "Update Tenants"
+msgstr "更新租户信息"
+
+#: ../../source/sql/sql_multi_tenant.md:43 17829f7f72e34a878498e836dd5819e7
+msgid "5. Delete Tenants"
+msgstr "5.删除租户"
+
+#: ../../source/sql/sql_multi_tenant.md:44 b270b915c5c44231b1654ed2eb9e02ee
+msgid "Description:"
+msgstr "说明："
+
+#: ../../source/sql/sql_multi_tenant.md:45 82c77b4d88314013a7971282f1b890da
+msgid ""
+"Only the root tenant has the privilege to delete tenants, and only ordinary "
+"tenants can be deleted, not the root tenant itself."
+msgstr ""
+"只有根租户才有删除租户的权限，而且只能删除普通租户，不能删除根租户本身。"
+
+#: ../../source/sql/sql_multi_tenant.md:46 db1cc241337e4aeab9e1e38e0fa62be9
+msgid ""
+"Deleting a tenant successfully, all metadata and user data under that tenant "
+"will be deleted. Therefore, please be careful when deleting tenants."
+msgstr ""
+"成功删除租户后，该租户下的所有元数据和用户数据都将被删除。因此，删除租户时请"
+"务必小心。"
+
+#: ../../source/sql/sql_multi_tenant.md:47 e0cdba27c24d4758946dec69e6dc4314
+msgid ""
+"For easy tracking of tenant history information, the deleted tenant will "
+"still be shown in the tenant list, IS_DELETE is shown as true"
+msgstr ""
+"为便于跟踪租户历史信息，已删除的租户仍会显示在租户列表中，IS_DELETE 显示为 "
+"true"
+
+#: ../../source/sql/sql_multi_tenant.md:48 c1ee804b53644c34b95230bd330773ca
+msgid ""
+"Deleted tenant, start Executor will fail (i.e. tenant is no longer available)"
+msgstr "删除租户，启动执行器将失败（即租户不再可用）"
+
+#: ../../source/sql/sql_multi_tenant.md:49 44f0328e9572443883d7b6585c9c948d
+msgid ""
+"Shell command line to delete a tenant, only supports deletion by tenant "
+"name, not by tenant id."
+msgstr "删除租户的 Shell 命令行，只支持按租户名称删除，不支持按租户 ID 删除。"
+
+#: ../../source/sql/sql_multi_tenant.md:51 100a099db91147e1914cba768bda852d
+msgid ""
+"If there is created data under the deleted tenant. Direct deletion is not "
+"allowed, if you need to delete, you need to use the purge_resources "
+"parameter."
+msgstr ""
+"如果已删除的租户下有已创建的数据。不允许直接删除，如果需要删除，需要使用 "
+"purge_resources 参数。"
+
+#: ../../source/sql/sql_multi_tenant.md:52 78b48a9c3f384f4a86c455070664c763
+msgid ""
+"If there is no new data table or schema created under the tenant, the tenant "
+"can be deleted directly."
+msgstr "如果租户下没有创建新的数据表或模式，则可直接删除租户。"
+
+#: ../../source/sql/sql_multi_tenant.md:53 6056b0cc9ddc4691b9399776a33f37b9
+msgid "If there is data under the tenant, direct deletion returns failure:"
+msgstr "如果租户下有数据，直接删除会返回失败："
+
+#: ../../source/sql/sql_multi_tenant.md:57 decdc3d2fdbb4fb59daf8fddcb1aff80
+msgid ""
+"![Drop Tenants](../../images/sql_multi_tenant_drop_1.png) If there is data "
+"under the tenant, using the purge_resources parameter, it can be deleted "
+"successfully."
+msgstr ""
+"![删除租户](../../images/sql_multi_tenant_drop_1.png) 如果租户下有数据，使用 "
+"purge_resources 参数可以成功删除。"
+
+#: ../../source/sql/sql_multi_tenant.md:57
+#: ../../source/sql/sql_multi_tenant.md:63 403eba1046bb45b7a5ae930df48ea2d6
+#: 94c24e89c4534edbbc4c5aaaf9eff9a3 c932258a70594e279672ac49e2b2b7af
+msgid "Drop Tenants"
+msgstr "删除租户"
+
+#: ../../source/sql/sql_multi_tenant.md:59 2a4dd7b57e534d408cbf0cf6a2fb1d4f
+msgid ""
+"Note: The deleted tenant will still be shown in the tenant list and the "
+"IS_DELETE field will become true"
+msgstr "注意：已删除的租户仍将显示在租户列表中，IS_DELETE 字段将变为 true"
+
+#: ../../source/sql/sql_multi_tenant.md:63 3ac5bab848364716a8c428ae87c4d045
+msgid ""
+"![Drop Tenants](../../images/sql_multi_tenant_drop_2.png) If no new data is "
+"created under the tenant, it can be deleted directly ![Drop Tenants](../../"
+"images/sql_multi_tenant_drop_3.png)"
+msgstr ""
+"![Drop Tenants](../../images/sql_multi_tenant_drop_2.png) 如果租户下没有创建"
+"新数据，可直接删除 ![Drop Tenants](../../images/sql_multi_tenant_drop_3.png)"
