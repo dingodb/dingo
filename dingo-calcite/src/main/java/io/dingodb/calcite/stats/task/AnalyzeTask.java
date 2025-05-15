@@ -240,7 +240,8 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         AtomicInteger index = new AtomicInteger();
         td.getColumns().forEach(columnDefinition -> {
             index.incrementAndGet();
-            if (columnList != null && !columnList.isEmpty() && !columnList.contains(columnDefinition.getName())) {
+            if (columnList != null && !columnList.isEmpty() && !columnList.stream().map(String::toUpperCase).toList()
+                .contains(columnDefinition.getName().toUpperCase())) {
                 return;
             }
             boolean allowStats = false;

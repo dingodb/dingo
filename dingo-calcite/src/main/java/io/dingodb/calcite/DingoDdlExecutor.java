@@ -471,7 +471,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
 
         // Distinct column
-        long distinctColCnt = columns.stream().map(ColumnDefinition::getName).distinct().count();
+        long distinctColCnt = columns.stream().map(c -> c.getName().toUpperCase()).distinct().count();
         long realColCnt = columns.size();
         if (distinctColCnt != realColCnt) {
             throw DINGO_RESOURCE.duplicateColumn().ex();
@@ -1836,16 +1836,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         String originIndexName = sqlAlterRenameIndex.originIndexName;
         boolean hasIndex = table.getIndexes().stream()
-            .anyMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(originIndexName)
-                : indexTable.getName().equalsIgnoreCase(originIndexName));
+            .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(originIndexName));
         if (!hasIndex) {
             throw DingoErrUtil.newStdErr(ErrKeyDoesNotExist, originIndexName, tableName);
         }
 
         hasIndex = table.getIndexes().stream()
-            .anyMatch(indexTable -> caseSensitive() ? indexTable.getName()
-                .equals(sqlAlterRenameIndex.toIndexName)
-                : indexTable.getName().equalsIgnoreCase(sqlAlterRenameIndex.toIndexName));
+            .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(sqlAlterRenameIndex.toIndexName));
         if (hasIndex) {
             throw DingoErrUtil.newStdErr(ErrDupKeyName, sqlAlterRenameIndex.toIndexName);
         }

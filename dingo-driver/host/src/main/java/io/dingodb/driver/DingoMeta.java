@@ -141,7 +141,7 @@ public class DingoMeta extends MetaImpl {
         }
         buf.append("$");
         Pattern regex;
-        if (caseInSensitive) {
+        if (!caseInSensitive) {
             regex = Pattern.compile(buf.toString(), Pattern.CASE_INSENSITIVE);
         } else {
             regex = Pattern.compile(buf.toString());
@@ -169,7 +169,7 @@ public class DingoMeta extends MetaImpl {
         @NonNull CalciteSchema usedSchema,
         @NonNull Pat pat
     ) {
-        final Predicate<String> filter = patToFilter(pat, true);
+        final Predicate<String> filter = patToFilter(pat, caseSensitive());
         if (usedSchema.getSubSchemaMap().isEmpty()) {
             return Collections.emptyList();
         }
@@ -184,7 +184,7 @@ public class DingoMeta extends MetaImpl {
         @NonNull Collection<CalciteSchema> schemas,
         @NonNull Pat pat
     ) {
-        final Predicate<String> filter = patToFilter(pat, true);
+        final Predicate<String> filter = patToFilter(pat, caseSensitive());
         return schemas.stream()
             .map(schema -> (SubCalciteSchema)schema)
             .flatMap(s -> s.getTableNames().stream()
@@ -1132,7 +1132,7 @@ public class DingoMeta extends MetaImpl {
         final Collection<CalciteSchema.TableEntry> tables = getMatchedTables(
             getMatchedSubSchema(context.getRootSchema(), schemaPattern), tableNamePattern
         );
-        final Predicate<String> filter = patToFilter(columnNamePattern, true);
+        final Predicate<String> filter = patToFilter(columnNamePattern, false);
         List<MetaColumn> columns = tables.stream()
             .flatMap(t -> {
                 RelDataType rowType = t.getTable().getRowType(context.getTypeFactory());

@@ -629,8 +629,7 @@ public class DdlWorker {
             return Pair.of(0L, "table not exists");
         }
         boolean exists = table.getIndexes().stream()
-            .anyMatch(indexTable -> (caseSensitive() ? indexTable.getName().equals(indexInfo.getName())
-                : indexTable.getName().equalsIgnoreCase(indexInfo.getName()))
+            .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexInfo.getName())
                 && indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC);
         if (exists) {
             job.setState(JobState.jobStateCancelled);
@@ -717,8 +716,7 @@ public class DdlWorker {
             indexName = job.getArgs().get(0).toString();
         }
         boolean notExists = table.getIndexes().stream()
-            .noneMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(indexName)
-                : indexTable.getName().equalsIgnoreCase(indexName));
+            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "index not exists");
@@ -1974,9 +1972,9 @@ public class DdlWorker {
         TableDefinitionWithId indexWithId = indexList.stream()
             .map(idxTable -> (TableDefinitionWithId)idxTable)
             .filter(idxTable ->
-                idxTable.getTableDefinition().getName().endsWith(indexName)
-                    || idxTable.getTableDefinition().getName().endsWith(indexName)).findFirst()
-                    .orElse(null);
+                idxTable.getTableDefinition().getName().toUpperCase().endsWith(indexName.toUpperCase()))
+            .findFirst()
+            .orElse(null);
         if (indexWithId == null) {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, indexName, job.getTableName()));
             return Pair.of(0L, job.getDingoErr().errorMsg);

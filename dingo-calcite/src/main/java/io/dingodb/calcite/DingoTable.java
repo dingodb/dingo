@@ -63,7 +63,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
@@ -108,7 +107,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
     public IndexTable getIndexDefinition(String name) {
         return indexTableDefinitions.stream()
-            .filter(i -> caseSensitive() ? i.getName().equals(name) : i.getName().equalsIgnoreCase(name))
+            .filter(i -> i.getName().equalsIgnoreCase(name))
             .findAny()
             .orElse(null);
     }

@@ -118,7 +118,7 @@ public class TxnPartDocumentOperator extends FilterProjectSourceOperator {
                         ScalarField fieldValue = value.getFieldValue();
                         int idx = 0;
                         for (int i = 0; i < columns.size(); i++) {
-                            if (columns.get(i).getName().equals(key)) {
+                            if (columns.get(i).getName().equalsIgnoreCase(key)) {
                                 idx = i;
                                 break;
                             }

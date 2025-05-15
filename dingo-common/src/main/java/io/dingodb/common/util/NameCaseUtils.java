@@ -81,10 +81,4 @@ public final class NameCaseUtils {
         return DingoConfiguration.lowerCaseTableNames() == 0;
     }
 
-    public static void main(String[] args) {
-        DingoConfiguration.instance().getVariable().setLowerCaseTableNames(2);
-        String sql = "insert into mysql.DINGO_DDL_JOB(job_id, reorg, schema_ids, table_ids, job_meta, type, processing) values(1002, false, '50003', '60074', '{\"id\":1002,\"actionType\":\"ActionCreateTable\",\"schemaId\":50003,\"tableId\":60074,\"schemaName\":\"DINGO\",\"tableName\":\"t3\",\"state\":\"jobStateQueueing\",\"warning\":null,\"error\":null,\"errorCount\":0,\"rowCount\":0,\"lock\":null,\"schemaState\":null,\"snapshotVer\":0,\"realStartTs\":0,\"startTs\":0,\"dependencyId\":0,";
-        String s = convertSql(sql);
-        System.out.println(s);
-    }
 }

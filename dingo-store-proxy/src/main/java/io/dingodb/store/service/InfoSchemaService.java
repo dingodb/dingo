@@ -600,7 +600,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 .map(objWithId -> (TableDefinitionWithId)objWithId)
                 .anyMatch(indexWithId -> {
                     String ixName = indexWithId.getTableDefinition().getName();
-                    return ixName.endsWith(convertName(indexName));
+                    return ixName.toUpperCase().endsWith(convertName(indexName.toUpperCase()));
                 });
         }
         return false;

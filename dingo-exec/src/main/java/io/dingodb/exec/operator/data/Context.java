@@ -33,6 +33,7 @@ public class Context {
 
     private int pin;
     private CommonId indexId;
+    private CommonId tablePartId;
     private RangeDistribution distribution;
     private List<Boolean> keyState;
     @Builder.Default

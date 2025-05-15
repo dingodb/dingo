@@ -186,8 +186,7 @@ public class Table {
     public int getColumnIndex(Column column) {
         int i = 0;
         for (Column col : columns) {
-            if (caseSensitive() ? col.getName().equals(column.getName())
-                : col.getName().equalsIgnoreCase(column.getName())) {
+            if (col.getName().equalsIgnoreCase(column.getName())) {
                 return i;
             }
             ++i;

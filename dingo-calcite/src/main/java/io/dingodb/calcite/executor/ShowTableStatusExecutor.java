@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
 public class ShowTableStatusExecutor extends QueryExecutor {
 
     String schema;
@@ -49,7 +51,7 @@ public class ShowTableStatusExecutor extends QueryExecutor {
         return is.getSchemaMap()
             .entrySet()
             .stream()
-            .filter(e -> e.getKey().equalsIgnoreCase(schema))
+            .filter(e -> caseSensitive() ? e.getKey().equals(schema) : e.getKey().equalsIgnoreCase(schema))
             .flatMap(e -> {
                 Collection<Table> tables = e.getValue().getTables().values();
                 return tables.stream()

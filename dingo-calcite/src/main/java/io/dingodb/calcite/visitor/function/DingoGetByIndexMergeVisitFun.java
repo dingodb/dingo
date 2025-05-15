@@ -58,9 +58,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;

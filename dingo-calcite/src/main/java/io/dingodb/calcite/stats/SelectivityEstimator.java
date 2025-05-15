@@ -119,12 +119,14 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
         if (StatsCache.statsMap.containsKey(statsIdentifier.getLeft())) {
             TableStats stats = StatsCache.statsMap.get(statsIdentifier.getLeft());
             for (int i = 0; i < stats.getHistogramList().size(); i ++) {
-                if (stats.getHistogramList().get(i).getColumnName().equals(statsIdentifier.getRight().getName())) {
+                if (stats.getHistogramList().get(i).getColumnName()
+                    .equalsIgnoreCase(statsIdentifier.getRight().getName())) {
                     return stats.getHistogramList().get(i);
                 }
             }
             for (int i = 0; i < stats.getCountMinSketchList().size(); i ++) {
-                if (stats.getCountMinSketchList().get(i).getColumnName().equals(statsIdentifier.getRight().getName())) {
+                if (stats.getCountMinSketchList().get(i).getColumnName()
+                    .equalsIgnoreCase(statsIdentifier.getRight().getName())) {
                     return stats.getCountMinSketchList().get(i);
                 }
             }
