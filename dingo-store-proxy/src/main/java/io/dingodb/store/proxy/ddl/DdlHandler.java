@@ -54,7 +54,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NameCaseUtils.convertSql;
 
@@ -363,8 +362,7 @@ public class DdlHandler {
         }
         boolean notExists = table.getIndexes()
             .stream()
-            .noneMatch(indexTable -> caseSensitive() ? indexTable.getName().equals(indexName)
-                : indexTable.getName().equalsIgnoreCase(indexName));
+            .noneMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexName));
         if (notExists) {
             throw new RuntimeException("index not exists");
         }

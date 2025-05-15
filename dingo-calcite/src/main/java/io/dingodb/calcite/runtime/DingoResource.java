@@ -126,7 +126,7 @@ public interface DingoResource {
     @BaseMessage("Tenant ''{0}'' not found")
     ExInst<DingoSqlException> tenantNotFound(String a0);
 
-    @BaseMessage("Error 1060 (42S21): Duplicate column names are not allowed in table definition")
+    @BaseMessage("Error 1060 (42S21): Duplicate column names are not allowed in table definition, even if the cases are different")
     ExInst<DingoSqlException> duplicateColumn();
 
     @BaseMessage("Error 1105 (HY000): Check illegalArgumentException")

@@ -108,8 +108,7 @@ public class DingoCostModelV1 extends DingoCostModel {
             AtomicBoolean hasStats = new AtomicBoolean(false);
             if (tableStats != null) {
                 tableStats.getStatsNormalList().forEach(statsNormal -> {
-                    if (caseSensitive() ? cd.getName().equals(statsNormal.getColumnName())
-                        : cd.getName().equalsIgnoreCase(statsNormal.getColumnName())) {
+                    if (cd.getName().equalsIgnoreCase(statsNormal.getColumnName())) {
                         avgRowSize.addAndGet(statsNormal.getAvgColSize());
                         hasStats.set(true);
                     }

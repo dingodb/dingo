@@ -54,9 +54,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
@@ -83,7 +81,6 @@ public final class DingoGetByIndexVisitFun {
         Map<CommonId, Set> indexSetMap = rel.getIndexSetMap();
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         boolean needLookup = indexSetMap.size() > 1;
-        List<String> originNames = td.getColumns().stream().map(Column::getName).toList();
         for (Map.Entry<CommonId, Set> indexValSet : indexSetMap.entrySet()) {
             CommonId idxId = indexValSet.getKey();
             Table indexTd = rel.getIndexTdMap().get(idxId);
@@ -132,9 +129,7 @@ public final class DingoGetByIndexVisitFun {
                 task.putVertex(distributionVertex);
 
                 List<String> columnNames = indexTd.getColumns().stream().map(Column::getName).toList();
-                TupleMapping tupleMapping = TupleMapping.of(
-                    caseSensitive() ? columnNames.stream().map(originNames::indexOf).collect(Collectors.toList())
-                        : td.getColumnIndices(columnNames)
+                TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames)
                 );
                 if (!needLookup) {
                     needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());

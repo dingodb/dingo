@@ -34,10 +34,6 @@ public final class TxnScanWithCacheOpOperator extends TxnScanWithRelOpOperatorBa
     @Override
     protected @NonNull Scanner getScanner(@NonNull Context context, @NonNull Vertex vertex) {
         ScanWithRelOpParam param = vertex.getParam();
-        if (context.getDistribution().getId().seq != 80012) {
-            int i = 0;
-            LogUtils.debug(log, "for debug");
-        }
         if (param.getCoprocessor(context.getDistribution().getId()) != null) {
             return RelOpUtils::doScan;
         }

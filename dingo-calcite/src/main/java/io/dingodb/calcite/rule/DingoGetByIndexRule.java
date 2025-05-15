@@ -18,7 +18,6 @@ package io.dingodb.calcite.rule;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
-import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByKeys;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
@@ -32,9 +31,7 @@ import io.dingodb.calcite.utils.IndexValueMapSetVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
@@ -44,7 +41,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -64,8 +60,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
 public class DingoGetByIndexRule extends ConverterRule {

@@ -297,7 +297,6 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
 
     private static Pair<Integer, Integer> getVectorIndex(DingoTable dingoTable, int dimension) {
         List<IndexTable> indexes = dingoTable.getTable().getIndexes();
-        boolean caseSensitive = caseSensitive();
         for (IndexTable index : indexes) {
 
             if (!index.getIndexType().isVector) {
@@ -314,11 +313,9 @@ public class DingoVectorIndexRule extends RelRule<RelRule.Config> {
             int vectorIndex = 0;
             for (int i = 0; i < dingoTable.getTable().getColumns().size(); i ++) {
                 Column column = dingoTable.getTable().getColumns().get(i);
-                if (caseSensitive ? column.getName().equals(vectorIdColName)
-                    : column.getName().equalsIgnoreCase(vectorIdColName)) {
+                if (column.getName().equalsIgnoreCase(vectorIdColName)) {
                     vectorIdIndex = i;
-                } else if (caseSensitive ? column.getName().equals(vectorColName)
-                    : column.getName().equalsIgnoreCase(vectorColName)) {
+                } else if (column.getName().equalsIgnoreCase(vectorColName)) {
                     vectorIndex = i;
                 }
             }
