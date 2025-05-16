@@ -298,13 +298,14 @@ public interface IndexMapper {
                 case "HNSW": {
                     int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "40"));
                     int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "32"));
+                    int maxElements = Integer.valueOf(properties.getOrDefault("maxElements", "2147483647"));
                     vectorIndexParameter = VectorIndexParameter.builder()
                         .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_HNSW)
                         .vectorIndexParameter(HnswParameter.builder()
                             .dimension(dimension)
                             .metricType(metricType)
                             .efConstruction(efConstruction)
-                            .maxElements(Integer.MAX_VALUE)
+                            .maxElements(maxElements)
                             .nlinks(nlinks)
                             .build()
                         ).build();

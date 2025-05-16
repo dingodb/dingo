@@ -570,7 +570,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     |
      <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
     |
-     <AUTO_INCREMENT> [<EQ>] {autoIncrement = positiveInteger(getNextToken().image, "auto_increment"); }
+     <AUTO_INCREMENT> [<EQ>] {autoIncrement = positiveLong(getNextToken().image, "auto_increment"); }
     |
      <DEFAULT_>
     |
