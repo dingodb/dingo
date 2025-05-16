@@ -40,15 +40,21 @@ public class InfoSchemaScanParam extends FilterProjectSourceParam {
     @JsonProperty("target")
     private final String target;
 
+    private final String user;
+
+    private final String host;
+
     public InfoSchemaScanParam(DingoType schema,
                                int schemaVersion,
                                SqlExpr filter,
                                TupleMapping selection,
-                               String target) {
+                               String target, String user, String host) {
         super(null, null, schema, schemaVersion, filter, selection, null, 2);
         this.schema = schema;
         this.filter = filter;
         this.selection = selection;
         this.target = target;
+        this.user = user;
+        this.host = host;
     }
 }

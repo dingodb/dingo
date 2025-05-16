@@ -105,7 +105,11 @@ public final class DingoMetrics {
         metricRegistry.register("activeSessionCount", new CachedGauge<Integer>(1, TimeUnit.MINUTES) {
             @Override
             protected Integer loadValue() {
-                return SessionUtil.INSTANCE.getSessionPool().getNumActive();
+                if (SessionUtil.INSTANCE.getSessionPool() != null) {
+                    return SessionUtil.INSTANCE.getSessionPool().getNumActive();
+                } else {
+                    return 0;
+                }
             }
         });
         metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {

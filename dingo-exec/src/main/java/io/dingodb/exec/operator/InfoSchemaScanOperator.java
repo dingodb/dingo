@@ -34,6 +34,7 @@ import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TransactionService;
+import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -58,28 +59,30 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     @Override
     protected @NonNull Iterator<Object[]> createSourceIterator(Vertex vertex) {
         InfoSchemaScanParam param = vertex.getParam();
+        String user = param.getUser();
+        String host = param.getHost();
         String target = param.getTarget();
         switch (target.toUpperCase()) {
             case "GLOBAL_VARIABLES":
                 return getGlobalVariables();
             case "TABLES":
-                return getInformationTables();
+                return getInformationTables(user, host);
             case "SCHEMATA":
-                return getInformationSchemata();
+                return getInformationSchemata(user, host);
             case "COLUMNS":
-                return getInformationColumns();
+                return getInformationColumns(user, host);
             case "PARTITIONS":
-                return getInformationPartitions();
+                return getInformationPartitions(user, host);
             case "STATISTICS":
-                return getInformationStatistics();
+                return getInformationStatistics(user, host);
             case "VIEWS":
-                return getView();
+                return getView(user, host);
             case "USER_PRIVILEGES":
-                return getUserPrivileges();
+                return getUserPrivileges(user, host);
             case "SCHEMA_PRIVILEGES":
-                return getSchemaPrivileges();
+                return getSchemaPrivileges(user, host);
             case "TABLE_PRIVILEGES":
-                return getTablePrivileges();
+                return getTablePrivileges(user, host);
             case "KEYWORDS":
                 return getKeywords();
             case "EVENTS":
@@ -94,7 +97,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "REFERENTIAL_CONSTRAINTS":
                 return getEmpty();
             case "TABLE_CONSTRAINTS":
-                return getInformationTableConstraints();
+                return getInformationTableConstraints(user, host);
             case "STATEMENTS_SUMMARY":
                 return StmtSummaryMap.iterator();
             case "DINGO_MDL_VIEW":
@@ -124,7 +127,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         };
     }
 
-    private static Iterator<Object[]> getInformationColumns() {
+    private static Iterator<Object[]> getInformationColumns(String user, String host) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap()
             .values()
@@ -132,6 +135,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(schemaTables -> schemaTables.getTables()
                 .values()
                 .stream()
+                .filter(td -> PrivilegeVerify.verify(user, host, schemaTables.getSchemaInfo().getName(),
+                    td.getName(), "dataPrivilege"))
                 .flatMap(td -> {
                     List<Object[]> colRes = new ArrayList<>();
                     for (int i = 0; i < td.getColumns().size(); i++) {
@@ -173,7 +178,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 })).iterator();
     }
 
-    private static Iterator<Object[]> getInformationPartitions() {
+    private static Iterator<Object[]> getInformationPartitions(String user, String host) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap()
             .values()
@@ -181,7 +186,11 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(schemaTables -> schemaTables.getTables()
                 .values()
                 .stream()
-                .filter(table -> table.partitions != null && !table.getPartitions().isEmpty())
+                .filter(table -> {
+                    boolean authed = PrivilegeVerify.verify(user, host, schemaTables.getSchemaInfo().getName(),
+                        table.getName(), "dataPrivilege");
+                    return table.partitions != null && !table.getPartitions().isEmpty() && authed;
+                })
                 .flatMap(table -> table.getPartitions()
                     .stream()
                     .map(partition -> getPartitionDetail(
@@ -258,16 +267,17 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return resList.iterator();
     }
 
-    private static Iterator<Object[]> getInformationSchemata() {
+    private static Iterator<Object[]> getInformationSchemata(String user, String host) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap()
             .keySet()
             .stream()
+            .filter(schemaName -> PrivilegeVerify.verify(user, host, schemaName, null, "dataPrivilege"))
             .map(service -> new Object[]{"def", service, "utf8", "utf8_bin", null})
             .iterator();
     }
 
-    private static Iterator<Object[]> getInformationTables() {
+    private static Iterator<Object[]> getInformationTables(String user, String host) {
         MetaService metaService = MetaService.root();
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap().values()
@@ -276,6 +286,11 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 Collection<Table> tables = e.getTables().values();
                 return tables.stream()
                     .map(td -> {
+                        boolean authed = PrivilegeVerify.verify(
+                            user, host, e.getSchemaInfo().getName(), td.getName(), "dataPrivilege");
+                        if (!authed) {
+                            return null;
+                        }
                         Timestamp updateTime = null;
                         if (td.getUpdateTime() > 0) {
                             updateTime = new Timestamp(td.getUpdateTime());
@@ -324,7 +339,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .iterator();
     }
 
-    private static Iterator<Object[]> getInformationTableConstraints() {
+    private static Iterator<Object[]> getInformationTableConstraints(String user, String host) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap()
             .values()
@@ -332,6 +347,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(e -> {
                 Collection<Table> tables = e.getTables().values();
                 return tables.stream()
+                    .filter(td -> PrivilegeVerify.verify(user, host, e.getSchemaInfo().getName(),
+                        td.getName(), "dataPrivilege"))
                     .map(td -> new Object[]{"def",
                         e.getSchemaInfo().getName(),
                         "PRIMARY",
@@ -343,7 +360,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             }).iterator();
     }
 
-    private static Iterator<Object[]> getInformationStatistics() {
+    private static Iterator<Object[]> getInformationStatistics(String user, String host) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap()
             .values()
@@ -351,6 +368,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(e -> {
                 Collection<Table> tables = e.getTables().values();
                 List<Object[]> priKeyList = tables.stream()
+                    .filter(table -> PrivilegeVerify.verify(user, host, e.getSchemaInfo().getName(),
+                        table.getName(), "dataPrivilege"))
                     .flatMap(table -> table.getColumns().stream().filter(Column::isPrimary).map(
                         column -> new Object[]{
                             "def",
@@ -371,7 +390,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             ""
                         }
                     )).collect(Collectors.toList());
-                List<Object[]> indexColList = tables.stream().flatMap(table -> table.getIndexes().stream()
+                List<Object[]> indexColList = tables.stream()
+                    .filter(table -> PrivilegeVerify.verify(user, host, e.getSchemaInfo().getName(),
+                        table.getName(), "dataPrivilege")).flatMap(table -> table.getIndexes().stream()
                     .flatMap(index -> index.getColumns().stream().filter(Column::isPrimary).map(
                         column -> new Object[]{
                             "def",
@@ -401,7 +422,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return TransactionService.getDefault().getMdlInfo();
     }
 
-    public static Iterator<Object[]> getView() {
+    public static Iterator<Object[]> getView(String userVer, String hostVerf) {
         InfoSchema is = DdlService.root().getIsLatest();
         return is.getSchemaMap().values()
             .stream()
@@ -410,7 +431,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .flatMap(e -> {
                 Collection<Table> tables = e.getTables().values();
                 return tables.stream()
-                    .filter(td -> td.getTableType().equalsIgnoreCase("VIEW"))
+                    .filter(td -> {
+                        boolean authed = PrivilegeVerify.verify(userVer, hostVerf, e.getSchemaInfo().getName(), td.getName(), "dataPrivilege");
+                        return td.getTableType().equalsIgnoreCase("VIEW") && authed;
+                    })
                     .map(td -> {
                         String checkOpt = td.getProperties()
                             .getProperty("check_option", "").toUpperCase();
@@ -487,7 +511,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return result.stream().iterator();
     }
 
-    private static Iterator<Object[]> getUserPrivileges() {
+    private static Iterator<Object[]> getUserPrivileges(String user, String host) {
         Session session = SessionUtil.INSTANCE.getSession();
         Map<Integer, String> privilegeMap = new HashMap<>();
         privilegeMap.put(2, "SELECT");
@@ -522,7 +546,14 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         try {
             String sql = "select * from mysql.user";
             List<Object[]> users = session.executeQuery(sql);
-            return users.stream().flatMap(userRow -> {
+            return users.stream().filter(userRow -> {
+                if ("root".equals(user)) {
+                    return true;
+                }
+                String user1 = userRow[1].toString();
+                String host1 = userRow[0].toString();
+                return user.equals(user1) && host.equals(host1);
+            }).flatMap(userRow -> {
                 List<Object[]> userPrivilegeList = new ArrayList<>();
                 String grantee = "'" + userRow[1] + "'@'" + userRow[0] + "'";
                 String isGrantee =  userRow[12] != null
@@ -551,7 +582,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return getEmpty();
     }
 
-    private static Iterator<Object[]> getSchemaPrivileges() {
+    private static Iterator<Object[]> getSchemaPrivileges(String user, String host) {
         Session session = SessionUtil.INSTANCE.getSession();
         Map<Integer, String> privilegeMap = new HashMap<>();
         privilegeMap.put(3, "SELECT");
@@ -576,7 +607,14 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         try {
             String sql = "select * from mysql.db";
             List<Object[]> users = session.executeQuery(sql);
-            return users.stream().flatMap(userRow -> {
+            return users.stream().filter(userRow -> {
+                if ("root".equals(user)) {
+                    return true;
+                }
+                String user1 = userRow[1].toString();
+                String host1 = userRow[0].toString();
+                return user.equals(user1) && host.equals(host1);
+            }).flatMap(userRow -> {
                 List<Object[]> privilegeList = new ArrayList<>();
                 String grantee = "'" + userRow[1] + "'@'" + userRow[0] + "'";
                 String isGrantee =  userRow[9] != null
@@ -607,12 +645,19 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         return getEmpty();
     }
 
-    private static Iterator<Object[]> getTablePrivileges() {
+    private static Iterator<Object[]> getTablePrivileges(String user, String host) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             String sql = "select * from mysql.tables_priv";
             List<Object[]> users = session.executeQuery(sql);
-            return users.stream().flatMap(userRow -> {
+            return users.stream().filter(userRow -> {
+                if ("root".equals(user)) {
+                    return true;
+                }
+                String user1 = userRow[1].toString();
+                String host1 = userRow[0].toString();
+                return user.equals(user1) && host.equals(host1);
+            }).flatMap(userRow -> {
                 List<Object[]> privilegeList = new ArrayList<>();
                 String grantee = "'" + userRow[1] + "'@'" + userRow[0] + "'";
                 String schema = userRow[2] != null ? userRow[2].toString() : "";

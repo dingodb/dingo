@@ -241,7 +241,7 @@ public final class PrivilegeVerify {
 
     private static boolean isFilter(String command, int i) {
         boolean filter = false;
-        if ("use".equals(command) || "getTables".equals(command)) {
+        if ("use".equals(command) || "getTables".equals(command) || "dataPrivilege".equals(command)) {
             filter = filterPx.contains(i);
         } else if ("getSchemas".equals(command)) {
             // 23 means show databases

@@ -511,7 +511,7 @@ public final class DingoDriverParser extends DingoParser {
         if (pessimisticTxn && transaction.getPrimaryKeyLock() == null && explain == null) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()));
+                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()), user, host);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -534,7 +534,9 @@ public final class DingoDriverParser extends DingoParser {
             forUpdate,
             getReplaceInto(sqlNode),
             getIgnore(sqlNode),
-            getUpdateLimit(sqlNode)
+            getUpdateLimit(sqlNode),
+            user,
+            host
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -766,7 +768,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()));
+                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()), user, host);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -784,7 +786,8 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace())
+            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
+            user, host
         );
         return new DingoSignature(
             visitColumns,
@@ -811,7 +814,9 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         Location currentLocation,
         DingoType dingoType,
-        ExecuteVariables executeVariables
+        ExecuteVariables executeVariables,
+        String user,
+        String host
     ) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         boolean forUpdate = forUpdate(sqlNode);
@@ -820,7 +825,7 @@ public final class DingoDriverParser extends DingoParser {
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
                 transaction, sqlNode.getKind(), executeVariables, 0,
-                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode)
+                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode), user, host
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);
