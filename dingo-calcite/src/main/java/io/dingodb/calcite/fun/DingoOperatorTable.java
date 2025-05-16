@@ -44,7 +44,7 @@ import io.dingodb.exec.fun.vector.VectorImageFun;
 import io.dingodb.exec.fun.vector.VectorL2DistanceFun;
 import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.runtime.op.special.IfNullFunFactory;
-import io.dingodb.expr.runtime.op.string.ConcatFunFactory;
+import io.dingodb.expr.runtime.op.string.ConcatFun;
 import io.dingodb.expr.runtime.op.string.LTrim1FunFactory;
 import io.dingodb.expr.runtime.op.string.LeftFunFactory;
 import io.dingodb.expr.runtime.op.string.Locate2FunFactory;
@@ -153,7 +153,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
 
         // string
         registerFunction(
-            ConcatFunFactory.NAME,
+            ConcatFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING_STRING,
