@@ -138,7 +138,7 @@ public class Gc {
             }
 
             LogUtils.info(log, "Update safe point to safeTs: {}, reqTs: {}", safeTs, reqTs);
-            if (isDisable(reqTs)) {
+            if (enable(reqTs)) {
                 UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
                     = UpdateGCSafePointRequest.builder();
                 builder.safePoint(0);
@@ -281,7 +281,7 @@ public class Gc {
             .isPresent();
     }
 
-    private static boolean isDisable(long reqTs) {
+    private static boolean enable(long reqTs) {
         Map<String,String> globalVariables = InfoSchemaService.root().getGlobalVariables();
         String enableGc = globalVariables.get(GcApi.enableKeyStr);
         return "1".equalsIgnoreCase(enableGc);
@@ -473,12 +473,15 @@ public class Gc {
         if ("off".equalsIgnoreCase(jobGc)) {
             return;
         }
+        if (!enable(0)) {
+            return;
+        }
         long currentTime = System.currentTimeMillis();
         String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");
         long gcLifeTime = Long.parseLong(gcLifeTimeStr);
         long safePointTs = currentTime - (gcLifeTime * 1000);
         long tso = TsoService.getDefault().tso(safePointTs);
-        DdlUtil.gcLifeTimeTso = tso;
+        InfoSchemaService.root().putGlobalVariable("safepoint_ts", tso);
         LogUtils.info(log, "gcDeleteRegion tso:{}", tso);
         gcDeleteRange(tso);
     }

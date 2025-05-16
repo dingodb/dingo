@@ -158,7 +158,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
                             SqlKind kind, ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
-                            boolean replaceInto, boolean isIgnore, long updateLimit) {
+                            boolean replaceInto, boolean isIgnore, long updateLimit, String user, String host) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
@@ -170,30 +170,34 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         this.replaceInto = replaceInto;
         this.isIgnore = isIgnore;
         this.updateLimit = updateLimit;
+        this.user = user;
+        this.host = host;
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation) {
+        String user = "root";
+        String host = "%";
         renderJob(jobManager, job, input, currentLocation, false, null, null,
-            new ExecuteVariables());
+            new ExecuteVariables(), user, host);
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
-                                 ExecuteVariables executeVariables) {
+                                 ExecuteVariables executeVariables, String user, String host) {
         renderJob(jobManager, job, input, currentLocation, checkRoot, transaction, kind,
-            executeVariables, 0, false, false, false, -1);
+            executeVariables, 0, false, false, false, -1, user, host);
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
                                  ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
-                                 boolean replaceInto, boolean isIgnore, long updateLimit) {
+                                 boolean replaceInto, boolean isIgnore, long updateLimit, String user, String host) {
         try {
             IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
             DingoJobVisitor visitor = new DingoJobVisitor(
                 job, idGenerator, currentLocation, transaction, kind,
                 executeVariables, pointTs, forUpdate, replaceInto, isIgnore,
-                updateLimit
+                updateLimit, user, host
             );
             Collection<Vertex> outputs = dingo(input).accept(visitor);
             if (checkRoot && !outputs.isEmpty()) {

@@ -284,12 +284,7 @@ public class DdlHandler {
             .schemaName(convertName(schemaInfo.getName()))
             .schemaId(schemaInfo.getSchemaId()).build();
         job.setConnId(connId);
-        try {
-            doDdlJob(job);
-        } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] dropSchema error, schema:" + schemaInfo.getName(), e);
-            throw e;
-        }
+        doDdlJob(job);
     }
 
     public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {

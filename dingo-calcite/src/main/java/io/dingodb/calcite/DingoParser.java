@@ -555,8 +555,10 @@ public class DingoParser {
     }
 
     public long getGcLifeTime() {
-        if (DdlUtil.gcLifeTimeTso > 0) {
-            return DdlUtil.gcLifeTimeTso;
+        long globalSafePointTs = Long.parseLong(InfoSchemaService.root().getGlobalVariables()
+            .getOrDefault("safepoint_ts", "0"));
+        if (globalSafePointTs > 0) {
+            return globalSafePointTs;
         } else {
             long currentTime = System.currentTimeMillis();
             String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");

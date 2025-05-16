@@ -186,7 +186,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -279,7 +278,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             SchemaInfo schemaInfo = subSchema.getSchemaInfo(schemaName);
             schemaId = schemaInfo.getSchemaId();
             DdlService ddlService = DdlService.root();
-            ddlService.dropSchema(schemaInfo, connId);
+            try {
+                ddlService.dropSchema(schemaInfo, connId);
+            } catch (DingoSqlException e) {
+                if (e.getSqlCode() == 1008 && schema.ifExists) {
+                    return;
+                } else {
+                    throw  e;
+                }
+            }
         } else {
             throw new RuntimeException("Schema not empty.");
         }
@@ -568,7 +575,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (schema == null) {
             return;
         }
-        final String tableName = getTableName(drop.name);
+        String tableName = getTableName(drop.name);
+        tableName = convertName(tableName);
         SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
         if (schemaInfo == null) {
             throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();

@@ -58,12 +58,16 @@ public final class DingoInfoSchemaScanVisitFun {
         } else {
             tableName = td.getName();
         }
+        String user = visitor.getUser();
+        String host = visitor.getHost();
         InfoSchemaScanParam param = new InfoSchemaScanParam(
             td.tupleType(),
             td.version,
             filter,
             rel.getSelection(),
-            tableName
+            tableName,
+            user,
+            host
         );
 
         Task task = job.getOrCreate(currentLocation, idGenerator);

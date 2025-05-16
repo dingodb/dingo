@@ -268,7 +268,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
             });
         }
 
-        Map<String, TablePrivDefinition> tablePrivDefMap = new HashMap<>();
+        Map<String, TablePrivDefinition> tablePrivDefMap = caseSensitive() ? new TreeMap<>() : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         if (tpValues != null) {
             tpValues.forEach(tpValue -> {
                 String schemaName = convertName((String) tpValue[2]);
