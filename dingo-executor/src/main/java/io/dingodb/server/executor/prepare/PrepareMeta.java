@@ -242,7 +242,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 5.7 compatible"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
-        values.add(new Object[]{"max_allowed_packet", "16777216"});
+        values.add(new Object[]{"max_allowed_packet", "67108864"});
         values.add(new Object[]{"local_infile", "1"});
         values.add(new Object[]{"max_connections", "151"});
         values.add(new Object[]{"max_connect_errors", "10"});
