@@ -33,6 +33,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -284,6 +285,18 @@ public class DdlHandler {
             .schemaName(convertName(schemaInfo.getName()))
             .schemaId(schemaInfo.getSchemaId()).build();
         job.setConnId(connId);
+        doDdlJob(job);
+    }
+
+    public void alterIndex(long schemaId, String schemaName, Table table, IndexDefinition indexDef) {
+        DdlJob job = DdlJob.builder()
+            .actionType(ActionType.ActionAlterIndex)
+            .schemaState(SchemaState.SCHEMA_PUBLIC)
+            .schemaName(convertName(schemaName))
+            .schemaId(schemaId).tableId(table.tableId.seq).tableName(table.getName()).build();
+        List<Object> args = new ArrayList<>();
+        args.add(indexDef);
+        job.setArgs(args);
         doDdlJob(job);
     }
 

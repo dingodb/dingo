@@ -50,11 +50,22 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.sdk.service.CoordinatorService;
+import io.dingodb.sdk.service.Services;
+import io.dingodb.sdk.service.entity.common.IndexParameter;
+import io.dingodb.sdk.service.entity.common.RawEngine;
+import io.dingodb.sdk.service.entity.common.RegionType;
+import io.dingodb.sdk.service.entity.coordinator.CreateIdsRequest;
+import io.dingodb.sdk.service.entity.coordinator.CreateRegionRequest;
+import io.dingodb.sdk.service.entity.coordinator.IdEpochType;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
+import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
+import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
+import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.store.proxy.mapper.MapperImpl;
 import io.dingodb.store.proxy.service.AutoIncrementService;
@@ -84,7 +95,6 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrInvalidDDLState;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY;
@@ -93,6 +103,7 @@ import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_NONE;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_ONLY;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_REORG;
+import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
 public class DdlWorker {
@@ -304,6 +315,9 @@ public class DdlWorker {
                 break;
             case ActionTruncateTablePartition:
                 res = onTruncatePart(dc, job);
+                break;
+            case ActionAlterIndex:
+                res = onAlterIndex(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -2181,5 +2195,116 @@ public class DdlWorker {
                 error = job.getDingoErr().errorMsg;
         }
         return Pair.of(0L, error);
+    }
+
+    public Pair<Long, String> onAlterIndex(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
+        if (tableRes.getValue() != null && tableRes.getKey() == null) {
+            return Pair.of(0L, tableRes.getValue());
+        }
+        boolean empty = JobTableUtil.validateTableEmpty(job.getSchemaName(), job.getTableName());
+        if (!empty) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, "table is not empty");
+        }
+        IndexDefinition indexDef = (IndexDefinition) job.getArgs().get(0);
+        String indexName = convertName(indexDef.getName());
+        List<Object> indexList = InfoSchemaService.root().allIndex(job.getSchemaId(), job.getTableId());
+        TableDefinitionWithId indexWithId = indexList.stream()
+            .map(idxTable -> (TableDefinitionWithId)idxTable)
+            .filter(idxTable ->
+                idxTable.getTableDefinition().getName().toUpperCase().endsWith(indexName.toUpperCase()))
+            .findFirst()
+            .orElse(null);
+        if (indexWithId == null) {
+            job.setState(JobState.jobStateCancelled);
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrKeyDoesNotExist, indexName, job.getTableName()));
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        }
+        indexDef.getProperties().forEach((k, v) -> {
+            indexWithId.getTableDefinition().getProperties().put(k.toString(), v.toString());
+        });
+
+        MAPPER.resetIndexParameter(indexWithId.getTableDefinition(), indexDef);
+        DingoCommonId originIndexId = indexWithId.getTableId();
+
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        List<DingoCommonId> indexIds = coordinatorService.createIds(
+                TsoService.getDefault().cacheTso(),
+                CreateIdsRequest.builder().idEpochType(IdEpochType.ID_NEXT_TABLE).count(1).build()
+            ).getIds()
+            .stream()
+            .map(id -> DingoCommonId.builder()
+                .entityId(id)
+                .entityType(EntityType.ENTITY_TYPE_INDEX)
+                .parentEntityId(job.getTableId())
+                .build())
+            .collect(Collectors.toList());
+
+        List<DingoCommonId> indexPartIds = coordinatorService.createIds(
+                TsoService.getDefault().cacheTso(), CreateIdsRequest.builder()
+                    .idEpochType(IdEpochType.ID_NEXT_TABLE)
+                    .count(indexWithId.getTableDefinition()
+                        .getTablePartition().getPartitions().size())
+                    .build()
+            ).getIds().stream()
+            .map(id -> DingoCommonId.builder()
+                .entityType(EntityType.ENTITY_TYPE_PART)
+                .parentEntityId(indexIds.get(0).getEntityId())
+                .entityId(id)
+                .build())
+            .collect(Collectors.toList());
+        TableIdWithPartIds indexIdWithPartIds = TableIdWithPartIds.builder()
+            .tableId(indexIds.get(0))
+            .partIds(indexPartIds)
+            .build();
+        io.dingodb.store.proxy.meta.MetaService.resetTableId(indexIdWithPartIds, indexWithId);
+
+        io.dingodb.sdk.service.entity.meta.TableDefinition definition = indexWithId.getTableDefinition();
+        for (Partition partition : definition.getTablePartition().getPartitions()) {
+            IndexParameter indexParameter = definition.getIndexParameter();
+            if (indexParameter.getVectorIndexParameter() != null) {
+                indexParameter.setIndexType(io.dingodb.sdk.service.entity.common.IndexType.INDEX_TYPE_VECTOR);
+            } else if (indexParameter.getDocumentIndexParameter() != null) {
+                indexParameter.setIndexType(io.dingodb.sdk.service.entity.common.IndexType.INDEX_TYPE_DOCUMENT);
+            }
+            CreateRegionRequest request = CreateRegionRequest.builder()
+                .regionName("I_" + job.getSchemaId() + "_" + definition.getName() + "_part_"
+                    + partition.getId().getEntityId())
+                .regionType(definition.getIndexParameter().getIndexType() == io.dingodb.sdk.service.entity.common.IndexType.INDEX_TYPE_SCALAR
+                    ? RegionType.STORE_REGION : RegionType.INDEX_REGION)
+                .replicaNum(indexWithId.getTableDefinition().getReplica())
+                .range(partition.getRange())
+                .rawEngine(RawEngine.RAW_ENG_ROCKSDB)
+                .storeEngine(definition.getStoreEngine())
+                .schemaId(job.getSchemaId())
+                .tableId(job.getTableId())
+                .partId(partition.getId().getEntityId())
+                .tenantId(indexWithId.getTenantId())
+                .indexId(indexWithId.getTableId().getEntityId())
+                .indexParameter(indexParameter)
+                .build();
+            try {
+                LogUtils.info(log, "create region, range:{}", partition.getRange());
+                coordinatorService.createRegion(TsoService.getDefault().cacheTso(), request);
+            } catch (Exception e) {
+                LogUtils.error(log, "create region error,schemaId:{},regionId:{}",
+                    job.getSchemaId(), partition.getRange(), e);
+                job.setState(JobState.jobStateCancelled);
+                return Pair.of(0L, "create index region error");
+            }
+        }
+        MetaService.root().dropIndex(
+            MAPPER.idFrom(tableRes.getKey().getTableId()),
+            MAPPER.idFrom(originIndexId),
+            job.getId(), job.getSnapshotVer()
+        );
+        job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
     }
 }

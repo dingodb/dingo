@@ -276,6 +276,8 @@ public class DdlJob {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionDropSequence) {
                 t = new TypeReference<List<String>>() {};
+            } else if (actionType == ActionType.ActionAlterIndex) {
+                t = new TypeReference<List<IndexDefinition>>() {};
             }
 
             this.args = (List<Object>) objectMapper.readValue(rawArgs, t);
