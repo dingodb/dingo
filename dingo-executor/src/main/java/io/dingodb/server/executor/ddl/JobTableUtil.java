@@ -325,4 +325,19 @@ public final class JobTableUtil {
         }
     }
 
+    public static boolean validateTableEmpty(String schema, String table) {
+        String sql = "select * from %s.%s limit 1";
+        sql = String.format(sql, schema, table);
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            List<Object[]> res = session.executeQuery(sql);
+            return res.isEmpty();
+        } catch (Exception e) {
+            LogUtils.error(log, "validateTableEmpty error", e);
+            return true;
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
+    }
+
 }

@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.sequence.SequenceDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.DdlServiceProvider;
@@ -30,7 +31,6 @@ import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -58,6 +58,11 @@ public class LocalDdlService implements DdlService {
     @Override
     public void dropSchema(SchemaInfo schemaInfo, String connId) {
         localMetaService.dropSubMetaService(schemaInfo.getName());
+    }
+
+    @Override
+    public void alterIndex(long schemaId, String schemaName, Table table, IndexDefinition indexDef) {
+
     }
 
     @Override

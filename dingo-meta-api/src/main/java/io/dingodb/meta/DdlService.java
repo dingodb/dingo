@@ -23,6 +23,7 @@ import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
@@ -37,6 +38,8 @@ public interface DdlService {
     void createSchema(String schemaName, long schemaId, String connId);
 
     void dropSchema(SchemaInfo schemaInfo, String connId);
+
+    void alterIndex(long schemaId, String schemaName, Table table, IndexDefinition indexDef);
 
     void createTableWithInfo(String schemaName,
                              TableDefinition tableDefinition, String connId, String sql);

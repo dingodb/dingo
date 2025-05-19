@@ -204,6 +204,7 @@ public class InfoSchemaBuilder {
             case ActionRenameIndex:
             case ActionModifyTableComment:
             case ActionAlterIndexVisibility:
+            case ActionAlterIndex:
             case ActionAddTablePartition:
             case ActionDropTablePartition:
             case ActionTruncateTablePartition:

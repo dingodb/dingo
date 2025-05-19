@@ -1148,7 +1148,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             sqlAlterIndex.setPreValidate(false);
             return;
         }
-        indexTable.getProperties().putAll(sqlAlterIndex.getProperties());
+        List<ColumnDefinition> columnInfoList = indexTable.getColumns().stream().map(col -> {
+            return mapTo(col);
+        }).collect(Collectors.toList());
+        TableDefinition tableDefinition = IndexDefinition.builder()
+            .properties(sqlAlterIndex.getProperties())
+            .name(sqlAlterIndex.getIndex())
+            .columns(columnInfoList)
+            .build();
+        IndexDefinition indexDefinition = IndexDefinition.createIndexDefinition(
+            sqlAlterIndex.getIndex(), tableDefinition, false, null, null
+        );
+        DdlService.root().alterIndex(schema.getSchemaId(), schema.getSchemaName(),
+            table.getTable(), indexDefinition);
+        LogUtils.info(log, "DDL:" + sqlAlterIndex + " done");
     }
 
     public void execute(@NonNull SqlAlterIndexVisible sqlAlterIndexVisible, CalcitePrepare.Context context) {

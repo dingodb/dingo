@@ -1239,7 +1239,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .getIds().get(0);
     }
 
-    private static void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
+    public static void resetTableId(TableIdWithPartIds newTableId, TableDefinitionWithId table) {
         table.setTableId(newTableId.getTableId());
         List<Partition> partitions = table.getTableDefinition().getTablePartition().getPartitions();
         for (int i = 0; i < newTableId.getPartIds().size(); i++) {
