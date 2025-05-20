@@ -100,6 +100,11 @@ public class DingoResultSet extends AvaticaResultSet {
                     );
                 }
             }
+
+            //Deal with bit type output format.
+            if (columnMetaData.type.name.equalsIgnoreCase("BIT")) {
+                this.accessorList.set(i, new DingoAccessor.BitAccessor((AbstractCursor) cursor, i));
+            }
         }
         return this;
     }

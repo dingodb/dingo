@@ -41,14 +41,22 @@ import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.sql.SqlBasicTypeNameSpec;
+import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSetOption;
+import org.apache.calcite.sql.SqlTypeNameSpec;
+import org.apache.calcite.sql.ddl.DingoSqlColumn;
 import org.apache.calcite.sql.ddl.SqlDropTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.sql.SQLClientInfoException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,6 +88,24 @@ public class DingoDdlVerify {
                 if (indexCount > 0) {
                     accessTypes.add(DingoSqlAccessEnum.INDEX);
                 }
+
+                //Check column type precision and scale here.
+                sqlCreateTable.columnList.stream()
+                    .forEach(col -> {
+                        if(col instanceof DingoSqlColumn) {
+                            SqlDataTypeSpec spec = ((DingoSqlColumn)col).dataType;
+                            SqlTypeNameSpec typeNameSpec = spec.getTypeNameSpec();
+                            if(spec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
+                                SqlBasicTypeNameSpec t1 = (SqlBasicTypeNameSpec)spec.getTypeNameSpec();
+                                if(t1.getSqlTypeName() == SqlTypeName.BIT) {
+                                    int precision = t1.getPrecision();
+                                    if(precision < 1 || precision > 64) {
+                                        throw new DingoSqlException(String.format("Display width out of range for bit type [1,64]"));
+                                    }
+                                }
+                            }
+                        }
+                    });
             }
             schemaTables = initSchemaTable(sqlCreateTable.name.names, connection);
         } else if (sqlNode instanceof SqlDropUser) {

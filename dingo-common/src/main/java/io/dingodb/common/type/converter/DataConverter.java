@@ -18,9 +18,11 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.apache.calcite.avatica.util.ByteString;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -164,6 +166,20 @@ public interface DataConverter {
             return number.intValue() != 0;
         }
         return (Boolean) value;
+    }
+
+    default long convertBitFrom(@NonNull Object value) {
+        String className = value.getClass().getName();
+        long val = 0;
+        if(value instanceof org.apache.calcite.avatica.util.ByteString) {
+            String v = ((ByteString) value).toString(16);
+            val= Long.parseLong(v, 16);
+        } else if( value instanceof Long) {
+            val = (Long) value;
+        } else {
+            throw new IllegalArgumentException("Unsupported value type for bit: " + value.getClass().getName());
+        }
+        return val;
     }
 
     default String convertStringFrom(@NonNull Object value) {

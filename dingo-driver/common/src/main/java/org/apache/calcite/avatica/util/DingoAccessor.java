@@ -229,6 +229,20 @@ public class DingoAccessor implements Cursor.Accessor {
         }
     }
 
+    public static class BitAccessor extends DingoAccessor {
+        public BitAccessor(AbstractCursor cursor, int index) {
+            super(cursor.createGetter(index));
+        }
+
+        public long getLong() throws SQLException {
+            Long o = (Long) getObject();
+            if (o == null) {
+                return 0;
+            }
+            return o;
+        }
+    }
+
     public static class ArrayAccessor extends DingoAccessor {
         private final AvaticaType component;
 

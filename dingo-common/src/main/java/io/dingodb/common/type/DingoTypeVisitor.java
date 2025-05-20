@@ -22,6 +22,7 @@ import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;
@@ -42,6 +43,8 @@ public interface DingoTypeVisitor<R, T> {
     R visitDoubleType(@NonNull DoubleType type, T obj);
 
     R visitBooleanType(@NonNull BooleanType type, T obj);
+
+    R visitBitType(@NonNull BitType type, T obj);
 
     R visitDecimalType(@NonNull DecimalType type, T obj);
 

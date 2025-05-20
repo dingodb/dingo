@@ -159,6 +159,10 @@ public final class MysqlResponseHandler {
                     }
                 } else if (typeName.equalsIgnoreCase("ARRAY")) {
                     val = getArrayObject(mysqlConnection, val);
+                } else if (typeName.equalsIgnoreCase("BIT")) {
+                    if(val != null) {
+                        val = "0x" + Long.toHexString((long)val);
+                    }
                 }
 
                 resultSetRowPacket.addColumnValue(val);

@@ -23,6 +23,7 @@ import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;
@@ -60,6 +61,7 @@ public final class DingoTypeFactory {
         scalarGenerators.put("REAL", DoubleType::new);
         scalarGenerators.put("BOOL", BooleanType::new);
         scalarGenerators.put("BOOLEAN", BooleanType::new);
+        scalarGenerators.put("BIT", BitType::new);
         scalarGenerators.put("STRING", StringType::new);
         scalarGenerators.put("CHAR", StringType::new);
         scalarGenerators.put("VARCHAR", StringType::new);
