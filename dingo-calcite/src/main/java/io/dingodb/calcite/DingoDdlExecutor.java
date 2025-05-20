@@ -2749,6 +2749,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
+
         return ColumnDefinition.builder()
             .name(name)
             .type(typeName.getName())

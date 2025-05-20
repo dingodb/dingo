@@ -4903,6 +4903,45 @@ SqlNode StringLiteral() :
         }
     }
 |
+    <BIT_STRING_LITERAL>
+    {
+        frags = new ArrayList<SqlLiteral>();
+        try {
+            p = SqlParserUtil.trim(token.image, "bB'");
+            frags.add(SqlLiteral.createBinaryStringFromBitString(p, getPos()));
+        } catch (NumberFormatException ex) {
+            throw SqlUtil.newContextException(getPos(),
+                RESOURCE.illegalBinaryString(token.image));
+        }
+    }
+    (
+        // The grammar is ambiguous when a continued literals and a character
+        // string alias are both possible. For example, in
+        //   SELECT x'01'\n'ab'
+        // we prefer that 'ab' continues the literal, and is not an alias.
+        // The following LOOKAHEAD mutes the warning about ambiguity.
+        LOOKAHEAD(1)
+        <QUOTED_STRING>
+        {
+            try {
+                p = SqlParserUtil.trim(token.image, "'"); // no embedded quotes
+                frags.add(SqlLiteral.createBinaryString(p, getPos()));
+            } catch (NumberFormatException ex) {
+                throw SqlUtil.newContextException(getPos(),
+                    RESOURCE.illegalBinaryString(token.image));
+            }
+        }
+    )*
+    {
+        assert !frags.isEmpty();
+        if (frags.size() == 1) {
+            return frags.get(0); // just the head fragment
+        } else {
+            SqlParserPos pos2 = SqlParserPos.sum(frags);
+            return SqlStdOperatorTable.LITERAL_CHAIN.createCall(pos2, frags);
+        }
+    }
+|
     (
         <PREFIXED_STRING_LITERAL>
         { charSet = SqlParserUtil.getCharacterSet(token.image); }
@@ -6062,7 +6101,7 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
                                            <COMMA>
                                            scale = UnsignedIntLiteral()
                                 ]
-          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
+          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BIT; }
     |
         <TEXT> [<LPAREN> precision = UnsignedIntLiteral()
            [
@@ -6095,7 +6134,11 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
         [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
     )
     {
-        return new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));
+        if(sqlTypeName == SqlTypeName.BIT) {
+            return new SqlBasicTypeNameSpec(SqlTypeName.BIT, precision, s.end(this));
+        } else {
+            return new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));
+        }
     }
 }
 
@@ -8882,6 +8925,10 @@ void NonReservedKeyWord2of3() :
     /* To improve error reporting, we allow all kinds of characters,
      * not just hexits, in a binary string literal. */
     < BINARY_STRING_LITERAL: ["x","X"] <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+|
+    /* To improve error reporting, we allow all kinds of characters,
+     * not just hexits, in a binary string literal. */
+    < BIT_STRING_LITERAL: ["b","B"] <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
 }
 
 // All databases except BigQuery support standard single-quoted literals,

@@ -33,6 +33,7 @@ import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.IntervalYearType;
 import io.dingodb.common.type.scalar.LongType;
@@ -85,6 +86,11 @@ public class AvroSchemaConverter extends DingoTypeVisitorBase<Schema, Void> {
     @Override
     public Schema visitBooleanType(@NonNull BooleanType type, Void obj) {
         return ofNullable(Schema.create(Schema.Type.BOOLEAN), type.isNullable());
+    }
+
+    @Override
+    public Schema visitBitType(@NonNull BitType type, Void obj) {
+        return ofNullable(Schema.create(Schema.Type.LONG), type.isNullable());
     }
 
     @Override
