@@ -27,7 +27,7 @@ configurations {
 
 dependencies {
     annotationProcessor group: 'org.immutables', name: 'value', version: 'immutables'.v()
-    api group: 'io.dingodb', name: 'calcite-core', version: '1.33.0-SNAPSHOT'
+    implementation group: 'io.dingodb', name: 'calcite-core', version: '1.33.0-SNAPSHOT'
     api project(':dingo-exec')
     implementation project(':dingo-partition-api')
     implementation project(':dingo-codec-api')
