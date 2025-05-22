@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
+import org.apache.calcite.util.IndexColumnName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             }
             cols.add(Column
                 .builder()
-                .name(index.getName().concat("$distance"))
+                .name(index.getName().concat(IndexColumnName.VECTOR_INDEX_COLUMN))
                 .sqlTypeName("FLOAT")
                 .type(new FloatType(false))
                 .precision(-1)
@@ -128,7 +129,7 @@ public class TableFunctionNamespace extends AbstractNamespace {
             this.index = getDocumentIndexTable(table, columnIdentifier.getSimple().toUpperCase());
             cols.add(Column
                 .builder()
-                .name(index.getName().concat("$rank_bm25"))
+                .name(index.getName().concat(IndexColumnName.TEXT_INDEX_COLUMN))
                 .sqlTypeName("FLOAT")
                 .type(new FloatType(false))
                 .precision(-1)

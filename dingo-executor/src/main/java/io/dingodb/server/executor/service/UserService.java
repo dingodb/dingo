@@ -162,7 +162,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
 
     @Override
     public void dropUser(UserDefinition userDefinition) {
-        String condition = "user ='" + userDefinition.getUser() + "' and host ='" + userDefinition.getHost() + "'";
+        String condition = "User ='" + userDefinition.getUser() + "' and Host ='" + userDefinition.getHost() + "'";
         String delUserSql = "delete from mysql.user where " + condition;
         String delDbSql = "delete from mysql.db where " + condition;
         String delTablesPrivSql = "delete from mysql.tables_priv where " + condition;

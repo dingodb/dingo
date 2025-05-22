@@ -35,6 +35,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.IndexColumnName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -117,7 +118,7 @@ public class DingoGetDocumentPreFilter extends Filter implements DingoRel {
         RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         builder.addAll(relDataType.getFieldList());
         builder.add(new RelDataTypeFieldImpl(
-            indexTable.getName() + "$rank_bm25",
+            indexTable.getName() + IndexColumnName.TEXT_INDEX_COLUMN,
             relDataType.getFieldCount(),
             getCluster().getTypeFactory().createSqlType(SqlTypeName.get("FLOAT"))));
         return builder.build();
