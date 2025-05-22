@@ -27,6 +27,21 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
 
     @Override
     public void build() {
+        table("test_group_by", file("cases/tables/test_group_by.create.sql"))
+            .init(file("cases/tables/test_group_by.data.sql"), 2);
+
+        test("Select group by timestamp")
+            .use("table", "test_group_by")
+            .step(
+                "select substr(charge_start_time, 1, 16) as charge_start_time from {table} group by substr(charge_start_time, 1, 16)",
+                csv(
+                    "charge_start_time",
+                    "STRING",
+                    "2025-09-21 22:30",
+                    "2025-05-06 11:50"
+                )
+            );
+
         table("i4k_vs_f80", file("cases/tables/i4k_vs_f80.create.sql"))
             .init(file("cases/tables/i4k_vs_f80.data.sql"), 9);
 
