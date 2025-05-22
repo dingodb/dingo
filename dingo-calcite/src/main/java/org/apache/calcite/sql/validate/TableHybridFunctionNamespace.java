@@ -36,6 +36,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
+import org.apache.calcite.util.IndexColumnName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
@@ -168,11 +169,11 @@ public class TableHybridFunctionNamespace extends AbstractNamespace {
             //    throw new RuntimeException("Multiple hybridSearch in SQL is not supported");
             //}
             String documentId = documentIndex.getColumns().get(0).getName();
-            String documentRankBm25 = documentIndex.getName() + "$rank_bm25";
+            String documentRankBm25 = documentIndex.getName() + IndexColumnName.TEXT_INDEX_COLUMN;
             String documentSelect = this.function.operand(0).toString();
             String vectorSelect = this.function.operand(1).toString();
             String vectorId = vectorIndex.getColumns().get(0).getName();
-            String vectorDistance = vectorIndex.getName() + "$distance";
+            String vectorDistance = vectorIndex.getName() + IndexColumnName.VECTOR_INDEX_COLUMN;
             String sql = HybridSearchSqlUtils.hybridSearchSqlReplace(
                 vectorWeight,
                 documentWeight,
