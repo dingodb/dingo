@@ -70,7 +70,8 @@ public final class DingoParserContext implements Context {
     @Getter
     private final CalciteConnectionConfig config;
     @Getter
-    private final TimeZone timeZone;
+    @Setter
+    private TimeZone timeZone;
     @Getter
     private final boolean usingRelOp;
     @Getter
@@ -92,17 +93,22 @@ public final class DingoParserContext implements Context {
     private boolean autoCommit;
 
     public DingoParserContext(@NonNull String defaultSchemaName) {
-        this(defaultSchemaName, null, null);
+        this(defaultSchemaName, null, null, TimeZone.getDefault());
     }
 
     public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options,
                               @Nullable Properties sessionVariables) {
+        this(defaultSchemaName, options, sessionVariables, TimeZone.getDefault());
+    }
+
+    public DingoParserContext(@NonNull String defaultSchemaName, @Nullable Properties options,
+                              @Nullable Properties sessionVariables, TimeZone timeZone) {
         this.defaultSchemaName = defaultSchemaName;
         this.sessionVariables = sessionVariables;
         this.autoCommit = false;
 
-        String timeZoneId = (options != null ? options.getProperty("timeZone") : null);
-        timeZone = (timeZoneId != null ? TimeZone.getTimeZone(timeZoneId) : TimeZone.getDefault());
+        timeZone = timeZone == null ? TimeZone.getDefault() : timeZone;
+        this.timeZone = timeZone;
 
         String usingRelOpStr = options != null ? options.getProperty("usingRelOp") : null;
         usingRelOp = (usingRelOpStr == null || Boolean.parseBoolean(usingRelOpStr));

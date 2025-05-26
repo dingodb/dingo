@@ -79,6 +79,7 @@ import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -601,7 +602,9 @@ public class DingoMeta extends MetaImpl {
                 }
                 if (!trace) {
                     DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
-                    AvaticaResultSetConverter converter = new AvaticaResultSetConverter(resultSet.getLocalCalendar());
+                    GregorianCalendar calendarCST = new GregorianCalendar();
+                    calendarCST.setTimeZone(((DingoConnection) connection).getInternalTimeZone().getTimeZone());
+                    AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
                     for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                         rows.add(dingoType.convertTo(iterator.next(), converter));
                     }

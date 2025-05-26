@@ -68,7 +68,11 @@ public class SetOptionExecutor implements DdlExecutor {
             value = Objects.requireNonNull(numericLiteral.getValue()).toString();
         } else if (sqlNode instanceof SqlIdentifier) {
             sqlIdentifier = (SqlIdentifier) sqlNode;
-            value = sqlIdentifier.names.get(0).toLowerCase();
+            if (name.equals("time_zone")) {
+                value = sqlIdentifier.names.get(0);
+            } else {
+                value = sqlIdentifier.names.get(0).toLowerCase();
+            }
         } else if (sqlNode instanceof SqlLiteral) {
             Object val = ((SqlLiteral) sqlNode).getValue();
             if (val != null) {
@@ -97,6 +101,9 @@ public class SetOptionExecutor implements DdlExecutor {
                     connection.setClientInfo(name, value);
                 }
             } else if ("SYSTEM".equals(scope)) {
+                if ("time_zone".equals(name)) {
+                    connection.setClientInfo(name, value);
+                }
                 putGlobalVariable(name, value);
             } else if ("EXECUTOR".equals(scope)) {
                 ScopeVariables.setExecutorProp(name, value);

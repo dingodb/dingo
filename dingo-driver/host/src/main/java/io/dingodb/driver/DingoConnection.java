@@ -26,6 +26,8 @@ import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.time.InternalTimeZone;
+import io.dingodb.common.time.TimeZoneUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -118,6 +120,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Getter
     private Map<Long, Long> mdlLockJobMap = new ConcurrentHashMap<>();
 
+    @Getter
+    @Setter
+    private InternalTimeZone internalTimeZone = InternalTimeZone.defaultTimeZone;
+
     protected DingoConnection(
         DingoDriver driver,
         AvaticaFactory factory,
@@ -133,7 +139,6 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         info.put("connId", id);
         LogUtils.trace(log, "Connection url = {}, properties = {}, default schema = {}.", url, info, defaultSchema);
         sessionVariables = new Properties();
-        context = new DingoParserContext(defaultSchema, info, sessionVariables);
         String user = info.getProperty("user");
         String host  = info.getProperty("host");
         if (user != null && host != null) {
@@ -145,9 +150,15 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
             Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
             this.setClientInfo(globalProp);
+            if (sessionVariables.containsKey("time_zone")) {
+                String timeZoneId = (String) sessionVariables.get("time_zone");
+                InternalTimeZone timeZone = TimeZoneUtils.convertFromTZ(timeZoneId);
+                this.internalTimeZone = timeZone;
+            }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         }
+        context = new DingoParserContext(defaultSchema, info, sessionVariables, internalTimeZone.getTimeZone());
     }
 
     public DingoMeta getMeta() {
@@ -496,6 +507,14 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 oneTimeTxIsolation = value;
                 return;
             }
+        }
+        if (name.equalsIgnoreCase("time_zone")) {
+            InternalTimeZone timeZone = TimeZoneUtils.convertFromTZ(value);
+            if (timeZone == null) {
+                throw new RuntimeException("Invalid time_zone value: " + value);
+            }
+            this.internalTimeZone = timeZone;
+            this.getContext().setTimeZone(timeZone.getTimeZone());
         }
         sessionVariables.setProperty(name, value);
         if (name.equalsIgnoreCase("autocommit")) {
