@@ -191,6 +191,12 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     } else if (type.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
                         && resultType.getSqlTypeName().getName().equalsIgnoreCase("INTEGER")) {
                         resultType = type;
+                    } else if (resultType.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
+                        && type.getSqlTypeName().getName().equalsIgnoreCase("DECIMAL")) {
+                        continue;
+                    } else if (type.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
+                        && resultType.getSqlTypeName().getName().equalsIgnoreCase("DECIMAL")) {
+                        resultType = type;
                     } else {
                         return null;
                     }
