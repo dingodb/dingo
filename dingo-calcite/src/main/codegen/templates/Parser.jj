@@ -5601,6 +5601,12 @@ void AddIdentifierSegment(List<String> names, List<SqlParserPos> positions) :
             pos = getPos().withQuoting(true);
         }
     |
+        <QUOTED_IDENTIFIER1> {
+            id = SqlParserUtil.stripQuotes(getToken(0).image, DQ, DQ, DQDQ,
+                quotedCasing);
+            pos = getPos().withQuoting(true);
+        }
+    |
         <BACK_QUOTED_IDENTIFIER> {
             id = SqlParserUtil.stripQuotes(getToken(0).image, "`", "`", "``",
                 quotedCasing);
@@ -8862,6 +8868,8 @@ void NonReservedKeyWord2of3() :
        (["0"-"9"])+("-")?(["0"-"9"]["0"-"9"])("-")?(["0"-"9"]["0"-"9"])(" ")
        (["0"-"9"])+(":")?(["0"-"9"]["0"-"9"])(":")?(["0"-"9"]["0"-"9"])
        >
+|
+     <QUOTED_IDENTIFIER1: "\"" ( (~["\""])+ | "\"\"" )* "\"" >
 |
     < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
 |
