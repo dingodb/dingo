@@ -250,45 +250,45 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
             arguments("from_unixtime(1649770110)", "FROM_UNIXTIME(1649770110)", new Timestamp(1649770110000L)),
             arguments("from_unixtime(null)", "FROM_UNIXTIME(DECIMAL(NULL))", null),
             arguments("date_format('2022/7/2')", "DATE_FORMAT(CASTDATE('2022\\/7\\/2'))", "2022-07-02"),
-            arguments("date_format('', '%Y-%m-%d')", "DATE_FORMAT(CASTDATE(''), $CTF('%Y-%m-%d'))", null),
+            arguments("date_format('', '%Y-%m-%d')", "DATE_FORMAT(CASTTIMESTAMP(''), $CTF('%Y-%m-%d'))", null),
             arguments(
                 "date_format('1999-01-01', '%Y-%m-%d')",
-                "DATE_FORMAT(CASTDATE('1999-01-01'), $CTF('%Y-%m-%d'))",
+                "DATE_FORMAT(CASTTIMESTAMP('1999-01-01'), $CTF('%Y-%m-%d'))",
                 "1999-01-01"
             ),
             arguments(
                 "date_format('1999/01/01', '%Y/%m/%d')",
-                "DATE_FORMAT(CASTDATE('1999\\/01\\/01'), $CTF('%Y\\/%m\\/%d'))",
+                "DATE_FORMAT(CASTTIMESTAMP('1999\\/01\\/01'), $CTF('%Y\\/%m\\/%d'))",
                 "1999/01/01"
             ),
             arguments(
                 "date_format('1999.01.01', '%Y.%m.%d')",
-                "DATE_FORMAT(CASTDATE('1999.01.01'), $CTF('%Y.%m.%d'))",
+                "DATE_FORMAT(CASTTIMESTAMP('1999.01.01'), $CTF('%Y.%m.%d'))",
                 "1999.01.01"
             ),
-            //arguments(
-            //    "date_format('1999-01-01', '%Y-%m-%d %T')",
-            //    "DATE_FORMAT(DATE('1999-01-01'), $CTF('%Y-%m-%d %T'))",
-            //    "1999-01-01 00:00:00"
-            //),
+            arguments(
+                "date_format('1999-01-01', '%Y-%m-%d %T')",
+                "DATE_FORMAT(CASTTIMESTAMP('1999-01-01'), $CTF('%Y-%m-%d %T'))",
+                "1999-01-01 00:00:00"
+            ),
             arguments(
                 "date_format('1999-01-01', '%Y year %m month %d day')",
-                "DATE_FORMAT(CASTDATE('1999-01-01'), $CTF('%Y year %m month %d day'))",
+                "DATE_FORMAT(CASTTIMESTAMP('1999-01-01'), $CTF('%Y year %m month %d day'))",
                 "1999 year 01 month 01 day"
             ),
             arguments(
                 "date_format('2022-04-1', '%Y-%m-%d')",
-                "DATE_FORMAT(CASTDATE('2022-04-1'), $CTF('%Y-%m-%d'))",
+                "DATE_FORMAT(CASTTIMESTAMP('2022-04-1'), $CTF('%Y-%m-%d'))",
                 "2022-04-01"
             ),
             arguments(
                 "date_format('2022-04-1', '%Y-%m-%d %A')",
-                "DATE_FORMAT(CASTDATE('2022-04-1'), $CTF('%Y-%m-%d %A'))",
+                "DATE_FORMAT(CASTTIMESTAMP('2022-04-1'), $CTF('%Y-%m-%d %A'))",
                 "2022-04-01 A"
             ),
             arguments(
                 "date_format('20220413', 'Year:%Y Month:%m Day:%d')",
-                "DATE_FORMAT(CASTDATE('20220413'), $CTF('Year:%Y Month:%m Day:%d'))",
+                "DATE_FORMAT(CASTTIMESTAMP('20220413'), $CTF('Year:%Y Month:%m Day:%d'))",
                 "Year:2022 Month:04 Day:13"
             ),
             arguments(

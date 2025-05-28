@@ -622,7 +622,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (context.isDuplicateKey() && oldTuple != null) {
                     Long updateNum = Optional.mapOrGet(pair, Pair::getValue, () -> 0L);
                     if (updateNum > 0) {
-                        param.inc();
+                        param.inc(2);
                     }
                 }
             }
@@ -648,21 +648,41 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         List<SqlExpr> updates = param.getUpdates();
         Object[] revMap = mapping.revMap(tuple);
         long updateNum = 0L;
-        for (int i = 0; i < mapping.size(); i++) {
-            Object newValue = updates.get(i).eval(revMap);
-            if (newValue.equals("NULL")) {
-                newValue = null;
+        if (indexTable != null) {
+            int[] newIndex = new int[indexTable.mapping().size()];
+            for (int i = 0; i < indexTable.mapping().size(); i++) {
+                newIndex[i] = mapping.findIdx(((IndexTable) indexTable).mapping.get(i));
             }
-            int index;
-            if (indexTable != null) {
-                index = indexTable.mapping().get(i);
-            } else {
-                index = mapping.get(i);
+            revMap = ((IndexTable) indexTable).mapping.revMap(tuple);
+            TupleMapping tupleMapping = TupleMapping.of(newIndex);
+            for (int i = 0; i < tupleMapping.size(); i++) {
+                int i1 = tupleMapping.get(i);
+                Object newValue = null;
+                if (i1 >= 0) {
+                    newValue = updates.get(i1).eval(tuple);
+                }
+                if (newValue != null && newValue.equals("NULL")) {
+                    newValue = null;
+                }
+                int index = indexTable.mapping().get(i);
+                if ((newTuple[index] == null && newValue != null)
+                    || (newTuple[index] != null && !newTuple[index].equals(newValue) && newValue != null)) {
+                    newTuple[index] = newValue;
+                    updateNum++;
+                }
             }
-            if ((newTuple[index] == null && newValue != null)
-                || (newTuple[index] != null && !newTuple[index].equals(newValue))) {
-                newTuple[index] = newValue;
-                updateNum++;
+        } else {
+            for (int i = 0; i < mapping.size(); i++) {
+                Object newValue = updates.get(i).eval(tuple);
+                if (newValue.equals("NULL")) {
+                    newValue = null;
+                }
+                int index = mapping.get(i);
+                if ((newTuple[index] == null && newValue != null)
+                    || (newTuple[index] != null && !newTuple[index].equals(newValue))) {
+                    newTuple[index] = newValue;
+                    updateNum++;
+                }
             }
         }
         Object[] convertTuple = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);

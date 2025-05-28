@@ -254,11 +254,12 @@ public class DingoOperatorTable implements SqlOperatorTable {
             // Why not `OperandTypes.family(ImmutableList.of(SqlTypeFamily.DATE, SqlTypeFamily.STRING), i -> i == 1)`?
             // Because if there are any optional operands, casting is disabled.
             OperandTypes.or(
-                family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
                 family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
+                /*family(SqlTypeFamily.NUMERIC, SqlTypeFamily.STRING),*/
                 OperandTypes.DATE
             ),
-            SqlFunctionCategory.STRING
+            SqlFunctionCategory.TIMEDATE
         );
         registerFunction(
             TimeFormat1FunFactory.NAME,
