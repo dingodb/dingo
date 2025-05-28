@@ -298,7 +298,7 @@ public interface IndexMapper {
                 case "HNSW": {
                     int efConstruction = Integer.valueOf(properties.getOrDefault("efConstruction", "40"));
                     int nlinks = Integer.valueOf(properties.getOrDefault("nlinks", "32"));
-                    int maxElements = Integer.valueOf(properties.getOrDefault("maxElements", "2147483647"));
+                    int maxElements = Integer.valueOf(properties.getOrDefault("maxElements", "0"));
                     vectorIndexParameter = VectorIndexParameter.builder()
                         .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_HNSW)
                         .vectorIndexParameter(HnswParameter.builder()
@@ -312,7 +312,7 @@ public interface IndexMapper {
                     break;
                 }
                 case "BINARY_FLAT":
-                    if (dimension % 8 !=0) {
+                    if (dimension % 8 != 0) {
                         throw new RuntimeException("The dimension must be a multiple of 8.");
                     }
                     vectorIndexParameter = VectorIndexParameter.builder()
@@ -325,7 +325,7 @@ public interface IndexMapper {
                         ).build();
                     break;
                 case "BINARY_IVF_FLAT": {
-                    if (dimension % 8 !=0) {
+                    if (dimension % 8 != 0) {
                         throw new RuntimeException("The dimension must be a multiple of 8.");
                     }
                     int ncentroids = Integer.valueOf(properties.getOrDefault("ncentroids", "2048"));
