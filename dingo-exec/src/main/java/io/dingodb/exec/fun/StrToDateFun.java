@@ -16,24 +16,17 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.OpKeys;
-import io.dingodb.expr.runtime.op.cast.DateCastOpFactory;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 @Slf4j
 public class StrToDateFun extends BinaryOp {
@@ -55,29 +48,22 @@ public class StrToDateFun extends BinaryOp {
             return null;
         }
         String strVal = value0.toString();
-        try {
-            return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
-        } catch (Exception e) {
-            LogUtils.info(log, "str to date parse date: {} error", strVal);
+        Object result = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
+        if (result != null) {
+            return result;
         }
-        try {
-            return DateTimeUtils.parseTimestamp(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
-        } catch (Exception e) {
-            LogUtils.info(log, "str to date parse timestamp: {} error", strVal);
+        result = DateTimeUtils.parseTimestamp(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
+        if (result != null) {
+            return result;
         }
-        try {
-            return DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIME_FORMATTERS);
-        } catch (Exception e) {
-            LogUtils.info(log, "str to date parse time: {} error", strVal);
+        result = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIME_FORMATTERS);
+        if (result != null) {
+            return result;
         }
         String format = value1.toString();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
-        try {
-            LocalDateTime t = LocalDate.parse(strVal, dateTimeFormatter).atStartOfDay();
-            return new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
-        } catch (DateTimeParseException ignored) {
-        }
-        return null;
+        DateTimeFormatter[] dateTimeFormatter =
+            new DateTimeFormatter[]{DateTimeFormatter.ofPattern(DateTimeUtils.convertFormat(format))};
+        return DateTimeUtils.parseDate(strVal, dateTimeFormatter);
     }
 
     @Override
