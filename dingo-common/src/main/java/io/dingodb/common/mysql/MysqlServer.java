@@ -18,6 +18,8 @@ package io.dingodb.common.mysql;
 
 public class MysqlServer {
 
+    public static volatile boolean SSL_ENABLE = true;
+
     public static final int getServerCapabilities() {
         int flag = 0;
         //lower
@@ -33,7 +35,9 @@ public class MysqlServer {
         flag |= CapabilityFlags.CLIENT_IGNORE_SIGPIPE.getCode();
         flag |= CapabilityFlags.CLIENT_TRANSACTIONS.getCode();
         flag |= CapabilityFlags.CLIENT_SECURE_CONNECTION.getCode();
-        //flag |= CapabilityFlags.CLIENT_SSL.getCode();
+        if (SSL_ENABLE) {
+            flag |= CapabilityFlags.CLIENT_SSL.getCode();
+        }
         //upper
         //flag |= CapabilityFlags.CLIENT_MULTI_STATEMENTS.getCode();
         flag |= CapabilityFlags.CLIENT_MULTI_RESULTS.getCode();

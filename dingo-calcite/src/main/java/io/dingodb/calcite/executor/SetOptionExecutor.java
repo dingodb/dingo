@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.meta.InfoSchemaService;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -149,6 +150,9 @@ public class SetOptionExecutor implements DdlExecutor {
         }
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         infoSchemaService.putGlobalVariable(key, value);
+        if ("SSL_ENABLE".equalsIgnoreCase(key)) {
+            MysqlServer.SSL_ENABLE = "on".equalsIgnoreCase(value);
+        }
     }
 
 }

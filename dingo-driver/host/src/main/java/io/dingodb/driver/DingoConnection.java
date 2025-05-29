@@ -22,6 +22,7 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.mysql.scope.ScopeVariables;
@@ -149,6 +150,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
             Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
             Properties globalProp = ScopeVariables.putAllGlobalVar(globalVariableMap);
+            String sslEnableStr = globalProp.getOrDefault("ssl_enable", "off").toString();
+            MysqlServer.SSL_ENABLE = "on".equalsIgnoreCase(sslEnableStr);
             this.setClientInfo(globalProp);
             if (sessionVariables.containsKey("time_zone")) {
                 String timeZoneId = (String) sessionVariables.get("time_zone");
