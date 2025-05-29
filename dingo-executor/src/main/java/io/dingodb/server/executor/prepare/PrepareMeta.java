@@ -317,6 +317,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"innodb_online_alter_log_max_size", "134217728"});
         values.add(new Object[]{"innodb_version", "5.6.25"});
         values.add(new Object[]{"safepoint_ts", "0"});
+        values.add(new Object[]{"ssl_enable", "on"});
         return values;
     }
 
