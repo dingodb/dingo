@@ -24,7 +24,6 @@ import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.DecimalType;
-import io.dingodb.common.util.NameCaseUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
