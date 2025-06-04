@@ -22,29 +22,27 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
 
 import java.io.Serial;
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Year;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class DateFun extends UnaryOp {
 
     private static final ZoneId SERVER_ZONE = ZoneId.of("Asia/Shanghai");
-    private static final Locale SERVER_LOCALE = Locale.CHINA;
-    private static final Pattern SHORT_YEAR_PATTERN = Pattern.compile("^(\\d{2})[-/.]?(\\d{1,2})[-/.]?(\\d{1,2})");
+    // List of supported date formats (4-digit year)
+    private static final List<DateTimeFormatter> FOUR_DIGIT_YEAR_FORMATS = new ArrayList<>();
+    // List of Supported Date Formats (2-digit Year)
+    private static final List<DateTimeFormatter> TWO_DIGIT_YEAR_FORMATS = new ArrayList<>();
     public static final DateFun INSTANCE = new DateFun();
 
     public static final String NAME = "DATE";
@@ -52,40 +50,39 @@ public class DateFun extends UnaryOp {
     @Serial
     private static final long serialVersionUID = -3232758300335248032L;
 
-    private static final List<DateTimeFormatter> DATE_FORMATTERS = new ArrayList<>();
-
     static {
-        addFormatter(DateTimeFormatter.ISO_LOCAL_DATE);                    // yyyy-MM-dd
-        addPattern("yyyy-MM-dd HH:mm:ss[.SSSSSS]");
-        addPattern("yyyy-M-d[ H:m:s[.SSSSSS]]");
+        // Common separators:- . space
+        String[] separators = {"-", "/", "\\.", " "};
 
-        addPattern("yyyy/MM/dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/MM/d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/d[ H:m:s[.SSSSSS]]");
-        addPattern("yyyy.MM.dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.MM.d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.d[ H:m:s[.SSSSSS]]");
-        addPattern("yyyy年M月d日");
-        addPattern("yyyy年M月dd日");
-        addPattern("yyyy年MM月d日");
-        addPattern("yyyy年M月d日[ H时m分s秒[.SSSSSS]]", SERVER_LOCALE);
+        // 4-digit year format (with separators)
+        for (String sep : separators) {
+            // Single-digit months and dates are supported using M and d
+            String pattern = String.format("uuuu%sM%sd[ H:m:s]", sep, sep);
+            FOUR_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern(pattern)
+                .withResolverStyle(ResolverStyle.STRICT));
 
-        addPattern("yyyy-MM-dd HH:mm:ssXXX");
+            // No delimiter format
+            FOUR_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern("uuuuMMdd[HHmmss]")
+                .withResolverStyle(ResolverStyle.STRICT));
+        }
 
-        addPattern("yyyyMMdd");                                            // 20231005
-        addPattern("yyyyMMddHHmm");
-        addPattern("yyyyMMddHHmmss");                                      // 20231005153045
-        addPattern("yyyyMMdd[HHmmss[SSSSSS]]");
-        addPattern("yyMMdd");                                              // 231005
-        addPattern("dd-MMM-yy", Locale.ENGLISH);                    // 05-Oct-23
+        // 2-digit year format (with separators)
+        for (String sep : separators) {
+            // Single-digit months and dates are supported using M and d
+            String pattern = String.format("uu%sM%sd[ H:m:s]", sep, sep);
+            TWO_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern(pattern)
+                .withResolverStyle(ResolverStyle.STRICT));
+        }
 
-        addPattern("yy-MM-dd");
-        addPattern("yy/MM/dd");
-        addPattern("yy.MM.dd");
+        // 2-digit year in undelimited format
+        TWO_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern("uuMMdd[HHmmss]")
+            .withResolverStyle(ResolverStyle.STRICT));
+
+        // Add a special format: no separator between year, month and day, but single digits are allowed (e.g. 202532 -> 2025-03-02)
+        FOUR_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern("uuuuM d")
+            .withResolverStyle(ResolverStyle.STRICT));
+        TWO_DIGIT_YEAR_FORMATS.add(DateTimeFormatter.ofPattern("uuM d")
+            .withResolverStyle(ResolverStyle.STRICT));
     }
 
     @Override
@@ -93,114 +90,182 @@ public class DateFun extends UnaryOp {
         return date(value);
     }
 
-    private static void addPattern(String pattern) {
-        DATE_FORMATTERS.add(new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .parseLenient()
-            .appendPattern(pattern)
-            .toFormatter(SERVER_LOCALE)
-            .withZone(SERVER_ZONE));
-    }
-
-    private static void addPattern(String pattern, Locale locale) {
-        DATE_FORMATTERS.add(new DateTimeFormatterBuilder()
-            .parseCaseInsensitive()
-            .parseLenient()
-            .appendPattern(pattern)
-            .toFormatter(locale)
-            .withZone(SERVER_ZONE));
-    }
-
-    private static void addFormatter(DateTimeFormatter formatter) {
-        DATE_FORMATTERS.add(formatter.withZone(SERVER_ZONE));
-    }
-
     public static String date(Object value) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
 
         try {
             if (value instanceof Timestamp) {
-                return handleTimestamp((Timestamp) value);
+                return ((Timestamp) value).toInstant().atZone(SERVER_ZONE).toLocalDate().toString();
             }
             if (value instanceof Date) {
-                return handleLegacyDate((Date) value);
+                return new java.util.Date(((Date) value).getTime())
+                    .toInstant()
+                    .atZone(SERVER_ZONE)
+                    .toLocalDate()
+                    .toString();
             }
             if (value instanceof String) {
-                return handleString((String) value);
+                return parseDate((String) value);
             }
-        } catch (DateTimeException e) {
-            return null;
+        } catch (DateTimeException ignore) {
+
         }
         return null;
     }
 
-    private static String handleTimestamp(Timestamp timestamp) {
-        return timestamp.toInstant()
-            .atZone(SERVER_ZONE)
-            .toLocalDate()
-            .toString();
-    }
-
-    private static String handleLegacyDate(Date date) {
-        return new java.util.Date(date.getTime()).toInstant()
-            .atZone(SERVER_ZONE)
-            .toLocalDate()
-            .toString();
-    }
-
-    private static String handleString(String dateStr) {
-        if (!dateStr.matches(".*[年月日时].*")) {
-            Matcher shortYearMatcher = SHORT_YEAR_PATTERN.matcher(dateStr);
-            if (shortYearMatcher.find()) {
-                String converted = convertTwoDigitYear(shortYearMatcher.group(1),
-                    shortYearMatcher.group(2),
-                    shortYearMatcher.group(3));
-                if (converted != null) return converted;
-            }
+    /**
+     * Parse the date string
+     * @param input The input date string
+     * @return Date string in standard format (yyyy-MM-dd), null is returned if parsing fails
+     */
+    public static String parseDate(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return null;
         }
+        input = input.trim();
 
-        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+        // Try the 4-digit year format
+        for (DateTimeFormatter formatter : FOUR_DIGIT_YEAR_FORMATS) {
             try {
-                TemporalAccessor parsed = formatter.parseBest(dateStr.trim(),
-                    LocalDateTime::from,
-                    LocalDate::from,
-                    YearMonth::from,
-                    Year::from);
+                // Try to resolve to LocalDateTime (with time part)
+                LocalDateTime dateTime = LocalDateTime.parse(input, formatter);
+                return dateTime.toLocalDate().toString();
+            } catch (DateTimeParseException ignored) {}
 
-                return parseToDateString(parsed);
-            } catch (DateTimeParseException e) {
-                // ignore
-            }
+            try {
+                // Try to resolve to LocalDate (without the time part)
+                LocalDate date = LocalDate.parse(input, formatter);
+                return date.toString();
+            } catch (DateTimeParseException ignored) {}
         }
-        return null;
+
+        // try the 2 digit year format
+        for (DateTimeFormatter formatter : TWO_DIGIT_YEAR_FORMATS) {
+            try {
+                TemporalAccessor accessor = formatter.parse(input);
+                int year = accessor.get(ChronoField.YEAR);
+                int month = accessor.get(ChronoField.MONTH_OF_YEAR);
+                int day = accessor.get(ChronoField.DAY_OF_MONTH);
+
+                // Two years of processing: 00-69 -> 2000-2069, 70-99 -> 1970-1999
+                if (year >= 0 && year <= 69) year += 2000;
+                else if (year >= 70 && year <= 99) year += 1900;
+
+                LocalDate date = LocalDate.of(year, month, day);
+                return date.toString();
+            } catch (DateTimeException ignored) {}
+        }
+
+        // Try a digital-only format (6-bit/8-bit/12-bit/14-bit)
+        return parseNumericFormats(input);
     }
 
-    private static String convertTwoDigitYear(String yy, String mm, String dd) {
+    // handles numeric only formats with no delimiters
+    private static String parseNumericFormats(String input) {
         try {
-            int year = Integer.parseInt(yy);
-            int month = Integer.parseInt(mm);
-            int day = Integer.parseInt(dd);
+            // Check whether it is a pure time string (for example, 12:10:20)
+            if (input.matches("^\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
+                return null; // pure time strings are not processed
+            }
 
-            int fullYear = (year <= 69) ? 2000 + year : 1900 + year;
+            // Removes all non-numeric characters, but retains periods and spaces for special formatting
+            String digits = input.replaceAll("[^0-9\\.\\s]", "");
+            int len = digits.length();
 
-            return LocalDate.of(fullYear, month, day).toString();
-        } catch (DateTimeException e) {
-            return null;
-        }
-    }
+            if (len >= 5) { // The minimum significant length is changed to 5 digits (e.g. 20251)
+                int year, month, day;
 
-    private static String parseToDateString(TemporalAccessor parsed) {
-        if (parsed instanceof LocalDateTime) {
-            return ((LocalDateTime) parsed).toLocalDate().toString();
-        }
-        if (parsed instanceof LocalDate) {
-            return parsed.toString();
-        }
-        if (parsed instanceof YearMonth) {
-            return ((YearMonth) parsed).atDay(1).toString();
-        }
-        if (parsed instanceof Year) {
-            return ((Year) parsed).atMonth(1).atDay(1).toString();
+                // Work with special formats with dots, such as 2025.03.2 or 2025.3.02
+                if (digits.contains(".")) {
+                    String[] parts = digits.split("\\.");
+                    if (parts.length >= 3) {
+                        try {
+                            year = Integer.parseInt(parts[0]);
+                            month = Integer.parseInt(parts[1]);
+                            String[] dayAndTime = parts[2].split(" ");
+                            day = Integer.parseInt(dayAndTime[0]);
+                            LocalDate date = LocalDate.of(year, month, day);
+                            return date.toString();
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+                }
+
+                // Handle formats with time, such as 2025.3.2 11:12:10
+                if (digits.contains(" ")) {
+                    String[] dateTimeParts = digits.split(" ");
+                    if (dateTimeParts.length >= 2) {
+                        String[] dateParts = dateTimeParts[0].split("\\.");
+                        if (dateParts.length >= 3) {
+                            try {
+                                year = Integer.parseInt(dateParts[0]);
+                                month = Integer.parseInt(dateParts[1]);
+                                day = Integer.parseInt(dateParts[2]);
+                                LocalDate date = LocalDate.of(year, month, day);
+                                return date.toString();
+                            } catch (Exception e) {
+                                // ignore
+                            }
+                        }
+                    }
+                }
+
+                if (len >= 6 && Character.isDigit(input.charAt(0))) {
+                    // handle 202532 2025 03 02 format
+                    try {
+                        year = Integer.parseInt(digits.substring(0, 4));
+                        month = Integer.parseInt(digits.substring(4, 5));
+                        day = Integer.parseInt(digits.substring(5, 6));
+                        if (len > 6) day = day * 10 + Integer.parseInt(digits.substring(6, 7));
+                        LocalDate date = LocalDate.of(year, month, day);
+                        return date.toString();
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+
+                if (len >= 8) {
+                    // 8 digits or more: YYYYMMDD
+                    year = Integer.parseInt(digits.substring(0, 4));
+                    month = Integer.parseInt(digits.substring(4, 6));
+                    day = Integer.parseInt(digits.substring(6, 8));
+                } else if (len == 6 || len == 7) {
+                    // 6/7 digits: YYMMDD or YYMDD
+                    year = Integer.parseInt(digits.substring(0, 2));
+                    month = Integer.parseInt(digits.substring(2, 3));
+                    day = Integer.parseInt(digits.substring(3, 4));
+
+                    if (len > 4) {
+                        // handle multi digit dates
+                        if (len >= 5) month = month * 10 + Integer.parseInt(digits.substring(3, 4));
+                        if (len >= 5) day = Integer.parseInt(digits.substring(4, Math.min(6, len)));
+                    }
+
+                    // processed for two years
+                    if (year >= 0 && year <= 69) year += 2000;
+                    else if (year >= 70 && year <= 99) year += 1900;
+                } else if (len == 5) {
+                    // 5 digits: YYMDD
+                    year = Integer.parseInt(digits.substring(0, 2));
+                    month = Integer.parseInt(digits.substring(2, 3));
+                    day = Integer.parseInt(digits.substring(3, 5));
+
+                    // processed for two years
+                    if (year >= 0 && year <= 69) year += 2000;
+                    else if (year >= 70 && year <= 99) year += 1900;
+                } else {
+                    return null;
+                }
+
+                // verify and create the date
+                LocalDate date = LocalDate.of(year, month, day);
+                return date.toString();
+            }
+        } catch (DateTimeException | NumberFormatException | StringIndexOutOfBoundsException e) {
+            // ignore all resolution exceptions
         }
         return null;
     }
