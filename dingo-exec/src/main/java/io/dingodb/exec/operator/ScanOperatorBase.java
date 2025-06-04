@@ -41,7 +41,7 @@ public abstract class ScanOperatorBase extends SoleOutOperator {
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
-        if(vertex.getTask().getStatus() == Status.CANCEL) {
+        if (vertex.getTask().getStatus() == Status.CANCEL) {
             throw new TaskCancelException("task is cancel");
         } else if (vertex.getTask().getStatus() == Status.STOPPED) {
             return false;

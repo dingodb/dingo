@@ -120,6 +120,9 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
                     }
                     return null;
                 }).filter(Objects::nonNull).collect(Collectors.toList());
+                if (columnList.isEmpty()) {
+                    return;
+                }
                 IndexTable indexTable = matchIndex(columnList, dingoTable.getTable().getIndexes());
                 if (indexTable == null) {
                     return;
