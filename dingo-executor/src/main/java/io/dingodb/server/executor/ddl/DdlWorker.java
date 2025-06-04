@@ -1523,21 +1523,49 @@ public class DdlWorker {
         Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
         table.getIndexes().forEach(indexTable -> {
             AtomicInteger idx = new AtomicInteger(-1);
+            AtomicInteger keyIndex = new AtomicInteger(-1);
             for (int i = 0; i < indexTable.getColumns().size(); i++) {
                 Column col = indexTable.getColumns().get(i);
                 if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                     idx.set(i);
+                    keyIndex.set(col.primaryKeyIndex);
                     break;
                 }
             }
             if (idx.get() > -1) {
                 TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexTable.getName());
-                indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition);
+                ColumnDefinition columnDefinition1 = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
+                columnDefinition1.setIndexOfKey(keyIndex.get());
+                columnDefinition1.setSchemaState(SCHEMA_PUBLIC);
+                indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition1);
+                if (indexWithId.getTableDefinition().getIndexParameter() != null) {
+                    List<String> originKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginKeys();
+                    handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originKeys);
+                    indexWithId.getTableDefinition().getIndexParameter().setOriginKeys(originKeys);
+                    List<String> originWithKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginWithKeys();
+                    handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originWithKeys);
+                    indexWithId.getTableDefinition().getIndexParameter().setOriginWithKeys(originWithKeys);
+                }
                 TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, false);
             }
         });
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
         return TableUtil.updateVersionAndTableInfos(dc, job, definitionWithId, true);
+    }
+
+    private static void handleModifyIndexKey(String oldName, String newName, List<String> originKeys) {
+        if (originKeys == null || oldName == null) {
+            return;
+        }
+        int index = -1;
+        for (int i = 0; i < originKeys.size(); i ++) {
+            String key = originKeys.get(i);
+            if (key != null && key.equalsIgnoreCase(oldName)) {
+                index = i;
+                break;
+            }
+        }
+        originKeys.set(index, newName);
     }
 
     public Pair<Long, String> doModifyColumnTypeWithData(

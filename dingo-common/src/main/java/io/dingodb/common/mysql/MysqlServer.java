@@ -18,7 +18,7 @@ package io.dingodb.common.mysql;
 
 public class MysqlServer {
 
-    public static volatile boolean SSL_ENABLE = true;
+    public static volatile boolean SSL_ENABLE = false;
 
     public static final int getServerCapabilities() {
         int flag = 0;
