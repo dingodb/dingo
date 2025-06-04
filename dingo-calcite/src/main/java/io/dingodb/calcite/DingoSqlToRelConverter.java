@@ -170,7 +170,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
         RelNode sourceRel = convertQueryRecursive(call.getSource(), true, targetRowType).project();
         RelNode messageRel = convertColumnList(call, sourceRel);
         final List<String> targetColumnNames = new ArrayList<>();
-        ImmutableList.Builder<RexNode> rexNodeSourceExpressionListBuilder = null;
+        final List<RexNode> rexNodeSourceExpressionList = new ArrayList<>();
         if (call instanceof io.dingodb.calcite.grammar.dml.SqlInsert) {
             io.dingodb.calcite.grammar.dml.SqlInsert sqlInsert = (io.dingodb.calcite.grammar.dml.SqlInsert) call;
             SqlNodeList targetColumnList = sqlInsert.getTargetColumnList2();
@@ -188,18 +188,21 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
             RelDataType sourceRowType = sourceRel.getRowType();
             final RexRangeRef sourceRef = rexBuilder.makeRangeReference(sourceRowType, 0, false);
             final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, targetTable.getRowType().getFieldNames());
-            rexNodeSourceExpressionListBuilder = ImmutableList.builder();
             for (SqlNode n : sqlInsert.getSourceExpressionList()) {
+                if (n.getKind() == SqlKind.IDENTIFIER) {
+                    rexNodeSourceExpressionList.add(null);
+                    continue;
+                }
                 if (n.getKind() == SqlKind.LITERAL && ((SqlLiteral) n).toValue() == null) {
                     n = SqlLiteral.createCharString(n.toString(), n.getParserPosition());
                 }
                 RexNode rn = bb.convertExpression(n);
-                rexNodeSourceExpressionListBuilder.add(rn);
+                rexNodeSourceExpressionList.add(rn);
             }
 
         }
 
-        return createModify(targetTable, messageRel, targetColumnNames, rexNodeSourceExpressionListBuilder.build());
+        return createModify(targetTable, messageRel, targetColumnNames, rexNodeSourceExpressionList);
     }
 
     private RelNode createModify(RelOptTable targetTable,

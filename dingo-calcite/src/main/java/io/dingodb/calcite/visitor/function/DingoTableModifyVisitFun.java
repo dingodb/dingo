@@ -95,7 +95,13 @@ public final class DingoTableModifyVisitFun {
                             updateMapping = TupleMapping.of(rel.getTargetColumnNames().stream()
                                 .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList()));
                             updates = rel.getSourceExpressionList2()
-                                .stream().map(SqlExprUtils::toSqlExpr).collect(Collectors.toList());
+                                .stream().map(r -> {
+                                    if (r == null) {
+                                        return null;
+                                    } else {
+                                        return SqlExprUtils.toSqlExpr(r);
+                                    }
+                                }).collect(Collectors.toList());
                             isUpdate = true;
                         }
                         if (pessimisticTxn) {
