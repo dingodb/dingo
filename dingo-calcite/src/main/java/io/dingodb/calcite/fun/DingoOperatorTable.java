@@ -256,7 +256,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             OperandTypes.or(
                 family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING),
                 family(SqlTypeFamily.DATE, SqlTypeFamily.STRING),
-                /*family(SqlTypeFamily.NUMERIC, SqlTypeFamily.STRING),*/
+                family(SqlTypeFamily.NUMERIC, SqlTypeFamily.STRING),
                 OperandTypes.DATE
             ),
             SqlFunctionCategory.TIMEDATE
