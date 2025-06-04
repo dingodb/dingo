@@ -29,6 +29,7 @@ import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @JsonTypeName("txn_insert")
@@ -87,7 +88,7 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         if (updates != null) {
-            updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+            updates.stream().filter(Objects::nonNull).forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
         }
     }
 

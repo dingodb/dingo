@@ -646,20 +646,18 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         KeyValue insertUpKv;
         TupleMapping mapping = param.getUpdateMapping();
         List<SqlExpr> updates = param.getUpdates();
-        Object[] revMap = mapping.revMap(tuple);
         long updateNum = 0L;
         if (indexTable != null) {
             int[] newIndex = new int[indexTable.mapping().size()];
             for (int i = 0; i < indexTable.mapping().size(); i++) {
                 newIndex[i] = mapping.findIdx(((IndexTable) indexTable).mapping.get(i));
             }
-            revMap = ((IndexTable) indexTable).mapping.revMap(tuple);
             TupleMapping tupleMapping = TupleMapping.of(newIndex);
             for (int i = 0; i < tupleMapping.size(); i++) {
                 int i1 = tupleMapping.get(i);
                 Object newValue = null;
                 if (i1 >= 0) {
-                    newValue = updates.get(i1).eval(tuple);
+                    newValue = updates.get(i1) == null ? newTuple[i1] : updates.get(i1).eval(tuple);
                 }
                 if (newValue != null && newValue.equals("NULL")) {
                     newValue = null;
@@ -673,7 +671,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             }
         } else {
             for (int i = 0; i < mapping.size(); i++) {
-                Object newValue = updates.get(i).eval(tuple);
+                Object newValue = updates.get(i) == null ? newTuple[mapping.get(i)] : updates.get(i).eval(tuple);
                 if (newValue.equals("NULL")) {
                     newValue = null;
                 }
