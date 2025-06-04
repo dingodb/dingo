@@ -36,4 +36,6 @@ public interface TsoService {
 
     boolean IsExpired(long ttl);
 
+    long tsoToTimestamp(long tso);
+
 }

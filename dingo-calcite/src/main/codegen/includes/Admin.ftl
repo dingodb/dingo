@@ -34,6 +34,9 @@ SqlAdmin SqlAdmin(): {
    <BACK_UP_TSO_POINT> { point = new BigInteger(getNextToken().image); }
    { return new SqlBackUpTsoPoint(s.end(this), point); }
   |
+    <TSO_TO_TIME> { point = new BigInteger(getNextToken().image); }
+     { return new SqlTsoToTime(s.end(this), point); }
+  |
    <BACK_UP_TIME_POINT> { timeStr = getNextToken().image.toUpperCase().replace("'", ""); }
    { return new SqlBackUpTimePoint(s.end(this), timeStr); }
   |
