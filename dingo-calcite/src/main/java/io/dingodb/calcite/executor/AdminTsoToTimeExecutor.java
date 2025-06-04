@@ -22,6 +22,7 @@ import io.dingodb.transaction.api.GcService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,42 +30,31 @@ import java.util.Iterator;
 import java.util.List;
 
 @Slf4j
-public class AdminBackUpTimePointExecutor extends QueryExecutor {
+public class AdminTsoToTimeExecutor extends QueryExecutor {
 
     public static final List<String> COLUMNS = Arrays.asList(
-        "STATUS", "RESOLVE_LOCK_SAFE_POINT", "TIME"
+        "TIME"
     );
-    public static final int INDEX_STATUS = 0;
-
-    public static final int INDEX_TSO = 1;
-
-    public static final int INDEX_TIME = 2;
+    public static final int INDEX_TIME = 0;
 
     @Getter
-    private final String timeStr;
+    private final long point;
 
-    public AdminBackUpTimePointExecutor(String timeStr) {
-        this.timeStr = timeStr;
+    public AdminTsoToTimeExecutor(long point) {
+        this.point = point;
     }
 
     @Override
     public Iterator getIterator() {
-        long time  = DataTimeUtils.parseDate(timeStr);
-        long point = TsoService.getDefault().tso(time);
-        long latestTso = TsoService.getDefault().tso();
-        if (point > latestTso) {
-            throw new RuntimeException("The specified time:"+ timeStr +" is greater than the " +
-                "current latest tso:" + latestTso);
-        }
-        Pair<String, Long> stringLongPair = GcService.getDefault().startBackUpSafeByPoint(point, latestTso);
         List<Object[]> gcColumns = new ArrayList<>();
         Object[] objects = new Object[COLUMNS.size()];
-        objects[INDEX_STATUS] = stringLongPair.getKey();
-        Long tsoValue = stringLongPair.getValue();
-        objects[INDEX_TSO] = tsoValue;
-        long timestamp = TsoService.getDefault().tsoToTimestamp(tsoValue);
-        String timeStr = DataTimeUtils.longToTimeString(timestamp);
-        objects[INDEX_TIME] = timeStr;
+        if (point <= 0L) {
+            objects[INDEX_TIME] = null;
+        } else {
+            long tsoValue = TsoService.getDefault().tsoToTimestamp(point);
+            String timeStr = DataTimeUtils.longToTimeString(tsoValue);
+            objects[INDEX_TIME] = timeStr;
+        }
         gcColumns.add(objects);
         return gcColumns.iterator();
     }

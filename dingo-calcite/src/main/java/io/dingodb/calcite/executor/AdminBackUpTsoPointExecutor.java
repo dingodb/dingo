@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.transaction.api.GcService;
 import io.dingodb.tso.TsoService;
@@ -31,11 +32,13 @@ import java.util.List;
 public class AdminBackUpTsoPointExecutor extends QueryExecutor {
 
     public static final List<String> COLUMNS = Arrays.asList(
-        "STATUS", "SAFE_POINT"
+        "STATUS", "RESOLVE_LOCK_SAFE_POINT", "TIME"
     );
     public static final int INDEX_STATUS = 0;
 
     public static final int INDEX_TSO = 1;
+
+    public static final int INDEX_TIME = 2;
 
     @Getter
     private final long point;
@@ -56,6 +59,11 @@ public class AdminBackUpTsoPointExecutor extends QueryExecutor {
         Object[] objects = new Object[COLUMNS.size()];
         objects[INDEX_STATUS] = stringLongPair.getKey();
         objects[INDEX_TSO] = stringLongPair.getValue();
+        Long tsoValue = stringLongPair.getValue();
+        objects[INDEX_TSO] = tsoValue;
+        long timestamp = TsoService.getDefault().tsoToTimestamp(tsoValue);
+        String timeStr = DataTimeUtils.longToTimeString(timestamp);
+        objects[INDEX_TIME] = timeStr;
         gcColumns.add(objects);
         return gcColumns.iterator();
     }

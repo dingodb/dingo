@@ -46,4 +46,8 @@ public class DataTimeUtils {
         return time.toString();
     }
 
+    public static String longToTimeString(long timestamp) {
+        Timestamp tt = new Timestamp(timestamp);
+        return new SimpleDateFormat(TIMESTAMP_FORMAT).format(tt);
+    }
 }

@@ -31,7 +31,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import static io.dingodb.sdk.service.entity.meta.TsoOpType.OP_GEN_TSO;
 
 public class TsoService implements io.dingodb.tso.TsoService {
-    private static int threshold = 20;
+
+    private final static long BaseTimestampMs = 1577808000000L;  // 2020-01-01 00:00:00
     private final ConcurrentLinkedDeque<Long> cache = new ConcurrentLinkedDeque<>();
     @AutoService(TsoServiceProvider.class)
     public static class Provider implements TsoServiceProvider {
@@ -93,7 +94,7 @@ public class TsoService implements io.dingodb.tso.TsoService {
 
     @Override
     public long tso(long timestamp) {
-        timestamp = timestamp - 1577808000000L;
+        timestamp = timestamp - BaseTimestampMs;
         return (timestamp << PHYSICAL_SHIFT) + (1 & MAX_LOGICAL);
     }
 
@@ -112,6 +113,13 @@ public class TsoService implements io.dingodb.tso.TsoService {
     @Override
     public boolean IsExpired(long ttl) {
         return timestamp(getLatestTso()) > ttl;
+    }
+
+    @Override
+    public long tsoToTimestamp(long tso) {
+        tso = tso - (1 & MAX_LOGICAL);
+        tso = tso >> PHYSICAL_SHIFT;
+        return tso + BaseTimestampMs;
     }
 
     public long getLatestTso() {
@@ -140,6 +148,7 @@ public class TsoService implements io.dingodb.tso.TsoService {
     }
 
     private void loadBatchTso() {
+        int threshold = 20;
         TsoTimestamp startTimestamp = tsoMetaService.tsoService(
             trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(threshold).build()
         ).getStartTimestamp();
