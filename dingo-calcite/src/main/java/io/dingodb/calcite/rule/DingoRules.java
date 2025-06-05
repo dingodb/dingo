@@ -194,6 +194,8 @@ public final class DingoRules {
     public static final DingoFilterReduceExpressionsRule FILTER_REDUCE_EXPRESSIONS_RULE
         = DingoFilterReduceExpressionsRule.Config.DEFAULT.toRule();
 
+    public static final UnionAllAddProjectRule UNION_ALL_ADD_PROJECT_RULE = UnionAllAddProjectRule.Config.DEFAULT.toRule();
+
     private static final List<RelOptRule> rules = ImmutableList.of(
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES_TO_JOIN,
