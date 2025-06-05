@@ -262,8 +262,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return false;
         }
         byte[] val = getBytesFromObj(tenant);
-        txn.hInsert(mTenants, tenantKey, val);
         MetaService.ROOT.createTenant(tenant);
+        txn.hInsert(mTenants, tenantKey, val);
         return true;
     }
 

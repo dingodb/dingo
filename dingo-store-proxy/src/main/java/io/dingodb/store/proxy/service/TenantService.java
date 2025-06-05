@@ -17,9 +17,11 @@
 package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.TenantServiceProvider;
+import io.dingodb.sdk.common.DingoClientException;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.coordinator.CreateIdsRequest;
@@ -58,6 +60,14 @@ public class TenantService implements io.dingodb.meta.TenantService {
 
     @Override
     public boolean createTenant(@NonNull Tenant tenant) {
+        return createTenant(tenant, 30);
+    }
+
+    private boolean createTenant(Tenant tenant, int retry) {
+        if (retry <= 0) {
+            LogUtils.error(log, "Failed to create tenant {} after retries", tenant.getName());
+            return false;
+        }
         Long tenantId = coordinatorService.createIds(
             tso(),
             CreateIdsRequest.builder()
@@ -66,10 +76,17 @@ public class TenantService implements io.dingodb.meta.TenantService {
                 .build()
         ).getIds().get(0);
         tenant.setId(tenantId);
-        return infoSchemaService.createTenant(
-            tenantId,
-            tenant
-        );
+        try {
+            return infoSchemaService.createTenant(
+                tenantId,
+                tenant
+            );
+        } catch (DingoClientException.RequestErrorException e) {
+            if (e.getMessage().equals("tenant_id already exist")) {
+                createTenant(tenant, --retry);
+            }
+        }
+        return false;
     }
 
     @Override
