@@ -23,8 +23,10 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -45,6 +47,7 @@ import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.ServiceLoader;
 
 import static io.dingodb.common.CommonId.CommonType.EXECUTOR;
@@ -60,6 +63,8 @@ public class Starter {
 
     @Parameter(names = "--tenant", description = "Tenant id.", order = 2)
     private Long tenant;
+
+    public static final String LOWER_CASE_TABLE_NAMES = "lower_case_table_names";
 
     public static void main(String[] args) throws Exception {
         Starter starter = new Starter();
@@ -114,6 +119,20 @@ public class Starter {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         env.setRole(DingoRole.EXECUTOR);
         SchedulerService schedulerService = SchedulerService.getDefault();
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        List<KeyValue> list = infoSchemaService.getByKey(LOWER_CASE_TABLE_NAMES, LOWER_CASE_TABLE_NAMES + "1");
+        if (!list.isEmpty()) {
+            for (KeyValue keyValue : list) {
+                Integer value = Integer.parseInt(new String(keyValue.getValue()));
+                if (!DingoConfiguration.lowerCaseTableNames().equals(value)) {
+                    LogUtils.error(log, "The value of lower_case_table_names cannot be modified, "
+                        + "current value: {}, original value: {}", DingoConfiguration.lowerCaseTableNames(), value);
+                    System.exit(0);
+                }
+            }
+        } else {
+            infoSchemaService.putKvToCoordinator(LOWER_CASE_TABLE_NAMES, String.valueOf(DingoConfiguration.lowerCaseTableNames()));
+        }
         checkContinue();
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
         if (tenantObj == null) {
