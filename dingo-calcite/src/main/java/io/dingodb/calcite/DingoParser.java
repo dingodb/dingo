@@ -104,6 +104,8 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -112,6 +114,8 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.HintPredicate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataProvider;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -443,7 +447,7 @@ public class DingoParser {
         try (Hook.Closeable ignored = Hook.REL_BUILDER_SIMPLIFY.addThread((Holder<Boolean> h) -> h.set(false))) {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("deCorrelateProgram");
 
-            Program subQueryProgram = Programs.subQuery(cluster.getMetadataProvider());
+            Program subQueryProgram = subQuery(cluster.getMetadataProvider());
             RelNode relNode1 = subQueryProgram.run(planner, relNode, traitSet, ImmutableList.of(), ImmutableList.of());
 
             DecorrelateProgram decorrelateProgram = new DecorrelateProgram();
@@ -453,6 +457,12 @@ public class DingoParser {
             timeCtx.stop();
             return program.run(planner, relNode2, traitSet, ImmutableList.of(), ImmutableList.of());
         }
+    }
+
+    public static Program subQuery(RelMetadataProvider metadataProvider) {
+        HepProgramBuilder builder = HepProgram.builder();
+        builder.addRuleCollection(ImmutableList.of(CoreRules.FILTER_SUB_QUERY_TO_CORRELATE, CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE, CoreRules.JOIN_SUB_QUERY_TO_CORRELATE, DingoRules.UNION_ALL_ADD_PROJECT_RULE));
+        return Programs.of(builder.build(), true, metadataProvider);
     }
 
     protected static boolean compatibleMysql(SqlNode sqlNode, PlanProfile planProfile) {
