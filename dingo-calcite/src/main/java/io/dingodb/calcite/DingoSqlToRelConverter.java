@@ -243,7 +243,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
                         rexBuilder.makeFieldAccess(sourceRef, j++));
             }
         }
-        return createBlackboard(null, nameToNameMap, false);
+        return createBlackboard(validator().getEmptyScope(), nameToNameMap, false);
     }
 
     private SqlValidator validator() {

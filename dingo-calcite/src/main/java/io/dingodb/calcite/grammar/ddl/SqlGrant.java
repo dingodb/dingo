@@ -104,9 +104,9 @@ public class SqlGrant extends SqlDdl {
             writer.keyword("USAGE");
         }
         writer.keyword("ON");
-        writer.keyword(schema);
+        writer.literal(schema);
         writer.keyword(".");
-        writer.keyword(table);
+        writer.literal(table);
         writer.keyword("TO");
         writer.keyword("`" + user.toLowerCase() + "`@`" + host.toLowerCase() + "`");
         if (withGrantOption) {

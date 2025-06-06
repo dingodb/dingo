@@ -2287,9 +2287,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(col -> col.getKind() == SqlKind.CREATE_INDEX)
             .map(col -> fromSqlIndexDeclaration((SqlIndexDeclaration) col, tableDefinition))
             .collect(Collectors.toCollection(ArrayList::new)));
-        long count = tableDefList.stream().map(TableDefinition::getName).distinct().count();
+        long count = tableDefList.stream().map(c -> c.getName().toUpperCase()).distinct().count();
         if (tableDefList.size() > count) {
-            throw new IllegalArgumentException("Duplicate index name");
+            throw DINGO_RESOURCE.duplicateColumn().ex();
         }
         return tableDefList;
     }

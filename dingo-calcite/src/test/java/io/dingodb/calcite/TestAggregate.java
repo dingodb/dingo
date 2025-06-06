@@ -133,7 +133,6 @@ public class TestAggregate {
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
-            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
@@ -238,7 +237,6 @@ public class TestAggregate {
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
-            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
@@ -258,7 +256,6 @@ public class TestAggregate {
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
-            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
@@ -297,7 +294,6 @@ public class TestAggregate {
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
-            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalAggregate.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalDingoTableScan.class);
