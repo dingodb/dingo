@@ -1295,7 +1295,10 @@ public class DdlWorker {
             Executors.execute("reorg", () -> {
                 DingoErr dingoErr = null;
                 try {
-                    function.apply(null);
+                    String error = function.apply(null);
+                    if (error != null) {
+                        dingoErr = DingoErrUtil.newInternalErr(error);
+                    }
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
                     dingoErr = DingoErrUtil.fromException(e);
@@ -1679,10 +1682,7 @@ public class DdlWorker {
                 DingoCommonId replicaTableId = withId.getTableId();
                 DingoErr dingoErr = DdlColumn.doReorgWorkForModifyCol(dc, job, tableId, withId, this);
                 if (dingoErr.errorCode > 0) {
-                    MetaService.root().dropRegionByTable(
-                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
-                    );
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                    cancelledReplicate(job, replicaTableId, tableId);
                     LogUtils.info(log, "rollback drop replica table, priId:{}, replica id:{}",
                         tableId.seq, replicaTableId);
                     job.setState(JobState.jobStateCancelled);
@@ -1702,6 +1702,13 @@ public class DdlWorker {
                     TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
                     DingoErr err = doModifyColumnIndex(indexWithId, job, tableId);
                     if (err != null && err.errorCode > 0) {
+                        // keep same to doReorgWorkForModifyCol failed
+                        cancelledReplicate(job, replicaTableId, tableId);
+                        LogUtils.info(log, "rollback drop replica table, priId:{}, replica id:{}",
+                            tableId.seq, replicaTableId);
+                        job.setState(JobState.jobStateCancelled);
+                        job.setDingoErr(dingoErr);
+                        updateSchemaVersion(dc, job);
                         job.setDingoErr(err);
                         return Pair.of(0L, err.errorMsg);
                     }
@@ -1728,6 +1735,26 @@ public class DdlWorker {
                 error = job.getDingoErr().errorMsg;
         }
         return Pair.of(0L, error);
+    }
+
+    private static void cancelledReplicate(DdlJob job, DingoCommonId replicaTableId, CommonId tableId) {
+        List<Object> indexWithIdList;
+        MetaService.root().dropRegionByTable(
+            Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
+        );
+        InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+        // drop index replica definition and region
+        indexWithIdList = InfoSchemaService.root()
+            .getReplicaIndex(job.getSchemaId(), job.getTableId());
+        if (!indexWithIdList.isEmpty()) {
+            indexWithIdList.forEach(indexObj -> {
+                TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
+                MetaService.root().dropRegionByTable(
+                    Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs(), false
+                );
+                InfoSchemaService.root().dropIndex(tableId.seq, indexWithId.getTableId().getEntityId());
+            });
+        }
     }
 
     public Pair<Long, String> onRecoverSchema(DdlContext dc, DdlJob job) {
@@ -1812,11 +1839,10 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition newColDef
     ) {
         if (newColDef.getTypeName().equals(oldColDef.getTypeName())) {
-            //if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
-            // add signed
-            //    return oldColDef.getPrecision() != newColDef.getPrecision()
-            //        || oldColDef.getScale() != newColDef.getScale();
-            //}
+            if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
+                return oldColDef.getPrecision() != newColDef.getPrecision()
+                    || oldColDef.getScale() != newColDef.getScale();
+            }
             // if type is tiny/short/int/bigint -> = toUnsigned == originUnsigned
             //return oldColDef.getPrecision();
             return oldColDef.isNullable() != newColDef.isNullable();
