@@ -17,6 +17,7 @@
 package io.dingodb.common.mysql;
 
 import java.util.Base64;
+import java.util.Objects;
 
 public class DingoErr {
     public int errorCode;
@@ -36,11 +37,7 @@ public class DingoErr {
     public DingoErr(int errorCode, String state, String errorMsg) {
         this.errorCode = errorCode;
         this.state = state;
-        if (errorMsg == null) {
-            this.errorMsg = "NullPointException";
-        } else {
-            this.errorMsg = errorMsg;
-        }
+        this.errorMsg = Objects.requireNonNullElse(errorMsg, ".");
     }
 
     public void fillErrorByArgs(Object... param) {
