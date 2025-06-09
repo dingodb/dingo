@@ -23,6 +23,7 @@ import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.exec.type.converter.ExprConverter;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rex.RexNode;
@@ -46,6 +47,15 @@ public final class CalcValueUtils {
         Expr expr = RexConverter.convert(rexNode);
         SqlExprEvalContext etx = new SqlExprEvalContext();
         etx.setTuple(tuple);
+
+        ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
+
+        try {
+            exprCompiler.setExprContet(ExprContext.CALC_VALUE);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         return targetType.convertFrom(
             ExprCompiler.ADVANCED.visit(expr, new SqlExprCompileContext(tupleType, null))
                 .eval(etx, config),

@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -24,6 +25,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.DingoSqlBasicCall;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -39,6 +41,9 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.fun.SqlSumAggFunction;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
@@ -456,6 +461,36 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                 sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
         } else {
             return resNode;
+        }
+    }
+
+    @Override public void validateAggregateParams(SqlCall aggCall,
+                                                  @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
+                                                  @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
+        super.validateAggregateParams(aggCall, filter, distinctList, orderList, scope);
+
+        if(aggCall instanceof SqlBasicCall && ((SqlBasicCall)aggCall).getFieldTypeList() != null) {
+            RelDataType sourceParamType = ((SqlBasicCall)aggCall).getFieldTypeList().get(((SqlBasicCall) aggCall).getFieldIndex()).getValue();
+            RelDataType targetType = DingoTypeMapper.getAggregateResultType((SqlAggFunction) aggCall.getOperator(), sourceParamType);
+
+            if(targetType != null) {
+                for(SqlNode operand : aggCall.getOperandList()) {
+                    //change node, append cast.
+                    SqlNode targetNode = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO, operand,
+                        SqlTypeUtil.convertTypeToSpec(targetType).withNullable(targetType.isNullable()));
+                    aggCall.setOperand(0, targetNode);
+
+                    //reset field type.
+                    ((SqlBasicCall)aggCall).setFieldType(targetType);
+
+                    //reset field type list.
+                    String fieldKey = ((SqlBasicCall)aggCall).getFieldTypeList().get(((SqlBasicCall) aggCall).getFieldIndex()).getKey();
+                    ((SqlBasicCall)aggCall).getFieldTypeList().set(((SqlBasicCall) aggCall).getFieldIndex(), Pair.of(fieldKey, targetType));
+
+                    //reset nodeToTypeMap.
+                    nodeToTypeMap.put(aggCall, targetType);
+                }
+            }
         }
     }
 }
