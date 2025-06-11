@@ -17,9 +17,13 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.calcite.stats.StatsCache;
+import io.dingodb.calcite.utils.DingoFilterUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Pair;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
@@ -29,24 +33,31 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
+import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getSelectionCdList;
 import static io.dingodb.calcite.meta.DingoCostModelV1.needLookUp;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
+import static io.dingodb.common.mysql.scope.ScopeVariables.getLookupConcurrency;
 
 @Slf4j
 public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
@@ -131,9 +142,11 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         double cost = (indexNetCost + indexScanCost) / scanConcurrency;
         if (isLookup()) {
             double rowSize = getScanAvgRowSize(this);
-            //double tableScanCost = getScanCost(estimateRowCount, rowSize);
+            double tableScanCost = getScanCost(estimateRowCount, rowSize);
             double tableNetCost = estimateRowCount * rowSize * netFactor;
-            cost += tableNetCost / scanConcurrency;
+            tableScanCost += tableNetCost;
+            tableScanCost += estimateRowCount * ScopeVariables.getSeekFactor();
+            cost += (tableScanCost) / getLookupConcurrency();
         }
         return DingoCost.FACTORY.makeCost(cost * 0.7, 0, 0);
     }
@@ -153,7 +166,47 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        rowCount = super.estimateRowCount(mq);
+        CommonId commonId = getIndexSetMap().keySet().stream().findFirst().orElse(null);
+        if (commonId == null) {
+            return ScopeVariables.getStatsDefaultCount();
+        }
+        Table indexTd = getIndexTdMap().get(commonId);
+        Table td = Objects.requireNonNull(getTable().unwrap(DingoTable.class)).getTable();
+        List<Integer> indexSelectionList = td.getColumnIndices2(indexTd.getColumns());
+        Mapping mapping = Mappings.target(indexSelectionList, td.getColumns().size());
+        Pair<RexNode, RexNode> res = DingoFilterUtils.splitRexFilter(filter, mapping, getCluster().getRexBuilder());
+        RexNode indexFilter;
+        if (res != null && res.getKey() != null) {
+            indexFilter = res.getKey();
+        } else {
+            indexFilter = filter;
+        }
+
+        double rowCount;
+        if (indexFilter != null) {
+            RelNode fakeInput = new LogicalDingoTableScan(
+                getCluster(),
+                getTraitSet(),
+                getHints(),
+                table,
+                null,
+                null
+            );
+            rowCount = RelMdUtil.estimateFilteredRows(fakeInput, indexFilter, mq);
+            if (rowCount < 1) {
+                rowCount = 1;
+            }
+        } else {
+            rowCount = StatsCache.getTableRowCount(this);
+        }
+        if (groupSet != null) {
+            if (groupSet.cardinality() == 0) {
+                rowCount = 1.0;
+            } else {
+                rowCount *= 1.0 - Math.pow(.8, groupSet.cardinality());
+            }
+        }
+        this.rowCount = rowCount;
         return rowCount;
     }
 }

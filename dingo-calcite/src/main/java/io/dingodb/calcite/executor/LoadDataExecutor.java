@@ -28,6 +28,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -370,6 +371,7 @@ public class LoadDataExecutor implements DmlExecutor {
         }
         List<Object[]> objects = new ArrayList<>();
         objects.add(new Object[] {insertCount});
+        StmtSummaryMap.addAnalyzeEvent(schemaName, table.getName(), insertCount);
         return objects.iterator();
     }
 

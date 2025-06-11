@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static io.dingodb.calcite.rule.DingoAggTransformRule.selMinCostIndex;
+import static io.dingodb.calcite.rule.IndexScanAggRule.selMinCostIndex;
 import static io.dingodb.calcite.rule.DingoIndexCollationRule.getIndexByExpr;
 import static io.dingodb.calcite.rule.DingoIndexCollationRule.validateProjectOp;
 

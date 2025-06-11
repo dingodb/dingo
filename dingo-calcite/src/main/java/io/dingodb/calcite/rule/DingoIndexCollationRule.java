@@ -107,7 +107,7 @@ public class DingoIndexCollationRule extends RelRule<DingoIndexCollationRule.Con
                 break;
             }
             Column matchOrderIxCol = indexScanWithRelOp.getIndexTable().getColumns().get(matchSortIx);
-            if (matchOrderIxCol.primaryKeyIndex < 0) {
+            if (matchOrderIxCol.primaryKeyIndex != 0) {
                 cancelSort = false;
                 break;
             }

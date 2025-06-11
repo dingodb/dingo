@@ -114,6 +114,9 @@ public class ModifyColumnFiller extends IndexAddFiller {
             Object[] tuplesTmp = getNewTuples(colLen, tuples);
 
             KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
+            if (keyValue == null) {
+                throw new RuntimeException("modify column encode error");
+            }
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
                 getRegionList();
             CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);

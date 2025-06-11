@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Value.Enclosing
-public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
-    protected IndexCompareMergeOpRule(Config config) {
+public class IndexRangeMergeOpRule extends RelRule<RelRule.Config> {
+    protected IndexRangeMergeOpRule(Config config) {
         super(config);
     }
 
@@ -144,8 +144,8 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        IndexCompareMergeOpRule.Config INDEX_COMPARE_MERGE2P = ImmutableIndexCompareMergeOpRule.Config.builder()
-            .description("IndexCompareMergeOpRule(merge2Op)")
+        IndexRangeMergeOpRule.Config INDEX_RANGE_MERGE2P = ImmutableIndexRangeMergeOpRule.Config.builder()
+            .description("IndexRangeMergeOpRule(merge2Op)")
             .operandSupplier(b0 ->
                 b0.operand(DingoRelOp.class).oneInput(b1 ->
                     b1.operand(DingoRelOp.class).oneInput(b2 ->
@@ -157,8 +157,8 @@ public class IndexCompareMergeOpRule extends RelRule<RelRule.Config> {
             .build();
 
         @Override
-        default IndexCompareMergeOpRule toRule() {
-            return new IndexCompareMergeOpRule(this);
+        default IndexRangeMergeOpRule toRule() {
+            return new IndexRangeMergeOpRule(this);
         }
 
     }

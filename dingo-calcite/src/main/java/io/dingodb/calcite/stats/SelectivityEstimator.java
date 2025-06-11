@@ -17,14 +17,12 @@
 package io.dingodb.calcite.stats;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
-import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.meta.entity.Column;
-import org.apache.calcite.plan.RelOptTable;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -53,6 +51,7 @@ import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LIKE;
 import static org.apache.calcite.sql.SqlKind.NOT_EQUALS;
 
+@Slf4j
 public class SelectivityEstimator extends RexVisitorImpl<Double> {
 
     public static final Set<SqlKind> COMPARISON =
@@ -103,8 +102,13 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
         if (predicateMatch(pred) && childRel instanceof TableScan) {
             CalculateStatistic statistic = extractColStats(extractCol((TableScan) childRel, pred));
             if (statistic != null) {
-                return statistic.estimateSelectivity(pred.getKind(),
-                    extractVal(pred));
+                try {
+                    return statistic.estimateSelectivity(pred.getKind(),
+                        extractVal(pred));
+                } catch (Exception e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    return defaultSelectivity(pred);
+                }
             }
         }
         return defaultSelectivity(pred);
@@ -118,6 +122,9 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
     private static CalculateStatistic extractColStats(Pair<String, Column> statsIdentifier) {
         if (StatsCache.statsMap.containsKey(statsIdentifier.getLeft())) {
             TableStats stats = StatsCache.statsMap.get(statsIdentifier.getLeft());
+            if (!StatsCache.validate(stats.getTableId())) {
+                return null;
+            }
             for (int i = 0; i < stats.getHistogramList().size(); i ++) {
                 if (stats.getHistogramList().get(i).getColumnName()
                     .equalsIgnoreCase(statsIdentifier.getRight().getName())) {
@@ -202,10 +209,17 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
                 if (predicateMatch((RexCall) pred)) {
                     CalculateStatistic statistic = extractColStats(extractCol(tableScan, rexCall));
                     if (statistic != null) {
-                        artificialSel += statistic.estimateSelectivity(pred.getKind(),
-                            extractVal(rexCall));
-                        predicateMatch ++;
+                        try {
+                            artificialSel += statistic.estimateSelectivity(pred.getKind(),
+                                extractVal(rexCall));
+                        } catch (Exception e) {
+                            LogUtils.info(log, e.getMessage(), e);
+                            continue;
+                        }
+                    } else {
+                        artificialSel += defaultSelectivity(rexCall);
                     }
+                    predicateMatch ++;
                 }
             }
         }
@@ -216,17 +230,26 @@ public class SelectivityEstimator extends RexVisitorImpl<Double> {
     }
 
     private static double defaultSelectivity(RexNode pred) {
-        if (pred.getKind() == SqlKind.IS_NOT_NULL) {
-            return  0.9;
-        } else if (
-            (pred instanceof RexCall)
-                && (((RexCall) pred).getOperator()
-                == RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC)) {
-            return RelMdUtil.getSelectivityValue(pred);
+        if (pred instanceof RexCall) {
+            RexCall rexCall = (RexCall) pred;
+            if (rexCall.getOperator()
+                == RelMdUtil.ARTIFICIAL_SELECTIVITY_FUNC){
+                return RelMdUtil.getSelectivityValue(pred);
+            } else if (rexCall.getOperator().getKind() == IS_NULL) {
+                return 0.001;
+            } else if (rexCall.getOperator().getKind() == IS_NOT_NULL) {
+                return 1 - 0.001;
+            } else if (rexCall.isA(EQUALS)) {
+                return 0.001;
+            } else if (rexCall.isA(SqlKind.COMPARISON)) {
+                return 0.33;
+            } else {
+                return 0.25;
+            }
         } else if (pred.isA(SqlKind.EQUALS)) {
-            return 0.15;
+            return 0.001;
         } else if (pred.isA(SqlKind.COMPARISON)) {
-            return 0.5;
+            return 0.33;
         } else {
             return 0.25;
         }

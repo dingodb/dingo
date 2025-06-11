@@ -42,10 +42,10 @@ import static io.dingodb.calcite.meta.DingoCostModelV1.cpuFactor;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
-import static io.dingodb.calcite.meta.DingoCostModelV1.lookupConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
+import static io.dingodb.common.mysql.scope.ScopeVariables.getLookupConcurrency;
+import static io.dingodb.common.mysql.scope.ScopeVariables.getScanConcurrency;
 
 public class LogicalIndexRangeScan extends LogicalDingoTableScan {
     @Getter
@@ -97,20 +97,20 @@ public class LogicalIndexRangeScan extends LogicalDingoTableScan {
 
         double indexScanCost = rowCount * (Math.log(indexRowSize) / Math.log(2)) * scanFactor;
         double indexNetCost = rowCount * indexRowSize * netFactor;
-        double cost = (indexNetCost + indexScanCost) / scanConcurrency;
+        double cost = (indexNetCost + indexScanCost) / getScanConcurrency();
 
         if (lookup) {
             double rowSize = getScanAvgRowSize(this);
             double estimateRowCount = estimateRowCount(mq);
             double tableScanCost = getScanCost(estimateRowCount, rowSize);
             double tableNetCost = estimateRowCount * rowSize * netFactor;
-            double tableSideCost = (tableNetCost + tableScanCost) / scanConcurrency;
+            double tableSideCost = (tableNetCost + tableScanCost) / getScanConcurrency();
 
             double doubleReadRequestCost = estimateRowCount * ScopeVariables.getRequestFactor();
             double doubleReadCpuCost = estimateRowCount * cpuFactor;
             double doubleReadCost = doubleReadRequestCost + doubleReadCpuCost;
 
-            tableSideCost = (tableSideCost + doubleReadCost) / lookupConcurrency;
+            tableSideCost = (tableSideCost + doubleReadCost) / getLookupConcurrency();
             cost += tableSideCost;
         }
 

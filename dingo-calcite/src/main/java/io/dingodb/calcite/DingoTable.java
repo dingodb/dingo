@@ -24,6 +24,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.utils.HybridNodeUtils;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -224,7 +225,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
         return new Statistic() {
             @Override
             public Double getRowCount() {
-                return 100D;
+                return ScopeVariables.getStatsDefaultCount();
             }
 
             @Override
