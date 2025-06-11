@@ -27,7 +27,7 @@ public final class VisitUtils {
     private VisitUtils() {
     }
 
-    public static long getScanTs(ITransaction transaction, SqlKind kind, long pointStartTs) {
+    public static long getScanTs(ITransaction transaction, SqlKind kind, long pointStartTs, boolean forUpdate) {
         if (transaction == null) {
             return 0;
         }
@@ -40,7 +40,8 @@ public final class VisitUtils {
             && IsolationLevel.of(transaction.getIsolationLevel()) == IsolationLevel.SnapshotIsolation
             && (kind == SqlKind.INSERT
             || kind == SqlKind.DELETE
-            || kind == SqlKind.UPDATE)) {
+            || kind == SqlKind.UPDATE
+            || forUpdate)) {
             scanTs = TsoService.getDefault().tso();
         }
         if (transaction.isPessimistic()

@@ -89,6 +89,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static io.dingodb.calcite.DingoParser.forUpdate;
 import static io.dingodb.common.profile.StmtSummaryMap.addProfileQueue;
 import static io.dingodb.common.profile.StmtSummaryMap.addSqlProfile;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
@@ -617,9 +618,14 @@ public class DingoMeta extends MetaImpl {
                     getTraceValues(sqlProfile, rows);
                 }
             } catch (Throwable e) {
+                boolean forUpdate = false;
+                if (signature instanceof DingoSignature) {
+                    DingoSignature dingoSignature = (DingoSignature) signature;
+                    forUpdate = forUpdate(dingoSignature.getSqlNode());
+                }
                 LogUtils.error(log, "run job exception:{}", e);
                 if (transaction != null && transaction.isPessimistic() && transaction.getPrimaryKeyLock() != null
-                    && isDml(signature)) {
+                    && (isDml(signature) || forUpdate)) {
 
                     if (e instanceof LockWaitException) {
                         return requireNonNull(

@@ -134,7 +134,11 @@ public final class DingoGetByIndexVisitFun {
                 if (!needLookup) {
                     needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
                 }
-                long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+                long scanTs = VisitUtils.getScanTs(
+                    transaction,
+                    visitor.getKind(),
+                    visitor.getPointTs(),
+                    visitor.isForUpdate());
 
                 Vertex vertex;
                 if (transaction != null) {

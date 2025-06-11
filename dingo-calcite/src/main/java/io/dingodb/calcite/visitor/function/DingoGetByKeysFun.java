@@ -100,7 +100,7 @@ public final class DingoGetByKeysFun {
         distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(distributionVertex);
         Vertex getVertex;
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
         if (transaction != null) {
             TxnGetByKeysParam param = new TxnGetByKeysParam(
                 tableInfo.getId(),

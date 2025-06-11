@@ -400,12 +400,11 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
 
     @Override
     public Explain visit(@NonNull DingoForUpdate rel) {
-        String filter = "";
-        String tableNames = "";
-        return new Explain(
-            "dingoForUpdate", rel.getRowCount(), "root",
-            tableNames, filter
-        );
+        Explain explain = dingo(rel.getInput(0)).accept(this);
+        Explain explain1 = new Explain("dingoForUpdate", rel.getRowCount(), "root", "", "");
+
+        explain1.getChildren().add(explain);
+        return explain1;
     }
 
     @Override

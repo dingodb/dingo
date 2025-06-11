@@ -133,7 +133,11 @@ public final class DingoGetByIndexMergeVisitFun {
                 TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices2(indexTd.getColumns()));
                 lookupKeyMapping = indexMergeMapping(td.keyMapping(), rel.getSelection());
 
-                long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+                long scanTs = VisitUtils.getScanTs(
+                    transaction,
+                    visitor.getKind(),
+                    visitor.getPointTs(),
+                    visitor.isForUpdate());
 
                 Vertex vertex;
                 if (transaction != null) {

@@ -179,7 +179,7 @@ public final class DingoVectorVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
         // Get query additional parameters
         Map<String, Object> parameterMap = getParameterMap(operandsList);
         // Get all index table distributions

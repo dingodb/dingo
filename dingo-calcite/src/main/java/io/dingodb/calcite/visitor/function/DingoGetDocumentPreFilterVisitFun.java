@@ -91,7 +91,11 @@ public final class DingoGetDocumentPreFilterVisitFun {
                     columnName.getName().toUpperCase() + ":"
                 );
             }
-            long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+            long scanTs = VisitUtils.getScanTs(
+                transaction,
+                visitor.getKind(),
+                visitor.getPointTs(),
+                visitor.isForUpdate());
             MetaService metaService = MetaService.root(visitor.getPointTs())
                 .getSubMetaService(dingoRelOptTable.getSchemaName());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions
