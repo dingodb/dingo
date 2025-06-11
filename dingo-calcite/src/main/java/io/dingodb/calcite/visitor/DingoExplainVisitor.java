@@ -101,10 +101,11 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
 
     @Override
     public Explain visit(@NonNull DingoGetByIndex rel) {
-        String info = "";
+        StringBuilder info = new StringBuilder();
         if (rel.getFilter() != null) {
-            info = rel.getFilter().toString();
+            info.append(rel.getFilter());
         }
+        info.append(", lookup:").append(rel.isLookup());
         List<CommonId> idList = rel.getIndexSetMap().keySet().stream().collect(Collectors.toList());
         Map<CommonId, Table> tableIndexes = rel.getIndexTdMap();
         List<String> nameList = idList.stream()
@@ -112,7 +113,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             .map(id -> tableIndexes.get(id).getName())
             .collect(Collectors.toList());
         String table = StringUtils.join(nameList);
-        return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info);
+        return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info.toString());
     }
 
     @Override

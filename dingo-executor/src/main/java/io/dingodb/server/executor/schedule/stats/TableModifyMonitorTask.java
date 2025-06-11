@@ -39,6 +39,8 @@ import static io.dingodb.common.util.NameCaseUtils.convertName;
 @Slf4j
 public class TableModifyMonitorTask extends StatsOperator implements Runnable {
 
+    public static final TableModifyMonitorTask INSTANCE = new TableModifyMonitorTask();
+
     private static final BigDecimal MODIFY_COMMIT_RATE = new BigDecimal(0.3);
 
     @Override
@@ -84,7 +86,7 @@ public class TableModifyMonitorTask extends StatsOperator implements Runnable {
      * @param commitCount update,delete,insert
      * @return auto analyze flag
      */
-    protected boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
+    public boolean autoAnalyzeTriggerPolicy(String schemaName, String tableName, long commitCount) {
         long processRows = 0;
         KeyValue old;
         Object[] oldValues = null;

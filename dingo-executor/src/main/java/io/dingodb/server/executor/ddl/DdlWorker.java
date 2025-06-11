@@ -1614,10 +1614,12 @@ public class DdlWorker {
                         return;
                     }
                     AtomicInteger idx = new AtomicInteger(-1);
+                    AtomicInteger keyIndex = new AtomicInteger(-1);
                     for (int i = 0; i < indexTable.getColumns().size(); i++) {
                         Column col = indexTable.getColumns().get(i);
                         if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                             idx.set(i);
+                            keyIndex.set(col.primaryKeyIndex);
                             break;
                         }
                     }
@@ -1625,7 +1627,10 @@ public class DdlWorker {
                         TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexTable.getName());
                         String originIndexName = indexWithId.getTableDefinition().getName();
                         indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
-                        indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition);
+                        ColumnDefinition columnDefinition1 = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
+                        columnDefinition1.setIndexOfKey(keyIndex.get());
+                        columnDefinition1.setSchemaState(SCHEMA_PUBLIC);
+                        indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition1);
                         indexWithId.getTableDefinition().setName(DdlUtil.ddlTmpIndexName + "_" + originIndexName);
                         MetaService.root().createIndexReplicaTable(
                             job.getSchemaId(), originPriTabId,
@@ -1859,10 +1864,6 @@ public class DdlWorker {
         DingoErr dingoErr = DdlColumn.doReorgWorkForModifyIndexCol(
             DdlContext.INSTANCE, job, tableId, withId, this);
         if (dingoErr.errorCode > 0) {
-            MetaService.root().dropRegionByTable(
-                Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
-            );
-            InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
             job.setState(JobState.jobStateCancelled);
             return dingoErr;
         }

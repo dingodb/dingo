@@ -53,8 +53,8 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 
 @Value.Enclosing
-public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config> implements TransformationRule {
-    public DingoAggTransformRule(DingoAggTransformRule.Config config) {
+public class IndexScanAggRule extends RelRule<IndexScanAggRule.Config> implements TransformationRule {
+    public IndexScanAggRule(IndexScanAggRule.Config config) {
         super(config);
     }
 
@@ -63,7 +63,7 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
         config.matchHandler().accept(this, relOptRuleCall);
     }
 
-    public static void matchAggCount(DingoAggTransformRule rule, RelOptRuleCall call) {
+    public static void matchAggCount(IndexScanAggRule rule, RelOptRuleCall call) {
         LogicalScanWithRelOp scan = call.rel(0);
         boolean disableIndex = !scan.getHints().isEmpty()
             && "disable_index".equalsIgnoreCase(scan.getHints().get(0).hintName);
@@ -189,23 +189,23 @@ public class DingoAggTransformRule extends RelRule<DingoAggTransformRule.Config>
 
     @Value.Immutable()
     public interface Config extends RelRule.Config {
-        DingoAggTransformRule.Config AGG_COUNT_TRANSFORM = ImmutableDingoAggTransformRule.Config.builder()
-            .matchHandler(DingoAggTransformRule::matchAggCount)
+        IndexScanAggRule.Config INDEX_SCAN_AGG = ImmutableIndexScanAggRule.Config.builder()
+            .matchHandler(IndexScanAggRule::matchAggCount)
             .build()
             .withOperandSupplier(b0 ->
                 b0.operand(LogicalScanWithRelOp.class).predicate(scan -> {
                     RelOp relOp = scan.getRelOp();
                     return relOp instanceof UngroupedAggregateOp || relOp instanceof TandemPipeCacheOp;
                 }).anyInputs())
-            .withDescription("DingoAggTransformRule:aggCountTransform");
+            .withDescription("IndexScanAggRule:aggCountTransform");
 
-        @Override default DingoAggTransformRule toRule() {
-            return new DingoAggTransformRule(this);
+        @Override default IndexScanAggRule toRule() {
+            return new IndexScanAggRule(this);
         }
 
         /**
         * Forwards a call to {@link #onMatch(RelOptRuleCall)}. */
-        MatchHandler<DingoAggTransformRule> matchHandler();
+        MatchHandler<IndexScanAggRule> matchHandler();
 
     }
 }

@@ -36,6 +36,10 @@ public class CountMinSketch implements Cloneable, CalculateStatistic {
 
     @Getter
     @Setter
+    private long tableId;
+
+    @Getter
+    @Setter
     private String columnName;
 
     @Getter

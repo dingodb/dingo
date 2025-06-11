@@ -84,8 +84,8 @@ public final class ScopeVariables {
         return (Integer) executorProp.getOrDefault("rpc_batch_size", 40960);
     }
 
-    public static Double getStatsDefaultSize() {
-        return (Double) executorProp.getOrDefault("stats_default_size", 100D);
+    public static Double getStatsDefaultCount() {
+        return (Double) executorProp.getOrDefault("stats_default_count", 10000D);
     }
 
     public static Double getRequestFactor() {
@@ -151,6 +151,33 @@ public final class ScopeVariables {
             return Integer.parseInt(replica);
         } catch (Exception e) {
             return 3;
+        }
+    }
+
+    public static int getSeekFactor() {
+        try {
+            String seekFactor = executorProp.getOrDefault("seek_factor", "80").toString();
+            return Integer.parseInt(seekFactor);
+        } catch (Exception e) {
+            return 80;
+        }
+    }
+
+    public static int getLookupConcurrency() {
+        try {
+            String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "1").toString();
+            return Integer.parseInt(lookupConcurrency);
+        } catch (Exception e) {
+            return 1;
+        }
+    }
+
+    public static int getScanConcurrency() {
+        try {
+            String scanConcurrency = executorProp.getOrDefault("scan_concurrency", "5").toString();
+            return Integer.parseInt(scanConcurrency);
+        } catch (Exception e) {
+            return 5;
         }
     }
 

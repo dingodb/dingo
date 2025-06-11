@@ -28,9 +28,11 @@ import io.dingodb.expr.rel.op.TandemPipeCacheOp;
 import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.IndexOpExpr;
+import io.dingodb.expr.runtime.expr.UnaryOpExpr;
 import io.dingodb.expr.runtime.expr.Val;
 import io.dingodb.expr.runtime.expr.VariadicOpExpr;
 import io.dingodb.expr.runtime.op.logical.AndFun;
+import io.dingodb.expr.runtime.op.special.IsNullFunFactory;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -51,11 +53,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static io.dingodb.calcite.rule.DingoAggTransformRule.matchIndex;
+import static io.dingodb.calcite.rule.IndexScanAggRule.matchIndex;
 
 @Value.Enclosing
-public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
-    protected IndexCompareFilterAggrRule(Config config) {
+public class IndexRangeFilterAggrRule extends RelRule<RelRule.Config> {
+    protected IndexRangeFilterAggrRule(Config config) {
         super(config);
     }
 
@@ -79,7 +81,62 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
         }
         FilterOp filterOp = (FilterOp) tandemPipeCacheOp.getInput();
         IndexTable indexTable;
-        if (filterOp.getFilter() instanceof BinaryOpExpr) {
+        if (filterOp.getFilter() instanceof UnaryOpExpr) {
+            UnaryOpExpr unaryOpExpr = (UnaryOpExpr) filterOp.getFilter();
+            if (!(unaryOpExpr.getOp() instanceof IsNullFunFactory)) {
+                return;
+            }
+            if (!(unaryOpExpr.getOperand() instanceof IndexOpExpr)) {
+                return;
+            }
+            IndexOpExpr indexOpExpr = (IndexOpExpr) unaryOpExpr.getOperand();
+            if (!(indexOpExpr.getOperand1() instanceof Val)) {
+                return;
+            }
+            Val val1 = (Val) indexOpExpr.getOperand1();
+            if (!(val1.getType() instanceof IntType)) {
+                return;
+            }
+            int ix = (int) val1.getValue();
+            Column column = table.getColumns().get(ix);
+            indexTable = matchIndex(Collections.singletonList(column),
+                dingoTable.getTable().getIndexes());
+            if (indexTable == null) {
+                return;
+            }
+            int indexIx = indexTable.getColumnIndex(column);
+            Column indexCol = indexTable.getColumns().get(indexIx);
+            boolean rangeScan = indexCol.getPrimaryKeyIndex() == 0;
+            RexInputRef rexInputRef = new RexInputRef(indexIx,
+                dingoScanWithRelOp.getCluster().getTypeFactory().createSqlType(SqlTypeName.INTEGER));
+            Expr newIndexOpExpr = RexConverter.convert(rexInputRef);
+            UnaryOpExpr newFilterOp = new UnaryOpExpr(IsNullFunFactory.INSTANCE, newIndexOpExpr);
+            FilterOp filterOp1 = new FilterOp(newFilterOp);
+            RelOp op = new TandemPipeCacheOp(filterOp1, (CacheOp) tandemPipeCacheOp.getOutput());
+
+            RexNode rexFilter = dingoScanWithRelOp.getFilter();
+            List<Integer> indexSelectionList = dingoTable.getTable().getColumnIndices2(indexTable.getColumns());
+            Mapping mapping = Mappings.target(indexSelectionList,
+                dingoTable.getTable().getColumns().size());
+            if (rexFilter != null) {
+                rexFilter = RexUtil.apply(mapping, rexFilter);
+            }
+            call.transformTo(
+                new DingoIndexScanWithRelOp(
+                    dingoScanWithRelOp.getCluster(),
+                    dingoScanWithRelOp.getTraitSet(),
+                    dingoScanWithRelOp.getHints(),
+                    dingoScanWithRelOp.getTable(),
+                    dingoScanWithRelOp.getRowType(),
+                    op,
+                    rexFilter,
+                    true,
+                    0,
+                    indexTable,
+                    rangeScan
+                )
+            );
+        } else if (filterOp.getFilter() instanceof BinaryOpExpr) {
             BinaryOpExpr binaryOpExpr = (BinaryOpExpr) filterOp.getFilter();
             if (!(binaryOpExpr.getOperand0() instanceof IndexOpExpr)) {
                 return;
@@ -215,8 +272,8 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
 
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        Config INDEX_COMPARE_FILTER_AGG_RULE = ImmutableIndexCompareFilterAggrRule.Config.builder()
-            .description("IndexCompareFilterAggrRule")
+        Config INDEX_RANGE_FILTER_AGG_RULE = ImmutableIndexRangeFilterAggrRule.Config.builder()
+            .description("IndexRangeFilterAggrRule")
             .operandSupplier(b0 ->
                 b0.operand(DingoScanWithRelOp.class).predicate(dingoScanWithRelOp -> {
                     if (dingoScanWithRelOp.getRelOp() instanceof TandemPipeCacheOp) {
@@ -229,8 +286,8 @@ public class IndexCompareFilterAggrRule extends RelRule<RelRule.Config> {
             .build();
 
         @Override
-        default IndexCompareFilterAggrRule toRule() {
-            return new IndexCompareFilterAggrRule(this);
+        default IndexRangeFilterAggrRule toRule() {
+            return new IndexRangeFilterAggrRule(this);
         }
     }
 }

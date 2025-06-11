@@ -44,6 +44,7 @@ import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
+import static io.dingodb.common.mysql.scope.ScopeVariables.getStatsDefaultCount;
 
 public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
 
@@ -122,7 +123,7 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
     @Override
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = getTable().getRowCount();
-        if (rowCount == 0) {
+        if (rowCount == 0 || rowCount == getStatsDefaultCount()) {
             rowCount = StatsCache.getTableRowCount(this);
         }
 

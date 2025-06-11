@@ -152,17 +152,17 @@ public final class DingoRules {
     public static final DingoRemoveSortRule SORT_PRIMARY_REMOVE
         = DingoRemoveSortRule.Config.REMOVE_PRIMARY_SORT.toRule();
 
-    public static final DingoAggTransformRule AGG_COUNT_TRANSFORM
-        = DingoAggTransformRule.Config.AGG_COUNT_TRANSFORM.toRule();
+    public static final IndexScanAggRule INDEX_SCAN_AGG
+        = IndexScanAggRule.Config.INDEX_SCAN_AGG.toRule();
 
     public static final DingoIndexScanWithRelOpRule DINGO_INDEX_SCAN_WITH_REL_OP_RULE
         = DingoIndexScanWithRelOpRule.DEFAULT.toRule(DingoIndexScanWithRelOpRule.class);
 
-    public static final IndexCompareMergeOpRule INDEX_COMPARE_MERGE_OP_RULE
-        = IndexCompareMergeOpRule.Config.INDEX_COMPARE_MERGE2P.toRule();
+    public static final IndexRangeMergeOpRule INDEX_RANGE_MERGE_OP_RULE
+        = IndexRangeMergeOpRule.Config.INDEX_RANGE_MERGE2P.toRule();
 
-    public static final IndexCompareFilterAggrRule INDEX_COMPARE_FILTER_AGGR_RULE
-        = IndexCompareFilterAggrRule.Config.INDEX_COMPARE_FILTER_AGG_RULE.toRule();
+    public static final IndexRangeFilterAggrRule INDEX_RANGE_FILTER_AGGR_RULE
+        = IndexRangeFilterAggrRule.Config.INDEX_RANGE_FILTER_AGG_RULE.toRule();
 
     public static final IndexFullScanWithRelOpRule INDEX_FULL_SCAN_WITH_REL_OP_RULE
         = IndexFullScanWithRelOpRule.Config.INDEX_FULL_WITH_RELOP.toRule();
@@ -245,14 +245,14 @@ public final class DingoRules {
         INDEX_RANGE,
         INDEX_RANGE_SCAN_RULE,
         SORT_PRIMARY_REMOVE,
-        AGG_COUNT_TRANSFORM,
+        INDEX_SCAN_AGG,
         DINGO_INDEX_SCAN_WITH_REL_OP_RULE,
         INDEX_PROJECT_SORT,
-        INDEX_COMPARE_MERGE_OP_RULE,
-        INDEX_COMPARE_FILTER_AGGR_RULE,
+        INDEX_RANGE_MERGE_OP_RULE,
+        INDEX_RANGE_FILTER_AGGR_RULE,
         INDEX_FULL_SCAN_WITH_REL_OP_RULE,
         DINGO_FULL_SCAN_PROJECT_RULE,
-        DINGO_INDEX_COLLATION_RULE,
+        //DINGO_INDEX_COLLATION_RULE,
         INDEXSCAN_SORT_ASC,
         INDEX_NONLEFT_ORDER,
         SORT_REMOVE_DINGO_SCAN,

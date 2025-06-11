@@ -47,6 +47,10 @@ public class Histogram implements Cloneable, CalculateStatistic {
 
     @Getter
     @Setter
+    private long tableId;
+
+    @Getter
+    @Setter
     private String columnName;
 
     @Getter

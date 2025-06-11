@@ -34,6 +34,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -51,6 +52,7 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
@@ -62,6 +64,8 @@ import io.dingodb.expr.runtime.expr.Exprs;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -85,6 +89,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -197,7 +202,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             addCountMinSketch(tableStats.getCountMinSketchList());
             long end6 = System.currentTimeMillis();
             LogUtils.info(log, "add count min sketch cost:{}", (end6 - end5));
-            addStatsNormal(tableStats.getStatsNormalList());
+            addStatsNormal(tableStats.getStatsNormalList(), tableId.seq);
             long end7 = System.currentTimeMillis();
             LogUtils.info(log, "add stats normal cost:{}", (end7 - end6));
             // update analyze job status
@@ -250,10 +255,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
                 || (columnDefinition.getType() instanceof FloatType)
                 || (columnDefinition.getType() instanceof LongType)
                 || (columnDefinition.getType() instanceof DecimalType)
-                || (columnDefinition.getType() instanceof DateType)
-                || (columnDefinition.getType() instanceof TimeType)
-                || (columnDefinition.getType() instanceof TimestampType)
             ) {
+                if (!isIndex(td, columnDefinition)) {
+                    return;
+                }
                 allowStats = true;
                 histogramCdList.add(new Histogram(schemaName, tableName,
                     columnDefinition.getName(), columnDefinition.getType(), index.get() - 1));
@@ -276,6 +281,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         List<Object[]> paramList = histogramList.stream().map(histogram -> {
             String histogramDetail = histogram.serialize();
             return new Object[] {histogram.getSchemaName(), histogram.getTableName(), histogram.getColumnName(),
+                histogram.getTableId(),
                 histogramDetail, new Timestamp(System.currentTimeMillis())};
         }).collect(Collectors.toList());
         upsert(bucketsStore, bucketsCodec, paramList);
@@ -285,7 +291,7 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         List<Object[]> paramList = countMinSketches.stream().map(countMinSketch -> {
             String cmSketch = countMinSketch.serialize();
             return new Object[] {countMinSketch.getSchemaName(), countMinSketch.getTableName(),
-                countMinSketch.getColumnName(), cmSketch, countMinSketch.getNullCount(),
+                countMinSketch.getColumnName(), countMinSketch.getTableId(), cmSketch, countMinSketch.getNullCount(),
                 countMinSketch.getTotalCount(), countMinSketch.getIndex(), new Timestamp(System.currentTimeMillis())
             };
         }).collect(Collectors.toList());
@@ -295,9 +301,9 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         LogUtils.info(log, "add sketch done, take time:{}", (end - start));
     }
 
-    private void addStatsNormal(List<StatsNormal> statsNormals) {
+    private void addStatsNormal(List<StatsNormal> statsNormals, long tableId) {
         List<Object[]> paramList = statsNormals.stream().map(statsNormal ->
-            new Object[] {schemaName, tableName, statsNormal.getColumnName(), statsNormal.getNdv(),
+            new Object[] {schemaName, tableName, statsNormal.getColumnName(), tableId, statsNormal.getNdv(),
                 statsNormal.getNumNull(), statsNormal.getAvgColSize(), statsNormal.getTotalCount(),
                 new Timestamp(System.currentTimeMillis())
             }
@@ -317,37 +323,79 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
         if (histogramList.isEmpty()) {
             return;
         }
-        List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
-            DingoType outputSchema = DingoTypeFactory.tuple(
-                histogramList.stream().flatMap(histogram ->
-                    Arrays.stream(new DingoType[]{histogram.getDingoType(),
-                        histogram.getDingoType()})).toArray(DingoType[]::new));
-            CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
-            if (coprocessor == null) {
-                return null;
+        List<CompletableFuture<Iterator<Object[]>>> futures = new ArrayList<>();
+        for (RangeDistribution region : rangeDistributions) {
+            Supplier<Iterator<Object[]>> supplier = () -> {
+                DingoType outputSchema = DingoTypeFactory.tuple(
+                    histogramList.stream().flatMap(histogram ->
+                        Arrays.stream(new DingoType[]{histogram.getDingoType(),
+                            histogram.getDingoType()})).toArray(DingoType[]::new));
+                CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
+                if (coprocessor == null) {
+                    return null;
+                }
+                byte[] startKey = region.getStartKey();
+                byte[] endKey = region.getEndKey();
+                CodecService.getDefault().setId(startKey, region.getId().domain);
+                CodecService.getDefault().setId(endKey, region.getId().domain);
+                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
+                LogUtils.info(log, "buildHistogram txnScan region:{}", region);
+                Iterator<KeyValue> iterator = kvStore.txnScan(
+                    TsoService.getDefault().cacheTso(),
+                    new StoreInstance.Range(startKey, endKey,
+                        region.isWithStart(), region.isWithEnd()),
+                    30000,
+                    coprocessor
+                );
+                TupleMapping outputKeyMapping = TupleMapping.of(
+                    IntStream.range(0, 0).boxed().collect(Collectors.toList())
+                );
+                return Iterators.transform(
+                    iterator,
+                    wrap(CodecService.getDefault().createKeyValueCodec(td.getCodecVersion(), td.version,
+                        outputSchema, outputKeyMapping)::decode)::apply
+                );
+            };
+            futures.add(CompletableFuture.supplyAsync(supplier, Executors.executor("buildHistogram")));
+        }
+        List<Iterator<Object[]>> iteratorList = futures.stream().map(future -> {
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
-            byte[] startKey = region.getStartKey();
-            byte[] endKey = region.getEndKey();
-            CodecService.getDefault().setId(startKey, region.getId().domain);
-            CodecService.getDefault().setId(endKey, region.getId().domain);
-            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
-
-            Iterator<KeyValue> iterator = kvStore.txnScan(
-                TsoService.getDefault().cacheTso(),
-                new StoreInstance.Range(startKey, endKey,
-                   region.isWithStart(), region.isWithEnd()),
-                30000,
-                coprocessor
-            );
-            TupleMapping outputKeyMapping = TupleMapping.of(
-                IntStream.range(0, 0).boxed().collect(Collectors.toList())
-            );
-            return Iterators.transform(
-                iterator,
-                wrap(CodecService.getDefault().createKeyValueCodec(td.getCodecVersion(), td.version,
-                   outputSchema, outputKeyMapping)::decode)::apply
-            );
-        }).collect(Collectors.toList());
+        }).toList();
+//        List<Iterator<Object[]>> iteratorList = rangeDistributions.stream().map(region -> {
+//            DingoType outputSchema = DingoTypeFactory.tuple(
+//                histogramList.stream().flatMap(histogram ->
+//                    Arrays.stream(new DingoType[]{histogram.getDingoType(),
+//                        histogram.getDingoType()})).toArray(DingoType[]::new));
+//            CoprocessorV2 coprocessor = getCoprocessor(td, histogramList, outputSchema);
+//            if (coprocessor == null) {
+//                return null;
+//            }
+//            byte[] startKey = region.getStartKey();
+//            byte[] endKey = region.getEndKey();
+//            CodecService.getDefault().setId(startKey, region.getId().domain);
+//            CodecService.getDefault().setId(endKey, region.getId().domain);
+//            StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, region.getId());
+//
+//            Iterator<KeyValue> iterator = kvStore.txnScan(
+//                TsoService.getDefault().cacheTso(),
+//                new StoreInstance.Range(startKey, endKey,
+//                   region.isWithStart(), region.isWithEnd()),
+//                30000,
+//                coprocessor
+//            );
+//            TupleMapping outputKeyMapping = TupleMapping.of(
+//                IntStream.range(0, 0).boxed().collect(Collectors.toList())
+//            );
+//            return Iterators.transform(
+//                iterator,
+//                wrap(CodecService.getDefault().createKeyValueCodec(td.getCodecVersion(), td.version,
+//                   outputSchema, outputKeyMapping)::decode)::apply
+//            );
+//        }).collect(Collectors.toList());
         for (Iterator<Object[]> iterator : iteratorList) {
             if (iterator == null) {
                 continue;
@@ -487,5 +535,21 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     private static Expr makeMinAgg(int index) {
         Expr var = DingoCompileContext.createTupleVar(index);
         return Exprs.op(Exprs.MIN_AGG, var);
+    }
+
+    private static boolean isIndex(Table td, Column columnDefinition) {
+        if (columnDefinition.isPrimary()) {
+            return true;
+        } else {
+            List<IndexTable> indexTableList = td.getIndexes();
+            return indexTableList.stream().anyMatch(indexTable -> {
+                if (indexTable.getIndexType() == IndexType.SCALAR) {
+                    return indexTable.getColumns().stream().anyMatch(
+                        column -> column.getName().equalsIgnoreCase(columnDefinition.getName()));
+                } {
+                    return false;
+                }
+            });
+        }
     }
 }

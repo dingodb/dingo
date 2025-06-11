@@ -19,8 +19,8 @@ package io.dingodb.calcite.stats;
 import org.apache.calcite.sql.SqlKind;
 
 public interface CalculateStatistic {
-    public double estimateSelectivity(SqlKind op, Object valObj);
+    double estimateSelectivity(SqlKind op, Object valObj);
 
-    public String serialize();
+    String serialize();
 
 }

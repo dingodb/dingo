@@ -37,15 +37,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
-
 public class DingoCostModelV1 extends DingoCostModel {
 
     public static final double scanFactor = 40.7;
     public static final double netFactor = 3.96;
     public static final double cpuFactor = 49.9;
-    public static final double scanConcurrency = 1;
-    public static final double lookupConcurrency = 1;
+    public static final double scanConcurrency = 5;
 
     public static final double memFactor = 0.01;
 
@@ -106,7 +103,7 @@ public class DingoCostModelV1 extends DingoCostModel {
         }
         selectionCds.forEach(cd -> {
             AtomicBoolean hasStats = new AtomicBoolean(false);
-            if (tableStats != null) {
+            if (tableStats != null && StatsCache.validate(tableStats.getTableId())) {
                 tableStats.getStatsNormalList().forEach(statsNormal -> {
                     if (cd.getName().equalsIgnoreCase(statsNormal.getColumnName())) {
                         avgRowSize.addAndGet(statsNormal.getAvgColSize());

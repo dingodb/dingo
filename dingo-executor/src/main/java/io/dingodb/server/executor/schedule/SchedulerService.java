@@ -161,7 +161,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         ).start();
         new Thread(LoadInfoSchemaTask::scheduler).start();
         new Thread(MetaLockCheckHandler::mdlCheckLoop).start();
-        this.add("analyzeTable", "0 0 0/1 * * ?", new AnalyzeScanTask());
+        this.add("analyzeTable", "0 */10 * * * ?", new AnalyzeScanTask());
         this.add("licenseCheck", "0 */1 * * * ?", new LicenseCheckTask());
         Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),
             10, 3600, TimeUnit.SECONDS);

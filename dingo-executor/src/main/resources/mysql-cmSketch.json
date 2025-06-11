@@ -21,6 +21,15 @@
       "nullable": false
     },
     {
+     "name": "table_id",
+     "type": "bigint",
+     "scale": -2147483648,
+     "precision": -1,
+     "default": 0,
+     "primary": -1,
+     "nullable": true
+   },
+    {
       "name": "cm_sketch",
       "type": "varchar",
       "scale": -2147483648,

@@ -49,6 +49,7 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
  */
 @Slf4j
 public class CollectStatsTask implements Callable<TableStats> {
+    private long tableId;
     private final String tableName;
     private final RangeDistribution region;
     private final boolean isTxn;
@@ -84,13 +85,16 @@ public class CollectStatsTask implements Callable<TableStats> {
         this.isTxn = td.getEngine().contains("TXN");
         this.startTs = scanTs;
         this.timeout = timeout;
+        this.tableId = tableId.seq;
         this.kvStore = Services.KV_STORE.getInstance(tableId, region.id());
         this.codec = CodecService.getDefault().createKeyValueCodec(
             td.getCodecVersion(), td.getVersion(), td.tupleType(), td.keyMapping());
 
         this.minSketchList = minSketches.stream().map(CountMinSketch::copy)
+            .peek(countMinSketch -> countMinSketch.setTableId(this.tableId))
             .collect(Collectors.toList());
         columnHistogramList = columnHistograms.stream().map(Histogram::copy)
+            .peek(histogram -> histogram.setTableId(this.tableId))
             .collect(Collectors.toList());
         statsNormalMap = statsNormals.stream()
             .collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::copy));
@@ -142,7 +146,7 @@ public class CollectStatsTask implements Callable<TableStats> {
         long end = System.currentTimeMillis();
         LogUtils.info(log, "collect region stats end, take time:{}, tableName:{}, regionId:{}, count:{}",
             (end - start), tableName, region.getId(), count);
-        return new TableStats(minSketchList, columnHistogramList,
+        return new TableStats(tableId, minSketchList, columnHistogramList,
             new ArrayList<>(statsNormalMap.values()));
     }
 

@@ -19,6 +19,8 @@ package io.dingodb.calcite.stats;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.InfoSchema;
 import org.apache.calcite.plan.RelOptTable;
 
 import java.util.Map;
@@ -40,10 +42,10 @@ public final class StatsCache {
 
     public static double getTableRowCount(String key) {
         TableStats tableStats = statsMap.get(key);
-        if (tableStats != null) {
+        if (tableStats != null && validate(tableStats.getTableId())) {
             return tableStats.getRowCount();
         }
-        return ScopeVariables.getStatsDefaultSize();
+        return ScopeVariables.getStatsDefaultCount();
     }
 
     public static double getTableRowCount(RelOptTable relOptTable) {
@@ -52,7 +54,7 @@ public final class StatsCache {
         if (dingoTable.getNames().size() > 2) {
             return getTableRowCount(dingoTable.getNames().get(1), dingoTable.getNames().get(2));
         } else {
-            return ScopeVariables.getStatsDefaultSize();
+            return ScopeVariables.getStatsDefaultCount();
         }
     }
 
@@ -62,5 +64,10 @@ public final class StatsCache {
 
     public static void removeCache(String schemaName,String tableName) {
         statsMap.remove(schemaName + "." + tableName);
+    }
+
+    public static boolean validate(long tableId) {
+        InfoSchema infoSchema = DdlService.root().getIsLatest();
+        return infoSchema.getTable(tableId) != null;
     }
 }

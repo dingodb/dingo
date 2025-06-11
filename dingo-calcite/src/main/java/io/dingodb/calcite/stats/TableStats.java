@@ -26,6 +26,9 @@ public class TableStats {
     private String tableName;
 
     @Getter
+    private long tableId;
+
+    @Getter
     private long rowCount;
 
     @Getter
@@ -37,10 +40,11 @@ public class TableStats {
     @Getter
     private final List<StatsNormal> statsNormalList;
 
-    public TableStats(
+    public TableStats(long tableId,
                       List<CountMinSketch> countMinSketchList,
                       List<Histogram> histogramList,
                       List<StatsNormal> statsNormalList) {
+        this.tableId = tableId;
         this.countMinSketchList = countMinSketchList;
         this.histogramList = histogramList;
         this.statsNormalList = statsNormalList;
@@ -53,7 +57,8 @@ public class TableStats {
         }
     }
 
-    public TableStats(String schemaName, String tableName) {
+    public TableStats(long tableId, String schemaName, String tableName) {
+        this.tableId = tableId;
         this.histogramList = new ArrayList<>();
         this.countMinSketchList = new ArrayList<>();
         this.statsNormalList = new ArrayList<>();
