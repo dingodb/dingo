@@ -148,7 +148,7 @@ public final class DingoIndexFullScanVisitFun {
         }
 
         TableInfo tableInfo = MetaServiceUtils.getTableInfo(visitor.getPointTs(), rel.getTable());
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
         Vertex indexScanvertex = null;
         if (transaction != null) {
             indexScanvertex = new Vertex(TXN_INDEX_RANGE_SCAN, new TxnIndexRangeScanParam(

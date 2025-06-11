@@ -187,7 +187,7 @@ public final class DingoDocumentVisitFun {
         if (rexFilter != null) {
             filter = SqlExprUtils.toSqlExpr(rexFilter);
         }
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
 
         // Get all index table distributions
         NavigableMap<ComparableByteArray, RangeDistribution> indexRanges =

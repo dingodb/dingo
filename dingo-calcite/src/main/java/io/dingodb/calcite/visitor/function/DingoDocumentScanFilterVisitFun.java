@@ -74,7 +74,7 @@ public final class DingoDocumentScanFilterVisitFun {
         TupleMapping tupleMapping = TupleMapping.of(
             indexSelectionList
         );
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
 
         for (RangeDistribution rangeDistribution : indexRanges.values()) {
             TxnDocumentScanFilterParam param = new TxnDocumentScanFilterParam(

@@ -87,7 +87,11 @@ public final class DingoScanWithRelOpVisitFun {
                 transaction.getType(),
                 IsolationLevel.of(transaction.getIsolationLevel())
             );
-            final long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+            final long scanTs = VisitUtils.getScanTs(
+                transaction,
+                visitor.getKind(),
+                visitor.getPointTs(),
+                visitor.isForUpdate());
             scanVertexCreator = () -> createTxnScanVertex(rel, tableInfo, transaction, scanTs);
         } else {
             task = job.getOrCreate(currentLocation, idGenerator);

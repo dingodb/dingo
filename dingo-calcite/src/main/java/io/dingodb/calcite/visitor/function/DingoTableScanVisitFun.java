@@ -120,7 +120,7 @@ public final class DingoTableScanVisitFun {
 
         List<Vertex> outputs = new ArrayList<>();
 
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
         for (int i = 0; i < Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {

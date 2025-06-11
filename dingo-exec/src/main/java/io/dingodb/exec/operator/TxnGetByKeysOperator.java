@@ -78,7 +78,7 @@ public final class TxnGetByKeysOperator extends FilterProjectOperator {
             profile.time(start);
             if (transactionType == TransactionType.PESSIMISTIC && !param.isSelect()) {
                 return Collections.singletonList(tuple).iterator();
-            } else if (transactionType == TransactionType.OPTIMISTIC && param.isSelect() && param.isForUpdate()) {
+            } else if (param.isSelect() && param.isForUpdate()) {
                 context.setShow(false);
                 return Collections.singletonList(tuple).iterator();
             } else {

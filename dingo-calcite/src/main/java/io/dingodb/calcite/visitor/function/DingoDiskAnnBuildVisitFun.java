@@ -95,7 +95,7 @@ public final class DingoDiskAnnBuildVisitFun {
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
         RexNode rexFilter = rel.getFilter();
         TupleMapping resultSelection = rel.getSelection();
-        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs());
+        long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
 
         SqlExpr filter = null;
         if (rexFilter != null) {
