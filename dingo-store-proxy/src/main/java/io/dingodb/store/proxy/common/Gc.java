@@ -19,7 +19,6 @@ package io.dingodb.store.proxy.common;
 import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
@@ -41,6 +40,8 @@ import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.Region;
 import io.dingodb.sdk.service.entity.common.RegionDefinition;
 import io.dingodb.sdk.service.entity.coordinator.DropRegionRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.UpdateGCSafePointRequest;
 import io.dingodb.sdk.service.entity.meta.DeleteAutoIncrementRequest;
@@ -59,6 +60,7 @@ import io.dingodb.store.api.transaction.data.checkstatus.AsyncResolveData;
 import io.dingodb.store.api.transaction.exception.NonAsyncCommitLockException;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.transaction.api.GcApi;
+import io.dingodb.transaction.api.GcObj;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -164,10 +166,14 @@ public class Gc {
         }
     }
 
-    public static Pair<String, Long> startBackUpSafeByPoint(long point, long latestTso) {
+    public static GcObj startBackUpSafeByPoint(long point, long latestTso) {
         LogUtils.info(log, "back up safe point update task start. latestTso:{}, to point:{}", latestTso, point);
         if (!GcApi.running.compareAndSet(false, true)) {
-            return new Pair<>(GcStatus.GC_TASK_RUNNING.toString(), 0L);
+            return GcObj.builder()
+                .status(GcStatus.GC_TASK_RUNNING.toString())
+                .safePoint(0L)
+                .resolveLockSafePoint(0L)
+                .build();
         }
         try {
             LogUtils.info(log, "Run back up safe point update task.");
@@ -212,19 +218,61 @@ public class Gc {
                 while (true);
             }
 
+            safeTs = safeTs - 1;
             LogUtils.info(log, "Back up Update safe point to safeTs: {}, latestTso: {}", safeTs, latestTso);
+
+            GetGCSafePointRequest.GetGCSafePointRequestBuilder <?, ?> getBuilder = GetGCSafePointRequest.builder();
+            long safePoint;
+            if (TenantConstant.TENANT_ID == 0) {
+                getBuilder.getAllTenant(false);
+                GetGCSafePointRequest getGCSafePointRequest = getBuilder.build();
+                GetGCSafePointResponse gcSafePoint = Services.coordinatorService(coordinators).getGCSafePoint(
+                    latestTso, getGCSafePointRequest
+                );
+                safePoint = gcSafePoint.getSafePoint();
+
+                if (safePoint > safeTs) {
+                    throw new RuntimeException("gcSafePoint: " + safePoint + " is greater than resolveLockSafePoint: " + safeTs);
+                }
+                if (gcSafePoint.getResolveLockSafePoint() > safeTs) {
+                    throw new RuntimeException("The currently calculated resolveLockSafePoint: " + safeTs +
+                        " is less than coordinator's resolveLockSafePoint: " + gcSafePoint.getResolveLockSafePoint());
+                }
+            } else {
+                getBuilder.getAllTenant(true);
+                GetGCSafePointRequest getGCSafePointRequest = getBuilder.build();
+                GetGCSafePointResponse gcSafePoint = Services.coordinatorService(coordinators).getGCSafePoint(
+                    latestTso, getGCSafePointRequest
+                );
+                Map<Long, Long> tenantSafePoints = gcSafePoint.getTenantSafePoints();
+                safePoint = tenantSafePoints.get(TenantConstant.TENANT_ID);
+                if (safePoint > safeTs) {
+                    throw new RuntimeException("gcSafePoint: " + safePoint + " is greater than resolveLockSafePoint: " + safeTs);
+                }
+                Map<Long, Long> tenantResolveLockSafePoints = gcSafePoint.getTenantResolveLockSafePoints();
+                long resolveLockSafePoint = tenantResolveLockSafePoints.get(TenantConstant.TENANT_ID);
+                if (resolveLockSafePoint > safeTs) {
+                    throw new RuntimeException("The currently calculated resolveLockSafePoint: " + safeTs +
+                        " is less than coordinator's resolveLockSafePoint: " + resolveLockSafePoint);
+                }
+            }
+
             UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
                 = UpdateGCSafePointRequest.builder();
             if (TenantConstant.TENANT_ID == 0) {
-                builder.resolveLockSafePoint(safeTs - 1);
+                builder.resolveLockSafePoint(safeTs);
             } else {
-                builder.tenantResolveLockSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs - 1));
+                builder.tenantResolveLockSafePoints(Collections.singletonMap(TenantConstant.TENANT_ID, safeTs));
             }
             UpdateGCSafePointRequest request = builder.build();
             Services.coordinatorService(coordinators).updateGCSafePoint(
                 latestTso, request
             );
-            return new Pair<>(GcStatus.FINISH.toString(), safeTs - 1);
+            return GcObj.builder()
+                .status(GcStatus.FINISH.toString())
+                .safePoint(safePoint)
+                .resolveLockSafePoint(safeTs)
+                .build();
         } catch (Exception e) {
             LogUtils.error(log, "Back up update safe point error, skip this run.", e);
             throw e;

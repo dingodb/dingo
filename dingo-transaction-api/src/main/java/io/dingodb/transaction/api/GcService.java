@@ -28,7 +28,7 @@ public interface GcService {
 
     Pair<String, Long> startSafePointUpdate();
 
-    Pair<String, Long> startBackUpSafeByPoint(long point, long latestTso);
+    GcObj startBackUpSafeByPoint(long point, long latestTso);
 
     void gcDeleteRegion();
 }

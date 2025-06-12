@@ -19,6 +19,7 @@ package io.dingodb.store.proxy.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.util.Pair;
 import io.dingodb.store.proxy.common.Gc;
+import io.dingodb.transaction.api.GcObj;
 import io.dingodb.transaction.api.GcServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +48,7 @@ public class GcService implements io.dingodb.transaction.api.GcService {
     }
 
     @Override
-    public Pair<String, Long> startBackUpSafeByPoint(long point, long latestTso) {
+    public GcObj startBackUpSafeByPoint(long point, long latestTso) {
         return Gc.startBackUpSafeByPoint(point, latestTso);
     }
 

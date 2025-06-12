@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package io.dingodb.store.proxy.common;
+package io.dingodb.transaction.api;
 
-public enum GcStatus {
-    READY, RUNNING, FINISH, GC_TASK_RUNNING, WARING
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Builder
+@Getter
+@Setter
+public class GcObj {
+    private String status;
+    private long resolveLockSafePoint;
+    private long safePoint;
 }
