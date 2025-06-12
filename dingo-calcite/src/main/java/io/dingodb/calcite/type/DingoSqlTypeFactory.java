@@ -487,7 +487,15 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     RelDataType type1 = types.get(i + 1);
                     if (SqlTypeUtil.isInterval(type1)
                         || SqlTypeUtil.isIntType(type1)) {
-                        resultType = type;
+                        SqlTypeName sqlTypeName = type1.getSqlTypeName();
+                        if (SqlTypeUtil.isDate(type) && (sqlTypeName.equals(SqlTypeName.INTERVAL_HOUR)
+                            || sqlTypeName.equals(SqlTypeName.INTERVAL_MINUTE)
+                            || sqlTypeName.equals(SqlTypeName.INTERVAL_SECOND))
+                        ) {
+                            resultType = DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.TIMESTAMP);
+                        } else {
+                            resultType = type;
+                        }
                         return createTypeWithNullability(resultType,
                             nullCount > 0 || nullableCount > 0);
                     }
