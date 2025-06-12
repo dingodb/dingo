@@ -26,8 +26,10 @@ import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
@@ -42,10 +44,14 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.PartVectorParam;
 import io.dingodb.exec.operator.params.TxnPartVectorParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.expr.coding.CodingFlag;
+import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
 import io.dingodb.expr.runtime.expr.Expr;
@@ -67,6 +73,7 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -126,7 +133,13 @@ public final class DingoVectorVisitFun {
         }
 
         IndexTable indexTable = (IndexTable) rel.getIndexTable();
-        boolean pushDown = pushDown(rel.getFilter(), dingoTable.getTable(), indexTable);
+        boolean pushDown = pushDown(
+            rel.getFilter(),
+            dingoTable.getTable(),
+            indexTable,
+            rel.tupleType(),
+            job.getParasType()
+        );
         RexNode rexFilter = rel.getFilter();
         TupleMapping resultSelection = rel.getSelection();
 
@@ -304,7 +317,7 @@ public final class DingoVectorVisitFun {
         return parameterMap;
     }
 
-    private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable) {
+    private static boolean pushDown(RexNode filter, Table table, IndexTable indexTable, TupleType tupleType, DingoType parasType) {
         if (filter == null) {
             return false;
         }
@@ -340,7 +353,20 @@ public final class DingoVectorVisitFun {
         java.util.Optional<Column> optional = selectionColList.stream()
             .filter(column -> !filterIndexCols.contains(column))
             .findFirst();
-        return !optional.isPresent();
+        // Calculate RelOpCoder in advance, because the filter will change the index according to the selection
+        Expr expr = RexConverter.convert(filter);
+        RelOp relOp = RelOpBuilder.builder()
+            .filter(expr)
+            .build();
+        relOp = relOp.compile(new DingoCompileContext(
+            (io.dingodb.expr.common.type.TupleType) tupleType.getType(),
+            (io.dingodb.expr.common.type.TupleType) parasType.getType()
+        ), new DingoRelConfig());
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        if (!optional.isPresent() && RelOpCoder.INSTANCE.visit(relOp, os) == CodingFlag.OK) {
+            return true;
+        }
+        return false;
     }
 
 }

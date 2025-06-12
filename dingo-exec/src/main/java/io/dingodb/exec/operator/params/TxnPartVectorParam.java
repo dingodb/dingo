@@ -130,6 +130,7 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
         this.isLookUp = isLookUp;
         this.relOp = relOp;
         this.resultSelection = resultSelection;
+        // tableDataSchema calculation is incorrect
         this.tableDataColList = table.columns.stream().filter(Column::isPrimary).collect(Collectors.toList());
         tableDataColList.addAll(indexTable.columns.stream()
             .filter(column -> !column.isPrimary())
@@ -150,24 +151,25 @@ public class TxnPartVectorParam extends FilterProjectSourceParam {
                 builder.selection(selection.stream().boxed().collect(Collectors.toList()));
                 this.selection = resultSelection;
             }
-            relOp = relOp.compile(new DingoCompileContext(
+            RelOp relOpR = relOp.compile(new DingoCompileContext(
                 (TupleType) tableDataSchema.getType(),
                 (TupleType) vertex.getParasType().getType()
             ), new DingoRelConfig());
             ByteArrayOutputStream os = new ByteArrayOutputStream();
-            if (RelOpCoder.INSTANCE.visit(relOp, os) == CodingFlag.OK) {
+            if (RelOpCoder.INSTANCE.visit(relOpR, os) == CodingFlag.OK) {
+                relOp = relOpR;
                 builder.relExpr(os.toByteArray());
                 filter = null;
-            }
-            builder.schemaVersion(table.getVersion());
-            builder.codecVersion(table.getCodecVersion());
-            builder.originalSchema(
-                SchemaWrapperUtils.buildSchemaWrapper(
-                    tableDataSchema, tableDataKeyMapping(), 0
-                )
-            );
+                builder.schemaVersion(table.getVersion());
+                builder.codecVersion(table.getCodecVersion());
+                builder.originalSchema(
+                    SchemaWrapperUtils.buildSchemaWrapper(
+                        tableDataSchema, tableDataKeyMapping(), 0
+                    )
+                );
 
-            coprocessor = builder.build();
+                coprocessor = builder.build();
+            }
         }
         codec = CodecService.getDefault().createKeyValueCodec(codecVersion, schemaVersion, schema, keyMapping);
     }

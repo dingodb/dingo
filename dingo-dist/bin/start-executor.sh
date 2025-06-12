@@ -22,7 +22,29 @@ LOCAL_STORE_JAR_PATH=$(find $ROOT -name dingo-store-local*.jar)
 NET_JAR_PATH=$(find $ROOT -name dingo-net-*.jar)
 APP_HOME=$( cd "$( dirname "$0" )/.." && pwd )
 PLATFORM=$(uname -s)-$(uname -m | sed 's/x86_64/x64/')
-JAVA_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError -XX:MaxDirectMemorySize=4096m"
+LOG_DIR="$ROOT/log"
+
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+fi
+
+JAVA_OPTS="\
+    -Xms8g -Xmx8g \
+    -XX:+UseG1GC \
+    -XX:MaxGCPauseMillis=100 \
+    -XX:G1HeapRegionSize=4M \
+    -XX:+ParallelRefProcEnabled \
+    -XX:+AlwaysPreTouch \
+    -XX:+DisableExplicitGC \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:MaxDirectMemorySize=4096m \
+    -XX:ReservedCodeCacheSize=256m \
+    -XX:+UseCodeCacheFlushing \
+    -XX:+TieredCompilation \
+    -XX:TieredStopAtLevel=4 \
+    -XX:InitialCodeCacheSize=256m \
+    -Xlog:gc*:file=${LOG_DIR}/gc.log:time:filecount=5,filesize=100M \
+"
 
 EMBEDDED_JDK="${APP_HOME}/${PLATFORM}"
 if [ -d "${EMBEDDED_JDK}" ]; then
