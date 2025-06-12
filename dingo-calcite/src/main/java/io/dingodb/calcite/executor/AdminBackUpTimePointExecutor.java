@@ -17,7 +17,7 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.common.mysql.util.DataTimeUtils;
-import io.dingodb.common.util.Pair;
+import io.dingodb.transaction.api.GcObj;
 import io.dingodb.transaction.api.GcService;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
@@ -32,13 +32,17 @@ import java.util.List;
 public class AdminBackUpTimePointExecutor extends QueryExecutor {
 
     public static final List<String> COLUMNS = Arrays.asList(
-        "STATUS", "RESOLVE_LOCK_SAFE_POINT", "TIME"
+        "STATUS", "RESOLVE_LOCK_SAFE_POINT", "RESOLVE_LOCK_SAFE_TIME", "GC_SAFE_POINT", "GC_SAFE_POINT_TIME"
     );
     public static final int INDEX_STATUS = 0;
 
-    public static final int INDEX_TSO = 1;
+    public static final int INDEX_RESOLVE_TSO = 1;
 
-    public static final int INDEX_TIME = 2;
+    public static final int INDEX_RESOLVE_TIME = 2;
+
+    public static final int INDEX_SAFE_TSO = 3;
+
+    public static final int INDEX_SAFE_TIME = 4;
 
     @Getter
     private final String timeStr;
@@ -56,15 +60,20 @@ public class AdminBackUpTimePointExecutor extends QueryExecutor {
             throw new RuntimeException("The specified time:"+ timeStr +" is greater than the " +
                 "current latest tso:" + latestTso);
         }
-        Pair<String, Long> stringLongPair = GcService.getDefault().startBackUpSafeByPoint(point, latestTso);
+        GcObj gcObj = GcService.getDefault().startBackUpSafeByPoint(point, latestTso);
         List<Object[]> gcColumns = new ArrayList<>();
         Object[] objects = new Object[COLUMNS.size()];
-        objects[INDEX_STATUS] = stringLongPair.getKey();
-        Long tsoValue = stringLongPair.getValue();
-        objects[INDEX_TSO] = tsoValue;
+        objects[INDEX_STATUS] = gcObj.getStatus();
+        long tsoValue = gcObj.getResolveLockSafePoint();
+        objects[INDEX_RESOLVE_TSO] = tsoValue;
         long timestamp = TsoService.getDefault().tsoToTimestamp(tsoValue);
         String timeStr = DataTimeUtils.longToTimeString(timestamp);
-        objects[INDEX_TIME] = timeStr;
+        objects[INDEX_RESOLVE_TIME] = timeStr;
+        long safePoint = gcObj.getSafePoint();
+        objects[INDEX_SAFE_TSO] = safePoint;
+        long safeTime = TsoService.getDefault().tsoToTimestamp(safePoint);
+        String safeTimeStr = DataTimeUtils.longToTimeString(safeTime);
+        objects[INDEX_SAFE_TIME] = safeTimeStr;
         gcColumns.add(objects);
         return gcColumns.iterator();
     }
