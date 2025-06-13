@@ -267,6 +267,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             DingoInferTypes.TIME_VARCHAR1024,
             OperandTypes.or(
                 family(SqlTypeFamily.TIME, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.DATETIME, SqlTypeFamily.STRING),
                 family(SqlTypeFamily.TIME)
             ),
             SqlFunctionCategory.STRING
