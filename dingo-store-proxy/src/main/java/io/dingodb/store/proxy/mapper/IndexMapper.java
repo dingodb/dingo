@@ -241,6 +241,7 @@ public interface IndexMapper {
                 case "DISKANN":
                     int maxDegree = Integer.parseInt(properties.getOrDefault("max_degree", "64"));
                     int searchListSize = Integer.parseInt(properties.getOrDefault("search_list_size", "100"));
+                    String codebookPrefix = properties.getOrDefault("codebookPrefix", "");
                     vectorIndexParameter = VectorIndexParameter.builder()
                         .vectorIndexType(VectorIndexType.VECTOR_INDEX_TYPE_DISKANN)
                         .vectorIndexParameter(
@@ -250,7 +251,7 @@ public interface IndexMapper {
                                 .maxDegree(maxDegree)
                                 .searchListSize(searchListSize)
                                 .valueType(ValueType.FLOAT)
-                                .codebookPrefix("")
+                                .codebookPrefix(codebookPrefix)
                                 .build()
                         )
                         .build();

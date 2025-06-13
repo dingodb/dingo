@@ -94,7 +94,7 @@ public class Starter {
         }
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
-        NetService.getDefault().listenPort(DingoConfiguration.host(), DingoConfiguration.port());
+        NetService.getDefault().listenPort(DingoConfiguration.port());
         DriverProxyServer driverProxyServer = new DriverProxyServer();
         driverProxyServer.start();
         // Register cluster heartbeat.

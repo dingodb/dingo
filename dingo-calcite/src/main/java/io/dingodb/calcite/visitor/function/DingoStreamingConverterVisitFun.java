@@ -112,7 +112,7 @@ public final class DingoStreamingConverterVisitFun {
                     if (partition instanceof DingoRelPartitionByTable) {
                         outputs = partition(idGenerator, outputs, (DingoRelPartitionByTable) partition);
                     } else if (partition instanceof DingoRelPartitionByKeys) {
-                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition, visitor);
+                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition, visitor, transaction);
                     } else if (partition instanceof DingoRelPartitionByIndex) {
                         outputs = copy(idGenerator, outputs, (DingoRelPartitionByIndex) partition, transaction);
                     } else {
@@ -225,11 +225,12 @@ public final class DingoStreamingConverterVisitFun {
         IdGenerator idGenerator,
         @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelPartitionByKeys hash,
-        DingoJobVisitor visitor
+        DingoJobVisitor visitor,
+        ITransaction transaction
     ) {
         List<Vertex> outputs = new LinkedList<>();
         List<Location> locations = new ArrayList<>();
-        if (visitor.getExecuteVariables().isJoinConcurrency()) {
+        if (visitor.getExecuteVariables().isJoinConcurrency() || (transaction != null && transaction.isAutoCommit())) {
             locations.addAll(ClusterService.getDefault().getComputingLocations());
         }
         final HashStrategy hs = new SimpleHashStrategy();

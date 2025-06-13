@@ -53,6 +53,7 @@ if [ -d "${EMBEDDED_JDK}" ]; then
 fi
 
 nohup ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
+     --add-opens java.base/java.util=ALL-UNNAMED \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
      -classpath ${JAR_PATH}:${NET_JAR_PATH}:${LOCAL_STORE_JAR_PATH}  \
      io.dingodb.server.executor.Starter \
