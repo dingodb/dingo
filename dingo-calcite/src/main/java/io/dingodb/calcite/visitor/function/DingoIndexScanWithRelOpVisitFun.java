@@ -23,6 +23,7 @@ import io.dingodb.calcite.utils.VisitUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -43,7 +44,9 @@ import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.exception.NeverRunHere;
 import io.dingodb.meta.MetaService;
+import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -224,6 +227,16 @@ public final class DingoIndexScanWithRelOpVisitFun {
             );
             return new Vertex(TXN_SCAN_WITH_NO_OP, param);
         } else {
+            boolean pushDown = rel.isPushDown();
+            if (pushDown && td instanceof IndexTable && ((IndexTable)td).indexType == IndexType.SCALAR) {
+                for (Column column: td.getColumns()) {
+                    //Should not push down for decimal key column.
+                    if (column.getType() instanceof DecimalType && ((IndexTable) td).originKeyList.contains(column.getName())) {
+                        pushDown = false;
+                    }
+                }
+            }
+
             TxnScanWithRelOpParam param = new TxnScanWithRelOpParam(
                 rel.getIndexTable().tableId,
                 td.tupleType(),
@@ -233,7 +246,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 transaction.getLockTimeOut(),
                 relOp,
                 DefinitionMapper.mapToDingoType(rel.getRowType()),
-                rel.isPushDown(),
+                pushDown,
                 td.version,
                 0,
                 td.getCodecVersion(),
