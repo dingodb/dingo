@@ -262,6 +262,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                                         break;
                                 }
                             }
+                            if (key.equals("codebookPrefix") && val.toString().equals("")) {
+                                val = "''";
+                            }
                             createTableSqlStr.append(key).append("=").append(val).append(",");
                         });
                         createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
