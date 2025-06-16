@@ -16,9 +16,38 @@
 
 package io.dingodb.server.executor.ddl;
 
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.meta.entity.Column;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.stream.Collectors;
+
+
+@Slf4j
 public class ModifyColumnIndexFiller extends ModifyColumnFiller {
+    @Override
+    public void initFiller() {
+        super.initFiller();
+        replicaId = indexTable.tableId;
+
+        columnIndices = table.getColumnIndices(indexTable.columns.stream()
+            .map(Column::getName)
+            .collect(Collectors.toList()));
+        if (columnIndices.contains(-1)) {
+            columnIndices.clear();
+            if (indexTable.getProperties() != null) {
+                String columnIndicesStr = indexTable.getProperties().getProperty("columnIndices");
+                String[] indices = columnIndicesStr.split(",");
+                for (String columnIndex : indices) {
+                    columnIndices.add(Integer.parseInt(columnIndex));
+                }
+            }
+        }
+        colLen = columnIndices.size();
+
+        LogUtils.info(log, "modify column index id:{}", replicaId);
+    }
 
     @Override
     public @NonNull Object[] getNewTuples(int colLen, Object[] tuples) {

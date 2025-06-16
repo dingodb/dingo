@@ -17,6 +17,7 @@
 package io.dingodb.store.proxy.ddl;
 
 import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.AddingColInfo;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlJobEventSource;
 import io.dingodb.common.ddl.DdlUtil;
@@ -389,17 +390,17 @@ public class DdlHandler {
         doDdlJob(job);
     }
 
-    public void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
+    public void addColumn(SchemaInfo schemaInfo, Table table, AddingColInfo addingColInfo, String connId) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaInfo.getSchemaId())
             .tableId(table.tableId.seq)
             .schemaName(schemaInfo.getName())
             .tableName(table.getName())
             .actionType(ActionType.ActionAddColumn)
-            .schemaState(column.getSchemaState())
+            .schemaState(addingColInfo.getColumn().getSchemaState())
             .build();
         List<Object> args = new ArrayList<>();
-        args.add(column);
+        args.add(addingColInfo);
         job.setArgs(args);
         doDdlJob(job);
     }

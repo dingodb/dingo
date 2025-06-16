@@ -17,6 +17,7 @@
 package io.dingodb.meta;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.AddingColInfo;
 import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.meta.SchemaInfo;
@@ -53,7 +54,7 @@ public interface DdlService {
 
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
 
-    default void addColumn(SchemaInfo schemaInfo, Table table, ColumnDefinition column, String connId) {
+    default void addColumn(SchemaInfo schemaInfo, Table table, AddingColInfo addingColInfo, String connId) {
 
     }
 

@@ -30,6 +30,8 @@ public class SqlAlterChangeColumn extends SqlAlterTable {
     public SqlIdentifier newName;
 
     public DingoSqlColumn dingoSqlColumn;
+    public SqlIdentifier afterCol;
+    public boolean firstCol;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE CHANGE COLUMN", SqlKind.ALTER_TABLE);
@@ -39,12 +41,16 @@ public class SqlAlterChangeColumn extends SqlAlterTable {
         SqlIdentifier table,
         SqlIdentifier oldName,
         SqlIdentifier newName,
-        DingoSqlColumn sqlColumn
+        DingoSqlColumn sqlColumn,
+        SqlIdentifier afterCol,
+        boolean firstCol
     ) {
         super(pos, table, OPERATOR);
         this.oldName = oldName;
         this.newName = newName;
         this.dingoSqlColumn = sqlColumn;
+        this.afterCol = afterCol;
+        this.firstCol = firstCol;
     }
 
     @Override

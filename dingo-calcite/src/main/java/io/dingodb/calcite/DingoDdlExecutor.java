@@ -77,6 +77,7 @@ import io.dingodb.calcite.schema.SubSnapshotSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.calcite.utils.IndexParameterUtils;
 import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.AddingColInfo;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.ModifyingColInfo;
@@ -766,20 +767,33 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
         }
         validateAddColumn(newColumn);
+        SqlIdentifier afterCol = sqlAlterAddColumn.getAfterCol();
+        String afterColName;
+        if (afterCol != null) {
+            afterColName = afterCol.getSimple();
+            Column afterColumn = definition.getColumns().stream()
+                .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                    && col.getName().equalsIgnoreCase(afterColName)).findFirst().orElse(null);
+
+            if (afterColumn == null) {
+                throw DINGO_RESOURCE.unknownColumn(afterColName, tableName).ex();
+            }
+        } else {
+            afterColName = null;
+        }
         if (sqlAlterAddColumn.isPreValidate()) {
             sqlAlterAddColumn.setPreValidate(false);
             return;
         }
-        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
-        DdlService.root().addColumn(schemaInfo, definition, newColumn, "");
 
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(definition.getTableId().seq)
-            .type(ActionType.ActionAddColumn)
+        newColumn.setSchemaState(SchemaState.SCHEMA_NONE);
+
+        AddingColInfo addingColInfo = AddingColInfo.builder()
+            .column(newColumn)
+            .afterColName(afterColName)
+            .firstCol(sqlAlterAddColumn.isFirstCol())
             .build();
-        rootSnapshotSchema.applyDiff(diff);
+        DdlService.root().addColumn(schemaInfo, definition, addingColInfo, "");
 
         LogUtils.info(log, "add column done, tableName:{}, colName:{}", tableName, newColumn.getName());
     }
@@ -1622,7 +1636,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         && col.getName().equalsIgnoreCase(afterColName)).findFirst().orElse(null);
 
                 if (afterColumn == null) {
-                    throw DINGO_RESOURCE.unknownColumn(name, tableName).ex();
+                    throw DINGO_RESOURCE.unknownColumn(afterColName, tableName).ex();
                 }
             } else {
                 afterColName = null;
@@ -1647,6 +1661,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .changingCol(oldColumn)
                 .oldColName(oldColumn.getName())
                 .afterColName(afterColName)
+                .firstCol(sqlAlterModifyColumn.firstCol)
                 .build();
             modifyingColInfoList.add(modifyingColInfo);
         }
@@ -1702,6 +1717,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (newColumn == null) {
             throw DINGO_RESOURCE.unknownColumn(name, tableName).ex();
         }
+        SqlIdentifier afterCol = sqlAlterChangeColumn.afterCol;
+        String afterColName;
+        if (afterCol != null) {
+            afterColName = afterCol.getSimple();
+            Column afterColumn = table.getColumns().stream()
+                .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                    && col.getName().equalsIgnoreCase(afterColName)).findFirst().orElse(null);
+
+            if (afterColumn == null) {
+                throw DINGO_RESOURCE.unknownColumn(afterColName, tableName).ex();
+            }
+        } else {
+            afterColName = null;
+        }
         newColumn.setName(sqlAlterChangeColumn.newName.getSimple());
         checkModifyTypes(schema.getSchemaName(), tableName, oldColumn, newColumn);
         if (sqlAlterChangeColumn.isPreValidate()) {
@@ -1715,6 +1744,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .newCol(newColumn)
             .changingCol(oldColumn)
             .oldColName(oldColumn.getName())
+            .firstCol(sqlAlterChangeColumn.firstCol)
+            .afterColName(afterColName)
             .build();
         DdlService.root().changeColumn(
             schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, modifyingColInfo

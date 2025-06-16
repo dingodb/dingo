@@ -31,15 +31,19 @@ public class SqlAlterModifyColumn extends SqlAlterTable {
 
     public List<DingoSqlColumn> dingoSqlColumnList = new ArrayList<>();
     public List<SqlIdentifier> afterColumnList = new ArrayList<>();
+    public boolean firstCol;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE MODIFY COLUMN", SqlKind.ALTER_TABLE);
 
     public SqlAlterModifyColumn(
-        SqlParserPos pos, SqlIdentifier sqlIdentifier, DingoSqlColumn sqlColumn, SqlIdentifier afterCol) {
+        SqlParserPos pos, SqlIdentifier sqlIdentifier,
+        DingoSqlColumn sqlColumn, SqlIdentifier afterCol, boolean firstCol
+    ) {
         super(pos, sqlIdentifier, OPERATOR);
         this.dingoSqlColumnList.add(sqlColumn);
         this.afterColumnList.add(afterCol);
+        this.firstCol = firstCol;
     }
 
     public void addSqlColumn(DingoSqlColumn sqlColumn) {

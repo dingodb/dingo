@@ -193,6 +193,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
     final SqlDataTypeSpec type;
     SqlIdentifier afterCol = null;
     ColumnOption columnOpt = null;
+    boolean firstCol = false;
 } {
     [<COLUMN>]
     columnId = SimpleIdentifier()
@@ -202,7 +203,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
           (
            <AFTER> afterCol = SimpleIdentifier()
            |
-           <FIRST>
+           <FIRST> { firstCol = true; }
           )
     ]
     {
@@ -210,7 +211,7 @@ SqlAlterTable addColumn(Span s, String scope, SqlIdentifier id): {
         if (columnOpt != null) { nullable = columnOpt.nullable; }
         return new SqlAlterAddColumn(s.end(this), id, DingoSqlDdlNodes.createColumn(
             s.end(this), columnId, type.withNullable(nullable), columnOpt
-        ));
+        ), afterCol, firstCol);
     }
 }
 
@@ -572,6 +573,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
     ColumnOption columnOpt = null;
     SqlIdentifier afterCol = null;
     SqlIdentifier name = null;
+    boolean firstCol = false;
 } {
    [<COLUMN>] name = SimpleIdentifier()
     (
@@ -581,7 +583,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
           (
            <AFTER> afterCol = SimpleIdentifier()
            |
-           <FIRST>
+           <FIRST> { firstCol = true; }
           )
         ]
         {
@@ -592,7 +594,7 @@ SqlAlterTable modifyColumn(Span s, String scope, SqlIdentifier id, SqlAlterTable
     )
    {
      if (alterTable == null) {
-         return new SqlAlterModifyColumn(s.end(this), id, columnDec, afterCol);
+         return new SqlAlterModifyColumn(s.end(this), id, columnDec, afterCol, firstCol);
      } else {
          SqlAlterModifyColumn alterModifyCol = (SqlAlterModifyColumn)alterTable;
          alterModifyCol.addSqlColumn(columnDec);
@@ -632,14 +634,21 @@ SqlAlterTable alterColumn(Span s, String scope, SqlIdentifier id): {
 SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
   SqlIdentifier name = null;
   SqlIdentifier newName = null;
-  DingoSqlColumn columnDec = null;
-    final SqlDataTypeSpec type;
+  DingoSqlColumn columnDec = null; final SqlDataTypeSpec type;
    ColumnOption columnOpt = null;
+  boolean firstCol = false; SqlIdentifier afterCol = null;
 } {
   [<COLUMN>] name = SimpleIdentifier() newName = SimpleIdentifier()
    (
         type = DataType()
         columnOpt = parseColumnOption()
+        [
+          (
+           <AFTER> afterCol = SimpleIdentifier()
+           |
+           <FIRST> { firstCol = true; }
+          )
+        ]
         {
             boolean nullable = true;
             if (columnOpt != null) { nullable = columnOpt.nullable;}
@@ -647,7 +656,7 @@ SqlAlterTable changeColumn(Span s, String scope, SqlIdentifier id): {
         }
     )?
   {
-    return new SqlAlterChangeColumn(s.end(this), id, name, newName, columnDec);
+    return new SqlAlterChangeColumn(s.end(this), id, name, newName, columnDec, afterCol, firstCol);
   }
 }
 

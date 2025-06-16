@@ -44,19 +44,32 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
 
 @Slf4j
 public class ModifyColumnFiller extends IndexAddFiller {
 
     DingoType dingoType;
-    private CommonId replicaId;
+    protected CommonId replicaId;
+
+    private boolean switchPos = false;
+    private int removePos = -1;
+    private int addPos = -1;
 
     @Override
     public NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> getRegionList() {
@@ -67,6 +80,14 @@ public class ModifyColumnFiller extends IndexAddFiller {
     public void initFiller() {
         super.initFiller();
         replicaId = indexTable.tableId;
+        Properties properties = indexTable.getProperties();
+        if (properties != null) {
+            switchPos = properties.getOrDefault("switchPos", "false").equals("true");
+            if (switchPos) {
+                removePos = Integer.parseInt(properties.getProperty("removePos", "-1"));
+                addPos = Integer.parseInt(properties.getProperty("addPos", "-1"));
+            }
+        }
         LogUtils.info(log, "replicaTableId:{}", replicaId);
     }
 
@@ -79,16 +100,10 @@ public class ModifyColumnFiller extends IndexAddFiller {
         table = InfoSchemaService.root().getTableDef(task.getTableId().domain, task.getTableId().seq);
         indexTable = InfoSchemaService.root().getIndexDef(task.getTableId().domain, task.getTableId().seq,
             task.getIndexId().seq);
+
         this.dingoType = indexTable.tupleType();
         initFiller();
         LogUtils.info(log, "modify column filler dingo type:{}", dingoType);
-        columnIndices = table.getColumnIndices(indexTable.columns.stream()
-            .map(Column::getName)
-            .collect(Collectors.toList()));
-        if (columnIndices.contains(-1)) {
-            columnIndices = IntStream.range(0, table.getColumns().size()).boxed().collect(Collectors.toList());
-        }
-        colLen = columnIndices.size();
         indexCodec = CodecService.getDefault()
             .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
             indexTable.keyMapping());
@@ -111,6 +126,7 @@ public class ModifyColumnFiller extends IndexAddFiller {
         boolean preRes = false;
         while (tupleIterator.hasNext()) {
             Object[] tuples = tupleIterator.next();
+
             Object[] tuplesTmp = getNewTuples(colLen, tuples);
 
             KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
@@ -141,15 +157,78 @@ public class ModifyColumnFiller extends IndexAddFiller {
         return preRes;
     }
 
+    @Override
+    public BackFillResult backFillDataInTxn(ReorgBackFillTask task, boolean withCheck) {
+        CommonId tableId = task.getTableId();
+        Iterator<Object[]> tupleIterator;
+        if (task.getRegionId().seq != ownerRegionId) {
+            tupleIterator = getIterator(task, tableId, withCheck);
+        } else {
+            tupleIterator = this.tupleIterator;
+        }
+        long start = System.currentTimeMillis();
+        Map<String, TxnLocalData> caches = new TreeMap<>();
+        long scanCount = 0;
+        while (tupleIterator.hasNext()) {
+            scanCount += 1;
+            if (scanCount % 409600 == 0) {
+                LogUtils.info(log, "bckFillDataInTxn loop count:{}, regionId:{}", scanCount, task.getRegionId());
+            }
+            Object[] tuple = tupleIterator.next();
+            //Object[] tuplesTmp = columnIndices.stream().map(i -> tuple[i]).toArray();
+            Object[] tuplesTmp = getNewTuples(colLen, tuple);
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique && ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                duplicateKey(tuplesTmp);
+            }
+            String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
+            if (!caches.containsKey(cacheKey)) {
+                caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
+            }
+            if (caches.size() % max_pre_write_count == 0) {
+                try {
+                    List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
+                    preWriteSecondSkipConflict(txnLocalDataList);
+                } finally {
+                    caches.clear();
+                }
+            }
+        }
+
+        this.scanCount.addAndGet(scanCount);
+        BackFillResult backFillResult = BackFillResult.builder().scanCount(scanCount).build();
+        Collection<TxnLocalData> tupleList = caches.values();
+        if (tupleList.isEmpty()) {
+            return backFillResult;
+        }
+        List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
+        preWriteSecondSkipConflict(txnLocalDataList);
+        backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second, regionId:{}, iterator cost:{}ms, scanCount:{}",
+            task.getRegionId(), (System.currentTimeMillis() - start), scanCount);
+        doneRegionIdList.add(task.getRegionId());
+        return backFillResult;
+    }
+
     @NonNull
     public Object[] getNewTuples(int colLen, Object[] tuples) {
+        if (switchPos) {
+            List<Object> valList = new ArrayList<>();
+            for (Object valItem : tuples) {
+                valList.add(valItem);
+            }
+            Object removeVal = valList.remove(removePos);
+            valList.add(addPos, removeVal);
+            tuples = valList.toArray();
+        }
         return transformType(tuples);
     }
 
     @Override
     public TxnLocalData getTxnLocalData(Object[] tuples) {
-        Object[] tuplesTmp = getNewTuples(colLen, tuples);
-        KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
+        KeyValue keyValue = wrap(indexCodec::encode).apply(tuples);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
             getRegionList();
         CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
@@ -165,8 +244,62 @@ public class ModifyColumnFiller extends IndexAddFiller {
             .build();
     }
 
-    public Object[] transformType(Object[] val) {
-        return (Object[]) dingoType.convertFrom(val, new ModifyTypeConverter());
+    public Object[] transformType(Object[] tuples) {
+        return (Object[]) dingoType.convertFrom(tuples, new ModifyTypeConverter());
+    }
+
+    @Override
+    public BackFillResult backFillDataInTxnWithCheck(ReorgBackFillTask task, boolean withCheck) {
+        CommonId tableId = task.getTableId();
+        Iterator<Object[]> tupleIterator = getIterator(task, tableId, withCheck);
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        long start = System.currentTimeMillis();
+        Map<String, TxnLocalData> caches = new TreeMap<>();
+        long scanCount = 0;
+        while (tupleIterator.hasNext()) {
+            scanCount += 1;
+            Object[] tuple = tupleIterator.next();
+            Object[] tuplesTmp = getNewTuples(colLen, tuple);
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique) {
+                if (ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                    duplicateKey(tuplesTmp);
+                } else {
+                    byte[] key = getLocalKey(txnLocalData.getKey(), txnLocalData.getPartId().encode());
+                    if (cache.get(key) != null) {
+                        continue;
+                    }
+                }
+            }
+            String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
+            if (!caches.containsKey(cacheKey)) {
+                caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
+            }
+            if (caches.size() % max_pre_write_count == 0) {
+                try {
+                    List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
+                    preWriteSecondSkipConflict(txnLocalDataList);
+                } finally {
+                    caches.clear();
+                }
+            }
+        }
+
+        this.scanCount.addAndGet(scanCount);
+        BackFillResult backFillResult = BackFillResult.builder().scanCount(scanCount).build();
+        Collection<TxnLocalData> tupleList = caches.values();
+        if (tupleList.isEmpty()) {
+            return backFillResult;
+        }
+        List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
+        preWriteSecondSkipConflict(txnLocalDataList);
+        backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second with check, iterator cost:{}ms, scanCount:{}, regionId:{}",
+            (System.currentTimeMillis() - start), scanCount, task.getRegionId());
+        doneRegionIdList.add(task.getRegionId());
+        return backFillResult;
     }
 
 }
