@@ -19,6 +19,7 @@ package io.dingodb.server.executor.ddl;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
+import io.dingodb.common.ddl.AddingColInfo;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.JobState;
@@ -75,6 +76,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
@@ -926,8 +928,10 @@ public class DdlWorker {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, error);
         }
-        io.dingodb.common.table.ColumnDefinition columnDefinition
-            = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
+        AddingColInfo addingColInfo = (AddingColInfo) job.getArgs().get(0);
+        io.dingodb.common.table.ColumnDefinition columnDefinition = addingColInfo.getColumn();
+        //io.dingodb.common.table.ColumnDefinition columnDefinition
+        //    = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
         if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
             columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
         }
@@ -949,6 +953,8 @@ public class DdlWorker {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrDupFieldName, columnDefinition.getName()));
             return Pair.of(0L, job.getDingoErr().errorMsg);
         }
+        Integer addPos = isNotWriteData(
+            columnDefinition, addingColInfo.getAfterColName(), addingColInfo.isFirstCol(), tableRes.getKey());
         TableDefinitionWithId withId;
         switch (columnDefinition.getSchemaState()) {
             case SCHEMA_NONE:
@@ -960,13 +966,27 @@ public class DdlWorker {
                     .anyMatch(columnDefinition1 -> columnDefinition1.getState() == 2
                         && columnDefinition1.getName().equalsIgnoreCase("_ROWID")
                         && columnDefinition1.getIndexOfKey() >= 0);
-                if (withoutPriTable) {
-                    int colSize = columnDefinitions.size();
-                    definitionWithId.getTableDefinition().getColumns()
-                        .add(colSize - 1, MapperImpl.MAPPER.columnTo(columnDefinition));
+                if (addPos > -1) {
+                    columnDefinitions.add(addPos, MapperImpl.MAPPER.columnTo(columnDefinition));
+                    if (definitionWithId.getTableDefinition().getProperties() == null) {
+                        definitionWithId.getTableDefinition().setProperties(new HashMap<>());
+                    }
+                    definitionWithId.getTableDefinition().getProperties().put("addPos", addPos.toString());
                 } else {
-                    definitionWithId.getTableDefinition()
-                        .getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
+                    if (withoutPriTable) {
+                        int colSize = columnDefinitions.size();
+                        addPos = colSize - 1;
+                        definitionWithId.getTableDefinition().getColumns()
+                            .add(colSize - 1, MapperImpl.MAPPER.columnTo(columnDefinition));
+                    } else {
+                        addPos = columnDefinitions.size();
+                        definitionWithId.getTableDefinition()
+                            .getColumns().add(MapperImpl.MAPPER.columnTo(columnDefinition));
+                    }
+                    if (definitionWithId.getTableDefinition().getProperties() == null) {
+                        definitionWithId.getTableDefinition().setProperties(new HashMap<>());
+                    }
+                    definitionWithId.getTableDefinition().getProperties().put("addPos", addPos.toString());
                 }
                 String originTableName = definitionWithId.getTableDefinition().getName();
                 definitionWithId.getTableDefinition().setName("replicaTable");
@@ -1087,11 +1107,91 @@ public class DdlWorker {
             }
         }
         // if do not need change column data -> doModifyColumn
-        if (oldColDef == null || !needModifyColWIthData(oldColDef, newColDef)) {
+        Pair<Integer, Integer> changePosPair = isNotWriteData(modifyingColInfo, tableWithId);
+        if ((oldColDef == null || !needModifyColWIthData(oldColDef, newColDef)) && changePosPair == null) {
             return doModifyColumn(modifyingColInfo, job, dc);
         }
         // doModifyColumnWithData
-        return doModifyColumnTypeWithData(modifyingColInfo, job, dc);
+        return doModifyColumnTypeWithData(modifyingColInfo, job, dc, changePosPair);
+    }
+
+    private static Pair<Integer, Integer> isNotWriteData(
+        ModifyingColInfo modifyingColInfo, TableDefinitionWithId tableWithId
+    ) {
+        io.dingodb.common.table.ColumnDefinition colDef = modifyingColInfo.getChangingCol();
+        String afterColName = modifyingColInfo.getAfterColName();
+        boolean firstCol = modifyingColInfo.isFirstCol();
+        boolean switchPos = afterColName != null;
+        boolean notWriteData = true;
+        int removePos = -1;
+        int addPos = -1;
+        if (switchPos && colDef != null) {
+            List<ColumnDefinition> columnDefinitionList = tableWithId.getTableDefinition().getColumns();
+            int markPos = -1;
+            for (int i = 0; i < columnDefinitionList.size(); i ++) {
+                ColumnDefinition columnDefinition = columnDefinitionList.get(i);
+                if (columnDefinition.getName().equalsIgnoreCase(afterColName)) {
+                    markPos = i;
+                } else if (columnDefinition.getName().equalsIgnoreCase(colDef.getName())) {
+                    removePos = i;
+                }
+            }
+            if (markPos > -1 && markPos < columnDefinitionList.size() - 1) {
+                notWriteData = colDef.getName().equalsIgnoreCase(columnDefinitionList.get(markPos + 1).getName());
+            }
+            addPos = markPos + 1;
+        } else if (firstCol && colDef != null) {
+            notWriteData = tableWithId.getTableDefinition().getColumns().get(0).getName()
+                .equalsIgnoreCase(colDef.getName());
+            addPos = 0;
+            List<ColumnDefinition> columnDefinitionList = tableWithId.getTableDefinition().getColumns();
+            for (int i = 0; i < columnDefinitionList.size(); i ++) {
+                ColumnDefinition columnDefinition = columnDefinitionList.get(i);
+                if (columnDefinition.getName().equalsIgnoreCase(colDef.getName())) {
+                    removePos = i;
+                    break;
+                }
+            }
+        } else {
+            return null;
+        }
+        if (!notWriteData) {
+            if (removePos < addPos) {
+                addPos = addPos - 1;
+            }
+            return Pair.of(removePos, addPos);
+        } else {
+            return null;
+        }
+    }
+
+    private static Integer isNotWriteData(
+        io.dingodb.common.table.ColumnDefinition colDef,
+        String afterColName,
+        boolean firstCol,
+        TableDefinitionWithId tableWithId
+    ) {
+        boolean switchPos = afterColName != null;
+        if (switchPos && colDef != null) {
+            List<ColumnDefinition> columnDefinitionList = tableWithId.getTableDefinition().getColumns();
+            int markPos = -1;
+            for (int i = 0; i < columnDefinitionList.size(); i ++) {
+                ColumnDefinition columnDefinition = columnDefinitionList.get(i);
+                if (columnDefinition.getName().equalsIgnoreCase(afterColName)) {
+                    markPos = i;
+                    break;
+                }
+            }
+            if (markPos == -1) {
+                return -1;
+            } else {
+                return markPos + 1;
+            }
+        } else if (firstCol && colDef != null) {
+            return 0;
+        } else {
+            return -1;
+        }
     }
 
     public static Pair<SchemaInfo, String> checkSchemaExistAndCancelNotExistJob(DdlJob job) {
@@ -1572,7 +1672,7 @@ public class DdlWorker {
     }
 
     public Pair<Long, String> doModifyColumnTypeWithData(
-        ModifyingColInfo modifyColumnInfo, DdlJob job, DdlContext dc
+        ModifyingColInfo modifyColumnInfo, DdlJob job, DdlContext dc, Pair<Integer, Integer> changePosPair
     ) {
         Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
         if (tableRes.getValue() != null && tableRes.getKey() == null) {
@@ -1584,6 +1684,8 @@ public class DdlWorker {
         switch (modifyColumnInfo.getNewCol().getSchemaState()) {
             case SCHEMA_NONE:
                 TableDefinitionWithId definitionWithId = tableRes.getKey();
+                io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = definitionWithId.getTableDefinition();
+                List<ColumnDefinition> columnDefinitionList = definitionWithId.getTableDefinition().getColumns();
                 definitionWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 modifyColumnInfo.getNewCol().setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
                 // modify col def
@@ -1591,8 +1693,8 @@ public class DdlWorker {
                 // new col
                 // replace
                 int colIndex = -1;
-                for (int i = 0; i < definitionWithId.getTableDefinition().getColumns().size(); i++) {
-                    ColumnDefinition col = definitionWithId.getTableDefinition().getColumns().get(i);
+                for (int i = 0; i < columnDefinitionList.size(); i++) {
+                    ColumnDefinition col = columnDefinitionList.get(i);
                     if (col.getName().equalsIgnoreCase(modifyColumnInfo.getOldColName())) {
                         colIndex = i;
                         break;
@@ -1600,7 +1702,18 @@ public class DdlWorker {
                 }
                 ColumnDefinition columnDefinition = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
                 columnDefinition.setSchemaState(SCHEMA_PUBLIC);
-                definitionWithId.getTableDefinition().getColumns().set(colIndex, columnDefinition);
+                if (changePosPair != null) {
+                    columnDefinitionList.remove((int)changePosPair.getKey());
+                    columnDefinitionList.add(changePosPair.getValue(), columnDefinition);
+                    if (tableDefinition.getProperties() == null) {
+                        tableDefinition.setProperties(new HashMap<>());
+                    }
+                    tableDefinition.getProperties().put("removePos", changePosPair.getKey().toString());
+                    tableDefinition.getProperties().put("addPos", changePosPair.getValue().toString());
+                    tableDefinition.getProperties().put("switchPos", "true");
+                } else {
+                    columnDefinitionList.set(colIndex, columnDefinition);
+                }
 
                 String originTableName = definitionWithId.getTableDefinition().getName();
                 definitionWithId.getTableDefinition().setName(DdlUtil.ddlTmpTableName);
@@ -1625,6 +1738,15 @@ public class DdlWorker {
                     }
                     if (idx.get() > -1) {
                         TableDefinitionWithId indexWithId = IndexUtil.getIndexWithId(table, indexTable.getName());
+                        List<Integer> columnIndices = table.getColumnIndices(indexTable.columns.stream()
+                            .map(Column::getName)
+                            .collect(Collectors.toList()));
+                        StringBuilder builder = new StringBuilder();
+                        for (Integer columnIndex : columnIndices) {
+                            builder.append(columnIndex).append(",");
+                        }
+                        builder.deleteCharAt(builder.length() - 1);
+                        String columnIndicesStr = builder.toString();
                         String originIndexName = indexWithId.getTableDefinition().getName();
                         indexWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                         ColumnDefinition columnDefinition1 = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
@@ -1632,6 +1754,19 @@ public class DdlWorker {
                         columnDefinition1.setSchemaState(SCHEMA_PUBLIC);
                         indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition1);
                         indexWithId.getTableDefinition().setName(DdlUtil.ddlTmpIndexName + "_" + originIndexName);
+                        if (indexWithId.getTableDefinition().getIndexParameter() != null) {
+                            List<String> originKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginKeys();
+                            handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originKeys);
+                            indexWithId.getTableDefinition().getIndexParameter().setOriginKeys(originKeys);
+                            List<String> originWithKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginWithKeys();
+                            handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originWithKeys);
+                            indexWithId.getTableDefinition().getIndexParameter().setOriginWithKeys(originWithKeys);
+                        }
+                        if (indexWithId.getTableDefinition().getProperties() == null) {
+                            indexWithId.getTableDefinition().setProperties(new HashMap<>());
+                        }
+                        indexWithId.getTableDefinition().getProperties()
+                            .put("columnIndices", columnIndicesStr);
                         MetaService.root().createIndexReplicaTable(
                             job.getSchemaId(), originPriTabId,
                             indexWithId, originIndexName);
@@ -1732,6 +1867,11 @@ public class DdlWorker {
                     job.finishTableJob(JobState.jobStateRollbackDone, SchemaState.SCHEMA_PUBLIC);
                 } else {
                     job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                }
+                if (withId.getTableDefinition().getProperties() != null) {
+                    withId.getTableDefinition().getProperties().remove("removePos");
+                    withId.getTableDefinition().getProperties().remove("addPos");
+                    withId.getTableDefinition().getProperties().remove("switchPos");
                 }
                 return TableUtil.updateVersionAndTableInfos(dc, job, withId, true);
             default:
@@ -1891,7 +2031,11 @@ public class DdlWorker {
             );
             // to remove origin definition
             InfoSchemaService.root().dropIndex(tableId.seq, originIndexId.getEntityId());
+            if (withId.getTableDefinition().getProperties() != null) {
+                withId.getTableDefinition().getProperties().remove("columnIndices");
+            }
             TableUtil.updateVersionAndIndexInfos(DdlContext.INSTANCE, job, withId, false);
+            InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
             return DingoErrUtil.normal();
         } catch (Exception e) {
             LogUtils.error(log, "drop replicaTable error", e);

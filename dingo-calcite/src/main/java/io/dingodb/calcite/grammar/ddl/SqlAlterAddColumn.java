@@ -29,12 +29,25 @@ public class SqlAlterAddColumn extends SqlAlterTable {
     @Getter
     private SqlColumnDeclaration columnDeclaration;
 
+    @Getter
+    private SqlIdentifier afterCol;
+
+    @Getter
+    private boolean firstCol;
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("ALTER TABLE ADD COLUMN", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAddColumn(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlColumnDeclaration indexDeclaration) {
+    public SqlAlterAddColumn(SqlParserPos pos,
+        SqlIdentifier sqlIdentifier,
+        SqlColumnDeclaration indexDeclaration,
+        SqlIdentifier afterCol,
+        boolean firstCol
+    ) {
         super(pos, sqlIdentifier, OPERATOR);
         this.columnDeclaration = indexDeclaration;
+        this.afterCol = afterCol;
+        this.firstCol = firstCol;
     }
 
 }

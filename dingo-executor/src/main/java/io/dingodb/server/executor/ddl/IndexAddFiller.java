@@ -474,7 +474,7 @@ public class IndexAddFiller implements BackFiller {
         }
     }
 
-    private Iterator<Object[]> getIterator(ReorgBackFillTask task, CommonId tableId, boolean check) {
+    protected Iterator<Object[]> getIterator(ReorgBackFillTask task, CommonId tableId, boolean check) {
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, task.getRegionId());
         KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.getVersion(), table.tupleType(), table.keyMapping()
@@ -565,7 +565,7 @@ public class IndexAddFiller implements BackFiller {
         timeCtx.stop();
     }
 
-    private byte[] getLocalKey(byte[] key, byte[] partId) {
+    protected byte[] getLocalKey(byte[] key, byte[] partId) {
         byte[] ek = new byte[key.length + 1 + txnIdKey.length + partId.length];
         ek[0] = (byte) FILL_BACK.getCode();
         System.arraycopy(txnIdKey, 0, ek, 1, txnIdKey.length);

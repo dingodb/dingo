@@ -255,7 +255,7 @@ public class DdlJob {
             } else if (actionType == ActionType.ActionDropColumn) {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionAddColumn) {
-                t = new TypeReference<List<ColumnDefinition>>() {};
+                t = new TypeReference<List<AddingColInfo>>() {};
             } else if (actionType == ActionType.ActionRecoverTable || actionType == ActionType.ActionRecoverSchema) {
                 t = new TypeReference<List<RecoverInfo>>() {};
             } else if (actionType == ActionType.ActionCreateSequence) {

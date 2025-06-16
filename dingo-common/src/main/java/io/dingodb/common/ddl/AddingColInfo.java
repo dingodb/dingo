@@ -26,30 +26,16 @@ import lombok.extern.slf4j.Slf4j;
 @EqualsAndHashCode
 @Builder
 @Slf4j
-public class ModifyingColInfo {
-    ColumnDefinition newCol;
-    ColumnDefinition changingCol;
-    String oldColName;
-    int modifyTp;
-    String afterColName;
-    boolean firstCol;
+public class AddingColInfo {
+    private ColumnDefinition column;
+    private String afterColName;
+    private boolean firstCol;
 
-    public ModifyingColInfo() {
-
+    public AddingColInfo() {
     }
 
-    public ModifyingColInfo(
-        ColumnDefinition newCol,
-        ColumnDefinition changingCol,
-        String oldColName,
-        int modifyTp,
-        String afterColName,
-        boolean firstCol
-    ) {
-        this.newCol = newCol;
-        this.changingCol = changingCol;
-        this.oldColName = oldColName;
-        this.modifyTp = modifyTp;
+    public AddingColInfo(ColumnDefinition column, String afterColName, boolean firstCol) {
+        this.column = column;
         this.afterColName = afterColName;
         this.firstCol = firstCol;
     }

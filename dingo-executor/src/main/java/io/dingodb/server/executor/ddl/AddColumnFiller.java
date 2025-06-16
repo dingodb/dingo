@@ -43,12 +43,19 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
+import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
 
 @Slf4j
 public class AddColumnFiller extends IndexAddFiller {
@@ -57,6 +64,7 @@ public class AddColumnFiller extends IndexAddFiller {
     boolean withoutPrimary;
 
     private CommonId replicaId;
+    private int addPos;
 
     @Override
     public boolean preWritePrimary(ReorgBackFillTask task) {
@@ -75,14 +83,18 @@ public class AddColumnFiller extends IndexAddFiller {
         if (addColumn == null) {
             throw new RuntimeException("new column not found");
         }
-        columnIndices = table.getColumnIndices(indexTable.columns.stream()
-            .map(Column::getName)
-            .collect(Collectors.toList()));
-        colLen = columnIndices.size();
-        if (columnIndices.contains(-1)) {
-            defaultVal = addColumn.getDefaultVal();
-            columnIndices.removeIf(index -> index == -1);
-            colLen = columnIndices.size();
+        defaultVal = addColumn.getDefaultVal();
+        //columnIndices = table.getColumnIndices(indexTable.columns.stream()
+        //    .map(Column::getName)
+        //    .collect(Collectors.toList()));
+        //colLen = columnIndices.size();
+        //if (columnIndices.contains(-1)) {
+        //    defaultVal = addColumn.getDefaultVal();
+        //    columnIndices.removeIf(index -> index == -1);
+        //    colLen = columnIndices.size();
+        //}
+        if (indexTable.getProperties() != null) {
+            addPos = Integer.parseInt(indexTable.getProperties().getProperty("addPos"));
         }
         indexCodec = CodecService.getDefault()
             .createKeyValueCodec(indexTable.codecVersion, indexTable.version,
@@ -135,23 +147,138 @@ public class AddColumnFiller extends IndexAddFiller {
 
     @NonNull
     public Object[] getNewTuples(int colLen, Object[] tuples) {
-        Object[] tuplesTmp = new Object[colLen + 1];
-        for (int i = 0; i < colLen; i++) {
-            tuplesTmp[i] = tuples[columnIndices.get(i)];
+        List<Object> valList = new ArrayList<>(tuples.length + 1);
+        for (Object valItem : tuples) {
+            valList.add(valItem);
         }
-        if (withoutPrimary) {
-            tuplesTmp[colLen] = tuplesTmp[colLen - 1];
-            tuplesTmp[colLen - 1] = defaultVal;
+        valList.add(addPos, defaultVal);
+        tuples = valList.toArray();
+        return tuples;
+
+        //Object[] tuplesTmp = new Object[colLen + 1];
+        //for (int i = 0; i < colLen; i++) {
+        //    tuplesTmp[i] = tuples[columnIndices.get(i)];
+        //}
+        //if (withoutPrimary) {
+        //    tuplesTmp[colLen] = tuplesTmp[colLen - 1];
+        //    tuplesTmp[colLen - 1] = defaultVal;
+        //} else {
+        //    tuplesTmp[colLen] = defaultVal;
+        //}
+        //return tuplesTmp;
+    }
+
+    @Override
+    public BackFillResult backFillDataInTxn(ReorgBackFillTask task, boolean withCheck) {
+        CommonId tableId = task.getTableId();
+        Iterator<Object[]> tupleIterator;
+        if (task.getRegionId().seq != ownerRegionId) {
+            tupleIterator = getIterator(task, tableId, withCheck);
         } else {
-            tuplesTmp[colLen] = defaultVal;
+            tupleIterator = this.tupleIterator;
         }
-        return tuplesTmp;
+        long start = System.currentTimeMillis();
+        Map<String, TxnLocalData> caches = new TreeMap<>();
+        long scanCount = 0;
+        while (tupleIterator.hasNext()) {
+            scanCount += 1;
+            if (scanCount % 409600 == 0) {
+                LogUtils.info(log, "bckFillDataInTxn loop count:{}, regionId:{}", scanCount, task.getRegionId());
+            }
+            Object[] tuple = tupleIterator.next();
+            Object[] tuplesTmp = getNewTuples(colLen, tuple);
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique && ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                duplicateKey(tuplesTmp);
+            }
+            String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
+            if (!caches.containsKey(cacheKey)) {
+                caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
+            }
+            if (caches.size() % max_pre_write_count == 0) {
+                try {
+                    List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
+                    preWriteSecondSkipConflict(txnLocalDataList);
+                } finally {
+                    caches.clear();
+                }
+            }
+        }
+
+        this.scanCount.addAndGet(scanCount);
+        BackFillResult backFillResult = BackFillResult.builder().scanCount(scanCount).build();
+        Collection<TxnLocalData> tupleList = caches.values();
+        if (tupleList.isEmpty()) {
+            return backFillResult;
+        }
+        List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
+        preWriteSecondSkipConflict(txnLocalDataList);
+        backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second, regionId:{}, iterator cost:{}ms, scanCount:{}",
+            task.getRegionId(), (System.currentTimeMillis() - start), scanCount);
+        doneRegionIdList.add(task.getRegionId());
+        return backFillResult;
+    }
+
+    @Override
+    public BackFillResult backFillDataInTxnWithCheck(ReorgBackFillTask task, boolean withCheck) {
+        CommonId tableId = task.getTableId();
+        Iterator<Object[]> tupleIterator = getIterator(task, tableId, withCheck);
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        long start = System.currentTimeMillis();
+        Map<String, TxnLocalData> caches = new TreeMap<>();
+        long scanCount = 0;
+        while (tupleIterator.hasNext()) {
+            scanCount += 1;
+            Object[] tuple = tupleIterator.next();
+            Object[] tuplesTmp = getNewTuples(colLen, tuple);
+            TxnLocalData txnLocalData = getTxnLocalData(tuplesTmp);
+            if (indexTable.unique) {
+                if (ByteArrayUtils.compare(txnLocalData.getKey(), primaryKey, 1) == 0) {
+                    duplicateKey(tuplesTmp);
+                } else {
+                    byte[] key = getLocalKey(txnLocalData.getKey(), txnLocalData.getPartId().encode());
+                    if (cache.get(key) != null) {
+                        continue;
+                    }
+                }
+            }
+            String cacheKey = Base64.getEncoder().encodeToString(txnLocalData.getKey());
+            if (!caches.containsKey(cacheKey)) {
+                caches.put(cacheKey, txnLocalData);
+            } else if (indexTable.unique) {
+                duplicateKey(tuplesTmp);
+            }
+            if (caches.size() % max_pre_write_count == 0) {
+                try {
+                    List<TxnLocalData> txnLocalDataList = new ArrayList<>(caches.values());
+                    preWriteSecondSkipConflict(txnLocalDataList);
+                } finally {
+                    caches.clear();
+                }
+            }
+        }
+
+        this.scanCount.addAndGet(scanCount);
+        BackFillResult backFillResult = BackFillResult.builder().scanCount(scanCount).build();
+        Collection<TxnLocalData> tupleList = caches.values();
+        if (tupleList.isEmpty()) {
+            return backFillResult;
+        }
+        List<TxnLocalData> txnLocalDataList = new ArrayList<>(tupleList);
+        preWriteSecondSkipConflict(txnLocalDataList);
+        backFillResult.addCount(tupleList.size());
+        LogUtils.info(log, "pre write second with check, iterator cost:{}ms, scanCount:{}, regionId:{}",
+            (System.currentTimeMillis() - start), scanCount, task.getRegionId());
+        doneRegionIdList.add(task.getRegionId());
+        return backFillResult;
     }
 
     @Override
     public TxnLocalData getTxnLocalData(Object[] tuples) {
-        Object[] tuplesTmp = getNewTuples(colLen, tuples);
-        KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
+        KeyValue keyValue = wrap(indexCodec::encode).apply(tuples);
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
             getRegionList();
         CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
