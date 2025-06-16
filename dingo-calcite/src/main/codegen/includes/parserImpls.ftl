@@ -299,11 +299,13 @@ void TableElement(List<SqlNode> list) :
         ( name = SimpleIdentifier()|{ boolean hasName=false;} )
         [ indexTypeName() ]
         columnList = ParenthesizedSimpleIdentifierList() {
-              list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList));
+              list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine));
         }
-        [
+        (
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
-        ]
+           |
+            <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+        )*
         prop = indexOption()
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]

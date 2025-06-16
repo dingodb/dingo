@@ -252,6 +252,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0);
+        if ("dingo".equalsIgnoreCase(schemaName)) {
+            throw new RuntimeException("Schema used.");
+        }
         if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
             throw new RuntimeException("Schema used.");
         }
@@ -2385,10 +2388,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .map(SqlIdentifier::getSimple)
             .collect(Collectors.toCollection(ArrayList::new));
         DingoSqlKeyConstraint sqlKeyConstraint1 = (DingoSqlKeyConstraint) sqlKeyConstraint;
-        return getIndexDefinition(
+        IndexDefinition indexDefinition =  getIndexDefinition(
             sqlKeyConstraint1.getUniqueName(),
             tableDefinition, columns
         );
+        if (sqlKeyConstraint1.getReplica() >= 0) {
+            indexDefinition.setReplica(sqlKeyConstraint1.getReplica());
+        }
+        if (sqlKeyConstraint1.getEngine() != null) {
+            indexDefinition.setEngine(sqlKeyConstraint1.getEngine().toUpperCase());
+        }
+        return indexDefinition;
     }
 
     private static IndexDefinition fromSqlUniqueDeclaration(

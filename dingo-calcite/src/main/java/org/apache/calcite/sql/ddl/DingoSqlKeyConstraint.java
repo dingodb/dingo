@@ -35,8 +35,22 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
     @Setter
     private boolean usePrimary;
 
-    public DingoSqlKeyConstraint(SqlParserPos pos, @Nullable SqlIdentifier name, SqlNodeList columnList) {
+    @Getter
+    int replica;
+
+    @Getter
+    String engine;
+
+    public DingoSqlKeyConstraint(
+        SqlParserPos pos,
+        @Nullable SqlIdentifier name,
+        SqlNodeList columnList,
+        int replica,
+        String engine
+    ) {
         super(pos, name, columnList);
+        this.replica = replica;
+        this.engine = engine;
         if (name != null) {
             this.uniqueName = name.getSimple();
         } else {

@@ -115,14 +115,14 @@ public final class DingoErrUtil {
         String state = "HY000";
         String error;
         if (exception instanceof NullPointerException || exception.getMessage() == null) {
-            error = "null point";
+            error = "nullPointException";
         } else if (exception instanceof DingoSqlException) {
             DingoSqlException sqlException = (DingoSqlException) exception;
             return new DingoErr(sqlException.getSqlCode(), sqlException.getSqlState(), sqlException.getMessage());
         } else {
             error = exception.getMessage();
-            if (error != null && error.length() > 20) {
-                error = error.substring(0, 20);
+            if (error != null && error.length() > 60) {
+                error = error.substring(0, 60);
             }
         }
         return new DingoErr(code, state, error);

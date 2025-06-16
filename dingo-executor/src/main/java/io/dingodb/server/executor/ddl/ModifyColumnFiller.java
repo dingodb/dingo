@@ -128,8 +128,7 @@ public class ModifyColumnFiller extends IndexAddFiller {
             Object[] tuples = tupleIterator.next();
 
             Object[] tuplesTmp = getNewTuples(colLen, tuples);
-
-            KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
+            KeyValue keyValue = indexCodec.encode(tuplesTmp);
             if (keyValue == null) {
                 throw new RuntimeException("modify column encode error");
             }

@@ -49,9 +49,9 @@ public class ShowTableIndexExecutor extends QueryExecutor {
 
     private final String schemaName;
 
-    public ShowTableIndexExecutor(SqlNode sqlNode, String tableName) {
+    public ShowTableIndexExecutor(SqlNode sqlNode, String schemaName, String tableName) {
         this.sqlNode = sqlNode;
-        this.schemaName = MetaServiceUtils.getSchemaName(tableName);
+        this.schemaName = schemaName;
         metaService = MetaService.root().getSubMetaService(schemaName);
         this.tableName = tableName;
     }
