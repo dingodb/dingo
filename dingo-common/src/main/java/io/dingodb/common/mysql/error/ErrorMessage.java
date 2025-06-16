@@ -46,6 +46,7 @@ public final class ErrorMessage {
         errorMap.put(ErrDropPartitionNonExistent, "Error in list of partitions to DROP");
         errorMap.put(ErrDupKeyName, "Duplicate key name '%s'");
         errorMap.put(ErrSetDiffTime, "can not set different time in the as of");
+        errorMap.put(ErrNoDB, "No database selected");
     }
 
     private ErrorMessage() {

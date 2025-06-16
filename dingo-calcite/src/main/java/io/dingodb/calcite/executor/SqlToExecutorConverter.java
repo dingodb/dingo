@@ -154,7 +154,10 @@ public final class SqlToExecutorConverter {
             return Optional.of(new AnalyzeTableExecutor(analyze, connection));
         } else if (sqlNode instanceof SqlShowTableIndex) {
             SqlShowTableIndex sqlShowTableIndex = (SqlShowTableIndex) sqlNode;
-            return Optional.of(new ShowTableIndexExecutor(sqlNode, sqlShowTableIndex.tableName));
+            if (StringUtils.isEmpty(sqlShowTableIndex.schemaName)) {
+                sqlShowTableIndex.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowTableIndexExecutor(sqlNode, sqlShowTableIndex.schemaName, sqlShowTableIndex.tableName));
         } else if (sqlNode instanceof SqlCommit) {
             return Optional.of(new CommitTxExecutor(connection));
         } else if (sqlNode instanceof SqlRollback) {

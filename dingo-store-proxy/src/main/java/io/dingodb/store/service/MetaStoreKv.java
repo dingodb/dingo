@@ -103,20 +103,24 @@ public class MetaStoreKv {
         this.ddl = ddl;
         if (!ddl) {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 0);
-            long metaPartId = checkMetaRegion();
+            long metaPartId = checkMetaRegion(0);
             metaId = new CommonId(CommonId.CommonType.META, 0, 0);
             preStoreService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
             preMetaKvTxn = new MetaKvTxn(preStoreService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         } else {
             partId = new CommonId(CommonId.CommonType.PARTITION, 0, 3);
-            long metaPartId = checkMetaRegion();
+            long metaPartId = checkMetaRegion(0);
             metaId = new CommonId(CommonId.CommonType.DDL, 0, 0);
             preStoreService = Services.storeRegionService(coordinators, metaPartId, TransactionUtil.STORE_RETRY);
             preMetaKvTxn = new MetaKvTxn(preStoreService, partId, r -> getMetaRegionKey(), r -> getMetaRegionEndKey());
         }
     }
 
-    public long checkMetaRegion() {
+    public long checkMetaRegion(int retry) {
+        if (retry > 5) {
+            LogUtils.error(log, "checkMetaRegion retry count exceed max");
+            System.exit(-1);
+        }
         CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
         long startTs = TsoService.getDefault().tso();
         byte[] startKey = getMetaRegionKey();
@@ -129,7 +133,7 @@ public class MetaStoreKv {
 
         if (!MetaServiceApiImpl.INSTANCE.isReady() || !MetaServiceApiImpl.INSTANCE.isLeader()) {
             Utils.sleep(1000);
-            return checkMetaRegion();
+            return checkMetaRegion(retry + 1);
         }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
         String regionName = "meta";
@@ -158,8 +162,9 @@ public class MetaStoreKv {
             return response.getRegionId();
         } catch (Exception e) {
             LogUtils.error(log, "create meta region error,name:" + regionName, e);
+            Utils.sleep(1000);
+            return checkMetaRegion(retry + 1);
         }
-        return 0;
     }
 
     public long getScanRegionId(byte[] start, byte[] end) {
