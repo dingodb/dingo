@@ -42,6 +42,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.eclipse.jetty.http.HttpStatus;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -163,14 +164,10 @@ public final class MysqlResponseHandler {
                     val = getArrayObject(mysqlConnection, val);
                 }
 
-                if(typeName.equalsIgnoreCase("FLOAT")) {
-                    if(val != null) {
-                        val = (float)Math.round((float)val * (double)10000) / (double)10000.0;
-                    }
-                } else if(typeName.equalsIgnoreCase("DOUBLE")) {
-                    if(val != null) {
-                        val = (double)Math.round((double)val * (double)10000) / (double)10000.0;
-                    }
+                if (typeName.equalsIgnoreCase("FLOAT") && val instanceof Float) {
+                    val = (float) Math.round((float) val * (double) 10000) / (double) 10000.0;
+                } else if(typeName.equalsIgnoreCase("DOUBLE") && val instanceof Double) {
+                    val = (double) Math.round((double) val * (double) 10000) / (double) 10000.0;
                 }
                 resultSetRowPacket.addColumnValue(val);
             }
