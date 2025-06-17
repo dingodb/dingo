@@ -25,7 +25,9 @@ import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.sequence.CurrValFun;
+import io.dingodb.exec.fun.sequence.LastValFun;
 import io.dingodb.exec.fun.sequence.NextValFun;
+import io.dingodb.exec.fun.sequence.SetValFun;
 import io.dingodb.exec.fun.special.ThrowFun;
 import io.dingodb.exec.fun.vector.VectorCosineDistanceFun;
 import io.dingodb.exec.fun.vector.VectorDistanceFun;
@@ -72,6 +74,8 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(StrToDateFun.NAME, StrToDateFun.INSTANCE);
         registerUnaryFun(NextValFun.NAME, NextValFun.INSTANCE);
         registerUnaryFun(CurrValFun.NAME, CurrValFun.INSTANCE);
+        registerUnaryFun(LastValFun.NAME, LastValFun.INSTANCE);
+        registerBinaryFun(SetValFun.NAME, SetValFun.INSTANCE);
         registerUnaryFun(LengthFun.NAME, LengthFun.INSTANCE);
         registerTertiaryFun(ConcatFun.NAME, ConcatFun.INSTANCE);
         registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);

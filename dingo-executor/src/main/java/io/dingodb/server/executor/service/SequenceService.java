@@ -147,6 +147,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
             return;
         }
         store.del(keys);
+        queueMap.remove(name);
         LogUtils.debug(log, "drop sequence: {}", name);
     }
 
@@ -164,17 +165,32 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
 
     @Override
     public Long setVal(String name, Long seq) {
-        return null;
+        SequenceGenerator generator = queueMap.computeIfAbsent(name, k -> {
+            SequenceDefinition definition = getSequence(name);
+            if (definition == null) {
+                return null;
+            }
+            return new SequenceGenerator(definition);
+        });
+        return generator == null ? null : generator.set(seq);
     }
 
     @Override
     public Long currVal(String name) {
-        return null;
+        SequenceGenerator generator = queueMap.computeIfAbsent(name, k -> {
+            SequenceDefinition definition = getSequence(name);
+            if (definition == null) {
+                return null;
+            }
+            return new SequenceGenerator(definition);
+        });
+        return generator == null ? null : generator.current();
     }
 
     @Override
     public Long lastVal(String name) {
-        return null;
+        SequenceGenerator generator = queueMap.get(name);
+        return generator == null ? null : generator.current();
     }
 
     @Override
