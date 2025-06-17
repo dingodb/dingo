@@ -74,6 +74,23 @@ public class SequenceGenerator {
         return queue.poll();
     }
 
+    public synchronized Long current() {
+        if (!queue.isEmpty()) {
+            return queue.peek() - increment;
+        }
+        return null;
+    }
+
+    public synchronized Long set(Long seq) {
+        if (seq < minvalue && seq > maxvalue) {
+            throw new IllegalArgumentException("Sequence value must be within the range of minvalue and maxvalue");
+        }
+        currentValue = seq;
+        queue.clear();
+        fillQueue();
+        return seq;
+    }
+
     public ConcurrentLinkedQueue<Long> getQueue() {
         return queue;
     }
