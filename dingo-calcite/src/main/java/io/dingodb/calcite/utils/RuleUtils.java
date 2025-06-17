@@ -31,6 +31,7 @@ import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.Date;
 import java.util.Calendar;
 import java.util.Objects;
 
@@ -87,7 +88,11 @@ public class RuleUtils {
                         NlsString val = (NlsString) rexLiteral.getValue();
                         RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
                         Calendar calendar = Calendar.getInstance();
-                        calendar.setTime(Objects.requireNonNull(DateTimeUtils.parseDate(val.getValue())));
+                        Date date = DateTimeUtils.parseDate(val.getValue());
+                        if (date == null) {
+                            return false;
+                        }
+                        calendar.setTime(date);
                         info.value = rexBuilder.makeDateLiteral(calendar);
                         return true;
                     }
