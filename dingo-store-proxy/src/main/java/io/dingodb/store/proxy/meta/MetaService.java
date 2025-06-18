@@ -19,7 +19,6 @@ package io.dingodb.store.proxy.meta;
 import com.codahale.metrics.Timer;
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.GcDeleteRegion;
 import io.dingodb.common.log.LogUtils;
@@ -28,7 +27,6 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
-import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.PartitionDefinition;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
@@ -1386,14 +1384,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
             key, Objects.equals(table.partitionStrategy, HASH_FUNC_NAME) ? 0 : 9
         );
 
-        Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 60);
+        Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 180);
         if (checkSplitFinish(comparableKey, table)) {
             return commonId.domain;
+        } else {
+            throw DingoErrUtil.newStdErr("Add distribution wait timeout");
         }
-        LogUtils.warn(log, "Add distribution wait timeout, refresh distributions run in the background.");
-        Executors.execute("wait-split", () -> Utils.loop(() -> !checkSplitFinish(comparableKey, table),
-            TimeUnit.SECONDS.toNanos(1)));
-        return commonId.domain;
+        //LogUtils.warn(log, "Add distribution wait timeout, refresh distributions run in the background.");
+        //Executors.execute("wait-split", () -> Utils.loop(() -> !checkSplitFinish(comparableKey, table),
+        //    TimeUnit.SECONDS.toNanos(1)));
+        //return commonId.domain;
     }
 
     private boolean checkSplitFinish(ComparableByteArray comparableKey, Table table) {
@@ -1464,6 +1464,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
     @Override
     public void updateAutoIncrement(CommonId tableId, long autoIncrementId) {
         AutoIncrementService.INSTANCE.updateAutoIncrementId(tableId, autoIncrementId);
+    }
+
+    @Override
+    public boolean cacheAutoIncrement(CommonId tableId) {
+        return AutoIncrementService.INSTANCE.cacheAutoIncrement(tableId);
     }
 
     @Override

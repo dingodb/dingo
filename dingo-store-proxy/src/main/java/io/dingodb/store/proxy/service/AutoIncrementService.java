@@ -93,4 +93,8 @@ public class AutoIncrementService {
         autoIncrementService.update(mapping(tableId), autoIncrementId);
     }
 
+    public boolean cacheAutoIncrement(CommonId tableId) {
+        return autoIncrementService.cacheAutoIncrement(mapping(tableId));
+    }
+
 }

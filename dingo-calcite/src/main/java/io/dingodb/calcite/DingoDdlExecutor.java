@@ -170,6 +170,7 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.ArraySqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.util.Pair;
@@ -845,6 +846,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schemaPaths, DingoSqlTypeFactory.INSTANCE, config);
         DingoSqlValidator sqlValidator = new DingoSqlValidator(catalogReader, DingoSqlTypeFactory.INSTANCE);
         SqlNode sqlNode = sqlValidator.validate(query);
+        CalciteSchema rootSchema = context.getRootSchema();
+        if (rootSchema instanceof RootCalciteSchema) {
+            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) rootSchema;
+            rootCalciteSchema.cleanMdl();
+        }
         RelDataType type = sqlValidator.getValidatedNodeType(sqlNode);
 
         RelDataType jdbcType = type;
@@ -858,7 +864,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 int scale = f.getType().getScale();
                 String name = f.getType().getSqlTypeName().getName();
                 if ("BIGINT".equals(name) || "FLOAT".equals(name)
-                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)) {
+                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)
+                    || "DOUBLE".equals(name) || "BOOLEAN".equals(name)) {
                     precision = -1;
                     scale = -2147483648;
                 }
@@ -870,11 +877,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 if ("NULL".equalsIgnoreCase(typeName)) {
                     typeName = "INTEGER";
                 }
+                RelDataType relDataType = f.getValue();
+                String elementType = null;
+                if (relDataType instanceof ArraySqlType) {
+                    ArraySqlType arraySqlType = (ArraySqlType) relDataType;
+                    elementType = arraySqlType.getComponentType().getSqlTypeName().getName();
+                }
                 return ColumnDefinition
                     .builder()
                     .name(f.getName())
                     .type(typeName)
                     .scale(scale)
+                    .elementType(elementType)
                     .precision(precision)
                     .nullable(nullable)
                     .build();

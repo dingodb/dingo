@@ -330,7 +330,8 @@ public class InfoSchemaBuilder {
             tableIdList.add(table.tableId.seq);
             return Pair.of(tableIdList, null);
         } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
+            LogUtils.error(log, "applyCreateTable error,name{},reason:{}",
+                diff.getTableName() , e.getMessage(), e);
             return Pair.of(null, e.getMessage());
         }
     }
@@ -481,10 +482,13 @@ public class InfoSchemaBuilder {
     public Pair<List<Long>, String> applyRebaseAuto(SchemaDiff diff) {
         Table table = InfoSchemaService.root().getTableDef(diff.getSchemaId(), diff.getTableId());
         long autoId = table.getAutoIncrement();
-        autoId--;
-        MetaService.root().updateAutoIncrement(
-            new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId()), autoId
-        );
+        CommonId tableId = new CommonId(CommonId.CommonType.TABLE, diff.getSchemaId(), diff.getTableId());
+        if (MetaService.root().cacheAutoIncrement(tableId)) {
+            autoId--;
+            MetaService.root().updateAutoIncrement(
+                tableId, autoId
+            );
+        }
         List<Long> tableIdList = new ArrayList<>();
         tableIdList.add(diff.getTableId());
         return Pair.of(tableIdList, null);
