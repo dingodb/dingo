@@ -21,12 +21,28 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.OpKeys;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class StrToDateFun extends BinaryOp {
@@ -34,6 +50,9 @@ public class StrToDateFun extends BinaryOp {
     private static final long serialVersionUID = 8883906487235211037L;
 
     public static final StrToDateFun INSTANCE = new StrToDateFun();
+
+    private static final Map<String, DateTimeFormatter> FORMATTER_CACHE = new ConcurrentHashMap<>();
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("UTC");
 
     public static final String NAME = "str_to_date";
 
@@ -44,26 +63,134 @@ public class StrToDateFun extends BinaryOp {
 
     @Override
     public Object evalValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
-        if (value0 == null) {
+        try {
+            return strToDate(value0.toString(), value1.toString());
+        } catch (Exception e) {
             return null;
         }
-        String strVal = value0.toString();
-        Object result = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_DATE_FORMATTERS);
-        if (result != null) {
-            return result;
+    }
+
+    public static Date strToDate(String dateString, String formatString) {
+        if (dateString == null || formatString == null) {
+            throw new IllegalArgumentException("Date string and format string must not be null");
         }
-        result = DateTimeUtils.parseTimestamp(strVal, DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
-        if (result != null) {
-            return result;
+
+        // Try multiple mode analysis
+        for (int mode = 0; mode < 4; mode++) {
+            try {
+                DateTimeFormatter formatter = getOrCreateFormatter(formatString, mode);
+                TemporalAccessor temporal = formatter.parse(dateString);
+                return new java.sql.Date(toDate(temporal).getTime());
+            } catch (DateTimeParseException ignored) {
+                // ignored
+            }
         }
-        result = DateTimeUtils.parseDate(strVal, DateTimeUtils.DEFAULT_PARSE_TIME_FORMATTERS);
-        if (result != null) {
-            return result;
+        throw new DateTimeParseException("Unable to parse date string: " + dateString, dateString, 0);
+    }
+
+    private static DateTimeFormatter getOrCreateFormatter(String formatString, int mode) {
+        String key = formatString + "|" + mode;
+        return FORMATTER_CACHE.computeIfAbsent(key, k -> {
+            StringBuilder pattern = new StringBuilder();
+            int len = formatString.length();
+            for (int i = 0; i < len; i++) {
+                char current = formatString.charAt(i);
+                if (current == '%' && i + 1 < len) {
+                    char specifier = formatString.charAt(++i);
+                    switch (specifier) {
+                        case 'Y': pattern.append("uuuu"); break;
+                        case 'y': pattern.append("uu"); break;  // Modified to 2-4-bit year adaptive
+                        case 'm': pattern.append("MM"); break;
+                        case 'c':
+                            switch (mode) {
+                                case 0: pattern.append("M"); break;   // Digital Month
+                                case 1: pattern.append("MMM"); break; // English abbreviation
+                                case 2: pattern.append("MMMM"); break; // Full English name
+                                default: pattern.append("M");
+                            }
+                            break;
+                        case 'M': // Full name of month
+                            switch (mode) {
+                                case 0: case 3: pattern.append("MMMM"); break;
+                                default: pattern.append("M");
+                            }
+                            break;
+                        case 'b': // Month name abbreviation
+                            switch (mode) {
+                                case 0: case 3: pattern.append("MMM"); break;
+                                default: pattern.append("M");
+                            }
+                            break;
+                        case 'd': pattern.append("dd"); break;
+                        case 'e': pattern.append("d"); break;
+                        case 'H': pattern.append("HH"); break;
+                        case 'h': case 'I': pattern.append("hh"); break;
+                        case 'i': pattern.append("mm"); break;
+                        case 's': pattern.append("ss"); break;
+                        case 'p': pattern.append("a"); break;
+                        case 'r': pattern.append("hh:mm:ss a"); break;
+                        case 'T': pattern.append("HH:mm:ss"); break;
+                        case 'f':
+                            pattern.append("SSSSSS");
+                            break;
+                        case 'W': pattern.append("EEEE"); break;
+                        case 'a': pattern.append("EEE"); break;
+                        case '%': pattern.append("%"); break;
+                        default:
+                            pattern.append(specifier);
+                    }
+                } else {
+                    // Escape special characters
+                    if (isDateTimePatternLetter(current)) {
+                        pattern.append("'").append(current).append("'");
+                    } else {
+                        pattern.append(current);
+                    }
+                }
+            }
+
+            DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder()
+                .parseCaseInsensitive()
+                .parseLenient()
+                .appendPattern(pattern.toString());
+
+            return builder.toFormatter(Locale.ENGLISH)
+                .withResolverStyle(ResolverStyle.SMART);
+        });
+    }
+
+    private static boolean isDateTimePatternLetter(char c) {
+        return "GyYMwdDEaHkKhmsSzZX".indexOf(c) >= 0;
+    }
+
+    private static Date toDate(TemporalAccessor temporal) {
+        try {
+            // Try to parse to LocalDateTime
+            if (temporal.isSupported(ChronoField.EPOCH_DAY) && temporal.isSupported(ChronoField.NANO_OF_DAY)) {
+                LocalDateTime t = LocalDateTime.from(temporal);
+                ZonedDateTime zonedDateTime = ZonedDateTime.of(t, ZoneOffset.UTC);
+                LocalDateTime localDateTime = zonedDateTime.toLocalDate().atStartOfDay();
+                return new Date(localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
+            }
+
+            // Try to parse to LocalDate
+            if (temporal.isSupported(ChronoField.EPOCH_DAY)) {
+                return new Date(LocalDate.from(temporal).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli());
+            }
+
+            // Try to parse to LocalTime
+            if (temporal.isSupported(ChronoField.NANO_OF_DAY)) {
+                LocalTime time = LocalTime.from(temporal);
+                return new Date(time.atDate(LocalDate.of(1970, 1, 1)).toInstant(ZoneOffset.UTC).toEpochMilli());
+            }
+        } catch (DateTimeException e) {
+            // Fallback to Instant parsing
+            try {
+                return Date.from(Instant.from(temporal));
+            } catch (DateTimeException ignored) {}
         }
-        String format = value1.toString();
-        DateTimeFormatter[] dateTimeFormatter =
-            new DateTimeFormatter[]{DateTimeFormatter.ofPattern(DateTimeUtils.convertFormat(format))};
-        return DateTimeUtils.parseDate(strVal, dateTimeFormatter);
+
+        throw new DateTimeException("Unsupported temporal type");
     }
 
     @Override
