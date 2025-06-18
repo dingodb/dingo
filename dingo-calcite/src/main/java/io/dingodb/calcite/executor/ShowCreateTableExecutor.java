@@ -289,7 +289,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         if (autoInc) {
             long autoIncVal = MetaService.root().getNextAutoIncrement(table.tableId);
             if (autoIncVal > 2) {
-                createTableSqlStr.append(" AUTO_INCREMENT=").append(autoIncVal);
+                createTableSqlStr.append(" AUTO_INCREMENT=").append(autoIncVal - 1);
             }
         }
         appendPart(table, createTableSqlStr);
