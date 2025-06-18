@@ -173,6 +173,10 @@ public class RootCalciteSchema extends CalciteSchema {
         this.relatedTableForMdl.clear();
     }
 
+    public void cleanMdl() {
+        this.relatedTableForMdl.clear();
+    }
+
     public void putRelatedTable(long tableId, long ver) {
         this.relatedTableForMdl.put(tableId, ver);
     }

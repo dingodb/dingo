@@ -280,6 +280,8 @@ public interface MetaService {
 
     void updateAutoIncrement(CommonId tableId, long autoIncrementId);
 
+    boolean cacheAutoIncrement(CommonId tableId);
+
     long getLastId(CommonId tableId);
 
     default void rebaseAutoInc(CommonId tableId) {

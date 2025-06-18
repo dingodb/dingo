@@ -403,6 +403,11 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public boolean cacheAutoIncrement(CommonId tableId) {
+        return false;
+    }
+
+    @Override
     public long getLastId(CommonId tableId) {
         return 1L;
     }
