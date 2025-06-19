@@ -93,6 +93,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         boolean isDocument = false;
         Object[] primaryOldTuple = tuple;
         Table indexTable = null;
+        IndexTable index = null;
         if (context.getIndexId() != null) {
             boolean duplicate = param.getUpdateMapping() != null && param.getUpdates() != null;
             indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
@@ -126,7 +127,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     return finalTuple[i];
                 }).toArray();
             }
-            IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+            index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
             if (index.indexType.isVector) {
                 isVector = true;
             }
@@ -576,6 +577,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         schema,
                         context,
                         indexTable);
+                    op = Op.PUT;
                 } else {
                     if (!param.isReplaceInto()) {
                         keyValue.setKey(
@@ -587,6 +589,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             }
             KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
             if (insertUpKv != null && insertUpKv.getValue() != null) {
+                if (index != null && index.isUnique()) {
+                    keyValue.setKey(
+                        ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertUpKv.getKey())
+                    );
+                    localStore.put(keyValue);
+                }
+
                 keyValue.setKey(insertUpKv.getKey());
                 keyValue.setValue(insertUpKv.getValue());
             } else {
