@@ -204,10 +204,10 @@ public final class DingoDriverParser extends DingoParser {
                 );
             default:
                 int typeId = type.getSqlTypeName().getJdbcOrdinal();
-                // typeId:1 -> char  fixedString
-                //if (type.getSqlTypeName().getJdbcOrdinal() == 1) {
-                //    typeId = 12;
-                //}
+                // typeId:1  char  fixedString -> string
+                if (type.getSqlTypeName().getJdbcOrdinal() == 1) {
+                    typeId = 12;
+                }
                 return ColumnMetaData.scalar(
                     typeId,
                     type.getSqlTypeName().getName(),
@@ -550,7 +550,7 @@ public final class DingoDriverParser extends DingoParser {
             if (explain.getDetailLevel() == SqlExplainLevel.EXPPLAN_ATTRIBUTES) {
                 return new DingoExplainSignature(
                     new ArrayList<>(Collections.singletonList(metaData(typeFactory, 0, "PLAN",
-                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))),
+                        new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false))),
                     sql,
                     createParameterList(parasType),
                     null,
@@ -669,7 +669,7 @@ public final class DingoDriverParser extends DingoParser {
                 QueryExecutor queryOperation = (QueryExecutor) operation;
                 queryOperation.initExecProfile(execProfile);
                 columns = queryOperation.columns().stream().map(column -> metaData(typeFactory, 0, column,
-                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false))
+                    new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false))
                     .collect(Collectors.toList());
                 statementType = Meta.StatementType.SELECT;
                 if (queryOperation instanceof ShowProcessListExecutor) {
@@ -1111,11 +1111,11 @@ public final class DingoDriverParser extends DingoParser {
 
     private static List<ColumnMetaData> getTraceColMeta(JavaTypeFactory typeFactory) {
         ColumnMetaData colMeta1 = metaData(typeFactory, 0, "operation",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta2 = metaData(typeFactory, 1, "startTs",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta3 = metaData(typeFactory, 2, "duration",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta4 = metaData(typeFactory, 3, "rowcount",
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.BIGINT), null, true);
 
@@ -1129,15 +1129,15 @@ public final class DingoDriverParser extends DingoParser {
 
     private static List<ColumnMetaData> getExplainColMeta(JavaTypeFactory typeFactory) {
         ColumnMetaData colMeta1 = metaData(typeFactory, 0, "id",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta2 = metaData(typeFactory, 1, "estRows",
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
         ColumnMetaData colMeta3 = metaData(typeFactory, 1, "task",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta4 = metaData(typeFactory, 2, "accessObject",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
-            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.CHAR), null, false);
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         List<ColumnMetaData> metaDataList = new ArrayList<>();
         metaDataList.add(colMeta1);
         metaDataList.add(colMeta2);

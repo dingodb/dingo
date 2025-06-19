@@ -17,7 +17,6 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
-import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -41,9 +40,7 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.fun.SqlSumAggFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
@@ -57,22 +54,17 @@ import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql.validate.implicit.DingoTypeCoercionImpl;
 import org.apache.calcite.sql.validate.implicit.TypeCoercion;
-import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.apache.calcite.util.BitString;
 import org.apache.calcite.util.Pair;
-import org.apache.calcite.util.Static;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.AbstractList;
 import java.util.Calendar;
 import java.util.List;
@@ -435,11 +427,14 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
                 if (literal instanceof SqlIntervalLiteral) {
-                    SqlIntervalLiteral.IntervalValue interval = (SqlIntervalLiteral.IntervalValue)literal.getValueAs(SqlIntervalLiteral.IntervalValue.class);
+                    SqlIntervalLiteral.IntervalValue interval
+                        = (SqlIntervalLiteral.IntervalValue)literal.getValueAs(SqlIntervalLiteral.IntervalValue.class);
                     SqlIntervalQualifier intervalQualifier = interval.getIntervalQualifier();
                     this.validateIntervalQualifier(intervalQualifier);
                     String intervalStr = interval.getIntervalLiteral();
-                    int[] values = intervalQualifier.evaluateIntervalLiteral(intervalStr, literal.getParserPosition(), this.typeFactory.getTypeSystem());
+                    int[] values = intervalQualifier.evaluateIntervalLiteral(
+                        intervalStr, literal.getParserPosition(), this.typeFactory.getTypeSystem()
+                    );
                     Util.discard(values);
                 }
         }
@@ -469,12 +464,14 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                                                   @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
         super.validateAggregateParams(aggCall, filter, distinctList, orderList, scope);
 
-        if(aggCall instanceof SqlBasicCall && ((SqlBasicCall)aggCall).getFieldTypeList() != null) {
-            RelDataType sourceParamType = ((SqlBasicCall)aggCall).getFieldTypeList().get(((SqlBasicCall) aggCall).getFieldIndex()).getValue();
-            RelDataType targetType = DingoTypeMapper.getAggregateResultType((SqlAggFunction) aggCall.getOperator(), sourceParamType);
+        if (aggCall instanceof SqlBasicCall && ((SqlBasicCall)aggCall).getFieldTypeList() != null) {
+            RelDataType sourceParamType = ((SqlBasicCall)aggCall).getFieldTypeList()
+                .get(((SqlBasicCall) aggCall).getFieldIndex()).getValue();
+            RelDataType targetType = DingoTypeMapper.getAggregateResultType((SqlAggFunction) aggCall.getOperator(),
+                sourceParamType);
 
-            if(targetType != null) {
-                for(SqlNode operand : aggCall.getOperandList()) {
+            if (targetType != null) {
+                for (SqlNode operand : aggCall.getOperandList()) {
                     //change node, append cast.
                     SqlNode targetNode = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO, operand,
                         SqlTypeUtil.convertTypeToSpec(targetType).withNullable(targetType.isNullable()));
@@ -484,8 +481,10 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                     ((SqlBasicCall)aggCall).setFieldType(targetType);
 
                     //reset field type list.
-                    String fieldKey = ((SqlBasicCall)aggCall).getFieldTypeList().get(((SqlBasicCall) aggCall).getFieldIndex()).getKey();
-                    ((SqlBasicCall)aggCall).getFieldTypeList().set(((SqlBasicCall) aggCall).getFieldIndex(), Pair.of(fieldKey, targetType));
+                    String fieldKey = ((SqlBasicCall)aggCall).getFieldTypeList()
+                        .get(((SqlBasicCall) aggCall).getFieldIndex()).getKey();
+                    ((SqlBasicCall)aggCall).getFieldTypeList().set(((SqlBasicCall) aggCall)
+                        .getFieldIndex(), Pair.of(fieldKey, targetType));
 
                     //reset nodeToTypeMap.
                     nodeToTypeMap.put(aggCall, targetType);
