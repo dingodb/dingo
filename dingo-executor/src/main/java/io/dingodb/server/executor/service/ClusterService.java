@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.sdk.service.CoordinatorService;
@@ -30,7 +31,6 @@ import io.dingodb.sdk.service.entity.common.Executor;
 import io.dingodb.sdk.service.entity.common.ExecutorMap;
 import io.dingodb.sdk.service.entity.common.ExecutorState;
 import io.dingodb.sdk.service.entity.common.ExecutorUser;
-import io.dingodb.sdk.service.entity.common.Store;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorRequest;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorResponse;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
@@ -38,7 +38,6 @@ import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
 import io.dingodb.server.executor.Configuration;
-import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,10 +70,8 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     );
 
     private static Executor executor() {
-        String leaderId;
-        try {
-            leaderId = new String(MetaServiceApiImpl.INSTANCE.lockService.currentLock().getKv().getValue()).split("#")[0];
-        } catch (Exception ignore) {
+        String leaderId = "";
+        if (ExecutionEnvironment.INSTANCE.ddlOwner.get()) {
             leaderId = DingoConfiguration.serverId().toString();
         }
         return Executor.builder()

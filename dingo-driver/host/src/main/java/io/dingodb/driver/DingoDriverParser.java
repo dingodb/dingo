@@ -203,8 +203,13 @@ public final class DingoDriverParser extends DingoParser {
                     ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
                 );
             default:
+                int typeId = type.getSqlTypeName().getJdbcOrdinal();
+                // typeId:1 -> char  fixedString
+                //if (type.getSqlTypeName().getJdbcOrdinal() == 1) {
+                //    typeId = 12;
+                //}
                 return ColumnMetaData.scalar(
-                    type.getSqlTypeName().getJdbcOrdinal(),
+                    typeId,
                     type.getSqlTypeName().getName(),
                     ColumnMetaData.Rep.of(typeFactory.getJavaClass(type))
                 );
