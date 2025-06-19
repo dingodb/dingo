@@ -17,6 +17,7 @@
 package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
@@ -47,7 +48,6 @@ import io.dingodb.sdk.service.entity.coordinator.ScanRegionsResponse;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.proxy.Configuration;
-import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.store.proxy.service.CodecService;
 import io.dingodb.store.proxy.service.TransactionStoreInstance;
 import io.dingodb.tso.TsoService;
@@ -80,7 +80,7 @@ public class MetaStoreKv {
         if (instance == null || instanceDdl == null) {
             instance = new MetaStoreKv(false);
             instanceDdl = new MetaStoreKv(true);
-            MetaServiceApiImpl.INSTANCE.initMetaDone = true;
+            ExecutionEnvironment.INSTANCE.initMetaDone = true;
             LogUtils.info(log, "meta init region ready");
         }
     }
@@ -117,10 +117,6 @@ public class MetaStoreKv {
     }
 
     public long checkMetaRegion(int retry) {
-        if (retry > 5) {
-            LogUtils.error(log, "checkMetaRegion retry count exceed max");
-            System.exit(-1);
-        }
         CoordinatorService coordinatorService = Services.coordinatorService(coordinators);
         long startTs = TsoService.getDefault().tso();
         byte[] startKey = getMetaRegionKey();
@@ -131,10 +127,6 @@ public class MetaStoreKv {
             return regionId;
         }
 
-        if (!MetaServiceApiImpl.INSTANCE.isReady() || !MetaServiceApiImpl.INSTANCE.isLeader()) {
-            Utils.sleep(1000);
-            return checkMetaRegion(retry + 1);
-        }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
         String regionName = "meta";
         long schemaId = 1001;
@@ -161,6 +153,10 @@ public class MetaStoreKv {
             LogUtils.info(log, "create meta region done,name:{}", regionName);
             return response.getRegionId();
         } catch (Exception e) {
+            if (retry > 20) {
+                LogUtils.error(log, "checkMetaRegion retry count exceed max");
+                System.exit(-1);
+            }
             LogUtils.error(log, "create meta region error,name:" + regionName, e);
             Utils.sleep(1000);
             return checkMetaRegion(retry + 1);

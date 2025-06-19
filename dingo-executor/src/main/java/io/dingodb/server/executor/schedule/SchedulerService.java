@@ -31,7 +31,6 @@ import io.dingodb.server.executor.Configuration;
 import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.stats.AnalyzeProfileTask;
 import io.dingodb.server.executor.schedule.stats.AnalyzeScanTask;
-import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -96,7 +95,7 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
 
     public void start()  {
         try {
-            while (!MetaServiceApiImpl.INSTANCE.initMetaDone) {
+            while (!ExecutionEnvironment.INSTANCE.initMetaDone) {
                 LogUtils.info(log, "wait meta init ready");
                 Utils.sleep(1000);
             }

@@ -153,7 +153,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
     public final io.dingodb.sdk.service.MetaService service;
     public final TsoService tsoService = TsoService.getDefault();
     public final MetaCache cache;
-    public final MetaServiceApiImpl api = MetaServiceApiImpl.INSTANCE;
     public final InfoSchemaService infoSchemaService = new InfoSchemaService();
 
     public MetaService() {
@@ -181,7 +180,6 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void close() {
-        api.close();
         cache.clear();
     }
 

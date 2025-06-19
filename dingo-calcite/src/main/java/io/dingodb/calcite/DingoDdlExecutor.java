@@ -153,6 +153,7 @@ import org.apache.calcite.sql.DingoAnsiSqlDialect;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -832,7 +833,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DINGO_RESOURCE.tableExists(tableName).ex();
         }
         SqlNode query = renameColumns(sqlCreateView.columnList, sqlCreateView.query);
-        String sql = query.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
+
+        SqlDialect.Context context1 = SqlDialect.EMPTY_CONTEXT.withDatabaseProduct(SqlDialect.DatabaseProduct.MYSQL)
+            .withIdentifierQuoteString("\"");
+        SqlDialect sqlDialect = new CalciteSqlDialect(context1);
+        String sql = query.toSqlString(sqlDialect).getSql();
         List<String> schemas = new ArrayList<>();
         schemas.add(schema.getSchemaName());
         List<List<String>> schemaPaths = new ArrayList<>();

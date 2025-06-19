@@ -23,7 +23,6 @@ import io.dingodb.common.concurrent.LinkedRunner;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.net.api.ApiRegistry;
-import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.transaction.api.LockType;
 import io.dingodb.transaction.api.TableLock;
 import io.dingodb.transaction.api.TableLockServiceProvider;
@@ -97,10 +96,6 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
 
     @Override
     public void lock(TableLock lock) {
-        if (MetaServiceApiImpl.INSTANCE.isReady()) {
-            doLock(lock);
-            return;
-        }
         throw new RuntimeException("Offline, please wait and retry.");
     }
 
@@ -172,7 +167,8 @@ public class TableLockService implements io.dingodb.transaction.api.TableLockSer
                 this.tableLocks.put(tableId, lock);
                 lock.unlockFuture.whenCompleteAsync((v, r) -> this.tableLocks.remove(tableId), Executors.LOCK_FUTURE_POOL);
                 try {
-                    MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
+                    //MetaServiceApiImpl.INSTANCE.lockTable(lock.lockTs, lock);
+                    //todo lock table
                 } catch (Exception e) {
                     if (e instanceof TimeoutException) {
                         LogUtils.trace(log, "Lock table {} error.", tableId, e);
