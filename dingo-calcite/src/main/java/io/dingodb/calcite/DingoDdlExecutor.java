@@ -989,39 +989,47 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(@NonNull SqlCreateSequence createS, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", createS);
         SequenceService sequenceService = SequenceService.getDefault();
-        if (sequenceService.existsSequence(createS.name)) {
+        if (!sequenceService.existsSequence(createS.name)) {
+            SequenceDefinition sequenceDefinition = new SequenceDefinition(
+                createS.name,
+                createS.increment,
+                createS.minvalue,
+                createS.maxvalue,
+                createS.start,
+                createS.cache,
+                createS.cycle);
+            String connId = (String) context.getDataContext().get("connId");
+            DdlService ddlService = DdlService.root();
+            ddlService.createSequence(sequenceDefinition, connId);
+
+            InfoSchemaService service = InfoSchemaService.root();
+            long schemaId = service.getSchema("mysql").getSchemaId();
+            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
+            RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
+            SchemaDiff diff = SchemaDiff.builder()
+                .schemaId(schemaId)
+                .tableId(service.getTableDef(schemaId, "sequence").tableId.seq)
+                .type(ActionType.ActionCreateSequence)
+                .build();
+            diff.setSequence(createS.name);
+            rootSnapshotSchema.applyDiff(diff);
+        } else if (!createS.ifNotExists) {
             throw DINGO_RESOURCE.sequenceExists(createS.name).ex();
         }
-        SequenceDefinition sequenceDefinition = new SequenceDefinition(
-            createS.name,
-            createS.increment,
-            createS.minvalue,
-            createS.maxvalue,
-            createS.start,
-            createS.cache,
-            createS.cycle);
-        String connId = (String) context.getDataContext().get("connId");
-        DdlService ddlService = DdlService.root();
-        ddlService.createSequence(sequenceDefinition, connId);
-
-        InfoSchemaService service = InfoSchemaService.root();
-        long schemaId = service.getSchema("mysql").getSchemaId();
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schemaId)
-            .tableId(service.getTableDef(schemaId, "sequence").tableId.seq)
-            .type(ActionType.ActionCreateSequence)
-            .build();
-        diff.setSequence(createS.name);
-        rootSnapshotSchema.applyDiff(diff);
-
     }
 
     public void execute(@NonNull SqlDropSequence sqlDropSequence, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", sqlDropSequence);
         String connId = (String) context.getDataContext().get("connId");
         DdlService ddlService = DdlService.root();
+        SequenceService sequenceService = SequenceService.getDefault();
+        if (!sequenceService.existsSequence(sqlDropSequence.sequence)) {
+            if (!sqlDropSequence.ifExists) {
+                throw DINGO_RESOURCE.sequenceNotFound(sqlDropSequence.sequence).ex();
+            } else {
+                return;
+            }
+        }
         ddlService.dropSequence(sqlDropSequence.sequence, connId);
 
         InfoSchemaService service = InfoSchemaService.root();
