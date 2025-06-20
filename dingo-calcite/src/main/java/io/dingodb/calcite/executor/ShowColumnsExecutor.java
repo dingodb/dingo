@@ -108,7 +108,7 @@ public class ShowColumnsExecutor extends QueryExecutor {
             }
             columnValues.add(type.toLowerCase());
             columnValues.add(column.isNullable() ? "YES" : "NO");
-            columnValues.add(column.isPrimary() ? "PRI" : "");
+            columnValues.add(column.isPrimary() ? "PRI" : " ");
             columnValues.add(column.defaultValueExpr != null ? column.defaultValueExpr : "NULL");
 
             columnList.add(columnValues);

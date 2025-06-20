@@ -145,7 +145,7 @@ public final class PrivilegeVerify {
         }
 
         // Table verify
-        TablePrivDefinition tableDef = privilegeGather.getTablePrivDefMap().get(table);
+        TablePrivDefinition tableDef = privilegeGather.getTablePrivDef(schema, table);
         return tableDef != null && tableDef.getPrivileges()[index];
     }
 
@@ -226,7 +226,7 @@ public final class PrivilegeVerify {
                 return false;
             });
         } else {
-            TablePrivDefinition tableDef = privilegeGather.getTablePrivDefMap().get(table);
+            TablePrivDefinition tableDef = privilegeGather.getTablePrivDef(schema, table);
             if (tableDef != null) {
                 for (int i = 0; i < tableDef.getPrivileges().length; i ++) {
                     boolean privilege = tableDef.getPrivileges()[i];

@@ -298,9 +298,7 @@ void TableElement(List<SqlNode> list) :
         )?
         ( name = SimpleIdentifier()|{ boolean hasName=false;} )
         [ indexTypeName() ]
-        columnList = ParenthesizedSimpleIdentifierList() {
-              list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine));
-        }
+        columnList = ParenthesizedSimpleIdentifierList()
         (
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
            |
@@ -309,6 +307,9 @@ void TableElement(List<SqlNode> list) :
         prop = indexOption()
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
+        {
+            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine)); 
+        }
     |
         <PRIMARY>  { s.add(this); } <KEY>
         columnList = ParenthesizedSimpleIdentifierList() {

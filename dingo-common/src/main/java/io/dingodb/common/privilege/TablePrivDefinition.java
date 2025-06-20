@@ -28,29 +28,26 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class TablePrivDefinition extends PrivilegeDefinition {
-    private CommonId schema;
+    private CommonId schemaId;
 
     private String schemaName;
-    private CommonId table;
+    private CommonId tableId;
 
     private String tableName;
 
     Boolean[] privileges;
 
-    public String getKey() {
-        StringBuilder schemaPrivKey = new StringBuilder();
-        return schemaPrivKey.append(user)
-            .append("#").append(host)
-            .append("#").append(schema)
-            .append("#").append(table).toString();
+    public String getPrivilegeKey() {
+        StringBuilder privKey = new StringBuilder();
+        return privKey.append(schemaName).append("#").append(tableName).toString();
     }
 
     @Builder(toBuilder = true)
-    TablePrivDefinition(String user, String host, CommonId schema, CommonId table,
+    TablePrivDefinition(String user, String host, CommonId schemaId, CommonId tableId,
                         String schemaName, String tableName) {
         super(user, host);
-        this.schema = schema;
-        this.table = table;
+        this.schemaId = schemaId;
+        this.tableId = tableId;
         this.schemaName = schemaName;
         this.tableName = tableName;
     }

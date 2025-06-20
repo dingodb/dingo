@@ -38,6 +38,7 @@ public class ExecutionEnvironment {
     public ReentrantLock lock = new ReentrantLock();
 
     public AtomicBoolean ddlOwner = new AtomicBoolean(false);
+    public AtomicBoolean metaOwner = new AtomicBoolean(false);
     public volatile boolean initMetaDone = false;
 
     public LocalMemCacheFor2PC memCacheFor2PC = new LocalMemCacheFor2PC();

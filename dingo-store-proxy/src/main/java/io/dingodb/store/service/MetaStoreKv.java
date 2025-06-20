@@ -17,10 +17,12 @@
 package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -29,6 +31,7 @@ import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.sdk.common.serial.BufImpl;
 import io.dingodb.sdk.service.CoordinatorService;
+import io.dingodb.sdk.service.LockService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.Location;
@@ -59,6 +62,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 public class MetaStoreKv {
@@ -126,7 +130,10 @@ public class MetaStoreKv {
         if (regionId > 0) {
             return regionId;
         }
-
+        if (!ExecutionEnvironment.INSTANCE.metaOwner.get()) {
+            Utils.sleep(1000);
+            return checkMetaRegion(-1);
+        }
         Range range = Range.builder().startKey(startKey).endKey(endKey).build();
         String regionName = "meta";
         long schemaId = 1001;
@@ -161,6 +168,27 @@ public class MetaStoreKv {
             Utils.sleep(1000);
             return checkMetaRegion(retry + 1);
         }
+    }
+
+    public static void metaOwner() {
+        LockService lockService = new LockService("executor-meta-" + TenantConstant.TENANT_ID,
+            Configuration.coordinators());
+        io.dingodb.sdk.service.LockService.Lock lock = lockService.newLock(DingoConfiguration.location().url() + ":meta");
+        CompletableFuture.runAsync(lock::lock).whenComplete((r, e) -> {
+            if (e == null) {
+                LogUtils.info(log, "lock meta success");
+                ExecutionEnvironment.INSTANCE.metaOwner.set(true);
+                lock.watchDestroy().thenRun(() -> {
+                    ExecutionEnvironment.INSTANCE.metaOwner.set(false);
+                    lockService.cancel();
+                    metaOwner();
+                });
+            } else {
+                lockService.cancel();
+                LogUtils.info(log, "lock meta failed, start retry", e);
+                metaOwner();
+            }
+        });
     }
 
     public long getScanRegionId(byte[] start, byte[] end) {

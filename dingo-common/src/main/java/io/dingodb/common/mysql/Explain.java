@@ -42,8 +42,17 @@ public class Explain {
     public Explain(String id, double estRows, String task, String accessObject, String info) {
         this.id = id;
         this.estRows = estRows;
+        if ("".equals(accessObject)) {
+            accessObject = " ";
+        }
         this.accessObject = accessObject;
+        if ("".equals(info)) {
+            info = " ";
+        }
         this.info = info;
+        if ("".equals(task)) {
+            task = " ";
+        }
         this.task = task;
         this.children = new ArrayList<>();
     }

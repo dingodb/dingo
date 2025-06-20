@@ -1668,7 +1668,9 @@ public class DdlWorker {
                 break;
             }
         }
-        originKeys.set(index, newName);
+        if (index > -1) {
+            originKeys.set(index, newName);
+        }
     }
 
     public Pair<Long, String> doModifyColumnTypeWithData(
