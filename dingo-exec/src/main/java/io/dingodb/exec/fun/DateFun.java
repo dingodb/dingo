@@ -213,6 +213,14 @@ public class DateFun extends UnaryOp {
                     }
                 }
 
+                if (len >= 8) {
+                    year = Integer.parseInt(digits.substring(0, 4));
+                    month = Integer.parseInt(digits.substring(4, 6));
+                    day = Integer.parseInt(digits.substring(6, 8));
+                    LocalDate date = LocalDate.of(year, month, day);
+                    return date.toString();
+                }
+
                 if (len >= 6 && Character.isDigit(input.charAt(0))) {
                     // handle 202532 2025 03 02 format
                     try {
@@ -227,12 +235,7 @@ public class DateFun extends UnaryOp {
                     }
                 }
 
-                if (len >= 8) {
-                    // 8 digits or more: YYYYMMDD
-                    year = Integer.parseInt(digits.substring(0, 4));
-                    month = Integer.parseInt(digits.substring(4, 6));
-                    day = Integer.parseInt(digits.substring(6, 8));
-                } else if (len == 6 || len == 7) {
+                if (len == 6 || len == 7) {
                     // 6/7 digits: YYMMDD or YYMDD
                     year = Integer.parseInt(digits.substring(0, 2));
                     month = Integer.parseInt(digits.substring(2, 3));
