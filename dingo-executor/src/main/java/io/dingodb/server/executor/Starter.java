@@ -44,6 +44,7 @@ import io.dingodb.server.executor.ddl.DdlServer;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
+import io.dingodb.store.service.MetaStoreKv;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -92,6 +93,7 @@ public class Starter {
         if (serverId == null) {
             serverId = new CommonId(EXECUTOR, 1, TsoService.getDefault().cacheTso());
         }
+        MetaStoreKv.metaOwner();
         DingoConfiguration.instance().setServerId(serverId);
         Configuration.instance();
         NetService.getDefault().listenPort(DingoConfiguration.port());

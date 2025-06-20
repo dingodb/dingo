@@ -278,7 +278,7 @@ public class UserService implements io.dingodb.verify.service.UserService {
                 tablePrivDefinition.setSchemaName(schemaName);
                 tablePrivDefinition.setTableName(tableName);
                 tablePrivDefinition.setPrivileges(tpMapping(tpValue));
-                tablePrivDefMap.put(tableName, tablePrivDefinition);
+                tablePrivDefMap.put(tablePrivDefinition.getPrivilegeKey(), tablePrivDefinition);
             });
         }
 

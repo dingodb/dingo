@@ -16,7 +16,6 @@
 
 package io.dingodb.common.privilege;
 
-import io.dingodb.common.CommonId;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,6 +39,11 @@ public class PrivilegeGather implements Serializable {
 
     public String key() {
         return user + "#" + host;
+    }
+
+    public TablePrivDefinition getTablePrivDef(String schemaName, String tableName) {
+        String key = schemaName + "#" + tableName;
+        return tablePrivDefMap.get(key);
     }
 
 }
