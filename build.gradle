@@ -30,7 +30,7 @@ allprojects {
         }
         mavenCentral()
         maven {
-            url 'https://ossrh-staging-api.central.sonatype.com/service/local/'
+            url 'https://packages.confluent.io/maven/'
             allowInsecureProtocol = true
         }
 //        maven {
