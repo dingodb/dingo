@@ -51,7 +51,7 @@ public final class CalcValueUtils {
         ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
 
         try {
-            exprCompiler.setExprContet(ExprContext.CALC_VALUE);
+            exprCompiler.setExprContext(ExprContext.CALC_VALUE);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
