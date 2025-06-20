@@ -153,6 +153,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
 
     @Override
     public Long nextVal(String name) {
+        checkSequence(name);
         SequenceGenerator generator = queueMap.computeIfAbsent(name, k -> {
             SequenceDefinition definition = getSequence(name);
             if (definition == null) {
@@ -165,6 +166,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
 
     @Override
     public Long setVal(String name, Long seq) {
+        checkSequence(name);
         SequenceGenerator generator = queueMap.computeIfAbsent(name, k -> {
             SequenceDefinition definition = getSequence(name);
             if (definition == null) {
@@ -177,6 +179,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
 
     @Override
     public Long currVal(String name) {
+        checkSequence(name);
         SequenceGenerator generator = queueMap.computeIfAbsent(name, k -> {
             SequenceDefinition definition = getSequence(name);
             if (definition == null) {
@@ -189,6 +192,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
 
     @Override
     public Long lastVal(String name) {
+        checkSequence(name);
         SequenceGenerator generator = queueMap.get(name);
         return generator == null ? null : generator.current();
     }
@@ -211,6 +215,12 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
             (long) row[4],
             (int) row[5],
             (boolean) row[6]);
+    }
+
+    private void checkSequence(String name) {
+        if (!existsSequence(name)) {
+            throw new RuntimeException("Sequence " + name + " does not exist.");
+        }
     }
 
     public static Table getTable(String tableName) {
