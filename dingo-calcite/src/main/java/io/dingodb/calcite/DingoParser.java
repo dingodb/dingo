@@ -44,7 +44,9 @@ import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
 import io.dingodb.calcite.grammar.ddl.SqlCreateSchema;
+import io.dingodb.calcite.grammar.ddl.SqlCreateSequence;
 import io.dingodb.calcite.grammar.ddl.SqlCreateUser;
+import io.dingodb.calcite.grammar.ddl.SqlDropSequence;
 import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
@@ -565,7 +567,9 @@ public class DingoParser {
             || sqlNode instanceof SqlAlterTruncatePart
             || sqlNode instanceof SqlAlterExchangePart
             || sqlNode instanceof SqlAlterTableOptions
-            || sqlNode instanceof SqlAlterIndex;
+            || sqlNode instanceof SqlAlterIndex
+            || sqlNode instanceof SqlCreateSequence
+            || sqlNode instanceof SqlDropSequence;
     }
 
     public long getGcLifeTime() {
