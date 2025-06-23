@@ -42,9 +42,18 @@ then
     ./bin/start-executor.sh
 elif [[ $ROLE == "proxy" ]]
 then
-    java ${JAVA_OPTS} \
+    APP_HOME=$( cd "$( dirname "$0" )/.." && pwd )
+    PLATFORM=$(uname -s)-$(uname -m | sed 's/x86_64/x64/')
+    JAVA_OPTS="-Xms1g -Xmx1g -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:+DisableExplicitGC -XX:+HeapDumpOnOutOfMemoryError"
+
+    EMBEDDED_JDK="${APP_HOME}/${PLATFORM}"
+    if [ -d "${EMBEDDED_JDK}" ]; then
+        export JAVA_HOME="${EMBEDDED_JDK}"
+        PATH="${JAVA_HOME}/bin:${PATH}"
+    fi
+    nohup ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-proxy.xml \
-     -jar ${PROXY_JAR_PATH} \
+     -jar ${JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-proxy.yaml \
      > ${ROOT}/log/proxy.out
 else

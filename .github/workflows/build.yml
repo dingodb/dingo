@@ -37,7 +37,7 @@ jobs:
 
     - name: Build Dingo Project
       run: |
-        ./gradlew build
+        ./gradlew build -PisDownload=true
 
     - name: Build Java Documents
       uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
