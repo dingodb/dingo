@@ -35,6 +35,7 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.fun.ValuesFun;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.transaction.base.TxnPartData;
@@ -42,6 +43,9 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
+import io.dingodb.expr.runtime.expr.BinaryOpExpr;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.UnaryOpExpr;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -680,7 +684,18 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             }
         } else {
             for (int i = 0; i < mapping.size(); i++) {
-                Object newValue = updates.get(i) == null ? newTuple[mapping.get(i)] : updates.get(i).eval(tuple);
+                SqlExpr sqlExpr = updates.get(i);
+                Object newValue = null;
+                if (sqlExpr != null && sqlExpr.getExpr() instanceof BinaryOpExpr) {
+                    Expr operand0 = ((BinaryOpExpr) sqlExpr.getExpr()).getOperand0();
+                    if (operand0 instanceof UnaryOpExpr && !(((UnaryOpExpr) operand0).getOp() instanceof ValuesFun)) {
+                        newValue = sqlExpr.eval(newTuple);
+                    }
+                }
+                if (newValue == null) {
+                    newValue = sqlExpr == null ? newTuple[mapping.get(i)] : sqlExpr.eval(tuple);
+                }
+
                 if (newValue.equals("NULL")) {
                     newValue = null;
                 }

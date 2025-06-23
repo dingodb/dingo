@@ -37,9 +37,6 @@ public class SequenceGenerator {
         if (definition.getStart() < definition.getMinvalue() || definition.getStart() > definition.getMaxvalue()) {
             throw new IllegalArgumentException("startValue must be within the range of minvalue and maxvalue");
         }
-        if (definition.getIncrement() <= 0) {
-            throw new IllegalArgumentException("increment must be greater than 0");
-        }
         if (definition.getCache() <= 0) {
             throw new IllegalArgumentException("Cache size must be greater than 0");
         }
