@@ -51,9 +51,9 @@ then
         export JAVA_HOME="${EMBEDDED_JDK}"
         PATH="${JAVA_HOME}/bin:${PATH}"
     fi
-    nohup ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
+    ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-proxy.xml \
-     -jar ${JAR_PATH} \
+     -jar ${PROXY_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-proxy.yaml \
      > ${ROOT}/log/proxy.out
 else
