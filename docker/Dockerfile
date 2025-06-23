@@ -5,7 +5,7 @@ ENV TZ=Asia/Shanghai \
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update  \
-    && apt-get install -y openjdk-8-jdk vim unzip netcat net-tools tzdata curl \
+    && apt-get install -y openjdk-17-jdk vim unzip netcat net-tools tzdata curl \
     && unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY \
     && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \
@@ -16,7 +16,7 @@ COPY ./dingo.zip /opt
 
 RUN unzip /opt/dingo.zip -d /opt/ && mkdir /opt/dingo/log && mkdir /opt/dingo/executor && chmod +x /opt/dingo/bin/*
 
-ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64/
 
 WORKDIR /opt/dingo
 
