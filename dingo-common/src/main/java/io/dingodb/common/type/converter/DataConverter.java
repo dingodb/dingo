@@ -190,6 +190,10 @@ public interface DataConverter {
         }
     }
 
+    default BigDecimal convertDecimalFrom(@NonNull Object value, int precision, int scale) {
+        return convertDecimalFrom(value);
+    }
+
     default BigDecimal convertDecimalFrom(@NonNull Object value) {
         if (value instanceof BigDecimal) {
             return (BigDecimal) value;

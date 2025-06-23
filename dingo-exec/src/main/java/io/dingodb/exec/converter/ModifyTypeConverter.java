@@ -23,12 +23,14 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDataOutOfRange;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
 
 public class ModifyTypeConverter implements DataConverter {
@@ -103,6 +105,18 @@ public class ModifyTypeConverter implements DataConverter {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public BigDecimal convertDecimalFrom(@NonNull Object value, int precision, int scale) {
+        BigDecimal valDecimal = convertDecimalFrom(value);
+        valDecimal = valDecimal.setScale(scale, RoundingMode.HALF_UP);
+        if (valDecimal.precision() > precision) {
+            String formatErr = "DECIMAL value is out of range in '(%d, %d)'";
+            formatErr = formatErr.formatted(precision, scale);
+            throw DingoErrUtil.newStdErr(formatErr, ErrDataOutOfRange);
+        }
+        return valDecimal;
     }
 
     @Override
