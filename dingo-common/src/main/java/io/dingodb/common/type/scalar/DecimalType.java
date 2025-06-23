@@ -30,11 +30,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 @Slf4j
 @JsonTypeName("decimal")
 public class DecimalType extends AbstractScalarType {
+
     @JsonCreator
     public DecimalType(@JsonProperty("nullable") boolean nullable) {
         super(Types.DECIMAL, nullable);
@@ -78,6 +78,6 @@ public class DecimalType extends AbstractScalarType {
 
     @Override
     protected Object convertValueFrom(@NonNull Object value, @NonNull DataConverter converter) {
-        return converter.convertDecimalFrom(value);
+        return converter.convertDecimalFrom(value, (int)precision, (int)scale);
     }
 }
