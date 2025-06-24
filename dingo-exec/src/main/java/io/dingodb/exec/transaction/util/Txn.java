@@ -148,7 +148,7 @@ public class Txn {
         );
     }
 
-    private void preWritePrimaryKey(CacheToObject cacheToObject) {
+    protected void preWritePrimaryKey(CacheToObject cacheToObject) {
         primaryKey = cacheToObject.getMutation().getKey();
         // 2、call sdk preWritePrimaryKey
         TxnPreWrite txnPreWrite = TxnPreWrite.builder()
@@ -169,6 +169,7 @@ public class Txn {
         try {
             StoreInstance store = Services.KV_STORE.getInstance(cacheToObject.getTableId(), cacheToObject.getPartId());
             this.future = store.txnPreWritePrimaryKey(txnPreWrite, timeOut);
+            LogUtils.info(log, "preWritePrimaryKey startTs:{}, txnId:{}", startTs, this.txnId);
         } catch (RegionSplitException e) {
             LogUtils.error(log, e.getMessage(), e);
             long start = System.currentTimeMillis();
@@ -381,6 +382,7 @@ public class Txn {
             // 1、call sdk commitPrimaryKey
             long start = System.currentTimeMillis();
             while (true) {
+                LogUtils.info(log, "commitPrimaryData startTs:{}, commitTs:{}", startTs, commitTs);
                 TxnCommit commitRequest = TxnCommit.builder()
                     .isolationLevel(IsolationLevel.of(isolationLevel))
                     .startTs(startTs)

@@ -16,7 +16,11 @@
 
 package io.dingodb.store.api.transaction.exception;
 
+import java.util.List;
+
 public class DuplicateEntryException extends RuntimeException {
+    public List<byte[]> keys;
+    public int doneCnt;
     public DuplicateEntryException(String message) {
         super(message);
     }
