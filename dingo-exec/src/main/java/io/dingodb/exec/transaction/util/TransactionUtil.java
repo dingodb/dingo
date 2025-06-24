@@ -23,42 +23,29 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
-import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
-import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TransactionType;
-import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
-import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
-import io.dingodb.meta.entity.IndexTable;
-import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
-import io.dingodb.store.api.transaction.data.Op;
-import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.data.prewrite.ForUpdateTsCheck;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraData;
 import io.dingodb.store.api.transaction.data.prewrite.LockExtraDataList;
 import io.dingodb.store.api.transaction.data.prewrite.PessimisticCheck;
-import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -208,7 +195,7 @@ public final class TransactionUtil {
                                        CommonId partId,
                                        byte[] key,
                                        boolean ignoreLockWait) {
-        List<KeyValue> kvRet = new ArrayList<KeyValue>();
+        List<KeyValue> kvRet = new ArrayList<>();
         try {
             StoreInstance store = Services.KV_STORE.getInstance(tableId, partId);
             boolean result = store.txnPessimisticLock(txnPessimisticLock, timeOut, ignoreLockWait, kvRet);
@@ -227,7 +214,7 @@ public final class TransactionUtil {
             }
         }
 
-        if (kvRet.size() == 0) {
+        if (kvRet.isEmpty()) {
             return null;
         }
         return kvRet.get(0);

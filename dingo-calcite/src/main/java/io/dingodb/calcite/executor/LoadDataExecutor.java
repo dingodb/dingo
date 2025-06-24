@@ -39,6 +39,7 @@ import io.dingodb.exec.converter.ImportFileConverter;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
+import io.dingodb.exec.transaction.util.TxnIgnore;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.expr.runtime.utils.CodecUtils;
 import io.dingodb.meta.DdlService;
@@ -458,9 +459,6 @@ public class LoadDataExecutor implements DmlExecutor {
         }
 
         if (isTxn) {
-            if (dataGenNum % max_pre_write_count == 0) {
-                refreshTxnId = true;
-            }
             insertWithTxn(tuples);
         } else {
             insertWithoutTxn(tuples, false);
@@ -501,7 +499,7 @@ public class LoadDataExecutor implements DmlExecutor {
     }
 
     public CommonId getTxnId() {
-        if (refreshTxnId || txnId == null) {
+        if (txnId == null) {
             txnId = new CommonId(CommonId.CommonType.TRANSACTION,
                 TransactionManager.getServerId().seq, TransactionManager.getStartTs());
         }
@@ -509,7 +507,6 @@ public class LoadDataExecutor implements DmlExecutor {
     }
 
     CommonId txnId;
-    boolean refreshTxnId = false;
 
     public void insertWithTxn(Object[] tuples) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
@@ -569,19 +566,26 @@ public class LoadDataExecutor implements DmlExecutor {
                 }
             }
         }
-
-        if (refreshTxnId) {
+        if (dataGenNum % max_pre_write_count == 0) {
             long start = System.currentTimeMillis();
             int cacheSize;
-            Txn txn = new Txn(
-                txnId, txnRetry, txnRetryCnt, timeOut
-            );
+            Txn txn;
+            if (ignore) {
+                txn = new Txn(
+                    txnId, txnRetry, txnRetryCnt, timeOut
+                );
+            } else {
+                txn = new TxnIgnore(txnId, txnRetry, txnRetryCnt, timeOut);
+            }
             try {
                 List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
                 int result = txn.commit(tupleList);
                 count.addAndGet(result);
                 cacheSize = caches.size();
                 caches.clear();
+            } catch (Exception e) {
+                LogUtils.error(log, "load data commit error, count:{}", count.get());
+                throw e;
             } finally {
                 txn.close();
                 env.memCacheFor2PC.memoryCache.remove(statementId);
@@ -592,7 +596,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 LogUtils.info(log, "insert txn batch size: {}, cost time: {}ms, insert count:{}",
                     cacheSize, sub, totalCount);
             }
-            refreshTxnId = false;
+            this.txnId = null;
         }
     }
 
@@ -605,11 +609,16 @@ public class LoadDataExecutor implements DmlExecutor {
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = table.getTableId().encode();
         byte[] partIdByte = partId.encode();
-
+        int opCode;
+        if (replaceInto) {
+            opCode = Op.PUT.getCode();
+        } else {
+            opCode = Op.PUTIFABSENT.getCode();
+        }
         keyValue.setKey(ByteUtils.encode(
             CommonId.CommonType.TXN_CACHE_DATA,
             keyValue.getKey(),
-            Op.PUT.getCode(),
+            opCode,
             (txnIdByte.length + tableIdByte.length + partIdByte.length),
             txnIdByte, tableIdByte, partIdByte));
     }
@@ -619,9 +628,16 @@ public class LoadDataExecutor implements DmlExecutor {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         try {
             CommonId txnId = getTxnId();
-            Txn txnImportDataOperation = new Txn(
-                txnId, txnRetry, txnRetryCnt, timeOut
-            );
+            Txn txnImportDataOperation;
+            if (ignore) {
+                txnImportDataOperation = new TxnIgnore(
+                    txnId, txnRetry, txnRetryCnt, timeOut
+                );
+            } else {
+                txnImportDataOperation = new Txn(
+                    txnId, txnRetry, txnRetryCnt, timeOut
+                );
+            }
             Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
@@ -638,7 +654,7 @@ public class LoadDataExecutor implements DmlExecutor {
         LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");
     }
 
-    public static List<TxnLocalData> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
+    public List<TxnLocalData> getCacheTupleList(Map<String, KeyValue> keyValueMap, CommonId txnId) {
         List<TxnLocalData> tupleCacheList = new ArrayList<>();
         for (KeyValue keyValue : keyValueMap.values()) {
             TxnLocalData txnLocalData = getCacheTuples(keyValue);

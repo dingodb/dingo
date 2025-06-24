@@ -326,8 +326,10 @@ public class TransactionStoreInstance {
                     joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)))
                 )
         );
-        throw new DuplicateEntryException("Duplicate entry " + joinedKey.get()
+        DuplicateEntryException duplicateEntryException = new DuplicateEntryException("Duplicate entry " + joinedKey.get()
             + " for key '" + table.getName() + ".PRIMARY'");
+        duplicateEntryException.keys= keysAlreadyExist.stream().map(AlreadyExist::getKey).collect(Collectors.toList());
+        throw duplicateEntryException;
     }
 
     public Future<?> txnPreWritePrimaryKey(TxnPreWrite txnPreWrite, long timeOut) {
@@ -365,6 +367,9 @@ public class TransactionStoreInstance {
             }
             if (response.getTxnResult() != null && response.getTxnResult().getCommitTsExpired() != null) {
                 throw new CommitTsExpiredException(response.getTxnResult().getCommitTsExpired().toString());
+            }
+            if (response.getTxnResult() != null) {
+                LogUtils.error(log, "commit failed, result:{}", response.getTxnResult());
             }
             return response.getTxnResult() == null;
         } finally {

@@ -92,6 +92,7 @@ public class CommonId implements Comparable<CommonId>, Serializable {
         META(122),
         FILL_BACK(123),
         DDL(124),
+        LOAD_DATA(125),
         ;
 
         public final int code;
