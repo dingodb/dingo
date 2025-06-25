@@ -41,6 +41,7 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
@@ -308,6 +309,26 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             // Returns early if source and target row type equals sans nullability.
             return;
         }
+
+        //Check precison for type cast.
+        List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
+        List<RelDataTypeField> targetFields = targetRowType.getFieldList();
+        final int sourceCount = sourceFields.size();
+        for (int i = 0; i < sourceCount; ++i) {
+            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataType targetType = targetFields.get(i).getType();
+            if (sourceType.getSqlTypeName() == SqlTypeName.DECIMAL
+                && targetType.getSqlTypeName() == SqlTypeName.DECIMAL) {
+                int sourceIntPart = sourceType.getPrecision() - sourceType.getScale();
+                int targetIntPart = targetType.getPrecision() - targetType.getScale();
+                if (sourceIntPart > targetIntPart) {
+                    //get field name.
+                    String columnName = targetFields.get(i).getKey();
+                    throw new RuntimeException("Out of range value for column '" + columnName + "'");
+                }
+            }
+        }
+
         if (CONFIG.typeCoercionEnabled() && !isUpdateModifiableViewTable) {
             // Try type coercion first if implicit type coercion is allowed.
             boolean coerced = typeCoercion1.querySourceCoercion(sourceScope,
@@ -320,9 +341,6 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         }
 
         // Fall back to default behavior: compare the type families.
-        List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
-        List<RelDataTypeField> targetFields = targetRowType.getFieldList();
-        final int sourceCount = sourceFields.size();
         for (int i = 0; i < sourceCount; ++i) {
             RelDataType sourceType = sourceFields.get(i).getType();
             RelDataType targetType = targetFields.get(i).getType();
