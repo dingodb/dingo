@@ -33,10 +33,13 @@ public class SqlSelect extends org.apache.calcite.sql.SqlSelect {
 
     boolean trace;
 
+    @Setter
     boolean flashBackQuery;
 
+    @Setter
     String flashBackTimeStr;
 
+    @Setter
     long flashBackTso;
 
     boolean forUpdate;

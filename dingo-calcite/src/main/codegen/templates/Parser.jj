@@ -688,6 +688,9 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     SqlNode[] offsetFetch = {null, null};
     ExportOptions exportOptions = null;
     boolean forUpdate=false;
+    boolean flashBackQuery = false;
+    String flashBackStr = null;
+    String flashBackTsoStr = null;
 }
 {
     (
@@ -716,10 +719,25 @@ SqlNode OrderByLimitOpt(SqlNode e) :
     ]
     [ exportOptions = exportOptions() ]
     [ <FOR><UPDATE> { forUpdate = true;} ]
+    [ LOOKAHEAD(2) <AS> <OF> { flashBackQuery = true; }
+         (
+           <TIMESTAMP> <QUOTED_STRING> { flashBackStr = SqlParserUtil.trim(token.image, "'"); }
+           |
+           <TSO> <UNSIGNED_INTEGER_LITERAL> { flashBackTsoStr = token.image; }
+         )
+    ]
     {
-        if (e instanceof SqlSelect && exportOptions != null) {
+        if (e instanceof SqlSelect) {
            SqlSelect sqlSelect = (SqlSelect)e;
-           sqlSelect.setExportOptions(exportOptions);
+           if (exportOptions != null) {
+            sqlSelect.setExportOptions(exportOptions);
+           }
+           sqlSelect.setFlashBackQuery(flashBackQuery);
+           sqlSelect.setFlashBackTimeStr(flashBackStr);
+           if (flashBackTsoStr != null) {
+               Long flashBackTso = Long.parseLong(flashBackTsoStr);
+               sqlSelect.setFlashBackTso(flashBackTso);
+           }
         }
         if (orderBy != null || offsetFetch[0] != null || offsetFetch[1] != null) {
             return new SqlOrderBy(getPos(), e,
