@@ -1070,7 +1070,6 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         result.add(new Object[]{"CANCEL", 1});
         result.add(new Object[]{"CONCURRENT", 1});
         result.add(new Object[]{"INPLACE", 1});
-        result.add(new Object[]{"UNHEX", 1});
         result.add(new Object[]{"IF", 1});
         result.add(new Object[]{"COPY", 1});
         result.add(new Object[]{"CODEC_VERSION", 1});

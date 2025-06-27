@@ -229,7 +229,7 @@ public final class SqlToExecutorConverter {
             }
             return Optional.of(new LoadDataExecutor(sqlLoadData, connection, context,
                 sqlLoadData.isLocal(), sqlLoadData.isIgnore(),
-                sqlLoadData.getSetColumnList(),
+                sqlLoadData.getLoadDataSetExpr(),
                 sqlLoadData.getWithColumnList()));
         } else if (sqlNode instanceof SqlShowProcessList) {
             SqlShowProcessList showProcessList = (SqlShowProcessList) sqlNode;

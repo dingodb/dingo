@@ -60,7 +60,7 @@ public class ImportFileConverter implements DataConverter {
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
-        String valStr = (String) value;
+        String valStr = value.toString();
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {

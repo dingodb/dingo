@@ -17,6 +17,8 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.grammar.ddl.LoadDataColMapping;
+import io.dingodb.calcite.grammar.ddl.LoadDataSetExpr;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.service.LoadDataService;
@@ -41,7 +43,6 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
 import io.dingodb.exec.transaction.util.TxnIgnore;
 import io.dingodb.exec.utils.ByteUtils;
-import io.dingodb.expr.runtime.utils.CodecUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -55,8 +56,6 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -124,8 +123,7 @@ public class LoadDataExecutor implements DmlExecutor {
     private long timeOut;
     private CompletableFuture<String> loadDataRead;
     private long start;
-    private List<String> withColumnList;
-    private List<Integer> exprList;
+    LoadDataExpand loadDataExpand;
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -135,8 +133,8 @@ public class LoadDataExecutor implements DmlExecutor {
         SqlLoadData sqlLoadData, Connection connection,
         DingoParserContext context,
         boolean local, boolean ignore,
-        SqlNodeList setColumnList,
-        SqlNodeList withColumnList
+        LoadDataSetExpr loadDataSetExpr,
+        List<LoadDataColMapping> withColumnList
     ) {
         this.context = context;
         this.filePath = sqlLoadData.getFilePath();
@@ -192,18 +190,7 @@ public class LoadDataExecutor implements DmlExecutor {
         this.statementId = UUID.randomUUID().toString();
         this.local = local;
         this.ignore = ignore;
-        if (withColumnList != null) {
-            this.withColumnList = withColumnList
-                .stream().map(SqlNode::toString).collect(Collectors.toList());
-        }
-        if (setColumnList != null) {
-            List<String> setCl = setColumnList.stream()
-                .map(SqlNode::toString)
-                .toList();
-            this.exprList = setCl.stream()
-                .map(sc -> getColumnIndex(sc, this.withColumnList))
-                .collect(Collectors.toList());
-        }
+        this.loadDataExpand = new LoadDataExpand(table, withColumnList, loadDataSetExpr, context);
         this.replaceInto = sqlLoadData.isReplaceInto();
     }
 
@@ -442,16 +429,8 @@ public class LoadDataExecutor implements DmlExecutor {
             return;
         }
         tuples = enclosed(tuples);
+        tuples = loadDataExpand.expand(tuples);
         tuples = processHideCol(tuples);
-        if (exprList != null) {
-            for (Integer ix : exprList) {
-                Object hexVal = tuples[ix];
-                if (hexVal != null) {
-                    byte[] actVal = CodecUtils.hexStringToBytes(hexVal.toString());
-                    tuples[ix] = new String(actVal);
-                }
-            }
-        }
         try {
             tuples = (Object[]) schema.convertFrom(tuples, new ImportFileConverter(escaped));
         } catch (Exception e) {
@@ -512,7 +491,12 @@ public class LoadDataExecutor implements DmlExecutor {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
             .computeIfAbsent(statementId, e -> new TreeMap<>());
-        KeyValue keyValue = codec.encode(tuples);
+        KeyValue keyValue;
+        try {
+            keyValue = codec.encode(tuples);
+        } catch (Exception e) {
+            throw new RuntimeException("encode error");
+        }
 
         CommonId txnId = getTxnId();
         recodePriTable(keyValue, txnId);
@@ -833,4 +817,5 @@ public class LoadDataExecutor implements DmlExecutor {
         String engine = table.getEngine().toUpperCase();
         return StringUtils.isNotBlank(engine) && engine.contains("TXN");
     }
+
 }

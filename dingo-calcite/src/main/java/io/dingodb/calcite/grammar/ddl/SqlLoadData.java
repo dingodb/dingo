@@ -51,8 +51,8 @@ public class SqlLoadData extends SqlDdl {
     private final boolean local;
     private final boolean ignore;
     private boolean replaceInto;
-    private SqlNodeList withColumnList;
-    private SqlNodeList setColumnList;
+    private List<LoadDataColMapping> withColumnList;
+    private LoadDataSetExpr loadDataSetExpr;
 
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("LOAD DATA", SqlKind.INSERT);
@@ -72,8 +72,8 @@ public class SqlLoadData extends SqlDdl {
                        byte[] lineStarting,
                        String charset,
                        int ignoreNum, boolean local, boolean ignore,
-                       SqlNodeList withColumnList,
-                       SqlNodeList setColumnList,
+                       List<LoadDataColMapping> withColumnList,
+                       LoadDataSetExpr loadDataSetExpr,
                        boolean replaceInto) {
         super(OPERATOR, pos);
         this.tableId = tableId;
@@ -94,7 +94,7 @@ public class SqlLoadData extends SqlDdl {
         this.local = local;
         this.ignore = ignore;
         this.withColumnList = withColumnList;
-        this.setColumnList = setColumnList;
+        this.loadDataSetExpr = loadDataSetExpr;
         this.replaceInto = replaceInto;
     }
 

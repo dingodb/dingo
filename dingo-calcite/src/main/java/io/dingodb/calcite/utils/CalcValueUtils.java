@@ -39,7 +39,6 @@ public final class CalcValueUtils {
 
     public static Object calcValue(
         RexNode rexNode,
-        @NonNull DingoType targetType,
         Object[] tuple,
         DingoType tupleType,
         ExprConfig config
@@ -56,9 +55,21 @@ public final class CalcValueUtils {
             throw new RuntimeException(e);
         }
 
+        return ExprCompiler.ADVANCED.visit(expr, new SqlExprCompileContext(tupleType, null))
+                .eval(etx, config);
+    }
+
+    public static Object calcValue(
+        RexNode rexNode,
+        @NonNull DingoType targetType,
+        Object[] tuple,
+        DingoType tupleType,
+        ExprConfig config
+    ) {
+        Object object= calcValue(rexNode, tuple, tupleType, config);
+
         return targetType.convertFrom(
-            ExprCompiler.ADVANCED.visit(expr, new SqlExprCompileContext(tupleType, null))
-                .eval(etx, config),
+            object,
             ExprConverter.INSTANCE
         );
     }

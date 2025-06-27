@@ -16,11 +16,13 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.exec.fun.mysql.HexFun;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
+import io.dingodb.exec.fun.mysql.UnHexFun;
 import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
@@ -82,6 +84,8 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
         registerUnaryFun(DateFun.NAME, DateFun.INSTANCE);
         registerUnaryFun(ValuesFun.NAME, ValuesFun.INSTANCE);
+        registerUnaryFun(UnHexFun.NAME, UnHexFun.INSTANCE);
+        registerUnaryFun(HexFun.NAME, HexFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {

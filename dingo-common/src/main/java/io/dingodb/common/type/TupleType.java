@@ -45,7 +45,7 @@ public class TupleType extends AbstractDingoType {
     private final Type type;
 
     @JsonCreator
-    TupleType(
+    public TupleType(
         @JsonProperty("fields") DingoType[] fields
     ) {
         super();
