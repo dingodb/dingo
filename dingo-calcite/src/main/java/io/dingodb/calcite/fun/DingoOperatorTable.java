@@ -25,11 +25,13 @@ import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.StrToDateFun;
 import io.dingodb.exec.fun.ValuesFun;
+import io.dingodb.exec.fun.mysql.HexFun;
 import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
+import io.dingodb.exec.fun.mysql.UnHexFun;
 import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
@@ -479,6 +481,20 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ReturnTypes.explicit(SqlTypeName.ANY),
             InferTypes.ANY_NULLABLE,
             OperandTypes.ANY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+        registerFunction(
+            HexFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+        registerFunction(
+            UnHexFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            InferTypes.VARCHAR_1024,
+            OperandTypes.STRING,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
     }

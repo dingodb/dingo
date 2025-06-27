@@ -18,6 +18,7 @@ package io.dingodb.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.dingodb.calcite.grammar.ddl.LoadDataColMapping;
 import io.dingodb.calcite.rel.DingoFunctionScan;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnCountMemory;
@@ -52,6 +53,7 @@ import org.apache.calcite.rel.stream.Delta;
 import org.apache.calcite.rel.stream.LogicalDelta;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -75,7 +77,11 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParserUtil;
+import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
@@ -103,7 +109,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
-class DingoSqlToRelConverter extends SqlToRelConverter {
+public class DingoSqlToRelConverter extends SqlToRelConverter {
 
     static final Config CONFIG = SqlToRelConverter.CONFIG
         .withTrimUnusedFields(true)
@@ -114,7 +120,7 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
 
     private final HintStrategyTable hintStrategies;
 
-    DingoSqlToRelConverter(
+    public DingoSqlToRelConverter(
         RelOptTable.ViewExpander viewExpander,
         @Nullable SqlValidator validator,
         Prepare.CatalogReader catalogReader,
@@ -621,4 +627,50 @@ class DingoSqlToRelConverter extends SqlToRelConverter {
 
         bb.setRoot(callRel, true);
     }
+
+    public class DingoBlackboard extends Blackboard {
+
+        public List<LoadDataColMapping> withColumnList;
+
+        public DingoBlackboard(
+            @Nullable SqlValidatorScope scope,
+            @Nullable Map<String, RexNode> nameToNodeMap,
+            boolean top,
+            List<LoadDataColMapping> withColumnList
+        ) {
+            super(scope, nameToNodeMap, top);
+            this.withColumnList = withColumnList;
+        }
+
+        @Override
+        public RexNode visit(SqlCall call) {
+            if (this.withColumnList != null
+                && call.getOperator().getName().equals("@") && call.getOperandList().size() == 1
+                && call.getOperandList().get(0) instanceof SqlLiteral) {
+                SqlLiteral sqlLiteral = (SqlLiteral) call.getOperandList().get(0);
+                if (sqlLiteral.getValue() == null) {
+                    return super.visit(call);
+                }
+                String userVar = sqlLiteral.getValue().toString();
+                userVar = SqlParserUtil.trim(userVar, "'");
+                int inputRef = -1;
+                for (int i = 0; i < withColumnList.size(); i ++) {
+                    LoadDataColMapping colMap = withColumnList.get(i);
+                    if (colMap.isUserVar() && userVar.equalsIgnoreCase(colMap.getColumnName())) {
+                        inputRef = i;
+                        break;
+                    }
+                }
+                if (inputRef > -1) {
+                    RelDataType targetType = new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARBINARY);
+                    return new RexInputRef(inputRef, targetType);
+                } else {
+                    return super.visit(call);
+                }
+            } else {
+                return super.visit(call);
+            }
+        }
+    }
+
 }

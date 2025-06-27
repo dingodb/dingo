@@ -28,8 +28,8 @@ SqlLoadData SqlLoadData(): {
   int ignoreNum = 0;
   boolean local = false;
   boolean ignore = false;
-  SqlNodeList withColumnList = null;
-  SqlNodeList setColumnList = null;
+  List<LoadDataColMapping> withColumnList = null;
+  LoadDataSetExpr loadDataSetExpr = null;
   boolean replaceInto = false;
 } {
   <LOAD> { s = span(); }
@@ -62,76 +62,61 @@ SqlLoadData SqlLoadData(): {
      <IGNORE> (<UNSIGNED_INTEGER_LITERAL> | <DECIMAL_NUMERIC_LITERAL>) { ignoreNum = Integer.parseInt(token.image); }
    )*
   [ withColumnList = loadDataParenthesizedSimpleIdentifierList()]
-  [ setColumnList = setLoadProp()]
-  { return new SqlLoadData(s.end(this), table, filePath, terminated, escaped, lineTerminated, enclosed, lineStarting, exportCharset, ignoreNum, local, ignore, withColumnList, setColumnList, replaceInto); }
+  [ loadDataSetExpr = setLoadProp()]
+  { return new SqlLoadData(s.end(this), table, filePath, terminated, escaped, lineTerminated, enclosed, lineStarting, exportCharset, ignoreNum, local, ignore, withColumnList, loadDataSetExpr, replaceInto); }
 }
 
-SqlNodeList loadDataParenthesizedSimpleIdentifierList() :
+List<LoadDataColMapping> loadDataParenthesizedSimpleIdentifierList() :
 {
     final Span s;
-    final List<SqlNode> list = new ArrayList<SqlNode>();
+    final List<LoadDataColMapping> list = new ArrayList<>();
 }
 {
     <LPAREN> { s = span(); }
     AddLoadDataSimpleIdentifiers(list)
     <RPAREN> {
-        return new SqlNodeList(list, s.end(this));
+        return list;
     }
 }
 
-void AddLoadDataSimpleIdentifiers(List<SqlNode> list) :
+void AddLoadDataSimpleIdentifiers(List<LoadDataColMapping> list) :
 {
     SqlIdentifier id;
+    boolean userVar = false;
 }
 {
-    [<AT_SPLIT>]
-    id = SimpleIdentifier() {list.add(id);}
+    [<AT_SPLIT> {userVar = true;}]
+    id = SimpleIdentifier() {list.add(new LoadDataColMapping(id, userVar));}
     (
-        <COMMA> [<AT_SPLIT>]id = SimpleIdentifier() {
-            list.add(id);
+        <COMMA> {userVar = false;} [<AT_SPLIT> { userVar = true; }]id = SimpleIdentifier() {
+            list.add(new LoadDataColMapping(id,userVar));
         } [<ASC>] [<DESC>]
     )*
 }
 
-SqlNodeList setLoadProp() :
+LoadDataSetExpr setLoadProp() :
 {
     final Span s;
-    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNodeList targetColumnList;
+    SqlNodeList sourceExpressionList;
     SqlIdentifier id;
-    SqlIdentifier tid = null;
-    SqlIdentifier hexId = null;
 }
 {
-    <SET> { s = span(); }
+    <SET> { s = span(); targetColumnList = new SqlNodeList(s.pos()); sourceExpressionList = new SqlNodeList(s.pos()); }
     id = SimpleIdentifier()
-    <EQ>
-    (
-      <AT_SPLIT> tid = SimpleIdentifier()
-     |
-      <UNHEX> <LPAREN> <AT_SPLIT>hexId = SimpleIdentifier() <RPAREN>
-    )
     {
-     if (hexId != null) {
-      list.add(hexId);
-     }
+       targetColumnList.add(id);
     }
+    <EQ>
+    AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     (
      <COMMA>
-     id = SimpleIdentifier()
+     id = SimpleIdentifier() { targetColumnList.add(id); }
      <EQ>
-     (
-       <AT_SPLIT> tid = SimpleIdentifier()
-      |
-       <UNHEX> <LPAREN> <AT_SPLIT> hexId = SimpleIdentifier() <RPAREN>
-     )
-     {
-       if (hexId != null) {
-        list.add(hexId);
-       }
-     }
+     AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     {
-        return new SqlNodeList(list, s.end(this));
+        return new LoadDataSetExpr(targetColumnList, sourceExpressionList);
     }
 }
 
