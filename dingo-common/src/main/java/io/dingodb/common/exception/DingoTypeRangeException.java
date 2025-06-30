@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.fin;
+package io.dingodb.common.exception;
 
-public enum ErrorType {
-    Unknown, TaskFin, WriteConflict, DuplicateEntry, LockWait, TaskCancel, OutOfValueRange
+import lombok.Getter;
+import lombok.Setter;
+
+public class DingoTypeRangeException extends RuntimeException {
+    @Getter
+    @Setter
+    private int columnIndex;
+
+    public DingoTypeRangeException(int columnIndex, String message) {
+        super(message, null);
+        this.columnIndex = columnIndex;
+    }
 }

@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.codec.PrimitiveCodec;
+import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
@@ -57,6 +58,7 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -95,10 +97,29 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             Object[] copyTuple = Arrays.copyOf(tuple, tuple.length);
             TupleMapping mapping = param.getMapping();
             List<SqlExpr> updates = param.getUpdates();
+            List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
             boolean updated = false;
+
             for (int i = 0; i < mapping.size(); ++i) {
                 Object newValue = updates.get(i).eval(tuple);
                 int index = mapping.get(i);
+
+                DingoType t = originColumns.get(index).getType();
+
+                //Only for origin table.
+                if (context.getIndexId() == null) {
+                    if (t instanceof io.dingodb.common.type.scalar.DecimalType) {
+                        if (newValue instanceof BigDecimal) {
+                            long valueIntPart = ((BigDecimal) newValue).precision() - ((BigDecimal) newValue).scale();
+                            long typeIntPart = ((io.dingodb.common.type.scalar.DecimalType) t).getPrecision()
+                                - ((io.dingodb.common.type.scalar.DecimalType) t).getScale();
+                            if (valueIntPart > typeIntPart) {
+                                throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(index).getName() + "'");
+                            }
+                        }
+                    }
+                }
+
                 if ((newTuple[index] == null && newValue != null)
                     || (newTuple[index] != null && !newTuple[index].equals(newValue))
                 ) {
