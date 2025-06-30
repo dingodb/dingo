@@ -40,6 +40,7 @@ import io.dingodb.exec.transaction.params.PreWriteParam;
 import io.dingodb.exec.transaction.params.RollBackParam;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
@@ -432,7 +433,7 @@ public class Txn {
                 if (indexTable == null) {
                     indexTable = (IndexTable) DdlService.root().getTable(tableId);
                 }
-                if (indexTable.indexType.isVector) {
+                if (indexTable.indexType.isVector || indexTable.indexType == IndexType.DOCUMENT) {
                     KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
                         indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
                         indexTable.keyMapping()

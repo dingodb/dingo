@@ -103,12 +103,12 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
             scheduler.start();
 
             ExecutionEnvironment.INSTANCE.ddlOwner.set(true);
-            SafePointUpdateTask.runScheduleSafePointUpdate();
             new Thread(() -> {
                 LogUtils.info(log, "owner prepare meta start");
                 PrepareMeta.prepare(io.dingodb.store.proxy.Configuration.coordinators());
                 LogUtils.info(log, "owner meta init done");
             }).start();
+            SafePointUpdateTask.runScheduleSafePointUpdate();
         } catch (SchedulerException e) {
             LogUtils.error(log, "Start schedule failed.", e);
             throw new RuntimeException(e);
