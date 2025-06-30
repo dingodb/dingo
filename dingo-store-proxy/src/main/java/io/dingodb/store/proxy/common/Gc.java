@@ -72,6 +72,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.LongStream;
 
 import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static io.dingodb.sdk.common.utils.ByteArrayUtils.toHex;
@@ -101,9 +102,7 @@ public class Gc {
             Set<Location> coordinators = coordinatorSet();
             long reqTs = tso();
             long safeTs = safeTs(getTxnDurationSafeTs(reqTs));
-            List<Region> regions = Services.coordinatorService(coordinators).getRegionMap(
-                reqTs, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
-            ).getRegionmap().getRegions();
+            List<Region> regions = getRegions(coordinators, reqTs);
             LogUtils.info(log, "Run safe point update task, current ts: {}, safe ts: {}", reqTs, safeTs);
             for (Region region : regions) {
                 long regionId = region.getId();
@@ -166,6 +165,24 @@ public class Gc {
         }
     }
 
+    private static List<Region> getRegions(Set<Location> coordinators, long reqTs) {
+        Integer retry = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 30
+        );
+        while (retry-- > 0) {
+            try {
+                return Services.coordinatorService(coordinators).getRegionMap(
+                    reqTs, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
+                ).getRegionmap().getRegions();
+            } catch (Exception e) {
+                LogUtils.warn(log, "Get region map failed, retry times: {}", retry, e);
+            }
+        }
+        throw new RuntimeException("Tenant id:" + TenantConstant.TENANT_ID + " get region map failed.");
+    }
+
     public static GcObj startBackUpSafeByPoint(long point, long latestTso) {
         LogUtils.info(log, "back up safe point update task start. latestTso:{}, to point:{}", latestTso, point);
         if (!GcApi.running.compareAndSet(false, true)) {
@@ -179,9 +196,7 @@ public class Gc {
             LogUtils.info(log, "Run back up safe point update task.");
             Set<Location> coordinators = coordinatorSet();
             long safeTs = safeTs(point);
-            List<Region> regions = Services.coordinatorService(coordinators).getRegionMap(
-                latestTso, GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
-            ).getRegionmap().getRegions();
+            List<Region> regions = getRegions(coordinators, latestTso);
             LogUtils.info(log, "Run back up safe point update task, current ts: {}, safe ts: {}",
                 latestTso, safeTs);
             for (Region region : regions) {
@@ -292,11 +307,24 @@ public class Gc {
     }
 
     private static long safeTs(long safeTs) {
-        long remoteMinStartTs = ClusterService.getDefault().getComputingLocations().stream()
-            .filter($ -> !$.equals(DingoConfiguration.location()))
-            .map($ -> ApiRegistry.getDefault().proxy(ShowLocksExecutor.Api.class, $))
-            .mapToLong(ShowLocksExecutor.Api::getMinTs)
-            .min().orElse(Long.MAX_VALUE);
+        Integer retry = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 30
+        );
+        long remoteMinStartTs = Long.MAX_VALUE;
+        while (retry-- > 0) {
+            try {
+                LongStream longStream = ClusterService.getDefault().getComputingLocations().stream()
+                    .filter($ -> !$.equals(DingoConfiguration.location()))
+                    .map($ -> ApiRegistry.getDefault().proxy(ShowLocksExecutor.Api.class, $))
+                    .mapToLong(ShowLocksExecutor.Api::getMinTs);
+                remoteMinStartTs = longStream.min().orElse(Long.MAX_VALUE);
+                break;
+            } catch (Exception e) {
+                LogUtils.warn(log, "Cross node get remote min start ts failed, retry times: {}", retry, e);
+            }
+        }
         long localMinTs = TransactionManager.getMinTs();
         long minTxnTs = Math.min(remoteMinStartTs, localMinTs);
 
