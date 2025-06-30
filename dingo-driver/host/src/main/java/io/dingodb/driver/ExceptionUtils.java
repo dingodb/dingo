@@ -18,6 +18,7 @@ package io.dingodb.driver;
 
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.exec.exception.TaskFinException;
+import io.dingodb.exec.fin.ErrorType;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.runtime.CalciteException;
@@ -110,6 +111,9 @@ public final class ExceptionUtils {
         } else if (throwable instanceof NumberFormatException) {
             return toRuntime((NumberFormatException) throwable);
         } else if (throwable instanceof TaskFinException) {
+            if(((TaskFinException) throwable).getErrorType() == ErrorType.OutOfValueRange) {
+                return new DingoSqlException(throwable.getMessage());
+            }
             return toRuntime((TaskFinException) throwable);
         } else if (throwable instanceof RuntimeException) {
             return toRuntime((RuntimeException) throwable);

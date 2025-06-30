@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.type.DingoType;
@@ -259,6 +260,23 @@ public final class TaskImpl implements Task {
                         LogUtils.info(log, "Operator {} need another pushing.", vertex.getId());
                     }
                     operator.fin(0, null, vertex);
+                } catch (DingoTypeRangeException e) {
+                    LogUtils.error(log, "Run Task:" + getId().toString()
+                        + ",catch operator:" + vertex.getId() + " run Exception: ", e);
+                    status.compareAndSet(Status.RUNNING, Status.STOPPED);
+                    TaskStatus taskStatus = new TaskStatus();
+                    taskStatus.setStatus(false);
+                    taskStatus.setTaskId(vertex.getTask().getId().toString());
+                    taskStatus.setErrorMsg(e.getMessage());
+                    taskStatus.setErrorType(ErrorType.OutOfValueRange);
+
+                    try {
+                        operator.fin(0, FinWithException.of(taskStatus), vertex);
+                    } catch (RuntimeException exception) {
+                        LogUtils.error(log, "Run Task Fin:" + getId() + " catch operator:" + vertex.getId() +
+                            " run Exception:", exception);
+                        throw exception;
+                    }
                 } catch (RuntimeException e) {
                     LogUtils.error(log, "Run Task:" + getId().toString()
                             + ",catch operator:" + vertex.getId() + " run Exception: ", e);

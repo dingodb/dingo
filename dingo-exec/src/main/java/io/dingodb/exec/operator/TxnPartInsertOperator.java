@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
@@ -43,6 +44,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
+import io.dingodb.expr.common.type.DecimalType;
 import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.UnaryOpExpr;
@@ -60,6 +62,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -99,6 +102,25 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         boolean isDocument = false;
         Object[] primaryOldTuple = tuple;
         Table indexTable = null;
+
+        //Only for origin table.
+        if (context.getIndexId() == null && !param.isPessimisticTxn()) {
+            List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
+            for (int i = 0; i < originColumns.size(); i++) {
+                DingoType t = originColumns.get(i).getType();
+                if (t instanceof io.dingodb.common.type.scalar.DecimalType) {
+                    if (tuple[i] instanceof BigDecimal) {
+                        long valueIntPart = ((BigDecimal) tuple[i]).precision() - ((BigDecimal) tuple[i]).scale();
+                        long typeIntPart = ((io.dingodb.common.type.scalar.DecimalType) t).getPrecision()
+                            - ((io.dingodb.common.type.scalar.DecimalType) t).getScale();
+                        if (valueIntPart > typeIntPart) {
+                            throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(i).getName() + "'");
+                        }
+                    }
+                }
+            }
+        }
+
         IndexTable index = null;
         if (context.getIndexId() != null) {
             boolean duplicate = param.getUpdateMapping() != null && param.getUpdates() != null;

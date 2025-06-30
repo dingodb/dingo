@@ -314,20 +314,6 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         List<RelDataTypeField> sourceFields = sourceRowType.getFieldList();
         List<RelDataTypeField> targetFields = targetRowType.getFieldList();
         final int sourceCount = sourceFields.size();
-        for (int i = 0; i < sourceCount; ++i) {
-            RelDataType sourceType = sourceFields.get(i).getType();
-            RelDataType targetType = targetFields.get(i).getType();
-            if (sourceType.getSqlTypeName() == SqlTypeName.DECIMAL
-                && targetType.getSqlTypeName() == SqlTypeName.DECIMAL) {
-                int sourceIntPart = sourceType.getPrecision() - sourceType.getScale();
-                int targetIntPart = targetType.getPrecision() - targetType.getScale();
-                if (sourceIntPart > targetIntPart) {
-                    //get field name.
-                    String columnName = targetFields.get(i).getKey();
-                    throw new RuntimeException("Out of range value for column '" + columnName + "'");
-                }
-            }
-        }
 
         if (CONFIG.typeCoercionEnabled() && !isUpdateModifiableViewTable) {
             // Try type coercion first if implicit type coercion is allowed.

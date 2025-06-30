@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
@@ -51,6 +52,7 @@ import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,9 +83,29 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
         boolean updated = false;
         int i;
         try {
+            CommonId txnId = vertex.getTask().getTxnId();
+            CommonId tableId = param.getTableId();
+            List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
+
             for (i = 0; i < mapping.size(); ++i) {
                 Object newValue = updates.get(i).eval(tuple);
                 int index = mapping.get(i);
+                DingoType t = originColumns.get(index).getType();
+
+                //Only for origin table.
+                if (context.getIndexId() == null && !param.isPessimisticTxn()) {
+                    if (t instanceof io.dingodb.common.type.scalar.DecimalType) {
+                        if (newValue instanceof BigDecimal) {
+                            long valueIntPart = ((BigDecimal) newValue).precision() - ((BigDecimal) newValue).scale();
+                            long typeIntPart = ((io.dingodb.common.type.scalar.DecimalType) t).getPrecision()
+                                - ((io.dingodb.common.type.scalar.DecimalType) t).getScale();
+                            if (valueIntPart > typeIntPart) {
+                                throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(index).getName() + "'");
+                            }
+                        }
+                    }
+                }
+
                 if ((newTuple[index] == null && newValue != null)
                     || (newTuple[index] != null && !newTuple[index].equals(newValue))
                 ) {
@@ -98,8 +120,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
                 }
             }
-            CommonId txnId = vertex.getTask().getTxnId();
-            CommonId tableId = param.getTableId();
+
             CommonId partId = context.getDistribution().getId();
             KeyValueCodec codec = param.getCodec();
             boolean calcPartId = false;
@@ -522,6 +543,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     }
                 }
             }
+        } catch(DingoTypeRangeException ex) {
+            throw ex;
         } catch (Exception ex) {
             LogUtils.error(log, ex.getMessage(), ex);
             throw new RuntimeException(ex);
