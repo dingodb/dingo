@@ -26,7 +26,6 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
-import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
@@ -41,14 +40,13 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
-import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.service.MetaStoreKv;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 import static io.dingodb.common.CommonId.CommonType.EXECUTOR;
@@ -122,18 +120,16 @@ public class Starter {
         env.setRole(DingoRole.EXECUTOR);
         SchedulerService schedulerService = SchedulerService.getDefault();
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
-        List<KeyValue> list = infoSchemaService.getByKey(LOWER_CASE_TABLE_NAMES, LOWER_CASE_TABLE_NAMES + "1");
-        if (!list.isEmpty()) {
-            for (KeyValue keyValue : list) {
-                Integer value = Integer.parseInt(new String(keyValue.getValue()));
-                if (!DingoConfiguration.lowerCaseTableNames().equals(value)) {
-                    LogUtils.error(log, "The value of lower_case_table_names cannot be modified, "
-                        + "current value: {}, original value: {}", DingoConfiguration.lowerCaseTableNames(), value);
-                    System.exit(0);
-                }
-            }
-        } else {
-            infoSchemaService.putKvToCoordinator(LOWER_CASE_TABLE_NAMES, String.valueOf(DingoConfiguration.lowerCaseTableNames()));
+        Map<String, String> globalVariables = infoSchemaService.getGlobalVariables();
+        String caseTableName = globalVariables.get(LOWER_CASE_TABLE_NAMES);
+        if (caseTableName.equals("-1")) {
+            infoSchemaService.putGlobalVariable(LOWER_CASE_TABLE_NAMES, DingoConfiguration.lowerCaseTableNames());
+        }
+        if (!caseTableName.equals("-1")
+            && !caseTableName.equals(String.valueOf(DingoConfiguration.lowerCaseTableNames()))) {
+            LogUtils.error(log, "The value of lower_case_table_names cannot be modified, "
+                + "current value: {}, original value: {}", DingoConfiguration.lowerCaseTableNames(), caseTableName);
+            System.exit(0);
         }
         checkContinue();
         Object tenantObj = Optional.mapOrGet(InfoSchemaService.root(), __ -> __.getTenant(tenant), () -> null);
