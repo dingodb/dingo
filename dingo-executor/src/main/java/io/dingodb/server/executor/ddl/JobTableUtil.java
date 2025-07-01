@@ -276,22 +276,25 @@ public final class JobTableUtil {
         Object startKey,
         Object endKey,
         String eleId,
-        String eleType
+        String eleType,
+        boolean markGcDone
     ) {
         LogUtils.info(log, "gcDeleteDone start, jobId:{}, regionId:{}", jobId, regionId);
-        String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
-            + " element_id, element_type)"
-            + " values(%d, %d, %d, %s, %s, %s, %s)";
-        sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
-            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
         Session session = SessionUtil.INSTANCE.getSession();
-        try {
-            session.setAutoCommit(false);
-            session.executeUpdate(sql);
-            session.commit();
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            session.rollback();
+        if (markGcDone) {
+            String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
+                + " element_id, element_type)"
+                + " values(%d, %d, %d, %s, %s, %s, %s)";
+            sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
+                Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
+            try {
+                session.setAutoCommit(false);
+                session.executeUpdate(sql);
+                session.commit();
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                session.rollback();
+            }
         }
         try {
             String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;

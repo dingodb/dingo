@@ -184,7 +184,8 @@ public final class TableUtil {
             view = "VIEW".equalsIgnoreCase(tableDefinitionWithId.getTableDefinition().getTableType());
         }
         // remove gc_delete_range to gc_delete_range_done
-        String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type from mysql.gc_delete_range where job_id="
+        String sql = "select region_id,start_key,end_key,job_id,ts, element_id, element_type "
+            + " from mysql.gc_delete_range where job_id="
             + recoverInfo.getDropJobId();
         sql = convertSql(sql);
         Session session = SessionUtil.INSTANCE.getSession();
@@ -202,7 +203,7 @@ public final class TableUtil {
                     String endKey = objects[2].toString();
                     String eleId = objects[5].toString();
                     String eleType = objects[6].toString();
-                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType)) {
+                    if (!JobTableUtil.gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType, false)) {
                         LogUtils.error(log, "remove gcDeleteTask failed");
                     } else {
                         cnt.getAndIncrement();
