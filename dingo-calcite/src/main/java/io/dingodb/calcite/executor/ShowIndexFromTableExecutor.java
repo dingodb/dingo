@@ -111,11 +111,11 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         if (index instanceof IndexTable) {
             val[9] = column.isNullable() ? "YES" : "NO";
         } else {
-            val[9] = "";
+            val[9] = " ";
         }
         val[10] = index.getEngine();
         val[11] = column.getComment();
-        val[12] = index.getComment() == null ? "" : index.getComment();
+        val[12] = index.getComment() == null ? " " : index.getComment();
         val[13] = index.visible ? "YES" : "NO";
         val[14] = null;
         val[15] = "YES";

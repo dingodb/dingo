@@ -255,7 +255,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0);
         if ("dingo".equalsIgnoreCase(schemaName)) {
-            throw new RuntimeException("Schema used.");
+            throw new RuntimeException("The system built-in schema that cannot be dropped.");
         }
         if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
             throw new RuntimeException("Schema used.");
@@ -3007,9 +3007,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static DdlJob getRecoverJob(String schemaName, long schemaId, String tableName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where (schema_name = %s or schema_ids = %s) and table_name= %s "
+        String sql = "select job_meta from mysql.dingo_ddl_history where (lower(schema_name) = %s or schema_ids = %s) "
+            + " and lower(table_name)= %s "
             + "and type in (4,11) order by create_time desc limit 10";
-        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName), Utils.quoteForSql(schemaId), Utils.quoteForSql(convertName(tableName))));
+        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName.toLowerCase()), Utils.quoteForSql(schemaId),
+            Utils.quoteForSql(tableName.toLowerCase())));
         return getRecoverJobBySql(sql, true);
     }
 
@@ -3037,9 +3039,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static DdlJob getRecoverWithoutTrunJob(String schemaName, String tableName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where schema_name = %s and table_name= %s "
+        String sql = "select job_meta from mysql.dingo_ddl_history where lower(schema_name) = %s "
+            + "and lower(table_name)= %s "
             + "and type=4 order by create_time desc limit 10";
-        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName), Utils.quoteForSql(tableName)));
+        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName.toLowerCase()),
+            Utils.quoteForSql(tableName.toLowerCase())));
         return getRecoverJobBySql(sql, true);
     }
 

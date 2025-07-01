@@ -99,7 +99,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "TABLE_CONSTRAINTS":
                 return getInformationTableConstraints(user, host);
             case "STATEMENTS_SUMMARY":
-                return StmtSummaryMap.iterator();
+                return StmtSummaryMap.iterator(user, host);
             case "DINGO_MDL_VIEW":
                 return getMdlView();
             case "DINGO_TRX":

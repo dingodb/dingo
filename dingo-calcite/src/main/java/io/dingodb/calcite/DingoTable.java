@@ -230,7 +230,19 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
             @Override
             public boolean isKey(ImmutableBitSet columns) {
-                return keys.stream().allMatch(columns::contains);
+                if (columns == null) {
+                    return false;
+                }
+                return keys.stream().allMatch(set -> {
+                    if (set == null) {
+                        return false;
+                    }
+                    if (set.isEmpty() && !columns.isEmpty()) {
+                        return false;
+                    } else {
+                        return columns.contains(set);
+                    }
+                });
             }
 
             @Override

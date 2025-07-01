@@ -29,6 +29,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -42,12 +43,13 @@ public final class StmtSummaryMap {
     private StmtSummaryMap() {
     }
 
-    public static Iterator<Object[]> iterator() {
+    public static Iterator<Object[]> iterator(String user, String host) {
         return stmtSummaryMap.asMap()
-        .values()
-        .stream()
-        .map(StmtSummary::getTuple)
-        .iterator();
+            .values()
+            .stream()
+            .map(stmtSummary -> stmtSummary.getTuple(user, host))
+            .filter(Objects::nonNull)
+            .iterator();
     }
 
     static {
