@@ -58,6 +58,13 @@ public class SequenceGenerator {
                     break;
                 }
             }
+            if (currentValue < minvalue) {
+                if (cycle) {
+                    currentValue = maxvalue;
+                } else {
+                    break;
+                }
+            }
             queue.add(currentValue);
             currentValue += increment;
         }
@@ -79,7 +86,7 @@ public class SequenceGenerator {
     }
 
     public synchronized Long set(Long seq) {
-        if (seq < minvalue && seq > maxvalue) {
+        if (seq < minvalue || seq > maxvalue) {
             throw new IllegalArgumentException("Sequence value must be within the range of minvalue and maxvalue");
         }
         currentValue = seq;
