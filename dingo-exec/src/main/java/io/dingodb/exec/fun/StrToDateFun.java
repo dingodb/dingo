@@ -62,7 +62,10 @@ public class StrToDateFun extends BinaryOp {
     }
 
     @Override
-    public Object evalValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+    public Object evalValue(Object value0, Object value1, ExprConfig config) {
+        if (value0 == null || value1 == null) {
+            return null;
+        }
         try {
             return strToDate(value0.toString(), value1.toString());
         } catch (Exception e) {
@@ -71,10 +74,6 @@ public class StrToDateFun extends BinaryOp {
     }
 
     public static Date strToDate(String dateString, String formatString) {
-        if (dateString == null || formatString == null) {
-            throw new IllegalArgumentException("Date string and format string must not be null");
-        }
-
         // Try multiple mode analysis
         for (int mode = 0; mode < 4; mode++) {
             try {
