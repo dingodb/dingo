@@ -283,7 +283,11 @@ public class StmtSummary {
         }
     }
 
-    public Object[] getTuple() {
+    public Object[] getTuple(String user, String host) {
+        String role = user + "@" + host;
+        if (!"root".equalsIgnoreCase(user) && !role.equalsIgnoreCase(simpleUser)) {
+            return null;
+        }
         try {
             lock.readLock().lock();
             return new Object[]{
