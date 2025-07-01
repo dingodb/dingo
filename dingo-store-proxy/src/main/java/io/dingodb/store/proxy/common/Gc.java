@@ -96,6 +96,11 @@ public class Gc {
 
     public static Pair<String, Long> safePointUpdate() {
         LogUtils.info(log, "safe point update task start.");
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        if (!infoSchemaService.prepare()) {
+            Utils.sleep(1000);
+            return safePointUpdate();
+        }
         if (!GcApi.running.compareAndSet(false, true)) {
             return new Pair<>(GcStatus.RUNNING.toString(), 0L);
         }
@@ -673,6 +678,10 @@ public class Gc {
     }
 
     public static void gcDeleteRegion() {
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        if (!infoSchemaService.prepare()) {
+            return;
+        }
         Map<String, String> globalVarMap = InfoSchemaService.root().getGlobalVariables();
         String jobGc = globalVarMap.getOrDefault("job_need_gc", "on");
         if ("off".equalsIgnoreCase(jobGc)) {

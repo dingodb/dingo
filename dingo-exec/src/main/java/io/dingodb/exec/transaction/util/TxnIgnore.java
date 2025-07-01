@@ -17,10 +17,17 @@
 package io.dingodb.exec.transaction.util;
 
 import com.codahale.metrics.Timer;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
@@ -29,6 +36,9 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.params.CommitParam;
 import io.dingodb.exec.transaction.params.PreWriteParam;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Mutation;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
@@ -176,7 +186,7 @@ public class TxnIgnore extends Txn {
                             + Arrays.toString(param.getPrimaryKey()));
                     }
                     preDoneCnt += param.getMutations().size();
-                    result.getValue().forEach((key1, value1) -> this.removeDoneKey(key1, value1, tableId));
+                    result.getValue().forEach((key1, value1) -> this.removeDoneKey(key1, value1, param.getTableId()));
                     param.getMutations().clear();
                     param.addMutation(mutation);
                     param.setPartId(newPartId);
@@ -252,6 +262,26 @@ public class TxnIgnore extends Txn {
             CommonId newPartId = CommonId.decode(Arrays.copyOfRange(keyValue.getKey(), from, from += CommonId.LEN));
             byte[] key = new byte[keyValue.getKey().length - from];
             System.arraycopy(keyValue.getKey(), from , key, 0, key.length);
+            if (tableId.type == CommonId.CommonType.INDEX) {
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+                if (indexTable == null) {
+                    indexTable = (IndexTable) DdlService.root().getTable(tableId);
+                }
+                if (indexTable.indexType.isVector || indexTable.indexType == IndexType.DOCUMENT) {
+                    KeyValueCodec codec = CodecService.getDefault().createKeyValueCodec(
+                        indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(),
+                        indexTable.keyMapping()
+                    );
+                    Object[] decodeKey = codec.decodeKeyPrefix(key);
+                    TupleMapping mapping = TupleMapping.of(new int[]{0});
+                    DingoType dingoType = new LongType(false);
+                    TupleType tupleType = DingoTypeFactory.tuple(new DingoType[]{dingoType});
+                    KeyValueCodec vectorCodec = CodecService.getDefault().createKeyValueCodec(
+                        indexTable.getCodecVersion(), indexTable.version, tupleType, mapping
+                    );
+                    key = vectorCodec.encodeKeyPrefix(new Object[]{decodeKey[0]}, 1);
+                }
+            }
             CommonId partId = param.getPartId();
             if (partId == null) {
                 partId = newPartId;
