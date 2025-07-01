@@ -2398,7 +2398,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .collect(Collectors.toCollection(ArrayList::new)));
         long count = tableDefList.stream().map(c -> c.getName().toUpperCase()).distinct().count();
         if (tableDefList.size() > count) {
-            throw DINGO_RESOURCE.duplicateColumn().ex();
+            throw DINGO_RESOURCE.duplicateIndex().ex();
         }
         return tableDefList;
     }

@@ -129,6 +129,9 @@ public interface DingoResource {
     @BaseMessage("Error 1060 (42S21): Duplicate column names are not allowed in table definition, even if the cases are different")
     ExInst<DingoSqlException> duplicateColumn();
 
+    @BaseMessage("Error 1061 (42000): Duplicate index names are not allowed in table definition")
+    ExInst<DingoSqlException> duplicateIndex();
+
     @BaseMessage("Error 1105 (HY000): Check illegalArgumentException")
     ExInst<DingoSqlException> illegalArgumentException();
 
