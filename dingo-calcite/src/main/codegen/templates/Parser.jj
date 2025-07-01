@@ -5347,12 +5347,20 @@ SqlNode IntervalLiteralOrExpression() :
                 sign, ((SqlNumericLiteral) e).toValue(), intervalQualifier);
         }
     |
+        p = SimpleStringLiteral()
+        intervalQualifier = IntervalQualifier() {
+            return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
+                sign, p, intervalQualifier);
+        }
+    |
         // To keep parsing simple, any expressions besides numeric literal and
         // identifiers must be enclosed in parentheses.
         (
             <LPAREN>
             e = Expression(ExprContext.ACCEPT_SUB_QUERY)
             <RPAREN>
+        |
+            e = UnsignedNumericLiteral()
         |
             e = CompoundIdentifier()
         )
@@ -6608,6 +6616,17 @@ SqlNode BuiltinFunctionCall() :
         <RPAREN> {
             return SqlStdOperatorTable.SUBSTRING.createCall(
                 s.end(this), args);
+        }
+    |
+        <SUBSTRING_INDEX> { s = span(); }
+        <LPAREN>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <COMMA>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <COMMA>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <RPAREN> {
+            return SqlLibraryOperators.SUBSTRING_INDEX.createCall(s.end(this), args);
         }
     |
         <TRIM> {

@@ -227,7 +227,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             SubStringIndexFunFactory.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
-            DingoInferTypes.VARCHAR,
+            InferTypes.VARCHAR_1024,
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.STRING
         );

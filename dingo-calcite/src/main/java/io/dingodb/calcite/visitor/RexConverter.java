@@ -440,7 +440,8 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                     Exprs.CEIL,
                     call.getOperands().get(0).accept(this)
                 );
-            case OTHER_FUNCTION: {
+            case OTHER_FUNCTION:
+            case SUBSTRING_INDEX: {
                 OpExpr opExpr = getFunFromFactory(call);
                 if (opExpr != null) {
                     return opExpr;
