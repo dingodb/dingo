@@ -120,6 +120,9 @@ public class Starter {
         env.setRole(DingoRole.EXECUTOR);
         SchedulerService schedulerService = SchedulerService.getDefault();
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        while (!infoSchemaService.prepare()) {
+            Utils.sleep(5000L);
+        }
         Map<String, String> globalVariables = infoSchemaService.getGlobalVariables();
         String caseTableName = globalVariables.get(LOWER_CASE_TABLE_NAMES);
         if (caseTableName.equals("-1")) {
