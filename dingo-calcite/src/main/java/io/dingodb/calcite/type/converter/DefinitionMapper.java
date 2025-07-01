@@ -229,7 +229,7 @@ public final class DefinitionMapper {
         List<ColumnDefinition> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(ColumnDefinition::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
+            columns.stream().map(ColumnDefinition::getName).collect(Collectors.toList())
         );
     }
 
@@ -238,7 +238,7 @@ public final class DefinitionMapper {
         List<Column> columns = table.getColumns();
         return typeFactory.createStructType(
             columns.stream().map(c -> mapToRelDataType(c, typeFactory)).collect(Collectors.toList()),
-            columns.stream().map(Column::getName).map(NameCaseUtils::convertName).collect(Collectors.toList())
+            columns.stream().map(Column::getName).collect(Collectors.toList())
         );
     }
 
