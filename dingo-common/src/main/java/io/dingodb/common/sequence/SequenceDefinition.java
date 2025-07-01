@@ -42,6 +42,12 @@ public class SequenceDefinition {
                               long start,
                               int cache,
                               boolean cycle) {
+        if (minvalue > maxvalue) {
+            throw new IllegalArgumentException("minvalue cannot be greater than maxvalue.");
+        }
+        if (start < minvalue || start > maxvalue) {
+            throw new IllegalArgumentException("startValue must be within the range of minvalue and maxvalue");
+        }
         this.name = name;
         this.increment = increment;
         this.minvalue = minvalue;
