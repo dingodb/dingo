@@ -102,7 +102,12 @@ public class RangeUtils {
                     subRanges.last().setEndKey(rangeEnd);
                     subRanges.last().setWithEnd(range.isWithEnd());
                 } else {
-                    subRanges.last().setWithEnd(true);
+                    // except first digit
+                    if (ByteArrayUtils.compare(subRanges.last().getEndKey(), rangeEnd, 1) == 0) {
+                        subRanges.last().setWithEnd(range.isWithEnd());
+                    } else {
+                        subRanges.last().setWithEnd(true);
+                    }
                 }
             } else {
                 subRanges.last().setEndKey(rangeEnd);
