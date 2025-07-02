@@ -46,6 +46,8 @@ import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.UnaryOpExpr;
+import io.dingodb.expr.runtime.expr.Val;
+import io.dingodb.expr.runtime.expr.Var;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -688,7 +690,11 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 Object newValue = null;
                 if (sqlExpr != null && sqlExpr.getExpr() instanceof BinaryOpExpr) {
                     Expr operand0 = ((BinaryOpExpr) sqlExpr.getExpr()).getOperand0();
-                    if (operand0 instanceof UnaryOpExpr && !(((UnaryOpExpr) operand0).getOp() instanceof ValuesFun)) {
+                    Expr operand1 = ((BinaryOpExpr) sqlExpr.getExpr()).getOperand1();
+                    if (operand0 instanceof Val && operand1 instanceof Var
+                        || (operand0 instanceof Var && operand1 instanceof Val)
+                        || (operand0 instanceof UnaryOpExpr && !(((UnaryOpExpr) operand0).getOp() instanceof ValuesFun))
+                    ) {
                         newValue = sqlExpr.eval(newTuple);
                     }
                 }
