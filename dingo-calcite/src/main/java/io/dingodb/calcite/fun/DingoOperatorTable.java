@@ -297,14 +297,14 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             DateFun.NAME,
-            ReturnTypes.VARCHAR_2000_NULLABLE,
+            ReturnTypes.DATE,
             DingoInferTypes.TIMESTAMP_VARCHAR1024,
             OperandTypes.or(
                 OperandTypes.TIMESTAMP,
                 OperandTypes.STRING,
                 OperandTypes.DATE
             ),
-            SqlFunctionCategory.STRING
+            SqlFunctionCategory.NUMERIC
         );
 
         // special

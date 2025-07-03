@@ -28,6 +28,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -87,24 +88,28 @@ public class DateFun extends UnaryOp {
 
     @Override
     public Object evalValue(Object value, ExprConfig config) {
-        return date(value);
+        LocalDate date = date(value);
+        if (date == null) {
+            return null;
+        }
+        LocalDateTime t = date.atStartOfDay();
+        return new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
     }
 
-    public static String date(Object value) {
+    public static LocalDate date(Object value) {
         if (value == null) {
             return null;
         }
 
         try {
             if (value instanceof Timestamp) {
-                return ((Timestamp) value).toInstant().atZone(SERVER_ZONE).toLocalDate().toString();
+                return ((Timestamp) value).toInstant().atZone(SERVER_ZONE).toLocalDate();
             }
             if (value instanceof Date) {
                 return new java.util.Date(((Date) value).getTime())
                     .toInstant()
                     .atZone(SERVER_ZONE)
-                    .toLocalDate()
-                    .toString();
+                    .toLocalDate();
             }
             if (value instanceof String) {
                 return parseDate((String) value);
@@ -120,7 +125,7 @@ public class DateFun extends UnaryOp {
      * @param input The input date string
      * @return Date string in standard format (yyyy-MM-dd), null is returned if parsing fails
      */
-    public static String parseDate(String input) {
+    public static LocalDate parseDate(String input) {
         if (input == null || input.trim().isEmpty()) {
             return null;
         }
@@ -131,13 +136,13 @@ public class DateFun extends UnaryOp {
             try {
                 // Try to resolve to LocalDateTime (with time part)
                 LocalDateTime dateTime = LocalDateTime.parse(input, formatter);
-                return dateTime.toLocalDate().toString();
+                return dateTime.toLocalDate();
             } catch (DateTimeParseException ignored) {}
 
             try {
                 // Try to resolve to LocalDate (without the time part)
                 LocalDate date = LocalDate.parse(input, formatter);
-                return date.toString();
+                return date;
             } catch (DateTimeParseException ignored) {}
         }
 
@@ -154,7 +159,7 @@ public class DateFun extends UnaryOp {
                 else if (year >= 70 && year <= 99) year += 1900;
 
                 LocalDate date = LocalDate.of(year, month, day);
-                return date.toString();
+                return date;
             } catch (DateTimeException ignored) {}
         }
 
@@ -163,7 +168,7 @@ public class DateFun extends UnaryOp {
     }
 
     // handles numeric only formats with no delimiters
-    private static String parseNumericFormats(String input) {
+    private static LocalDate parseNumericFormats(String input) {
         try {
             // Check whether it is a pure time string (for example, 12:10:20)
             if (input.matches("^\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
@@ -187,7 +192,7 @@ public class DateFun extends UnaryOp {
                             String[] dayAndTime = parts[2].split(" ");
                             day = Integer.parseInt(dayAndTime[0]);
                             LocalDate date = LocalDate.of(year, month, day);
-                            return date.toString();
+                            return date;
                         } catch (Exception e) {
                             // ignore
                         }
@@ -205,7 +210,7 @@ public class DateFun extends UnaryOp {
                                 month = Integer.parseInt(dateParts[1]);
                                 day = Integer.parseInt(dateParts[2]);
                                 LocalDate date = LocalDate.of(year, month, day);
-                                return date.toString();
+                                return date;
                             } catch (Exception e) {
                                 // ignore
                             }
@@ -218,7 +223,7 @@ public class DateFun extends UnaryOp {
                     month = Integer.parseInt(digits.substring(4, 6));
                     day = Integer.parseInt(digits.substring(6, 8));
                     LocalDate date = LocalDate.of(year, month, day);
-                    return date.toString();
+                    return date;
                 }
 
                 if (len >= 6 && Character.isDigit(input.charAt(0))) {
@@ -229,7 +234,7 @@ public class DateFun extends UnaryOp {
                         day = Integer.parseInt(digits.substring(5, 6));
                         if (len > 6) day = day * 10 + Integer.parseInt(digits.substring(6, 7));
                         LocalDate date = LocalDate.of(year, month, day);
-                        return date.toString();
+                        return date;
                     } catch (Exception e) {
                         // ignore
                     }
@@ -265,7 +270,7 @@ public class DateFun extends UnaryOp {
 
                 // verify and create the date
                 LocalDate date = LocalDate.of(year, month, day);
-                return date.toString();
+                return date;
             }
         } catch (DateTimeException | NumberFormatException | StringIndexOutOfBoundsException e) {
             // ignore all resolution exceptions
