@@ -23,24 +23,22 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-import java.math.BigInteger;
-
-public class SqlBackUpTsoPoint extends SqlAdmin {
-    public long point;
+public class SqlTenantsBackUpTimePoint extends SqlAdmin {
+    public String timeStr;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ADMIN BACK_UP_TSO_POINT", SqlKind.SELECT);
+        new SqlSpecialOperator("ADMIN IS_DELETED_TENANTS BACK_UP_TIME_POINT", SqlKind.SELECT);
 
-    public SqlBackUpTsoPoint(SqlParserPos pos, BigInteger point) {
+    public SqlTenantsBackUpTimePoint(SqlParserPos pos, String timeStr) {
         super(OPERATOR, pos);
-        if (point != null) {
-            this.point = point.longValue();
+        if (timeStr != null) {
+            this.timeStr = timeStr;
         }
     }
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
-        writer.keyword("ADMIN BACK_UP_TSO_POINT");
-        writer.keyword(point + " ");
+        writer.keyword("ADMIN IS_DELETED_TENANTS BACK_UP_TIME_POINT");
+        writer.keyword(timeStr);
     }
 }

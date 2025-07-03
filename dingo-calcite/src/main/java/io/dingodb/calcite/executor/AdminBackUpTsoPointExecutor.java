@@ -17,7 +17,6 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.common.mysql.util.DataTimeUtils;
-import io.dingodb.common.util.Pair;
 import io.dingodb.transaction.api.GcObj;
 import io.dingodb.transaction.api.GcService;
 import io.dingodb.tso.TsoService;

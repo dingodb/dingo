@@ -14,7 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 -->
-
+boolean isDeletedTenants() :
+{
+}
+{
+    <IS_DELETED_TENANTS>  { return true; }
+|
+    { return false; }
+}
 
 SqlAdmin SqlAdmin(): {
   BigInteger txnId;
@@ -42,6 +49,8 @@ SqlAdmin SqlAdmin(): {
   |
    <START_GC>
    { return new SqlStartGc(s.end(this)); }
+  | <IS_DELETED_TENANTS> <BACK_UP_TIME_POINT>  { timeStr = getNextToken().image.toUpperCase().replace("'", ""); }
+  { return new SqlTenantsBackUpTimePoint(s.end(this), timeStr); }
   | <BATCH> <CREATE> <TABLE>
   { return new SqlBatchCreateTable(s.end(this), true); }
   | <CANCEL> <BATCH> <CREATE> <TABLE>  { return new SqlBatchCreateTable(s.end(this), false); }

@@ -59,6 +59,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowTriggers;
 import io.dingodb.calcite.grammar.dql.SqlShowVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowWarnings;
 import io.dingodb.calcite.grammar.dql.SqlStartGc;
+import io.dingodb.calcite.grammar.dql.SqlTenantsBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlTsoToTime;
 import io.dingodb.exec.transaction.base.TransactionType;
 import org.apache.calcite.sql.SqlNode;
@@ -268,6 +269,9 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlTsoToTime) {
             SqlTsoToTime sqlTsoToTime = (SqlTsoToTime) sqlNode;
             return Optional.of(new AdminTsoToTimeExecutor(sqlTsoToTime.point));
+        } else if (sqlNode instanceof SqlTenantsBackUpTimePoint) {
+            SqlTenantsBackUpTimePoint sqlTenantsBackUpTimePoint = (SqlTenantsBackUpTimePoint) sqlNode;
+            return Optional.of(new AdminTenantsBackUpTimePointExecutor(sqlTenantsBackUpTimePoint.timeStr));
         } else {
             return Optional.empty();
         }
