@@ -51,6 +51,9 @@ public final class VariableValidator {
         if (ScopeVariables.immutableVariables.contains(name)) {
             throw new RuntimeException(String.format(ErrorCode.ER_IMMUTABLE_VARIABLES.message, name));
         }
+        if (("SESSION".equals(scope) || "USER".equals(scope)) && ScopeVariables.containsGlobalVariable(name.toLowerCase())) {
+            throw DINGO_RESOURCE.invalidSetGlobalVariable(name).ex();
+        }
         if (name.equalsIgnoreCase("autocommit")
             || name.equalsIgnoreCase("transaction_read_only")
             || name.equalsIgnoreCase("txn_inert_check")

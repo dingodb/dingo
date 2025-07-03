@@ -24,6 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class GcObj {
+    private String tenant;
     private String status;
     private long resolveLockSafePoint;
     private long safePoint;

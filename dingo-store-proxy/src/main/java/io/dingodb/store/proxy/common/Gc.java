@@ -20,6 +20,7 @@ import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -64,6 +65,7 @@ import io.dingodb.transaction.api.GcObj;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -183,6 +185,24 @@ public class Gc {
         throw new RuntimeException("Tenant id:" + TenantConstant.TENANT_ID + " get region map failed.");
     }
 
+    private static List<Region> getRegions(Set<Location> coordinators, long reqTs, Tenant tenant) {
+        Integer retry = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 30
+        );
+        while (retry-- > 0) {
+            try {
+                return Services.coordinatorService(coordinators).getRegionMap(
+                    reqTs, GetRegionMapRequest.builder().tenantId(tenant.getId()).build()
+                ).getRegionmap().getRegions();
+            } catch (Exception e) {
+                LogUtils.warn(log, "Get region map failed, retry times: {}", retry, e);
+            }
+        }
+        throw new RuntimeException("Tenant id:" + tenant.getId() + " get region map failed.");
+    }
+
     public static GcObj startBackUpSafeByPoint(long point, long latestTso) {
         LogUtils.info(log, "back up safe point update task start. latestTso:{}, to point:{}", latestTso, point);
         if (!GcApi.running.compareAndSet(false, true)) {
@@ -290,6 +310,115 @@ public class Gc {
                 .build();
         } catch (Exception e) {
             LogUtils.error(log, "Back up update safe point error, skip this run.", e);
+            throw e;
+        } finally {
+            GcApi.running.set(false);
+        }
+    }
+
+    public static List<GcObj> startTenantsBackUpSafeByPoint(long point, long latestTso) {
+        if (TenantConstant.TENANT_ID != 0L) {
+            throw new RuntimeException("The current tenant " +TenantConstant.TENANT_ID+ " does not have permission");
+        }
+        if (!GcApi.running.compareAndSet(false, true)) {
+            GcObj gcObj = GcObj.builder()
+                .status(GcStatus.GC_TASK_RUNNING.toString())
+                .safePoint(0L)
+                .resolveLockSafePoint(0L)
+                .build();
+            return Collections.singletonList(gcObj);
+        }
+        LogUtils.info(log, "Tenants back up safe point update task start. " +
+            "latestTso:{}, to point:{}", latestTso, point);
+        List<GcObj> gcObs = new ArrayList<>();
+        try {
+            LogUtils.info(log, "Run tenants back up safe point update task.");
+            Set<Location> coordinators = coordinatorSet();
+            List<Object> tenants = InfoSchemaService.root().listTenant()
+                .stream().
+                filter( t -> ((Tenant)t).isDelete())
+                .toList();
+            for (Object tenant: tenants) {
+                long safeTs = point;
+                Tenant te = (Tenant) tenant;
+                List<Region> regions = getRegions(coordinators, latestTso, te);
+                for (Region region : regions) {
+                    long regionId = region.getId();
+                    // skip non txn region
+                    if (region.getDefinition().getRange().getStartKey()[0] != 't') {
+                        continue;
+                    }
+                    LogUtils.info(log, "Back up Tenant id {}  scan {} locks.", te.getId(), regionId);
+                    byte[] startKey = region.getDefinition().getRange().getStartKey();
+                    byte[] endKey = region.getDefinition().getRange().getEndKey();
+                    TxnScanLockResponse scanLockResponse;
+                    do {
+                        LogUtils.info(log, "Back up Tenant id {} scan {} locks range: [{}, {}).", te.getId(),
+                            regionId, toHex(startKey), toHex(endKey));
+                        TxnScanLockRequest req = TxnScanLockRequest.builder()
+                            .startKey(startKey).endKey(endKey).maxTs(safeTs).limit(1024).build();
+                        if (isIndexRegion(region)) {
+                            scanLockResponse = indexRegionService(regionId).txnScanLock(latestTso, req);
+                        } else if (isDocumentRegion(region)) {
+                            scanLockResponse = documentService(regionId).txnScanLock(latestTso, req);
+                        } else {
+                            scanLockResponse = storeRegionService(regionId).txnScanLock(latestTso, req);
+                        }
+                        if (scanLockResponse.getLocks() != null && !scanLockResponse.getLocks().isEmpty()) {
+                            safeTs = resolveLock(safeTs, latestTso, scanLockResponse.getLocks(), coordinators, region);
+                        }
+                        if (scanLockResponse.isHasMore()) {
+                            startKey = scanLockResponse.getEndKey();
+                        } else {
+                            break;
+                        }
+                    }
+                    while (true);
+                }
+                safeTs = safeTs - 1;
+                LogUtils.info(log, "Back up Tenant id {} Update safe point to safeTs: {}, latestTso: {}",
+                    te.getId(), safeTs, latestTso);
+
+                GetGCSafePointRequest.GetGCSafePointRequestBuilder <?, ?> getBuilder = GetGCSafePointRequest.builder();
+                long safePoint;
+                getBuilder.getAllTenant(true);
+                GetGCSafePointRequest getGCSafePointRequest = getBuilder.build();
+                GetGCSafePointResponse gcSafePoint = Services.coordinatorService(coordinators).getGCSafePoint(
+                    latestTso, getGCSafePointRequest
+                );
+                Map<Long, Long> tenantSafePoints = gcSafePoint.getTenantSafePoints();
+                safePoint = tenantSafePoints.get(te.getId());
+                if (safePoint > safeTs) {
+                    throw new RuntimeException("Tenant id: " + te.getId() + " gcSafePoint: "
+                        + safePoint + " is greater than resolveLockSafePoint: " + safeTs);
+                }
+                Map<Long, Long> tenantResolveLockSafePoints = gcSafePoint.getTenantResolveLockSafePoints();
+                long resolveLockSafePoint = tenantResolveLockSafePoints.get(te.getId());
+                if (resolveLockSafePoint > safeTs) {
+                    throw new RuntimeException("The currently calculated tenant id: " + te.getId() +
+                        " resolveLockSafePoint: " + safeTs + " is less than coordinator's resolveLockSafePoint: "
+                        + resolveLockSafePoint);
+                }
+
+                UpdateGCSafePointRequest.UpdateGCSafePointRequestBuilder<?, ?> builder
+                    = UpdateGCSafePointRequest.builder();
+                builder.tenantResolveLockSafePoints(Collections.singletonMap(te.getId(), safeTs));
+                UpdateGCSafePointRequest request = builder.build();
+                Services.coordinatorService(coordinators).updateGCSafePoint(
+                    latestTso, request
+                );
+                gcObs.add(
+                    GcObj.builder()
+                        .tenant(String.valueOf(te.getId()))
+                        .status(GcStatus.FINISH.toString())
+                        .safePoint(safePoint)
+                        .resolveLockSafePoint(safeTs)
+                    .build()
+                );
+            }
+            return gcObs;
+        } catch (Exception e) {
+            LogUtils.error(log, "Tenants back up update safe point error, skip this run.", e);
             throw e;
         } finally {
             GcApi.running.set(false);

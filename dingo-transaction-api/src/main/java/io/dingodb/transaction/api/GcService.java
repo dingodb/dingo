@@ -18,6 +18,8 @@ package io.dingodb.transaction.api;
 
 import io.dingodb.common.util.Pair;
 
+import java.util.List;
+
 public interface GcService {
 
     static GcService getDefault() {
@@ -29,6 +31,8 @@ public interface GcService {
     Pair<String, Long> startSafePointUpdate();
 
     GcObj startBackUpSafeByPoint(long point, long latestTso);
+
+    List<GcObj> startTenantsBackUpSafeByPoint(long point, long latestTso);
 
     void gcDeleteRegion();
 }

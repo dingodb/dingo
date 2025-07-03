@@ -1,0 +1,90 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.dingodb.calcite.executor;
+
+import io.dingodb.common.mysql.util.DataTimeUtils;
+import io.dingodb.transaction.api.GcObj;
+import io.dingodb.transaction.api.GcService;
+import io.dingodb.tso.TsoService;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+@Slf4j
+public class AdminTenantsBackUpTimePointExecutor extends QueryExecutor {
+
+    public static final List<String> COLUMNS = Arrays.asList(
+        "TENANT_ID", "STATUS", "RESOLVE_LOCK_SAFE_POINT", "RESOLVE_LOCK_SAFE_TIME", "GC_SAFE_POINT", "GC_SAFE_POINT_TIME"
+    );
+
+    public static final int INDEX_TENANT = 0;
+    public static final int INDEX_STATUS = 1;
+
+    public static final int INDEX_RESOLVE_TSO = 2;
+
+    public static final int INDEX_RESOLVE_TIME = 3;
+
+    public static final int INDEX_SAFE_TSO = 4;
+
+    public static final int INDEX_SAFE_TIME = 5;
+
+    @Getter
+    private final String timeStr;
+
+    public AdminTenantsBackUpTimePointExecutor(String timeStr) {
+        this.timeStr = timeStr;
+    }
+
+    @Override
+    public Iterator getIterator() {
+        long time  = DataTimeUtils.parseDate(timeStr);
+        long point = TsoService.getDefault().tso(time);
+        long latestTso = TsoService.getDefault().tso();
+        if (point > latestTso) {
+            throw new RuntimeException("The specified time:"+ timeStr +" is greater than the " +
+                "current latest tso:" + latestTso);
+        }
+        List<GcObj> gcObs = GcService.getDefault().startTenantsBackUpSafeByPoint(point, latestTso);
+        List<Object[]> gcColumns = new ArrayList<>();
+        for (GcObj gcObj: gcObs) {
+            Object[] objects = new Object[COLUMNS.size()];
+            objects[INDEX_TENANT] = gcObj.getTenant();
+            objects[INDEX_STATUS] = gcObj.getStatus();
+            long tsoValue = gcObj.getResolveLockSafePoint();
+            objects[INDEX_RESOLVE_TSO] = tsoValue;
+            long timestamp = TsoService.getDefault().tsoToTimestamp(tsoValue);
+            String timeStr = DataTimeUtils.longToTimeString(timestamp);
+            objects[INDEX_RESOLVE_TIME] = timeStr;
+            long safePoint = gcObj.getSafePoint();
+            objects[INDEX_SAFE_TSO] = safePoint;
+            long safeTime = TsoService.getDefault().tsoToTimestamp(safePoint);
+            String safeTimeStr = DataTimeUtils.longToTimeString(safeTime);
+            objects[INDEX_SAFE_TIME] = safeTimeStr;
+            gcColumns.add(objects);
+        }
+        return gcColumns.iterator();
+    }
+
+    @Override
+    public List<String> columns() {
+        return COLUMNS;
+    }
+}

@@ -40,5 +40,6 @@ public class SqlBackUpTimePoint extends SqlAdmin {
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
         writer.keyword("ADMIN BACK_UP_TIME_POINT");
+        writer.keyword(timeStr);
     }
 }

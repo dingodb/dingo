@@ -74,6 +74,7 @@ import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
 import io.dingodb.calcite.grammar.dql.SqlSelect;
 import io.dingodb.calcite.grammar.dql.SqlShow;
 import io.dingodb.calcite.grammar.dql.SqlStartGc;
+import io.dingodb.calcite.grammar.dql.SqlTenantsBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlTsoToTime;
 import io.dingodb.calcite.meta.DingoRelMetadataProvider;
 import io.dingodb.calcite.program.DecorrelateProgram;
@@ -493,7 +494,8 @@ public class DingoParser {
                 || sqlNode instanceof SqlStartGc
                 || sqlNode instanceof SqlBackUpTimePoint
                 || sqlNode instanceof SqlBackUpTsoPoint
-                || sqlNode instanceof SqlTsoToTime;
+                || sqlNode instanceof SqlTsoToTime
+                || sqlNode instanceof SqlTenantsBackUpTimePoint;
         }
     }
 

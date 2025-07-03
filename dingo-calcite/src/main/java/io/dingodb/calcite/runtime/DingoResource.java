@@ -91,6 +91,9 @@ public interface DingoResource {
     @BaseMessage("Error 1231(42000): Variable ''{0}'' can not be set to the value ''{1}''")
     ExInst<DingoSqlException> invalidVariableArg(String a0, String a1);
 
+    @BaseMessage("Error 1229(HY000): Variable ''{0}'' is a GLOBAL variable and should be set with SET GLOBAL")
+    ExInst<DingoSqlException> invalidSetGlobalVariable(String a0);
+
     @BaseMessage("Illegal column name definition")
     ExInst<DingoSqlException> invalidColumn();
 

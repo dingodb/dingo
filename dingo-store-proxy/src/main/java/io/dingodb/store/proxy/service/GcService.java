@@ -23,6 +23,8 @@ import io.dingodb.transaction.api.GcObj;
 import io.dingodb.transaction.api.GcServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 public class GcService implements io.dingodb.transaction.api.GcService {
     @AutoService(GcServiceProvider.class)
@@ -50,6 +52,10 @@ public class GcService implements io.dingodb.transaction.api.GcService {
     @Override
     public GcObj startBackUpSafeByPoint(long point, long latestTso) {
         return Gc.startBackUpSafeByPoint(point, latestTso);
+    }
+
+    public List<GcObj> startTenantsBackUpSafeByPoint(long point, long latestTso) {
+        return Gc.startTenantsBackUpSafeByPoint(point, latestTso);
     }
 
     @Override
