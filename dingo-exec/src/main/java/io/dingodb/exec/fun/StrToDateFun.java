@@ -74,17 +74,63 @@ public class StrToDateFun extends BinaryOp {
     }
 
     public static Date strToDate(String dateString, String formatString) {
-        // Try multiple mode analysis
+        if (dateString == null || formatString == null) {
+            throw new IllegalArgumentException("Date string and format string must not be null");
+        }
+
         for (int mode = 0; mode < 4; mode++) {
             try {
                 DateTimeFormatter formatter = getOrCreateFormatter(formatString, mode);
-                TemporalAccessor temporal = formatter.parse(dateString);
-                return new java.sql.Date(toDate(temporal).getTime());
+                try {
+                    LocalDateTime t = LocalDate.parse(dateString, formatter).atStartOfDay();
+                    Date date = new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
+                    return new java.sql.Date(adjustDateForTwoDigitYear(date, formatString).getTime());
+                } catch (DateTimeParseException ignored) {
+                    try {
+                        LocalDateTime t = LocalTime.parse(dateString, formatter).atDate(LocalDate.of(1970, 1, 1));
+                        Date date = new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
+                        return new java.sql.Date(adjustDateForTwoDigitYear(date, formatString).getTime());
+                    } catch (DateTimeParseException ignored2) {
+                        LocalDateTime t = LocalDateTime.parse(dateString, formatter);
+                        Date date = new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
+                        return new java.sql.Date(adjustDateForTwoDigitYear(date, formatString).getTime());
+                    }
+                }
             } catch (DateTimeParseException ignored) {
                 // ignored
             }
         }
         throw new DateTimeParseException("Unable to parse date string: " + dateString, dateString, 0);
+    }
+
+    private static boolean containsUnescapedY(String formatString) {
+        for (int i = 0; i < formatString.length(); i++) {
+            char c = formatString.charAt(i);
+            if (c == '%') {
+                if (i + 1 < formatString.length()) {
+                    char next = formatString.charAt(i + 1);
+                    if (next == 'y') {
+                        return true;
+                    } else if (next == '%') {
+                        i++;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Date adjustDateForTwoDigitYear(Date date, String formatString) {
+        if (containsUnescapedY(formatString)) {
+            Instant instant = date.toInstant();
+            LocalDateTime ldt = LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+            int year = ldt.getYear();
+            if (year >= 2070 && year <= 2099) {
+                ldt = ldt.minusYears(100);
+                return Date.from(ldt.toInstant(ZoneOffset.UTC));
+            }
+        }
+        return date;
     }
 
     private static DateTimeFormatter getOrCreateFormatter(String formatString, int mode) {
@@ -160,36 +206,6 @@ public class StrToDateFun extends BinaryOp {
 
     private static boolean isDateTimePatternLetter(char c) {
         return "GyYMwdDEaHkKhmsSzZX".indexOf(c) >= 0;
-    }
-
-    private static Date toDate(TemporalAccessor temporal) {
-        try {
-            // Try to parse to LocalDateTime
-            if (temporal.isSupported(ChronoField.EPOCH_DAY) && temporal.isSupported(ChronoField.NANO_OF_DAY)) {
-                LocalDateTime t = LocalDateTime.from(temporal);
-                ZonedDateTime zonedDateTime = ZonedDateTime.of(t, ZoneOffset.UTC);
-                LocalDateTime localDateTime = zonedDateTime.toLocalDate().atStartOfDay();
-                return new Date(localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
-            }
-
-            // Try to parse to LocalDate
-            if (temporal.isSupported(ChronoField.EPOCH_DAY)) {
-                return new Date(LocalDate.from(temporal).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli());
-            }
-
-            // Try to parse to LocalTime
-            if (temporal.isSupported(ChronoField.NANO_OF_DAY)) {
-                LocalTime time = LocalTime.from(temporal);
-                return new Date(time.atDate(LocalDate.of(1970, 1, 1)).toInstant(ZoneOffset.UTC).toEpochMilli());
-            }
-        } catch (DateTimeException e) {
-            // Fallback to Instant parsing
-            try {
-                return Date.from(Instant.from(temporal));
-            } catch (DateTimeException ignored) {}
-        }
-
-        throw new DateTimeException("Unsupported temporal type");
     }
 
     @Override
