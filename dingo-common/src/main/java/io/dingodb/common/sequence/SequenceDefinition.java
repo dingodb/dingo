@@ -42,6 +42,9 @@ public class SequenceDefinition {
                               long start,
                               int cache,
                               boolean cycle) {
+        if (maxvalue == -1) {
+            throw new IllegalArgumentException("maxvalue cannot be null.");
+        }
         if (minvalue > maxvalue) {
             throw new IllegalArgumentException("minvalue cannot be greater than maxvalue.");
         }
