@@ -95,28 +95,16 @@ public class MysqlCommands {
             throw new RuntimeException(e);
         }
         AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
-        LogUtils.debug(log, "dingo connection:{}, receive sql:{}", mysqlConnection.getConnection().toString(), sql);
+        if (log.isDebugEnabled()) {
+            LogUtils.debug(log, "dingo connection:{}, receive sql:{}", mysqlConnection.getConnection().toString(), sql);
+        }
         if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
                 characterSet);
             return;
         }
-        if (sql.startsWith(";/* DTS-writer")) {
-            String split = ";/*";
-            String[] sqls = sql.split(split);
-            for (String splitSql : sqls) {
-                try {
-                    if (splitSql.startsWith("* DTS-writer")) {
-                        splitSql = "/" + splitSql;
-                    }
-                    executeSingleQuery(splitSql, packetId, mysqlConnection);
-                } catch (Exception e) {
-                    LogUtils.error(log, e.getMessage() + ",sql:" + splitSql, e);
-                }
-            }
-        } else {
-            executeSingleQuery(sql, packetId, mysqlConnection);
-        }
+
+        executeSingleQuery(sql, packetId, mysqlConnection);
     }
 
     private static boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {

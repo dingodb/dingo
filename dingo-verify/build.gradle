@@ -7,7 +7,7 @@ plugins {
 dependencies {
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
-    api group: 'io.dingodb', name: 'calcite-core', version: '1.33.0-SNAPSHOT'
+    api group: 'io.dingodb', name: 'calcite-core', version: 'calcite'.v()
     api group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
     implementation project(":dingo-common")
     implementation project(":dingo-net-api")
