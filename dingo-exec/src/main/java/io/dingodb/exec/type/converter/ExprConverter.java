@@ -29,6 +29,9 @@ public class ExprConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value ? 1 : 0;
+        }
         return ((Number) value).intValue();
     }
 
