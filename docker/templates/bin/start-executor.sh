@@ -52,7 +52,7 @@ if [ -d "${EMBEDDED_JDK}" ]; then
     PATH="${JAVA_HOME}/bin:${PATH}"
 fi
 
-nohup ${JAVA_HOME}/bin/java ${JAVA_OPTS} \
+${JAVA_HOME}/bin/java ${JAVA_OPTS} \
      --add-opens java.base/java.util=ALL-UNNAMED \
      --add-opens java.base/java.lang=ALL-UNNAMED \
      -Dlogback.configurationFile=file:${ROOT}/conf/logback-executor.xml \
