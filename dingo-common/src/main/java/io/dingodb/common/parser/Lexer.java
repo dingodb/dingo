@@ -110,7 +110,7 @@ public class Lexer {
     private boolean lexSingleColon = false;
 
     protected final Charset charset;
-    protected boolean meetPolarxOriginSql = false;
+    protected boolean meetDingoOriginSql = false;
 
     public Lexer(ByteString input) {
         this(input, (CommentHandler) null);
@@ -892,8 +892,8 @@ public class Lexer {
         for (; ; ) {
             if (isWhitespace(ch)) {
                 if (ch == '\n') {
-                    if (meetPolarxOriginSql) {
-                        meetPolarxOriginSql = false;
+                    if (meetDingoOriginSql) {
+                        meetDingoOriginSql = false;
                         token = EOF;
                         return;
                     }
@@ -1007,7 +1007,7 @@ public class Lexer {
                     }
                     return;
                 case '#':
-                    scanSharp();if (meetPolarxOriginSql) {
+                    scanSharp();if (meetDingoOriginSql) {
                     ch = charAt(pos);
                     continue;
                 }
@@ -3167,8 +3167,6 @@ public class Lexer {
 
     /**
      * Length of special character, e.g. full-width whitespace or identifier character
-     * <p/>
-     * Must be set if <code>isIdentifierChar<code/>, <code>isFirstIdentifierChar<code/> or <code>isWhitespace</code>
      * returns true
      */
     protected int nchar = 1;

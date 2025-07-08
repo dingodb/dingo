@@ -37,7 +37,7 @@ public class MySqlLexer extends Lexer {
     public static SymbolTable quoteTable = new SymbolTable(8192);
 
     public final static Keywords DEFAULT_MYSQL_KEYWORDS;
-    private final static String POLARX_ORIGIN_SQL_COMMENT_PREFIX = "# POLARX_ORIGIN_SQL=";
+    private final static String DINGO_ORIGIN_SQL_COMMENT_PREFIX = "# DINGO_ORIGIN_SQL=";
 
     static {
         Map<String, Token> map = new HashMap<String, Token>();
@@ -121,9 +121,9 @@ public class MySqlLexer extends Lexer {
             return;
         }
 
-        /*if (isPolarxOriginSqlComment()) {
-            super.meetPolarxOriginSql = true;
-            pos += POLARX_ORIGIN_SQL_COMMENT_PREFIX.length();
+        /*if (isDingoOriginSqlComment()) {
+            super.meetDingoOriginSql = true;
+            pos += DINGO_ORIGIN_SQL_COMMENT_PREFIX.length();
             return;
         }*/
 
@@ -845,7 +845,7 @@ public class MySqlLexer extends Lexer {
         return super.isIdentifierChar(c);
     }
 
-    private boolean isPolarxOriginSqlComment() {
-        return text.startsWith(POLARX_ORIGIN_SQL_COMMENT_PREFIX, pos);
+    private boolean isDingoOriginSqlComment() {
+        return text.startsWith(DINGO_ORIGIN_SQL_COMMENT_PREFIX, pos);
     }
 }
