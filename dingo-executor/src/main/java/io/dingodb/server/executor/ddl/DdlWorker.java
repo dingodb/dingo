@@ -1290,7 +1290,7 @@ public class DdlWorker {
         if (error != null) {
             return error;
         }
-        if (job.getActionType() == ActionType.ActionRecoverTable) {
+        if (job.getActionType() == ActionType.ActionRecoverTable || job.getActionType() == ActionType.ActionRecoverSchema) {
             finishRecoverTable(job);
         }
         boolean updateRawArgs = job.getActionType() != ActionType.ActionAddPrimaryKey || job.isCancelled();

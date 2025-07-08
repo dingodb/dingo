@@ -3167,8 +3167,6 @@ public class Lexer {
 
     /**
      * Length of special character, e.g. full-width whitespace or identifier character
-     * <p/>
-     * Must be set if <code>isIdentifierChar<code/>, <code>isFirstIdentifierChar<code/> or <code>isWhitespace</code>
      * returns true
      */
     protected int nchar = 1;
