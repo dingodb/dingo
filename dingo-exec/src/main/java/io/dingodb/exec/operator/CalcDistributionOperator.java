@@ -16,26 +16,252 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.config.DingoConfiguration;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
+import io.dingodb.common.util.Utils;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
+import io.dingodb.meta.MetaService;
 import io.dingodb.partition.PartitionService;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class CalcDistributionOperator extends IteratorSourceOperator {
     public static final CalcDistributionOperator INSTANCE = new CalcDistributionOperator();
 
     private CalcDistributionOperator() {
+    }
+
+    private static NavigableSet<RangeDistribution> getRangeDistributions(@NonNull DistributionSourceParam param) {
+        PartitionService ps = param.getPs();
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistribution
+            = param.getRangeDistribution();
+        LogUtils.trace(log,
+            "start = {}, end = {}, PartitionService = {}, RangeDistribution = {}",
+            Arrays.toString(param.getStartKey()),
+            Arrays.toString(param.getEndKey()),
+            ps.getClass().getCanonicalName(),
+            rangeDistribution.entrySet().stream()
+                .map(e -> e.getKey().encodeToString() + ": " + e.getValue())
+                .collect(Collectors.joining("\n"))
+        );
+        NavigableSet<RangeDistribution> distributions;
+        if (param.getFilter() != null || param.isNotBetween()) {
+            if (param.isLogicalNot() || param.isNotBetween()) {
+                distributions = new TreeSet<>(RangeUtils.rangeComparator(1));
+                distributions.addAll(ps.calcPartitionRange(
+                    null,
+                    param.getStartKey(),
+                    true,
+                    !param.isWithStart(),
+                    param.getRangeDistribution()));
+                distributions.addAll(ps.calcPartitionRange(
+                    param.getEndKey(),
+                    null,
+                    !param.isWithEnd(),
+                    true,
+                    param.getRangeDistribution()));
+                return distributions;
+            }
+        }
+        return ps.calcPartitionRange(
+            param.getStartKey(),
+            param.getEndKey(),
+            param.isWithStart(),
+            param.isWithEnd(),
+            rangeDistribution
+        );
+    }
+
+    @Override
+    public boolean push(Context context, @NonNull Vertex vertex) {
+        DistributionSourceParam param = vertex.getParam();
+        Set<RangeDistribution> distributions = getRangeDistributions(param);
+        if (log.isTraceEnabled()) {
+            if (distributions.isEmpty()) {
+                LogUtils.trace(
+                    log,
+                    "No data distribution from ({}) to ({})",
+                    Arrays.toString(param.getStartKey()),
+                    Arrays.toString(param.getEndKey())
+                );
+            }
+        }
+        boolean parallel = Utils.parallel(param.getKeepOrder());
+        boolean flag = (!parallel || distributions.size() == 1);
+        if (flag) {
+            pushSerialExecution(context, vertex, distributions, param);
+        } else {
+            try {
+                int concurrencyLevel = param.getConcurrencyLevel();
+                Set<CompletableFuture<Boolean>> futures = new HashSet<>(concurrencyLevel);
+                for (RangeDistribution distribution : distributions) {
+                    CompletableFuture<Boolean> future = push(context, vertex, param, distribution);
+                    futures.add(future);
+                    if (futures.size() >= concurrencyLevel) {
+                        // Wait for all the current futures to complete
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                        futures.clear();
+                    }
+                }
+                // Wait for any remaining futures to complete
+                if (!futures.isEmpty()) {
+                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                }
+            } catch (CompletionException exception) {
+                if (exception.getCause() instanceof LockWaitException) {
+                    throw new LockWaitException("Lock wait");
+                }
+                throw exception;
+            }
+        }
+        return false;
+    }
+
+    public static void pushSerialExecution(Context context,
+                                           @NonNull Vertex vertex,
+                                           Set<RangeDistribution> distributions, DistributionSourceParam param) {
+        Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        for (RangeDistribution distribution : distributions) {
+            try {
+                if (log.isTraceEnabled()) {
+                    LogUtils.trace(log, "Push distribution: {}", distribution);
+                }
+                context.setDistribution(distribution);
+                for (Edge edge : vertex.getOutList()) {
+                    if (!edge.transformToNext(context, param.getKeyTuple())) {
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                if (e instanceof RegionSplitException
+                    || (e.getMessage() != null && e.getMessage().contains("epoch is not match, region_epoch"))) {
+                    int retry;
+                    if (param.getSplitRetry().containsKey(distribution.getId())) {
+                        int retryCnt = param.getSplitRetry().get(distribution.getId());
+                        retry = retryCnt + 1;
+                    } else {
+                        retry = 1;
+                    }
+                    if (retry > 10) {
+                        MetaService.root().invalidateDistribution(param.getTd().getTableId());
+                    }
+                    if (retry > maxRetry) {
+                        LogUtils.error(log, e.getMessage(), e);
+                        throw new RuntimeException("The number of split retries exceeds the maximum limit");
+                    }
+                    param.getSplitRetry().put(distribution.getId(), retry);
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> tmpDistribution =
+                        MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                    DistributionSourceParam copyParam = param.copy(
+                        tmpDistribution,
+                        distribution.getStartKey(),
+                        distribution.getEndKey(),
+                        distribution.isWithStart(),
+                        distribution.isWithEnd());
+                    NavigableSet<RangeDistribution> rangeDistributions = getRangeDistributions(copyParam);
+                    pushSerialExecution(context, vertex, rangeDistributions, param);
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    private static CompletableFuture<Boolean> push(
+        Context context,
+        Vertex vertex,
+        DistributionSourceParam param,
+        RangeDistribution distribution
+    ) {
+        Supplier<Boolean> supplier = () -> {
+            if (log.isTraceEnabled()) {
+                LogUtils.trace(log, "Push distribution: {}", distribution);
+            }
+            Context copyContext = context.copy();
+            copyContext.setDistribution(distribution);
+            for (Edge edge : vertex.getOutList()) {
+                if (!edge.transformToNext(copyContext, param.getKeyTuple())) {
+                    break;
+                }
+            }
+            return false;
+        };
+        Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        return CompletableFuture.supplyAsync(
+                supplier, Executors.executor(
+                    "operator-" + vertex.getTask().getJobId() + "-"
+                        + vertex.getTask().getId() + "-" + vertex.getId() + "-" + distribution.getId()))
+            .exceptionally(ex -> {
+                if (ex != null) {
+                    if (ex.getCause() instanceof RegionSplitException
+                        || (ex.getMessage() != null && ex.getMessage().contains("epoch is not match, region_epoch"))) {
+                        int retry;
+                        if (param.getSplitRetry().containsKey(distribution.getId())) {
+                            int retryCnt = param.getSplitRetry().get(distribution.getId());
+                            retry = retryCnt + 1;
+                        } else {
+                            retry = 1;
+                        }
+                        if (retry > 10) {
+                            MetaService.root().invalidateDistribution(param.getTd().getTableId());
+                        }
+                        if (retry > maxRetry) {
+                            LogUtils.error(log, ex.getMessage(), ex);
+                            throw new RuntimeException("The number of split retries exceeds the maximum limit");
+                        }
+                        param.getSplitRetry().put(distribution.getId(), retry);
+                        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> tmpDistribution =
+                            MetaService.root().getRangeDistribution(param.getTd().getTableId());
+                        DistributionSourceParam copyParam = param.copy(
+                            tmpDistribution,
+                            distribution.getStartKey(),
+                            distribution.getEndKey(),
+                            distribution.isWithStart(),
+                            distribution.isWithEnd());
+                        NavigableSet<RangeDistribution> rangeDistributions = getRangeDistributions(copyParam);
+                        Set<CompletableFuture<Boolean>> futures = new HashSet<>(param.getConcurrencyLevel());
+                        for (RangeDistribution rangeDistribution : rangeDistributions) {
+                            futures.add(push(context, vertex, param, rangeDistribution));
+                        }
+                        if (!futures.isEmpty()) {
+                            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                        }
+                    } else if (ex.getCause() instanceof LockWaitException) {
+                        LogUtils.error(log, "jobId:" + vertex.getTask().getJobId() + ", taskId:"
+                            + vertex.getTask().getId() + ", vertexId:" + vertex.getId() + ", error:", ex);
+                        throw new LockWaitException("Lock wait");
+                    } else {
+                        throw new RuntimeException(ex);
+                    }
+                }
+                return true;
+            });
     }
 
     @Override
