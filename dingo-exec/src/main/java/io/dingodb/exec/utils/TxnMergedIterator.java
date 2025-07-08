@@ -65,7 +65,7 @@ public class TxnMergedIterator implements Iterator<Object[]> {
             byte[] key1 = nextLocal.getKey();
             byte[] key2 = nextKv.getKey();
             int code = key1[key1.length - 2];
-            if (code == Op.NONE.getCode()) {
+            if (code == Op.NONE.getCode() || code == Op.ROLLBACK.getCode()) {
                 nextLocal = getNextValue(localKVIterator);
                 continue;
             }

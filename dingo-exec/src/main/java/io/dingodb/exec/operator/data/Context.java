@@ -41,7 +41,8 @@ public class Context {
 
     private boolean isDuplicateKey;
     // OPTIMISTIC select... for update
-    private boolean isShow;
+    @Builder.Default
+    private boolean isShow = true;
 
     private boolean isReplaceIntoKey;
 

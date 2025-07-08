@@ -266,7 +266,7 @@ public class OptimisticTransaction extends BaseTransaction {
             Object[] next = transform.next();
             TxnLocalData txnLocalData = (TxnLocalData) next[0];
 
-            //check whether having same patition id.
+            //check whether having same partition id.
             partIdSet.add(txnLocalData.getPartId());
             if(partIdSet.size() > 1) {
                 forSamePart = false;
@@ -286,8 +286,11 @@ public class OptimisticTransaction extends BaseTransaction {
 
         if(forSamePart) {
             //commit 1pc.
-	        this.primaryKeyPreWrite.compareAndSet(false, true);
-            return txnOnePCCommit(mutations);
+            boolean result = txnOnePCCommit(mutations);
+            if(result) {
+                this.primaryKeyPreWrite.compareAndSet(false, true);
+            }
+            return result;
         } else {
             return false;
         }

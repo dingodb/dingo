@@ -239,11 +239,13 @@ public class ForUpdateOperator extends SoleOutOperator {
                     CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.LOCK, deadLockKeyBytes
                 );
                 localStore.put(new KeyValue(rollBackKey, null));
-                @Nullable Object[] finalTuple1 = tuple;
-                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
+//                @Nullable Object[] finalTuple1 = tuple;
+//                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple1));
+                return context.isShow() && vertex.getSoleEdge().transformToNext(context, tuple);
             } else {
-                @Nullable Object[] finalTuple2 = tuple;
-                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple2));
+                return context.isShow() && vertex.getSoleEdge().transformToNext(context, tuple);
+//                @Nullable Object[] finalTuple2 = tuple;
+//                vertex.getOutList().forEach(o -> o.transformToNext(context, finalTuple2));
             }
         } else {
             // Optimistic
@@ -263,16 +265,15 @@ public class ForUpdateOperator extends SoleOutOperator {
             byte[] dataKey = encode(
                 CommonId.CommonType.TXN_CACHE_DATA,
                 key,
-                Op.PUT.getCode(),
+                context.isShow() ? Op.PUT.getCode() : Op.ROLLBACK.getCode(),
                 len,
                 txnIdByte,
                 tableIdByte,
                 partIdByte);
             keyValue.setKey(dataKey);
             localStore.put(keyValue);
-            return !context.isShow() && vertex.getSoleEdge().transformToNext(context, tuple);
+            return context.isShow() && vertex.getSoleEdge().transformToNext(context, tuple);
         }
-        return true;
     }
 
     @Override
