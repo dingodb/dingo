@@ -23,7 +23,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -68,6 +72,10 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     private long updateScanCount;
 
+    @JsonProperty("relOp")
+    private RelOp relOp;
+    public final DingoRelConfig config;
+
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -84,7 +92,8 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
         @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
-        @JsonProperty("updateLimit") long updateLimit
+        @JsonProperty("updateLimit") long updateLimit,
+        RelOp relOp
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -95,12 +104,18 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         this.updatePrimaryKey =  updatePrimaryKey;
         this.updateLimit = updateLimit;
         this.updateScanCount = 0L;
+        this.relOp = relOp;
+        this.config = new DingoRelConfig();
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        // updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        relOp = relOp.compile(new DingoCompileContext(
+            (TupleType) schema.getType(),
+            (TupleType) vertex.getParasType().getType()
+        ), config);
     }
 
     public void inc() {

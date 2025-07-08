@@ -43,6 +43,8 @@ import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
+import io.dingodb.expr.rel.PipeOp;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -173,8 +175,14 @@ public class PessimisticLockOperator extends SoleOutOperator {
             if (param.isUpdatePrimaryKey() && context.getIndexId() == null) {
                 TupleMapping mapping = param.getMapping();
                 List<SqlExpr> updates = param.getUpdates();
+                RelOp relOp = param.getRelOp();
                 for (int i = 0; i < mapping.size(); ++i) {
-                    Object newValue = updates.get(i).eval(tuple);
+                    Object newValue;
+                    if (relOp != null) {
+                        newValue = ((Object[]) ((PipeOp) relOp).put(tuple))[i];
+                    } else {
+                        newValue = updates.get(i).eval(tuple);
+                    }
                     int index = mapping.get(i);
                     if ((newTuple[index] == null && newValue != null)
                         || (newTuple[index] != null && !newTuple[index].equals(newValue))

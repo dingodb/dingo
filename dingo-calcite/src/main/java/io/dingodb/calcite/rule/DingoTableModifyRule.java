@@ -20,7 +20,11 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.Convention;
@@ -65,10 +69,17 @@ public class DingoTableModifyRule extends ConverterRule {
     @Override
     public @Nullable RelNode convert(RelNode rel) {
         LogicalTableModify modify = (LogicalTableModify) rel;
+        RelOp relOp = null;
         switch (modify.getOperation()) {
             case UPDATE:
                 // Only support update in part.
                 checkUpdateInPart(modify);
+                Expr[] exprs = modify.getSourceExpressionList().stream()
+                    .map(RexConverter::convert)
+                    .toArray(Expr[]::new);
+                relOp = RelOpBuilder.builder()
+                    .project(exprs)
+                    .build();
                 break;
             case INSERT:
             case DELETE:
@@ -90,7 +101,8 @@ public class DingoTableModifyRule extends ConverterRule {
             modify.getOperation(),
             modify.getUpdateColumnList(),
             modify.getSourceExpressionList(),
-            modify.isFlattened()
+            modify.isFlattened(),
+            relOp
         );
     }
 }
