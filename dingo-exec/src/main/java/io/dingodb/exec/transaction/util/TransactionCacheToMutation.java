@@ -220,6 +220,11 @@ public final class TransactionCacheToMutation {
                     .build();
             }
             key = CODEC.encodeKeyPrefix(new Object[]{longId}, 1);
+        } else {
+            // for optimistic transaction for update
+            if (op == Op.ROLLBACK.getCode()) {
+                op = Op.DELETE.getCode();
+            }
         }
         return new Mutation(Op.forNumber(op), key, value, forUpdateTs, vectorWithId, documentWithId);
     }

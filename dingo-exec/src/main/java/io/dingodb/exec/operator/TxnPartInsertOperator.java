@@ -636,6 +636,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 }
             }
             localStore.delete(deleteKey);
+            // for optimistic transaction for update
+            byte[] rollbackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.ROLLBACK, deleteKey);
+            if (context.getIndexId() == null && localStore.get(rollbackKey) != null ) {
+                localStore.delete(rollbackKey);
+                op = Op.ROLLBACK;
+            }
             // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
             byte[] extraKey = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
