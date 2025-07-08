@@ -43,6 +43,8 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
+import io.dingodb.expr.rel.PipeOp;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -97,11 +99,17 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             Object[] copyTuple = Arrays.copyOf(tuple, tuple.length);
             TupleMapping mapping = param.getMapping();
             List<SqlExpr> updates = param.getUpdates();
+            RelOp relOp = param.getRelOp();
             List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
             boolean updated = false;
 
             for (int i = 0; i < mapping.size(); ++i) {
-                Object newValue = updates.get(i).eval(tuple);
+                Object newValue;
+                if (relOp != null) {
+                    newValue = ((Object[]) ((PipeOp) relOp).put(tuple))[i];
+                } else {
+                    newValue = updates.get(i).eval(tuple);
+                }
                 int index = mapping.get(i);
 
                 DingoType t = originColumns.get(index).getType();

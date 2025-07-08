@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -48,6 +49,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
     @Getter
     @Setter
     private List<RexNode> sourceExpressionList2;
+    @Getter
+    private RelOp relOp;
 
     public DingoTableModify(
         RelOptCluster cluster,
@@ -60,6 +63,31 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         @Nullable List<RexNode> sourceExpressionList,
         boolean flattened
     ) {
+        this(
+            cluster,
+            traitSet,
+            table,
+            catalogReader,
+            input,
+            operation,
+            updateColumnList,
+            sourceExpressionList,
+            flattened,
+            null);
+    }
+
+    public DingoTableModify(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelOptTable table,
+        Prepare.CatalogReader catalogReader,
+        RelNode input,
+        Operation operation,
+        @Nullable List<String> updateColumnList,
+        @Nullable List<RexNode> sourceExpressionList,
+        boolean flattened,
+        RelOp relOp
+    ) {
         super(
             cluster,
             traitSet,
@@ -71,6 +99,7 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             sourceExpressionList,
             flattened
         );
+        this.relOp = relOp;
     }
 
     public DingoTableModify(
@@ -84,7 +113,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         @Nullable List<RexNode> sourceExpressionList,
         boolean flattened,
         List<String> targetColumnNames,
-        @Nullable List<RexNode> sourceExpressionList2
+        @Nullable List<RexNode> sourceExpressionList2,
+        RelOp relOp
     ) {
         super(
             cluster,
@@ -99,6 +129,7 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         );
         this.targetColumnNames = targetColumnNames;
         this.sourceExpressionList2 = sourceExpressionList2;
+        this.relOp = relOp;
     }
 
     @Override
@@ -119,7 +150,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             getSourceExpressionList(),
             isFlattened(),
             getTargetColumnNames(),
-            getSourceExpressionList2()
+            getSourceExpressionList2(),
+            getRelOp()
         );
     }
 

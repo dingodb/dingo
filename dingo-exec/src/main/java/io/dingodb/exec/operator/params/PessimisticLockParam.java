@@ -23,7 +23,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -59,6 +63,10 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     private final long updateLimit;
 
     private long updateScanCount;
+
+    private RelOp relOp;
+    private final DingoRelConfig config;
+
     public PessimisticLockParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -80,7 +88,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
         @JsonProperty("mapping") TupleMapping mapping,
         @JsonProperty("updates") List<SqlExpr> updates,
-        @JsonProperty("updateLimit") long updateLimit
+        @JsonProperty("updateLimit") long updateLimit,
+        RelOp relOp
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -96,6 +105,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.updates = updates;
         this.updateLimit = updateLimit;
         this.updateScanCount = 0L;
+        this.relOp = relOp;
+        this.config = new DingoRelConfig();
     }
     public void inc() {
         count++;
@@ -104,8 +115,14 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        if (updates != null && !updates.isEmpty()) {
+        if (updates != null && !updates.isEmpty() && relOp == null) {
             updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
+        if (relOp != null) {
+            relOp = relOp.compile(new DingoCompileContext(
+                (TupleType) schema.getType(),
+                (TupleType) vertex.getParasType().getType()
+            ), config);
         }
     }
 
