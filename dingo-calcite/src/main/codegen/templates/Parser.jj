@@ -1390,9 +1390,9 @@ SqlNode SqlSelect() :
     final SqlNodeList keywordList;
     final List<SqlNode> selectList = new ArrayList<SqlNode>();
     final SqlNode fromClause;
-    final SqlNode where;
+    SqlNode where;
     final SqlNodeList groupBy;
-    final SqlNode having;
+    SqlNode having;
     final SqlNodeList windowDecls;
     final List<SqlNode> hints = new ArrayList<SqlNode>();
     final Span s;
@@ -1449,6 +1449,20 @@ SqlNode SqlSelect() :
         }
     )
     {
+        //Wrapper where...having... to where...and... here to be compatible with MySQL syntax.
+        if (where != null && groupBy == null && having != null) {
+            //Matched where...having...
+            List<Object> list = new ArrayList<>();
+            SqlParserPos pos = where.getParserPosition();
+
+            list.add(where);
+            list.add(new SqlParserUtil.ToTreeListItem(SqlStdOperatorTable.AND, pos));
+            list.add(having);
+
+            where = SqlParserUtil.toTree(list);
+            having = null;
+        }
+
         return new SqlSelect(s.end(this), keywordList,
             new SqlNodeList(selectList, Span.of(selectList).pos()),
             fromClause, where, groupBy, having, windowDecls, null, null, null,
