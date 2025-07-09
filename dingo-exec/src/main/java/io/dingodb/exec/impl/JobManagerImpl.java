@@ -128,7 +128,9 @@ public final class JobManagerImpl implements JobManager {
     }
 
     @Override
-    public @NonNull Iterator<Object[]> createIterator(@NonNull Job job, Object @Nullable [] paras, long takeNextTimeout) {
+    public @NonNull Iterator<Object[]> createIterator(@NonNull Job job,
+                                                      Object @Nullable [] paras,
+                                                      long takeNextTimeout) {
         RootParam param = job.getRoot().getRoot().getParam();
         param.setTakeTtl(takeNextTimeout);
         return createIterator(job, paras);
@@ -152,8 +154,8 @@ public final class JobManagerImpl implements JobManager {
     public void cancel(CommonId jobId) {
         Job job = jobMap.get(jobId);
         if (job != null) {
-            if (job.getStatus() == Status.BORN || job.getStatus() == Status.READY ||
-                job.getStatus() == Status.STOPPED || job.getStatus() ==  Status.CANCEL) {
+            if (job.getStatus() == Status.BORN || job.getStatus() == Status.READY
+                || job.getStatus() == Status.STOPPED || job.getStatus() ==  Status.CANCEL) {
                 return;
             }
             cancel(job);
@@ -185,7 +187,8 @@ public final class JobManagerImpl implements JobManager {
                 sendTaskMessage(task, new Message(TASK_TAG, new CreateTaskMessage(task).toBytes()));
             } catch (Exception e) {
                 LogUtils.error(log, "jobId:{}, Error to distribute tasks.", job.getJobId(), e);
-                throw new RuntimeException("jobId:" + job.getJobId() + "taskId:" + task.getId() + ", Error to distribute tasks.", e);
+                throw new RuntimeException("jobId:" + job.getJobId() + "taskId:"
+                    + task.getId() + ", Error to distribute tasks.", e);
             }
         }
     }
@@ -241,11 +244,15 @@ public final class JobManagerImpl implements JobManager {
             Task task = cmd.getTask();
             // 1、cross node need add transaction
             // 2、check whether the current node can execute transactions
-            ITransaction transaction = TransactionManager.getTransaction(task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId());
+            ITransaction transaction = TransactionManager.getTransaction(
+                task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId()
+            );
             if (transaction == null) {
                 TransactionManager.createTransaction(task.getTransactionType(),
                     task.getTxnId() == null ? CommonId.EMPTY_TRANSACTION : task.getTxnId(),
-                    task.getIsolationLevel().getCode());
+                    task.getIsolationLevel().getCode(),
+                    false
+                );
             }
             taskManager.addTask(task);
         } finally {

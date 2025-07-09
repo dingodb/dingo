@@ -963,7 +963,8 @@ public class DingoMeta extends MetaImpl {
                     || task.getTransactionType() == TransactionType.NONE) {
                     transaction = dingoConnection.createTransaction(
                         task.getTransactionType(),
-                        true
+                        true,
+                        false
                     );
                     statement.setTxnId(jobManager, transaction.getTxnId());
                     MdcUtils.setStmtId("Stmt_" + sh + "_" + job.getJobId().seq);
