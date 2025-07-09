@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+import static io.dingodb.calcite.DingoTypeMapper.getAggregateResultType;
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 @Slf4j
@@ -237,6 +239,12 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         boolean coerced = false;
         for (int i = 0; i < operandTypes.size(); i++) {
             RelDataType implicitType = myImplicitCast(operandTypes.get(i), newExpectedFamilies.get(i));
+
+            if(binding.getCall().getOperator() instanceof SqlAggFunction) {
+                RelDataType wrapperedAggArgType = getAggregateResultType((SqlAggFunction)binding.getCall().getOperator(), operandTypes.get(i));
+                implicitType = wrapperedAggArgType == null ? implicitType : wrapperedAggArgType;
+            }
+
             coerced = null != implicitType
                 && operandTypes.get(i) != implicitType
                 && coerceOperandType(binding.getScope(), binding.getCall(), i, implicitType)
