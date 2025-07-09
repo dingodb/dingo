@@ -148,7 +148,9 @@ public class OperationServiceV2 {
             ITransaction transaction = TransactionManager.createTransaction(
                 TransactionType.OPTIMISTIC,
                 startTs,
-                IsolationLevel.SnapshotIsolation.getCode());
+                IsolationLevel.SnapshotIsolation.getCode(),
+                false
+            );
             Properties properties = new Properties();
             properties.setProperty("lock_wait_timeout", "50");
             properties.setProperty("transaction_isolation", "REPEATABLE-READ");
@@ -833,7 +835,14 @@ public class OperationServiceV2 {
                 );
 
             } else {
-                vertex = new Vertex(PART_INSERT, new PartInsertParam(tableId, td.tupleType(), td.keyMapping(), td, false, 0));
+                vertex = new Vertex(PART_INSERT, new PartInsertParam(
+                    tableId,
+                    td.tupleType(),
+                    td.keyMapping(),
+                    td,
+                    false,
+                    0)
+                );
             }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);

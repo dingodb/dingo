@@ -49,7 +49,8 @@ public final class TransactionManager {
                     trans.values().stream().findFirst()
                         .ifPresent(iTransaction -> {
                             if (iTransaction.getSqlList() != null && !iTransaction.getSqlList().isEmpty()) {
-                                LogUtils.error(log, "trans too many, random tran sql:{}", iTransaction.getSqlList().get(0));
+                                LogUtils.error(log, "trans too many, random tran sql:{}",
+                                    iTransaction.getSqlList().get(0));
                             }
                         });
                 }
@@ -61,39 +62,63 @@ public final class TransactionManager {
     private TransactionManager() {
     }
 
-    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, long startTs, int isolationLevel) {
+    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType,
+                                                          long startTs,
+                                                          int isolationLevel,
+                                                          boolean isReadOnly) {
         ITransaction tran;
         switch (trxType) {
             case OPTIMISTIC:
-                tran = new OptimisticTransaction(startTs, isolationLevel);
+                if (isReadOnly) {
+                    tran = new ReadOnlyTransaction(trxType, startTs, isolationLevel);
+                } else {
+                    tran = new OptimisticTransaction(startTs, isolationLevel);
+                }
                 break;
             case PESSIMISTIC:
-                tran = new PessimisticTransaction(startTs, isolationLevel);
+                if (isReadOnly) {
+                    tran = new ReadOnlyTransaction(trxType, startTs, isolationLevel);
+                } else {
+                    tran = new PessimisticTransaction(startTs, isolationLevel);
+                }
                 break;
             case NONE:
                 tran = new NoneTransaction(startTs, isolationLevel);
                 break;
             default:
-                LogUtils.error(log, "startTs:" + startTs + ", TransactionType: " + trxType.name() + " not supported");
+                LogUtils.error(log, "startTs:" + startTs + ", TransactionType: "
+                    + trxType.name() + ",isReadOnly" + isReadOnly + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
         }
         return tran;
     }
 
-    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType, @NonNull CommonId txnId, int isolationLevel) {
+    public static @NonNull ITransaction createTransaction(@NonNull TransactionType trxType,
+                                                          @NonNull CommonId txnId,
+                                                          int isolationLevel,
+                                                          boolean isReadOnly) {
         ITransaction tran;
         switch (trxType) {
             case OPTIMISTIC:
-                tran = new OptimisticTransaction(txnId, isolationLevel);
+                if (isReadOnly) {
+                    tran = new ReadOnlyTransaction(trxType, txnId, isolationLevel);
+                } else {
+                    tran = new OptimisticTransaction(txnId, isolationLevel);
+                }
                 break;
             case PESSIMISTIC:
-                tran = new PessimisticTransaction(txnId, isolationLevel);
+                if (isReadOnly) {
+                    tran = new ReadOnlyTransaction(trxType, txnId, isolationLevel);
+                } else {
+                    tran = new PessimisticTransaction(txnId, isolationLevel);
+                }
                 break;
             case NONE:
                 tran = new NoneTransaction(txnId, isolationLevel);
                 break;
             default:
-                LogUtils.error(log, "txnId:" + txnId + ", TransactionType: " + trxType.name() + " not supported");
+                LogUtils.error(log, "txnId:" + txnId + ", TransactionType: "
+                    + trxType.name() + ",isReadOnly" + isReadOnly + " not supported");
                 throw new ArithmeticException("TransactionType: " + trxType.name() + " not supported");
         }
         return tran;
@@ -133,7 +158,8 @@ public final class TransactionManager {
     }
 
     public static CommonId getServerId() {
-        return DingoConfiguration.serverId() == null ? new CommonId(CommonId.CommonType.SCHEMA, 0L, 0L) : DingoConfiguration.serverId();
+        return DingoConfiguration.serverId() == null ?
+            new CommonId(CommonId.CommonType.SCHEMA, 0L, 0L) : DingoConfiguration.serverId();
     }
 
     public static long lockTtlTm() {
