@@ -127,7 +127,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
     public List<String> columns() {
         List<String> indexList = new ArrayList<>();
         indexList.add("Table");
-        indexList.add("Non_unique");
+        indexList.add("Unique");
         indexList.add("Key_name");
         indexList.add("Seq_in_index");
         indexList.add("Column_name");

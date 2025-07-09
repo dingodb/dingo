@@ -229,7 +229,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         lockTables = null;
     }
 
-    public synchronized ITransaction createTransaction(TransactionType type, boolean autoCommit) {
+    public synchronized ITransaction createTransaction(TransactionType type, boolean autoCommit, boolean isReadOnly) {
         if (transaction == null) {
             long startTs = TransactionManager.getStartTs();
             String txIsolation;
@@ -247,7 +247,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                     startTs, type, txIsolation, autoCommit);
             }
             this.transaction = TransactionManager.createTransaction(type, startTs,
-                TransactionUtil.convertIsolationLevel(txIsolation));
+                TransactionUtil.convertIsolationLevel(txIsolation), isReadOnly);
             transaction.setTransactionConfig(sessionVariables);
             transaction.setAutoCommit(autoCommit);
             if (pointTs > 0) {
@@ -267,7 +267,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     public ITransaction initTransaction(boolean isTxn, boolean once) {
         if (!isTxn && once) {
             cleanTransaction();
-            transaction = createTransaction(NONE, getAutoCommit());
+            transaction = createTransaction(NONE, getAutoCommit(), false);
             return transaction;
         }
         return transaction;
@@ -297,7 +297,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             getMeta().cleanTransaction();
         }
         LogUtils.debug(log, "begin transaction...");
-        createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
+        createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
+            false,
+            false
+        );
     }
 
     @Override
@@ -322,7 +325,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         if (!autoCommit) {
             createTransaction("pessimistic".equalsIgnoreCase(getClientInfo("txn_mode"))
-                ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false);
+                ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false, false);
             this.autoCommit = false;
         }
     }

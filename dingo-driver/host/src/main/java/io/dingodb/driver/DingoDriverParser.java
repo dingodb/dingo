@@ -374,6 +374,7 @@ public final class DingoDriverParser extends DingoParser {
         CommonId txnId;
         ITransaction transaction;
         boolean newTxn = false;
+        boolean isReadOnlySql = !forUpdate && !(sqlNode.getKind().belongsTo(SqlKind.DML));
         if (connection.getTransaction() != null) {
             transaction = connection.getTransaction();
             txnId = transaction.getTxnId();
@@ -385,14 +386,15 @@ public final class DingoDriverParser extends DingoParser {
                 // prepare using optimistic transaction
                 transaction = connection.createTransaction(
                     TransactionType.OPTIMISTIC,
-                    connection.getAutoCommit()
+                    connection.getAutoCommit(),
+                    false
                 );
             } else {
                 // autocommit is true use current txn mode
                 transaction = connection.createTransaction(
                     "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"))
                         ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
-                    connection.getAutoCommit());
+                    connection.getAutoCommit(), (isReadOnlySql && connection.getAutoCommit()));
             }
             txnId = transaction.getTxnId();
             newTxn = true;
@@ -753,7 +755,8 @@ public final class DingoDriverParser extends DingoParser {
 
         ITransaction transaction = connection.createTransaction(
             TransactionType.OPTIMISTIC,
-            connection.getAutoCommit()
+            connection.getAutoCommit(),
+            false
         );
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().cacheTso();
