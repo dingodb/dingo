@@ -462,38 +462,4 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             return resNode;
         }
     }
-
-    @Override public void validateAggregateParams(SqlCall aggCall,
-                                                  @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
-                                                  @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
-        super.validateAggregateParams(aggCall, filter, distinctList, orderList, scope);
-
-        if (aggCall instanceof SqlBasicCall && ((SqlBasicCall)aggCall).getFieldTypeList() != null) {
-            RelDataType sourceParamType = ((SqlBasicCall)aggCall).getFieldTypeList()
-                .get(((SqlBasicCall) aggCall).getFieldIndex()).getValue();
-            RelDataType targetType = DingoTypeMapper.getAggregateResultType((SqlAggFunction) aggCall.getOperator(),
-                sourceParamType);
-
-            if (targetType != null) {
-                for (SqlNode operand : aggCall.getOperandList()) {
-                    //change node, append cast.
-                    SqlNode targetNode = SqlStdOperatorTable.CAST.createCall(SqlParserPos.ZERO, operand,
-                        SqlTypeUtil.convertTypeToSpec(targetType).withNullable(targetType.isNullable()));
-                    aggCall.setOperand(0, targetNode);
-
-                    //reset field type.
-                    ((SqlBasicCall)aggCall).setFieldType(targetType);
-
-                    //reset field type list.
-                    String fieldKey = ((SqlBasicCall)aggCall).getFieldTypeList()
-                        .get(((SqlBasicCall) aggCall).getFieldIndex()).getKey();
-                    ((SqlBasicCall)aggCall).getFieldTypeList().set(((SqlBasicCall) aggCall)
-                        .getFieldIndex(), Pair.of(fieldKey, targetType));
-
-                    //reset nodeToTypeMap.
-                    nodeToTypeMap.put(aggCall, targetType);
-                }
-            }
-        }
-    }
 }
