@@ -136,5 +136,8 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         if (updates != null && !updates.isEmpty()) {
             updates.forEach(e -> e.setParas(paras));
         }
+        if (relOp != null) {
+            config.getEvalContext().setParas(paras);
+        }
     }
 }

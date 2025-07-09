@@ -129,6 +129,7 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
     @Override
     public void setParas(Object[] paras) {
         super.setParas(paras);
-        updates.forEach(e -> e.setParas(paras));
+        // updates.forEach(e -> e.setParas(paras));
+        config.getEvalContext().setParas(paras);
     }
 }
