@@ -1894,15 +1894,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             DdlService.root().renameTable(
                 schema.getSchemaId(), schema.getSchemaName(), table,
                 getTableName(toId));
-            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-            RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-            SchemaDiff diff = SchemaDiff.builder()
-                .schemaId(schema.getSchemaId())
-                .tableId(table.getTableId().seq)
-                .type(ActionType.ActionRenameTable)
-                .build();
-            diff.setTableName(tableName);
-            rootSnapshotSchema.applyDiff(diff);
         }
     }
 
