@@ -32,20 +32,20 @@ public class SourceProfile extends Profile {
     @Override
     public void end() {
         this.end = System.currentTimeMillis();
-        if (duration > 0 && count > 0) {
-            this.avg = duration / count;
+        if (duration.get() > 0 && count.get() > 0) {
+            this.avg = duration.get() / count.get();
         }
     }
 
     public void time(long start) {
         incrTime(start);
-        count ++;
+        count.incrementAndGet();
     }
 
     public void incrTime(long start) {
         long current = System.currentTimeMillis();
         long time = current - start;
-        duration += time;
+        duration.addAndGet(time);
         if (time > max) {
             max = time;
         }
@@ -55,20 +55,20 @@ public class SourceProfile extends Profile {
     }
 
     public void decreaseCount() {
-        count --;
+        count.decrementAndGet();
     }
 
     public void mergeChild() {
         if (this.children != null && this.children.size() > 1) {
             boolean res = this.children.stream()
-                .anyMatch(profile -> profile.duration == 0 && profile.getChildren().isEmpty());
+                .anyMatch(profile -> profile.duration.get() == 0 && profile.getChildren().isEmpty());
             if (!res) {
                 return;
             }
             Profile first = this.children.get(0);
             for (int i = 1; i < this.children.size(); i ++) {
                 Profile profile = this.children.get(i);
-                first.count += profile.count;
+                first.count.addAndGet(profile.count.get());
             }
             this.children.clear();
             this.children.add(first);
