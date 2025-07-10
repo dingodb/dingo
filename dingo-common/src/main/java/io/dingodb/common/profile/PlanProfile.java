@@ -75,7 +75,7 @@ public class PlanProfile extends Profile {
         val[0] = termStr + "compile";
         val[1] = DateTimeUtils.timeFormat(new Time(start));
         val[2] = String.valueOf(duration);
-        val[3] = Long.valueOf(this.getCount());
+        val[3] = this.getCount();
         rowList.add(val);
 
         byte[] prefix1 = new byte[prefix.length + 2];
@@ -90,21 +90,21 @@ public class PlanProfile extends Profile {
         parseVal[0] = termStr + "parse";
         parseVal[1] = DateTimeUtils.timeFormat(new Time(start));
         parseVal[2] = String.valueOf(parse);
-        parseVal[3] = Long.valueOf(this.getCount());
+        parseVal[3] = this.getCount();
         rowList.add(parseVal);
 
         Object[] validateVal = new Object[4];
         validateVal[0] = termStr + "validate";
         validateVal[1] = DateTimeUtils.timeFormat(new Time(parseTime));
         validateVal[2] = String.valueOf(validate);
-        validateVal[3] = Long.valueOf(this.getCount());
+        validateVal[3] = this.getCount();
         rowList.add(validateVal);
 
         Object[] optimizeVal = new Object[4];
         optimizeVal[0] = termStr + "optimize";
         optimizeVal[1] = DateTimeUtils.timeFormat(new Time(validateTime));
         optimizeVal[2] = String.valueOf(optimize);
-        optimizeVal[3] = Long.valueOf(this.getCount());
+        optimizeVal[3] = this.getCount();
         rowList.add(optimizeVal);
     }
 

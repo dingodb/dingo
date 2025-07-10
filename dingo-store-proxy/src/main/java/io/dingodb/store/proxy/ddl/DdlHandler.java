@@ -521,8 +521,7 @@ public class DdlHandler {
 
     public static void doDdlJob(DdlJob job) {
         long timeout = ScopeVariables.getDdlWaitTimeout();
-        if (job.mayNeedReorg() || job.getActionType() == ActionType.ActionRenameTable
-            || job.getActionType() == ActionType.ActionRenameIndex) {
+        if (job.mayNeedReorg()) {
             timeout = 0;
         }
         // put job to queue

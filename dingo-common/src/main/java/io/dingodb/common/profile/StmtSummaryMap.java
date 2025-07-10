@@ -128,8 +128,8 @@ public final class StmtSummaryMap {
             log.error(ignored.getMessage(), ignored);
         }
         sqlProfile.end();
-        if ((slowQueryEnabled && sqlProfile.duration > slowQueryThreshold)
-            || (ddlInnerProfile && sqlProfile.duration > 100)) {
+        if ((slowQueryEnabled && sqlProfile.duration.get() > slowQueryThreshold)
+            || (ddlInnerProfile && sqlProfile.duration.get() > 100)) {
             LogUtils.info(log, sqlProfile.dumpTree());
         }
         if (ddlInnerProfile) {
@@ -137,7 +137,7 @@ public final class StmtSummaryMap {
         }
         try {
             if (sqlProfile.getStatementType() != null) {
-                DingoMetrics.latency(sqlProfile.getStatementType(), sqlProfile.duration);
+                DingoMetrics.latency(sqlProfile.getStatementType(), sqlProfile.duration.get());
             }
             if (!profileQueue.offer(sqlProfile)) {
                 LogUtils.info(log, "profileQueue is busy.");

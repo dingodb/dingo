@@ -40,7 +40,7 @@ public class ExecProfile extends Profile {
     }
 
     public void increment() {
-        this.count ++;
+        this.count.incrementAndGet();
     }
 
     public String dumpTree(byte[] prefix) {
@@ -67,7 +67,7 @@ public class ExecProfile extends Profile {
         val[0] = prefixStr + "runStmt";
         val[1] = DateTimeUtils.timeFormat(new Time(start));
         val[2] = String.valueOf(duration);
-        val[3] = Long.valueOf(this.getCount());
+        val[3] = this.getCount();
         rowList.add(val);
 
         if (profile != null) {

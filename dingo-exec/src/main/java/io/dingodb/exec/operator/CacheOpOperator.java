@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
@@ -73,11 +74,13 @@ public final class CacheOpOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, @NonNull Vertex vertex) {
         RelOpParam param = vertex.getParam();
-        param.getProfile("aggCache");
+        OperatorProfile operatorProfile = param.getProfile("aggCache");
         CacheOp relOp = (CacheOp) (param).getRelOp();
+        long start = System.currentTimeMillis();
         synchronized (relOp) {
             relOp.put(tuple);
         }
+        operatorProfile.time(start);
         return true;
     }
 }
