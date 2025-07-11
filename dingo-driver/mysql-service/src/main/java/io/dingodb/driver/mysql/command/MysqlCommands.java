@@ -17,13 +17,16 @@
 package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
+import io.dingodb.common.parser.ByteString;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
+import io.dingodb.driver.mysql.MultiStatementSplitter;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.MysqlType;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
@@ -58,6 +61,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 
 @Slf4j
@@ -85,26 +89,40 @@ public class MysqlCommands {
 
     public void execute(QueryPacket queryPacket,
                         MysqlConnection mysqlConnection) {
-        String sql;
+        ByteString sql;
         String characterSet;
         try {
             characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             characterSet = getCharacterSet(characterSet);
-            sql = new String(queryPacket.message, characterSet);
+            sql = new ByteString(queryPacket.message, characterSet);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
-        if (log.isDebugEnabled()) {
-            LogUtils.debug(log, "dingo connection:{}, receive sql:{}", mysqlConnection.getConnection().toString(), sql);
+        //AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
+        //if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
+        //    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
+        //        characterSet);
+        //    return;
+        //}
+        List<ByteString> statements;
+        try {
+            MultiStatementSplitter splitter = new MultiStatementSplitter(sql);
+            statements = splitter.split();
+        } catch (Exception e) {
+            throw DingoErrUtil.newStdErr(e.getMessage());
         }
-        if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sql, packetId)) {
-            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
-                characterSet);
+        if (statements.isEmpty()) {
+            // write ok package
+            MysqlResponseHandler.responseOk(mysqlConnection.channel);
             return;
         }
-
-        executeSingleQuery(sql, packetId, mysqlConnection);
+        AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
+        for (int i = 0; i < statements.size(); i ++) {
+            if (!executeStatement(statements.get(i), packetId, mysqlConnection,
+             i < statements.size() - 1, characterSet)) {
+                break;
+            }
+        }
     }
 
     private static boolean doExpire(MysqlConnection mysqlConnection, String sql, AtomicLong packetId) {
@@ -193,6 +211,98 @@ public class MysqlCommands {
         }
     }
 
+    public boolean executeStatement(
+        ByteString sql,
+        AtomicLong packetId,
+        MysqlConnection mysqlConnection,
+        boolean hasMore,
+        String charsetStr
+    ) {
+        Statement statement = null;
+        boolean hasResults;
+        String connCharSet = null;
+
+        try {
+            String sqlSample = sql.substring(0);
+            if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sqlSample, packetId)) {
+                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
+                    charsetStr);
+                return false;
+            }
+            statement = mysqlConnection.getConnection().createStatement();
+            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            hasResults = statement.execute(sqlSample);
+            if (hasResults) {
+                // select
+                do {
+                    try (ResultSet rs = statement.getResultSet()) {
+                        MysqlResponseHandler.responseResultSet(rs, packetId, mysqlConnection, hasMore);
+                    }
+                }
+                while (getMoreResults(statement));
+            } else {
+                // update insert delete
+                int count = statement.getUpdateCount();
+                SQLWarning sqlWarning = statement.getWarnings();
+                if (sqlWarning == null) {
+                    sqlWarning = mysqlConnection.getConnection().getWarnings();
+                    if (sqlWarning != null && sqlWarning.getMessage().contains("local infile:")) {
+                        mysqlConnection.querySpecial = true;
+                        mysqlConnection.querySpecialId = sqlWarning.getSQLState();
+                        String ret = sqlWarning.getMessage().substring(13);
+                        LoadDataResPacket loadDataResPacket = new LoadDataResPacket();
+                        loadDataResPacket.message = ret;
+                        loadDataResPacket.packetId = (byte) packetId.getAndIncrement();
+                        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+                        loadDataResPacket.write(buffer);
+                        mysqlConnection.channel.writeAndFlush(buffer);
+                        return true;
+                    }
+                }
+                try {
+                    mysqlConnection.getConnection().clearWarnings();
+                } catch (SQLException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                }
+                DingoStatement dingoStatement = (DingoStatement) statement;
+                OKPacket okPacket;
+                int initServerStatus = dingoStatement.getServerStatus();
+                if (hasMore) {
+                    initServerStatus |= SERVER_MORE_RESULTS_EXISTS;
+                }
+                if (dingoStatement.isHasIncId()) {
+                    Long lastInsertId = dingoStatement.getAutoIncId();
+                    okPacket = MysqlPacketFactory.getInstance()
+                        .getOkPacket(
+                            count, packetId, initServerStatus, new BigInteger(String.valueOf(lastInsertId)), sqlWarning
+                        );
+                } else {
+                    okPacket = MysqlPacketFactory.getInstance()
+                        .getOkPacket(count, packetId, initServerStatus, BigInteger.ZERO, sqlWarning);
+                }
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+            }
+            return true;
+        } catch (SQLException sqlException) {
+            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSQLState() + ", code:"
+                + sqlException.getErrorCode()
+                + ", message:" + sqlException.getMessage());
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException, connCharSet);
+            return false;
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            throw e;
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+            } catch (SQLException e) {
+                LogUtils.error(log, e.getMessage(), e);
+            }
+        }
+    }
+
     public void executeSingleQuery(String sql, AtomicLong packetId,
                                    MysqlConnection mysqlConnection) {
         Statement statement = null;
@@ -207,7 +317,7 @@ public class MysqlCommands {
                 // select
                 do {
                     try (ResultSet rs = statement.getResultSet()) {
-                        MysqlResponseHandler.responseResultSet(rs, packetId, mysqlConnection);
+                        MysqlResponseHandler.responseResultSet(rs, packetId, mysqlConnection, false);
                     }
                 }
                 while (getMoreResults(statement));

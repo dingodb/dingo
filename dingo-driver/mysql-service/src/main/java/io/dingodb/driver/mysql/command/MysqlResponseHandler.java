@@ -25,6 +25,7 @@ import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.ColumnsNumberPacket;
+import io.dingodb.driver.mysql.packet.EOFPacket;
 import io.dingodb.driver.mysql.packet.ERRPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
 import static io.dingodb.driver.mysql.command.MysqlCommands.getInitServerStatus;
@@ -83,7 +85,7 @@ public final class MysqlResponseHandler {
 
     public static void responseResultSet(ResultSet resultSet,
                                          AtomicLong packetId,
-                                   MysqlConnection mysqlConnection) {
+                                   MysqlConnection mysqlConnection, boolean hasMore) {
         // packet combine:
         // 1. columns count packet
         // 2. column packet
@@ -114,6 +116,9 @@ public final class MysqlResponseHandler {
             }
 
             int initServerStatus = getInitServerStatus((DingoConnection) mysqlConnection.getConnection());
+            if (hasMore) {
+                initServerStatus |= SERVER_MORE_RESULTS_EXISTS;
+            }
             if (deprecateEof) {
                 handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
                 OKPacket okEofPacket = factory.getOkEofPacket(
@@ -122,12 +127,20 @@ public final class MysqlResponseHandler {
                 okEofPacket.write(buffer);
             } else {
                 // intermediate eof
-                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
+                EOFPacket eofPacket = MysqlPacketFactory.getEofPacket(packetId);
+                if (hasMore) {
+                    eofPacket.statusFlags |= SERVER_MORE_RESULTS_EXISTS;
+                }
+                eofPacket.write(buffer);
                 // row packet...
                 handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
                 // response EOF
                 //resultSetPacket.rowsEof = getEofPacket(packetId);
-                MysqlPacketFactory.getEofPacket(packetId).write(buffer);
+                eofPacket = MysqlPacketFactory.getEofPacket(packetId);
+                if (hasMore) {
+                    eofPacket.statusFlags |= SERVER_MORE_RESULTS_EXISTS;
+                }
+                eofPacket.write(buffer);
             }
 
             mysqlConnection.channel.writeAndFlush(buffer);
@@ -334,6 +347,12 @@ public final class MysqlResponseHandler {
     public static void responseOk(OKPacket okPacket, SocketChannel channel) {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         okPacket.write(buffer);
+        channel.writeAndFlush(buffer);
+    }
+
+    public static void responseOk(SocketChannel channel) {
+        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+        buffer.writeBytes(OKPacket.OK);
         channel.writeAndFlush(buffer);
     }
 
