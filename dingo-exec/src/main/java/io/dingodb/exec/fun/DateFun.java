@@ -20,6 +20,7 @@ import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 import java.sql.Date;
@@ -280,6 +281,11 @@ public class DateFun extends UnaryOp {
 
     @Override
     public Type getType() {
-        return Types.STRING;
+        return Types.DATE;
+    }
+
+    @Override
+    public @NonNull String getName() {
+        return NAME;
     }
 }
