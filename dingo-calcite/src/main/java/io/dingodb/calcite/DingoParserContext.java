@@ -77,6 +77,7 @@ public final class DingoParserContext implements Context {
     @Getter
     private final boolean pushDown;
 
+    @Getter
     private final Properties options;
     @Getter
     private CalciteSchema usedSchema;

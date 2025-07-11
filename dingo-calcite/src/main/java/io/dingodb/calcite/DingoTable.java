@@ -154,7 +154,18 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             SqlParser parser = SqlParser.create(dingoTable.getTable().createSql, config);
             try {
                 SqlNode sqlNode = parser.parseStmt();
-                DingoSqlValidator dingoSqlValidator = this.context.getSqlValidator();
+                String viewSchema = null;
+                if (dingoTable.getNames().size() == 3) {
+                    viewSchema = dingoTable.getNames().get(1);
+                }
+                DingoParserContext dingoParserContext;
+                if (viewSchema == null) {
+                    dingoParserContext = this.context;
+                } else {
+                    dingoParserContext = new DingoParserContext(viewSchema,
+                        this.context.getOptions(), this.context.getSessionVariables(), this.context.getTimeZone());
+                }
+                DingoSqlValidator dingoSqlValidator = dingoParserContext.getSqlValidator();
                 sqlNode = dingoSqlValidator.validate(sqlNode);
 
                 if (dingoSqlValidator.isHybridSearch()) {
