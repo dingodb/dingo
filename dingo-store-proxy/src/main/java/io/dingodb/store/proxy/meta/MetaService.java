@@ -56,7 +56,6 @@ import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Engine;
 import io.dingodb.sdk.service.entity.common.IndexParameter;
 import io.dingodb.sdk.service.entity.common.IndexType;
-import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.Range;
 import io.dingodb.sdk.service.entity.common.RawEngine;
 import io.dingodb.sdk.service.entity.common.Region;
@@ -109,7 +108,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -145,37 +143,34 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
-    //private static final Pattern pattern = Pattern.compile("^[A-Za-z_][A-Za-z\\d_]*$");
-    private static final Pattern warnPattern = Pattern.compile(".*[a-z]+.*");
-
     public final DingoCommonId id;
     public final String name;
-    public final io.dingodb.sdk.service.MetaService service;
+    public static final io.dingodb.sdk.service.MetaService service = Services.metaService(Configuration.coordinatorSet());
     public final TsoService tsoService = TsoService.getDefault();
-    public final MetaCache cache;
+    public static MetaCache cache = new MetaCache(Configuration.coordinatorSet());
+    public MetaCacheSnapShot cacheSnapShot;
     public final InfoSchemaService infoSchemaService = new InfoSchemaService();
 
     public MetaService() {
-        Set<Location> coordinators = Configuration.coordinatorSet();
-        this.service = Services.metaService(coordinators);
         this.id = ROOT_SCHEMA_ID;
         this.name = ROOT_NAME;
-        this.cache = new MetaCache(coordinators);
     }
 
     public MetaService(long pointTs) {
-        Set<Location> coordinators = Configuration.coordinatorSet();
-        this.service = Services.metaService(coordinators);
         this.id = ROOT_SCHEMA_ID;
         this.name = ROOT_NAME;
-        this.cache = new MetaCache(coordinators, pointTs);
+        this.cacheSnapShot = new MetaCacheSnapShot(pointTs);
     }
 
-    protected MetaService(DingoCommonId id, String name, io.dingodb.sdk.service.MetaService service, MetaCache cache) {
-        this.service = service;
+    protected MetaService(DingoCommonId id, String name) {
         this.id = id;
         this.name = name;
-        this.cache = cache;
+    }
+
+    protected MetaService(DingoCommonId id, String name, MetaCacheSnapShot cacheSnapshot) {
+        this.id = id;
+        this.name = name;
+        this.cacheSnapShot = cacheSnapshot;
     }
 
     @Override
@@ -246,7 +241,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (id != ROOT_SCHEMA_ID) {
             return Collections.emptyNavigableMap();
         }
-        return cache.getMetaServices();
+        if (cacheSnapShot == null) {
+            return cache.getMetaServices();
+        } else {
+            return cacheSnapShot.getMetaServices();
+        }
     }
 
     @Override
@@ -1309,7 +1308,11 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public NavigableMap<ComparableByteArray, RangeDistribution> getRangeDistribution(CommonId id) {
-        return cache.getRangeDistribution(id);
+        if (this.cacheSnapShot == null) {
+            return cache.getRangeDistribution(id);
+        } else {
+            return cacheSnapShot.getRangeDistribution(id);
+        }
     }
 
     @Override
@@ -1486,7 +1489,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void invalidateDistribution(CommonId tableId) {
-        this.cache.invalidateDistribution(tableId);
+        cache.invalidateDistribution(tableId);
     }
 
     public void checkRegionConsistent(TableDefinitionWithId tableDefinitionWithId, boolean index) {
