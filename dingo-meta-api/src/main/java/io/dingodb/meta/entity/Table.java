@@ -228,6 +228,7 @@ public class Table {
             .updateTime(this.updateTime)
             .version(this.version)
             .codecVersion(this.codecVersion)
+            .visible(this.visible)
             .build();
     }
 
