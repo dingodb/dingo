@@ -116,23 +116,6 @@ public class MetaCache {
         DingoMetrics.counter("metaCacheInstanceCount").inc();
     }
 
-    public MetaCache(Set<Location> coordinators, long pointTs) {
-        this.metaService = Services.metaService(coordinators);
-        this.infoSchemaService = new io.dingodb.store.service.InfoSchemaService(pointTs);
-        this.tsoService = TsoService.INSTANCE.isAvailable() ? TsoService.INSTANCE : new TsoService(coordinators);
-        this.distributionCache = buildDistributionCache();
-        Executors.execute("watch-meta", () -> {
-            while (!isClose) {
-                try {
-                    watch();
-                } catch (Exception e) {
-                    LogUtils.error(log, "Watch meta error, restart watch.", e);
-                }
-            }
-        });
-        DingoMetrics.counter("metaCacheInstanceCount").inc();
-    }
-
     private long tso() {
         return tsoService.tso();
     }
@@ -374,7 +357,7 @@ public class MetaCache {
                     .parentEntityId(0)
                     .build();
                 return new io.dingodb.store.proxy.meta.MetaService(dingoCommonId,
-                    schemaInfo.getName().toUpperCase(), metaService, this);
+                    schemaInfo.getName().toUpperCase());
             })
             .collect(Collectors.toMap(io.dingodb.store.proxy.meta.MetaService::name, Function.identity()));
     }
