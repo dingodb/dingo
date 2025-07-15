@@ -19,6 +19,8 @@ common:
     scheduledCoreThreads: 16
     lockCoreThreads: 0
     globalCoreThreads: 0
+    gcSafePointPeriod: 300
+    gcDeleteRegionPeriod: 60
 store:
     bufferSize: 67108864
     bufferNumber: 2

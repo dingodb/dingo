@@ -515,7 +515,8 @@ public final class DingoDriverParser extends DingoParser {
         }
         Location currentLocation = MetaService.root().currentLocation();
         RelDataType parasType = validator.getParameterRowType(sqlNode);
-        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null && explain == null) {
+        if (pessimisticTxn && transaction.getPrimaryKeyLock() == null && explain == null
+            && (forUpdate || sqlNode.getKind().belongsTo(SqlKind.DML))) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
                 new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()), user, host);

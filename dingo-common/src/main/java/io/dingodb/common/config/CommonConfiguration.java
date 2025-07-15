@@ -29,4 +29,6 @@ public class CommonConfiguration {
     private Integer scheduledCoreThreads;
     private Integer lockCoreThreads;
     private Integer globalCoreThreads;
+    private Integer gcSafePointPeriod;
+    private Integer gcDeleteRegionPeriod;
 }

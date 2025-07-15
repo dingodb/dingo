@@ -45,10 +45,12 @@ public final class SafePointUpdateTask {
         isLeader = true;
         LogUtils.info(log, "Start safe point update task.");
         future = Executors.scheduleWithFixedDelay(
-            lockKeyStr, SafePointUpdateTask::safePointUpdate, 1, 300, TimeUnit.SECONDS
+            lockKeyStr, SafePointUpdateTask::safePointUpdate, 1,
+            DingoConfiguration.gcSafePointPeriod(), TimeUnit.SECONDS
         );
         regionDelFuture = Executors.scheduleWithFixedDelay(
-            lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60, 60, TimeUnit.SECONDS
+            lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60,
+            DingoConfiguration.gcDeleteRegionPeriod(), TimeUnit.SECONDS
         );
     }
 
