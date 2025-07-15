@@ -19,6 +19,8 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -67,6 +69,7 @@ public class DistributionSourceParam extends SourceParam {
     private final int concurrencyLevel;
     @Setter
     private Map<CommonId, Integer> splitRetry = new ConcurrentHashMap<>();
+    private transient KeyValueCodec codec;
 
     public DistributionSourceParam(
         Table td,
@@ -100,6 +103,8 @@ public class DistributionSourceParam extends SourceParam {
         ps = PartitionService.getService(
             Optional.ofNullable(td.getPartitionStrategy())
                 .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            td.getCodecVersion(), td.version, td.tupleType(), td.keyMapping());
     }
 
     public DistributionSourceParam copy(
