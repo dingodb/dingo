@@ -103,6 +103,7 @@ public class CalcDistributionOperator extends IteratorSourceOperator {
                 NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
                     MetaService.root().getRangeDistribution(param.getTd().getTableId());
                 param.setRangeDistribution(distribution);
+                distributions = getRangeDistributions(param);
             }
         }
 
