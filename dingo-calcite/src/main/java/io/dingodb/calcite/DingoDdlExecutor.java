@@ -1002,17 +1002,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             DdlService ddlService = DdlService.root();
             ddlService.createSequence(sequenceDefinition, connId);
 
-            InfoSchemaService service = InfoSchemaService.root();
-            long schemaId = service.getSchema("mysql").getSchemaId();
-            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-            RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-            SchemaDiff diff = SchemaDiff.builder()
-                .schemaId(schemaId)
-                .tableId(service.getTableDef(schemaId, "sequence").tableId.seq)
-                .type(ActionType.ActionCreateSequence)
-                .build();
-            diff.setSequence(createS.name);
-            rootSnapshotSchema.applyDiff(diff);
         } else if (!createS.ifNotExists) {
             throw DINGO_RESOURCE.sequenceExists(createS.name).ex();
         }
@@ -1031,18 +1020,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         ddlService.dropSequence(sqlDropSequence.sequence, connId);
-
-        InfoSchemaService service = InfoSchemaService.root();
-        long schemaId = service.getSchema("mysql").getSchemaId();
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schemaId)
-            .tableId(service.getTableDef(schemaId, "sequence").tableId.seq)
-            .type(ActionType.ActionDropSequence)
-            .build();
-        diff.setSequence(sqlDropSequence.sequence);
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(@NonNull SqlAlterTableDistribution sqlAlterTableDistribution, CalcitePrepare.Context context) {

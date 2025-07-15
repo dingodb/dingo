@@ -75,7 +75,12 @@ public class SequenceGenerator {
             // Replenish when cache is empty
             fillQueue();
         }
-        return queue.poll();
+        Long next = queue.poll();
+        if (next == null) {
+            throw new RuntimeException("Sequence has run out");
+        } else {
+            return next;
+        }
     }
 
     public synchronized Long current() {

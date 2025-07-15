@@ -48,7 +48,8 @@ public class SchemaDiff {
                       long oldSchemaId,
                       boolean regenerateSchemaMap,
                       AffectedOption[] affectedOpts,
-                      SchemaState schemaState) {
+                      SchemaState schemaState,
+                      String sequence) {
         this.version = version;
         this.type = type;
         this.schemaId = schemaId;
@@ -58,6 +59,7 @@ public class SchemaDiff {
         this.regenerateSchemaMap = regenerateSchemaMap;
         this.affectedOpts = affectedOpts;
         this.schemaState = schemaState;
+        this.sequence = sequence;
     }
 
     public SchemaDiff() {

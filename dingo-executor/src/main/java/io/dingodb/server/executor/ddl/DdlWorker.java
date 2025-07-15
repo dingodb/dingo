@@ -1246,14 +1246,18 @@ public class DdlWorker {
             dc.getSv().unlockSchemaVersion(ddlJob);
         }
         try {
-            SchemaDiff schemaDiff = SchemaDiff
+            SchemaDiff.SchemaDiffBuilder builder = SchemaDiff
                 .builder()
                 .schemaId(ddlJob.getSchemaId())
                 .version(schemaVersion)
                 .type(ddlJob.getActionType())
                 .schemaState(ddlJob.getSchemaState())
-                .build();
-            switch (ddlJob.getActionType()) {
+                .sequence(ddlJob.getSequence());
+            if (ddlJob.getSequence() != null) {
+                builder.sequence(ddlJob.getSequence());
+            }
+            SchemaDiff schemaDiff = builder.build();
+                switch (ddlJob.getActionType()) {
                 case ActionTruncateTable:
                     String err = ddlJob.decodeArgs();
                     if (err != null) {

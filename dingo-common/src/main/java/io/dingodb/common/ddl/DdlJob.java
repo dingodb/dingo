@@ -48,6 +48,7 @@ public class DdlJob {
     private long tableId;
     private String schemaName;
     private String tableName;
+    private String sequence;
     private JobState state;
     private String warning;
     private String error;
@@ -85,6 +86,7 @@ public class DdlJob {
         long tableId,
         String schemaName,
         String tableName,
+        String sequence,
         JobState state,
         String warning,
         String error,
@@ -102,6 +104,7 @@ public class DdlJob {
         this.tableId = tableId;
         this.schemaName = schemaName;
         this.tableName = tableName;
+        this.sequence = sequence;
         this.state = state;
         this.warning = warning;
         this.error = error;
