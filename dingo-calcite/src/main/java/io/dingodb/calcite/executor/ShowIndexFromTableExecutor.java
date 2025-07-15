@@ -59,8 +59,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         primaryRes.addAll(table.getIndexes()
             .stream()
             .flatMap(index -> {
-                Properties properties = index.getProperties();
-                if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+                if (index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
                     return null;
                 }
                 AtomicInteger seq = new AtomicInteger(1);

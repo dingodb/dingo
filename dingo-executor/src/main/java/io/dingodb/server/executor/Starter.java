@@ -40,6 +40,7 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
+import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.service.MetaStoreKv;
@@ -124,11 +125,15 @@ public class Starter {
             Utils.sleep(5000L);
         }
         Map<String, String> globalVariables = infoSchemaService.getGlobalVariables();
+        if (globalVariables.isEmpty()) {
+            PrepareMeta.initGlobalVariables();
+            globalVariables = infoSchemaService.getGlobalVariables();
+        }
         String caseTableName = globalVariables.get(LOWER_CASE_TABLE_NAMES);
-        if (caseTableName.equals("-1")) {
+        if ("-1".equals(caseTableName)) {
             infoSchemaService.putGlobalVariable(LOWER_CASE_TABLE_NAMES, DingoConfiguration.lowerCaseTableNames());
         }
-        if (!caseTableName.equals("-1")
+        if (!"-1".equals(caseTableName)
             && !caseTableName.equals(String.valueOf(DingoConfiguration.lowerCaseTableNames()))) {
             LogUtils.error(log, "The value of lower_case_table_names cannot be modified, "
                 + "current value: {}, original value: {}", DingoConfiguration.lowerCaseTableNames(), caseTableName);
