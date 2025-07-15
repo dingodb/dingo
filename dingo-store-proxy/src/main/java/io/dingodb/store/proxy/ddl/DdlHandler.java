@@ -210,6 +210,7 @@ public class DdlHandler {
             .tableId(tableInfo.getTableId().getEntityId())
             .schemaName(schema)
             .tableName(table)
+            .sequence(definition.getName())
             .actionType(ActionType.ActionCreateSequence)
             .schemaState(SchemaState.SCHEMA_NONE)
             .build();
@@ -240,6 +241,7 @@ public class DdlHandler {
             .tableId(tableInfo.getTableId().seq)
             .schemaName(schema)
             .tableName(table)
+            .sequence(sequenceName)
             .actionType(ActionType.ActionDropSequence)
             .build();
         List<Object> args = new ArrayList<>();

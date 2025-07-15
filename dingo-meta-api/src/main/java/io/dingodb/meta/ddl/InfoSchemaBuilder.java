@@ -242,7 +242,7 @@ public class InfoSchemaBuilder {
             SchemaDiff optDiff = new SchemaDiff(diff.getVersion(), ActionType.ActionCreateTable,
                 affectedOption.getSchemaId(),
                 affectedOption.getTableId(), affectedOption.getSchemaId(), affectedOption.getOldTableId(),
-                false, null, null);
+                false, null, null, null);
             Pair<List<Long>, String> optTableIds = applyDiff(infoSchemaService, optDiff);
             if (optTableIds.getValue() != null) {
                 return optTableIds;
