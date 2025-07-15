@@ -101,6 +101,14 @@ public class DingoConfiguration {
         return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGlobalCoreThreads, () -> 0);
     }
 
+    public static int gcSafePointPeriod() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGcSafePointPeriod, () -> 300);
+    }
+
+    public static int gcDeleteRegionPeriod() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGcDeleteRegionPeriod, () -> 60);
+    }
+
     public static Integer lowerCaseTableNames() {
         return Optional.mapOrGet(INSTANCE.variable, VariableConfiguration::getLowerCaseTableNames, () -> 2);
     }
