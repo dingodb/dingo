@@ -575,17 +575,8 @@ public class DingoParser {
     }
 
     public long getGcLifeTime() {
-        long globalSafePointTs = Long.parseLong(InfoSchemaService.root().getGlobalVariables()
+        return Long.parseLong(InfoSchemaService.root().getGlobalVariables()
             .getOrDefault("safepoint_ts", "0"));
-        if (globalSafePointTs > 0) {
-            return globalSafePointTs;
-        } else {
-            long currentTime = System.currentTimeMillis();
-            String gcLifeTimeStr = InfoSchemaService.root().getGlobalVariables().get("txn_history_duration");
-            long gcLifeTime = Long.parseLong(gcLifeTimeStr);
-            long safePointTs = currentTime - (gcLifeTime * 1000);
-            return TsoService.getDefault().tso(safePointTs);
-        }
     }
 
     public SQLWarning getWarning(SqlNode sqlNode) {

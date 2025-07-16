@@ -154,10 +154,8 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             SqlParser parser = SqlParser.create(dingoTable.getTable().createSql, config);
             try {
                 SqlNode sqlNode = parser.parseStmt();
-                String viewSchema = null;
-                if (dingoTable.getNames().size() == 3) {
-                    viewSchema = dingoTable.getNames().get(1);
-                }
+                String viewSchema = dingoTable.getTable().getProperties().getProperty("envSchema");
+
                 DingoParserContext dingoParserContext;
                 if (viewSchema == null) {
                     dingoParserContext = this.context;

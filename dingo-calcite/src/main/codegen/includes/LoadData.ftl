@@ -34,7 +34,7 @@ SqlLoadData SqlLoadData(): {
 } {
   <LOAD> { s = span(); }
   <DATA> [<CONCURRENT>][<LOCAL> { local = true; }] <INFILE>
-  <QUOTED_STRING> { filePath = token.image.replace("'", "").toLowerCase(); }
+  <QUOTED_STRING> { filePath = SqlParserUtil.trim(token.image, "'"); }
   [ <IGNORE> {ignore = true;}]
   [ <REPLACE> { replaceInto = true; }]
   <INTO> <TABLE> table = CompoundIdentifier()
