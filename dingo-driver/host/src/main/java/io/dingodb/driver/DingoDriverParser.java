@@ -631,7 +631,7 @@ public final class DingoDriverParser extends DingoParser {
                 pointTs = sqlSelect.getFlashBackTso();
             }
         }
-        if (getGcLifeTime() > pointTs) {
+        if (pointTs > 0 && getGcLifeTime() > pointTs) {
             throw DingoResource.DINGO_RESOURCE.invalidAsTimestampParam().ex();
         }
         long tso = TsoService.getDefault().tso();

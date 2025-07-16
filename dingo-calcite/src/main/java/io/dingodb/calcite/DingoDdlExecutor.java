@@ -818,8 +818,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(DingoSqlCreateView sqlCreateView, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", sqlCreateView);
         String connId = (String) context.getDataContext().get("connId");
-        SubSnapshotSchema schema = getSnapShotSchema(sqlCreateView.name, context, false);
-        if (schema == null) {
+        Pair<SubSnapshotSchema, SubSnapshotSchema> schema = getEnvSnapShotSchema(sqlCreateView.name, context, false);
+        if (schema.left == null || schema.right == null) {
             if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
                 throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
             } else {
@@ -829,7 +829,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String tableName = getTableName(sqlCreateView.name);
 
         // Check table exist
-        if (schema.getTable(tableName) != null && !sqlCreateView.getReplace()) {
+        if (schema.right.getTable(tableName) != null && !sqlCreateView.getReplace()) {
             throw DINGO_RESOURCE.tableExists(tableName).ex();
         }
         SqlNode query = renameColumns(sqlCreateView.columnList, sqlCreateView.query);
@@ -839,7 +839,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         SqlDialect sqlDialect = new CalciteSqlDialect(context1);
         String sql = query.toSqlString(sqlDialect).getSql();
         List<String> schemas = new ArrayList<>();
-        schemas.add(schema.getSchemaName());
+        schemas.add(schema.left.getSchemaName());
         List<List<String>> schemaPaths = new ArrayList<>();
         schemaPaths.add(schemas);
         schemaPaths.add(new ArrayList<>());
@@ -900,7 +900,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             })
             .collect(Collectors.toList());
 
-        String schemaName = schema.getSchemaName();
+        String schemaName = schema.right.getSchemaName();
 
         // build tableDefinition
         TableDefinition tableDefinition = TableDefinition.builder()
@@ -933,6 +933,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         properties.setProperty("security_type", sqlCreateView.security);
         properties.setProperty("algorithm", sqlCreateView.alg);
         properties.setProperty("originSql", sqlCreateView.getOriginalCreateSql());
+        properties.setProperty("envSchema", schema.left.getSchemaName());
         tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
         ddlService.createViewWithInfo(schemaName, tableDefinition, connId, null, sqlCreateView.getReplace());
@@ -2235,27 +2236,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if ("NULL".equalsIgnoreCase(newColumn.getDefaultValue())) {
             newColumn.setDefaultValue(null);
         }
-        if (newColumn.getDefaultValue() == null) {
-            if (!newColumn.isNullable()) {
-                if (type instanceof StringType) {
-                    newColumn.setDefaultValue("");
-                } else if (type instanceof LongType
-                    || type instanceof IntegerType || type instanceof DoubleType
-                    || type instanceof FloatType || type instanceof DecimalType) {
-                    newColumn.setDefaultValue("0");
-                } else if (type instanceof DateType) {
-                    newColumn.setDefaultValue("0000-00-00");
-                } else if (type instanceof BooleanType) {
-                    newColumn.setDefaultValue("false");
-                } else if (type instanceof TimestampType) {
-                    newColumn.setDefaultValue("0000-00-00 00:00:00");
-                } else if (type instanceof TimeType) {
-                    newColumn.setDefaultValue("00:00:00");
-                } else if (type instanceof ListType || type instanceof MapType) {
-                    newColumn.setDefaultValue("{}");
-                }
-            }
-        } else {
+        if (newColumn.getDefaultValue() != null) {
             try {
                 String defaultVal = newColumn.getDefaultValue();
                 if (type instanceof LongType) {
@@ -2854,6 +2835,35 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         return (SubSnapshotSchema) schema;
+    }
+
+    private static Pair<SubSnapshotSchema, SubSnapshotSchema> getEnvSnapShotSchema(
+        @NonNull SqlIdentifier id, CalcitePrepare.@NonNull Context context, boolean ifExist
+    ) {
+        CalciteSchema rootSchema = context.getMutableRootSchema();
+        assert rootSchema != null : "No root schema.";
+
+        List<String> names = new ArrayList<>(id.names);
+        Schema schema = null;
+
+        final List<String> defaultSchemaPath = context.getDefaultSchemaPath();
+        assert defaultSchemaPath.size() == 1 : "Assume that the schema path has only one level.";
+        Schema envSchema = Optional.mapOrNull(rootSchema.getSubSchema(
+            defaultSchemaPath.get(0), caseSensitive()), $ -> $.schema);
+        SubSnapshotSchema envSchema1 = (SubSnapshotSchema) envSchema;
+
+        if (names.size() == 1) {
+            return Pair.of(envSchema1, envSchema1);
+        } else {
+            CalciteSchema subSchema = rootSchema.getSubSchema(names.get(0), caseSensitive());
+            if (subSchema != null) {
+                schema = subSchema.schema;
+            } else if (!ifExist) {
+                throw DINGO_RESOURCE.unknownSchema(names.get(0)).ex();
+            }
+            SubSnapshotSchema useSchema = (SubSnapshotSchema) schema;
+            return Pair.of(envSchema1, useSchema);
+        }
     }
 
     private static @NonNull String getTableName(@NonNull SqlIdentifier id) {

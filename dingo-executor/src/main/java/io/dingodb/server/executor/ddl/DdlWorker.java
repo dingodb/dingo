@@ -932,9 +932,9 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition columnDefinition = addingColInfo.getColumn();
         //io.dingodb.common.table.ColumnDefinition columnDefinition
         //    = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
-        if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
-            columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
-        }
+        //if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
+        //    columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
+        //}
         if (columnDefinition.getDefaultValue() != null && columnDefinition.getType() instanceof StringType) {
             String defaultVal = columnDefinition.getDefaultValue();
             if (defaultVal.startsWith("'") && defaultVal.endsWith("'")) {

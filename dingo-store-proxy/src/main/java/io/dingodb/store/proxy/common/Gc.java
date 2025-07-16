@@ -159,7 +159,6 @@ public class Gc {
                 Services.coordinatorService(coordinators).updateGCSafePoint(
                     reqTs, request
                 );
-                InfoSchemaService.root().putGlobalVariable("safepoint_ts", request.getSafePoint());
             } else {
                 LogUtils.info(log, "Safe point update task disabled, skip call coordinator.");
             }

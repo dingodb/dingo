@@ -25,12 +25,26 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.ListType;
+import io.dingodb.common.type.MapType;
+import io.dingodb.common.type.scalar.BooleanType;
+import io.dingodb.common.type.scalar.DateType;
+import io.dingodb.common.type.scalar.DecimalType;
+import io.dingodb.common.type.scalar.DoubleType;
+import io.dingodb.common.type.scalar.FloatType;
+import io.dingodb.common.type.scalar.IntegerType;
+import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.common.type.scalar.TimeType;
+import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
+import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -43,15 +57,16 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -65,6 +80,42 @@ public class AddColumnFiller extends IndexAddFiller {
 
     private CommonId replicaId;
     private int addPos;
+
+    public Object getFillerValue(Column newColumn) {
+        DingoType type = newColumn.getType();
+        if (newColumn.getDefaultVal() == null) {
+            if (!newColumn.isNullable()) {
+                if (type instanceof StringType) {
+                    return "";
+                } else if (type instanceof LongType) {
+                    return 0L;
+                } else if (type instanceof IntegerType) {
+                    return 0;
+                } else if (type instanceof DoubleType) {
+                    return 0D;
+                } else if (type instanceof FloatType) {
+                    return 0F;
+                } else if (type instanceof DecimalType) {
+                    return new BigDecimal(0);
+                } else if (type instanceof DateType) {
+                    return DateTimeUtils.parseDate("0000-00-00");
+                } else if (type instanceof BooleanType) {
+                    return 0;
+                } else if (type instanceof TimestampType) {
+                    return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+                } else if (type instanceof TimeType) {
+                    return DateTimeUtils.parseTime("00:00:00");
+                } else if (type instanceof ListType) {
+                    return new ArrayList<>();
+                } else if (type instanceof MapType) {
+                    return new LinkedHashMap<>();
+                }
+            }
+        } else {
+            return newColumn.getDefaultVal();
+        }
+        return null;
+    }
 
     @Override
     public boolean preWritePrimary(ReorgBackFillTask task) {
@@ -83,7 +134,7 @@ public class AddColumnFiller extends IndexAddFiller {
         if (addColumn == null) {
             throw new RuntimeException("new column not found");
         }
-        defaultVal = addColumn.getDefaultVal();
+        defaultVal = getFillerValue(addColumn);
         //columnIndices = table.getColumnIndices(indexTable.columns.stream()
         //    .map(Column::getName)
         //    .collect(Collectors.toList()));
