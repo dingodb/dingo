@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import com.google.common.collect.Iterators;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -42,6 +43,8 @@ public abstract class ScanWithRelOpOperatorBase extends ScanOperatorBase {
         @NonNull Vertex vertex
     ) {
         ScanWithRelOpParam param = vertex.getParam();
+        SourceProfile profile = param.getSourceProfile("scanBase");
+        long start = System.currentTimeMillis();
         RangeDistribution rd = context.getDistribution();
         byte[] startKey = rd.getStartKey();
         byte[] endKey = rd.getEndKey();
@@ -51,16 +54,19 @@ public abstract class ScanWithRelOpOperatorBase extends ScanOperatorBase {
         CoprocessorV2 coprocessor = param.getCoprocessor();
         if (coprocessor == null) {
             param.setNullCoprocessor(rd.getId());
-            return Iterators.transform(
+            Iterator<Object[]> res = Iterators.transform(
                 storeInstance.scan(
                     vertex.getTask().getJobId().seq,
                     new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)
                 ),
                 wrap(param.getCodec()::decode)::apply
             );
+            profile.incrTxnScanTime(start);
+            profile.end();
+            return res;
         }
         param.setCoprocessor(rd.getId());
-        return Iterators.transform(
+        Iterator<Object[]> res = Iterators.transform(
             storeInstance.scan(
                 vertex.getTask().getJobId().seq,
                 new StoreInstance.Range(startKey, endKey, includeStart, includeEnd),
@@ -68,5 +74,8 @@ public abstract class ScanWithRelOpOperatorBase extends ScanOperatorBase {
             ),
             wrap(param.getPushDownCodec()::decode)::apply
         );
+        profile.incrTxnScanTime(start);
+        profile.end();
+        return res;
     }
 }
