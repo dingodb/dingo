@@ -562,6 +562,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             return valueList.stream()
                 .map(val -> getObjFromBytes(val, TableDefinitionWithId.class))
                 .map(objWithId -> (TableDefinitionWithId)objWithId)
+                .peek(indexWithId -> {
+                    int codecVersion = indexWithId.getTableDefinition().getCodecVersion();
+                    if (codecVersion < 2) {
+                        indexWithId.getTableDefinition().setVisible(true);
+                    }
+                })
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();

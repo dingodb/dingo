@@ -17,6 +17,7 @@
 package io.dingodb.store.local;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,7 @@ import org.rocksdb.WriteOptions;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,18 +50,24 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     @SneakyThrows
     public boolean put(KeyValue row) {
+        long start = System.currentTimeMillis();
         nonNull(row, "row");
         if (StoreService.db.get(row.getKey()) != null) {
             return false;
         }
         StoreService.db.put(writeOptions, nonNull(row.getKey(), "key"), cleanNull(row.getValue(), ByteArrayUtils.EMPTY_BYTES));
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localPut").update(sub, TimeUnit.MILLISECONDS);
         return true;
     }
 
     @Override
     @SneakyThrows
     public boolean delete(byte[] key) {
+        long start = System.currentTimeMillis();
         StoreService.db.delete(writeOptions, key);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localDel").update(sub, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -72,31 +80,47 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
     @Override
     @SneakyThrows
     public KeyValue get(byte[] key) {
+        long start = System.currentTimeMillis();
         byte[] valueBytes = StoreService.db.get(key);
         if (valueBytes == null) {
             return null;
         }
-        return new KeyValue(key, valueBytes);
+        KeyValue keyValue = new KeyValue(key, valueBytes);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localGet").update(sub, TimeUnit.MILLISECONDS);
+        return keyValue;
     }
 
     @Override
     @SneakyThrows
     public List<KeyValue> get(List<byte[]> keys) {
+        long start = System.currentTimeMillis();
         List<byte[]> values = StoreService.db.multiGetAsList(keys);
-        return IntStream.range(0, keys.size())
+        List<KeyValue> res = IntStream.range(0, keys.size())
             .mapToObj(i -> new KeyValue(keys.get(i), values.get(i)))
             .filter(kv -> kv.getValue() != null)
             .collect(Collectors.toList());
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localMultiGet").update(sub, TimeUnit.MILLISECONDS);
+        return res;
     }
 
     @Override
     public Iterator<KeyValue> scan(Range range) {
-        return new KeyValueIterator(StoreService.db.newIterator(), range);
+        long start = System.currentTimeMillis();
+        KeyValueIterator keyValueIterator = new KeyValueIterator(StoreService.db.newIterator(), range);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localScan").update(sub, TimeUnit.MILLISECONDS);
+        return keyValueIterator;
     }
 
     @Override
     public Iterator<KeyValue> scan(long requestTs, Range range) {
-        return new KeyValueIterator(StoreService.db.newIterator(), range);
+        long start = System.currentTimeMillis();
+        KeyValueIterator keyValueIterator = new KeyValueIterator(StoreService.db.newIterator(), range);
+        long sub = System.currentTimeMillis() - start;
+        DingoMetrics.timer("localScan1").update(sub, TimeUnit.MILLISECONDS);
+        return keyValueIterator;
     }
 
     private byte[] nextKey(byte[] key) {
@@ -147,7 +171,8 @@ public class StoreInstance implements io.dingodb.store.api.StoreInstance {
 
         @Override
         public boolean hasNext() {
-            return hasNext = iterator.isValid() && compareWithoutLen(iterator.key(), end) < 0;
+            hasNext = iterator.isValid() && compareWithoutLen(iterator.key(), end) < 0;
+            return hasNext;
         }
 
         @Override

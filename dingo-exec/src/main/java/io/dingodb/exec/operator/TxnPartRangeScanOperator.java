@@ -51,6 +51,7 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
         RangeDistribution distribution = context.getDistribution();
         TxnPartRangeScanParam param = vertex.getParam();
         SourceProfile profile = param.getSourceProfile("txnPartRange");
+        long start = System.currentTimeMillis();
         byte[] startKey = distribution.getStartKey();
         byte[] endKey = distribution.getEndKey();
         boolean includeStart = distribution.isWithStart();
@@ -77,27 +78,35 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),
                 wrap(ByteUtils::mapping)::apply);
+            profile.incrLocalTime(start);
+            start = System.currentTimeMillis();
             kvKVIterator = kvStore.txnScan(
                 param.getScanTs(),
                 new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut()
             );
+            profile.incrTxnScanTime(start);
             profile.setTaskType("executor");
         } else {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd), coprocessor),
                 wrap(ByteUtils::mapping)::apply);
+            profile.incrLocalTime(start);
+            start = System.currentTimeMillis();
             kvKVIterator = kvStore.txnScan(
                 param.getScanTs(),
                 new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut()
             );
+            profile.incrTxnScanTime(start);
             profile.setTaskType("corp");
         }
         if (kvKVIterator instanceof ProfileScanIterator) {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) kvKVIterator;
             profile.getChildren().add(profileScanIterator.getInitRpcProfile());
         }
+        start = System.currentTimeMillis();
         profile.setRegionId(partId.seq);
         TxnMergedIterator txnMergedIterator = new TxnMergedIterator(localKVIterator, kvKVIterator, param.getCodec());
+        profile.incrMerge(start);
         profile.end();
         return txnMergedIterator;
     }
