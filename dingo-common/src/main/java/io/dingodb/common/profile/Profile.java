@@ -168,8 +168,17 @@ public class Profile {
             dagText.append(node).append(profile.type)
                 .append(",duration:").append(profile.getDuration());
             if (profile.opDuration.get() > 0) {
-                dagText.append(",op:").append(profile.opDuration.get());
+                dagText.append(",opDuration:").append(profile.opDuration.get());
                 dagText.append(",opCount:").append(profile.getOpCount().get());
+            }
+            if (profile instanceof SourceProfile) {
+                SourceProfile sourceProfile = (SourceProfile) profile;
+                dagText.append(", localScanDuration:").append(sourceProfile.localScan);
+                dagText.append(", txnScanDuration:").append(sourceProfile.txnScan);
+                dagText.append(", mergeDuration:").append(sourceProfile.merge);
+                if (sourceProfile.taskType != null) {
+                    dagText.append(", corp:").append(sourceProfile.taskType);
+                }
             }
             dagText
                 .append(",count:").append(profile.count)

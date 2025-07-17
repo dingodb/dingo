@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import com.google.common.collect.Iterators;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -46,11 +47,16 @@ public final class ScanOperator extends ScanOperatorBase {
         byte[] endKey = rd.getEndKey();
         boolean includeStart = rd.isWithStart();
         boolean includeEnd = rd.isWithEnd();
+        SourceProfile profile = param.getSourceProfile("scanBase");
+        long start = System.currentTimeMillis();
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), rd.getId());
-        return Iterators.transform(
+        Iterator<Object[]> res = Iterators.transform(
             storeInstance.scan(new StoreInstance.Range(startKey, endKey, includeStart, includeEnd)),
             wrap(param.getCodec()::decode)::apply
         );
+        profile.incrTxnScanTime(start);
+        profile.end();
+        return res;
     }
 
     @Override

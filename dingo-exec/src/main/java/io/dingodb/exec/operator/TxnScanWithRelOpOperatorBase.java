@@ -71,6 +71,8 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         RangeDistribution distribution = context.getDistribution();
         profile.setRegionId(distribution.getId().seq);
         Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
+        profile.incrLocalTime(start);
+        start = System.currentTimeMillis();
         if (localIterator.hasNext()) { // Cannot push down
             Iterator<KeyValue> storeIterator = createStoreIterator(
                 tableId,
@@ -80,13 +82,16 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             );
             profile.setTaskType("executor");
             param.setNullCoprocessor(distribution.getId());
-            profile.incrTime(start);
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
             }
+            profile.incrTxnScanTime(start);
+            start = System.currentTimeMillis();
+            Iterator<Object[]> res = createMergedIterator(localIterator, storeIterator, param.getCodec());
+            profile.incrMerge(start);
             profile.end();
-            return createMergedIterator(localIterator, storeIterator, param.getCodec());
+            return res;
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();
         if (coprocessor == null) {
@@ -96,13 +101,13 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
-            profile.incrTime(start);
             profile.setTaskType("executor");
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
             }
             param.setNullCoprocessor(distribution.getId());
+            profile.incrTxnScanTime(start);
             profile.end();
             return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
         }
@@ -115,7 +120,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         );
         param.setCoprocessor(distribution.getId());
         profile.setTaskType("corp");
-        profile.incrTime(start);
+        profile.incrTxnScanTime(start);
         if (storeIterator instanceof ProfileScanIterator) {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
             profile.getChildren().add(profileScanIterator.getInitRpcProfile());

@@ -67,7 +67,10 @@ public class ShowTableIndexExecutor extends QueryExecutor {
         }
         tuples = metaService.getTableIndexDefinitions(table.getTableId())
             .values()
-            .stream().filter(i -> !i.getName().equals(tableName) && i.isVisible())
+            .stream()
+            .filter(i -> {
+                return !i.getName().equals(tableName) && i.isVisible();
+            })
             .map(index -> {
                 Properties properties = index.getProperties();
                 if (!properties.containsKey("indexType") || index.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
