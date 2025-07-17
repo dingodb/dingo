@@ -18,6 +18,7 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -35,16 +36,22 @@ public final class TxnScanOperator extends TxnScanOperatorBase {
     @Override
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnScanParam param = vertex.getParam();
+        SourceProfile profile = param.getSourceProfile("scanBase");
+        long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
         Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
+        profile.incrLocalTime(start);
+        start = System.currentTimeMillis();
         Iterator<KeyValue> storeIterator = createStoreIterator(
             tableId,
             distribution,
             param.getScanTs(),
             param.getTimeOut()
         );
+        profile.incrTxnScanTime(start);
+        profile.end();
         return createMergedIterator(localIterator, storeIterator, param.getCodec());
     }
 

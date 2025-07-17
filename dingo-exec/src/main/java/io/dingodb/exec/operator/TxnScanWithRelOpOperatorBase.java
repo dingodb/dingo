@@ -71,6 +71,8 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         RangeDistribution distribution = context.getDistribution();
         profile.setRegionId(distribution.getId().seq);
         Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
+        profile.incrLocalTime(start);
+        start = System.currentTimeMillis();
         if (localIterator.hasNext()) { // Cannot push down
             Iterator<KeyValue> storeIterator = createStoreIterator(
                 tableId,
@@ -78,9 +80,9 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
+            profile.incrTxnScanTime(start);
             profile.setTaskType("executor");
             param.setNullCoprocessor(distribution.getId());
-            profile.incrTime(start);
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
                 profile.getChildren().add(profileScanIterator.getInitRpcProfile());
@@ -96,7 +98,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeOut()
             );
-            profile.incrTime(start);
+            profile.incrTxnScanTime(start);
             profile.setTaskType("executor");
             if (storeIterator instanceof ProfileScanIterator) {
                 ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
@@ -115,7 +117,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         );
         param.setCoprocessor(distribution.getId());
         profile.setTaskType("corp");
-        profile.incrTime(start);
+        profile.incrTxnScanTime(start);
         if (storeIterator instanceof ProfileScanIterator) {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
             profile.getChildren().add(profileScanIterator.getInitRpcProfile());

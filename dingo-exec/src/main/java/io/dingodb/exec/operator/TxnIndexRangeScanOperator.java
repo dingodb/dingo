@@ -23,6 +23,7 @@ import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -31,6 +32,7 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.SourceParam;
 import io.dingodb.exec.operator.params.TxnIndexRangeScanParam;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.utils.RelOpUtils;
@@ -110,7 +112,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
     @Override
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnIndexRangeScanParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("indexFullScan");
+        SourceProfile profile = param.getSourceProfile("indexFullScan");
         long start = System.currentTimeMillis();
         RangeDistribution distribution = context.getDistribution();
 
@@ -118,6 +120,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
             vertex.getTask().getTxnId(),
             param.getIndexTableId(),
             distribution);
+        profile.incrLocalTime(start);
+        start = System.currentTimeMillis();
         if (localIterator.hasNext()) {
             Iterator<KeyValue> storeIterator = createStoreIterator(
                 param.getIndexTableId(),
@@ -125,8 +129,11 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeout()
             );
+            profile.incrTxnScanTime(start);
+            start = System.currentTimeMillis();
             param.setNullCoprocessor(distribution.getId());
             Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
+            profile.incrMerge(start);
             if (param.getRelOp() != null) {
                 if (param.getRelOp() instanceof PipeOp) {
                     PipeOp op = (PipeOp) param.getRelOp();
@@ -144,6 +151,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
             if (param.getSelection2() != null) {
                 iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
+            profile.end();
             return iterator;
         }
 
@@ -155,6 +163,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 param.getScanTs(),
                 param.getTimeout()
             );
+            profile.incrTxnScanTime(start);
             Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
             if (param.getRelOp() != null) {
                 if (param.getRelOp() instanceof PipeOp) {
@@ -172,6 +181,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
             if (param.getSelection2() != null) {
                 iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
             }
+            profile.end();
             return iterator;
         }
 
@@ -183,13 +193,14 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
             coprocessor
         );
 
-        profile.time(start);
+        profile.incrTxnScanTime(start);
         Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
         iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
         iterator = getOtherRelIterator(param, iterator);
         if (param.getSelection2() != null) {
             iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
         }
+        profile.end();
         return iterator;
     }
 

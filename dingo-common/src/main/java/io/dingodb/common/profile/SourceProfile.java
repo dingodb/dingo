@@ -24,6 +24,9 @@ import lombok.EqualsAndHashCode;
 public class SourceProfile extends Profile {
     long regionId;
     String taskType;
+    long localScan;
+    long txnScan;
+    long merge;
 
     public SourceProfile(String type) {
         super(type);
@@ -52,6 +55,24 @@ public class SourceProfile extends Profile {
         if (time < min) {
             min = time;
         }
+    }
+
+    public void incrLocalTime(long start) {
+        long current = System.currentTimeMillis();
+        long time = current - start;
+        this.localScan += time;
+    }
+
+    public void incrTxnScanTime(long start) {
+        long current = System.currentTimeMillis();
+        long time = current - start;
+        this.txnScan += time;
+    }
+
+    public void incrMerge(long start) {
+        long current = System.currentTimeMillis();
+        long time = current - start;
+        this.merge += time;
     }
 
     public void decreaseCount() {

@@ -144,9 +144,17 @@ public class Profile {
             throw new RuntimeException(e);
         }
         if (!"base".equals(profile.type)) {
-            dagText.append(node).append(profile.type)
-                .append(",duration:").append(profile.getDuration())
-                .append(",count:").append(profile.count)
+            dagText.append(node).append(profile.type).append(",duration:").append(profile.getDuration());
+            if (profile instanceof SourceProfile) {
+                SourceProfile sourceProfile = (SourceProfile) profile;
+                dagText.append(", localScanDuration:").append(sourceProfile.localScan);
+                dagText.append(", txnScanDuration:").append(sourceProfile.txnScan);
+                dagText.append(", mergeDuration:").append(sourceProfile.merge);
+                if (sourceProfile.taskType != null) {
+                    dagText.append(", corp:").append(sourceProfile.taskType);
+                }
+            }
+            dagText.append(",count:").append(profile.count)
                 .append(",start:").append(profile.start)
                 .append(",end:").append(profile.end)
                 .append("\r\n");

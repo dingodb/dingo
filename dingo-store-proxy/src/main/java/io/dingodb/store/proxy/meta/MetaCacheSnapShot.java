@@ -64,12 +64,7 @@ public class MetaCacheSnapShot {
         DingoMetrics.counter("metaCacheSnapShotInstanceCount").inc();
     }
 
-    public synchronized void clear() {
-
-    }
-
     public void close() {
-        clear();
     }
 
     private List<TableDefinitionWithId> getIndexes(TableDefinitionWithId tableWithId, DingoCommonId tableId) {
