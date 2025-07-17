@@ -100,7 +100,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 } else if (type instanceof DateType) {
                     return DateTimeUtils.parseDate("0000-00-00");
                 } else if (type instanceof BooleanType) {
-                    return 0;
+                    return false;
                 } else if (type instanceof TimestampType) {
                     return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
                 } else if (type instanceof TimeType) {
