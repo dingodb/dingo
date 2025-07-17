@@ -6629,6 +6629,15 @@ SqlNode BuiltinFunctionCall() :
             return SqlLibraryOperators.SUBSTRING_INDEX.createCall(s.end(this), args);
         }
     |
+        <LEFT> { s = span(); }
+        <LPAREN>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <COMMA>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <RPAREN> {
+            return SqlLibraryOperators.LEFT.createCall(s.end(this), args);
+        }
+    |
         <TRIM> {
             SqlLiteral flag = null;
             SqlNode trimChars = null;

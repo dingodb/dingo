@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -32,6 +34,11 @@ public class ValuesFun extends UnaryOp {
     @Override
     public Object evalValue(Object value, ExprConfig config) {
         return value;
+    }
+
+    @Override
+    public Type getType() {
+        return Types.ANY;
     }
 
     @Override
