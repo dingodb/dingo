@@ -85,16 +85,16 @@ public class CalcDistributionOperator extends IteratorSourceOperator {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         while (retry-- > 0) {
             try {
-                if (param.getKeyTuple() != null) {
+                if (param.getKeyTuple() == null || distributions.size() > 1) {
+                    return distributions.stream()
+                        .map(d -> new Object[]{d, param.getKeyTuple()})
+                        .iterator();
+                } else {
                     Object[] keyTuple = param.getKeyTuple();
                     CommonId partId = ps.calcPartId(param.getCodec().encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple)), param.getRangeDistribution());
                     RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
                     return new ArrayList<>(distributions).stream()
                         .filter(d -> d.getId().equals(distribution.getId()))
-                        .map(d -> new Object[]{d, param.getKeyTuple()})
-                        .iterator();
-                } else {
-                    return distributions.stream()
                         .map(d -> new Object[]{d, param.getKeyTuple()})
                         .iterator();
                 }

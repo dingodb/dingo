@@ -194,7 +194,7 @@ public class SequenceService implements io.dingodb.meta.SequenceService {
     public Long lastVal(String name) {
         checkSequence(name);
         SequenceGenerator generator = queueMap.get(name);
-        return generator == null ? null : generator.current();
+        return generator == null ? null : generator.last();
     }
 
     @Override
