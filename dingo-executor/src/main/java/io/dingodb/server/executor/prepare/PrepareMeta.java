@@ -103,7 +103,7 @@ public final class PrepareMeta {
         Object tenant = infoSchemaService.getTenant(tenantId);
         if (tenant == null) {
             LogUtils.error(log, "Tenant not exists :{}", tenantId);
-            return;
+            System.exit(0);
         }
         initTableFiles();
         prepareSchema(tenantId);
