@@ -29,6 +29,7 @@ public class SequenceGenerator {
     private final int cache;
     private final boolean cycle;
     private final ConcurrentLinkedQueue<Long> queue;
+    private Long lastReturnedValue = null;
 
     public SequenceGenerator(SequenceDefinition definition) {
         if (definition.getMinvalue() > definition.getMaxvalue()) {
@@ -79,6 +80,7 @@ public class SequenceGenerator {
         if (next == null) {
             throw new RuntimeException("Sequence has run out");
         } else {
+            lastReturnedValue = next;
             return next;
         }
     }
@@ -88,6 +90,10 @@ public class SequenceGenerator {
             return queue.peek() - increment;
         }
         return null;
+    }
+
+    public synchronized Long last() {
+        return lastReturnedValue;
     }
 
     public synchronized Long set(Long seq) {
