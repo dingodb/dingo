@@ -203,6 +203,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedModifyVec;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
@@ -2236,7 +2237,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if ("NULL".equalsIgnoreCase(newColumn.getDefaultValue())) {
             newColumn.setDefaultValue(null);
         }
-        if (newColumn.getDefaultValue() != null) {
+        if (newColumn.getDefaultValue() == null) {
+            if (!newColumn.isNullable()) {
+                if (type instanceof DateType) {
+                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", "0000-00-00");
+                } else if (type instanceof TimestampType) {
+                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", "0000-00-00 00:00:00");
+                }
+            }
+        } else {
             try {
                 String defaultVal = newColumn.getDefaultValue();
                 if (type instanceof LongType) {
