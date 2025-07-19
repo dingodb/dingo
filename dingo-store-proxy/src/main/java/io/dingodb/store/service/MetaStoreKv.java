@@ -17,10 +17,12 @@
 package io.dingodb.store.service;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.MetaService;
@@ -46,6 +48,7 @@ import io.dingodb.sdk.service.entity.coordinator.ScanRegionsRequest;
 import io.dingodb.sdk.service.entity.coordinator.ScanRegionsResponse;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.meta.MetaServiceApiImpl;
 import io.dingodb.store.proxy.service.CodecService;
@@ -58,6 +61,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Set;
 
 @Slf4j
@@ -189,46 +193,108 @@ public class MetaStoreKv {
         key = getMetaDataKey(key);
 
         List<byte[]> keys = Collections.singletonList(key);
-        StoreService storeService = getStoreService(key);
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        while (retry-- > 0) {
+            try {
+                StoreService storeService = getStoreService(key);
+                TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
 
-        List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, statementTimeout);
-        if (keyValueList.isEmpty()) {
-            return null;
-        } else {
-            return keyValueList.get(0).getValue();
+                List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, statementTimeout);
+                if (keyValueList.isEmpty()) {
+                    return null;
+                } else {
+                    return keyValueList.get(0).getValue();
+                }
+            } catch (Exception e) {
+                if (e instanceof RegionSplitException || e.getMessage().contains("epoch is not match, region_epoch")) {
+                    LogUtils.warn(log, "meta region split:{}", e.getMessage(), e);
+                    Utils.sleep(100);
+                } else {
+                    LogUtils.error(log, "meta region mGet error:{}", e.getMessage(), e);
+                    throw e;
+                }
+            }
         }
+        return null;
     }
 
     public byte[] mGetImmediately(byte[] key, long startTs) {
         key = getMetaDataKey(key);
         List<byte[]> keys = Collections.singletonList(key);
 
-        StoreService storeService = getStoreService(key);
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
-        try {
-            List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, 1000);
-            if (keyValueList.isEmpty()) {
-                return null;
-            } else {
-                return keyValueList.get(0).getValue();
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+        while (retry-- > 0) {
+            try {
+                StoreService storeService = getStoreService(key);
+                TransactionStoreInstance storeInstance = new TransactionStoreInstance(storeService, null, partId);
+                List<KeyValue> keyValueList = storeInstance.getKeyValues(startTs, keys, 1000);
+                if (keyValueList.isEmpty()) {
+                    return null;
+                } else {
+                    return keyValueList.get(0).getValue();
+                }
+            } catch (Exception e) {
+                if (e instanceof RegionSplitException || e.getMessage().contains("epoch is not match, region_epoch")) {
+                    LogUtils.warn(log, "meta region split:{}", e.getMessage(), e);
+                    Utils.sleep(100);
+                } else {
+                    LogUtils.error(log, "meta region mGetImmediately error:{}", e.getMessage(), e);
+                    return null;
+                }
             }
-        } catch (Exception e) {
-            return null;
         }
+        return null;
     }
 
     public List<byte[]> mRange(byte[] start, byte[] end, long startTs) {
         start = getMetaDataKey(start);
         end = getMetaDataKey(end);
-        TransactionStoreInstance storeInstance = new TransactionStoreInstance(preStoreService, null, partId);
-        StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
-        Iterator<KeyValue> scanIterator = storeInstance.getScanIterator(startTs, range, statementTimeout, null);
-        List<byte[]> values = new ArrayList<>();
-        while (scanIterator.hasNext()) {
-            values.add(scanIterator.next().getValue());
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
+
+        while (retry-- > 0) {
+            try {
+                List<StoreService> storeServiceList = getStoreServiceList(start, end);
+                if (storeServiceList.size() == 1) {
+                    TransactionStoreInstance storeInstance = new TransactionStoreInstance(
+                        storeServiceList.get(0), null, partId
+                    );
+                    StoreInstance.Range range = new StoreInstance.Range(start, end, true, false);
+                    Iterator<KeyValue> scanIterator = storeInstance.getScanIterator(startTs, range, statementTimeout, null);
+                    List<byte[]> values = new ArrayList<>();
+                    while (scanIterator.hasNext()) {
+                        values.add(scanIterator.next().getValue());
+                    }
+                    return values;
+                } else {
+                    byte[] finalStart = start;
+                    byte[] finalEnd = end;
+                    return storeServiceList.stream().flatMap(storeService -> {
+                        TransactionStoreInstance storeInstance = new TransactionStoreInstance(
+                            storeServiceList.get(0), null, partId
+                        );
+                        StoreInstance.Range range = new StoreInstance.Range(finalStart, finalEnd, true, false);
+                        Iterator<KeyValue> scanIterator = storeInstance.getScanIterator(startTs, range, statementTimeout, null);
+                        List<byte[]> values = new ArrayList<>();
+                        while (scanIterator.hasNext()) {
+                            values.add(scanIterator.next().getValue());
+                        }
+                        return values.stream();
+                    }).toList();
+                }
+            } catch (Exception e) {
+                if (e instanceof RegionSplitException || e.getMessage().contains("epoch is not match, region_epoch")) {
+                    LogUtils.warn(log, "meta region split:{}", e.getMessage(), e);
+                    Utils.sleep(100);
+                } else {
+                    LogUtils.error(log, "meta region mRange error:{}", e.getMessage(), e);
+                    return new ArrayList<>();
+                }
+            }
         }
-        return values;
+        return new ArrayList<>();
     }
 
     public void mDel(byte[] key, long startTs) {
@@ -277,6 +343,16 @@ public class MetaStoreKv {
         CodecService.INSTANCE.setId(key, partId.seq);
         key[0] = namespace;
         return key;
+    }
+
+    public List<StoreService> getStoreServiceList(byte[] start, byte[] end) {
+        PartitionService ps = PartitionService.getService(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
+            MetaService.root().getRangeDistribution(metaId);
+        NavigableSet<RangeDistribution> ddlRanges = ps.calcPartitionRange(start, end, true, false, ranges);
+        return ddlRanges.stream().map(rangeDistribution -> Services.storeRegionService(
+            coordinators, rangeDistribution.id().seq, TransactionUtil.STORE_RETRY
+        )).toList();
     }
 
     public StoreService getStoreService(byte[] key) {
