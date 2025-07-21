@@ -930,17 +930,6 @@ public class DdlWorker {
         }
         AddingColInfo addingColInfo = (AddingColInfo) job.getArgs().get(0);
         io.dingodb.common.table.ColumnDefinition columnDefinition = addingColInfo.getColumn();
-        //io.dingodb.common.table.ColumnDefinition columnDefinition
-        //    = (io.dingodb.common.table.ColumnDefinition) job.getArgs().get(0);
-        //if (!columnDefinition.isNullable() && columnDefinition.getDefaultValue() == null) {
-        //    columnDefinition.setDefaultValue(DdlUtil.getColDefaultValIfNull(columnDefinition.getType()));
-        //}
-        if (columnDefinition.getDefaultValue() != null && columnDefinition.getType() instanceof StringType) {
-            String defaultVal = columnDefinition.getDefaultValue();
-            if (defaultVal.startsWith("'") && defaultVal.endsWith("'")) {
-                columnDefinition.setDefaultValue(defaultVal.substring(1, defaultVal.length() - 1));
-            }
-        }
 
         Pair<TableDefinitionWithId, String> tableRes = checkTableExistAndCancelNonExistJob(job, job.getSchemaId());
         if (tableRes.getValue() != null && tableRes.getKey() == null) {

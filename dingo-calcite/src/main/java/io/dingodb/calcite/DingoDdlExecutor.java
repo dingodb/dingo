@@ -115,7 +115,6 @@ import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
-import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.DefinitionUtils;
@@ -1540,7 +1539,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (sqlFlashBackSchema.newSchemaName != null) {
             String validateName = sqlFlashBackSchema.newSchemaName;
-            SubSnapshotSchema subSchema1 = rootSchema.getSubSchema(schemaName);
+            SubSnapshotSchema subSchema1 = rootSchema.getSubSchema(validateName);
             if (subSchema1 != null) {
                 throw SqlUtil.newContextException(
                     sqlFlashBackSchema.schemaId.getParserPosition(),
