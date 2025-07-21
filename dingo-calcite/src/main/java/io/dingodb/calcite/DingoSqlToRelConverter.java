@@ -191,9 +191,9 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
             } else {
                 return super.convertInsert(call);
             }
-            RelDataType sourceRowType = sourceRel.getRowType();
+            RelDataType sourceRowType = messageRel.getRowType();
             final RexRangeRef sourceRef = rexBuilder.makeRangeReference(sourceRowType, 0, false);
-            final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, targetTable.getRowType().getFieldNames());
+            final Blackboard bb = createInsertBlackboard(targetTable, sourceRef, sourceRowType.getFieldNames());
             for (SqlNode n : sqlInsert.getSourceExpressionList()) {
                 if (n.getKind() == SqlKind.IDENTIFIER) {
                     rexNodeSourceExpressionList.add(null);

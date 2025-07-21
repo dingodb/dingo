@@ -61,6 +61,8 @@ public class DingoForUpdateFilterRule extends RelRule<DingoForUpdateFilterRule.C
             forUpdate.getTable()
         ));
 
+        call.getPlanner().prune(scan);
+        call.getPlanner().prune(forUpdate);
     }
 
     @Override

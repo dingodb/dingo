@@ -730,7 +730,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     newValue = sqlExpr == null ? newTuple[mapping.get(i)] : sqlExpr.eval(tuple);
                 }
 
-                if (newValue.equals("NULL")) {
+                if (newValue == null || newValue.equals("NULL")) {
                     newValue = null;
                 }
                 int index = mapping.get(i);
