@@ -303,6 +303,7 @@ public class InfoSchemaBuilder {
             if (diff.getTableId() != 0) {
                 table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableId());
             } else {
+                LogUtils.error(log, "applyCreateTable diff tableId is null:{}", diff.toString());
                 table = schemaService.getTableDef(diff.getSchemaId(), diff.getTableName());
             }
             if (table == null) {

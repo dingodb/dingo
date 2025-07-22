@@ -63,6 +63,7 @@ import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
 import io.dingodb.calcite.grammar.ddl.SqlFlushPrivileges;
+import io.dingodb.calcite.grammar.ddl.SqlForeign;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRecoverTable;
@@ -201,6 +202,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNotSupportedYet;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
@@ -417,6 +419,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (columnList == null) {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
                 RESOURCE.createTableRequiresColumnList());
+        }
+        if (columnList.stream().anyMatch(SqlForeign.class::isInstance)) {
+            throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
         }
         final String tableName = getTableName(create.name);
 
@@ -1571,23 +1576,23 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(SqlAlterDropForeign sqlAlterDropForeign, CalcitePrepare.Context context) {
-
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
     }
 
     public void execute(SqlAlterAddConstraint sqlAlterAddConstraint, CalcitePrepare.Context context) {
-
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
     }
 
     public void execute(SqlAlterAddForeign sqlAlterAddForeign, CalcitePrepare.Context context) {
-
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
     }
 
     public void execute(SqlAlterConstraint sqlAlterConstraint, CalcitePrepare.Context context) {
-
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
     }
 
     public void execute(SqlAlterDropConstraint sqlAlterDropConstraint, CalcitePrepare.Context context) {
-
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
     }
 
     public void execute(SqlAlterModifyColumn sqlAlterModifyColumn, CalcitePrepare.Context context) {

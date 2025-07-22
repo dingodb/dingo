@@ -1197,6 +1197,23 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
+    @Override
+    public void dropSchema(long jobId, Long schemaId) {
+        GcDeleteRegion gcDeleteRegion = GcDeleteRegion
+            .builder()
+            .jobId(jobId)
+            .regionId(0)
+            .startTs(TsoService.getDefault().cacheTso())
+            .startKey("")
+            .endKey("")
+            .eleId(schemaId.toString())
+            .build();
+        gcDeleteRegion.setEleType("SCHEMA");
+        Utils.put(DdlUtil.gcDelRegionQueue, gcDeleteRegion);
+        LogUtils.info(log, "gcDelete put queue jobId:{}, schemaId:{}, startTs:{}",
+            jobId, schemaId, gcDeleteRegion.getStartTs());
+    }
+
     public void rebaseRegion(
         Object tableWithId,
         Object partition
@@ -1261,10 +1278,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         long ts = TsoService.getDefault().tso();
 
-        List<IndexTable> indexes = null;
         if (!"view".equalsIgnoreCase(table.getTableType())) {
             dropRegionByTable(table.getTableId(), jobId, ts, autoInc);
-            indexes = table.getIndexes();
+            List<IndexTable> indexes = table.getIndexes();
             if (indexes != null) {
                 for (IndexTable index : indexes) {
                     dropRegionByTable(index.getTableId(), jobId, ts);
@@ -1272,8 +1288,19 @@ public class MetaService implements io.dingodb.meta.MetaService {
             }
         }
 
+        return true;
+    }
+
+    @Override
+    public boolean dropTableMeta(long tenantId, long schemaId, long tableId) {
+        io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
+        Table table = schemaService.getTableDef(schemaId, tableId);
+        if (table == null) {
+            return false;
+        }
         infoSchemaService.dropTable(table.getTableId().domain, table.tableId.seq);
         if (!"view".equalsIgnoreCase(table.getTableType())) {
+            List<IndexTable> indexes = table.getIndexes();
             if (indexes == null) {
                 return true;
             }

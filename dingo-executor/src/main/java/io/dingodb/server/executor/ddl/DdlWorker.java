@@ -378,7 +378,7 @@ public class DdlWorker {
             synchronized (DdlContext.INSTANCE) {
                 schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                 SchemaInfo schemaInfoTmp = infoSchemaService.getSchema(schemaInfo.getName());
-                if (schemaInfoTmp != null && schemaInfoTmp.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+                if (schemaInfoTmp != null) {
                     job.setState(JobState.jobStateCancelled);
                     job.setDingoErr(DingoErrUtil.newInternalErr(ErrDBCreateExists, job.getSchemaName()));
                     return Pair.of(0L, "The database already exists");
@@ -426,7 +426,7 @@ public class DdlWorker {
             case SCHEMA_DELETE_ONLY:
                 schemaInfo.setSchemaState(SchemaState.SCHEMA_NONE);
                 infoSchemaService.updateSchema(schemaInfo);
-                infoSchemaService.dropSchema(schemaInfo.getSchemaId());
+                MetaService.root().dropSchema(ddlJob.getId(), ddlJob.getSchemaId());
                 ddlJob.finishDBJob(JobState.jobStateDone, SchemaState.SCHEMA_NONE, res.getKey(), schemaInfo);
                 break;
             default:
@@ -1931,7 +1931,7 @@ public class DdlWorker {
                     if (schemaInfo == null) {
                         LogUtils.info(log, "flashback schema:{} ts:{}, but found not schemaInfo, new tso:{}",
                             recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs(), TsoService.getDefault().tso());
-                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped schema '"
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped meta schema '"
                             + recoverInfo.getOldSchemaName() + "'"));
                         job.setState(JobState.jobStateCancelled);
                         return Pair.of(0L, job.getDingoErr().errorMsg);
