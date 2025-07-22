@@ -47,6 +47,7 @@ public final class ErrorMessage {
         errorMap.put(ErrDupKeyName, "Duplicate key name '%s'");
         errorMap.put(ErrSetDiffTime, "can not set different time in the as of");
         errorMap.put(ErrNoDB, "No database selected");
+        errorMap.put(ErrNotSupportedYet, "Not supported yet");
     }
 
     private ErrorMessage() {

@@ -221,6 +221,11 @@ public class LocalMetaService implements MetaService {
         return false;
     }
 
+    @Override
+    public boolean dropTableMeta(long tenantId, long schemaId, long tableId) {
+        return true;
+    }
+
     public boolean dropTables(@NonNull Collection<CommonId> tableIds) {
         tableIds.forEach(tableDefinitions::remove);
         return true;
