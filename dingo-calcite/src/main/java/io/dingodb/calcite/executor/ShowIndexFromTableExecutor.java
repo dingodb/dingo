@@ -96,7 +96,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         Object[] val = new Object[17];
         val[0] = tableName;
         if (index instanceof IndexTable) {
-            val[1] = unique ? 1 : 0;
+            val[1] = unique ? 0 : 1;
             val[2] = index.getName();
         } else {
             val[1] = 0;
@@ -127,7 +127,7 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
     public List<String> columns() {
         List<String> indexList = new ArrayList<>();
         indexList.add("Table");
-        indexList.add("Unique");
+        indexList.add("Non_unique");
         indexList.add("Key_name");
         indexList.add("Seq_in_index");
         indexList.add("Column_name");
