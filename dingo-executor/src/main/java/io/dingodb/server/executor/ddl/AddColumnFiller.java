@@ -88,7 +88,7 @@ public class AddColumnFiller extends IndexAddFiller {
 
     public Object getFillerValue(Column newColumn) {
         DingoType type = newColumn.getType();
-        if (newColumn.getDefaultVal() == null) {
+        if (newColumn.getDefaultValueExpr() == null) {
             if (!newColumn.isNullable()) {
                 if (type instanceof StringType) {
                     return "";

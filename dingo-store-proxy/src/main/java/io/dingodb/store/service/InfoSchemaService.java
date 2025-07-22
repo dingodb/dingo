@@ -41,6 +41,7 @@ import io.dingodb.sdk.service.VersionService;
 import io.dingodb.sdk.service.entity.Message;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.Location;
+import io.dingodb.sdk.service.entity.common.SchemaState;
 import io.dingodb.sdk.service.entity.common.StoreState;
 import io.dingodb.sdk.service.entity.common.StoreType;
 import io.dingodb.sdk.service.entity.coordinator.CreateIdsRequest;
@@ -318,6 +319,7 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return schemaList.stream()
             .filter(schemaInfo1 -> !caseSensitive() ? schemaInfo1.getName().equalsIgnoreCase(schema)
                 : schemaInfo1.getName().equals(schema))
+            .filter(schemaInfo -> schemaInfo.getSchemaState() == io.dingodb.common.meta.SchemaState.SCHEMA_PUBLIC)
             .findFirst().orElse(null);
     }
 
@@ -405,6 +407,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .filter(tableDefinitionWithId -> !caseSensitive()
                 ? tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(table)
                 : tableDefinitionWithId.getTableDefinition().getName().equals(table))
+            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getSchemaState()
+                == SchemaState.SCHEMA_PUBLIC
+            )
             .findFirst().orElse(null);
     }
 
@@ -632,9 +637,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
     @Override
     public void dropSchema(long schemaId) {
-        byte[] tenantKey = tenantKey(tenantId);
-        byte[] schemaKey = schemaKey(schemaId);
-        txn.hDel(tenantKey, schemaKey);
+        try {
+            byte[] tenantKey = tenantKey(tenantId);
+            byte[] schemaKey = schemaKey(schemaId);
+            txn.hDel(tenantKey, schemaKey);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 
     @Override
@@ -738,6 +747,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         // check duplicate key TableName
         List<TableDefinitionWithId> duplicateTableList = tableObjList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
+            .filter(tableDefinitionWithId ->
+                tableDefinitionWithId.getTableDefinition().getSchemaState() == SchemaState.SCHEMA_PUBLIC
+            )
             .collect(Collectors.groupingBy(e -> e.getTableDefinition().getName()))
             .values().stream()
             .filter(tableDefinitionWithIds -> tableDefinitionWithIds.size() > 1)
@@ -754,6 +766,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         }
         return tableObjList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
+            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getSchemaState()
+                == SchemaState.SCHEMA_PUBLIC)
             .map(tableWithId -> {
                 try {
                     return MAPPER.tableFrom(tableWithId,
@@ -775,6 +789,8 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         List<Object> objList = listTable(schemaId, tenantId);
         return objList.stream()
             .map(obj -> (TableDefinitionWithId) obj)
+            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getSchemaState()
+                == SchemaState.SCHEMA_PUBLIC)
             .map(tableWithId -> MAPPER.tableFrom(tableWithId,
                 getIndexes(tableWithId, tableWithId.getTableId(), tenantId)))
             .collect(Collectors.toMap(

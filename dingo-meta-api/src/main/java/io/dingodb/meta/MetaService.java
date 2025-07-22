@@ -25,6 +25,7 @@ import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.table.Index;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.ByteArrayUtils.ComparableByteArray;
 import io.dingodb.common.util.Pair;
 import io.dingodb.meta.entity.Table;
@@ -162,6 +163,12 @@ public interface MetaService {
     boolean dropTable(long schemaId, String tableName, long jobId);
 
     boolean dropTable(long tenantId, long schemaId, String tableName, long jobId);
+
+    default boolean dropTableMeta(long schemaId, long tableId) {
+        return dropTableMeta(TenantConstant.TENANT_ID, schemaId, tableId);
+    }
+
+    boolean dropTableMeta(long tenantId, long schemaId, long tableId);
 
     long truncateTable(@NonNull String tableName, long tableEntityId, long jobId);
 
@@ -301,6 +308,10 @@ public interface MetaService {
     }
 
     default void dropRegionByTable(CommonId tableId, long jobId, long startTs, boolean autoInc) {
+
+    }
+
+    default void dropSchema(long jobId, Long schemaId) {
 
     }
 

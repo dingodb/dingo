@@ -29,6 +29,7 @@ import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.meta.MetaService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.DocumentService;
@@ -726,6 +727,15 @@ public class Gc {
             int gcResultSize = gcResults.size();
             AtomicInteger delDone = new AtomicInteger(0);
             gcResults.forEach(objects -> {
+                // eleType: schema table table_auto
+                String eleType = (String) objects[6];
+                if ("SCHEMA".equalsIgnoreCase(eleType)) {
+                    String eleId = (String) objects[5];
+                    long schemaId = Long.parseLong(eleId);
+                    InfoSchemaService.root().dropSchema(schemaId);
+                    LogUtils.info(log, "gc schema meta, schemaId:{}", eleId);
+                    return;
+                }
                 long regionId = (long) objects[0];
                 try {
                     coordinatorService.dropRegion(
@@ -738,9 +748,9 @@ public class Gc {
                     String startKey = objects[1].toString();
                     String endKey = objects[2].toString();
                     String eleId = (String) objects[5];
-                    String eleType = (String) objects[6];
+                    dropTableMeta(eleId);
                     if (!gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType)) {
-                        LogUtils.error(log, "remove gcDeleteTask failed");
+                        LogUtils.error(log, "remove gcDeleteTask failed, jobId:{}, eleId:{}, eleType:{}", jobId, eleId, eleType);
                     } else {
                         delDone.incrementAndGet();
                     }
@@ -771,6 +781,27 @@ public class Gc {
             LogUtils.error(log, e.getMessage(), e);
         } finally {
             SessionUtil.INSTANCE.closeSession(session);
+        }
+    }
+
+    static boolean dropTableMeta(String eleId) {
+        if (eleId == null) {
+            return false;
+        }
+        String[] ids = eleId.split("-");
+        if (ids.length != 2) {
+            return false;
+        }
+        try {
+            long schemaId = Long.parseLong(ids[0]);
+            long tableId = Long.parseLong(ids[1]);
+            MetaService metaService = MetaService.root();
+            boolean res = metaService.dropTableMeta(schemaId, tableId);
+            LogUtils.info(log, "drop table meta done,schemaId:{}, tableId:{}", schemaId, tableId);
+            return res;
+        } catch (Exception e) {
+            LogUtils.error(log, "dropSchemaMeta error,eleId:{},reason:{}", eleId, e.getMessage(), e);
+            return false;
         }
     }
 
