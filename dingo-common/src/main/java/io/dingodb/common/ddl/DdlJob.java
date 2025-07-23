@@ -138,6 +138,8 @@ public class DdlJob {
             || actionType == ActionType.ActionDropColumn
             || actionType == ActionType.ActionAddColumn
             || actionType == ActionType.ActionModifyColumn
+            || actionType == ActionType.ActionRenameTable
+            || actionType == ActionType.ActionRenameIndex
         ) {
             return true;
         }

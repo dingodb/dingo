@@ -141,9 +141,9 @@ public class StmtSummary {
 
         PlanProfile planProfile = profile.getPlanProfile();
         if (planProfile != null) {
-            this.sumPlanLatency += planProfile.duration;
-            if (this.maxPlanLatency < planProfile.duration) {
-                this.maxPlanLatency = planProfile.duration;
+            this.sumPlanLatency += planProfile.duration.get();
+            if (this.maxPlanLatency < planProfile.duration.get()) {
+                this.maxPlanLatency = planProfile.duration.get();
             }
             this.avgPlanLatency = sumPlanLatency / execCount;
             this.sumParseLatency += planProfile.getParse();
@@ -189,9 +189,9 @@ public class StmtSummary {
 
         ExecProfile execProfile = profile.getExecProfile();
         if (execProfile != null) {
-            this.sumJobLatency += execProfile.duration;
-            if (this.maxJobLatency < execProfile.duration) {
-                this.maxJobLatency = execProfile.duration;
+            this.sumJobLatency += execProfile.duration.get();
+            if (this.maxJobLatency < execProfile.duration.get()) {
+                this.maxJobLatency = execProfile.duration.get();
             }
             this.avgJobLatency = sumJobLatency / execCount;
             if (plan == null) {
@@ -204,12 +204,12 @@ public class StmtSummary {
             // foreach profile to calculate operator duration
 
             if ("select".equals(statementType)) {
-                this.sumResultCount += execProfile.count;
-                if (this.maxResultCount < execProfile.count) {
-                    this.maxResultCount = execProfile.count;
+                this.sumResultCount += execProfile.count.get();
+                if (this.maxResultCount < execProfile.count.get()) {
+                    this.maxResultCount = execProfile.count.get();
                 }
-                if (this.minResultCount > execProfile.count) {
-                    this.minResultCount = execProfile.count;
+                if (this.minResultCount > execProfile.count.get()) {
+                    this.minResultCount = execProfile.count.get();
                 }
                 this.avgResultCount = sumResultCount / execCount;
             }

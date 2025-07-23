@@ -27,6 +27,8 @@ import java.io.UnsupportedEncodingException;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Data
@@ -38,9 +40,13 @@ public class Profile {
     @JsonProperty("end")
     long end;
     @JsonProperty("count")
-    long count;
+    AtomicLong count;
+    @JsonProperty("opCount")
+    AtomicLong opCount;
     @JsonProperty("duration")
-    long duration;
+    AtomicLong duration;
+    @JsonProperty("relOpDuration")
+    AtomicLong opDuration;
     @JsonProperty("max")
     long max;
     @JsonProperty("min")
@@ -65,12 +71,20 @@ public class Profile {
     final byte[] space = new byte[]{0x20, 0x20};
 
     public Profile() {
+        this.duration = new AtomicLong(0);
+        this.opDuration = new AtomicLong(0);
+        this.count = new AtomicLong(0);
+        this.opCount = new AtomicLong(0);
     }
 
     public Profile(String type) {
         this.type = type;
         this.children = new ArrayList<>();
         dagText = new StringBuilder();
+        this.duration = new AtomicLong(0);
+        this.opDuration = new AtomicLong(0);
+        this.count = new AtomicLong(0);
+        this.opCount = new AtomicLong(0);
     }
 
     public void start() {
@@ -80,19 +94,27 @@ public class Profile {
     public void end() {
         this.end = System.currentTimeMillis();
         if (start > 0) {
-            this.duration = end - start;
-            if (count > 0) {
-                this.avg = this.duration / count;
+            this.duration.set(end - start);
+            if (count.get() > 0) {
+                this.avg = this.duration.get() / count.get();
                 this.avg = Math.min(avg, max);
             }
         }
     }
 
     public long getDuration() {
-        if (duration == 0 && end > start) {
-            duration = end - start;
+        if (duration.get() == 0 && end > start) {
+            duration.set(end - start);
         }
-        return duration;
+        return duration.get();
+    }
+
+    public void setCount(long count) {
+        this.count = new AtomicLong(count);
+    }
+
+    public long getCount() {
+        return this.count.get();
     }
 
     public void traceTree(Profile profile, byte[] prefix, List<Object[]> rowList) {
@@ -118,7 +140,7 @@ public class Profile {
             }
             val[1] = DateTimeUtils.timeFormat(new Time(profile.start));
             val[2] = String.valueOf(profile.getDuration());
-            val[3] = Long.valueOf(this.getCount());
+            val[3] = this.getCount();
             rowList.add(val);
             skip = false;
         }
@@ -154,6 +176,10 @@ public class Profile {
                     dagText.append(", corp:").append(sourceProfile.taskType);
                 }
             }
+            if (profile.opDuration.get() > 0) {
+                dagText.append(",op:").append(profile.opDuration.get());
+                dagText.append(",opCount:").append(profile.getOpCount().get());
+            }
             dagText.append(",count:").append(profile.count)
                 .append(",start:").append(profile.start)
                 .append(",end:").append(profile.end)
@@ -184,14 +210,14 @@ public class Profile {
 
     public void clear() {
         this.dagText = new StringBuilder();
-        this.count = 0;
+        this.count.set(0);
         if (this.children != null) {
             this.children.clear();
         }
         this.start = System.currentTimeMillis();
         this.end = 0;
-        this.count = 0;
-        this.duration = 0;
+        this.count.set(0);
+        this.duration.set(0);
         this.max = 0;
         this.min = 0;
         this.avg = 0;
