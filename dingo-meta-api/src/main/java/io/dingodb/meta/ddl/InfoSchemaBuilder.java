@@ -458,7 +458,11 @@ public class InfoSchemaBuilder {
     }
 
     public Pair<List<Long>, String> applyRecoverTable(SchemaDiff diff) {
-        return applyCreateTable(diff);
+        if (diff != null && diff.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+            return applyCreateTable(diff);
+        } else {
+            return Pair.of(null, null);
+        }
     }
 
     public Pair<List<Long>, String> applyRecoverSchema(SchemaDiff diff) {
