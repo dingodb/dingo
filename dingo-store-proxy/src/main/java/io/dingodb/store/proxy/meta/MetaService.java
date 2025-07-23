@@ -535,14 +535,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
             tableDefinitionWithId
         );
         // recover index meta
-        for (Object indexObj : indexTableList) {
-            TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
-            infoSchemaService.createIndex(
-                id.getEntityId(),
-                tableDefinitionWithId.getTableId().getEntityId(),
-                indexWithId
-            );
-        }
+        //for (Object indexObj : indexTableList) {
+        //    TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
+        //    infoSchemaService.createIndex(
+        //        id.getEntityId(),
+        //        tableDefinitionWithId.getTableId().getEntityId(),
+        //        indexWithId
+        //    );
+        //}
     }
 
     private static RegionType mapping(IndexType indexType) {
@@ -1260,6 +1260,29 @@ public class MetaService implements io.dingodb.meta.MetaService {
             CodecService.INSTANCE.setId(partitions.get(i).getRange().getStartKey(), partitionId.getEntityId());
             CodecService.INSTANCE.setId(partitions.get(i).getRange().getEndKey(), partitionId.getEntityId() + 1);
         }
+    }
+
+    public boolean dropTable(long schemaId, long tableId, long jobId) {
+        io.dingodb.meta.InfoSchemaService schemaService = io.dingodb.meta.InfoSchemaService.root();
+        Table table = schemaService.getTableDef(schemaId, tableId);
+        if (table == null) {
+            return false;
+        }
+        boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
+
+        long ts = TsoService.getDefault().tso();
+
+        if (!"view".equalsIgnoreCase(table.getTableType())) {
+            dropRegionByTable(table.getTableId(), jobId, ts, autoInc);
+            List<IndexTable> indexes = table.getIndexes();
+            if (indexes != null) {
+                for (IndexTable index : indexes) {
+                    dropRegionByTable(index.getTableId(), jobId, ts);
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override

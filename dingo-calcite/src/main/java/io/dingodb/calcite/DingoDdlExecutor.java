@@ -584,23 +584,28 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         LogUtils.info(log, "DDL execute: {}", drop);
         final SubSnapshotSchema schema = getSnapShotSchema(drop.name, context, drop.ifExists);
         if (schema == null) {
+            LogUtils.error(log, "subSnapshotSchema is null, name:{}", drop.name.toString());
             return;
         }
         String tableName = getTableName(drop.name);
         tableName = convertName(tableName);
         SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
         if (schemaInfo == null) {
+            LogUtils.error(log, "schemaInfo is null, name:{}", schema.getSchemaName());
             throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
         }
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
             if (drop.ifExists) {
+                LogUtils.warn(log, "table is null, if exists is true, name:{}", tableName);
                 return;
             } else {
+                LogUtils.error(log, "table is null, is exists is false, name:{}", tableName);
                 throw DINGO_RESOURCE.unknownTable(schema.getSchemaName() + "." + tableName).ex();
             }
         }
         if ("VIEW".equalsIgnoreCase(table.getTableType())) {
+            LogUtils.error(log, "drop table, bug def is view, name:{}", tableName);
             throw DingoErrUtil.newStdErr(ErrNoSuchTable, tableName);
         }
         DdlService ddlService = DdlService.root();
@@ -682,23 +687,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String tableName = Parameters.nonNull(schemaTableName.right, "table name");
         Table table = schema.getTableInfo(tableName);
         if (table == null) {
+            LogUtils.error(log, "truncate table is null,name:{}", tableName);
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         if ("VIEW".equalsIgnoreCase(table.getTableType())) {
+            LogUtils.warn(log, "truncate table, but def is view,name:{}", tableName);
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         DdlService ddlService = DdlService.root();
         ddlService.truncateTable(schemaInfo, table, connId);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .type(ActionType.ActionTruncateTable)
-            .oldSchemaId(schema.getSchemaId())
-            .oldTableId(table.tableId.seq)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;

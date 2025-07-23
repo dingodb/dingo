@@ -407,8 +407,10 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .filter(tableDefinitionWithId -> !caseSensitive()
                 ? tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(table)
                 : tableDefinitionWithId.getTableDefinition().getName().equals(table))
-            .filter(tableDefinitionWithId -> tableDefinitionWithId.getTableDefinition().getSchemaState()
-                == SchemaState.SCHEMA_PUBLIC
+            .filter(tableDefinitionWithId -> {
+                    return tableDefinitionWithId.getTableDefinition().getSchemaState()
+                        == SchemaState.SCHEMA_PUBLIC;
+                }
             )
             .findFirst().orElse(null);
     }
@@ -826,7 +828,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             System.identityHashCode(deleteRequest), deleteRequest
         );
         if (response.getDeleted() < 1) {
-            LogUtils.error(log, "del kv failed,key:{}, keyEnd:{}", key, keyEnd);
+            String reason = "";
+            if (response.getError() != null) {
+                reason = response.getError().getErrmsg();
+            }
+            LogUtils.error(log, "del kv failed,key:{}, keyEnd:{}, error:{}", key, keyEnd, reason);
+            List<io.dingodb.common.store.KeyValue> keys = getByKey(key, keyEnd);
+            LogUtils.error(log, "del kv failed,key:{}, keyEnd:{}, keys size:{}", key, keyEnd, keys.size());
         }
     }
 
