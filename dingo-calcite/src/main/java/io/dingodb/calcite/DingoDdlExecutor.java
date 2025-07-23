@@ -116,12 +116,14 @@ import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.type.AnyType;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
@@ -2244,6 +2246,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", "0000-00-00");
                 } else if (type instanceof TimestampType) {
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", "0000-00-00 00:00:00");
+                } else if (type instanceof ObjectType && type.getType() instanceof AnyType) {
+                    throw DingoErrUtil.newStdErr("Map requires at least 2 arguments");
                 }
             }
         } else {
