@@ -36,8 +36,11 @@ public final class RelOpUtils {
     private RelOpUtils() {
     }
 
-    public static boolean processWithPipeOp(@NonNull PipeOp op, Object[] tuple, Edge edge, Context context) {
+    public static boolean processWithPipeOp(@NonNull PipeOp op, Object[] tuple, Edge edge,
+        Context context, OperatorProfile profile) {
+        long start = System.currentTimeMillis();
         Object[] out = op.put(tuple);
+        profile.pipeOpTime(start);
         if (out != null) {
             return edge.transformToNext(context, out);
         }
@@ -104,7 +107,7 @@ public final class RelOpUtils {
             profile.time(tmp);
             Object[] tuple = sourceIterator.next();
             ++count;
-            if (!processWithPipeOp(relOp, tuple, edge, context)) {
+            if (!processWithPipeOp(relOp, tuple, edge, context, profile)) {
                 breakFlg = true;
                 break;
             }
@@ -120,6 +123,7 @@ public final class RelOpUtils {
         }
         profile.time(tmp);
         profile.decreaseCount();
+        profile.end();
         return Pair.of(count, !breakFlg);
     }
 

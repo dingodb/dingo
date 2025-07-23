@@ -54,6 +54,7 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, Fin fin, @NonNull Vertex vertex) {
         ReduceRelOpParam param = vertex.getParam();
+        OperatorProfile profile = param.getProfile("reduceAggr");
         Edge edge = vertex.getSoleEdge();
         CacheOp relOp = (CacheOp) param.getRelOp();
         if (fin instanceof FinWithProfiles) {
@@ -64,6 +65,7 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
             if (!(fin instanceof FinWithException)) {
                 RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
             }
+            profile.end();
             edge.fin(fin);
             relOp.clear();
         }

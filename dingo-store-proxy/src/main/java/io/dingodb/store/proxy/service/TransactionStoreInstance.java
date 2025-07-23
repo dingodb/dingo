@@ -1173,6 +1173,9 @@ public class TransactionStoreInstance {
             fetch();
             initRpcProfile.time(start);
             initRpcProfile.end();
+            if (initRpcProfile.getDuration() > 4000) {
+                LogUtils.info(log, "initRpc cost long time:{},startTs:{}", initRpcProfile.getDuration(), startTs);
+            }
         }
 
         private synchronized void fetch() {
@@ -1180,6 +1183,7 @@ public class TransactionStoreInstance {
                 return;
             }
             long start = System.currentTimeMillis();
+            int resolvedCnt = 0;
             CommonId txnId = new CommonId(
                 CommonId.CommonType.TRANSACTION,
                 TransactionManager.getServerId().seq,
@@ -1211,6 +1215,7 @@ public class TransactionStoreInstance {
                         "txnScan",
                         true
                     );
+                    resolvedCnt ++;
                     if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
                         || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
                         if (scanTimeOut < 0) {
@@ -1244,6 +1249,9 @@ public class TransactionStoreInstance {
                 break;
             }
             long sub = System.currentTimeMillis() - start;
+            if (sub > 5000) {
+                LogUtils.info(log, "txnScan cost long time:{}, resolvedCnt:{}, startTs:{}", sub, resolvedCnt, start);
+            }
             DingoMetrics.timer("txnScanRpc").update(sub, TimeUnit.MILLISECONDS);
         }
 
@@ -1323,6 +1331,10 @@ public class TransactionStoreInstance {
             fetch();
             initRpcProfile.time(start);
             initRpcProfile.end();
+            if (initRpcProfile.getDuration() > 4000) {
+                LogUtils.info(log, "initStreamRpc cost long time:{},startTs:{}",
+                    initRpcProfile.getDuration(), startTs);
+            }
         }
 
         private synchronized void fetch() {
@@ -1432,6 +1444,9 @@ public class TransactionStoreInstance {
                 break;
             }
             long sub = System.currentTimeMillis() - start;
+            if (sub > 5000) {
+                LogUtils.info(log, "txnScanStreamRpc cost long time:{}, startTs:{}", sub, start);
+            }
             DingoMetrics.timer("txnScanRpc").update(sub, TimeUnit.MILLISECONDS);
         }
 

@@ -89,7 +89,7 @@ public class CommitProfile extends Profile {
     public synchronized void reset() {
         this.start = 0;
         this.end = 0;
-        this.duration = 0;
+        this.duration.set(0);
         this.preWriteSecond = 0;
         this.preWriteSecondTime = 0;
         this.preWritePrimaryTime = 0;
