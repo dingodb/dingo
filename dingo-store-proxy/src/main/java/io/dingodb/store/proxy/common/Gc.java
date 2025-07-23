@@ -66,6 +66,7 @@ import io.dingodb.transaction.api.GcObj;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -727,16 +728,19 @@ public class Gc {
             int gcResultSize = gcResults.size();
             AtomicInteger delDone = new AtomicInteger(0);
             gcResults.forEach(objects -> {
-                // eleType: schema table table_auto
+                // eleType: schema table table_auto index
                 String eleType = (String) objects[6];
+                long regionId = (long) objects[0];
                 if ("SCHEMA".equalsIgnoreCase(eleType)) {
                     String eleId = (String) objects[5];
                     long schemaId = Long.parseLong(eleId);
                     InfoSchemaService.root().dropSchema(schemaId);
+                    long jobId = (long) objects[3];
+                    long ts = (long) objects[4];
+                    gcDeleteDone(jobId, ts, regionId, "", "", eleId, eleType, false);
                     LogUtils.info(log, "gc schema meta, schemaId:{}", eleId);
                     return;
                 }
-                long regionId = (long) objects[0];
                 try {
                     coordinatorService.dropRegion(
                         tso(),
@@ -748,8 +752,8 @@ public class Gc {
                     String startKey = objects[1].toString();
                     String endKey = objects[2].toString();
                     String eleId = (String) objects[5];
-                    dropTableMeta(eleId);
-                    if (!gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType)) {
+                    dropTableMeta(eleId, jobId, session, eleType);
+                    if (!gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType, true)) {
                         LogUtils.error(log, "remove gcDeleteTask failed, jobId:{}, eleId:{}, eleType:{}", jobId, eleId, eleType);
                     } else {
                         delDone.incrementAndGet();
@@ -774,9 +778,9 @@ public class Gc {
                 }
             });
             LogUtils.info(log, "delete region done size:{}", delDone.get());
-            if (delDone.get() < gcResultSize) {
-                LogUtils.error(log, "delete region has failed");
-            }
+            //if (delDone.get() < gcResultSize) {
+            //    LogUtils.error(log, "delete region has failed");
+            //}
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         } finally {
@@ -784,7 +788,30 @@ public class Gc {
         }
     }
 
-    static boolean dropTableMeta(String eleId) {
+    static boolean dropTableMeta(String eleId, long jobId, Session session, String eleType) {
+        if ("INDEX".equalsIgnoreCase(eleType)) {
+            return true;
+        }
+        if (jobId > 0) {
+            String sql = "select type from mysql.dingo_ddl_history where job_id=" + jobId;
+            try {
+                List<Object[]> res = session.executeQuery(sql);
+                if (res.isEmpty()) {
+                    LogUtils.error(log, "drop table meta get job type empty, jobId:{}", jobId);
+                } else {
+                    if (res.get(0).length >= 1) {
+                        int type = (int) res.get(0)[0];
+                        // truncate/drop
+                        if (type != 3 && type != 11) {
+                            LogUtils.info(log, "drop table meta skip, type:{},jobId:{}", type, jobId);
+                            return true;
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                LogUtils.error(log, "drop table meta get job type error:{}, jobId:{}",e.getMessage(), jobId, e);
+            }
+        }
         if (eleId == null) {
             return false;
         }
@@ -812,19 +839,27 @@ public class Gc {
         Object startKey,
         Object endKey,
         String eleId,
-        String eleType
+        String eleType,
+        boolean markGcDone
     ) {
         LogUtils.info(log, "gcDeleteDone start, jobId:{}, regionId:{}", jobId, regionId);
-        String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
-            + " element_id, element_type)"
-            + " values(%d, %d, %d, %s, %s, %s, %s)";
-        sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
-            Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
         Session session = SessionUtil.INSTANCE.getSession();
+        if (markGcDone) {
+            String sql = "insert into mysql.gc_delete_range_done(job_id, region_id, ts, start_key, end_key, "
+                + " element_id, element_type)"
+                + " values(%d, %d, %d, %s, %s, %s, %s)";
+            sql = convertSql(String.format(sql, jobId, regionId, ts, Utils.quoteForSql(startKey.toString()),
+                Utils.quoteForSql(endKey.toString()), Utils.quoteForSql(eleId), Utils.quoteForSql(eleType)));
+            try {
+                session.setAutoCommit(false);
+                session.executeUpdate(sql);
+                session.commit();
+            } catch (Exception e) {
+                LogUtils.error(log, e.getMessage(), e);
+                session.rollback();
+            }
+        }
         try {
-            session.setAutoCommit(false);
-            session.executeUpdate(sql);
-
             String removeSql = "delete from mysql.gc_delete_range where job_id=" + jobId;
             session.executeUpdate(convertSql(removeSql));
             session.commit();
@@ -834,7 +869,7 @@ public class Gc {
         } finally {
             SessionUtil.INSTANCE.closeSession(session);
         }
-        LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
+        LogUtils.info(log, "gc gcDeleteDone, regionId:{}, jobId:{}, markGcDone:{}", regionId, jobId, markGcDone);
         return true;
     }
 

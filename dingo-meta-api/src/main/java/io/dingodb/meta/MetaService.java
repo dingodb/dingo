@@ -161,6 +161,9 @@ public interface MetaService {
      * @return true if success
      */
     boolean dropTable(long schemaId, String tableName, long jobId);
+    default boolean dropTable(long schemaId, long tableId, long jobId) {
+        return true;
+    }
 
     boolean dropTable(long tenantId, long schemaId, String tableName, long jobId);
 

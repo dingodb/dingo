@@ -40,7 +40,6 @@ import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
-import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -604,7 +603,7 @@ public class DdlWorker {
                 try {
                     start = System.currentTimeMillis();
                     MetaService.root().dropTable(
-                        job.getSchemaId(), tableInfo.getTableDefinition().getName(), job.getId()
+                        job.getSchemaId(), tableInfo.getTableId().getEntityId(), job.getId()
                     );
                     sub = System.currentTimeMillis() - start;
                     DingoMetrics.timer("metaDropTable").update(sub, TimeUnit.MILLISECONDS);
@@ -1562,7 +1561,8 @@ public class DdlWorker {
                     TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
                         .getTable(recoverInfo.getSchemaId(), tableId);
                     if (tableDefinitionWithId == null) {
-                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped table '"
+                        LogUtils.error(log, "can not find dropped meta table:{}", recoverInfo.getOldTableName());
+                        job.setDingoErr(DingoErrUtil.newInternalErr("Can't find dropped meta table '"
                             + recoverInfo.getOldTableName() + "'"));
                         job.setState(JobState.jobStateCancelled);
                         return Pair.of(0L, job.getDingoErr().errorMsg);

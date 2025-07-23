@@ -190,7 +190,7 @@ public class DdlHandler {
         try {
             doDdlJob(job);
         } catch (Exception e) {
-            LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef" + tableName, e);
+            LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef:" + tableName, e);
             throw e;
         }
     }
