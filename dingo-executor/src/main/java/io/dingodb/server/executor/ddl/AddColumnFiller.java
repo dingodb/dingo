@@ -28,6 +28,8 @@ import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
+import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -114,6 +116,10 @@ public class AddColumnFiller extends IndexAddFiller {
                     return new ArrayList<>();
                 } else if (type instanceof MapType) {
                     return new LinkedHashMap<>();
+                } else if (type instanceof BitType) {
+                    return 0L;
+                } else if (type instanceof BinaryType) {
+                    return new byte[]{0x00};
                 }
             }
         } else {
