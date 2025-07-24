@@ -39,6 +39,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -66,6 +67,17 @@ public class TxnGetByIndexOperator extends FilterProjectOperator {
         OperatorProfile profile = param.getProfile("getByIndex");
         long start = System.currentTimeMillis();
         byte[] keys = param.getCodec().encodeKeyPrefix(tuple, calculatePrefixCount(tuple));
+        if (param.isAutoCommit()) {
+            StoreInstance store = Services.KV_STORE.getInstance(param.getIndexTableId(), context.getDistribution().getId());
+            Iterator<KeyValue> storeIterator = store.txnScan(
+                param.getScanTs(),
+                new StoreInstance.Range(keys, keys, true, true),
+                param.getTimeout());
+            Iterator<Object[]> iterator = DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
+            iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+            profile.time(start);
+            return iterator;
+        }
         Iterator<KeyValue> localIterator = createScanLocalIterator(
             vertex.getTask().getTxnId(),
             context.getDistribution().getId(),

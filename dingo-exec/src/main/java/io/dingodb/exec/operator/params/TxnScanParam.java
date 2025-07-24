@@ -42,6 +42,7 @@ public final class TxnScanParam extends ScanParam {
     private final long timeOut;
     @JsonProperty("scanTs")
     private long scanTs;
+    private final boolean isAutoCommit;
 
     public TxnScanParam(
         CommonId tableId,
@@ -51,12 +52,14 @@ public final class TxnScanParam extends ScanParam {
         int isolationLevel,
         long timeOut,
         int schemaVersion,
-        int codecVersion
+        int codecVersion,
+        boolean isAutoCommit
     ) {
         super(tableId, schema, keyMapping, schemaVersion, codecVersion);
         this.scanTs = scanTs;
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;
+        this.isAutoCommit = isAutoCommit;
     }
 
     @Override

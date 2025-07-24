@@ -58,6 +58,8 @@ public class TxnGetByIndexParam extends FilterProjectParam {
 
     protected List<Integer> mapList;
 
+    private final boolean isAutoCommit;
+
     public TxnGetByIndexParam(
         CommonId indexTableId,
         CommonId tableId,
@@ -69,7 +71,8 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         Table table,
         boolean isLookup,
         long scanTs,
-        long timeout
+        long timeout,
+        boolean isAutoCommit
     ) {
         super(tableId, table.tupleType(), table.version, filter, selection, keyMapping, table.getCodecVersion());
         this.indexTableId = indexTableId;
@@ -81,6 +84,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         this.timeout = timeout;
         this.codec = CodecService.getDefault().createKeyValueCodec(
             index.getCodecVersion(), index.version, index.tupleType(), index.keyMapping());
+        this.isAutoCommit = isAutoCommit;
     }
 
     @Override

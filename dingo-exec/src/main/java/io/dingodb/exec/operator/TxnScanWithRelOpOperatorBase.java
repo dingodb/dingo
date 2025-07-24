@@ -70,28 +70,30 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
         profile.setRegionId(distribution.getId().seq);
-        Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
-        profile.incrLocalTime(start);
-        start = System.currentTimeMillis();
-        if (localIterator.hasNext()) { // Cannot push down
-            Iterator<KeyValue> storeIterator = createStoreIterator(
-                tableId,
-                distribution,
-                param.getScanTs(),
-                param.getTimeOut()
-            );
-            profile.setTaskType("executor");
-            param.setNullCoprocessor(distribution.getId());
-            if (storeIterator instanceof ProfileScanIterator) {
-                ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
-                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
-            }
-            profile.incrTxnScanTime(start);
+        if (!param.isAutoCommit()) {
+            Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
+            profile.incrLocalTime(start);
             start = System.currentTimeMillis();
-            Iterator<Object[]> res = createMergedIterator(localIterator, storeIterator, param.getCodec());
-            profile.incrMerge(start);
-            profile.end();
-            return res;
+            if (localIterator.hasNext()) { // Cannot push down
+                Iterator<KeyValue> storeIterator = createStoreIterator(
+                    tableId,
+                    distribution,
+                    param.getScanTs(),
+                    param.getTimeOut()
+                );
+                profile.setTaskType("executor");
+                param.setNullCoprocessor(distribution.getId());
+                if (storeIterator instanceof ProfileScanIterator) {
+                    ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
+                    profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+                }
+                profile.incrTxnScanTime(start);
+                start = System.currentTimeMillis();
+                Iterator<Object[]> res = createMergedIterator(localIterator, storeIterator, param.getCodec());
+                profile.incrMerge(start);
+                profile.end();
+                return res;
+            }
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();
         if (coprocessor == null) {

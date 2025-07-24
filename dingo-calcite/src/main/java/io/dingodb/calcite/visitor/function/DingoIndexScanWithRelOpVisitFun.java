@@ -223,7 +223,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 transaction.getIsolationLevel(),
                 transaction.getLockTimeOut(),
                 td.version,
-                td.getCodecVersion()
+                td.getCodecVersion(),
+                transaction.isAutoCommit()
             );
             return new Vertex(TXN_SCAN_WITH_NO_OP, param);
         } else {

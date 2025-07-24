@@ -115,43 +115,45 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
         long start = System.currentTimeMillis();
         RangeDistribution distribution = context.getDistribution();
 
-        Iterator<KeyValue> localIterator = createLocalIterator(
-            vertex.getTask().getTxnId(),
-            param.getIndexTableId(),
-            distribution);
-        profile.incrLocalTime(start);
-        start = System.currentTimeMillis();
-        if (localIterator.hasNext()) {
-            Iterator<KeyValue> storeIterator = createStoreIterator(
+        if (!param.isAutoCommit()) {
+            Iterator<KeyValue> localIterator = createLocalIterator(
+                vertex.getTask().getTxnId(),
                 param.getIndexTableId(),
-                distribution,
-                param.getScanTs(),
-                param.getTimeout()
-            );
-            profile.incrTxnScanTime(start);
+                distribution);
+            profile.incrLocalTime(start);
             start = System.currentTimeMillis();
-            param.setNullCoprocessor(distribution.getId());
-            Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
-            profile.incrMerge(start);
-            if (param.getRelOp() != null) {
-                if (param.getRelOp() instanceof PipeOp) {
-                    PipeOp op = (PipeOp) param.getRelOp();
-                    iterator = Iterators.filter(iterator, tuple -> {
-                        Object[] res = op.put(tuple);
-                        return res != null;
-                    });
-                } else {
-                    LogUtils.error(log, "index range scan cop is null,local is not empty, but rel op :{}", param.getRelOp());
+            if (localIterator.hasNext()) {
+                Iterator<KeyValue> storeIterator = createStoreIterator(
+                    param.getIndexTableId(),
+                    distribution,
+                    param.getScanTs(),
+                    param.getTimeout()
+                );
+                profile.incrTxnScanTime(start);
+                start = System.currentTimeMillis();
+                param.setNullCoprocessor(distribution.getId());
+                Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
+                profile.incrMerge(start);
+                if (param.getRelOp() != null) {
+                    if (param.getRelOp() instanceof PipeOp) {
+                        PipeOp op = (PipeOp) param.getRelOp();
+                        iterator = Iterators.filter(iterator, tuple -> {
+                            Object[] res = op.put(tuple);
+                            return res != null;
+                        });
+                    } else {
+                        LogUtils.error(log, "index range scan cop is null,local is not empty, but rel op :{}", param.getRelOp());
+                    }
                 }
-            }
-            iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
-            iterator = getOtherRelIterator(param, iterator);
+                iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
+                iterator = getOtherRelIterator(param, iterator);
 
-            if (param.getSelection2() != null) {
-                iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
+                if (param.getSelection2() != null) {
+                    iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
+                }
+                profile.end();
+                return iterator;
             }
-            profile.end();
-            return iterator;
         }
 
         CoprocessorV2 coprocessor = param.getCoprocessor();
