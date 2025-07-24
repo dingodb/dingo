@@ -20,6 +20,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
+import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.store.KeyValue;
@@ -29,6 +30,7 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.TwoPhaseCommitData;
 import io.dingodb.exec.transaction.base.TxnLocalData;
@@ -60,7 +62,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 
 import static io.dingodb.exec.transaction.util.TransactionUtil.keyToMutation;
@@ -72,6 +73,8 @@ import static io.dingodb.exec.transaction.util.TransactionUtil.toPessimisticChec
 
 @Slf4j
 public final class TwoPhaseCommitUtils {
+
+    public static final long RETRY_INTERVAL_MS = 100;
 
     private TwoPhaseCommitUtils() {
     }
@@ -294,7 +297,142 @@ public final class TwoPhaseCommitUtils {
                                       @NonNull List<Mutation> mutations,
                                       @Nullable TwoPhaseCommitData twoPhaseCommitData) {
         // 1、call sdk TxnPreWrite
+        TxnPreWrite txnPreWrite = buildTxnPreWriteRequest(twoPhaseCommitData, mutations, tableId, newPartId);
+        final int MAX_RETRY_TIMES = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 60);
+        try {
+            LogUtils.info(log, "{}-{}, txnPreWrite...", tableId, newPartId);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+            return store.txnPreWrite(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, "txnPreWrite regionSplitException occurred, retrying...", e);
+            for (int retry = 1; retry < MAX_RETRY_TIMES; retry++) {
+                try {
+                    // 2、regin split
+                    Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(
+                        tableId,
+                        twoPhaseCommitData.getTxnId(),
+                        mutationToKey(mutations)
+                    );
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        boolean result = txnPreWriteRegionSplitRetry(
+                            tableId,
+                            regionId,
+                            keyToMutation(value, mutations),
+                            twoPhaseCommitData,
+                            MAX_RETRY_TIMES
+                        );
+                        if (!result) {
+                            LogUtils.warn(log, "txnPreWrite failed for region: {}", regionId);
+                            break;
+                        }
+                    }
+                    LogUtils.info(log, "txnPreWrite successful after retry {}", retry);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnPreWrite retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnPreWrite unexpected error during retry :" + retry, ex);
+                    return false;
+                }
+            }
+            LogUtils.error(log, "Failed to txnPreWrite after {} retries", MAX_RETRY_TIMES);
+            return false;
+        } finally {
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                if (txnPreWrite.getMinCommitTs() == 0) {
+                    LogUtils.info(log, "TxnPreWrite Async Commit Set False");
+                    twoPhaseCommitData.getUseAsyncCommit().set(false);
+                } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                    twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                }
+            }
+        }
+    }
+
+    private static boolean txnPreWriteRegionSplitRetry(@NonNull CommonId tableId,
+                                      @Nullable CommonId newPartId,
+                                      @NonNull List<Mutation> mutations,
+                                      @Nullable TwoPhaseCommitData twoPhaseCommitData,
+                                      int retry) {
+        assert twoPhaseCommitData != null;
+        // 1、call sdk TxnPreWrite
+        TxnPreWrite txnPreWrite = buildTxnPreWriteRequest(twoPhaseCommitData, mutations, tableId, newPartId);
+        try {
+            if (sleep()) {
+                return false;
+            }
+            LogUtils.info(log, "{}-{}, txnPreWriteRegionSplitRetry...", tableId, newPartId);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+            return store.txnPreWrite(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, "txnPreWriteRegionSplitRetry regionSplitException occurred, retrying...", e);
+            while (retry-- > 0) {
+                try {
+                    // 2、regin split
+                    Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(
+                        tableId,
+                        twoPhaseCommitData.getTxnId(),
+                        mutationToKey(mutations)
+                    );
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        txnPreWrite.setMutations(keyToMutation(value, mutations));
+                        boolean result = store.txnPreWrite(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
+                        if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                            if (txnPreWrite.getMinCommitTs() == 0) {
+                                LogUtils.info(log, "TxnPreWriteRegionSplitRetry Async Commit Set False");
+                                twoPhaseCommitData.getUseAsyncCommit().set(false);
+                            } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                                twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                            }
+                        }
+                        if (!result) {
+                            LogUtils.warn(log, "txnPreWriteRegionSplitRetry failed for region: {}", regionId);
+                            break;
+                        }
+                    }
+                    LogUtils.info(log, "txnPreWriteRegionSplitRetry successful after retry {}", retry);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnPreWriteRegionSplitRetry Retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnPreWriteRegionSplitRetry unexpected error during retry", ex);
+                    return false;
+                }
+            }
+            LogUtils.error(log, "Failed to txnPreWriteRegionSplitRetry after {} retries", retry);
+            return false;
+        } finally {
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                if (txnPreWrite.getMinCommitTs() == 0) {
+                    LogUtils.info(log, "TxnPreWriteRegionSplitRetry Async Commit Set False");
+                    twoPhaseCommitData.getUseAsyncCommit().set(false);
+                } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                    twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                }
+            }
+        }
+    }
+
+    private static TxnPreWrite buildTxnPreWriteRequest(@Nullable TwoPhaseCommitData twoPhaseCommitData,
+                                                       @NonNull List<Mutation> mutations,
+                                                       @NonNull CommonId tableId,
+                                                       @Nullable CommonId newPartId) {
         TxnPreWrite txnPreWrite;
+        assert twoPhaseCommitData != null;
         boolean isAsyncCommit = twoPhaseCommitData.getUseAsyncCommit().get();
         if (!twoPhaseCommitData.isPessimistic()) {
             txnPreWrite = TxnPreWrite.builder()
@@ -342,39 +480,7 @@ public final class TwoPhaseCommitUtils {
                 )
                 .build();
         }
-        try {
-            LogUtils.info(log, "{}-{}, txnPreWrite...", tableId, newPartId);
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnPreWrite(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(
-                tableId,
-                twoPhaseCommitData.getTxnId(),
-                mutationToKey(mutations)
-            );
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                txnPreWrite.setMutations(keyToMutation(value, mutations));
-                boolean result = store.txnPreWrite(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
-                if (!result) {
-                    return false;
-                }
-            }
-            return true;
-        } finally {
-            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
-                if (txnPreWrite.getMinCommitTs() == 0) {
-                    LogUtils.info(log, "Async Commit Set False");
-                    twoPhaseCommitData.getUseAsyncCommit().set(false);
-                } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
-                    twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
-                }
-            }
-        }
+        return txnPreWrite;
     }
 
     public static boolean txnCommit(@NonNull CommonId txnId,
@@ -382,33 +488,127 @@ public final class TwoPhaseCommitUtils {
                                     @Nullable CommonId newPartId,
                                     @Nullable List<byte[]> keys,
                                     @Nullable TwoPhaseCommitData twoPhaseCommitData) {
+        assert twoPhaseCommitData != null;
         // 1、Async call sdk TxnCommit
+        TxnCommit commitRequest = buildCommitRequest(keys, twoPhaseCommitData);
+
+        final int MAX_RETRY_TIMES = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 60);
+
+        try {
+            LogUtils.info(log, "{}-{}, txnCommit...", tableId, newPartId);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+            return store.txnCommit(commitRequest);
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, "txnCommit regionSplitException occurred, retrying...", e);
+            for (int retry = 1; retry < MAX_RETRY_TIMES; retry++) {
+                try {
+                    Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(tableId, txnId, keys);
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        LogUtils.info(log, "RegionSplit retry {}-{}, txnCommit...", tableId, regionId);
+                        boolean result = txnCommitRegionSplitRetry(
+                            txnId,
+                            tableId,
+                            regionId,
+                            value,
+                            twoPhaseCommitData,
+                            MAX_RETRY_TIMES
+                        );
+                        if (!result) {
+                            LogUtils.warn(log, "txnCommit failed for region: {}", regionId);
+                            break;
+                        }
+                    }
+                    LogUtils.info(log, "txnCommit successful after retry {}", retry);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnCommit retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnCommit unexpected error during retry :" + retry, ex);
+                    return false;
+                }
+            }
+            LogUtils.error(log, "Failed to txnCommit after {} retries", MAX_RETRY_TIMES);
+            return false;
+        }
+    }
+
+    private static boolean txnCommitRegionSplitRetry(@NonNull CommonId txnId,
+                                    @Nullable CommonId tableId,
+                                    @Nullable CommonId newPartId,
+                                    @Nullable List<byte[]> keys,
+                                    @Nullable TwoPhaseCommitData twoPhaseCommitData,
+                                    int retry) {
+        assert twoPhaseCommitData != null;
+        // 1、Async call sdk TxnCommit
+        TxnCommit commitRequest = buildCommitRequest(keys, twoPhaseCommitData);
+        try {
+            if (sleep()) {
+                return false;
+            }
+            LogUtils.info(log, "{}-{}, txnCommitRegionSplitRetry...", tableId, newPartId);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+            return store.txnCommit(commitRequest);
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, "txnCommitRegionSplitRetry regionSplitException occurred, retrying...", e);
+            while (retry-- > 0) {
+                try {
+                    Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(tableId, txnId, keys);
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        LogUtils.info(log, "RegionSplit retry {}-{}, txnCommitRegionSplitRetry...", tableId, regionId);
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        commitRequest.setKeys(value);
+                        boolean result = store.txnCommit(commitRequest);
+                        if (!result) {
+                            LogUtils.warn(log, "txnCommitRegionSplitRetry failed for region: {}", regionId);
+                            break;
+                        }
+                    }
+                    LogUtils.info(log, "txnCommitRegionSplitRetry successful after retry {}", retry);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnCommitRegionSplitRetry Retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnCommitRegionSplitRetry unexpected error during retry", ex);
+                    return false;
+                }
+            }
+            LogUtils.error(log, "Failed to txnCommitRegionSplitRetry after {} retries", retry);
+            return false;
+        }
+    }
+
+    private static TxnCommit buildCommitRequest(@Nullable List<byte[]> keys, @NonNull TwoPhaseCommitData twoPhaseCommitData) {
         TxnCommit commitRequest = TxnCommit.builder()
             .isolationLevel(IsolationLevel.of(twoPhaseCommitData.getIsolationLevel()))
             .startTs(twoPhaseCommitData.getTxnId().seq)
             .commitTs(twoPhaseCommitData.getCommitTs())
             .keys(keys)
             .build();
+        return commitRequest;
+    }
+
+    private static boolean sleep() {
         try {
-            LogUtils.info(log, "{}-{}, txnCommit...", tableId, newPartId);
-            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnCommit(commitRequest);
-        } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(tableId, txnId, keys);
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                commitRequest.setKeys(value);
-                boolean result = store.txnCommit(commitRequest);
-                if (!result) {
-                    return false;
-                }
-            }
+            Thread.sleep(RETRY_INTERVAL_MS);
+        } catch (InterruptedException ie) {
+            LogUtils.warn(log, "Interrupted during retry sleep", ie);
+            Thread.currentThread().interrupt();
             return true;
         }
+        return false;
     }
 
     public static CompletableFuture<Boolean> rollBackPartData(@NonNull TxnPartData txnPartData,
@@ -524,6 +724,7 @@ public final class TwoPhaseCommitUtils {
                                       @Nullable List<Long> forUpdateTsList,
                                       @Nullable TwoPhaseCommitData twoPhaseCommitData) {
         LogUtils.info(log, "{}-{}, txnRollBack...", tableId, newPartId);
+        assert twoPhaseCommitData != null;
         if (twoPhaseCommitData.isPessimistic()) {
             // call sdk TxnPessimisticRollBack
             for (int i = 0; i < keys.size(); i++) {
@@ -543,64 +744,146 @@ public final class TwoPhaseCommitUtils {
             return true;
         } else {
             // 1、Async call sdk TxnRollBack
-            TxnBatchRollBack rollBackRequest = TxnBatchRollBack.builder().
-                isolationLevel(IsolationLevel.of(twoPhaseCommitData.getIsolationLevel()))
-                .startTs(twoPhaseCommitData.getTxnId().seq)
-                .keys(keys)
-                .build();
+            TxnBatchRollBack rollBackRequest = buildTxnBatchRollBackRequest(keys, twoPhaseCommitData);
+            final int MAX_RETRY_TIMES = Optional.mapOrGet(
+                DingoConfiguration.instance().find("retry", int.class),
+                __ -> __,
+                () -> 60);
             try {
                 StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
                 return store.txnBatchRollback(rollBackRequest);
             } catch (RegionSplitException e) {
-                LogUtils.error(log, e.getMessage(), e);
-                // 2、regin split
-                Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, keys);
-                for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                    CommonId regionId = entry.getKey();
-                    List<byte[]> value = entry.getValue();
-                    StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                    rollBackRequest.setKeys(value);
-                    boolean result = store.txnBatchRollback(rollBackRequest);
-                    if (!result) {
+                LogUtils.error(log, "txnRollBack regionSplitException occurred, retrying...", e);
+                for (int retry = 1; retry < MAX_RETRY_TIMES; retry++) {
+                    try {
+                        // 2、regin split
+                        Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, keys);
+                        for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                            CommonId regionId = entry.getKey();
+                            List<byte[]> value = entry.getValue();
+                            boolean result = txnRollBackRegionSplitRetry(
+                                txnId,
+                                tableId,
+                                regionId,
+                                value,
+                                twoPhaseCommitData,
+                                MAX_RETRY_TIMES
+                            );
+                            if (!result) {
+                                return false;
+                            }
+                        }
+                        LogUtils.info(log, "txnRollBack successful after retry {}", retry);
+                        return true;
+                    } catch (RegionSplitException re) {
+                        LogUtils.warn(log, "txnRollBack retry:" + retry + " failed", re);
+                        if (sleep()) {
+                            return false;
+                        }
+                    } catch (Exception ex) {
+                        LogUtils.error(log, "txnRollBack unexpected error during retry :" + retry, ex);
                         return false;
                     }
                 }
-                return true;
             }
+            LogUtils.error(log, "Failed to txnRollBack after {} retries", MAX_RETRY_TIMES);
+            return false;
         }
     }
 
-    public static boolean txnPessimisticRollBack(byte[] key, long startTs, long forUpdateTs, int isolationLevel,
-                                           CommonId txnId, CommonId tableId, CommonId newPartId) {
-        // 1、Async call sdk TxnPessimisticRollBack
-        TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder()
-            .isolationLevel(IsolationLevel.of(isolationLevel))
-            .startTs(startTs)
-            .forUpdateTs(forUpdateTs)
-            .keys(Collections.singletonList(key))
-            .build();
+    private static boolean txnRollBackRegionSplitRetry(@Nullable CommonId txnId, @Nullable CommonId tableId,
+                                                       @Nullable CommonId newPartId, @Nullable List<byte[]> keys,
+                                                       @Nullable TwoPhaseCommitData twoPhaseCommitData,
+                                                       int retry) {
+        // 1、Async call sdk TxnRollBack
+        assert twoPhaseCommitData != null;
+        TxnBatchRollBack rollBackRequest = buildTxnBatchRollBackRequest(keys, twoPhaseCommitData);
         try {
+            if (sleep()) {
+                return false;
+            }
             StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
-            return store.txnPessimisticLockRollback(pessimisticRollBack);
+            return store.txnBatchRollback(rollBackRequest);
         } catch (RegionSplitException e) {
-            LogUtils.error(log, e.getMessage(), e);
-            // 2、regin split
-            Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(
-                tableId,
-                txnId,
-                Collections.singletonList(key)
-            );
-            for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
-                CommonId regionId = entry.getKey();
-                List<byte[]> value = entry.getValue();
-                StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
-                pessimisticRollBack.setKeys(value);
-                boolean result = store.txnPessimisticLockRollback(pessimisticRollBack);
-                if (!result) {
+            LogUtils.error(log, "txnRollBackRegionSplitRetry regionSplitException occurred, retrying...", e);
+            while (retry-- > 0) {
+                try {
+                    // 2、regin split
+                    Map<CommonId, List<byte[]>> partMap = TransactionUtil.multiKeySplitRegionId(tableId, txnId, keys);
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        StoreInstance store = Services.KV_STORE.getInstance(tableId, regionId);
+                        rollBackRequest.setKeys(value);
+                        boolean result = store.txnBatchRollback(rollBackRequest);
+                        if (!result) {
+                            return false;
+                        }
+                    }
+                    LogUtils.info(log, "txnRollBackRegionSplitRetry successful after retry {}", retry);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnRollBackRegionSplitRetry retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnRollBackRegionSplitRetry unexpected error during retry", ex);
                     return false;
                 }
             }
-            return true;
+        } catch (Exception ex) {
+            LogUtils.error(log, "txnRollBackRegionSplitRetry unexpected error retry:" + retry , ex);
+            return false;
         }
+        LogUtils.error(log, "Failed to txnRollBackRegionSplitRetry after {} retries", retry);
+        return false;
+    }
+
+    private static TxnBatchRollBack buildTxnBatchRollBackRequest(@Nullable List<byte[]> keys,
+                                                                 @NonNull TwoPhaseCommitData twoPhaseCommitData) {
+        return TxnBatchRollBack.builder()
+            .isolationLevel(IsolationLevel.of(twoPhaseCommitData.getIsolationLevel()))
+            .startTs(twoPhaseCommitData.getTxnId().seq)
+            .keys(keys)
+            .build();
+    }
+
+    public static boolean txnPessimisticRollBack(@NonNull byte[] key,
+                                                 long startTs,
+                                                 long forUpdateTs,
+                                                 int isolationLevel,
+                                                 @NonNull CommonId txnId,
+                                                 @NonNull CommonId tableId,
+                                                 @NonNull CommonId newPartId) {
+        Integer retry = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 60);
+        while (retry-- > 0) {
+            // 1、Async call sdk TxnPessimisticRollBack
+            TxnPessimisticRollBack pessimisticRollBack = TxnPessimisticRollBack.builder()
+                .isolationLevel(IsolationLevel.of(isolationLevel))
+                .startTs(startTs)
+                .forUpdateTs(forUpdateTs)
+                .keys(Collections.singletonList(key))
+                .build();
+            try {
+                StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+                return store.txnPessimisticLockRollback(pessimisticRollBack);
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, "txnPessimisticRollBack regionSplitException occurred, retry:" + retry, e);
+                // 2、regin split
+                newPartId = TransactionUtil.singleKeySplitRegionId(
+                    tableId,
+                    txnId,
+                    key
+                );
+            } catch (Exception e) {
+                LogUtils.error(log, "txnPessimisticRollBack exception occurred, retry:" + retry, e);
+                return false;
+            }
+        }
+        return false;
     }
 }
