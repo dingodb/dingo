@@ -137,24 +137,24 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 .collect(Collectors.toList()));
             tableId = context.getIndexId();
             if (!param.isPessimisticTxn()) {
-                Object defaultVal = null;
-                if (columnIndices.contains(-1)) {
-                    Column addColumn = indexTable.getColumns().stream()
-                        .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
-                        .findFirst().orElse(null);
-                    if (addColumn != null) {
-                        defaultVal = addColumn.getDefaultVal();
-                    }
-                }
-                Object[] finalTuple = tuple;
-                Object finalDefaultVal = defaultVal;
-                tuple = columnIndices.stream().map(i -> {
-                    if (i == -1) {
-                        return finalDefaultVal;
-                    }
-                    return finalTuple[i];
-                }).toArray();
             }
+            Object defaultVal = null;
+            if (columnIndices.contains(-1)) {
+                Column addColumn = indexTable.getColumns().stream()
+                    .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                    .findFirst().orElse(null);
+                if (addColumn != null) {
+                    defaultVal = addColumn.getDefaultVal();
+                }
+            }
+            Object[] finalTuple = tuple;
+            Object finalDefaultVal = defaultVal;
+            tuple = columnIndices.stream().map(i -> {
+                if (i == -1) {
+                    return finalDefaultVal;
+                }
+                return finalTuple[i];
+            }).toArray();
             index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
             if (index.indexType.isVector) {
                 isVector = true;
@@ -176,24 +176,24 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (getPrimaryKv != null && getPrimaryKv.getValue() != null) {
                     context.setDuplicateKey(true);
                     Object[] getPrimaryTuple = param.getCodec().decode(getPrimaryKv);
-                    if (!param.isPessimisticTxn()) {
-                        Object defaultVal = null;
-                        if (columnIndices.contains(-1)) {
-                            Column addColumn = indexTable.getColumns().stream()
-                                .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
-                                .findFirst().orElse(null);
-                            if (addColumn != null) {
-                                defaultVal = addColumn.getDefaultVal();
-                            }
+                    Object defaultVal1 = null;
+                    if (columnIndices.contains(-1)) {
+                        Column addColumn = indexTable.getColumns().stream()
+                            .filter(column -> column.getSchemaState() != SchemaState.SCHEMA_PUBLIC)
+                            .findFirst().orElse(null);
+                        if (addColumn != null) {
+                            defaultVal1 = addColumn.getDefaultVal();
                         }
-                        Object finalDefaultVal = defaultVal;
-                        Object[] finalGetPrimaryTuple = getPrimaryTuple;
-                        getPrimaryTuple = columnIndices.stream().map(i -> {
-                            if (i == -1) {
-                                return finalDefaultVal;
-                            }
-                            return finalGetPrimaryTuple[i];
-                        }).toArray();
+                    }
+                    Object finalDefaultVal1 = defaultVal1;
+                    Object[] finalGetPrimaryTuple = getPrimaryTuple;
+                    getPrimaryTuple = columnIndices.stream().map(i -> {
+                        if (i == -1) {
+                            return finalDefaultVal1;
+                        }
+                        return finalGetPrimaryTuple[i];
+                    }).toArray();
+                    if (!param.isPessimisticTxn()) {
                     }
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
@@ -276,6 +276,18 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(deleteKey);
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
+            Object[] oldTuple = null;
+            if (param.getUpdateMapping() != null && param.getUpdates() != null) {
+                StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+                KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
+                context.setDuplicateKey(true);
+                if (oldKv != null && oldKv.getValue() != null) {
+                    oldTuple = codec.decode(oldKv);
+                }
+                if (oldTuple == null) {
+                    oldTuple = newTuple;
+                }
+            }
             if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
@@ -291,7 +303,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param,
                             partId,
                             codec,
-                            newTuple,
+                            oldTuple,
                             txnIdByte,
                             tableIdByte,
                             partIdByte,
@@ -374,7 +386,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param,
                             partId,
                             codec,
-                            newTuple,
+                            oldTuple,
                             txnIdByte,
                             tableIdByte,
                             partIdByte,
@@ -430,7 +442,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param,
                         partId,
                         codec,
-                        newTuple,
+                        oldTuple,
                         txnIdByte,
                         tableIdByte,
                         partIdByte,
@@ -483,7 +495,15 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     (!isVector && !isDocument)
                 );
                 if (localStore.put(keyValue) && context.getIndexId() == null) {
-                    param.inc(num);
+                    if (!context.isDuplicateKey()) {
+                        param.inc(num);
+                    }
+                    if (context.isDuplicateKey() && oldTuple != null) {
+                        Long updateNum = Optional.mapOrGet(pair, Pair::getValue, () -> 0L);
+                        if (updateNum > 0) {
+                            param.inc(2);
+                        }
+                    }
                 }
             }
         } else {
@@ -510,8 +530,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (param.getUpdateMapping() != null && param.getUpdates() != null) {
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
                 KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
+                context.setDuplicateKey(true);
                 if (oldKv != null && oldKv.getValue() != null) {
-                    context.setDuplicateKey(true);
                     oldTuple = codec.decode(oldKv);
                 }
                 if (oldTuple == null) {

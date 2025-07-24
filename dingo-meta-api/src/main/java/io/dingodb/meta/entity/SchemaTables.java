@@ -19,6 +19,7 @@ package io.dingodb.meta.entity;
 
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.sequence.SequenceDefinition;
+import io.dingodb.meta.SequenceService;
 import lombok.Data;
 
 import java.util.List;
@@ -68,6 +69,7 @@ public class SchemaTables {
 
     public boolean dropSequence(String sequence) {
         this.sequences.remove(sequence);
+        SequenceService.getDefault().dropSequence(sequence);
         return true;
     }
 
