@@ -424,11 +424,13 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                                 && precision == 0
                                 && scale == 0);
 
-                            resultType =
-                                createSqlType(
-                                    SqlTypeName.DECIMAL,
-                                    precision,
-                                    scale);
+                            if (resultType.getSqlTypeName() != SqlTypeName.BIT) {
+                                resultType =
+                                    createSqlType(
+                                        SqlTypeName.DECIMAL,
+                                        precision,
+                                        scale);
+                            }
                         }
                     }
                 } else if (SqlTypeUtil.isApproximateNumeric(resultType)) {
