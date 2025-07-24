@@ -16,6 +16,7 @@
 
 package io.dingodb.common.mysql;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Time;
@@ -168,4 +169,34 @@ public final class MysqlByteUtil {
         return ByteBuffer.allocate(8).putLong(value).array();
     }
 
+    public static boolean binaryPrefix(String str) {
+        return (str.startsWith("x'") && str.endsWith("'")) || str.startsWith("X'") && str.endsWith("'");
+    }
+
+    public static boolean isBinary(String str, long precision) {
+        if (binaryPrefix(str)) {
+            str = str.substring(2, str.length() - 1);
+            try {
+                BigInteger bigInt = new BigInteger(str, 16);
+                String binaryString = bigInt.toString(2);
+                //if (binaryString.length() > precision) {
+                //    return false;
+                //}
+                return binaryString.matches("[01]+");
+            } catch (Exception e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean isHex(String str) {
+        if (binaryPrefix(str)) {
+            str = str.substring(2, str.length() - 1);
+            return str.matches("^[0-9A-Fa-f]+$");
+        } else {
+            return false;
+        }
+    }
 }
