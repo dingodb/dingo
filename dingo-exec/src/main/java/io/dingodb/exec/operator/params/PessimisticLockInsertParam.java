@@ -22,8 +22,13 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+
+import java.util.List;
+import java.util.Objects;
 
 @Getter
 @JsonTypeName("pessimistic_lock_insert")
@@ -39,6 +44,8 @@ public class PessimisticLockInsertParam extends TxnPartModifyParam {
     private final boolean isReplaceInto;
     @JsonProperty("isIgnore")
     private final boolean isIgnore;
+    private TupleMapping updateMapping;
+    private List<SqlExpr> updates;
     public PessimisticLockInsertParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -53,7 +60,9 @@ public class PessimisticLockInsertParam extends TxnPartModifyParam {
         Table table,
         @JsonProperty("isDuplicateKeyUpdate") boolean isDuplicateUpdate,
         @JsonProperty("isReplaceInto") boolean isReplaceInto,
-        @JsonProperty("isIgnore") boolean isIgnore
+        @JsonProperty("isIgnore") boolean isIgnore,
+        TupleMapping updateMapping,
+        List<SqlExpr> updates
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -61,7 +70,18 @@ public class PessimisticLockInsertParam extends TxnPartModifyParam {
         this.isDuplicateUpdate = isDuplicateUpdate;
         this.isReplaceInto = isReplaceInto;
         this.isIgnore = isIgnore;
+        this.updateMapping = updateMapping;
+        this.updates = updates;
     }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        if (updates != null) {
+            updates.stream().filter(Objects::nonNull).forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
+    }
+
     public void inc() {
         count++;
     }

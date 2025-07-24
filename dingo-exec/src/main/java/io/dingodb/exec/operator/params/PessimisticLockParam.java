@@ -32,6 +32,7 @@ import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @JsonTypeName("pessimistic_lock")
@@ -116,7 +117,7 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         if (updates != null && !updates.isEmpty() && relOp == null) {
-            updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+            updates.stream().filter(Objects::nonNull).forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
         }
         if (relOp != null) {
             relOp = relOp.compile(new DingoCompileContext(
@@ -134,7 +135,7 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     public void setParas(Object[] paras) {
         super.setParas(paras);
         if (updates != null && !updates.isEmpty()) {
-            updates.forEach(e -> e.setParas(paras));
+            updates.stream().filter(Objects::nonNull).forEach(e -> e.setParas(paras));
         }
         if (relOp != null) {
             config.getEvalContext().setParas(paras);

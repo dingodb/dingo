@@ -147,7 +147,9 @@ public final class DingoTableModifyVisitFun {
                                     td,
                                     isUpdate,
                                     replaceInto,
-                                    isIgnore
+                                    isIgnore,
+                                    updateMapping,
+                                    updates
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
                             }
