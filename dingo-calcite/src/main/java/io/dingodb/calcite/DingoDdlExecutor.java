@@ -109,6 +109,8 @@ import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
+import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -197,6 +199,8 @@ import java.util.stream.IntStream;
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
+import static io.dingodb.common.mysql.MysqlByteUtil.isBinary;
+import static io.dingodb.common.mysql.MysqlByteUtil.isHex;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDupKeyName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
@@ -2323,14 +2327,21 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     } else {
                         throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                     }
-                } else if (type instanceof MapType) {
+                } else if (type instanceof MapType || (type instanceof ObjectType)) {
                     if (defaultVal.toUpperCase().startsWith("MAP[") && defaultVal.endsWith("]")) {
                         defaultVal = defaultVal.substring(4, defaultVal.length() - 1);
                         int itemSize = defaultVal.split(",").length;
                         if (itemSize % 2 != 0) {
                             throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                         }
-                        newColumn.setDefaultValue(defaultVal);
+                    }
+                } else if (type instanceof BitType) {
+                    if (!isBinary(defaultVal, ((BitType) type).getPrecision())) {
+                        throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
+                    }
+                } else if (type instanceof BinaryType) {
+                    if (!isHex(defaultVal)) {
+                        throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                     }
                 }
             } catch (Exception e) {

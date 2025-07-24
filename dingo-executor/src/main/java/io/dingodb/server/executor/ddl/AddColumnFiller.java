@@ -37,10 +37,12 @@ import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.ByteArrayUtils;
+import io.dingodb.common.util.ByteUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
@@ -61,6 +63,7 @@ import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -75,7 +78,9 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
+import static io.dingodb.common.mysql.MysqlByteUtil.binaryPrefix;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
 
@@ -124,7 +129,9 @@ public class AddColumnFiller extends IndexAddFiller {
             }
         } else {
             String defaultValueExpr = newColumn.defaultValueExpr;
-            defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
+            if (defaultValueExpr.startsWith("'") && defaultValueExpr.endsWith("'")) {
+                defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
+            }
             if (type instanceof StringType) {
                 return defaultValueExpr;
             } else if (type instanceof LongType) {
@@ -185,16 +192,35 @@ public class AddColumnFiller extends IndexAddFiller {
                             return item;
                     }
                 }).collect(Collectors.toList());
-            } else if (type instanceof MapType) {
+            } else if (type instanceof MapType || (type instanceof ObjectType)) {
+                if (defaultValueExpr.toUpperCase().startsWith("MAP[") && defaultValueExpr.endsWith("]")) {
+                    defaultValueExpr = defaultValueExpr.substring(4, defaultValueExpr.length() - 1);
+                }
                 if ("{}".equalsIgnoreCase(defaultValueExpr)) {
                     return new LinkedHashMap<>();
                 }
                 List<String> list = Arrays.asList(defaultValueExpr.split(","));
                 LinkedHashMap<Object, Object> mapVal = new LinkedHashMap<>();
                 for (int j = 0; j < list.size(); j += 2) {
-                    mapVal.put(list.get(j), list.get(j + 1));
+                    String key = list.get(j).trim();
+                    String val = list.get(j + 1).trim();
+                    key = SqlParserUtil.trim(key, "'");
+                    val = SqlParserUtil.trim(val, "'");
+                    mapVal.put(key, val);
                 }
                 return mapVal;
+            } else if (type instanceof BitType) {
+                defaultValueExpr = defaultValueExpr.substring(2, defaultValueExpr.length() - 1);
+                BigInteger bigInt = new BigInteger(defaultValueExpr, 16);
+                String binaryString = bigInt.toString(2);
+                return Long.parseLong(binaryString, 2);
+            } else if (type instanceof BinaryType) {
+                if (binaryPrefix(defaultValueExpr)) {
+                    defaultValueExpr = defaultValueExpr.substring(2, defaultValueExpr.length() - 1);
+                    return ByteUtils.hexStringToByteArray(defaultValueExpr);
+                } else {
+                    return ByteUtils.hexStringToByteArray(defaultValueExpr);
+                }
             }
             return defaultValueExpr;
         }
@@ -256,6 +282,9 @@ public class AddColumnFiller extends IndexAddFiller {
             Object[] tuplesTmp = getNewTuples(colLen, tuples);
 
             KeyValue keyValue = wrap(indexCodec::encode).apply(tuplesTmp);
+            if (keyValue == null) {
+                throw DINGO_RESOURCE.invalidDefaultValue(addColumn.getName()).ex();
+            }
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
                 getRegionList();
             CommonId partId = ps.calcPartId(keyValue.getKey(), ranges);
