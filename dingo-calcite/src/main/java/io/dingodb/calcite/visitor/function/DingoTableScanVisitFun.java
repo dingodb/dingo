@@ -146,7 +146,8 @@ public final class DingoTableScanVisitFun {
                     transaction.getIsolationLevel(),
                     transaction.getLockTimeOut(),
                     false,
-                    td.codecVersion
+                    td.codecVersion,
+                    transaction.isAutoCommit()
                 );
                 scanVertex = new Vertex(TXN_PART_RANGE_SCAN, param);
             } else {

@@ -30,6 +30,7 @@ import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.TxnMergedIterator;
 import io.dingodb.store.api.StoreInstance;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import io.dingodb.store.api.transaction.ProfileScanIterator;
 import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,26 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
             (txnIdByte.length + tableIdByte.length + partIdByte.length), txnIdByte, tableIdByte, partIdByte);
         Iterator<KeyValue> localKVIterator;
         Iterator<KeyValue> kvKVIterator;
+        if (param.isAutoCommit()) {
+            start = System.currentTimeMillis();
+            kvKVIterator = kvStore.txnScan(
+                param.getScanTs(),
+                new StoreInstance.Range(startKey, endKey, includeStart, includeEnd), param.getTimeOut()
+            );
+            profile.incrTxnScanTime(start);
+            if (coprocessor == null) {
+                profile.setTaskType("executor");
+            } else {
+                profile.setTaskType("corp");
+            }
+            if (kvKVIterator instanceof ProfileScanIterator) {
+                ProfileScanIterator profileScanIterator = (ProfileScanIterator) kvKVIterator;
+                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+            }
+            profile.setRegionId(partId.seq);
+            profile.end();
+            return DingoTransformedIterator.transform(kvKVIterator, wrap(param.getCodec()::decode)::apply);
+        }
         if (coprocessor == null) {
             localKVIterator = Iterators.transform(
                 localStore.scan(new StoreInstance.Range(encodeStart, encodeEnd, includeStart, includeEnd)),

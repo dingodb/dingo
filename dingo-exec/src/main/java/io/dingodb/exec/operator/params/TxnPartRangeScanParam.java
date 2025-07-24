@@ -64,6 +64,8 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
     private transient Coprocessor coprocessor = null;
     private transient KeyValueCodec codec;
 
+    private final boolean isAutoCommit;
+
     public TxnPartRangeScanParam(
         CommonId tableId,
         DingoType schema,
@@ -78,7 +80,8 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         int isolationLevel,
         long timeOut,
         boolean pushDown,
-        int codecVersion
+        int codecVersion,
+        boolean isAutoCommit
     ) {
         super(tableId, schema, schemaVersion, filter, selection, keyMapping, codecVersion);
         this.aggKeys = aggKeys;
@@ -88,6 +91,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         this.isolationLevel = isolationLevel;
         this.timeOut = timeOut;
         this.pushDown = pushDown;
+        this.isAutoCommit = isAutoCommit;
     }
 
     @Override

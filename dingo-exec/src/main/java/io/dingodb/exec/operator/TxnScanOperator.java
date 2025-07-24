@@ -24,10 +24,13 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnScanParam;
 import io.dingodb.exec.utils.RelOpUtils;
+import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
+
+import static io.dingodb.common.util.NoBreakFunctions.wrap;
 
 @Slf4j
 public final class TxnScanOperator extends TxnScanOperatorBase {
@@ -41,6 +44,18 @@ public final class TxnScanOperator extends TxnScanOperatorBase {
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
+        if (param.isAutoCommit()) {
+            start = System.currentTimeMillis();
+            Iterator<KeyValue> storeIterator = createStoreIterator(
+                tableId,
+                distribution,
+                param.getScanTs(),
+                param.getTimeOut()
+            );
+            profile.incrTxnScanTime(start);
+            profile.end();
+            return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
+        }
         Iterator<KeyValue> localIterator = createLocalIterator(txnId, tableId, distribution);
         profile.incrLocalTime(start);
         start = System.currentTimeMillis();

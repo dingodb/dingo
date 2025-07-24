@@ -153,7 +153,8 @@ public final class DingoGetByIndexVisitFun {
                         td,
                         needLookup,
                         scanTs,
-                        transaction.getLockTimeOut()
+                        transaction.getLockTimeOut(),
+                        transaction.isAutoCommit()
                     ));
                 } else {
                     vertex = new Vertex(GET_BY_INDEX, new GetByIndexParam(
