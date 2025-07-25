@@ -16,6 +16,8 @@
 
 package io.dingodb.common.mysql;
 
+import org.apache.calcite.sql.parser.SqlParserUtil;
+
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -196,7 +198,8 @@ public final class MysqlByteUtil {
             str = str.substring(2, str.length() - 1);
             return str.matches("^[0-9A-Fa-f]+$");
         } else {
-            return false;
+            str = SqlParserUtil.trim(str, "'");
+            return str.matches("^[0-9A-Fa-f]+$");
         }
     }
 }

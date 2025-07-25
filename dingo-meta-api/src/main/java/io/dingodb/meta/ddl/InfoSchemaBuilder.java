@@ -227,6 +227,7 @@ public class InfoSchemaBuilder {
             Utils.sleep(500);
         }
         if (schemaInfo == null) {
+            LogUtils.error(log, "schemaId not exists, schemaId:{}", diff.getSchemaId());
             return "schemaId not exists, schemaId:" + diff.getSchemaId();
         }
         this.is.schemaMap.put(schemaInfo.getName(), new SchemaTables(schemaInfo));
@@ -466,6 +467,9 @@ public class InfoSchemaBuilder {
     }
 
     public Pair<List<Long>, String> applyRecoverSchema(SchemaDiff diff) {
+        if (diff.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+            return Pair.of(null, null);
+        }
         String error = null;
         InfoSchemaService schemaService = InfoSchemaService.root();
         SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());

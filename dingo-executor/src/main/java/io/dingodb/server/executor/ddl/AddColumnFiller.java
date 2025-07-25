@@ -124,7 +124,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 } else if (type instanceof BitType) {
                     return 0L;
                 } else if (type instanceof BinaryType) {
-                    return new byte[]{0x00};
+                    return "00000000".getBytes();
                 }
             }
         } else {
@@ -219,7 +219,7 @@ public class AddColumnFiller extends IndexAddFiller {
                     defaultValueExpr = defaultValueExpr.substring(2, defaultValueExpr.length() - 1);
                     return ByteUtils.hexStringToByteArray(defaultValueExpr);
                 } else {
-                    return ByteUtils.hexStringToByteArray(defaultValueExpr);
+                    return defaultValueExpr.getBytes();
                 }
             }
             return defaultValueExpr;

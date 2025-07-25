@@ -1941,19 +1941,22 @@ public class DdlWorker {
                     Object schemaInfoTmp = currentInfoService.getSchema(schemaInfo.getSchemaId());
                     if (schemaInfoTmp != null) {
                         SchemaInfo schemaInfoTmp1 = (SchemaInfo) schemaInfoTmp;
-                        String errFormat = "Schema '%s' already been recover to '%s', can not be recover repeatedly";
-                        String newSchemaNm = schemaInfoTmp1.getName();
-                        String errMsg = String.format(errFormat, recoverInfo.getOldSchemaName(), newSchemaNm);
-                        DingoErr dingoErr = DingoErrUtil.newInternalErr(errMsg);
-                        dingoErr.errorCode = 1007;
-                        job.setDingoErr(dingoErr);
-                        job.setState(JobState.jobStateCancelled);
-                        return Pair.of(0L, job.getDingoErr().errorMsg);
+                        if (schemaInfoTmp1.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+                            String errFormat = "Schema '%s' already been recover to '%s', can not be recover repeatedly";
+                            String newSchemaNm = schemaInfoTmp1.getName();
+                            String errMsg = String.format(errFormat, recoverInfo.getOldSchemaName(), newSchemaNm);
+                            DingoErr dingoErr = DingoErrUtil.newInternalErr(errMsg);
+                            dingoErr.errorCode = 1007;
+                            job.setDingoErr(dingoErr);
+                            job.setState(JobState.jobStateCancelled);
+                            return Pair.of(0L, job.getDingoErr().errorMsg);
+                        }
                     }
                     if (recoverInfo.getNewSchemaName() != null) {
                         schemaInfo.setName(recoverInfo.getNewSchemaName());
                     }
-                    currentInfoService.createSchema(schemaInfo.getSchemaId(), schemaInfo);
+                    schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+                    currentInfoService.updateSchema(schemaInfo);
                     return updateSchemaVersion(dc, job);
                 }
             default:
