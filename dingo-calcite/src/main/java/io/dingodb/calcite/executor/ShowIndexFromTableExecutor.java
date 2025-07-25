@@ -22,6 +22,7 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
+import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 
@@ -95,6 +96,10 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
         Object[] val = new Object[17];
         val[0] = tableName;
         if (index instanceof IndexTable) {
+            if ((((IndexTable) index).getIndexType().isVector
+                || ((IndexTable) index).getIndexType() == IndexType.DOCUMENT) && column.isPrimary()) {
+                unique = true;
+            }
             val[1] = unique ? 0 : 1;
             val[2] = index.getName();
         } else {

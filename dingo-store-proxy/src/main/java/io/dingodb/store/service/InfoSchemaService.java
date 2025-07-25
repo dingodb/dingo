@@ -166,8 +166,11 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         String schema = convertName(schemaName);
         List<SchemaInfo> schemaInfoList = listSchema();
         return schemaInfoList.stream()
-            .anyMatch(schemaInfo -> caseSensitive() ? schemaInfo.getName().equals(schema)
-                : schemaInfo.getName().equalsIgnoreCase(schema));
+            .anyMatch(schemaInfo -> {
+                return schemaInfo.getSchemaState() == io.dingodb.common.meta.SchemaState.SCHEMA_PUBLIC
+                    && (caseSensitive() ? schemaInfo.getName().equals(schema)
+                    : schemaInfo.getName().equalsIgnoreCase(schema));
+            });
     }
 
     @Override

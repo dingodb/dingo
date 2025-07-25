@@ -249,10 +249,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             );
         }
 
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        rootSnapshotSchema.applyDiff(SchemaDiff.builder().schemaId(schemaId)
-            .type(ActionType.ActionCreateSchema).build());
         timeCtx.stop();
     }
 
@@ -304,10 +300,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } else {
             throw new RuntimeException("Schema not empty.");
         }
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        rootSnapshotSchema.applyDiff(SchemaDiff.builder().schemaId(schemaId)
-            .type(ActionType.ActionDropSchema).build());
         timeCtx.stop();
     }
 
