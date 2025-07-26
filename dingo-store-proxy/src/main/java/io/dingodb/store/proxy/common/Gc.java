@@ -816,7 +816,7 @@ public class Gc {
             return false;
         }
         String[] ids = eleId.split("-");
-        if (ids.length != 2) {
+        if (ids.length < 2) {
             return false;
         }
         try {
