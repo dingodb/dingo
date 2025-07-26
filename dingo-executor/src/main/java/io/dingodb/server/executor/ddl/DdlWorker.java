@@ -1557,7 +1557,7 @@ public class DdlWorker {
                     }
                     // recover table
                     InfoSchemaService infoSchemaService
-                        = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                        = new io.dingodb.store.service.InfoSchemaService();
                     TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) infoSchemaService
                         .getTable(recoverInfo.getSchemaId(), tableId);
                     if (tableDefinitionWithId == null) {
@@ -1924,7 +1924,7 @@ public class DdlWorker {
                     }
                     // recover table
                     InfoSchemaService infoSchemaService
-                        = new io.dingodb.store.service.InfoSchemaService(recoverInfo.getSnapshotTs());
+                        = new io.dingodb.store.service.InfoSchemaService();
                     LogUtils.info(log, "flashback schema:{} ts:{}",
                         recoverInfo.getOldSchemaName(), recoverInfo.getSnapshotTs());
                     SchemaInfo schemaInfo = (SchemaInfo) infoSchemaService.getSchema(recoverInfo.getSchemaId());
