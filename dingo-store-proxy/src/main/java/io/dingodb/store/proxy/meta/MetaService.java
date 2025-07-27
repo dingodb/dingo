@@ -1007,12 +1007,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         List<DingoCommonId> oldIds = new ArrayList<>();
         oldIds.add(table.getTableId());
-        indexes.stream().map(TableDefinitionWithId::getTableId)
-            .forEach(dingoCommonId ->
-                infoSchemaService.dropIndex(dingoCommonId.getParentEntityId(), dingoCommonId.getEntityId()));
 
         // Reset table id.
         io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = table.getTableDefinition();
+        tableDefinition.setSchemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_DELETE_ONLY);
         DingoCommonId tableId = DingoCommonId.builder()
             .entityType(EntityType.ENTITY_TYPE_TABLE)
             .parentEntityId(schemaId)
@@ -1031,9 +1029,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .collect(Collectors.toList());
         TableIdWithPartIds newTableId =
             TableIdWithPartIds.builder().tableId(tableId).partIds(tablePartIds).build();
-        oldIds.forEach(id -> infoSchemaService.dropTable(id.getParentEntityId(), id.getEntityId()));
+        oldIds.forEach(id -> infoSchemaService.updateTable(id.getParentEntityId(), table));
 
         resetTableId(newTableId, table);
+        table.getTableDefinition().setSchemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC);
 
         // create table、table region
         infoSchemaService.createTableOrView(schemaId, table.getTableId().getEntityId(), table);
