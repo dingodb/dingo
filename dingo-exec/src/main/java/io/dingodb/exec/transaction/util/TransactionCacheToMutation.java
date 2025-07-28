@@ -59,6 +59,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -282,7 +283,8 @@ public final class TransactionCacheToMutation {
                 txnIdByte, tableIdByte, partIdByte);
             KeyValue keyValue = store.get(lockBytes);
             if (keyValue == null) {
-                throw new RuntimeException(txnId + " lock keyValue is null ");
+                throw new RuntimeException(txnId + " lock keyValue is null, partId: " + newPartId
+                    + ", key is " + Arrays.toString(lockBytes));
             }
             forUpdateTs = ByteUtils.decodePessimisticLockValue(keyValue);
         } else {

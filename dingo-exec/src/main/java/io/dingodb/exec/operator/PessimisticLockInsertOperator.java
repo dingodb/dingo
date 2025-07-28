@@ -429,6 +429,9 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                             }
                             key = oldKey;
                         }
+                        if (!updated && !duplicateKey && param.isDuplicateUpdate()) {
+                            return false;
+                        }
                     }
                 }
             }

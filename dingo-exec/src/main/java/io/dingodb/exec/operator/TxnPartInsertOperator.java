@@ -246,6 +246,15 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             tmpLocalStore.put(new KeyValue(deleteKey, Arrays.copyOf(oldKv.getValue(), oldKv.getValue().length)));
                         }
                     }
+                } else {
+                    Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
+                    KeyValue keyValue = wrap(codec::encode).apply(newTuple);
+                    StoreInstance kvStore = Services.KV_STORE.getInstance(context.getIndexId(), partId);
+                    KeyValue indexKv = kvStore.txnGet(txnId.seq, keyValue.getKey(), param.getLockTimeOut());
+                    if (indexKv != null && indexKv.getValue() != null && index.isUnique()) {
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, keyValue.getKey(), txnId) + " for key 'PRIMARY'");
+                    }
                 }
             }
         }
@@ -530,8 +539,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (param.getUpdateMapping() != null && param.getUpdates() != null) {
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
                 KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
-                context.setDuplicateKey(true);
                 if (oldKv != null && oldKv.getValue() != null) {
+                    context.setDuplicateKey(true);
                     oldTuple = codec.decode(oldKv);
                 }
                 if (oldTuple == null) {
