@@ -151,9 +151,13 @@ public class AddColumnFiller extends IndexAddFiller {
                 return new BigDecimal(defaultValueExpr);
             } else if (type instanceof BooleanType) {
                 if (defaultValueExpr.equalsIgnoreCase("true")) {
-                    return 1;
+                    return true;
                 } else if (defaultValueExpr.equalsIgnoreCase("false")) {
-                    return 0;
+                    return false;
+                } else if (defaultValueExpr.equalsIgnoreCase("1")) {
+                    return true;
+                } else {
+                    return false;
                 }
             } else if (type instanceof TimestampType) {
                 if (defaultValueExpr.equalsIgnoreCase("current_timestamp")) {
@@ -163,6 +167,9 @@ public class AddColumnFiller extends IndexAddFiller {
             } else if (type instanceof TimeType) {
                 return DateTimeUtils.parseTime(defaultValueExpr);
             } else if (type instanceof ListType) {
+                if (defaultValueExpr.toUpperCase().startsWith("ARRAY[") && defaultValueExpr.endsWith("]")) {
+                    defaultValueExpr = defaultValueExpr.substring(6, defaultValueExpr.length() - 1);
+                }
                 if ("{}".equalsIgnoreCase(defaultValueExpr)) {
                     return new ArrayList<>();
                 }
