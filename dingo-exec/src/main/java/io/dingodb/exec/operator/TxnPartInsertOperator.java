@@ -289,8 +289,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             if (param.getUpdateMapping() != null && param.getUpdates() != null) {
                 StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
                 KeyValue oldKv = kvStore.txnGet(txnId.seq, key, param.getLockTimeOut());
-                context.setDuplicateKey(true);
                 if (oldKv != null && oldKv.getValue() != null) {
+                    context.setDuplicateKey(true);
                     oldTuple = codec.decode(oldKv);
                 }
                 if (oldTuple == null) {
@@ -750,7 +750,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     Expr operand1 = ((BinaryOpExpr) sqlExpr.getExpr()).getOperand1();
                     if (operand0 instanceof Val && operand1 instanceof Var
                         || (operand0 instanceof Var && operand1 instanceof Val)
-                        || (operand0 instanceof UnaryOpExpr && !(((UnaryOpExpr) operand0).getOp() instanceof ValuesFun))
+                        || (operand0 instanceof UnaryOpExpr
+                            && !(((UnaryOpExpr) operand0).getOp() instanceof ValuesFun)
+                            && ((UnaryOpExpr) operand0).getOperand() instanceof Var)
                     ) {
                         newValue = sqlExpr.eval(newTuple);
                     }

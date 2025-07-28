@@ -183,6 +183,17 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     } else {
                         getPrimaryTuple = param.getCodec().decode(getPrimaryKv);
                     }
+                    boolean duplicateKey2 = false;
+                    Object[] tmpTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
+                    for (int i = 0; i < index.keyMapping().size(); i++) {
+                        int i1 = index.keyMapping().get(i);
+                        if (getPrimaryTuple != null
+                            && tmpTuple.length == getPrimaryTuple.length
+                            && (tmpTuple[i1].equals(getPrimaryTuple[i1]) || tmpTuple[i1] == getPrimaryTuple[i1])
+                            && !duplicateKey2) {
+                            duplicateKey2 = true;
+                        }
+                    }
                     if ((getPrimaryKv != null && getPrimaryKv.getValue() != null) || getPrimaryTuple != null) {
                         context.setDuplicateKey(true);
                         if (param.isPessimisticTxn()) {
@@ -429,7 +440,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                             }
                             key = oldKey;
                         }
-                        if (!updated && !duplicateKey && param.isDuplicateUpdate()) {
+                        if (!updated && !duplicateKey && param.isDuplicateUpdate() && !duplicateKey2) {
                             return false;
                         }
                     }
