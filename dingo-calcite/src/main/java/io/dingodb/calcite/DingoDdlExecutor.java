@@ -2315,7 +2315,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                                     break;
                             }
                         });
-                        newColumn.setDefaultValue(defaultVal);
                     } else {
                         throw DINGO_RESOURCE.invalidDefaultValue(newColumn.getName()).ex();
                     }
