@@ -1527,7 +1527,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String schemaName = convertName(sqlFlashBackSchema.schemaId.names.get(0));
 
         SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);
-        if (subSchema != null) {
+        if (subSchema != null && sqlFlashBackSchema.newSchemaName == null) {
             throw SqlUtil.newContextException(
                 sqlFlashBackSchema.schemaId.getParserPosition(),
                 RESOURCE.schemaExists(schemaName)
