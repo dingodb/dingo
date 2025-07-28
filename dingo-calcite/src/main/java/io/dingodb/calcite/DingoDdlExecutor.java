@@ -3001,10 +3001,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public static DdlJob getRecoverJob(String schemaName, long schemaId, String tableName) {
-        String sql = "select job_meta from mysql.dingo_ddl_history where (lower(schema_name) = %s or schema_ids = %s) "
+        String sql = "select job_meta from mysql.dingo_ddl_history where (schema_ids = %s) "
             + " and lower(table_name)= %s "
             + "and type in (4,11) order by create_time desc limit 10";
-        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaName.toLowerCase()), Utils.quoteForSql(schemaId),
+        sql = convertSql(String.format(sql, Utils.quoteForSql(schemaId),
             Utils.quoteForSql(tableName.toLowerCase())));
         return getRecoverJobBySql(sql, true);
     }
