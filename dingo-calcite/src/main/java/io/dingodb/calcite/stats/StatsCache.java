@@ -50,7 +50,9 @@ public final class StatsCache {
 
     public static double getTableRowCount(RelOptTable relOptTable) {
         DingoTable dingoTable = relOptTable.unwrap(DingoTable.class);
-        assert dingoTable != null;
+        if (dingoTable == null) {
+            return 1;
+        }
         if (dingoTable.getNames().size() > 2) {
             return getTableRowCount(dingoTable.getNames().get(1), dingoTable.getNames().get(2));
         } else {

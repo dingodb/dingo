@@ -106,6 +106,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -953,6 +954,9 @@ public final class DingoDriverParser extends DingoParser {
                                        ITransaction transaction,
                                        PlanProfile planProfile,
                                        boolean isNewTxn) {
+        if (sqlNode instanceof SqlWith) {
+            return true;
+        }
         boolean isTxn = false;
         boolean isNotTransactionTable = false;
         // for UT test
@@ -967,12 +971,14 @@ public final class DingoDriverParser extends DingoParser {
             Table tableTarget;
             if (table instanceof RelOptTableImpl) {
                 RelOptTableImpl relOptTable = (RelOptTableImpl) table;
-                tableTarget = ((DingoTable) relOptTable.table()).getTable();
-                engine = tableTarget.getEngine();
-                List<String> fullName = relOptTable.getQualifiedName();
-                if (fullName.size() == 3) {
-                    name = fullName.get(1) + "." + fullName.get(2);
-                    tableList.add(name);
+                if (relOptTable.table() instanceof DingoTable) {
+                    tableTarget = ((DingoTable) relOptTable.table()).getTable();
+                    engine = tableTarget.getEngine();
+                    List<String> fullName = relOptTable.getQualifiedName();
+                    if (fullName.size() == 3) {
+                        name = fullName.get(1) + "." + fullName.get(2);
+                        tableList.add(name);
+                    }
                 }
             } else if (table instanceof DingoRelOptTable) {
                 DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) table;

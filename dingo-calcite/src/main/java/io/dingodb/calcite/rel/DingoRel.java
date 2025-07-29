@@ -20,6 +20,7 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
@@ -31,6 +32,10 @@ import java.util.Objects;
 
 public interface DingoRel extends PhysicalNode {
     static DingoRel dingo(RelNode rel) {
+        if (rel instanceof RelSubset) {
+            RelSubset relSubset = (RelSubset) rel;
+            return (DingoRel) relSubset.getBest();
+        }
         return (DingoRel) rel;
     }
 

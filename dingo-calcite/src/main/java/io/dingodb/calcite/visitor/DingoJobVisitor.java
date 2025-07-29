@@ -39,8 +39,12 @@ import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.DingoRel;
+import io.dingodb.calcite.rel.DingoRepeatUnion;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.DingoTableSpool;
+import io.dingodb.calcite.rel.DingoTransientTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
@@ -58,6 +62,7 @@ import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
+import io.dingodb.calcite.rule.DingoTableScanForSpoolRule;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoDiskAnnBuildVisitFun;
@@ -88,12 +93,15 @@ import io.dingodb.calcite.visitor.function.DingoRangeDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoReduceAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoReduceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRelOpVisitFun;
+import io.dingodb.calcite.visitor.function.DingoRepeatUnionVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRootVisitFun;
 import io.dingodb.calcite.visitor.function.DingoScanWithRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoSortVisitFun;
 import io.dingodb.calcite.visitor.function.DingoStreamingConverterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoTableModifyVisitFun;
 import io.dingodb.calcite.visitor.function.DingoTableScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoTableSpoolVisitFun;
+import io.dingodb.calcite.visitor.function.DingoTransientTableScanVisitFun;
 import io.dingodb.calcite.visitor.function.DingoUnionVisitFun;
 import io.dingodb.calcite.visitor.function.DingoValuesVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorStreamingVisitFun;
@@ -107,10 +115,12 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
+import io.dingodb.exec.operator.params.TableSpoolParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -423,6 +433,18 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     public Collection<Vertex> visit(@NonNull DingoWindow dingoWindow) {
         return DingoWindowVisitFun.visit(job, idGenerator, currentLocation, this, transaction, dingoWindow);
+    }
+
+    public Collection<Vertex> visit(@NonNull DingoRepeatUnion dingoRepeatUnion) {
+        return DingoRepeatUnionVisitFun.visit(job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion);
+    }
+
+    public Collection<Vertex> visit(@NonNull DingoTransientTableScan dingoTransientTableScan) {
+        return DingoTransientTableScanVisitFun.visit(job, idGenerator, currentLocation, this, transaction, dingoTransientTableScan);
+    }
+
+    public Collection<Vertex> visit(DingoTableSpool dingoTableSpool) {
+        return DingoTableSpoolVisitFun.visit(job, idGenerator, currentLocation, this, transaction, dingoTableSpool);
     }
 
 }

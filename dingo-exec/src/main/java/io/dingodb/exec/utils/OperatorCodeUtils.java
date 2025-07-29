@@ -43,6 +43,7 @@ public final class OperatorCodeUtils {
     public static final CommonId CALC_DISTRIBUTION_1 = new CommonId(CommonId.CommonType.OP, SOURCE, 15);
     public static final CommonId TXN_PART_DOCUMENT = new CommonId(CommonId.CommonType.OP, SOURCE, 16);
     public static final CommonId DOCUMENT_SCAN_FILTER = new CommonId(CommonId.CommonType.OP, SOURCE, 17);
+    public static final CommonId LIST_TRANSIENT_SCAN = new CommonId(CommonId.CommonType.OP, SOURCE, 18);
 
 
     // op
@@ -122,6 +123,8 @@ public final class OperatorCodeUtils {
 
     public static final CommonId TXN_DISK_ANN_LOAD = new CommonId(CommonId.CommonType.OP, SOURCE, 96);
     public static final CommonId WINDOW_FUNCTION = new CommonId(CommonId.CommonType.OP, OP, 97);
+    public static final CommonId REPEAT_UNION = new CommonId(CommonId.CommonType.OP, SOURCE, 98);
+    public static final CommonId TABLE_SPOOL = new CommonId(CommonId.CommonType.OP, OP, 99);
 
     private OperatorCodeUtils() {
     }

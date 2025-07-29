@@ -41,8 +41,11 @@ import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
 import io.dingodb.calcite.rel.DingoRel;
+import io.dingodb.calcite.rel.DingoRepeatUnion;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.DingoTableSpool;
+import io.dingodb.calcite.rel.DingoTransientTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
@@ -641,4 +644,26 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         return explain1;
     }
 
+    @Override
+    public Explain visit(DingoRepeatUnion dingoRepeatUnion) {
+        Explain left = dingo(dingoRepeatUnion.getLeft()).accept(this);
+        Explain right = dingo(dingoRepeatUnion.getRight()).accept(this);
+        Explain explain1 =  new Explain("repeatUnion", dingoRepeatUnion.getRowCount(), "root", "", "");
+        explain1.getChildren().add(left);
+        explain1.getChildren().add(right);
+        return explain1;
+    }
+
+    @Override
+    public Explain visit(DingoTableSpool dingoTableSpool) {
+        Explain input = dingo(dingoTableSpool.getInput()).accept(this);
+        Explain parent = new Explain("dingoTableSpool", dingoTableSpool.getRowCount(), "root", "", "");
+        parent.getChildren().add(input);
+        return parent;
+    }
+
+    @Override
+    public Explain visit(DingoTransientTableScan transientTableScan) {
+        return new Explain("transientTableScan", transientTableScan.getRowCount(), "root", "", "");
+    }
 }

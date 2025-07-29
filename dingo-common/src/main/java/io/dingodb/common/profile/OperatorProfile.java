@@ -42,7 +42,7 @@ public class OperatorProfile extends Profile {
         count.incrementAndGet();
     }
 
-    public void pipeOpTime(long start) {
+    public void opTime(long start) {
         long current = System.currentTimeMillis();
         long time = current - start;
         opDuration.addAndGet(time);

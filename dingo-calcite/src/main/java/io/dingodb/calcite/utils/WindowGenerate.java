@@ -68,7 +68,7 @@ public class WindowGenerate {
 
             Expression ix = Expressions.constant(index);
             Expression arg0 = Expressions.arrayIndex(parameterV0, ix);
-            Expression arg1 = Expressions.arrayIndex(parameterV0, ix);
+            Expression arg1 = Expressions.arrayIndex(parameterV1, ix);
 
             arg0 = EnumUtils.convert(arg0, Comparable.class);
             arg1 = EnumUtils.convert(arg1, Comparable.class);
