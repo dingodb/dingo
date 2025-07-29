@@ -18,12 +18,95 @@ package io.dingodb.calcite;
 
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlSumAggFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 
 public class DingoTypeMapper {
+    /*
+        To be compatible with MYSQL binary arithmetic operator.
+        The relation between parameter type and result type are as following:
+        +,-,*,/,% operators:
+                ------------------------------------------------------------------------------------
+                |    left parameter type      |    right parameter type    |    result type        |
+                ------------------------------------------------------------------------------------
+                |          float              |        double              |        double         |
+                ------------------------------------------------------------------------------------
+                |          float              |        float               |        float          |
+                ------------------------------------------------------------------------------------
+                |          float              |        int                 |        double         |
+                ------------------------------------------------------------------------------------
+                |          float              |        bigint              |        double         |
+                ------------------------------------------------------------------------------------
+                |          double             |        float               |        double         |
+                ------------------------------------------------------------------------------------
+                |          double             |        double              |        double         |
+                ------------------------------------------------------------------------------------
+                |          double             |        int                 |        double         |
+                ------------------------------------------------------------------------------------
+                |          double             |        bigint              |        double         |
+                ------------------------------------------------------------------------------------
+                |          int                |        bigint              |        bigint         |
+                ------------------------------------------------------------------------------------
+                |          int                |        float               |        double         |
+                ------------------------------------------------------------------------------------
+                |          int                |        double              |        double         |
+                ------------------------------------------------------------------------------------
+                |          bigint             |        bigint              |        bigint         |
+                ------------------------------------------------------------------------------------
+                |          bigint             |        int                 |        double         |
+                ------------------------------------------------------------------------------------
+                |          bigint             |        float               |        double         |
+                ------------------------------------------------------------------------------------
+     */
+    public static RelDataType getBinaryArithmeticResultType(RelDataType left, RelDataType right, RelDataTypeFactory factory) {
+        RelDataType ret = null;
+
+        if (SqlTypeUtil.isFloat(left)) {
+            if (SqlTypeUtil.isDouble(right)) {
+                ret = right;
+            } else if(SqlTypeUtil.isFloat(right)) {
+                ret = left;
+            } else if(SqlTypeUtil.isInt(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isBigint(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        } else if(SqlTypeUtil.isDouble(left)) {
+            if (SqlTypeUtil.isFloat(right)) {
+                ret = left;
+            } else if(SqlTypeUtil.isDouble(right)) {
+                ret = left;
+            } else if(SqlTypeUtil.isInt(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isBigint(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        } else if(SqlTypeUtil.isInt(left)) {
+            if (SqlTypeUtil.isBigint(right)) {
+                ret = right;
+            } else if(SqlTypeUtil.isFloat(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isDouble(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        } else if(SqlTypeUtil.isBigint(left)) {
+            if(SqlTypeUtil.isInt(right)) {
+                ret = left;
+            } else if(SqlTypeUtil.isFloat(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isDouble(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        }
+
+        return ret;
+    }
+
+
     /*
         To be compatible with MYSQL aggregation.
         The relation between parameter type and result type are as following:
