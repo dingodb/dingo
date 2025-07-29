@@ -44,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -96,11 +97,33 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         if (stackTrace.length >= 2) {
             stackTraceElement = stackTrace[2];
         }
+        DingoTable table = relOptTable.unwrap(DingoTable.class);
+        if (table == null) {
+            throw new RuntimeException("getRowType exception, table is null");
+        }
+        boolean withoutPri =
+            table.getTable().getColumns().stream().anyMatch(col -> col.getState() == 2);
+        if (!withoutPri) {
+            return relOptTable.getRowType();
+        }
         if (withOutPrimaryRowType(stackTraceElement)) {
             return getWithoutPriRowType();
         } else {
-            return relOptTable.getRowType();
+            if (stackTrace.length >= 13) {
+                StackTraceElement stackTraceElement9 = stackTrace[9];
+                StackTraceElement stackTraceElement11 = stackTrace[11];
+                StackTraceElement stackTraceElement12 = stackTrace[12];
+                if (stackTraceElement9 != null
+                    && "validateQuery".equals(stackTraceElement9.getMethodName()) && stackTraceElement11 != null
+                    && "validateSelect".equals(stackTraceElement11.getMethodName()) && stackTraceElement12 != null
+                    && "validateInsert".equals(stackTraceElement12.getMethodName())) {
+                    return getWithoutPriRowType();
+                } else if (withOutPrimaryRowType(stackTrace)) {
+                    return getWithoutPriRowType();
+                }
+            }
         }
+        return relOptTable.getRowType();
     }
 
     @Override
@@ -203,12 +226,18 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         if (stackTraceElement == null) {
             return false;
         }
-        DingoTable table = relOptTable.unwrap(DingoTable.class);
-        assert table != null;
-        boolean withoutPri =
-            table.getTable().getColumns().stream().anyMatch(col -> col.getState() == 2);
-        return withoutPri && ("createTargetRowType".equals(stackTraceElement.getMethodName())
-            || "collectInsertTargets".equals(stackTraceElement.getMethodName()));
+        return  "createTargetRowType".equals(stackTraceElement.getMethodName())
+            || "collectInsertTargets".equals(stackTraceElement.getMethodName());
+    }
+
+    public boolean withOutPrimaryRowType(StackTraceElement[] stackTraceElements) {
+        return Arrays.stream(stackTraceElements).noneMatch(
+            stackTraceElement -> {
+                String methodName = stackTraceElement.getMethodName().toUpperCase();
+                return methodName.contains("UPDATE")
+                    || methodName.contains("DELETE") || methodName.contains("INSERT");
+            }
+        );
     }
 
     public RelDataType getWithoutPriRowType() {

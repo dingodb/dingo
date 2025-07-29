@@ -124,11 +124,10 @@ public class LogicalDingoTableScan extends TableScan {
         this.groupSets = groupSets;
         this.pushDown = pushDown;
         DingoTable dingoTable = table.unwrap(DingoTable.class);
-        assert dingoTable != null;
         this.realSelection = selection;
         this.forDml = forDml;
         // If the columns of the table contain hide and delete, the data shows that they need to be deleted
-        if (selection != null) {
+        if (selection != null && dingoTable != null) {
             int fieldCount = dingoTable.getTable().getColumns().size();
             if (forDml) {
                 int[] mappingTmp = selection.getMappings();
@@ -149,7 +148,7 @@ public class LogicalDingoTableScan extends TableScan {
                 }
                 this.selection = TupleMapping.of(mappingList);
             }
-        } else {
+        } else if (dingoTable != null) {
             List<Integer> mapping = dingoTable.getTable()
                 .getColumns()
                 .stream()

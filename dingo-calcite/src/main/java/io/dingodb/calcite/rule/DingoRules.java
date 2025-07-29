@@ -18,8 +18,8 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.dingo.DingoPhysicalRules;
+import io.dingodb.calcite.rule.dingo.DingoRepeatUnionRule;
 import io.dingodb.calcite.rule.dingo.DingoWindowRule;
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.rel.core.Correlate;
@@ -204,18 +204,23 @@ public final class DingoRules {
     public static final DingoWindowRule DINGO_WINDOW_RULE =
         DingoWindowRule.DEFAULT.toRule(DingoWindowRule.class);
 
+    public static final DingoRepeatUnionRule DINGO_REPEAT_UNION_RULE =
+        DingoRepeatUnionRule.DEFAULT.toRule(DingoRepeatUnionRule.class);
+
+    public static final DingoTableSpoolRule DINGO_TABLE_SPOOL_RULE = DingoTableSpoolRule.DEFAULT_CONFIG
+        .toRule(DingoTableSpoolRule.class);
+
+    public static final DingoTableScanForSpoolRule DINGO_TABLE_SCAN_FOR_SPOOL_RULE
+        = DingoTableScanForSpoolRule.DEFAULT.toRule(DingoTableScanForSpoolRule.class);
+
     public static final List<RelOptRule> BASE_RULES = ImmutableList.of(
         CoreRules.AGGREGATE_STAR_TABLE,
         CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
-        CalciteSystemProperty.COMMUTE.value()
-            ? CoreRules.JOIN_ASSOCIATE
-            : CoreRules.PROJECT_MERGE,
         CoreRules.FILTER_SCAN,
         CoreRules.PROJECT_FILTER_TRANSPOSE,
         CoreRules.FILTER_PROJECT_TRANSPOSE,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_PUSH_EXPRESSIONS,
-        CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES,
         CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT,
         CoreRules.AGGREGATE_CASE_TO_FILTER,
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
@@ -237,16 +242,16 @@ public final class DingoRules {
         CoreRules.JOIN_CONDITION_PUSH,
         AbstractConverter.ExpandConversionRule.INSTANCE,
         CoreRules.JOIN_COMMUTE,
-        CoreRules.PROJECT_TO_SEMI_JOIN,
-        CoreRules.JOIN_ON_UNIQUE_TO_SEMI_JOIN,
-        CoreRules.JOIN_TO_SEMI_JOIN,
-        CoreRules.AGGREGATE_REMOVE,
+        //CoreRules.PROJECT_TO_SEMI_JOIN,
+        //CoreRules.JOIN_ON_UNIQUE_TO_SEMI_JOIN,
+        //CoreRules.JOIN_TO_SEMI_JOIN,
+        //CoreRules.AGGREGATE_REMOVE,
         CoreRules.UNION_TO_DISTINCT,
-        CoreRules.PROJECT_REMOVE,
+        //CoreRules.PROJECT_REMOVE,
         CoreRules.PROJECT_AGGREGATE_MERGE,
         CoreRules.AGGREGATE_JOIN_TRANSPOSE,
         CoreRules.AGGREGATE_MERGE,
-        CoreRules.AGGREGATE_PROJECT_MERGE,
+        //CoreRules.AGGREGATE_PROJECT_MERGE,
         CoreRules.CALC_REMOVE
         //CoreRules.SORT_REMOVE
     );
@@ -342,7 +347,10 @@ public final class DingoRules {
         DINGO_DOCUMENT_PROJECT_RULE,
         DINGO_DOCUMENT_FILTER_RULE,
         DOCUMENT_INDEX_RANGE_SCAN_RULE,
-        DINGO_WINDOW_RULE
+        DINGO_WINDOW_RULE,
+        DINGO_REPEAT_UNION_RULE,
+        DINGO_TABLE_SPOOL_RULE,
+        DINGO_TABLE_SCAN_FOR_SPOOL_RULE
     );
 
     private DingoRules() {

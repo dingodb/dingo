@@ -20,61 +20,40 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
 import io.dingodb.calcite.rel.DingoTableScan;
 import io.dingodb.calcite.rel.DingoTransientTableScan;
-import io.dingodb.calcite.rel.LogicalDingoTableScan;
-import io.dingodb.calcite.rel.logical.LogicalDocumentScanFilter;
-import io.dingodb.calcite.rel.logical.LogicalIndexFullScan;
-import io.dingodb.calcite.rel.logical.LogicalIndexRangeScan;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.schema.impl.ListTransientTable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
-
-public class DingoTableScanRule extends ConverterRule {
-
-    public static Set<String> metaSchemaSet;
-    static {
-        if (caseSensitive()) {
-            metaSchemaSet = Set.of("INFORMATION_SCHEMA");
-        } else {
-            metaSchemaSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            metaSchemaSet.add("INFORMATION_SCHEMA");
-        }
-    }
-
+public class DingoTableScanForSpoolRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
-            LogicalDingoTableScan.class,
+            LogicalTableScan.class,
             Convention.NONE,
             DingoConvention.INSTANCE,
-            "DingoTableScanRule"
+            "DingoTableScanForSpoolRule"
         )
-        .withRuleFactory(DingoTableScanRule::new);
+        .withRuleFactory(DingoTableScanForSpoolRule::new);
 
-    protected DingoTableScanRule(Config config) {
+    public DingoTableScanForSpoolRule(Config config) {
         super(config);
     }
 
     @Override
-    public RelNode convert(RelNode rel) {
-        LogicalDingoTableScan scan = (LogicalDingoTableScan) rel;
-        if (scan instanceof LogicalIndexFullScan || scan instanceof LogicalIndexRangeScan
-            || scan instanceof LogicalDocumentScanFilter) {
-            return null;
-        }
+    public @Nullable RelNode convert(RelNode relNode) {
+        LogicalTableScan scan = (LogicalTableScan) relNode;
         RelTraitSet traits = scan.getTraitSet()
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
         List<String> fullNameList = scan.getTable().getQualifiedName();
-        if (metaSchemaSet.contains(fullNameList.get(1))) {
+        if (fullNameList.size() >= 2 && DingoTableScanRule.metaSchemaSet.contains(fullNameList.get(1))) {
             DingoTable dingoTable = scan.getTable().unwrap(DingoTable.class);
             if (dingoTable != null && "SYSTEM VIEW".equals(dingoTable.getTable().getTableType())) {
                 return new DingoInfoSchemaScan(
@@ -82,28 +61,28 @@ public class DingoTableScanRule extends ConverterRule {
                     traits,
                     scan.getHints(),
                     scan.getTable(),
-                    scan.getFilter(),
-                    scan.getRealSelection()
+                    null,
+                   null
                 );
             }
         }
         ListTransientTable transientTable = scan.getTable().unwrap(ListTransientTable.class);
         if (transientTable != null) {
             return new DingoTransientTableScan(scan.getCluster(), traits, scan.getHints(),
-                scan.getTable(), scan.getFilter(), scan.getRealSelection(), transientTable);
+                scan.getTable(), null, null, transientTable);
         }
         return new DingoTableScan(
             scan.getCluster(),
             traits,
             scan.getHints(),
             scan.getTable(),
-            scan.getFilter(),
-            scan.getRealSelection(),
-            scan.getAggCalls(),
-            scan.getGroupSet(),
-            scan.getGroupSets(),
-            scan.isPushDown(),
-            scan.isForDml()
+            null,
+            null, // selection
+            null,
+            null,
+            null,
+            false,
+            false
         );
     }
 }

@@ -39,8 +39,11 @@ import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
+import io.dingodb.calcite.rel.DingoRepeatUnion;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
+import io.dingodb.calcite.rel.DingoTableSpool;
+import io.dingodb.calcite.rel.DingoTransientTableScan;
 import io.dingodb.calcite.rel.DingoUnion;
 import io.dingodb.calcite.rel.DingoValues;
 import io.dingodb.calcite.rel.DingoVector;
@@ -144,5 +147,15 @@ public interface DingoRelVisitor<T> {
     T visit(DingoDocumentScanFilter documentIndexRangeScan);
 
     T visit(DingoWindow dingoWindow);
+
+    T visit(DingoRepeatUnion dingoRepeatUnion);
+
+    default T visit(DingoTransientTableScan dingoTransientTableScan) {
+        return null;
+    }
+
+    default T visit(DingoTableSpool dingoTableSpool) {
+        return null;
+    }
 
 }

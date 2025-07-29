@@ -16,15 +16,20 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.WindowFunctionParam;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 import java.util.List;
 
+@Slf4j
 public class WindowFunctionOperator extends SoleOutOperator {
     public static final WindowFunctionOperator INSTANCE = new WindowFunctionOperator();
 
@@ -44,10 +49,20 @@ public class WindowFunctionOperator extends SoleOutOperator {
         // push next
         WindowFunctionParam param = vertex.getParam();
 
-        Iterator response = param.getWindowService().transform(param.getList().iterator());
-        while (response.hasNext()) {
-            Object[] tuple1 = (Object[]) response.next();
-            vertex.getSoleEdge().transformToNext(tuple1);
+        try {
+            Iterator response = param.getWindowService().transform(param.getList().iterator());
+            while (response.hasNext()) {
+                Object[] tuple1 = (Object[]) response.next();
+                vertex.getSoleEdge().transformToNext(tuple1);
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            TaskStatus taskStatus = new TaskStatus();
+            taskStatus.setStatus(false);
+            taskStatus.setTaskId(vertex.getTask().getId().toString());
+            taskStatus.setErrorMsg(e.getMessage());
+            vertex.getSoleEdge().fin(FinWithException.of(taskStatus));
+            return;
         }
         // push fin
         vertex.getSoleEdge().fin(fin);

@@ -58,7 +58,9 @@ public class DingoCostModelV1 extends DingoCostModel {
 
     public static double getScanAvgRowSize(LogicalDingoTableScan tableScan) {
         DingoTable dingoTable = tableScan.getTable().unwrap(DingoTable.class);
-        assert dingoTable != null;
+        if (dingoTable == null) {
+            return 0;
+        }
         String schemaName = dingoTable.getNames().get(1);
         //List<Column> selectionCdList = getSelectionCdList(tableScan, dingoTable);
         return getAvgRowSize(

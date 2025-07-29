@@ -44,14 +44,16 @@ public final class CacheOpOperator extends SoleOutOperator {
     public void fin(int pin, Fin fin, @NonNull Vertex vertex) {
         final Edge edge = vertex.getSoleEdge();
         RelOpParam param = vertex.getParam();
-        Profile profile = param.getProfile();
+        OperatorProfile profile = (OperatorProfile) param.getProfile();
         if (profile == null) {
             profile = param.getProfile("aggCache");
         }
         CacheOp relOp = (CacheOp) (param).getRelOp();
         synchronized (relOp) {
             try {
+                long start = System.currentTimeMillis();
                 RelOpUtils.forwardCacheOpResults(relOp, edge);
+                profile.opTime(start);
             } catch (Exception e) {
                 LogUtils.error(log, "[task-fin] fin exception:{}", e.getMessage(), e);
                 TaskStatus taskStatus = new TaskStatus();

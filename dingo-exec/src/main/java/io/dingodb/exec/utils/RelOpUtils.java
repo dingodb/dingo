@@ -40,7 +40,7 @@ public final class RelOpUtils {
         Context context, OperatorProfile profile) {
         long start = System.currentTimeMillis();
         Object[] out = op.put(tuple);
-        profile.pipeOpTime(start);
+        profile.opTime(start);
         if (out != null) {
             return edge.transformToNext(context, out);
         }
