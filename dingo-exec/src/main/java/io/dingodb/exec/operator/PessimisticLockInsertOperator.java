@@ -162,6 +162,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                     KeyValue getPrimaryKv = store.txnGet(txnId.seq, primaryKv.getKey(), param.getLockTimeOut());
 
                     Object[] getPrimaryTuple = null;
+                    boolean exists = getPrimaryKv != null && getPrimaryKv.getValue() != null;
                     if (getPrimaryKv == null || getPrimaryKv.getValue() == null) {
                         primaryTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
                         byte[] originalKey;
@@ -177,7 +178,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                         }
                         store = Services.KV_STORE.getInstance(tableId, partId);
                         getPrimaryKv = store.txnGet(txnId.seq, originalKey, param.getLockTimeOut());
-                        if (getPrimaryKv != null && getPrimaryKv.getValue() != null) {
+                        if (exists) {
                             getPrimaryTuple = codec.decode(getPrimaryKv);
                         }
                     } else {
@@ -194,7 +195,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                             duplicateKey2 = true;
                         }
                     }
-                    if ((getPrimaryKv != null && getPrimaryKv.getValue() != null) || getPrimaryTuple != null) {
+                    if (exists || getPrimaryTuple != null) {
                         context.setDuplicateKey(true);
                         if (param.isPessimisticTxn()) {
                             Object oldDefaultVal = null;
@@ -216,7 +217,7 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                                 if (finalIsVector) {
                                     return finalTuple[i];
                                 }
-                                return finalGetPrimaryTuple[i];
+                                return exists ? finalGetPrimaryTuple[i] : finalTuple[i];
                             }).toArray();
                         }
                         boolean updated = false;
