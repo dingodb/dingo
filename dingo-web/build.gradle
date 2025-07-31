@@ -42,7 +42,7 @@ dependencies {
     implementation project(":dingo-common")
     implementation project(":dingo-verify")
 
-    implementation ('io.dingodb:dingo-sdk:2.0.0-SNAPSHOT') {
+    implementation ("io.dingodb:dingo-sdk:$project.version") {
         exclude group: 'io.grpc', module: 'grpc-netty-shaded'
     }
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
