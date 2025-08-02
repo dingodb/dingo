@@ -45,6 +45,7 @@ public final class ErrorMessage {
         errorMap.put(ErrPartitionMgmtOnNonpartitioned, "Partition management on a not partitioned table is not possible");
         errorMap.put(ErrDropPartitionNonExistent, "Error in list of partitions to DROP");
         errorMap.put(ErrDupKeyName, "Duplicate key name '%s'");
+        errorMap.put(ErrRangeNotIncreasing, "VALUES LESS THAN value must be strictly increasing for each partition");
     }
 
     private ErrorMessage() {

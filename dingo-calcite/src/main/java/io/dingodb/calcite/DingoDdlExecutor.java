@@ -1026,7 +1026,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             tableName, detail);
         MetaService metaService = MetaService.root();
         metaService.addDistribution(schema.getSchemaName(), tableName,
-            sqlAlterTableDistribution.getPartitionDefinition());
+            sqlAlterTableDistribution.getPartitionDefinition(), false);
         timeCtx.stop();
     }
 

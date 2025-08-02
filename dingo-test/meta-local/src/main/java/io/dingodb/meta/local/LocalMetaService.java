@@ -406,6 +406,11 @@ public class LocalMetaService implements MetaService {
         return 1L;
     }
 
+    @Override
+    public void rebaseRegion(Object tableWithId, Object partition, byte[] startKey, byte[] endKey) {
+
+    }
+
     @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
         @Override

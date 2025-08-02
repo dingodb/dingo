@@ -16,6 +16,7 @@
 
 package io.dingodb.server.executor.ddl;
 
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.ddl.ActionType;
@@ -26,6 +27,7 @@ import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.ddl.SchemaDiff;
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
@@ -50,6 +52,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
 import io.dingodb.meta.entity.Table;
+import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.meta.ColumnDefinition;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
 import io.dingodb.sdk.service.entity.meta.Partition;
@@ -1951,10 +1954,17 @@ public class DdlWorker {
         }
         TableDefinitionWithId tableWithId = tableRes.getKey();
         PartitionDetailDefinition part = (PartitionDetailDefinition) job.getArgs().get(0);
+
         long partId;
         try {
-            partId = MetaService.root().addDistribution(job.getSchemaName(), job.getTableName(), part);
+            partId = MetaService.root().addDistribution(job.getSchemaName(), job.getTableName(), part, true);
+        } catch (DingoSqlException e) {
+            LogUtils.error(log, "add Distribution failed, reason:{}" + e.getMessage(), e);
+            job.setDingoErr(DingoErrUtil.newInternalErr(e.getSqlCode()));
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
         } catch (Exception e) {
+            LogUtils.error(log, "add Distribution failed, reason:{}" + e.getMessage(), e);
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "add distribution failed");
         }
@@ -1985,10 +1995,13 @@ public class DdlWorker {
         Partition matchPart = partitionList
             .stream().filter(partition -> part.equalsIgnoreCase(partition.getName()))
             .findFirst().orElse(null);
+
         if (matchPart == null) {
             job.setDingoErr(DingoErrUtil.newInternalErr(ErrDropPartitionNonExistent));
             return Pair.of(0L, job.getDingoErr().errorMsg);
         }
+        //int matchPartIdx = partitionList.indexOf(matchPart);
+        //matchPart = partitionList.get(matchPartIdx - 1);
         List<Object> indexList = InfoSchemaService.root().listIndex(job.getSchemaId(), job.getTableId());
 
         switch (job.getSchemaState()) {
@@ -2017,15 +2030,30 @@ public class DdlWorker {
                 job.setSchemaState(SchemaState.SCHEMA_DELETE_REORG);
                 return updateSchemaVersion(dc, job);
             case SCHEMA_DELETE_REORG:
-                partitionList.remove(matchPart);
+                // create new region
+                // find match next part
+                // reset next part range
+
                 CommonId tableId = Mapper.MAPPER.idFrom(tableWithId.getTableId());
-                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
-                     MetaService.root().getRangeDistribution(Mapper.MAPPER.idFrom(tableWithId.getTableId()));
-                List<RangeDistribution> regionList = ranges.values().stream()
-                    .filter(region -> region.getId().domain == matchPart.getId().getEntityId())
-                    .collect(Collectors.toList());
-                LogUtils.info(log, "delete region size:{}, partId:{}", regionList.size(), matchPart.getId());
-                MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                List<Object> regionInfoList = InfoSchemaService.root()
+                    .scanRegions(matchPart.getRange().getStartKey(), matchPart.getRange().getEndKey());
+                List<Long> regionIdList = regionInfoList.stream().map(obj -> (ScanRegionInfo)obj)
+                    .map(ScanRegionInfo::getRegionId)
+                    .toList();
+                LogUtils.info(log, "delete region size:{}, partId:{}", regionInfoList.size(), matchPart.getId());
+                MetaService.root().deleteRegion(regionIdList);
+                // find next part
+                int matchIdx = partitionList.indexOf(matchPart);
+                Partition nextPart = partitionList.get(matchIdx + 1);
+                byte[] originNextPartStartKey = nextPart.getRange().getStartKey();
+                // modify next part range
+                nextPart.getRange().setStartKey(matchPart.getRange().getStartKey());
+                CodecService.getDefault().setId(nextPart.getRange().getStartKey(), nextPart.getId().getEntityId());
+                partitionList.remove(matchPart);
+
+                // rebase region
+                MetaService.root().rebaseRegion(tableWithId, nextPart, nextPart.getRange().getStartKey(), originNextPartStartKey);
+
                 // disable index
                 indexList.forEach(obj -> {
                     TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;

@@ -21,7 +21,9 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.RpcProfile;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.TxnMergedIterator;
@@ -84,6 +86,27 @@ public abstract class TxnScanOperatorBase extends ScanOperatorBase {
         CodecService.getDefault().setId(endKey, partId.domain);
         StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
         return kvStore.txnScan(
+            scanTs,
+            new StoreInstance.Range(startKey, endKey, includeStart, includeEnd),
+            timeOut
+        );
+    }
+
+    public static @NonNull Pair<Iterator<KeyValue>, RpcProfile> createStoreIteratorWithProfile(
+        @NonNull CommonId tableId,
+        @NonNull RangeDistribution distribution,
+        long scanTs,
+        long timeOut
+    ) {
+        byte[] startKey = distribution.getStartKey();
+        byte[] endKey = distribution.getEndKey();
+        boolean includeStart = distribution.isWithStart();
+        boolean includeEnd = distribution.isWithEnd();
+        CommonId partId = distribution.getId();
+        CodecService.getDefault().setId(startKey, partId.domain);
+        CodecService.getDefault().setId(endKey, partId.domain);
+        StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+        return kvStore.txnScanWithProfile(
             scanTs,
             new StoreInstance.Range(startKey, endKey, includeStart, includeEnd),
             timeOut

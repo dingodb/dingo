@@ -20,8 +20,11 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.profile.Profile;
+import io.dingodb.common.profile.RpcProfile;
 import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.util.Pair;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -74,7 +77,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
         profile.incrLocalTime(start);
         start = System.currentTimeMillis();
         if (localIterator.hasNext()) { // Cannot push down
-            Iterator<KeyValue> storeIterator = createStoreIterator(
+            Pair<Iterator<KeyValue>, RpcProfile> storeIterator = createStoreIteratorWithProfile(
                 tableId,
                 distribution,
                 param.getScanTs(),
@@ -83,16 +86,15 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             profile.incrTxnScanTime(start);
             profile.setTaskType("executor");
             param.setNullCoprocessor(distribution.getId());
-            if (storeIterator instanceof ProfileScanIterator) {
-                ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
-                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+            if (storeIterator.getValue() != null && storeIterator.getValue().getInitProfile() != null) {
+                profile.getChildren().add(storeIterator.getValue().getInitProfile());
             }
             profile.end();
-            return createMergedIterator(localIterator, storeIterator, param.getCodec());
+            return createMergedIterator(localIterator, storeIterator.getKey(), param.getCodec());
         }
         CoprocessorV2 coprocessor = param.getCoprocessor();
         if (coprocessor == null) {
-            Iterator<KeyValue> storeIterator = createStoreIterator(
+            Pair<Iterator<KeyValue>, RpcProfile> storeIterator = createStoreIteratorWithProfile(
                 tableId,
                 distribution,
                 param.getScanTs(),
@@ -100,13 +102,12 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
             );
             profile.incrTxnScanTime(start);
             profile.setTaskType("executor");
-            if (storeIterator instanceof ProfileScanIterator) {
-                ProfileScanIterator profileScanIterator = (ProfileScanIterator) storeIterator;
-                profile.getChildren().add(profileScanIterator.getInitRpcProfile());
+            if (storeIterator.getValue() != null && storeIterator.getValue().getInitProfile() != null) {
+                profile.getChildren().add(storeIterator.getValue().getInitProfile());
             }
             param.setNullCoprocessor(distribution.getId());
             profile.end();
-            return DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
+            return DingoTransformedIterator.transform(storeIterator.getKey(), wrap(param.getCodec()::decode)::apply);
         }
         Iterator<KeyValue> storeIterator = createStoreIteratorCp(
             tableId,

@@ -130,10 +130,8 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 param.getTimeout()
             );
             profile.incrTxnScanTime(start);
-            start = System.currentTimeMillis();
             param.setNullCoprocessor(distribution.getId());
             Iterator<Object[]> iterator = createMergedIterator(localIterator, storeIterator, param.getCodec());
-            profile.incrMerge(start);
             if (param.getRelOp() != null) {
                 if (param.getRelOp() instanceof PipeOp) {
                     PipeOp op = (PipeOp) param.getRelOp();
