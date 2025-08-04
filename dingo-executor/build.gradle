@@ -42,7 +42,7 @@ dependencies {
 
     // implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
 
-    implementation ('io.dingodb:dingo-sdk:$project.version') {
+    implementation ("io.dingodb:dingo-sdk:$project.version") {
         exclude group: 'io.grpc', module: 'grpc-netty-shaded'
     }
 
