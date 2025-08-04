@@ -417,6 +417,16 @@ public class LocalMetaService implements MetaService {
         return 1L;
     }
 
+    @Override
+    public void deleteRegionByPart(List<Object> regionInfoList, long jobId, long startTs, CommonId id) {
+
+    }
+
+    @Override
+    public void rebaseRegion(Object tableWithId, Object partition, byte[] startKey, byte[] endKey) {
+
+    }
+
     @AutoService(MetaServiceProvider.class)
     public static class Provider implements MetaServiceProvider {
         @Override

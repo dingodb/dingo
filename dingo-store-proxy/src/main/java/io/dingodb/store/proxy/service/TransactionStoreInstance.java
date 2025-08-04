@@ -28,7 +28,9 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
+import io.dingodb.common.profile.RpcProfile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -552,6 +554,12 @@ public class TransactionStoreInstance {
         return txnScan(ts, range, timeOut, null);
     }
 
+    public Pair<Iterator<io.dingodb.common.store.KeyValue>, RpcProfile> txnScanWithProfile(
+        long ts, StoreInstance.Range range, long timeOut
+    ) {
+        return txnScanWithProfile(ts, range, timeOut, null);
+    }
+
     public Iterator<io.dingodb.common.store.KeyValue> documentScanFilter(
         long ts,
         DocumentSearchParameter documentSearchParameter
@@ -580,6 +588,31 @@ public class TransactionStoreInstance {
                 new Class[]{Iterator.class},
                 new IteratorProxy(getScanIterator(ts, range, timeOut, coprocessor))
             );
+        }
+    }
+
+    public Pair<Iterator<io.dingodb.common.store.KeyValue>, RpcProfile> txnScanWithProfile(
+        long ts,
+        StoreInstance.Range range,
+        long timeOut,
+        CoprocessorV2 coprocessor
+    ) {
+        Stream.of(range.start).peek(this::setId).forEach($ -> $[0] = 't');
+        Stream.of(range.end).peek(this::setId).forEach($ -> $[0] = 't');
+
+        if (ScopeVariables.txnScanByStream()) {
+            return Pair.of((Iterator<io.dingodb.common.store.KeyValue>) java.lang.reflect.Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[]{Iterator.class},
+                new IteratorProxy(getScanStreamIterator(ts, range, timeOut, coprocessor))
+            ), null);
+        } else {
+            ScanIterator scanIterator = getScanIterator(ts, range, timeOut, coprocessor);
+            return Pair.of((Iterator<io.dingodb.common.store.KeyValue>) java.lang.reflect.Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[]{Iterator.class},
+                new IteratorProxy(scanIterator)
+            ), new RpcProfile(scanIterator.initRpcProfile, scanIterator.rpcProfile));
         }
     }
 

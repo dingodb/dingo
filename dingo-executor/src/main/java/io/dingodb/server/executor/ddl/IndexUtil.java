@@ -33,6 +33,10 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
+import static io.dingodb.server.executor.ddl.BackFilling.typeAddIndexWorker;
+
 @Slf4j
 public final class IndexUtil {
     public static final IndexUtil INSTANCE = new IndexUtil();
@@ -57,7 +61,7 @@ public final class IndexUtil {
         TableDefinitionWithId index
     ) {
         if (job.getReorgMeta().getReorgType() == ReorgType.ReorgTypeNone) {
-            return runReorgJobAndHandleErr(dc, job, worker, tableId, index);
+            return runReorgJobAndHandleErr(dc, job, worker, tableId, index, typeAddIndexWorker, null);
         }
         // not support;
         return null;
@@ -68,7 +72,9 @@ public final class IndexUtil {
         DdlJob job,
         DdlWorker worker,
         CommonId tableId,
-        TableDefinitionWithId index
+        TableDefinitionWithId index,
+        int workType,
+        List<Long> regionIdList
     ) {
         MetaElement[] elements = new MetaElement[] {new MetaElement(index.getTableId().getEntityId(),
             DdlUtil.indexElementKey)};
@@ -86,11 +92,11 @@ public final class IndexUtil {
                 throw new RuntimeException(reorgInfoRes.getValue());
             }
             ReorgInfo reorgInfo = reorgInfoRes.getKey();
-            //if (reorgInfo.isFirst()) {
-            //    return Pair.of(false, 0L);
-            //}
+            if (regionIdList != null) {
+                reorgInfo.setRegionIdList(regionIdList);
+            }
             String error = worker.runReorgJob(dc, reorgInfo,
-                p -> addTableIndex(reorgInfoRes.getKey())
+                p -> opPhysicalTableIndex(reorgInfoRes.getKey(), workType)
             );
             if (error != null) {
                 LogUtils.warn(log, "[ddl] run add index job failed, convert job to rollback, jobId:{}, "
@@ -113,17 +119,13 @@ public final class IndexUtil {
         }
     }
 
-    public static String addPhysicalTableIndex(ReorgInfo reorgInfo) {
+    public static String opPhysicalTableIndex(ReorgInfo reorgInfo, int workType) {
         if (reorgInfo.isMergingTmpIndex()) {
             // optimize to implement
             return null;
         }
-        LogUtils.info(log, "[ddl] start to add table index, jobId:{}", reorgInfo.getDdlJob().getId());
-        return BackFilling.writePhysicalTableRecord(BackFilling.typeAddIndexWorker, reorgInfo);
-    }
-
-    public static String addTableIndex(ReorgInfo reorgInfo) {
-        return addPhysicalTableIndex(reorgInfo);
+        LogUtils.info(log, "[ddl] start to op table index, jobId:{}", reorgInfo.getDdlJob().getId());
+        return BackFilling.writePhysicalTableRecord(workType, reorgInfo);
     }
 
 }

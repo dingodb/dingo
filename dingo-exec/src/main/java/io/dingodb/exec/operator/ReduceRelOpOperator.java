@@ -17,7 +17,6 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.profile.OperatorProfile;
-import io.dingodb.common.profile.Profile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -48,7 +47,7 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
         synchronized (param.getRelOp()) {
             ((AggregateOp) param.getRelOp()).reduce(tuple);
         }
-        profile.time(start);
+        profile.pipeOpTime(start);
         return true;
     }
 
@@ -66,7 +65,9 @@ public final class ReduceRelOpOperator extends SoleOutOperator {
         AggregateOp aggregateOp;
         synchronized (relOp) {
             if (!(fin instanceof FinWithException)) {
+                long start = System.currentTimeMillis();
                 RelOpUtils.forwardCacheOpResults(relOp, vertex.getSoleEdge());
+                profile.cacheOpTime(start);
             }
             profile.end();
             edge.fin(fin);

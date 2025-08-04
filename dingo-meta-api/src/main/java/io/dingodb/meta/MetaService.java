@@ -198,7 +198,9 @@ public interface MetaService {
      */
     Set<Table> getTables();
 
-    default long addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
+    default long addDistribution(
+        String schemaName, String tableName, PartitionDetailDefinition detail, boolean addPart
+    ) {
         return 0;
     }
 
@@ -323,6 +325,20 @@ public interface MetaService {
     ) {
 
     }
+
+    void deleteRegionByPart(
+        List<Object> regionInfoList,
+        long jobId,
+        long startTs,
+        CommonId id
+    );
+
+    void rebaseRegion(
+        Object tableWithId,
+        Object partition,
+        byte[] startKey,
+        byte[] endKey
+    );
 
     default void rebaseRegion(
         Object tableWithId,

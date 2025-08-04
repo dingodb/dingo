@@ -37,8 +37,7 @@ public final class RelOpUtils {
     }
 
     public static boolean processWithPipeOp(@NonNull PipeOp op, Object[] tuple, Edge edge,
-        Context context, OperatorProfile profile) {
-        long start = System.currentTimeMillis();
+        Context context, OperatorProfile profile, long start) {
         Object[] out = op.put(tuple);
         profile.pipeOpTime(start);
         if (out != null) {
@@ -69,8 +68,11 @@ public final class RelOpUtils {
         long tmp = System.currentTimeMillis();
         boolean breakFlg = false;
         while (iterator.hasNext()) {
-            profile.time(tmp);
+            long current = System.currentTimeMillis();
+            profile.time(tmp, current);
             Object[] tuple = iterator.next();
+            long decodeEnd = System.currentTimeMillis();
+            profile.decodeTime(current, decodeEnd);
             if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                 breakFlg = true;
                 break;
@@ -104,10 +106,13 @@ public final class RelOpUtils {
         long tmp = System.currentTimeMillis();
         boolean breakFlg = false;
         while (sourceIterator.hasNext()) {
-            profile.time(tmp);
+            long current = System.currentTimeMillis();
+            profile.time(tmp, current);
             Object[] tuple = sourceIterator.next();
+            long decodeEnd = System.currentTimeMillis();
+            profile.decodeTime(current, decodeEnd);
             ++count;
-            if (!processWithPipeOp(relOp, tuple, edge, context, profile)) {
+            if (!processWithPipeOp(relOp, tuple, edge, context, profile, decodeEnd)) {
                 breakFlg = true;
                 break;
             }
@@ -139,16 +144,22 @@ public final class RelOpUtils {
         long tmp = System.currentTimeMillis();
         boolean breakFlg = true;
         while (sourceIterator.hasNext()) {
-            profile.time(tmp);
+            long current = System.currentTimeMillis();
+            profile.time(tmp, current);
             Object[] tuple = sourceIterator.next();
+            long decodeEnd = System.currentTimeMillis();
+            profile.decodeTime(current, decodeEnd);
             ++count;
             synchronized (relOp) {
                 relOp.put(tuple);
             }
+            profile.pipeOpTime(decodeEnd);
             tmp = System.currentTimeMillis();
         }
         if (sourceIterator instanceof DingoTransformedIterator) {
             DingoTransformedIterator transformedIterator = (DingoTransformedIterator) sourceIterator;
+            long decodeRate = transformedIterator.decodeRate();
+            profile.setDecodeRate(decodeRate);
             OperatorProfile profile1 = (OperatorProfile) transformedIterator.getProfile();
             if (profile1 != null) {
                 profile1.end();
@@ -159,8 +170,10 @@ public final class RelOpUtils {
         profile.decreaseCount();
 
         synchronized (relOp) {
+            long start  = System.currentTimeMillis();
             forwardCacheOpResults(relOp, vertex.getSoleEdge());
             relOp.clear();
+            profile.cacheOpTime(start);
         }
         profile.end();
         return Pair.of(count, breakFlg);

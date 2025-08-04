@@ -26,7 +26,6 @@ public class SourceProfile extends Profile {
     String taskType;
     long localScan;
     long txnScan;
-    long merge;
 
     public SourceProfile(String type) {
         super(type);
@@ -67,12 +66,6 @@ public class SourceProfile extends Profile {
         long current = System.currentTimeMillis();
         long time = current - start;
         this.txnScan += time;
-    }
-
-    public void incrMerge(long start) {
-        long current = System.currentTimeMillis();
-        long time = current - start;
-        this.merge += time;
     }
 
     public void decreaseCount() {

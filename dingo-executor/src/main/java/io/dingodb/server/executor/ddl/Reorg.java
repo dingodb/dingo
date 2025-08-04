@@ -17,8 +17,6 @@
 package io.dingodb.server.executor.ddl;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.concurrent.Executors;
-import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.MetaElement;
 import io.dingodb.common.ddl.ReorgInfo;
@@ -30,12 +28,6 @@ import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 @Slf4j
 public class Reorg {

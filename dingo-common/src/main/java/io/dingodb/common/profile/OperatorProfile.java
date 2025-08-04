@@ -42,6 +42,11 @@ public class OperatorProfile extends Profile {
         count.incrementAndGet();
     }
 
+    public void time(long start, long current) {
+        incrTime(start, current);
+        count.incrementAndGet();
+    }
+
     public void pipeOpTime(long start) {
         long current = System.currentTimeMillis();
         long time = current - start;
@@ -49,8 +54,18 @@ public class OperatorProfile extends Profile {
         opCount.incrementAndGet();
     }
 
+    public void cacheOpTime(long start) {
+        long current = System.currentTimeMillis();
+        long time = current - start;
+        cacheDuration.addAndGet(time);
+    }
+
     public void incrTime(long start) {
         long current = System.currentTimeMillis();
+        incrTime(start, current);
+    }
+
+    public void incrTime(long start, long current) {
         long time = current - start;
         duration.addAndGet(time);
         if (time > max) {
