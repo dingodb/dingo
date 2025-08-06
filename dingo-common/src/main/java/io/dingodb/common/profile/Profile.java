@@ -46,6 +46,15 @@ public class Profile {
     AtomicLong duration;
     @JsonProperty("relOpDuration")
     AtomicLong opDuration;
+
+    @JsonProperty("cacheDuration")
+    AtomicLong cacheDuration;
+
+    @JsonProperty("decodeDuration")
+    AtomicLong decodeDuration;
+
+    long decodeRate;
+
     @JsonProperty("max")
     long max;
     @JsonProperty("min")
@@ -74,6 +83,8 @@ public class Profile {
         this.opDuration = new AtomicLong(0);
         this.count = new AtomicLong(0);
         this.opCount = new AtomicLong(0);
+        this.cacheDuration = new AtomicLong(0);
+        this.decodeDuration = new AtomicLong(0);
     }
 
     public Profile(String type) {
@@ -84,6 +95,8 @@ public class Profile {
         this.opDuration = new AtomicLong(0);
         this.count = new AtomicLong(0);
         this.opCount = new AtomicLong(0);
+        this.cacheDuration = new AtomicLong(0);
+        this.decodeDuration = new AtomicLong(0);
     }
 
     public void start() {
@@ -114,6 +127,16 @@ public class Profile {
 
     public long getCount() {
         return this.count.get();
+    }
+
+    public void decodeTime(long start) {
+        long current = System.currentTimeMillis();
+        decodeTime(start, current);
+    }
+
+    public void decodeTime(long start, long current) {
+        long time = current - start;
+        decodeDuration.addAndGet(time);
     }
 
     public void traceTree(Profile profile, byte[] prefix, List<Object[]> rowList) {
@@ -175,13 +198,28 @@ public class Profile {
                 SourceProfile sourceProfile = (SourceProfile) profile;
                 dagText.append(", localScanDuration:").append(sourceProfile.localScan);
                 dagText.append(", txnScanDuration:").append(sourceProfile.txnScan);
-                dagText.append(", mergeDuration:").append(sourceProfile.merge);
                 if (sourceProfile.taskType != null) {
                     dagText.append(", corp:").append(sourceProfile.taskType);
                 }
             }
-            dagText
-                .append(",count:").append(profile.count)
+            if (profile.opDuration.get() > 0) {
+                dagText.append(",opDuration:").append(profile.opDuration.get());
+            }
+            if (profile.opCount.get() > 0) {
+                dagText.append(",opCount:").append(profile.getOpCount().get());
+            }
+            if (profile.cacheDuration.get() > 0) {
+                dagText.append(",cacheDuration:").append(profile.cacheDuration.get());
+            }
+            if (profile.decodeDuration.get() > 0) {
+                dagText.append(",decodeDuration:").append(profile.decodeDuration.get());
+            }
+            if (profile.decodeRate > 0) {
+                dagText.append(",decodeRate:").append(profile.getDecodeRate());
+            } else if (profile.decodeDuration.get() > 0 && profile.count.get() > 0) {
+                dagText.append(",decodeRate:").append(profile.count.get() / profile.decodeDuration.get());
+            }
+            dagText.append(",count:").append(profile.count)
                 .append(",start:").append(profile.start)
                 .append(",end:").append(profile.end)
                 .append("\r\n");

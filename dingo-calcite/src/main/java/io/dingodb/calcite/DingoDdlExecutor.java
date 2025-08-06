@@ -1060,7 +1060,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             tableName, detail);
         MetaService metaService = MetaService.root();
         metaService.addDistribution(schema.getSchemaName(), tableName,
-            sqlAlterTableDistribution.getPartitionDefinition());
+            sqlAlterTableDistribution.getPartitionDefinition(), false);
         timeCtx.stop();
     }
 
@@ -1077,6 +1077,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         //If the table does not exist, raise an exception.
         if (table == null) {
             throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        }
+        if (!"range".equalsIgnoreCase(table.getPartitionStrategy())) {
+            throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
         }
 
         List<Column> keyColumns = table.columns.stream()
@@ -1988,43 +1991,34 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
     public void execute(SqlAlterTruncatePart sqlAlterTruncatePart, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute:{}", sqlAlterTruncatePart);
-        final Pair<SubSnapshotSchema, String> schemaTableName
-            = getSchemaAndTableName(sqlAlterTruncatePart.table, context);
-        final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
-        if (schemaInfo == null) {
-            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
-        }
-        Table table = schema.getTableInfo(tableName);
-        if (table == null) {
-            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        }
+        throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
+        //final Pair<SubSnapshotSchema, String> schemaTableName
+        //    = getSchemaAndTableName(sqlAlterTruncatePart.table, context);
+        //final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        //final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        //SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        //if (schemaInfo == null) {
+        //    throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        //}
+        //Table table = schema.getTableInfo(tableName);
+        //if (table == null) {
+        //    throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        //}
 
-        if (table.getPartitions().size() == 1) {
-            throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
-        }
-        String part = sqlAlterTruncatePart.part.getSimple();
-        boolean noneMatch = table.getPartitions()
-            .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
-        if (noneMatch) {
-            throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
-        }
-        if (sqlAlterTruncatePart.isPreValidate()) {
-            sqlAlterTruncatePart.setPreValidate(false);
-            return;
-        }
-        DdlService.root().alterTableTruncatePart(schemaInfo, table, part);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionTruncateTablePartition)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
+        //if (table.getPartitions().size() == 1) {
+        //    throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
+        //}
+        //String part = sqlAlterTruncatePart.part.getSimple();
+        //boolean noneMatch = table.getPartitions()
+        //    .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
+        //if (noneMatch) {
+        //    throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
+        //}
+        //if (sqlAlterTruncatePart.isPreValidate()) {
+        //    sqlAlterTruncatePart.setPreValidate(false);
+        //    return;
+        //}
+        //DdlService.root().alterTableTruncatePart(schemaInfo, table, part);
     }
 
     public void execute(SqlAlterExchangePart sqlAlterExchangePart, CalcitePrepare.Context context) {

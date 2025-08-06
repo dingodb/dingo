@@ -88,9 +88,7 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
                     profile.getChildren().add(profileScanIterator.getInitRpcProfile());
                 }
                 profile.incrTxnScanTime(start);
-                start = System.currentTimeMillis();
                 Iterator<Object[]> res = createMergedIterator(localIterator, storeIterator, param.getCodec());
-                profile.incrMerge(start);
                 profile.end();
                 return res;
             }

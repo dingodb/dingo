@@ -48,6 +48,7 @@ public final class ErrorMessage {
         errorMap.put(ErrSetDiffTime, "can not set different time in the as of");
         errorMap.put(ErrNoDB, "No database selected");
         errorMap.put(ErrNotSupportedYet, "Not supported yet");
+        errorMap.put(ErrRangeNotIncreasing, "VALUES LESS THAN value must be strictly increasing for each partition");
     }
 
     private ErrorMessage() {

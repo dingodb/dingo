@@ -22,6 +22,7 @@ import io.dingodb.common.profile.Profile;
 import lombok.Getter;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
 @GwtCompatible
 public class DingoTransformedIterator<F, T> implements Iterator<T> {
@@ -31,6 +32,9 @@ public class DingoTransformedIterator<F, T> implements Iterator<T> {
 
     @Getter
     private Profile profile;
+
+    private AtomicLong decodeTime;
+    private AtomicLong decodeCnt;
 
     Iterator<? extends F> backingIterator;
 
@@ -42,6 +46,8 @@ public class DingoTransformedIterator<F, T> implements Iterator<T> {
             profile = ((ProfileScanIterator) fromIterator).getRpcProfile();
         }
         this.function = function;
+        this.decodeTime = new AtomicLong(0);
+        this.decodeCnt = new AtomicLong(0);
     }
 
     T transform(F var1) {
@@ -55,7 +61,22 @@ public class DingoTransformedIterator<F, T> implements Iterator<T> {
 
     @Override
     public T next() {
-        return this.transform(this.backingIterator.next());
+        long nanoTime = System.nanoTime();
+        T t = this.transform(this.backingIterator.next());
+        long nanoSubTime = System.nanoTime() - nanoTime;
+        this.decodeTime.addAndGet(nanoSubTime);
+        this.decodeCnt.incrementAndGet();
+        return t;
+    }
+
+    public long decodeRate() {
+        if (this.decodeTime.get() > 0) {
+            long millSecond = this.decodeTime.get() / 1000000;
+            if (millSecond > 0) {
+                return this.decodeCnt.get() / millSecond;
+            }
+        }
+        return 0;
     }
 
     public final void remove() {
