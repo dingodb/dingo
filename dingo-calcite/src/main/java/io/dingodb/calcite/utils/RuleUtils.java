@@ -28,6 +28,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlCastFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.NlsString;
+import org.apache.calcite.util.TimestampString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -94,6 +95,21 @@ public class RuleUtils {
                         }
                         calendar.setTime(date);
                         info.value = rexBuilder.makeDateLiteral(calendar);
+                        return true;
+                    }
+                } else if (rexCall.op instanceof SqlCastFunction
+                    && rexCall.type.getSqlTypeName() == SqlTypeName.TIMESTAMP
+                    && rexCall.getOperands().size() == 1
+                    && rexCall.getOperands().get(0).getKind() == SqlKind.LITERAL) {
+                    info.index = ((RexInputRef) op0).getIndex();
+                    RexLiteral rexLiteral = (RexLiteral) rexCall.getOperands().get(0);
+                    if (rexLiteral.getValue() instanceof NlsString) {
+                        NlsString val = (NlsString) rexLiteral.getValue();
+                        RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
+                        //Calendar calendar = Calendar.getInstance();
+                        TimestampString timestampString = new TimestampString(val.getValue());
+                        //calendar.setTime(Objects.requireNonNull(DateTimeUtils.parseDate(val.getValue())));
+                        info.value = rexBuilder.makeTimestampLiteral(timestampString, 19);
                         return true;
                     }
                 }

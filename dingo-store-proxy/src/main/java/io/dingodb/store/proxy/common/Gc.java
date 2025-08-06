@@ -778,9 +778,6 @@ public class Gc {
                 }
             });
             LogUtils.info(log, "delete region done size:{}", delDone.get());
-            //if (delDone.get() < gcResultSize) {
-            //    LogUtils.error(log, "delete region has failed");
-            //}
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
         } finally {
@@ -789,7 +786,7 @@ public class Gc {
     }
 
     static boolean dropTableMeta(String eleId, long jobId, Session session, String eleType) {
-        if ("INDEX".equalsIgnoreCase(eleType)) {
+        if ("INDEX".equalsIgnoreCase(eleType) || "TABLE_part".equalsIgnoreCase(eleType)) {
             return true;
         }
         if (jobId > 0) {

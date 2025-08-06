@@ -66,9 +66,7 @@ public final class TxnScanOperator extends TxnScanOperatorBase {
             param.getTimeOut()
         );
         profile.incrTxnScanTime(start);
-        start = System.currentTimeMillis();
         Iterator<Object[]> res = createMergedIterator(localIterator, storeIterator, param.getCodec());
-        profile.incrMerge(start);
         profile.end();
         return res;
     }

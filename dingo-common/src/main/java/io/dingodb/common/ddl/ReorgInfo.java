@@ -21,6 +21,8 @@ import io.dingodb.common.meta.SchemaInfo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class ReorgInfo {
     private DdlJob ddlJob;
@@ -31,6 +33,7 @@ public class ReorgInfo {
     private SchemaInfo schemaInfo;
     private MetaElement[] elements;
     private MetaElement element;
+    private List<Long> regionIdList;
 
     @Builder
     public ReorgInfo(
@@ -41,7 +44,8 @@ public class ReorgInfo {
         SchemaInfo schemaInfo,
         MetaElement[] elements,
         MetaElement element,
-        CommonId indexId
+        CommonId indexId,
+        List<Long> regionIdList
     ) {
         this.ddlJob = ddlJob;
         this.first = first;
@@ -51,6 +55,7 @@ public class ReorgInfo {
         this.elements = elements;
         this.element = element;
         this.indexId = indexId;
+        this.regionIdList = regionIdList;
     }
 
     public ReorgInfo() {

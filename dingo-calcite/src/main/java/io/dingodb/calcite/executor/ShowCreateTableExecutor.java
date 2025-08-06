@@ -336,13 +336,11 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                     int size = partition.getOperand().length;
                     for (int i = 0; i < size; i ++) {
                         if (partition.getOperand()[i] == null) {
-                            break;
+                            continue;
                         }
-                        if (i  > 0) {
-                            createTableSqlStr.append(",");
-                        }
-                        createTableSqlStr.append(partition.getOperand()[i]);
+                        createTableSqlStr.append(partition.getOperand()[i]).append(",");
                     }
+                    createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
                     createTableSqlStr.append("),");
                 });
                 createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);

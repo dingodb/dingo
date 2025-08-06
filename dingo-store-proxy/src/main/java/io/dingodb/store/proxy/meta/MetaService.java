@@ -70,6 +70,7 @@ import io.dingodb.sdk.service.entity.coordinator.IdEpochType;
 import io.dingodb.sdk.service.entity.coordinator.QueryRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.QueryRegionResponse;
 import io.dingodb.sdk.service.entity.coordinator.RegionCmd.RequestNest.SplitRequest;
+import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.coordinator.SplitRegionRequest;
 import io.dingodb.sdk.service.entity.meta.CreateAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.CreateTenantRequest;
@@ -113,6 +114,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.dingodb.common.CommonId.CommonType.TABLE;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrRangeNotIncreasing;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.partition.DingoPartitionServiceProvider.HASH_FUNC_NAME;
@@ -357,6 +359,17 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
         TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition,
             TenantConstant.TENANT_ID);
+        // reset partName
+        if (tableDefinitionWithId.getTableDefinition().getTablePartition().getPartitions().size() > 1) {
+            List<Partition> partitions = tableDefinitionWithId.getTableDefinition().getTablePartition().getPartitions();
+            for (int i = 0; i < partitions.size(); i ++) {
+                if (i < partitions.size() - 1) {
+                    partitions.get(i).setName(partitions.get(i + 1).getName());
+                } else {
+                    partitions.get(i).setName("");
+                }
+            }
+        }
 
         synchronized (this) {
             io.dingodb.meta.InfoSchemaService service = io.dingodb.meta.InfoSchemaService.root();
@@ -1196,6 +1209,55 @@ public class MetaService implements io.dingodb.meta.MetaService {
         }
     }
 
+    public void deleteRegionByPart(
+        List<Object> regionInfoList,
+        long jobId,
+        CommonId id
+    ) {
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        for (Object regionInfoObj : regionInfoList) {
+            ScanRegionInfo scanRegionInfo = (ScanRegionInfo) regionInfoObj;
+            long regionId = scanRegionInfo.getRegionId();
+            LogUtils.info(log, "dropRegion id:{}", regionId);
+            try {
+                DropRegionRequest r = DropRegionRequest.builder().regionId(regionId).build();
+                coordinatorService.dropRegion(tso(), r);
+            } catch (Exception e) {
+                LogUtils.error(log, "dropRegion id:{} not exists", regionId);
+            }
+        }
+    }
+
+    public void rebaseRegion(
+        Object tableWithId,
+        Object partition,
+        byte[] startKey,
+        byte[] endKey
+    ) {
+        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tableWithId;
+        io.dingodb.sdk.service.entity.meta.TableDefinition withIdTableDefinition
+            = tableDefinitionWithId.getTableDefinition();
+        long schemaId = tableDefinitionWithId.getTableId().getParentEntityId();
+        Partition partition1 = (Partition) partition;
+        Range range = Range.builder().startKey(startKey).endKey(endKey).build();
+        CreateRegionRequest request = CreateRegionRequest
+            .builder()
+            .regionName("T_" + schemaId + "_" + withIdTableDefinition.getName()
+                + "_part_" + partition1.getId().getEntityId())
+            .regionType(RegionType.STORE_REGION)
+            .replicaNum(withIdTableDefinition.getReplica())
+            .range(range)
+            .rawEngine(getRawEngine(withIdTableDefinition.getEngine()))
+            .storeEngine(withIdTableDefinition.getStoreEngine())
+            .schemaId(schemaId)
+            .tableId(tableDefinitionWithId.getTableId().getEntityId())
+            .partId(partition1.getId().getEntityId())
+            .tenantId(tableDefinitionWithId.getTenantId())
+            .build();
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        coordinatorService.createRegion(tso(), request);
+    }
+
     @Override
     public void dropSchema(long jobId, Long schemaId) {
         GcDeleteRegion gcDeleteRegion = GcDeleteRegion
@@ -1406,7 +1468,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
     }
 
     @Override
-    public long addDistribution(String schemaName, String tableName, PartitionDetailDefinition detail) {
+    public long addDistribution(
+        String schemaName,
+        String tableName,
+        PartitionDetailDefinition detail,
+        boolean addPart
+    ) {
         tableName = cleanTableName(tableName);
         Table table = DdlService.root().getTable(schemaName, tableName);
         if (table == null) {
@@ -1423,6 +1490,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
         encoder.resetKeyPrefix(key, commonId.domain);
         if (table.getEngine().startsWith("TXN")) {
             key[0] = 't';
+        }
+        if (addPart && table.getPartitions().size() > 1) {
+            io.dingodb.meta.entity.Partition partition = table.getPartitions().get(table.getPartitions().size() - 1);
+            if (ByteArrayUtils.compare(key, partition.getStart(), 9) <= 0) {
+                throw DingoErrUtil.newStdErr(ErrRangeNotIncreasing);
+            }
         }
         Services.coordinatorService(Configuration.coordinatorSet()).splitRegion(
             tso(),
@@ -1470,13 +1543,16 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
         TableDefinitionWithId tableWithId = (TableDefinitionWithId) objWithId;
         List<Partition> partList = tableWithId.getTableDefinition().getTablePartition().getPartitions();
-        Partition originPart = partList
-            .stream().filter(partition -> partition.getId().getEntityId() == partEntityId)
-            .findFirst().orElse(null);
+        //Partition originPart = partList
+        //    .stream().filter(partition -> partition.getId().getEntityId() == partEntityId)
+        //    .findFirst().orElse(null);
+        List<Partition> originPartList = partList
+            .stream().filter(partition -> partition.getId().getEntityId() == partEntityId).toList();
 
-        if (originPart == null) {
+        if (originPartList.isEmpty()) {
             throw DingoErrUtil.newStdErr(ErrUnknown);
         }
+        Partition originPart = originPartList.get(originPartList.size() - 1);
 
         DingoCommonId partId = DingoCommonId.builder()
             .entityType(EntityType.ENTITY_TYPE_PART)
@@ -1484,12 +1560,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
             .entityId(partEntityId).build();
         byte[] realKey = MAPPER.realKey(key, partId, (byte)'t');
         originPart.getRange().setEndKey(realKey);
+        originPart.setName(detail.getPartName());
 
         Partition newPart = Partition.builder()
             .range(Range.builder()
                 .startKey(realKey)
                 .endKey(MAPPER.nextKey(partId, (byte)'t')).build())
-            .name(detail.getPartName())
             .id(partId)
             .schemaState(io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC)
             .build();

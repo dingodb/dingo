@@ -51,6 +51,7 @@ public final class BackFilling {
     public static final int typeDropColumnWorker = 2;
     public static final int typeModifyColumnWorker = 3;
     public static final int typeModifyIndexColumnWorker = 4;
+    public static final int typeDelIndexWorker = 5;
 
     private BackFilling() {
     }
@@ -95,6 +96,13 @@ public final class BackFilling {
             filler = new ModifyColumnFiller();
         } else if (bfWorkerType == typeModifyIndexColumnWorker) {
             filler = new ModifyColumnIndexFiller();
+        } else if (bfWorkerType == typeDelIndexWorker) {
+            filler = new DelIndexFiller();
+            if (reorgInfo.getRegionIdList() != null) {
+                distributions = distributions.stream()
+                    .filter(rangeDistribution -> reorgInfo.getRegionIdList().contains(rangeDistribution.getId().seq))
+                    .collect(Collectors.toSet());
+            }
         } else {
             throw new RuntimeException("do not support bf work type");
         }
