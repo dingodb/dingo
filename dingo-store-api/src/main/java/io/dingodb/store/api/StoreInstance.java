@@ -290,7 +290,7 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
-    default Iterator<KeyValue> documentScanFilter(long startTs, DocumentSearchParameter documentSearchParameter) {
+    default Iterator<KeyValue> documentScanFilter(long startTs, DocumentSearchParameter documentSearchParameter, long timeout) {
         throw new UnsupportedOperationException();
     }
 
