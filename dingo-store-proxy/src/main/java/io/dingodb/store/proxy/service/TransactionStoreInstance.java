@@ -108,6 +108,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.dingodb.sdk.service.entity.error.Errno.ETXN_MEMORY_LOCK_CONFLICT;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 import static io.dingodb.store.utils.ResolveLockUtil.checkSecondaryAllLocks;
 import static io.dingodb.store.utils.ResolveLockUtil.resolveAsyncResolveData;
@@ -554,9 +555,10 @@ public class TransactionStoreInstance {
 
     public Iterator<io.dingodb.common.store.KeyValue> documentScanFilter(
         long ts,
-        DocumentSearchParameter documentSearchParameter
+        DocumentSearchParameter documentSearchParameter,
+        long timeout
     ) {
-        return getDocumentScanFilterStreamIterator(ts, documentSearchParameter);
+        return getDocumentScanFilterStreamIterator(ts, documentSearchParameter, timeout);
     }
 
     public Iterator<io.dingodb.common.store.KeyValue> txnScan(
@@ -605,9 +607,9 @@ public class TransactionStoreInstance {
 
     @NonNull
     public DocumentScanFilterStreamIterator getDocumentScanFilterStreamIterator(
-        long ts, DocumentSearchParameter documentSearchParameter
+        long ts, DocumentSearchParameter documentSearchParameter, long timeout
     ) {
-        return new DocumentScanFilterStreamIterator(ts, documentSearchParameter);
+        return new DocumentScanFilterStreamIterator(ts, documentSearchParameter, timeout);
     }
 
     public List<io.dingodb.common.store.KeyValue> txnGet(long startTs, List<byte[]> keys, long timeOut) {
@@ -629,59 +631,85 @@ public class TransactionStoreInstance {
                 );
                 txnBatchGetRequest.setResolveLocks(resolvedLocks);
                 TxnBatchGetResponse response;
-                if (indexService != null) {
-                    txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
-                    response = indexService.txnBatchGet(startTs, txnBatchGetRequest);
-                    if (response.getTxnResult() == null) {
-                        return response.getVectors().stream()
-                            .map(vectorWithId -> vectorWithId != null
-                                ? new io.dingodb.common.store.KeyValue(vectorWithId.getTableData().getTableKey(),
+
+                try {
+                    if (indexService != null) {
+                        txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
+                        response = indexService.txnBatchGet(startTs, txnBatchGetRequest);
+                        if (response.getTxnResult() == null) {
+                            return response.getVectors().stream()
+                                .map(vectorWithId -> vectorWithId != null
+                                    ? new io.dingodb.common.store.KeyValue(vectorWithId.getTableData().getTableKey(),
                                     vectorWithId.getTableData().getTableValue()) : null)
-                            .collect(Collectors.toList());
-                    }
-                } else if (documentService != null) {
-                    txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
-                    response = documentService.txnBatchGet(startTs, txnBatchGetRequest);
-                    if (response.getTxnResult() == null) {
-                        return response.getDocuments().stream()
-                            .map(documentWithId -> documentWithId != null
-                                ? new io.dingodb.common.store.KeyValue(
-                                    documentWithId.getDocument().getTableData().getTableKey(),
-                                    documentWithId.getDocument().getTableData().getTableValue()
-                                    ) : null
-                            )
-                            .collect(Collectors.toList());
-                    }
-                } else {
-                    response = storeService.txnBatchGet(startTs, txnBatchGetRequest);
-                    if (response.getTxnResult() == null) {
-                        return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
-                    }
-                }
-                ResolveLockStatus resolveLockStatus = resolveLockConflict(
-                    singletonList(response.getTxnResult()),
-                    IsolationLevel.SnapshotIsolation.getCode(),
-                    startTs,
-                    resolvedLocks,
-                    "txnScan",
-                    true
-                );
-                if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
-                    || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
-                    if (timeOut < 0) {
-                        throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
-                    }
-                    try {
-                        long lockTtl = TxnVariables.WaitFixTime;
-                        if (n < TxnVariables.WaitFixNum) {
-                            lockTtl = TxnVariables.WaitTime * n;
+                                .collect(Collectors.toList());
                         }
-                        Thread.sleep(lockTtl);
-                        n++;
-                        timeOut -= lockTtl;
-                        LogUtils.info(log, "txnBatchGet lockInfo wait {} ms end.", lockTtl);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                    } else if (documentService != null) {
+                        txnBatchGetRequest.getKeys().forEach($ -> Arrays.copyOf($, VectorKeyLen));
+                        response = documentService.txnBatchGet(startTs, txnBatchGetRequest);
+                        if (response.getTxnResult() == null) {
+                            return response.getDocuments().stream()
+                                .map(documentWithId -> documentWithId != null
+                                        ? new io.dingodb.common.store.KeyValue(
+                                        documentWithId.getDocument().getTableData().getTableKey(),
+                                        documentWithId.getDocument().getTableData().getTableValue()
+                                    ) : null
+                                )
+                                .collect(Collectors.toList());
+                        }
+                    } else {
+                        response = storeService.txnBatchGet(startTs, txnBatchGetRequest);
+                        if (response.getTxnResult() == null) {
+                            return response.getKvs().stream().map(MAPPER::kvFrom).collect(Collectors.toList());
+                        }
+                    }
+                    ResolveLockStatus resolveLockStatus = resolveLockConflict(
+                        singletonList(response.getTxnResult()),
+                        IsolationLevel.SnapshotIsolation.getCode(),
+                        startTs,
+                        resolvedLocks,
+                        "txnScan",
+                        true
+                    );
+                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                        || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                        if (timeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            timeOut -= lockTtl;
+                            LogUtils.info(log, "txnBatchGet lockInfo wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } catch (RequestErrorException e) {
+                    if (e.getErrorCode() == 130003) {
+                        LogUtils.error(log, "ETXN_MEMORY_LOCK_CONFLICT, Error:" + e.getMessage(), e);
+                        if (timeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " txnBatchGet error:" +
+                                e);
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            timeOut -= lockTtl;
+                            LogUtils.info(log, "txnBatchGet ETXN_MEMORY_LOCK_CONFLICT wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
+                        }
+                    } else {
+                        LogUtils.error(log, "txnBatchGet Error:" + e.getMessage(), e);
+                        throw e;
                     }
                 }
             }
@@ -1200,28 +1228,59 @@ public class TransactionStoreInstance {
                 txnScanRequest.setResolveLocks(resolvedLocks);
                 txnScanRequest.setCoprocessor(coprocessor);
                 TxnScanResponse txnScanResponse;
-                if (indexService != null) {
-                    txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
-                } else if (documentService != null) {
-                    txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
-                } else {
-                    txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
-                }
-                if (txnScanResponse.getTxnResult() != null) {
-                    ResolveLockStatus resolveLockStatus = resolveLockConflict(
-                        singletonList(txnScanResponse.getTxnResult()),
-                        IsolationLevel.SnapshotIsolation.getCode(),
-                        startTs,
-                        resolvedLocks,
-                        "txnScan",
-                        true
-                    );
-                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
-                        || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                try {
+                    if (indexService != null) {
+                        txnScanResponse = indexService.txnScan(startTs, txnScanRequest);
+                    } else if (documentService != null) {
+                        txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
+                    } else {
+                        txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
+                    }
+                    if (txnScanResponse.getTxnResult() != null) {
+                        ResolveLockStatus resolveLockStatus = resolveLockConflict(
+                            singletonList(txnScanResponse.getTxnResult()),
+                            IsolationLevel.SnapshotIsolation.getCode(),
+                            startTs,
+                            resolvedLocks,
+                            "txnScan",
+                            true
+                        );
+                        if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                            || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                            if (scanTimeOut < 0) {
+                                LogUtils.info(log, "scanTimeOut < 0, scanTs:{}", txnScanRequest.getStartTs());
+                                throw new RuntimeException("startTs:" + txnScanRequest.getStartTs()
+                                    + " resolve lock timeout");
+                            }
+                            try {
+                                long lockTtl = TxnVariables.WaitFixTime;
+                                if (n < TxnVariables.WaitFixNum) {
+                                    lockTtl = TxnVariables.WaitTime * n;
+                                }
+                                Thread.sleep(lockTtl);
+                                n++;
+                                scanTimeOut -= lockTtl;
+                                LogUtils.info(log, "scanTs:{}, txnScan lockInfo wait {} ms end.",
+                                    txnScanRequest.getStartTs(), lockTtl);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        continue;
+                    }
+                    keyValues = Optional.ofNullable(txnScanResponse.getKvs())
+                        .map(List::iterator).orElseGet(Collections::emptyIterator);
+                    hasMore = txnScanResponse.isHasMore();
+                    if (hasMore) {
+                        withStart = false;
+                        current = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                    }
+                    break;
+                } catch (RequestErrorException e) {
+                    if (e.getErrorCode() == 130003) {
+                        LogUtils.error(log, "ETXN_MEMORY_LOCK_CONFLICT, Error:" + e.getMessage(), e);
                         if (scanTimeOut < 0) {
-                            LogUtils.info(log, "scanTimeOut < 0, scanTs:{}", txnScanRequest.getStartTs());
-                            throw new RuntimeException("startTs:" + txnScanRequest.getStartTs()
-                                + " resolve lock timeout");
+                            throw new RuntimeException("startTs:" + startTs + " txnScan error:" + e);
                         }
                         try {
                             long lockTtl = TxnVariables.WaitFixTime;
@@ -1231,22 +1290,15 @@ public class TransactionStoreInstance {
                             Thread.sleep(lockTtl);
                             n++;
                             scanTimeOut -= lockTtl;
-                            LogUtils.info(log, "scanTs:{}, txnScan lockInfo wait {} ms end.",
-                                txnScanRequest.getStartTs(), lockTtl);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+                            LogUtils.info(log, "txnScan ETXN_MEMORY_LOCK_CONFLICT wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
                         }
+                    } else {
+                        LogUtils.error(log, "txnScan Error:" + e.getMessage(), e);
+                        throw e;
                     }
-                    continue;
                 }
-                keyValues = Optional.ofNullable(txnScanResponse.getKvs())
-                    .map(List::iterator).orElseGet(Collections::emptyIterator);
-                hasMore = txnScanResponse.isHasMore();
-                if (hasMore) {
-                    withStart = false;
-                    current = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
-                }
-                break;
             }
             long sub = System.currentTimeMillis() - start;
             DingoMetrics.timer("txnScanRpc").update(sub, TimeUnit.MILLISECONDS);
@@ -1427,7 +1479,26 @@ public class TransactionStoreInstance {
                         //ESTREAM_EXPIRED: stream id is expired.
                         this.streamId = null;
                         LogUtils.info(log, "Stream id expired, info:{}", e.getMessage());
+                    } else if (e.getErrorCode() == 130003) {
+                        LogUtils.error(log, "ETXN_MEMORY_LOCK_CONFLICT, Error:" + e.getMessage(), e);
+                        if (scanTimeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " txnScan error:" + e);
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            scanTimeOut -= lockTtl;
+                            LogUtils.info(log, "txnScan ETXN_MEMORY_LOCK_CONFLICT wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
+                        }
+                        continue;
                     } else {
+                        LogUtils.error(log, "txnScan Error:" + e.getMessage(), e);
                         throw e;
                     }
                 } catch (DingoClientException.InvalidRouteTableException e) {
@@ -1480,9 +1551,14 @@ public class TransactionStoreInstance {
         private final OperatorProfile rpcProfile;
         private final OperatorProfile initRpcProfile;
 
-        public DocumentScanFilterStreamIterator(long startTs, DocumentSearchParameter documentSearchParameter) {
+        private final long timeOut;
+
+        public DocumentScanFilterStreamIterator(long startTs,
+                                                DocumentSearchParameter documentSearchParameter,
+                                                long timeOut) {
             this.startTs = startTs;
             this.documentSearchParameter = documentSearchParameter;
+            this.timeOut = timeOut;
             this.streamId = null;
             this.closeStream = false;
             initRpcProfile = new OperatorProfile("initDocumentScanFilterRpc");
@@ -1514,7 +1590,8 @@ public class TransactionStoreInstance {
             if (documentSearchAllRequest.getStreamMeta() == null) {
                 documentSearchAllRequest.setStreamMeta(new StreamRequestMeta());
             }
-
+            long scanTimeOut = timeOut;
+            int n = 1;
             //actually it is not a loop. Just run once in normal cases.
             while (true) {
                 documentSearchAllRequest.getStreamMeta().setStreamId(streamId);
@@ -1563,7 +1640,27 @@ public class TransactionStoreInstance {
                         //ESTREAM_EXPIRED: stream id is expired.
                         this.streamId = null;
                         LogUtils.info(log, "document scan filter stream id expired, info:{}", e.getMessage());
+                    } else if (e.getErrorCode() == 130003) {
+                        LogUtils.error(log, "ETXN_MEMORY_LOCK_CONFLICT, Error:" + e.getMessage(), e);
+                        if (scanTimeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " documentSearchAll error:" + e);
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            scanTimeOut -= lockTtl;
+                            LogUtils.info(log, "documentSearchAll ETXN_MEMORY_LOCK_CONFLICT wait {} ms end.",
+                                lockTtl);
+                            continue;
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
+                        }
                     } else {
+                        LogUtils.error(log, "documentSearchAll Error:" + e.getMessage(), e);
                         throw e;
                     }
                 } catch (DingoClientException.InvalidRouteTableException e) {

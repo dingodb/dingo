@@ -71,7 +71,8 @@ public class TxnDocumentScanOperator extends FilterProjectSourceOperator {
             DocumentSearchParameter.builder()
                 .queryString(param.getQueryString())
                 .queryUnlimited(true)
-                .build()
+                .build(),
+            param.getTimeout()
         );
 
         profile.time(start);
