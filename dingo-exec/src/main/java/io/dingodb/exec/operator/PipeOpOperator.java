@@ -47,6 +47,7 @@ public final class PipeOpOperator extends SoleOutOperator {
         RelOpParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("pipeOp");
         PipeOp relOp = (PipeOp) param.getRelOp();
-        return RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), context, profile);
+        long start = System.currentTimeMillis();
+        return RelOpUtils.processWithPipeOp(relOp, tuple, vertex.getSoleEdge(), context, profile, start);
     }
 }

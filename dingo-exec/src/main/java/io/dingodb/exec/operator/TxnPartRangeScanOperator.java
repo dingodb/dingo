@@ -124,10 +124,8 @@ public class TxnPartRangeScanOperator extends FilterProjectOperator {
             ProfileScanIterator profileScanIterator = (ProfileScanIterator) kvKVIterator;
             profile.getChildren().add(profileScanIterator.getInitRpcProfile());
         }
-        start = System.currentTimeMillis();
         profile.setRegionId(partId.seq);
         TxnMergedIterator txnMergedIterator = new TxnMergedIterator(localKVIterator, kvKVIterator, param.getCodec());
-        profile.incrMerge(start);
         profile.end();
         return txnMergedIterator;
     }

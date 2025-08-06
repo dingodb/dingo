@@ -19,6 +19,8 @@ package io.dingodb.store.api;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Coprocessor;
 import io.dingodb.common.CoprocessorV2;
+import io.dingodb.common.profile.Profile;
+import io.dingodb.common.profile.RpcProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.vector.VectorSearchResponse;
@@ -276,6 +278,10 @@ public interface StoreInstance {
     }
 
     default Iterator<KeyValue> txnScan(long startTs, Range range, long timeOut) {
+        throw new UnsupportedOperationException();
+    }
+
+    default Pair<Iterator<KeyValue>, RpcProfile> txnScanWithProfile(long startTs, Range range, long timeOut) {
         throw new UnsupportedOperationException();
     }
 
