@@ -304,7 +304,7 @@
             <charset>UTF-8</charset>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>${rpcLog.level}</level>
+            <level>debug</level>
         </filter>
     </appender>
     <appender name="META_RPC" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -523,8 +523,8 @@
 
     <!-- Control RPC module log -->
     <!--Phase, RAfter is the stage name, supports all stages that can be monitored-->
-    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RAfter" level="${rpcLog.level}"/>
-    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RBefore" level="${rpcLog.level}"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RAfter" level="debug"/>
+    <logger name="io.dingodb.sdk.service.ServiceCallCycles$RBefore" level="debug"/>
     <logger name="io.dingodb.sdk.service.ServiceCallCycles$RError" level="${rpcLog.level}"/>
     <logger name="io.dingodb.sdk.service.ServiceCallCycles$Before" level="off"/>
     <logger name="io.dingodb.sdk.service.ServiceCallCycles$After" level="off"/>
