@@ -436,7 +436,9 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     }
 
     public Collection<Vertex> visit(@NonNull DingoRepeatUnion dingoRepeatUnion) {
-        return DingoRepeatUnionVisitFun.visit(job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion);
+        return DingoRepeatUnionVisitFun.visit(
+            job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion, executeVariables
+        );
     }
 
     public Collection<Vertex> visit(@NonNull DingoTransientTableScan dingoTransientTableScan) {

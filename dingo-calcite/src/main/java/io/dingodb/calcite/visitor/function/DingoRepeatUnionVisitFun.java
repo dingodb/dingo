@@ -21,9 +21,8 @@ import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecuteVariables;
 import io.dingodb.common.Location;
-import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
@@ -44,7 +43,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.REPEAT_UNION;
@@ -57,11 +55,13 @@ public class DingoRepeatUnionVisitFun {
         Location currentLocation,
         DingoJobVisitor visitor,
         ITransaction transaction,
-        @NonNull DingoRepeatUnion rel
+        @NonNull DingoRepeatUnion rel,
+        ExecuteVariables executeVariables
     ) {
-        Job seedJob = getSpoolJob(transaction.getStartTs(), rel.getSeedRel(), transaction);
-        Job iterationJob = getSpoolJob(transaction.getStartTs(), rel.getIterativeRel(), transaction);
-        RepeatUnionParam repeatUnionParam = new RepeatUnionParam(seedJob, iterationJob, rel.all, rel.iterationLimit);
+        Job seedJob = getSpoolJob(transaction.getStartTs(), rel.getSeedRel(), transaction, executeVariables);
+        Job iterationJob = getSpoolJob(transaction.getStartTs(), rel.getIterativeRel(), transaction, executeVariables);
+        RepeatUnionParam repeatUnionParam = new RepeatUnionParam(seedJob, iterationJob,
+            rel.all, executeVariables.getIterationLimit());
         Task task = job.getOrCreate(currentLocation, idGenerator);
         Vertex vertex = new Vertex(REPEAT_UNION, repeatUnionParam);
         vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -72,15 +72,17 @@ public class DingoRepeatUnionVisitFun {
         return outputs;
     }
 
-    public static Job getSpoolJob(long startTs, RelNode relNode, ITransaction transaction) {
+    public static Job getSpoolJob(
+        long startTs, RelNode relNode, ITransaction transaction, ExecuteVariables executeVariables
+    ) {
         RelNode relInput;
         if (relNode instanceof RelSubset) {
             RelSubset relSubset = (RelSubset) relNode;
             relNode = relSubset.getBest();
 
-            List<Integer> selection = new ArrayList<>();
-            selection.add(0);
-            relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, TupleMapping.of(selection));
+            //List<Integer> selection = new ArrayList<>();
+            //selection.add(0);
+            relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, null);
         } else {
             relInput = relNode;
         }
@@ -91,9 +93,10 @@ public class DingoRepeatUnionVisitFun {
         RelDataType parasType = new RelRecordType(new ArrayList<>());
         Job job = jobManager.createJob(startTs, jobSeqId, txnId, DefinitionMapper.mapToDingoType(parasType));
         Location currentLocation = MetaService.root().currentLocation();
+
         DingoJobVisitor.renderJob(
             jobManager, job, relInput, currentLocation, false,
-            transaction, null, null, 0,
+            transaction, null, executeVariables, 0,
             false, false, false, 1, "root", "%"
         );
         return job;

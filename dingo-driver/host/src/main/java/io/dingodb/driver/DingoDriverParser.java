@@ -123,12 +123,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import static io.dingodb.common.SimpleExecuteVariablesFactory.variablesFactory;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
@@ -520,7 +522,7 @@ public final class DingoDriverParser extends DingoParser {
             && (forUpdate || sqlNode.getKind().belongsTo(SqlKind.DML))) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()), user, host);
+                variablesFactory.createExecuteVariables(connection.getClientInfo()), user, host);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -538,7 +540,7 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
+            variablesFactory.createExecuteVariables(connection.getClientInfo()),
             pointTs,
             forUpdate,
             getReplaceInto(sqlNode),
@@ -648,6 +650,14 @@ public final class DingoDriverParser extends DingoParser {
         return concurrencyLevelOpt
             .map(Integer::parseInt)
             .orElse(5);
+    }
+
+    public int getIterationLimit() {
+        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
+            connection.getClientInfo("cte_max_recursion_depth"));
+        return concurrencyLevelOpt
+            .map(Integer::parseInt)
+            .orElse(1001);
     }
 
     public boolean isJoinConcurrency() {
@@ -778,7 +788,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()), user, host);
+                variablesFactory.createExecuteVariables(connection.getClientInfo()), user, host);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -796,7 +806,7 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            new ExecuteVariables(isJoinConcurrency(), getConcurrencyLevel(), isInsertCheckInplace()),
+            variablesFactory.createExecuteVariables(connection.getClientInfo()),
             user, host
         );
         return new DingoSignature(

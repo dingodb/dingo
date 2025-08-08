@@ -930,6 +930,7 @@ public class ErrorCode {
     public static int ErrWindowNoGroupOrderUnused                              = 3597;
     public static int ErrWindowExplainJson                                     = 3598; //nolint: revive
     public static int ErrWindowFunctionIgnoresFrame                            = 3599;
+    public static int ErrRecursiveCteErr                                       = 3636;
     public static int ErrDataTruncatedFunctionalIndex                          = 3751;
     public static int ErrDataOutOfRangeFunctionalIndex                         = 3752;
     public static int ErrFunctionalIndexOnJsonOrGeometryFunction               = 3753; //nolint: revive

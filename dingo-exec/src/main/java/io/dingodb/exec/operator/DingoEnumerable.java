@@ -16,11 +16,14 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.mysql.error.ErrorMessage;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.impl.JobManagerImpl;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import static io.dingodb.common.mysql.error.ErrorCode.ErrRecursiveCteErr;
 
 public class DingoEnumerable implements Iterator {
     private static final Object DUMMY = new Object();
@@ -59,9 +62,12 @@ public class DingoEnumerable implements Iterator {
         // if we are done with the seed, moveNext on the iterative part
         while (true) {
             if (iterationLimit >= 0 && currentIteration == iterationLimit) {
+                String errFormat = ErrorMessage.errorMap.get(ErrRecursiveCteErr);
+                String error = String.format(errFormat, iterationLimit + 1);
+                throw new RuntimeException(error);
                 // max number of iterations reached, we are done
-                current = DUMMY;
-                return false;
+                //current = DUMMY;
+                //return false;
             }
 
             Iterator iterativeEnumerator = this.iterativeEnumerator;

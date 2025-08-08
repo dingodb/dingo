@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrRecursiveCteErr;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.common.util.Utils.getDateByTimezone;
 import static io.dingodb.driver.mysql.command.MysqlCommands.getInitServerStatus;
@@ -337,6 +338,9 @@ public final class MysqlResponseHandler {
                 return new SQLException(e.getMessage()
                     .replace("io.dingodb.store.api.transaction.exception.DuplicateEntryException:", ""),
                      "23000", 1062);
+            } else if (e.getMessage().contains("Recursive query aborted after")) {
+                String err = e.getMessage().replace("java.lang.RuntimeException:", "").trim();
+                return new SQLException(err, "HY000", ErrRecursiveCteErr);
             }
             return e;
         } else {
