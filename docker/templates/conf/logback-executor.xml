@@ -618,6 +618,10 @@
         <appender-ref ref="ASYNC-COORDINATOR_RPC"/>
     </logger>
 
+    <logger name="io.dingodb.sdk.service.desc.coordinator.CoordinatorServiceDescriptors$DropRegion" level="debug" additivity="false">
+        <appender-ref ref="ASYNC-COORDINATOR_RPC"/>
+    </logger>
+
     <appender name="ASYNC-VERSION_RPC" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>
         <discardingThreshold>0</discardingThreshold>
