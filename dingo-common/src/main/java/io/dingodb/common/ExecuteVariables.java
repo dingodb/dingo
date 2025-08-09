@@ -16,16 +16,50 @@
 
 package io.dingodb.common;
 
+import io.dingodb.common.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Properties;
+
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class ExecuteVariables {
     public final static int CONCURRENCY_COUNT = 5;
     private boolean isJoinConcurrency = false;
     private int concurrencyLevel = CONCURRENCY_COUNT;
     private boolean isInsertCheckInplace = false;
+    private int iterationLimit;
+
+    protected ExecuteVariables(Properties properties) {
+        this.iterationLimit = getIterationLimit(properties);
+        this.isJoinConcurrency = isJoinConcurrency(properties);
+        this.concurrencyLevel = getConcurrencyLevel(properties);
+        this.isInsertCheckInplace = isInsertCheckInplace(properties);
+    }
+
+    public int getConcurrencyLevel(Properties properties) {
+        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
+            properties.getProperty("dingo_partition_execute_concurrency"));
+        return concurrencyLevelOpt
+            .map(Integer::parseInt)
+            .orElse(5);
+    }
+
+    public int getIterationLimit(Properties properties) {
+        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
+            properties.getProperty("cte_max_recursion_depth"));
+        return concurrencyLevelOpt
+            .map(Integer::parseInt)
+            .orElse(1001);
+    }
+
+    public boolean isJoinConcurrency(Properties properties) {
+        return "on".equalsIgnoreCase(properties.getProperty("dingo_join_concurrency_enable"));
+    }
+
+    public boolean isInsertCheckInplace(Properties properties) {
+        return "on".equalsIgnoreCase(properties.getProperty("dingo_constraint_check_in_place"));
+    }
 }

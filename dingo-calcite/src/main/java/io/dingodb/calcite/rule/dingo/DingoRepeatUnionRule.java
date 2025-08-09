@@ -17,15 +17,12 @@
 package io.dingodb.calcite.rule.dingo;
 
 import io.dingodb.calcite.rel.DingoRepeatUnion;
-import io.dingodb.calcite.rel.DingoWindow;
 import io.dingodb.calcite.traits.DingoConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.logical.LogicalRepeatUnion;
-import org.apache.calcite.rel.logical.LogicalWindow;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DingoRepeatUnionRule extends ConverterRule {

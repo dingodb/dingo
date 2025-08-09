@@ -16,6 +16,7 @@
 
 package io.dingodb.driver.mysql.command;
 
+import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
@@ -62,6 +63,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrRecursiveCteErr;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 
 @Slf4j
@@ -221,7 +223,7 @@ public class MysqlCommands {
         Statement statement = null;
         boolean hasResults;
         String connCharSet = null;
-
+        long originPacketId = packetId.get();
         try {
             String sqlSample = sql.substring(0);
             if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sqlSample, packetId)) {
@@ -288,6 +290,17 @@ public class MysqlCommands {
                 + sqlException.getErrorCode()
                 + ", message:" + sqlException.getMessage());
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException, connCharSet);
+            return false;
+        } catch (DingoSqlException sqlException) {
+            LogUtils.error(log, "sql exception sqlstate:" + sqlException.getSqlState() + ", code:"
+                + sqlException.getSqlCode()
+                + ", message:" + sqlException.getMessage());
+            if (sqlException.getMessage().contains("Recursive query aborted after")) {
+                packetId.set(originPacketId);
+            }
+            SQLException sqlException1 =
+                new SQLException(sqlException.getMessage(), sqlException.getSqlState(), sqlException.getSqlCode());
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, sqlException1, connCharSet);
             return false;
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
