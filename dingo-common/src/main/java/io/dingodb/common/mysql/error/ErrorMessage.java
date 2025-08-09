@@ -49,6 +49,8 @@ public final class ErrorMessage {
         errorMap.put(ErrNoDB, "No database selected");
         errorMap.put(ErrNotSupportedYet, "Not supported yet");
         errorMap.put(ErrRangeNotIncreasing, "VALUES LESS THAN value must be strictly increasing for each partition");
+        errorMap.put(ErrRecursiveCteErr,
+         "Recursive query aborted after %d iterations. Try increasing @@cte_max_recursion_depth to a larger value");
     }
 
     private ErrorMessage() {
