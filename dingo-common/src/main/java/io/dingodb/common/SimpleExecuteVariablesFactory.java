@@ -16,8 +16,6 @@
 
 package io.dingodb.common;
 
-import io.dingodb.common.util.Optional;
-
 import java.util.Properties;
 
 public class SimpleExecuteVariablesFactory {

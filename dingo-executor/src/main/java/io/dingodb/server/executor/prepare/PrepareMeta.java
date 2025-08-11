@@ -239,7 +239,7 @@ public final class PrepareMeta {
     public static List<Object[]> getGlobalVariablesList() {
         List<Object[]> values = new ArrayList<>();
         String name = System.getProperty("os.name").toLowerCase();
-        values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 5.7 compatible"});
+        values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 8.0 compatible"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
         values.add(new Object[]{"max_allowed_packet", "67108864"});
@@ -287,6 +287,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"lock_wait_timeout", "50"});
         values.add(new Object[]{"transaction_isolation", "REPEATABLE-READ"});
         values.add(new Object[]{"transaction_read_only", "off"});
+        values.add(new Object[]{"tx_read_only", "off"});
         values.add(new Object[]{"txn_mode", "optimistic"});
         values.add(new Object[]{"collect_txn", "true"});
         values.add(new Object[]{"statement_timeout", "50000"});

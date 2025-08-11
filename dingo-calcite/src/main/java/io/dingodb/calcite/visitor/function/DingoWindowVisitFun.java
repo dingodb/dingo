@@ -38,6 +38,7 @@ import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
+import org.apache.calcite.adapter.enumerable.RexImpTable;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.enumerable.WinAggAddContext;
 import org.apache.calcite.adapter.enumerable.WinAggContext;
@@ -65,6 +66,7 @@ import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -141,6 +143,11 @@ public final class DingoWindowVisitFun {
 
         final List<Expression> translatedConstants =
             new ArrayList<>(rel.constants.size());
+        for (RexLiteral constant : rel.constants) {
+            translatedConstants.add(
+                RexToLixTranslator.translateLiteral(constant, constant.getType(),
+                    DingoSqlTypeFactory.INSTANCE, RexImpTable.NullAs.NULL));
+        }
 
         builder.add(Expressions.declare(0, prevStart, null));
         builder.add(Expressions.declare(0, prevEnd, null));
@@ -572,13 +579,7 @@ public final class DingoWindowVisitFun {
                 return i_;
             }
             RexNode node = bound.getOffset();
-            Expression offs;
-            try {
-                Method translateMethod1 = RexToLixTranslator.class.getDeclaredMethod("translate", RexNode.class);
-                offs = (Expression) translateMethod1.invoke(translator, node);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            Expression offs = translator.translate(node);;
 
             // Floating offset does not make sense since we refer to array index.
             // Nulls do not make sense as well.
@@ -626,15 +627,7 @@ public final class DingoWindowVisitFun {
         if (bound.getOffset() == null) {
             desiredKeyType = Primitive.box(desiredKeyType);
         }
-        Expression val;
-
-        try {
-            Method translateMethod2 = RexToLixTranslator.class.getDeclaredMethod("translate", RexNode.class, Type.class);
-            translateMethod2.setAccessible(true);
-            val = (Expression) translateMethod2.invoke(translator, new RexInputRef(orderKey, keyType), desiredKeyType);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Expression val = translator.translate(new RexInputRef(orderKey, keyType), desiredKeyType);;
 
         if (!bound.isCurrentRow()) {
             RexNode node = bound.getOffset();

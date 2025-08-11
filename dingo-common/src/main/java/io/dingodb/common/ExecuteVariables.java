@@ -52,7 +52,7 @@ public class ExecuteVariables {
             properties.getProperty("cte_max_recursion_depth"));
         return concurrencyLevelOpt
             .map(Integer::parseInt)
-            .orElse(1001);
+            .orElse(1000);
     }
 
     public boolean isJoinConcurrency(Properties properties) {

@@ -19,5 +19,5 @@ package io.dingodb.common.mysql;
 public interface Versions {
 
     byte PROTOCOL_VERSION = 10;
-    byte[] SERVER_VERSION = "5.7.41-DingoDB-2.0".getBytes();
+    byte[] SERVER_VERSION = "8.0.41-DingoDB".getBytes();
 }
