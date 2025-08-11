@@ -644,30 +644,6 @@ public final class DingoDriverParser extends DingoParser {
         this.connection.setPointTs(pointTs);
     }
 
-    public int getConcurrencyLevel() {
-        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
-            connection.getClientInfo("dingo_partition_execute_concurrency"));
-        return concurrencyLevelOpt
-            .map(Integer::parseInt)
-            .orElse(5);
-    }
-
-    public int getIterationLimit() {
-        Optional<String> concurrencyLevelOpt = Optional.ofNullable(
-            connection.getClientInfo("cte_max_recursion_depth"));
-        return concurrencyLevelOpt
-            .map(Integer::parseInt)
-            .orElse(1001);
-    }
-
-    public boolean isJoinConcurrency() {
-        return "on".equalsIgnoreCase(connection.getClientInfo("dingo_join_concurrency_enable"));
-    }
-
-    public boolean isInsertCheckInplace() {
-        return "on".equalsIgnoreCase(connection.getClientInfo("dingo_constraint_check_in_place"));
-    }
-
     @Nullable
     private MysqlSignature getMysqlSignature(String sql,
             SqlNode sqlNode,

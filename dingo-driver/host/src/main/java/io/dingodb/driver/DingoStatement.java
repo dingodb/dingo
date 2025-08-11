@@ -144,9 +144,7 @@ public class DingoStatement extends AvaticaStatement {
         super.cancel();
         if (jobManager != null && job != null) {
             if (job.getStatus() == Status.RUNNING) {
-                if (log.isTraceEnabled()) {
-                    LogUtils.trace(log, "dingo statement cancel jobId:{}, job:{}", job.getJobId(), job);
-                }
+                LogUtils.trace(log, "dingo statement cancel jobId:{}, job:{}", job.getJobId(), job);
                 CompletableFuture.runAsync(
                     () -> {
                         try {
@@ -154,10 +152,8 @@ public class DingoStatement extends AvaticaStatement {
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
-                        if (log.isDebugEnabled()) {
-                            LogUtils.debug(log, "dingo statement cancel, jobId:{}, status:{}",
-                                job.getJobId(), job.getStatus());
-                        }
+                        LogUtils.debug(log, "dingo statement cancel, jobId:{}, status:{}",
+                            job.getJobId(), job.getStatus());
                         jobManager.cancel(job.getJobId());
                     },
                     Executors.executor("exec-asyncCancel")
@@ -168,9 +164,7 @@ public class DingoStatement extends AvaticaStatement {
                     }
                 );
             } else {
-                if (log.isTraceEnabled()) {
-                    LogUtils.trace(log, "dingo statement cancel job:{}, status:{}", job, job.getStatus());
-                }
+                LogUtils.trace(log, "dingo statement cancel job:{}, status:{}", job, job.getStatus());
                 jobManager.cancel(job.getJobId());
             }
         }
