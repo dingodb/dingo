@@ -42,7 +42,8 @@ public final class ErrorMessage {
         errorMap.put(ErrNotFoundDropSchema, "Can't find dropped schema '%s'");
         errorMap.put(ErrTruncatedWrongValue, "Incorrect %s value: '%s'");
         errorMap.put(ErrKeyDoesNotExist, "Key '%s' doesn't exist in table '%s'");
-        errorMap.put(ErrPartitionMgmtOnNonpartitioned, "Partition management on a not partitioned table is not possible");
+        errorMap.put(ErrPartitionMgmtOnNonpartitioned, "Partition management on a not partitioned "
+            + "table is not possible");
         errorMap.put(ErrDropPartitionNonExistent, "Error in list of partitions to DROP");
         errorMap.put(ErrDupKeyName, "Duplicate key name '%s'");
         errorMap.put(ErrSetDiffTime, "can not set different time in the as of");
@@ -51,6 +52,12 @@ public final class ErrorMessage {
         errorMap.put(ErrRangeNotIncreasing, "VALUES LESS THAN value must be strictly increasing for each partition");
         errorMap.put(ErrRecursiveCteErr,
          "Recursive query aborted after %d iterations. Try increasing @@cte_max_recursion_depth to a larger value");
+        errorMap.put(ErrUnknown, "Unknown error");
+        errorMap.put(ErrIncorrectGlobalLocalVar, "Variable '%s' is a read-only variable");
+        errorMap.put(ErrDBaccessDenied, "Access denied for user '%s'@'%s' to database '%s'");
+        errorMap.put(ErrAccessDenied, "Access denied for user '%s'@'%s' (using password: %s)");
+        errorMap.put(ErrMustChangePassword, "You must reset your password using ALTER USER statement before "
+            + "executing this statement.");
     }
 
     private ErrorMessage() {

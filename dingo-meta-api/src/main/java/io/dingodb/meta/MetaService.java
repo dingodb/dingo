@@ -313,8 +313,10 @@ public interface MetaService {
     }
 
     default void dropRegionByTable(CommonId tableId, long jobId, long startTs, boolean autoInc) {
-
+        dropRegionByTable(tableId, jobId, startTs, autoInc, false);
     }
+
+    void dropRegionByTable(CommonId tableId, long jobId, long startTs, boolean autoInc, boolean immediately);
 
     default void dropSchema(long jobId, Long schemaId) {
 

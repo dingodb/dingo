@@ -18,10 +18,8 @@ package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
-import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.parser.ByteString;
 import io.dingodb.driver.DingoConnection;
@@ -63,7 +61,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
-import static io.dingodb.common.mysql.error.ErrorCode.ErrRecursiveCteErr;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrMustChangePassword;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrParse;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.Utils.getCharacterSet;
 
 @Slf4j
@@ -106,19 +106,21 @@ public class MysqlCommands {
         //        characterSet);
         //    return;
         //}
+        AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
         List<ByteString> statements;
         try {
             MultiStatementSplitter splitter = new MultiStatementSplitter(sql);
             statements = splitter.split();
         } catch (Exception e) {
-            throw DingoErrUtil.newStdErr(e.getMessage());
+            MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                ErrParse, "You have an error in your SQL syntax", characterSet);
+            return;
         }
         if (statements.isEmpty()) {
             // write ok package
             MysqlResponseHandler.responseOk(mysqlConnection.channel);
             return;
         }
-        AtomicLong packetId = new AtomicLong(queryPacket.packetId + 1);
         for (int i = 0; i < statements.size(); i ++) {
             if (!executeStatement(statements.get(i), packetId, mysqlConnection,
              i < statements.size() - 1, characterSet)) {
@@ -147,7 +149,7 @@ public class MysqlCommands {
         try {
             if (sql.startsWith(setPwdSql1) || sql.startsWith(alterUserPwdSql1)) {
                 MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                    ErrorCode.ER_PASSWORD_EXPIRE, mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET));
+                    ErrMustChangePassword, mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET));
                 return true;
             }
         } catch (SQLException e) {
@@ -227,7 +229,7 @@ public class MysqlCommands {
         try {
             String sqlSample = sql.substring(0);
             if (mysqlConnection.passwordExpire && !doExpire(mysqlConnection, sqlSample, packetId)) {
-                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE,
+                MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, ErrMustChangePassword,
                     charsetStr);
                 return false;
             }
@@ -527,7 +529,7 @@ public class MysqlCommands {
             MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connectionCharSet);
         } catch (Exception e) {
             MysqlResponseHandler.responseError(
-                packetId, mysqlConnection.channel, ErrorCode.ER_UNKNOWN_ERROR, connectionCharSet
+                packetId, mysqlConnection.channel, ErrUnknown, connectionCharSet
             );
             LogUtils.error(log, e.getMessage(), e);
         }

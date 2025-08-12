@@ -37,7 +37,7 @@ public class SetOptionExecutor implements DdlExecutor {
 
     public static final String CONNECTION_CHARSET = "character_set_connection";
     private static final String CLIENT_CHARSET = "character_set_client";
-    private static final String RESULTS_CHARSET = "character_set_results";
+    public static final String RESULTS_CHARSET = "character_set_results";
 
     public Connection connection;
 

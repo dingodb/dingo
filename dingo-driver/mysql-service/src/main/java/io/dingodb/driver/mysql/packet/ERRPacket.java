@@ -18,7 +18,6 @@ package io.dingodb.driver.mysql.packet;
 
 import io.dingodb.common.mysql.CapabilityFlags;
 import io.dingodb.common.mysql.MysqlMessage;
-import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.driver.mysql.NativeConstants;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
@@ -105,7 +104,7 @@ public class ERRPacket extends MysqlPacket {
         if ((capabilities & CapabilityFlags.CLIENT_PROTOCOL_41.getCode()) > 0) {
             buffer.writeByte((byte) '#');
             if (StringUtils.isBlank(sqlState)) {
-                sqlState = ErrorCode.ER_NO.sqlState;
+                sqlState = "HY000";
             }
             buffer.writeBytes(sqlState.getBytes());
         }

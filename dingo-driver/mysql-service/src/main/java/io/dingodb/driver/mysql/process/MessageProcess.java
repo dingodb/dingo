@@ -18,8 +18,8 @@ package io.dingodb.driver.mysql.process;
 
 import io.dingodb.calcite.service.LoadDataService;
 import io.dingodb.common.mysql.MysqlByteUtil;
-import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
+import io.dingodb.common.mysql.error.ErrorMessage;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -43,6 +43,9 @@ import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrDBaccessDenied;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrMustChangePassword;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNoDB;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
@@ -88,7 +91,7 @@ public final class MessageProcess {
 
         if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
             MysqlResponseHandler.responseError(
-                packetId, mysqlConnection.channel, ErrorCode.ER_PASSWORD_EXPIRE, connCharSet
+                packetId, mysqlConnection.channel, ErrMustChangePassword, connCharSet
             );
             return;
         }
@@ -110,9 +113,9 @@ public final class MessageProcess {
                 String host = connection.getContext().getOption("host");
                 if (!PrivilegeVerify.verify(user, host, usedSchema, null, "use")) {
                     String error =
-                        String.format(ErrorCode.ER_ACCESS_DB_DENIED_ERROR.message, user, host, usedSchema);
+                        String.format(ErrorMessage.errorMap.get(ErrDBaccessDenied), user, host, usedSchema);
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                        ErrorCode.ER_ACCESS_DB_DENIED_ERROR, error, connCharSet);
+                        ErrDBaccessDenied, error, connCharSet);
                     return;
                 }
                 CalciteSchema schema = connection.getContext().getRootSchema()
@@ -124,7 +127,7 @@ public final class MessageProcess {
                     MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
                 } else {
                     MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
-                        ErrorCode.ER_NO_DATABASE_ERROR, connCharSet);
+                        ErrNoDB, connCharSet);
                 }
                 break;
             case NativeConstants.COM_QUERY:

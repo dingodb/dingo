@@ -554,7 +554,13 @@ public class DdlWorker {
         }
         TableDefinitionWithId tableInfo = tableRes.getKey();
         if (tableInfo == null) {
-            return Pair.of(0L, "table not exists");
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrNoSuchTable, job.getTableName()));
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
+        } else if (tableInfo.getTableDefinition().getSchemaState() == SCHEMA_NONE) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrNoSuchTable, job.getTableName()));
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, job.getDingoErr().errorMsg);
         }
         if (job.getError() != null) {
             if ("Lock wait timeout exceeded".equalsIgnoreCase(job.decodeError())
@@ -645,8 +651,9 @@ public class DdlWorker {
         // check index exists
         Table table = InfoSchemaService.root().getTableDef(job.getSchemaId(), job.getTableId());
         if (table == null) {
+            job.setDingoErr(DingoErrUtil.newInternalErr(ErrNoSuchTable, job.getTableName()));
             job.setState(JobState.jobStateCancelled);
-            return Pair.of(0L, "table not exists");
+            return Pair.of(0L, job.getDingoErr().errorMsg);
         }
         boolean exists = table.getIndexes().stream()
             .anyMatch(indexTable -> indexTable.getName().equalsIgnoreCase(indexInfo.getName())
@@ -1891,7 +1898,7 @@ public class DdlWorker {
     private static void cancelledReplicate(DdlJob job, DingoCommonId replicaTableId, CommonId tableId) {
         List<Object> indexWithIdList;
         MetaService.root().dropRegionByTable(
-            Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false
+            Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false, true
         );
         InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
         // drop index replica definition and region
@@ -1901,7 +1908,7 @@ public class DdlWorker {
             indexWithIdList.forEach(indexObj -> {
                 TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
                 MetaService.root().dropRegionByTable(
-                    Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs(), false
+                    Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs(), false,true
                 );
                 InfoSchemaService.root().dropIndex(tableId.seq, indexWithId.getTableId().getEntityId());
             });

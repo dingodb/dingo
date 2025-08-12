@@ -97,13 +97,16 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Boolean convertBooleanFrom(@NonNull Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
         String valStr = strVal(value);
         if ("1".equals(valStr)) {
             return true;
         } else if ("0".equals(valStr)) {
             return false;
         } else {
-            return null;
+            throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "boolean", valStr);
         }
     }
 
@@ -140,7 +143,11 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                return DateTimeUtils.parseDate(valStr);
+                Date date = DateTimeUtils.parseDate(valStr);
+                if (date == null) {
+                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", valStr);
+                }
+                return date;
             } catch (Exception e) {
                 throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", valStr);
             }

@@ -34,6 +34,7 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.units.qual.N;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -86,17 +87,44 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Float convertFloatFrom(@NonNull Object value) {
-        return ((BigDecimal) value).floatValue();
+        if (value instanceof Float) {
+            return (Float) value;
+        } else if (value instanceof Double) {
+            Double valDouble = (Double) value;
+            return valDouble.floatValue();
+        } else {
+            try {
+                return new BigDecimal(value.toString()).floatValue();
+            } catch (Exception e) {
+                return 0F;
+            }
+        }
+        //return ((BigDecimal) value).floatValue();
     }
 
     @Override
     public Double convertDoubleFrom(@NonNull Object value) {
-        return ((BigDecimal) value).doubleValue();
+        if (value instanceof Float) {
+            Float valFloat = (Float) value;
+            return valFloat.doubleValue();
+        } else if (value instanceof Double) {
+            return (Double) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString()).doubleValue();
+            } catch (Exception e) {
+                return 0D;
+            }
+        }
     }
 
     @Override
     public String convertStringFrom(@NonNull Object value) {
-        return ((NlsString) value).getValue();
+        if (value instanceof NlsString) {
+            return ((NlsString) value).getValue();
+        } else {
+            return value.toString();
+        }
     }
 
     @Override

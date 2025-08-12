@@ -109,4 +109,8 @@ public class DingoSqlException extends RuntimeException {
         }
     }
 
+    @Override
+    public String toString() {
+        return "DingoSqlException:" + sqlCode + "|" + sqlState + "|" + message;
+    }
 }

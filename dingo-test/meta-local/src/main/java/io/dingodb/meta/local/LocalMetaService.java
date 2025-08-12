@@ -418,6 +418,11 @@ public class LocalMetaService implements MetaService {
     }
 
     @Override
+    public void dropRegionByTable(CommonId tableId, long jobId, long startTs, boolean autoInc, boolean immediately) {
+
+    }
+
+    @Override
     public void deleteRegionByPart(List<Object> regionInfoList, long jobId, CommonId id) {
 
     }

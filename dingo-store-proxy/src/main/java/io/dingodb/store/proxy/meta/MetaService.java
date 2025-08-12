@@ -1172,13 +1172,36 @@ public class MetaService implements io.dingodb.meta.MetaService {
         CommonId tableId,
         long jobId,
         long ts,
-        boolean autoInc
+        boolean autoInc,
+        boolean immediately
     ) {
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
         LogUtils.info(log, "dropRegion size:{}, tableId:{}", rangeDistributions.size(), tableId);
-        deleteRegion(tableId, jobId, ts, autoInc, rangeDistributions);
+        if (immediately) {
+            deleteRegionImmediately(rangeDistributions, tableId, autoInc);
+        } else {
+            deleteRegion(tableId, jobId, ts, autoInc, rangeDistributions);
+        }
         invalidateDistribution(tableId);
+    }
+
+    public void deleteRegionImmediately(
+        Collection<RangeDistribution> rangeDistributions, CommonId tableId, boolean autoInc
+    ) {
+        if (autoInc) {
+            delAutoInc(tableId);
+        }
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        for (RangeDistribution rangeDistribution : rangeDistributions) {
+            LogUtils.info(log, "dropRegion id:{}, tableId:{}", rangeDistribution.getId(), tableId);
+            try {
+                DropRegionRequest r = DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build();
+                coordinatorService.dropRegion(tso(), r);
+            } catch (Exception e) {
+                LogUtils.error(log, "dropRegion id:{} not exists", rangeDistribution.getId().seq);
+            }
+        }
     }
 
     public void deleteRegion(
@@ -1188,24 +1211,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
     ) {
         Map<String, String> globalVarMap = io.dingodb.meta.InfoSchemaService.root().getGlobalVariables();
         String jobGc = globalVarMap.getOrDefault("job_need_gc", "on");
-        if ("on".equalsIgnoreCase(jobGc) && jobId >= 0) {
+        if (("on".equalsIgnoreCase(jobGc) && jobId >= 0)) {
             Timer.Context context = DingoMetrics.getTimeContext("insertGcDeleteRange");
             gcDeleteRegion(rangeDistributions, jobId, startTs, tableId, autoInc);
             context.stop();
         } else {
-            if (autoInc) {
-                delAutoInc(tableId);
-            }
-            CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
-            for (RangeDistribution rangeDistribution : rangeDistributions) {
-                LogUtils.info(log, "dropRegion id:{}, tableId:{}", rangeDistribution.getId(), tableId);
-                try {
-                    DropRegionRequest r = DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build();
-                    coordinatorService.dropRegion(tso(), r);
-                } catch (Exception e) {
-                    LogUtils.error(log, "dropRegion id:{} not exists", rangeDistribution.getId().seq);
-                }
-            }
+            deleteRegionImmediately(rangeDistributions, tableId, autoInc);
         }
     }
 
@@ -1507,7 +1518,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
             key, Objects.equals(table.partitionStrategy, HASH_FUNC_NAME) ? 0 : 9
         );
 
-        Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 180);
+        Utils.loop(() -> !checkSplitFinish(comparableKey, table), TimeUnit.SECONDS.toNanos(1), 300);
         if (checkSplitFinish(comparableKey, table)) {
             return commonId.domain;
         } else {

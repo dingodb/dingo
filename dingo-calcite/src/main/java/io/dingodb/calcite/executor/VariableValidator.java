@@ -16,7 +16,7 @@
 
 package io.dingodb.calcite.executor;
 
-import io.dingodb.common.mysql.constant.ErrorCode;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrIncorrectGlobalLocalVar;
 
 public final class VariableValidator {
 
@@ -49,7 +50,7 @@ public final class VariableValidator {
 
     public static String validator(String name, String value, String scope) {
         if (ScopeVariables.immutableVariables.contains(name)) {
-            throw new RuntimeException(String.format(ErrorCode.ER_IMMUTABLE_VARIABLES.message, name));
+            throw DingoErrUtil.newStdErr(ErrIncorrectGlobalLocalVar, name);
         }
         if (("SESSION".equals(scope) || "USER".equals(scope)) && ScopeVariables.containsGlobalVariable(name.toLowerCase())) {
             throw DINGO_RESOURCE.invalidSetGlobalVariable(name).ex();
