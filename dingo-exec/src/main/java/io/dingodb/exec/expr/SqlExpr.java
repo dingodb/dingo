@@ -88,7 +88,7 @@ public class SqlExpr {
         etx.setParas(paras);
     }
 
-    public Object eval(Object[] tuple) {
+    public synchronized Object eval(Object[] tuple) {
         etx.setTuple(tuple);
         return type.convertFrom(expr.eval(etx, ExprConfig.ADVANCED), ExprConverter.INSTANCE);
     }

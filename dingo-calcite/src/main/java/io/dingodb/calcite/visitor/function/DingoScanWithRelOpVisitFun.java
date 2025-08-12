@@ -123,7 +123,7 @@ public final class DingoScanWithRelOpVisitFun {
                 visitor.setScan(true);
                 return outputs;
             } else {
-                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
+                if (!Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
