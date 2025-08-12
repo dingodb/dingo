@@ -41,6 +41,7 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.expr.rel.PipeOp;
@@ -81,11 +82,34 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
         synchronized (vertex) {
             PessimisticLockUpdateParam param = vertex.getParam();
             param.setContext(context);
-            if (context.getIndexId() == null && param.getUpdateLimit() != -1L) {
-                if(param.getUpdateScanCount() >= param.getUpdateLimit()) {
-                    return true;
+            if (param.getUpdateLimit() != -1L) {
+                long scanCount = param.getUpdateScanCount();
+                long limit = param.getUpdateLimit();
+
+                if (scanCount >= limit) {
+                    if (scanCount == limit && param.getIndexSize() > 0) {
+                        TupleKey tupleKey = new TupleKey(tuple);
+                        if (param.getUpdateKeys().containsKey(tupleKey)) {
+                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    if (context.getIndexId() == null) {
+                        param.incUpdateScanCount();
+                        param.getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
+                    } else {
+                        TupleKey tupleKey = new TupleKey(tuple);
+                        if (param.getUpdateKeys().containsKey(tupleKey)) {
+                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        } else {
+                            return false;
+                        }
+                    }
                 }
-                param.incUpdateScanCount();
             }
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
@@ -217,7 +241,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
 
             // new index key and old main table key
             byte[] key = wrap(codec::encodeKey).apply(dest);
-            if (updated && param.isUpdatePrimaryKey()) {
+            if (updated && param.isUpdatePrimaryKey() && context.getIndexId() == null) {
                 PartitionService ps = PartitionService.getService(
                     Optional.ofNullable(param.getTable().getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));

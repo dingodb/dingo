@@ -41,6 +41,7 @@ import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.expr.rel.PipeOp;
@@ -91,11 +92,34 @@ public class PessimisticLockOperator extends SoleOutOperator {
             if (transaction == null || (primaryLockKey == null && transaction.getPrimaryKeyLock() != null)) {
                 return false;
             }
-            if (context.getIndexId() == null && param.getUpdateLimit() != -1L) {
-                if(param.getUpdateScanCount() >= param.getUpdateLimit()) {
-                    return false;
+            if (param.getUpdateLimit() != -1L) {
+                long scanCount = param.getUpdateScanCount();
+                long limit = param.getUpdateLimit();
+
+                if (scanCount >= limit) {
+                    if (scanCount == limit && param.getIndexSize() > 0) {
+                        TupleKey tupleKey = new TupleKey(tuple);
+                        if (param.getUpdateKeys().containsKey(tupleKey)) {
+                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    if (context.getIndexId() == null) {
+                        param.incUpdateScanCount();
+                        param.getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
+                    } else {
+                        TupleKey tupleKey = new TupleKey(tuple);
+                        if (param.getUpdateKeys().containsKey(tupleKey)) {
+                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        } else {
+                            return false;
+                        }
+                    }
                 }
-                param.incUpdateScanCount();
             }
             DingoType schema = param.getSchema();
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);

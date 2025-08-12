@@ -31,12 +31,12 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ValueConverter;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
 import io.dingodb.expr.rel.PipeOp;
@@ -326,7 +326,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 boolean isUpdateMainTablePrimaryKey = (param.isUpdatePrimaryKey() && context.getIndexId() == null && updated);
                 if (calcPartId && isUpdateMainTablePrimaryKey) {
                     // delete old key
-                    oldKeyValue = wrap(codec::encode).apply(Arrays.copyOf(copyTuple, tupleSize));
+                    oldKeyValue = wrap(codec::encode).apply(Arrays.copyOf(copyTuple, schema.fieldCount()));
                     byte[] oldKey = oldKeyValue.getKey();
                     partId = context.getDistribution().getId();
                     CodecService.getDefault().setId(oldKey, partId.domain);
@@ -353,12 +353,36 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.put(new KeyValue(deleteKey, Arrays.copyOf(oldKeyValue.getValue(), oldKeyValue.getValue().length)));
                 }
             } else {
-                if (context.getIndexId() == null && param.getUpdateLimit() != -1L) {
-                    if (param.getUpdateScanCount() >= param.getUpdateLimit()) {
-                        return true;
+                if (param.getUpdateLimit() != -1L) {
+                    long scanCount = param.getUpdateScanCount();
+                    long limit = param.getUpdateLimit();
+
+                    if (scanCount >= limit) {
+                        if (scanCount == limit && param.getIndexSize() > 0) {
+                            TupleKey tupleKey = new TupleKey(tuple);
+                            if (param.getUpdateKeys().containsKey(tupleKey)) {
+                                param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        if (context.getIndexId() == null) {
+                            param.incUpdateScanCount();
+                            param.getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
+                        } else {
+                            TupleKey tupleKey = new TupleKey(tuple);
+                            if (param.getUpdateKeys().containsKey(tupleKey)) {
+                                param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                            } else {
+                                return false;
+                            }
+                        }
                     }
-                    param.incUpdateScanCount();
                 }
+
                 KeyValue keyValue = wrap(codec::encode).apply(newTuple2);
                 CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
                 LogUtils.debug(log, "{} update key is {}, partId is {}",
@@ -366,7 +390,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (calcPartId) {
                     // begin insert update commit
                     KeyValue oldKeyValue = wrap(codec::encode).apply(
-                        param.isUpdatePrimaryKey() ? Arrays.copyOf(copyTuple, tupleSize) : copyTuple
+                        param.isUpdatePrimaryKey() ? Arrays.copyOf(copyTuple, schema.fieldCount()) : copyTuple
                     );
                     byte[] oldKey = oldKeyValue.getKey();
                     CodecService.getDefault().setId(oldKey, context.getDistribution().getId().domain);
