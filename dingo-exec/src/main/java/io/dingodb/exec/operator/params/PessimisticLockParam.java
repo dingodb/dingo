@@ -26,13 +26,16 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @JsonTypeName("pessimistic_lock")
@@ -64,6 +67,10 @@ public class PessimisticLockParam extends TxnPartModifyParam {
     private final long updateLimit;
 
     private long updateScanCount;
+
+    private int indexSize;
+
+    private transient Map<TupleKey, Integer> updateKeys;
 
     private RelOp relOp;
     private final DingoRelConfig config;
@@ -108,6 +115,7 @@ public class PessimisticLockParam extends TxnPartModifyParam {
         this.updateScanCount = 0L;
         this.relOp = relOp;
         this.config = new DingoRelConfig();
+        this.indexSize = 0;
     }
     public void inc() {
         count++;
@@ -124,6 +132,10 @@ public class PessimisticLockParam extends TxnPartModifyParam {
                 (TupleType) schema.getType(),
                 (TupleType) vertex.getParasType().getType()
             ), config);
+        }
+        if (updateLimit != -1L) {
+            indexSize = table.getIndexes().size();
+            updateKeys = new ConcurrentHashMap<>();
         }
     }
 

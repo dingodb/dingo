@@ -26,12 +26,15 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
 @JsonTypeName("txn_update")
@@ -76,6 +79,10 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
     private RelOp relOp;
     public final DingoRelConfig config;
 
+    private int indexSize;
+
+    private transient Map<TupleKey, Integer> updateKeys;
+
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -106,6 +113,7 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         this.updateScanCount = 0L;
         this.relOp = relOp;
         this.config = new DingoRelConfig();
+        this.indexSize = 0;
     }
 
     @Override
@@ -116,6 +124,10 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
             (TupleType) schema.getType(),
             (TupleType) vertex.getParasType().getType()
         ), config);
+        if (updateLimit != -1L) {
+            indexSize = table.getIndexes().size();
+            updateKeys = new ConcurrentHashMap<>();
+        }
     }
 
     public void inc() {
