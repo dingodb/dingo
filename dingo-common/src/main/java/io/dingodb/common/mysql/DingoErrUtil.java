@@ -95,6 +95,15 @@ public final class DingoErrUtil {
     }
 
     public static DingoErr newInternalErr(String error) {
+        if (error != null && error.startsWith("DingoSqlException")) {
+            String[] splits = error.split("\\|");
+            if (splits.length == 3) {
+                String state = splits[1];
+                String message = splits[2];
+                int code = Integer.parseInt(splits[0].replace("DingoSqlException:", "").trim());
+                return new DingoErr(code, state, message);
+            }
+        }
         return new DingoErr(
             1105, "HY000", error
         );

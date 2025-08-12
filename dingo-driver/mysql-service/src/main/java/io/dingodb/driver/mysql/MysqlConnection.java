@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql;
 
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.util.CharsetUtil;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.ServerMeta;
 import io.dingodb.driver.mysql.netty.MysqlIdleStateHandler;
@@ -28,9 +29,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
+import java.sql.SQLClientInfoException;
 import java.util.Map;
 import java.util.Set;
+
+import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.calcite.executor.SetOptionExecutor.RESULTS_CHARSET;
 
 @Slf4j
 public class MysqlConnection {
@@ -65,6 +71,7 @@ public class MysqlConnection {
     public void setConnection(DingoConnection dingoConnection) {
         connection = dingoConnection;
         this.id = dingoConnection.id;
+        setCharsetIndex(authPacket);
     }
 
     public void close() {
@@ -88,5 +95,29 @@ public class MysqlConnection {
             e.printStackTrace();
         }
         LogUtils.info(log, "mysql connections count:" + MysqlNettyServer.connections.size());
+    }
+
+    public boolean setCharsetIndex(AuthPacket authPacket) {
+        if (authPacket == null) {
+            return false;
+        }
+        String charset = CharsetUtil.getCharset(authPacket.charsetIndex);
+        if (charset != null) {
+            charset = CharsetUtil.getJavaCharset(charset);
+            try {
+                byte[] val = "test".getBytes(charset);
+            } catch (UnsupportedEncodingException e) {
+                LogUtils.error(log, "set charset index error, charset:{}", charset);
+                return false;
+            }
+            try {
+                connection.setClientInfo(CONNECTION_CHARSET, charset);
+                connection.setClientInfo(RESULTS_CHARSET, charset);
+                return true;
+            } catch (SQLClientInfoException e) {
+                LogUtils.error(log, "set charset index error,reason:{}", e.getMessage());
+            }
+        }
+        return false;
     }
 }

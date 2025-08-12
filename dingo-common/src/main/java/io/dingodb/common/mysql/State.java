@@ -35,6 +35,7 @@ public class State {
         mysqlState.put(ErrDBaccessDenied,                      "42000");
         mysqlState.put(ErrAccessDenied,                        "28000");
         mysqlState.put(ErrNoDB,                                "3D000");
+        mysqlState.put(ErrUnknown,                             "3D000");
         mysqlState.put(ErrUnknownCom,                          "08S01");
         mysqlState.put(ErrBadNull,                             "23000");
         mysqlState.put(ErrBadDB,                               "42000");

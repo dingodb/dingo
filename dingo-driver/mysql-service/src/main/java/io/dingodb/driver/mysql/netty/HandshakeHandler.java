@@ -22,8 +22,8 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.Versions;
-import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerConstant;
+import io.dingodb.common.mysql.error.ErrorMessage;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.privilege.UserDefinition;
 import io.dingodb.common.session.SessionUtil;
@@ -62,6 +62,7 @@ import javax.net.ssl.SSLEngine;
 
 import static io.dingodb.common.mysql.Versions.PROTOCOL_VERSION;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCOMMIT;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrAccessDenied;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 
@@ -160,9 +161,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         if (StringUtils.isNotEmpty(userDefinition.getRequireSsl())) {
                             if (ctx.channel().pipeline().get("tls") == null) {
                                 String error =
-                                    String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
+                                    String.format(ErrorMessage.errorMap.get(ErrAccessDenied), user, ip, "YES");
                                 MysqlResponseHandler.responseError(packetId,
-                                    mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error, null);
+                                    mysqlConnection.channel, ErrAccessDenied, error, null);
                                 if (mysqlConnection.channel.isActive()) {
                                     mysqlConnection.channel.close();
                                 }
@@ -216,9 +217,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                         }
                     } else {
                         String error =
-                            String.format(ErrorCode.ER_ACCESS_DENIED_ERROR.message, user, ip, "YES");
+                            String.format(ErrorMessage.errorMap.get(ErrAccessDenied), user, ip, "YES");
                         MysqlResponseHandler.responseError(packetId,
-                            mysqlConnection.channel, ErrorCode.ER_ACCESS_DENIED_ERROR, error, null);
+                            mysqlConnection.channel, ErrAccessDenied, error, null);
                         if (mysqlConnection.channel.isActive()) {
                             mysqlConnection.channel.close();
                         }

@@ -240,6 +240,7 @@ public final class DingoRules {
     public static final List<RelOptRule> ABSTRACT_RELATIONAL_RULES = ImmutableList.of(
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_CONDITION_PUSH,
+        CoreRules.FILTER_SET_OP_TRANSPOSE,
         AbstractConverter.ExpandConversionRule.INSTANCE,
         CoreRules.JOIN_COMMUTE,
         //CoreRules.PROJECT_TO_SEMI_JOIN,

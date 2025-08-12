@@ -19,7 +19,10 @@ package io.dingodb.driver.mysql.command;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
+import io.dingodb.common.mysql.State;
 import io.dingodb.common.mysql.constant.ServerStatus;
+import io.dingodb.common.mysql.error.ErrorCode;
+import io.dingodb.common.mysql.error.ErrorMessage;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -228,21 +231,32 @@ public final class MysqlResponseHandler {
 
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
-                                     io.dingodb.common.mysql.constant.ErrorCode errorCode,
+                                     int errorCode,
+                                     String message,
                                      String characterSet) {
-        responseError(packetId, channel, errorCode, errorCode.message, characterSet);
+        responseError(packetId, channel, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
+             message, characterSet);
     }
 
     public static void responseError(AtomicLong packetId,
                                      SocketChannel channel,
-                                     io.dingodb.common.mysql.constant.ErrorCode errorCode,
+                                     int errorCode,
+                                     String characterSet) {
+        responseError(packetId, channel, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
+            ErrorMessage.errorMap.getOrDefault(errorCode, "Unknown error"), characterSet);
+    }
+
+    public static void responseError(AtomicLong packetId,
+                                     SocketChannel channel,
+                                     int errorCode,
+                                     String sqlState,
                                      String message,
                                      String characterSet) {
         ERRPacket ep = new ERRPacket();
         ep.packetId = (byte) packetId.getAndIncrement();
         ep.capabilities = MysqlServer.getServerCapabilities();
-        ep.errorCode = errorCode.code;
-        ep.sqlState = errorCode.sqlState;
+        ep.errorCode = errorCode;
+        ep.sqlState = sqlState;
         ep.errorMessage = message;
         if ("utf8mb4".equalsIgnoreCase(characterSet) || "utf8mb3".equalsIgnoreCase(characterSet)) {
             characterSet = "utf8";
