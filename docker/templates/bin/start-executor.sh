@@ -30,9 +30,13 @@ fi
 
 JAVA_OPTS="\
     -Xms8g -Xmx8g \
-    -XX:+UseG1GC \
-    -XX:MaxGCPauseMillis=100 \
-    -XX:G1HeapRegionSize=4M \
+    -XX:+UseZGC \
+    -XX:SoftMaxHeapSize=8g \
+    -XX:ZAllocationSpikeTolerance=5 \
+    -XX:+ZProactive \
+    -XX:ZCollectionInterval=4 \
+    -XX:+UseLargePages \
+    -XX:+UseNUMA \
     -XX:+ParallelRefProcEnabled \
     -XX:+AlwaysPreTouch \
     -XX:+DisableExplicitGC \
