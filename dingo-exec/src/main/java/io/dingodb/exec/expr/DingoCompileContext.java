@@ -20,6 +20,7 @@ import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.TupleCompileContext;
 import io.dingodb.expr.rel.TupleCompileContextImpl;
 import io.dingodb.expr.runtime.CompileContext;
+import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.Exprs;
 import lombok.AccessLevel;
@@ -39,6 +40,8 @@ public final class DingoCompileContext implements TupleCompileContext {
     private final TupleType tupleType;
     @Getter
     private final TupleType parasType;
+
+    private ExprContext exprContext;
 
     public static @NonNull Expr createTupleVar(int index) {
         return Exprs.op(Exprs.INDEX, Exprs.var(TUPLE_VAR_NAME), index);
@@ -62,5 +65,15 @@ public final class DingoCompileContext implements TupleCompileContext {
     @Override
     public @NonNull TupleCompileContext withType(TupleType tupleType) {
         return new DingoCompileContext(tupleType, parasType);
+    }
+
+    @Override
+    public ExprContext getExprContext() {
+        return exprContext;
+    }
+
+    @Override
+    public void setExprContext(ExprContext exprContext) {
+        this.exprContext = exprContext;
     }
 }

@@ -23,7 +23,10 @@ import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -80,6 +83,30 @@ public class DingoTableModifyRule extends ConverterRule {
                 relOp = RelOpBuilder.builder()
                     .project(exprs)
                     .build();
+
+                //Make new exprConfig.
+                ExprConfig exprConfig = new ExprConfig() {
+                    ExprContext exprContext = ExprContext.CALC_VALUE;
+                    @Override
+                    public boolean withSimplification() {
+                        return true;
+                    }
+                    @Override
+                    public boolean withRangeCheck() {
+                        return true;
+                    }
+                    public ExprContext getExprContext() {
+                        return exprContext;
+                    }
+                    public void setExprContext(ExprContext exprContext) {
+                        this.exprContext = exprContext;
+                    }
+                };
+
+                if(relOp instanceof ProjectOp) {
+                    ((ProjectOp)relOp).setExprConfig(exprConfig);
+                }
+
                 break;
             case INSERT:
             case DELETE:

@@ -26,7 +26,9 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -50,7 +52,12 @@ public final class CalcValueUtils {
         ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
 
         try {
-            exprCompiler.setExprContext(ExprContext.CALC_VALUE);
+            if ((rexNode instanceof RexCall) &&
+            (((RexCall)rexNode).getOperator().getCallContext() == SqlOperator.CallContext.IN_VALUES)) {
+                exprCompiler.setExprContext(ExprContext.CALC_VALUE);
+            } else {
+                exprCompiler.setExprContext(ExprContext.INVALID);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
