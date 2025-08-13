@@ -24,6 +24,7 @@ import io.dingodb.calcite.utils.DingoRelResult;
 import io.dingodb.calcite.utils.WindowGenerate;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -33,8 +34,11 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.WindowFunctionParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.tool.api.WindowService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.AggImpState;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
@@ -49,6 +53,7 @@ import org.apache.calcite.adapter.enumerable.impl.WinAggResetContextImpl;
 import org.apache.calcite.adapter.enumerable.impl.WinAggResultContextImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteSystemProperty;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.tree.BinaryExpression;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
@@ -84,21 +89,27 @@ import org.codehaus.commons.compiler.ISimpleCompiler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
 import static io.dingodb.exec.utils.OperatorCodeUtils.WINDOW_FUNCTION;
+import static org.apache.calcite.adapter.enumerable.EnumerableRelImplementor.classDecl;
 
+@Slf4j
 public final class DingoWindowVisitFun {
 
     private DingoWindowVisitFun() {
@@ -158,7 +169,8 @@ public final class DingoWindowVisitFun {
                     "comparator",
                     WindowGenerate.generateComparator(group.collation(), rel.getInput().getRowType()));
             Pair<Expression, Expression> partitionIterator =
-                WindowGenerate.getPartitionIterator(builder, source, group, comparator_, inputPhysType);
+                WindowGenerate.getPartitionIterator(builder, source, group, comparator_,
+                inputPhysType);
             final Expression collectionExpr = partitionIterator.getKey();
             final Expression iterator_ = partitionIterator.getValue();
 
@@ -498,6 +510,8 @@ public final class DingoWindowVisitFun {
         throws ClassNotFoundException, InvocationTargetException,
          InstantiationException, IllegalAccessException {
         List<MemberDeclaration> memberDeclarations = new ArrayList<>();
+        TypeRegistrar typeRegistrar = new TypeRegistrar(memberDeclarations);
+        typeRegistrar.go(methodBody);
         ParameterExpression source =
             Expressions.parameter(Iterator.class, "paramSource");
         memberDeclarations.add(Expressions.methodDecl(
@@ -538,6 +552,7 @@ public final class DingoWindowVisitFun {
             + "\n"
             + "}";
         try {
+            LogUtils.info(log, "-->" + s);
             compiler.cook(s);
         } catch (CompileException e) {
             throw new RuntimeException(e);
@@ -631,21 +646,61 @@ public final class DingoWindowVisitFun {
 
         if (!bound.isCurrentRow()) {
             RexNode node = bound.getOffset();
-            Expression offs;
-
-            try {
-                Method translateMethod1 = RexToLixTranslator.class.getDeclaredMethod("translate", RexNode.class);
-                translateMethod1.setAccessible(true);
-                offs = (Expression) translateMethod1.invoke(translator, node);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            Expression offs = translator.translate(node);
 
             // TODO: support date + interval somehow
-            if (bound.isFollowing()) {
-                val = Expressions.add(val, offs);
+            // for dingo start
+            Expression val1;
+            if ("java.sql.Date".equalsIgnoreCase(desiredKeyType.getTypeName())) {
+                if (val instanceof ParameterExpression && !"java.sql.Date".equalsIgnoreCase(val.getType().getTypeName())) {
+                    val1 = Expressions.convert_(
+                        val,
+                        java.sql.Date.class);
+                    Expression timestamp = Expressions.call(val1, "getTime");
+                    Expression newDate;
+                    if (bound.isFollowing()) {
+                        Expression newTimestamp = Expressions.add(val, offs);
+                        newDate = Expressions.new_(java.sql.Date.class, newTimestamp);
+                    } else {
+                        Expression newTimestamp = Expressions.subtract(timestamp, offs);
+                        newDate = Expressions.new_(java.sql.Date.class, newTimestamp);
+                    }
+                    return Expressions.call(
+                        (lower
+                            ? BuiltInMethod.BINARY_SEARCH6_LOWER
+                            : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
+                        rows_, newDate, searchLower, searchUpper,
+                        Objects.requireNonNull(keySelector, "keySelector"),
+                        Objects.requireNonNull(keyComparator, "keyComparator"));
+                }
+            } else if ("java.sql.Timestamp".equalsIgnoreCase(desiredKeyType.getTypeName())) {
+                if (val instanceof ParameterExpression && !"java.sql.Timestamp".equalsIgnoreCase(val.getType().getTypeName())) {
+                    val1 = Expressions.convert_(
+                        val,
+                        java.sql.Date.class);
+                    Expression timestamp = Expressions.call(val1, "getTime");
+                    Expression newDate;
+                    if (bound.isFollowing()) {
+                        Expression newTimestamp = Expressions.add(val, offs);
+                        newDate = Expressions.new_(java.sql.Timestamp.class, newTimestamp);
+                    } else {
+                        Expression newTimestamp = Expressions.subtract(timestamp, offs);
+                        newDate = Expressions.new_(java.sql.Timestamp.class, newTimestamp);
+                    }
+                    return Expressions.call(
+                        (lower
+                            ? BuiltInMethod.BINARY_SEARCH6_LOWER
+                            : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
+                        rows_, newDate, searchLower, searchUpper,
+                        Objects.requireNonNull(keySelector, "keySelector"),
+                        Objects.requireNonNull(keyComparator, "keyComparator"));
+                }
             } else {
-                val = Expressions.subtract(val, offs);
+                if (bound.isFollowing()) {
+                    val = Expressions.add(val, offs);
+                } else {
+                    val = Expressions.subtract(val, offs);
+                }
             }
         }
         return Expressions.call(
@@ -912,6 +967,39 @@ public final class DingoWindowVisitFun {
                 new WinAggResetContextImpl(builder, agg.state,
                     null, null, null, null,
                     null, null));
+        }
+    }
+
+    public static class TypeRegistrar {
+        private final List<MemberDeclaration> memberDeclarations;
+        private final Set<Type> seen = new HashSet<>();
+
+        TypeRegistrar(List<MemberDeclaration> memberDeclarations) {
+            this.memberDeclarations = memberDeclarations;
+        }
+
+        private void register(Type type) {
+            if (!seen.add(type)) {
+                return;
+            }
+            if (type instanceof JavaTypeFactoryImpl.SyntheticRecordType) {
+                memberDeclarations.add(
+                    classDecl((JavaTypeFactoryImpl.SyntheticRecordType) type));
+            }
+            if (type instanceof ParameterizedType) {
+                for (Type type1 : ((ParameterizedType) type).getActualTypeArguments()) {
+                    register(type1);
+                }
+            }
+        }
+
+        public void go(BlockStatement blockStatement) {
+            final Set<Type> types = new LinkedHashSet<>();
+            blockStatement.accept(new EnumerableRelImplementor.TypeFinder(types));
+            //types.add(result.physType.getJavaRowType());
+            for (Type type : types) {
+                register(type);
+            }
         }
     }
 }

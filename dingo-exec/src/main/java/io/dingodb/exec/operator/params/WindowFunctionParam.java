@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.tool.api.WindowService;
 import lombok.Getter;
-
+import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,10 +35,13 @@ public class WindowFunctionParam extends AbstractParams {
     @Getter
     List<Object[]> list = new ArrayList<>();
 
+    @Setter
     @Getter
     WindowService windowService;
+
 
     public WindowFunctionParam(WindowService windowService) {
         this.windowService = windowService;
     }
+
 }

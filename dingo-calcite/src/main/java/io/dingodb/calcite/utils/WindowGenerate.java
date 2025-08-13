@@ -17,7 +17,6 @@
 package io.dingodb.calcite.utils;
 
 import com.google.common.collect.ImmutableList;
-import io.dingodb.calcite.rel.DingoWindow;
 import io.dingodb.common.util.Pair;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
@@ -28,8 +27,6 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MemberDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.PseudoField;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -38,14 +35,12 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.SortedMultiMap;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.util.BuiltInMethod;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 
@@ -152,7 +147,8 @@ public class WindowGenerate {
     }
 
     public static Pair<Expression, Expression> getPartitionIterator(
-        BlockBuilder builder, Expression source, Window.Group group, Expression comparator, PhysType inputPhysType
+        BlockBuilder builder, Expression source, Window.Group group,
+        Expression comparator, PhysType inputPhysType
     ) {
         if (group.keys.isEmpty()) {
             // dec list
@@ -229,16 +225,6 @@ public class WindowGenerate {
             builder2.add(declare);
             key = declare.parameter;
         }
-
-        // todo start
-        //int keyIndex = 0;
-        //if (group.keys.asList().size() == 1) {
-        //    keyIndex = group.keys.asList().get(0);
-        //}
-        //Expression ix = Expressions.constant(keyIndex);
-        //Expression tmp = Expressions.arrayIndex(rows_, ix);
-        //key = builder2.append("key", EnumUtils.convert(tmp, Integer.class));
-        // todo end
 
         builder2.add(
             Expressions.statement(
