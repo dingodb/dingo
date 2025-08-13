@@ -29,6 +29,8 @@ import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.ProjectOp;
+import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -120,10 +122,19 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
     public void init(Vertex vertex) {
         super.init(vertex);
         // updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
-        relOp = relOp.compile(new DingoCompileContext(
+        DingoCompileContext dingoCompileContext = new DingoCompileContext(
             (TupleType) schema.getType(),
             (TupleType) vertex.getParasType().getType()
-        ), config);
+        );
+
+        if (this.relOp instanceof ProjectOp) {
+            if (((ProjectOp)(this.relOp)).getExprConfig().getExprContext() == ExprContext.CALC_VALUE) {
+                dingoCompileContext.setExprContext(io.dingodb.expr.runtime.ExprContext.CALC_VALUE);
+            }
+        }
+
+        relOp = relOp.compile(dingoCompileContext, config);
+
         if (updateLimit != -1L) {
             indexSize = table.getIndexes().size();
             updateKeys = new ConcurrentHashMap<>();
