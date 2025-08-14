@@ -34,7 +34,6 @@ import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.units.qual.N;
 
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -140,7 +139,30 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Time convertTimeFrom(@NonNull Object value) {
-        return new Time(((Calendar) value).getTimeInMillis());
+        if (value instanceof NlsString) {
+            String valStr = ((NlsString) value).getValue();
+            return DateTimeUtils.parseTime(valStr);
+        } else if (value instanceof Calendar) {
+            return new Time(((Calendar) value).getTimeInMillis());
+        } else if (value instanceof Time) {
+            return (Time) value;
+        } else if (value instanceof Timestamp) {
+            Timestamp timestamp = (Timestamp) value;
+            return new Time(timestamp.getTime());
+        } else if (value instanceof Date) {
+            Date date = (Date) value;
+            return new Time(date.getTime());
+        } else if (value instanceof Number) {
+            Number number = (Number) value;
+            try {
+                return new Time(number.longValue());
+            } catch (Exception e) {
+                return null;
+            }
+        } else {
+            String valStr = value.toString();
+            return DateTimeUtils.parseTime(valStr);
+        }
     }
 
     @Override

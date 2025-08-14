@@ -148,6 +148,8 @@ public class HashJoinParam extends AbstractParams {
     }
 
     public void clear() {
+        rightFinFlag = false;
         hashMap.clear();
+        future = new CompletableFuture<>();
     }
 }
