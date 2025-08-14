@@ -18,12 +18,12 @@ package io.dingodb.exec.operator;
 
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.ListTransientScanParam;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
+@Slf4j
 public class ListTransientScanOperator extends FilterProjectSourceOperator {
     public static ListTransientScanOperator INSTANCE = new ListTransientScanOperator();
 
