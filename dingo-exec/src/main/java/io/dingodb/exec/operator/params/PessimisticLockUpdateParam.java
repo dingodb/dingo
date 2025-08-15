@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -92,6 +93,8 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         this.relOp = relOp;
         this.config = new DingoRelConfig();
         this.indexSize = 0;
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, schema, table.keyMapping());
     }
     @Override
     public void init(Vertex vertex) {

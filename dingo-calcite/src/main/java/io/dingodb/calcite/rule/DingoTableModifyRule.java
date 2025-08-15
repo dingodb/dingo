@@ -16,20 +16,16 @@
 
 package io.dingodb.calcite.rule;
 
-import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.RexConverter;
-import io.dingodb.common.type.TupleMapping;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
-import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.Table;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -37,9 +33,6 @@ import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class DingoTableModifyRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -129,7 +122,10 @@ public class DingoTableModifyRule extends ConverterRule {
             modify.getUpdateColumnList(),
             modify.getSourceExpressionList(),
             modify.isFlattened(),
-            relOp
+            null,
+            null,
+            relOp,
+            modify.getTableInfo()
         );
     }
 }

@@ -2124,34 +2124,61 @@ SqlNode SqlDelete() :
  */
 SqlNode SqlUpdate() :
 {
-    final SqlIdentifier tableName;
+    SqlNodeList tableList;
+    SqlIdentifier table;
     SqlNode tableRef;
-    final SqlIdentifier alias;
+    SqlIdentifier alias = null;
+    SqlNodeList aliasList;
     final SqlNode where;
     final SqlNodeList sourceExpressionList;
     final SqlNodeList targetColumnList;
     SqlIdentifier id;
     final Span s;
     SqlNode offsetFetch = null;
+    boolean isMulti = false;
 }
 {
+    // update t1, t2 set t1.name = t2.name where t1.id = t2.id;
+    // update t1 JOIN t2 ON t1.id = t2.id SET t1.name = t2.name;
     <UPDATE> {
         s = span();
         targetColumnList = new SqlNodeList(s.pos());
         sourceExpressionList = new SqlNodeList(s.pos());
+        tableList = new SqlNodeList(s.pos());
+        aliasList = new SqlNodeList(s.pos());
     }
-    tableName = CompoundTableIdentifier()
-    ( tableRef = TableHints(tableName) | { tableRef = tableName; } )
+    table = CompoundIdentifier()
+    ( tableRef = TableHints(table) | { tableRef = table; } )
     [ tableRef = ExtendTable(tableRef) ]
-    ( [ <AS> ] alias = SimpleIdentifier() | { alias = null; } )
-    <SET> id = SimpleIdentifier() {
+    {
+        tableList.add(tableRef);
+    }
+    ( [ <AS> ] alias = SimpleIdentifier() | { alias = table; } )
+    {
+        aliasList.add(alias);
+    }
+    (
+        <COMMA>
+        table = CompoundIdentifier()
+        ( tableRef = TableHints(table) | { tableRef = table; } )
+        [ tableRef = ExtendTable(tableRef) ]
+        {
+            isMulti = true;
+            tableList.add(tableRef);
+        }
+        ( [ <AS> ] alias = SimpleIdentifier() | { alias = table; } )
+        {
+            aliasList.add(alias);
+        }
+    )*
+    <SET> id = CompoundIdentifier() {
         targetColumnList.add(id);
     }
     // TODO:  support DEFAULT also
     <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     (
         <COMMA>
-        id = SimpleIdentifier() { targetColumnList.add(id); }
+        id = CompoundIdentifier() { targetColumnList.add(id); }
         <EQ> AddExpression(sourceExpressionList, ExprContext.ACCEPT_SUB_QUERY)
     )*
     ( where = Where() | { where = null; } )
@@ -2159,8 +2186,23 @@ SqlNode SqlUpdate() :
     {
         final SqlParserPos pos = s.addAll(targetColumnList)
             .addAll(sourceExpressionList).addIf(where).pos();
-        return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, tableRef, targetColumnList,
+        if (isMulti) {
+            SqlLiteral joinType = JoinType.COMMA.symbol(SqlParserPos.ZERO);
+            SqlNode left = tableList.get(0);
+            SqlNode right = tableList.get(1);
+            SqlNode targetTable = new SqlJoin(joinType.getParserPosition(),
+                left,
+                SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
+                joinType,
+                right,
+                JoinConditionType.NONE.symbol(SqlParserPos.ZERO),
+                null);
+            return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, targetTable, targetColumnList,
+                     sourceExpressionList, where, null, alias, offsetFetch, tableList, aliasList);
+        } else {
+            return new io.dingodb.calcite.grammar.dml.SqlUpdate(pos, tableRef, targetColumnList,
                      sourceExpressionList, where, null, alias, offsetFetch);
+        }
     }
 }
 

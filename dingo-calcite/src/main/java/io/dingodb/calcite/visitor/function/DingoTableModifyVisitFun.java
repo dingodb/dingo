@@ -23,7 +23,10 @@ import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -44,6 +47,8 @@ import io.dingodb.exec.operator.params.TxnPartUpdateParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.core.TableModify;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -239,6 +244,27 @@ public final class DingoTableModifyVisitFun {
                     }
                     break;
                 case UPDATE:
+                    TableModify.TableInfo tableInfo = rel.getTableInfo();
+                    DingoType dingoType;
+                    if (!tableInfo.isSingleSource() && tableInfo.getRefTables().size() >= 2) {
+                        RelOptTable leftTable = tableInfo.getRefTables().get(0);
+                        RelOptTable rightTable = tableInfo.getRefTables().get(1);
+                        List<DingoType> leftTypeName = leftTable.getRowType().getFieldList().stream()
+                            .map(t -> DingoTypeFactory.INSTANCE.fromName(
+                                t.getType().getSqlTypeName().getName(),
+                                null, t.getType().isNullable()))
+                            .collect(Collectors.toList());
+                        List<DingoType> rightTypeName = rightTable.getRowType().getFieldList().stream()
+                            .map(t -> DingoTypeFactory.INSTANCE.fromName(
+                                t.getType().getSqlTypeName().getName(),
+                                null, t.getType().isNullable()))
+                            .toList();
+                        leftTypeName.addAll(rightTypeName);
+                        DingoType[] dingoTypes = leftTypeName.toArray(DingoType[]::new);
+                        dingoType = DingoTypeFactory.tuple(dingoTypes);
+                    } else {
+                        dingoType = td.tupleType();
+                    }
                     List<String> colNames = td.getColumns().stream()
                         .map(Column::getName).map(String::toUpperCase).toList();
                     TupleMapping updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream()
@@ -249,7 +275,7 @@ public final class DingoTableModifyVisitFun {
                     TupleMapping keyMapping = td.keyMapping();
                     List<String> keys = keyMapping.stream()
                         .mapToObj(td.getColumns()::get)
-                        .map(Column::getName).collect(Collectors.toList());
+                        .map(Column::getName).toList();
                     if (updateList != null && updateList.stream().anyMatch(keys::contains)) {
                         updatePrimaryKey = true;
                     }
@@ -260,7 +286,7 @@ public final class DingoTableModifyVisitFun {
                             if (transaction.getPrimaryKeyLock() == null) {
                                 PessimisticLockParam pessimisticLockParam = new PessimisticLockParam(
                                     tableId,
-                                    td.tupleType(),
+                                    dingoType,
                                     td.keyMapping(),
                                     transaction.getIsolationLevel(),
                                     transaction.getStartTs(),
@@ -288,7 +314,7 @@ public final class DingoTableModifyVisitFun {
                             } else {
                                 PessimisticLockUpdateParam pessimisticLockParam = new PessimisticLockUpdateParam(
                                     tableId,
-                                    td.tupleType(),
+                                    dingoType,
                                     td.keyMapping(),
                                     updateMapping,
                                     rel.getSourceExpressionList().stream()
@@ -317,7 +343,7 @@ public final class DingoTableModifyVisitFun {
                             Vertex updateVertex = new Vertex(TXN_PART_UPDATE,
                                 new TxnPartUpdateParam(
                                     tableId,
-                                    td.tupleType(),
+                                    dingoType,
                                     td.keyMapping(),
                                     updateMapping,
                                     rel.getSourceExpressionList().stream()
@@ -350,7 +376,7 @@ public final class DingoTableModifyVisitFun {
                             vertex = new Vertex(TXN_PART_UPDATE,
                                 new TxnPartUpdateParam(
                                     tableId,
-                                    td.tupleType(),
+                                    dingoType,
                                     td.keyMapping(),
                                     updateMapping,
                                     rel.getSourceExpressionList().stream()
@@ -385,7 +411,7 @@ public final class DingoTableModifyVisitFun {
                         vertex = new Vertex(PART_UPDATE,
                             new PartUpdateParam(
                                 tableId,
-                                td.tupleType(),
+                                dingoType,
                                 td.keyMapping(),
                                 updateMapping,
                                 rel.getSourceExpressionList().stream()

@@ -174,7 +174,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                    byte[] key = wrap(codec::encodeKey).apply(newTuple);
+                    Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
+                    byte[] key = wrap(codec::encodeKey).apply(newTuple2);
                     partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
                     LogUtils.debug(log, "{} update index primary key is{} calcPartId is {}",
                         txnId,

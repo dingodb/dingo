@@ -88,8 +88,7 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         boolean flattened,
         RelOp relOp
     ) {
-        super(
-            cluster,
+        this(cluster,
             traitSet,
             table,
             catalogReader,
@@ -97,9 +96,11 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             operation,
             updateColumnList,
             sourceExpressionList,
-            flattened
-        );
-        this.relOp = relOp;
+            flattened,
+            null,
+            null,
+            relOp,
+            null);
     }
 
     public DingoTableModify(
@@ -114,7 +115,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
         boolean flattened,
         List<String> targetColumnNames,
         @Nullable List<RexNode> sourceExpressionList2,
-        RelOp relOp
+        RelOp relOp,
+        TableInfo tableInfo
     ) {
         super(
             cluster,
@@ -125,7 +127,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             operation,
             updateColumnList,
             sourceExpressionList,
-            flattened
+            flattened,
+            tableInfo
         );
         this.targetColumnNames = targetColumnNames;
         this.sourceExpressionList2 = sourceExpressionList2;
@@ -151,7 +154,8 @@ public final class DingoTableModify extends TableModify implements DingoRel {
             isFlattened(),
             getTargetColumnNames(),
             getSourceExpressionList2(),
-            getRelOp()
+            getRelOp(),
+            getTableInfo()
         );
     }
 
