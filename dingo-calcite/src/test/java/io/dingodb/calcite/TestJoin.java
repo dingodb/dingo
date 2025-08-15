@@ -70,6 +70,7 @@ public class TestJoin {
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.INNER)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
@@ -154,6 +155,7 @@ public class TestJoin {
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
             .soleInput().isA(LogicalProject.class)
+            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.LEFT)
             .inputNum(2);
         RelNode optimized = parser.optimize(relRoot.rel);
@@ -172,6 +174,7 @@ public class TestJoin {
         RelRoot relRoot = parser.convert(sqlNode);
         Assert.relNode(relRoot.rel)
             .isA(LogicalDingoRoot.class)
+            .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalProject.class)
             .soleInput().isA(LogicalJoin.class).prop("joinType", JoinRelType.RIGHT)
             .inputNum(2);

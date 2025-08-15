@@ -66,6 +66,7 @@ public class DingoSpecialInsertRule extends ConverterRule {
             modify.isFlattened(),
             modify.getTargetColumnNames(),
             modify.getSourceExpressionList2(),
+            null,
             null
         );
     }

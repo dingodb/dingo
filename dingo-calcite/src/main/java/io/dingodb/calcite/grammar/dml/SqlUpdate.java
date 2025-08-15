@@ -16,6 +16,7 @@
 
  package io.dingodb.calcite.grammar.dml;
 
+ import com.google.common.collect.ImmutableList;
  import lombok.Getter;
  import org.apache.calcite.sql.SqlIdentifier;
  import org.apache.calcite.sql.SqlNode;
@@ -25,11 +26,15 @@
  import org.apache.calcite.sql.parser.SqlParserPos;
  import org.checkerframework.checker.nullness.qual.Nullable;
 
+ import java.util.Collections;
+
  @Getter
  public class SqlUpdate extends org.apache.calcite.sql.SqlUpdate {
 
      @Getter
      public long limit = -1L;
+     public SqlNodeList tableList;
+     public SqlNodeList aliasList;
 
      public SqlUpdate(SqlParserPos pos,
                       SqlNode targetTable,
@@ -39,10 +44,44 @@
                       @Nullable SqlSelect sourceSelect,
                       @Nullable SqlIdentifier alias,
                       SqlNode offsetFetch) {
-         super(pos, targetTable, targetColumnList, sourceExpressionList, condition, sourceSelect, alias);
+         this(pos,
+             targetTable,
+             targetColumnList,
+             sourceExpressionList,
+             condition,
+             sourceSelect,
+             alias,
+             offsetFetch,
+             new SqlNodeList(ImmutableList.of(targetTable), SqlParserPos.ZERO),
+             new SqlNodeList(ImmutableList.of(alias), SqlParserPos.ZERO));
+     }
+
+     public SqlUpdate(SqlParserPos pos,
+                      SqlNode targetTable,
+                      SqlNodeList targetColumnList,
+                      SqlNodeList sourceExpressionList,
+                      @Nullable SqlNode condition,
+                      @Nullable SqlSelect sourceSelect,
+                      @Nullable SqlIdentifier alias,
+                      SqlNode offsetFetch,
+                      SqlNodeList tableList,
+                      SqlNodeList aliasList) {
+         super(pos,
+             targetTable,
+             tableList,
+             aliasList,
+             Collections.emptyMap(),
+             targetColumnList,
+             sourceExpressionList,
+             condition,
+             sourceSelect,
+             alias,
+             true);
          if (offsetFetch != null && offsetFetch instanceof SqlNumericLiteral) {
              limit = ((SqlNumericLiteral) offsetFetch).longValue(true);
          }
+         this.tableList = tableList;
+         this.aliasList = aliasList;
      }
 
  }

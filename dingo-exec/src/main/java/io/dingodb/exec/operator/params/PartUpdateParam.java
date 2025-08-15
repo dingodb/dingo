@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -60,6 +61,8 @@ public class PartUpdateParam extends PartModifyParam {
         this.updates = updates;
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;
+        this.codec = CodecService.getDefault().createKeyValueCodec(
+            table.getCodecVersion(), table.version, schema, table.keyMapping());
     }
 
     @Override

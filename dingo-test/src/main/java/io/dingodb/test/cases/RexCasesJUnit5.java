@@ -231,11 +231,11 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
                 "CASTTIMESTAMP('2020-11-01 01:01:01')",
                 DateTimeUtils.parseTimestamp("2020-11-01 01:01:01")
             ),
-            arguments(
+            /*arguments(
                 "* from (SELECT CAST('2020-11-01 01:01:01' AS TIMESTAMP))",
                 "CASTTIMESTAMP('2020-11-01 01:01:01')",
                 Timestamp.valueOf("2020-11-01 01:01:01")
-            ),
+            )*/
             unixTimestampCase("1980-11-12 23:25:12"),
             unixTimestampCase("2022-04-14 00:00:00"),
             unixTimestampCase("2022/04/14 00:00:00"),

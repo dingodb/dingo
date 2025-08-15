@@ -48,7 +48,7 @@ public class IfFun extends TertiaryOp {
                 return value2;
             }
         } else {
-            return value1;
+            return value2;
         }
     }
 
