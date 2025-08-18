@@ -41,7 +41,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 
 @Slf4j
@@ -74,7 +74,7 @@ public final class DingoFunctionScanVisitFun {
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()
         );
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);

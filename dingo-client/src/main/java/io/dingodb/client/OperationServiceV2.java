@@ -87,7 +87,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.client.utils.OperationUtils.mapKey2;
 import static io.dingodb.client.utils.OperationUtils.mapKeyPrefix;
 import static io.dingodb.common.util.Utils.sole;
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COALESCE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COMPARE_AND_SET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.COPY;
@@ -509,7 +509,7 @@ public class OperationServiceV2 {
             false,
             null,
             ExecuteVariables.CONCURRENCY_COUNT);
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);
@@ -567,7 +567,7 @@ public class OperationServiceV2 {
             false,
             null,
             ExecuteVariables.CONCURRENCY_COUNT);
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);
         calcVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(calcVertex);

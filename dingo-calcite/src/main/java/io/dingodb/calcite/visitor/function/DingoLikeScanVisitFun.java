@@ -45,7 +45,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
 
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.LIKE_SCAN;
 
 public final class DingoLikeScanVisitFun {
@@ -82,7 +82,7 @@ public final class DingoLikeScanVisitFun {
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()
         );
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionSourceParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionSourceParam);
 
         for (RangeDistribution distribution
             : ps.calcPartitionRange(rel.getPrefix(), rel.getPrefix(), true, true, distributions)) {
