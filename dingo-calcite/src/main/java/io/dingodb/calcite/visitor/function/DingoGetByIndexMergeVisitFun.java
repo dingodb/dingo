@@ -60,7 +60,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.INDEX_MERGE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
@@ -102,7 +102,7 @@ public final class DingoGetByIndexMergeVisitFun {
                     continue;
                 }
                 keyList.add(new ByteArrayUtils.ComparableByteArray(keys));
-                Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
+                Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION_1, new DistributionSourceParam(
                     indexTd,
                     indexRanges,
                     keys,

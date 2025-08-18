@@ -61,7 +61,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
 
 public final class DingoIndexFullScanVisitFun {
@@ -98,7 +98,7 @@ public final class DingoIndexFullScanVisitFun {
             visitor.getExecuteVariables().getConcurrencyLevel()
         );
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
 
         Task task;
         if (transaction != null) {

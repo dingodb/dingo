@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.operator;
 
+import com.codahale.metrics.Gauge;
+import com.google.common.base.Supplier;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
@@ -25,6 +27,7 @@ import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.common.util.Utils;
+import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
@@ -37,13 +40,13 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -165,8 +168,10 @@ public class NewCalcDistributionOperator extends SourceOperator {
                     LogUtils.trace(log, "Push distribution: {}", distribution);
                 }
                 context.setDistribution(distribution);
-                if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                    break;
+                for (Edge edge : vertex.getOutList()) {
+                    if (!edge.transformToNext(context, param.getKeyTuple())) {
+                        break;
+                    }
                 }
             } catch (Exception ex) {
                 if (ex instanceof RegionSplitException
@@ -216,7 +221,8 @@ public class NewCalcDistributionOperator extends SourceOperator {
             }
             Context copyContext = context.copy();
             copyContext.setDistribution(distribution);
-            return vertex.getSoleEdge().transformToNext(copyContext, null);
+            return vertex.getOutList().stream()
+                .map(out -> out.transformToNext(copyContext, param.getKeyTuple())).toList().get(0);
         };
         Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
             .find("retry", int.class), __ -> __, () -> 120);

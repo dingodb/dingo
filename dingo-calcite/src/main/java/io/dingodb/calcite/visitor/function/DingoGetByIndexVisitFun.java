@@ -57,7 +57,7 @@ import java.util.Set;
 
 import static io.dingodb.common.util.Utils.calculatePrefixCount;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 
@@ -100,7 +100,7 @@ public final class DingoGetByIndexVisitFun {
                     continue;
                 }
                 keyList.add(key);
-                Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION, new DistributionSourceParam(
+                Vertex distributionVertex = new Vertex(CALC_DISTRIBUTION_1, new DistributionSourceParam(
                     indexTd,
                     indexRanges,
                     keys,
