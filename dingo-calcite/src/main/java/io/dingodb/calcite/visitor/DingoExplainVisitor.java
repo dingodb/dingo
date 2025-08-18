@@ -149,8 +149,8 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         String info = "";
         String accessObj = "";
         if (rel.getOperation() != null && rel.getSourceExpressionList() != null) {
-            info = rel.getOperation().toString();
-            info += rel.getSourceExpressionList().stream().map(RexNode::toString).collect(Collectors.joining());
+            info = rel.getOperation().toString() + ":";
+            info += rel.getSourceExpressionList().stream().map(RexNode::toString).collect(Collectors.joining(","));
         }
         if (rel.getTable() != null) {
             accessObj = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable().getName();
