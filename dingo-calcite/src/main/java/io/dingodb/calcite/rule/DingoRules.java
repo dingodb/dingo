@@ -218,7 +218,7 @@ public final class DingoRules {
         CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
         CoreRules.FILTER_SCAN,
         CoreRules.PROJECT_FILTER_TRANSPOSE,
-        CoreRules.FILTER_PROJECT_TRANSPOSE,
+//        CoreRules.FILTER_PROJECT_TRANSPOSE,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_PUSH_EXPRESSIONS,
         CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT,
