@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.CommonId;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
@@ -114,7 +115,7 @@ public class NewCalcDistributionOperator extends SourceOperator {
         boolean isSplit = false;
         while (retry-- > 0 && flag) {
             try {
-                push(context, vertex, distributions);
+                push(context, vertex, distributions, param);
                 break;
             } catch (RegionSplitException e) {
                 LogUtils.error(log, e.getMessage());
@@ -155,14 +156,50 @@ public class NewCalcDistributionOperator extends SourceOperator {
 
     private static void push(Context context,
                              @NonNull Vertex vertex,
-                             Set<RangeDistribution> distributions) {
+                             Set<RangeDistribution> distributions, DistributionSourceParam param) {
+        Integer maxRetry = Optional.mapOrGet(DingoConfiguration.instance()
+            .find("retry", int.class), __ -> __, () -> 120);
         for (RangeDistribution distribution : distributions) {
-            if (log.isTraceEnabled()) {
-                LogUtils.trace(log, "Push distribution: {}", distribution);
-            }
-            context.setDistribution(distribution);
-            if (!vertex.getSoleEdge().transformToNext(context, null)) {
-                break;
+            try {
+                if (log.isTraceEnabled()) {
+                    LogUtils.trace(log, "Push distribution: {}", distribution);
+                }
+                context.setDistribution(distribution);
+                if (!vertex.getSoleEdge().transformToNext(context, null)) {
+                    break;
+                }
+            } catch (Exception ex) {
+                if (ex instanceof RegionSplitException
+                    || (ex.getMessage() != null && ex.getMessage().contains("epoch is not match, region_epoch"))) {
+                    int retry;
+                    if (param.getSplitRetry().containsKey(distribution.getId())) {
+                        int retryCnt = param.getSplitRetry().get(distribution.getId());
+                        retry = retryCnt + 1;
+                    } else {
+                        retry = 1;
+                    }
+                    if (retry > 10) {
+                        MetaService.root().invalidateDistribution(param.getTd().getTableId());
+                    }
+                    if (retry > maxRetry) {
+                        LogUtils.error(log, ex.getMessage(), ex);
+                        throw new RuntimeException("The number of split retries exceeds the maximum limit");
+                    }
+                    param.getSplitRetry().put(distribution.getId(), retry);
+
+                    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> tmpDistribution =
+                        MetaService.root().getRangeDistribution(param.getTd().tableId);
+                    DistributionSourceParam copyParam = param.copy(
+                        tmpDistribution,
+                        distribution.getStartKey(),
+                        distribution.getEndKey(),
+                        distribution.isWithStart(),
+                        distribution.isWithEnd());
+                    NavigableSet<RangeDistribution> rangeDistributions = getRangeDistributions(copyParam);
+                    push(context, vertex, rangeDistributions, param);
+                    return;
+                }
+                throw ex;
             }
         }
     }

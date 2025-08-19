@@ -270,6 +270,7 @@ public class MysqlCommands {
                         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
                         loadDataResPacket.write(buffer);
                         mysqlConnection.channel.writeAndFlush(buffer);
+                        mysqlConnection.getConnection().clearWarnings();
                         return;
                     }
                 }
