@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.type;
 
+import io.dingodb.calcite.DingoTypeMapper;
 import org.apache.calcite.DingoSqlFloatType;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
@@ -231,7 +232,7 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                         && type.getSqlTypeName().getName().equalsIgnoreCase("CHAR")) {
                         continue;
                     } else {
-                        return null;
+                        return DingoTypeMapper.getLeastRestrictPreferredType(resultType, type, this);
                     }
                 }
             }
@@ -466,11 +467,12 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     if (type.getPrecision() > resultType.getPrecision()) {
                         resultType = type;
                     }
+                    resultType = DingoTypeMapper.getLeastRestrictPreferredType(resultType, type, this);
                 } else if (SqlTypeUtil.isExactNumeric(resultType)) {
                     if (SqlTypeUtil.isDecimal(resultType)) {
                         resultType = createSqlType(SqlTypeName.DOUBLE);
                     } else {
-                        resultType = type;
+                        resultType = DingoTypeMapper.getLeastRestrictPreferredType(resultType, type, this);
                     }
                 } else {
                     return null;

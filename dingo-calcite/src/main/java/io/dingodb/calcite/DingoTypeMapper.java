@@ -17,6 +17,7 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
+import it.unimi.dsi.fastutil.Hash;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -25,7 +26,87 @@ import org.apache.calcite.sql.fun.SqlSumAggFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DingoTypeMapper {
+    /**
+     * Type mapper to compatible with mysql in union and some other scenarios.
+     */
+    public static final Map<SqlTypeName, Map<SqlTypeName, SqlTypeName>> MYSQL_TYPE_MAP = new HashMap<>() {{
+       put(SqlTypeName.DOUBLE, new HashMap<>() {{
+           put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+           put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+           put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
+           put(SqlTypeName.BIGINT, SqlTypeName.DOUBLE);
+           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+       }});
+       put(SqlTypeName.FLOAT, new HashMap<>() {{
+            put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
+            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+            put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
+           put(SqlTypeName.BIGINT, SqlTypeName.FLOAT);
+           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+        }});
+       put(SqlTypeName.INTEGER, new HashMap<>() {{
+            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+            put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
+           put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+        }});
+       put(SqlTypeName.BIGINT, new HashMap<>() {{
+            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+            put(SqlTypeName.INTEGER, SqlTypeName.BIGINT);
+            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+            put(SqlTypeName.BOOLEAN, SqlTypeName.BIGINT);
+            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+        }});
+       put(SqlTypeName.BOOLEAN, new HashMap<>() {{
+            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+        }});
+       put(SqlTypeName.VARCHAR, new HashMap<>() {{
+            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            put(SqlTypeName.BIGINT, SqlTypeName.VARCHAR);
+        }});
+    }};
+
+    /**
+     * Get preferred type name.
+     * @param left  left type.
+     * @param right right type.
+     * @return  preferred type.
+     */
+    public static SqlTypeName getPreferredType(SqlTypeName left, SqlTypeName right) {
+        //Get left mapper.
+        return MYSQL_TYPE_MAP.containsKey(left) ? MYSQL_TYPE_MAP.get(left).get(right) : left;
+    }
+
+    /**
+     * Get preferred type name.
+     * @param left  left type.
+     * @param right right type.
+     * @return  preferred type.
+     */
+    public static RelDataType getLeastRestrictPreferredType(RelDataType left, RelDataType right, DingoSqlTypeFactory typeFactory) {
+        SqlTypeName leftName = left.getSqlTypeName();
+        SqlTypeName rightName = right.getSqlTypeName();
+
+        SqlTypeName preferredType = getPreferredType(leftName, rightName);
+        if(preferredType == null) {
+            return left;
+        }
+
+        if (preferredType == leftName) {
+            return left;
+        } else if(preferredType == rightName) {
+            return right;
+        } else {
+            return typeFactory.createSqlType(preferredType);
+        }
+    }
+
     /*
         To be compatible with MYSQL binary arithmetic operator.
         The relation between parameter type and result type are as following:
