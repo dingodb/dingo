@@ -21,6 +21,8 @@ import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.DateAddFun;
 import io.dingodb.exec.fun.DateFun;
+import io.dingodb.exec.fun.DaySubFun;
+import io.dingodb.exec.fun.GetDateFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.StrToDateFun;
@@ -306,6 +308,17 @@ public class DingoOperatorTable implements SqlOperatorTable {
             ),
             SqlFunctionCategory.NUMERIC
         );
+        registerFunction(
+            GetDateFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.TIMESTAMP_VARCHAR1024,
+            OperandTypes.or(
+                OperandTypes.TIMESTAMP,
+                OperandTypes.STRING,
+                OperandTypes.DATE
+            ),
+            SqlFunctionCategory.STRING
+        );
 
         // special
         registerFunction(
@@ -496,6 +509,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+        registerFunction(
+            DaySubFun.NAME,
+            ReturnTypes.DATE,
+            DingoInferTypes.DATE_LONG,
+            family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
+            SqlFunctionCategory.NUMERIC
         );
     }
 
