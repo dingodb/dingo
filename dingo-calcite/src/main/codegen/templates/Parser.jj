@@ -7816,6 +7816,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FUSION>
     |   <INTERSECTION>
     |   <IFNULL>
+    |   <GETDATE>
     |   <GROUPING>
     |   <HOUR>
     |   <LAG>
@@ -8416,6 +8417,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GENERATED: "GENERATED" >
 |   < GEOMETRY: "GEOMETRY" >
 |   < GET: "GET" >
+|   < GETDATE: "GETDATE" >
 |   < GLOBAL: "GLOBAL" >
 |   < GO: "GO" >
 |   < GOTO: "GOTO" >
