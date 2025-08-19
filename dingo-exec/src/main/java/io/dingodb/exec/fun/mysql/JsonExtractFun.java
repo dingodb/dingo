@@ -95,10 +95,11 @@ public class JsonExtractFun extends BinaryOp {
                             node = node.get(pathItem).get(item);
                         }
                     } else {
-                        node = node.get(pathItem);
+                        if (node != null) {
+                            node = node.get(pathItem);
+                        }
                     }
                 }
-
             }
             if (node != null) {
                 String res = node.toString();
