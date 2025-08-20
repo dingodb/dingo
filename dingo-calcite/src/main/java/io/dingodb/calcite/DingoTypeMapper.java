@@ -182,6 +182,10 @@ public class DingoTypeMapper {
             } else if(SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
+        } else if(SqlTypeUtil.isCharacter(left)) {  //char or varchar.
+            if(SqlTypeUtil.isCharacter(right)) {    //char or varchar.
+                ret = SqlTypeUtil.getDouble(factory);
+            }
         }
 
         return ret;
