@@ -98,7 +98,9 @@ public class InfoSchemaBuilder {
         }
         this.is.schemaMetaVersion = schemaVersion;
         for (SchemaInfo schemaInfo : schemaInfos) {
-            createSchemaTablesForDB(schemaInfo, infoSchemaService);
+            if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
+                createSchemaTablesForDB(schemaInfo, infoSchemaService);
+            }
         }
     }
 

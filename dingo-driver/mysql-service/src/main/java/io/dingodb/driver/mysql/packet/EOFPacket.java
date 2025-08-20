@@ -22,6 +22,8 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.io.ByteArrayOutputStream;
+
 public class EOFPacket extends MysqlPacket {
 
     public byte header;
@@ -43,6 +45,17 @@ public class EOFPacket extends MysqlPacket {
             statusFlags = (short) message.readUB2();
         } else {
             message.move(4);
+        }
+    }
+
+    public void write(ByteArrayOutputStream outputStream) {
+        int size = calcPacketSize();
+        BufferUtil.writeUB3(outputStream, size);
+        outputStream.write(packetId);
+        outputStream.write((byte) header);
+        if ((capabilities & CapabilityFlags.CLIENT_PROTOCOL_41.getCode()) != 0) {
+            BufferUtil.writeUB2(outputStream, warningCount);
+            BufferUtil.writeUB2(outputStream, statusFlags);
         }
     }
 

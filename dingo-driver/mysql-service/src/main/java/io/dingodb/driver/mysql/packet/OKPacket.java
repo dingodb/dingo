@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql.packet;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 
 import static io.dingodb.driver.mysql.util.BufferUtil.NEGATIVE_INC_VAL;
@@ -63,6 +64,19 @@ public class OKPacket extends MysqlPacket {
         }
     }
 
+    public void write(ByteArrayOutputStream outputStream) {
+        BufferUtil.writeUB3(outputStream, calcPacketSize());
+        outputStream.write(packetId);
+        outputStream.write(header);
+        BufferUtil.writeLength(outputStream, affectedRows);
+        writeInsertId(outputStream);
+        BufferUtil.writeUB2(outputStream, serverStatus);
+        BufferUtil.writeUB2(outputStream, warningCount);
+        if (message != null) {
+            BufferUtil.writeWithLength(outputStream, message);
+        }
+    }
+
     @Override
     public int calcPacketSize() {
         int i = 1;
@@ -103,6 +117,30 @@ public class OKPacket extends MysqlPacket {
         }
     }
 
+    public void writeInsertId(ByteArrayOutputStream outputStream) {
+        if (insertId.compareTo(zero) < 0) {
+            // if insertId is negative, transform to 2 to the power of 64 and occupying 8 bytes
+            // format fe xx xx xx xx xx xx xx xx
+            // 8 + 1 = 9
+            processLargeNumberOrNegative(outputStream);
+        } else if (insertId.compareTo(level1) < 0) {
+            outputStream.write(insertId.intValue());
+        } else if (insertId.compareTo(level2) < 0) {
+            // format fc xx xx
+            // limit is 65536
+            outputStream.write((byte)252);
+            BufferUtil.writeUB2(outputStream, insertId.intValue());
+        } else if (insertId.compareTo(level3) < 0) {
+            // format fd xx xx xx
+            // limit is 16777216
+            outputStream.write((byte)253);
+            BufferUtil.writeUB3(outputStream, insertId.intValue());
+        } else {
+            // if insertId > 1677716, format remains the same as negative numbers
+            processLargeNumberOrNegative(outputStream);
+        }
+    }
+
     public void writeInsertId(ByteBuf buffer) {
         if (insertId.compareTo(zero) < 0) {
             // if insertId is negative, transform to 2 to the power of 64 and occupying 8 bytes
@@ -135,6 +173,17 @@ public class OKPacket extends MysqlPacket {
         System.arraycopy(original, 1, actual, 0, actual.length);
         for (int i = 7; i >= 0; i--) {
             buffer.writeByte(actual[i]);
+        }
+    }
+
+    private void processLargeNumberOrNegative(ByteArrayOutputStream outputStream) {
+        outputStream.write(254);
+        BigInteger operandFinal = NEGATIVE_INC_VAL.add(insertId);
+        byte[] original = operandFinal.toByteArray();
+        byte[] actual = new byte[8];
+        System.arraycopy(original, 1, actual, 0, actual.length);
+        for (int i = 7; i >= 0; i--) {
+            outputStream.write(actual[i]);
         }
     }
 

@@ -92,7 +92,8 @@ public class MysqlPacketFactory {
         OKPacket okPacket = new OKPacket();
         okPacket.capabilities = MysqlServer.getServerCapabilities();
         okPacket.affectedRows = affected;
-        okPacket.packetId = (byte) packetId.getAndIncrement();
+        long nextId = packetId.getAndIncrement();
+        okPacket.packetId = (byte) nextId;
         //int status = SERVER_STATUS_AUTOCOMMIT;
         //if (serverStatus != 0) {
         //    status |= serverStatus;
@@ -295,6 +296,15 @@ public class MysqlPacketFactory {
     }
 
     public static EOFPacket getEofPacket(AtomicLong packetId) {
+        EOFPacket responseEof = new EOFPacket();
+        responseEof.packetId = (byte) packetId.getAndIncrement();
+        responseEof.header = (byte) NativeConstants.TYPE_ID_EOF;
+        responseEof.warningCount = 0;
+        responseEof.statusFlags = SERVER_STATUS_AUTOCOMMIT;
+        return responseEof;
+    }
+
+    public static EOFPacket getEofPacket(AtomicLong packetId, int serverStatus) {
         EOFPacket responseEof = new EOFPacket();
         responseEof.packetId = (byte) packetId.getAndIncrement();
         responseEof.header = (byte) NativeConstants.TYPE_ID_EOF;

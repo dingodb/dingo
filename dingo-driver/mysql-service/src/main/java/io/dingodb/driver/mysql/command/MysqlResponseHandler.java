@@ -16,16 +16,17 @@
 
 package io.dingodb.driver.mysql.command;
 
+import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.State;
 import io.dingodb.common.mysql.constant.ServerStatus;
-import io.dingodb.common.mysql.error.ErrorCode;
 import io.dingodb.common.mysql.error.ErrorMessage;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
+import io.dingodb.driver.mysql.netty.AsyncStreamReader;
 import io.dingodb.driver.mysql.packet.ColumnPacket;
 import io.dingodb.driver.mysql.packet.ColumnsNumberPacket;
 import io.dingodb.driver.mysql.packet.EOFPacket;
@@ -37,7 +38,6 @@ import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.socket.SocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ArrayImpl;
 import org.apache.commons.lang3.StringUtils;
@@ -47,6 +47,7 @@ import java.lang.reflect.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,15 +82,17 @@ public final class MysqlResponseHandler {
             }
             OKPacket okPacket = factory.getOkEofPacket(0, packetId, ServerStatus.SERVER_STATUS_AUTOCOMMIT);
             okPacket.write(buffer);
-            mysqlConnection.channel.writeAndFlush(buffer);
+            mysqlConnection.writeAndFlushImmediately(buffer);
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e, connCharSet);
+            responseError(packetId, mysqlConnection, e, connCharSet);
         }
     }
 
-    public static void responseResultSet(ResultSet resultSet,
+    public static boolean responseResultSet(ResultSet resultSet,
                                          AtomicLong packetId,
-                                   MysqlConnection mysqlConnection, boolean hasMore) {
+                                   MysqlConnection mysqlConnection,
+                                   boolean hasMore,
+                                   Statement statement) throws SQLException {
         // packet combine:
         // 1. columns count packet
         // 2. column packet
@@ -104,14 +107,14 @@ public final class MysqlResponseHandler {
         boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
             & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
         String connCharSet = null;
+        boolean stream = false;
         try {
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
             ColumnsNumberPacket columnsNumberPacket = new ColumnsNumberPacket();
             columnsNumberPacket.packetId = (byte) packetId.getAndIncrement();
-            int columnCount = metaData.getColumnCount();
-            columnsNumberPacket.columnsNumber = columnCount;
+            columnsNumberPacket.columnsNumber = metaData.getColumnCount();
             columnsNumberPacket.write(buffer);
 
             List<ColumnPacket> columns = factory.getColumnPackets(packetId, resultSet, false, connCharSet);
@@ -124,11 +127,15 @@ public final class MysqlResponseHandler {
                 initServerStatus |= SERVER_MORE_RESULTS_EXISTS;
             }
             if (deprecateEof) {
-                handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
-                OKPacket okEofPacket = factory.getOkEofPacket(
-                    0, packetId, initServerStatus
+                stream = handlerRowPacket(
+                    resultSet, packetId, mysqlConnection, buffer, initServerStatus, statement
                 );
-                okEofPacket.write(buffer);
+                if (!stream) {
+                    OKPacket okEofPacket = factory.getOkEofPacket(
+                        0, packetId, initServerStatus
+                    );
+                    okEofPacket.write(buffer);
+                }
             } else {
                 // intermediate eof
                 EOFPacket eofPacket = MysqlPacketFactory.getEofPacket(packetId);
@@ -137,29 +144,46 @@ public final class MysqlResponseHandler {
                 }
                 eofPacket.write(buffer);
                 // row packet...
-                handlerRowPacket(resultSet, packetId, mysqlConnection, buffer, columnCount);
-                // response EOF
-                //resultSetPacket.rowsEof = getEofPacket(packetId);
-                eofPacket = MysqlPacketFactory.getEofPacket(packetId);
-                if (hasMore) {
-                    eofPacket.statusFlags |= SERVER_MORE_RESULTS_EXISTS;
+                stream = handlerRowPacket(
+                    resultSet, packetId, mysqlConnection, buffer, initServerStatus, statement
+                );
+                if (!stream) {
+                    // response EOF
+                    //resultSetPacket.rowsEof = getEofPacket(packetId);
+                    eofPacket = MysqlPacketFactory.getEofPacket(packetId, initServerStatus);
+                    eofPacket.write(buffer);
                 }
-                eofPacket.write(buffer);
             }
-
-            mysqlConnection.channel.writeAndFlush(buffer);
+            if (!stream) {
+                mysqlConnection.writeAndFlushImmediately(buffer);
+            }
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e, connCharSet);
+            responseError(packetId, mysqlConnection, e, connCharSet);
+        } finally {
+            if (!stream) {
+                resultSet.close();
+            }
+            return stream;
         }
     }
 
-    private static void handlerRowPacket(ResultSet resultSet, AtomicLong packetId, MysqlConnection mysqlConnection,
-                                  ByteBuf buffer, int columnCount) throws SQLException {
+    private static Boolean handlerRowPacket(
+        ResultSet resultSet,
+        AtomicLong packetId,
+        MysqlConnection mysqlConnection,
+        ByteBuf buffer,
+        int serverStatus,
+        Statement statement
+    ) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
         String typeName;
+        boolean stream = false;
+        AtomicLong cnt = new AtomicLong(0);
         while (resultSet.next()) {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
-            resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
+            long nextId = packetId.getAndIncrement();
+            resultSetRowPacket.packetId = (byte) nextId;
             String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
             characterSet = getCharacterSet(characterSet);
             resultSetRowPacket.setCharacterSet(characterSet);
@@ -184,8 +208,22 @@ public final class MysqlResponseHandler {
 
                 resultSetRowPacket.addColumnValue(val);
             }
+            cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
+            if (cnt.get() % 100000 == 0) {
+                LogUtils.info(log, "write big data. " +
+                    " cnt:{}, packetId:{}",
+                    cnt.get(), packetId.get());
+                AsyncStreamReader streamReader = new AsyncStreamReader(
+                    resultSet, packetId, mysqlConnection, serverStatus, statement
+                );
+                Executors.submit("streamReader", streamReader);
+                mysqlConnection.writeAndFlushByStream(buffer);
+                stream = true;
+                break;
+            }
         }
+        return stream;
     }
 
     public static Object getArrayObject(MysqlConnection mysqlConnection, Object val) throws SQLException {
@@ -230,24 +268,24 @@ public final class MysqlResponseHandler {
     }
 
     public static void responseError(AtomicLong packetId,
-                                     SocketChannel channel,
+                                     MysqlConnection mysqlConnection,
                                      int errorCode,
                                      String message,
                                      String characterSet) {
-        responseError(packetId, channel, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
+        responseError(packetId, mysqlConnection, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
              message, characterSet);
     }
 
     public static void responseError(AtomicLong packetId,
-                                     SocketChannel channel,
+                                     MysqlConnection mysqlConnection,
                                      int errorCode,
                                      String characterSet) {
-        responseError(packetId, channel, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
+        responseError(packetId, mysqlConnection, errorCode, State.mysqlState.getOrDefault(errorCode, "HY000"),
             ErrorMessage.errorMap.getOrDefault(errorCode, "Unknown error"), characterSet);
     }
 
     public static void responseError(AtomicLong packetId,
-                                     SocketChannel channel,
+                                     MysqlConnection mysqlConnection,
                                      int errorCode,
                                      String sqlState,
                                      String message,
@@ -264,11 +302,11 @@ public final class MysqlResponseHandler {
         ep.characterSet = characterSet;
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
-        channel.writeAndFlush(buffer);
+        mysqlConnection.writeAndFlushImmediately(buffer);
     }
 
     public static void responseError(AtomicLong packetId,
-                                     SocketChannel channel,
+                                     MysqlConnection mysqlConnection,
                                      SQLException exception,
                                      String characterSet) {
         exception = errorDingo2Mysql(exception);
@@ -291,9 +329,8 @@ public final class MysqlResponseHandler {
         }
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         ep.write(buffer);
-        channel.writeAndFlush(buffer);
+        mysqlConnection.writeAndFlushImmediately(buffer);
     }
-
 
     @Nullable
     private static String getSubErr(String errorDetail) {
@@ -362,22 +399,22 @@ public final class MysqlResponseHandler {
         }
     }
 
-    public static void responseOk(OKPacket okPacket, SocketChannel channel) {
+    public static void responseOk(OKPacket okPacket, MysqlConnection mysqlConnection) {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         okPacket.write(buffer);
-        channel.writeAndFlush(buffer);
+        mysqlConnection.writeAndFlushImmediately(buffer);
     }
 
-    public static void responseOk(SocketChannel channel) {
+    public static void responseOk(MysqlConnection mysqlConnection) {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(OKPacket.OK);
-        channel.writeAndFlush(buffer);
+        mysqlConnection.writeAndFlushImmediately(buffer);
     }
 
-    public static void responsePrepare(PreparePacket preparePacket, SocketChannel channel) {
+    public static void responsePrepare(PreparePacket preparePacket, MysqlConnection mysqlConnection) {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         preparePacket.write(buffer);
-        channel.writeAndFlush(buffer);
+        mysqlConnection.writeAndFlushImmediately(buffer);
     }
 
     public static void responsePrepareExecute(ResultSet resultSet,
@@ -428,10 +465,9 @@ public final class MysqlResponseHandler {
                 //resultSetPacket.rowsEof = getEofPacket(packetId);
                 MysqlPacketFactory.getEofPacket(packetId).write(buffer);
             }
-
-            mysqlConnection.channel.writeAndFlush(buffer);
+            mysqlConnection.writeAndFlushImmediately(buffer);
         } catch (SQLException e) {
-            responseError(packetId, mysqlConnection.channel, e, connCharSet);
+            responseError(packetId, mysqlConnection, e, connCharSet);
         }
     }
 }

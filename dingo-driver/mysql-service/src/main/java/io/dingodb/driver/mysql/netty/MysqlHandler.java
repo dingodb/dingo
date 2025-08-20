@@ -33,6 +33,12 @@ public class MysqlHandler extends SimpleChannelInboundHandler<ByteBuf> {
     }
 
     @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        mysqlConnection.setCtx(ctx);
+    }
+
+    @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
         LogUtils.debug(log, "mysql connection:" + mysqlConnection
             + ", dingo connection:" + mysqlConnection.getConnection()
