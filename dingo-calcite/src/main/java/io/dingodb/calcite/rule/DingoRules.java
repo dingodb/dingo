@@ -218,7 +218,7 @@ public final class DingoRules {
         CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
         CoreRules.FILTER_SCAN,
         CoreRules.PROJECT_FILTER_TRANSPOSE,
-//        CoreRules.FILTER_PROJECT_TRANSPOSE,
+        CoreRules.FILTER_PROJECT_TRANSPOSE,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_PUSH_EXPRESSIONS,
         CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT,
@@ -230,10 +230,6 @@ public final class DingoRules {
         CoreRules.JOIN_COMMUTE,
         JoinPushThroughJoinRule.RIGHT,
         JoinPushThroughJoinRule.LEFT,
-        //CoreRules.SORT_PROJECT_TRANSPOSE,
-        //CoreRules.SORT_JOIN_TRANSPOSE,
-        //CoreRules.SORT_REMOVE_CONSTANT_KEYS,
-        //CoreRules.SORT_UNION_TRANSPOSE,
         CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
         CoreRules.SORT_EXCHANGE_REMOVE_CONSTANT_KEYS);
 
@@ -243,18 +239,11 @@ public final class DingoRules {
         CoreRules.FILTER_SET_OP_TRANSPOSE,
         AbstractConverter.ExpandConversionRule.INSTANCE,
         CoreRules.JOIN_COMMUTE,
-        //CoreRules.PROJECT_TO_SEMI_JOIN,
-        //CoreRules.JOIN_ON_UNIQUE_TO_SEMI_JOIN,
-        //CoreRules.JOIN_TO_SEMI_JOIN,
-        //CoreRules.AGGREGATE_REMOVE,
         CoreRules.UNION_TO_DISTINCT,
-        //CoreRules.PROJECT_REMOVE,
         CoreRules.PROJECT_AGGREGATE_MERGE,
         CoreRules.AGGREGATE_JOIN_TRANSPOSE,
         CoreRules.AGGREGATE_MERGE,
-        //CoreRules.AGGREGATE_PROJECT_MERGE,
         CoreRules.CALC_REMOVE
-        //CoreRules.SORT_REMOVE
     );
 
     public static final List<RelOptRule> ABSTRACT_RULES = ImmutableList.of(
@@ -288,7 +277,7 @@ public final class DingoRules {
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_CONDITION_PUSH,
-        CoreRules.JOIN_EXTRACT_FILTER,
+        //CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.PROJECT_REMOVE,
         CoreRules.JOIN_ASSOCIATE,
         CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,

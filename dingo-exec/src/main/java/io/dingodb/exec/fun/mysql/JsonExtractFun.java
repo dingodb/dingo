@@ -25,6 +25,7 @@ import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.units.qual.A;
 
 import java.util.Arrays;
 import java.util.List;
@@ -67,6 +68,7 @@ public class JsonExtractFun extends BinaryOp {
         try {
             JsonNode rootNode = mapper.readTree(value0.toString());
             JsonNode node = rootNode;
+            List<JsonNode> jsonNodes;
             for (int i = 0; i < pathList.size(); i ++) {
                 String pathItem = pathList.get(i);
                 if (i == 0) {
@@ -74,13 +76,41 @@ public class JsonExtractFun extends BinaryOp {
                         int start = pathItem.indexOf("[");
                         int end = pathItem.indexOf("]");
                         if (end >= start + 1) {
-                            int item = Integer.parseInt(pathItem.substring(start + 1, end));
-                            node = rootNode.get(item);
-                            if (node == null && !(rootNode instanceof ArrayNode) && item == 0) {
-                                node = rootNode;
+                            String itemStr = pathItem.substring(start + 1, end);
+                            if (isNumeric(itemStr)) {
+                                int item = Integer.parseInt(itemStr);
+                                node = rootNode.get(item);
+                                if (node == null && !(rootNode instanceof ArrayNode) && item == 0) {
+                                    node = rootNode;
+                                }
                             }
                         } else {
                             return null;
+                        }
+
+                        if (pathItem.length() > (end + 1)) {
+                            pathItem = pathItem.substring(end + 1);
+                            if (pathItem.contains("[") && pathItem.contains("]")) {
+                                start = pathItem.indexOf("[");
+                                end = pathItem.indexOf("]");
+                                if (node != null && end >= start + 1) {
+                                    String itemStr = pathItem.substring(start + 1, end);
+                                    if (isNumeric(itemStr)) {
+                                        int item = Integer.parseInt(itemStr);
+                                        pathItem = pathItem.substring(0, start);
+                                        if ("".equalsIgnoreCase(pathItem)) {
+                                            node = node.get(item);
+                                        } else {
+                                            node = node.get(pathItem).get(item);
+                                        }
+                                    } else if ("*".equalsIgnoreCase(itemStr)) {
+                                        if (start > 0) {
+                                            String fieldName = pathItem.substring(0, start);
+                                            node = node.get(fieldName);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
                         node = rootNode;
@@ -89,13 +119,66 @@ public class JsonExtractFun extends BinaryOp {
                     if (pathItem.contains("[") && pathItem.contains("]")) {
                         int start = pathItem.indexOf("[");
                         int end = pathItem.indexOf("]");
-                        if (end >= start + 1) {
-                            int item = Integer.parseInt(pathItem.substring(start + 1, end));
-                            pathItem = pathItem.substring(0, start);
-                            node = node.get(pathItem).get(item);
+                        if (node != null && end >= start + 1) {
+                            String itemStr = pathItem.substring(start + 1, end);
+                            if (isNumeric(itemStr)) {
+                                int item = Integer.parseInt(itemStr);
+                                pathItem = pathItem.substring(0, start);
+                                node = node.get(pathItem).get(item);
+                            } else if ("*".equalsIgnoreCase(itemStr)) {
+                                if (start > 0) {
+                                    String fieldName = pathItem.substring(0, start);
+                                    node = node.get(fieldName);
+                                }
+                            }
+                        }
+                        // $[2][0]
+                        if (pathItem.length() > (end + 1)) {
+                            pathItem = pathItem.substring(end);
+                            if (pathItem.contains("[") && pathItem.contains("]")) {
+                                start = pathItem.indexOf("[");
+                                end = pathItem.indexOf("]");
+                                if (node != null && end >= start + 1) {
+                                    String itemStr = pathItem.substring(start + 1, end);
+                                    if (isNumeric(itemStr)) {
+                                        int item = Integer.parseInt(itemStr);
+                                        pathItem = pathItem.substring(0, start);
+                                        node = node.get(pathItem).get(item);
+                                    } else if ("*".equalsIgnoreCase(itemStr)) {
+                                        if (start > 0) {
+                                            String fieldName = pathItem.substring(0, start);
+                                            node = node.get(fieldName);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
-                        node = node.get(pathItem);
+                        if (node != null) {
+                            if (node instanceof ArrayNode && !isNumeric(pathItem)) {
+                                // $.name = null / $[*].name = ["", "", ""]
+                                String prePathItem = pathList.get(i - 1);
+                                boolean childAll = prePathItem.contains("[*]");
+                                if (!childAll) {
+                                    return null;
+                                }
+
+                                jsonNodes = rootNode.findValues(pathItem);
+                                if (i == (pathList.size() - 1)) {
+                                    if (jsonNodes.isEmpty()) {
+                                        return null;
+                                    }
+                                    StringBuilder stringBuilder = new StringBuilder("[");
+                                    jsonNodes.forEach(child -> {
+                                        stringBuilder.append(child.toString()).append(",");
+                                    });
+                                    return stringBuilder.deleteCharAt(stringBuilder.length() - 1)
+                                        .append("]").toString();
+                                }
+                            } else {
+                                node = node.get(pathItem);
+                            }
+                        }
                     }
                 }
 
@@ -111,5 +194,9 @@ public class JsonExtractFun extends BinaryOp {
         } catch (JsonProcessingException e) {
             return null;
         }
+    }
+
+    public static boolean isNumeric(String str) {
+        return str != null && str.matches("-?\\d+(\\.\\d+)?");
     }
 }

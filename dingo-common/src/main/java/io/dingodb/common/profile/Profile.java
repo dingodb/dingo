@@ -190,10 +190,6 @@ public class Profile {
         if (!"base".equals(profile.type)) {
             dagText.append(node).append(profile.type)
                 .append(",duration:").append(profile.getDuration());
-            if (profile.opDuration.get() > 0) {
-                dagText.append(",opDuration:").append(profile.opDuration.get());
-                dagText.append(",opCount:").append(profile.getOpCount().get());
-            }
             if (profile instanceof SourceProfile) {
                 SourceProfile sourceProfile = (SourceProfile) profile;
                 dagText.append(", localScanDuration:").append(sourceProfile.localScan);

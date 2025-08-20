@@ -75,7 +75,7 @@ public final class MessageProcess {
                         ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
                 mysqlConnection.querySpecial = false;
                 mysqlConnection.querySpecialId = "";
-                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection);
             }
             return;
         }
@@ -91,7 +91,7 @@ public final class MessageProcess {
 
         if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
             MysqlResponseHandler.responseError(
-                packetId, mysqlConnection.channel, ErrMustChangePassword, connCharSet
+                packetId, mysqlConnection, ErrMustChangePassword, connCharSet
             );
             return;
         }
@@ -114,7 +114,7 @@ public final class MessageProcess {
                 if (!PrivilegeVerify.verify(user, host, usedSchema, null, "use")) {
                     String error =
                         String.format(ErrorMessage.errorMap.get(ErrDBaccessDenied), user, host, usedSchema);
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection,
                         ErrDBaccessDenied, error, connCharSet);
                     return;
                 }
@@ -124,9 +124,9 @@ public final class MessageProcess {
                     connection.getContext().setUsedSchema(schema);
                     OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId,
                         ServerStatus.SERVER_SESSION_STATE_CHANGED, null);
-                    MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                    MysqlResponseHandler.responseOk(okPacket, mysqlConnection);
                 } else {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel,
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection,
                         ErrNoDB, connCharSet);
                 }
                 break;
@@ -176,7 +176,7 @@ public final class MessageProcess {
             case NativeConstants.COM_PING:
                 // test ping
                 OKPacket okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, null);
-                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection);
                 break;
             case NativeConstants.COM_TIME:
                 // time
@@ -259,7 +259,7 @@ public final class MessageProcess {
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
                 } catch (SQLException e) {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection, e, connCharSet);
                 }
                 break;
             case NativeConstants.COM_STMT_RESET:
@@ -275,10 +275,10 @@ public final class MessageProcess {
                 } catch (NoSuchStatementException e) {
                     throw new RuntimeException(e);
                 } catch (SQLException e) {
-                    MysqlResponseHandler.responseError(packetId, mysqlConnection.channel, e, connCharSet);
+                    MysqlResponseHandler.responseError(packetId, mysqlConnection, e, connCharSet);
                 }
                 okPacket = MysqlPacketFactory.getInstance().getOkPacket(0, packetId, null);
-                MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
+                MysqlResponseHandler.responseOk(okPacket, mysqlConnection);
                 break;
             case NativeConstants.COM_SET_OPTION:
                 // set option

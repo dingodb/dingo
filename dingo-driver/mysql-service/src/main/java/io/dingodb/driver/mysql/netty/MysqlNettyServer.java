@@ -17,16 +17,23 @@
 package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.concurrent.ThreadPoolBuilder;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.net.netty.NettyHandlers;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,18 +57,28 @@ public class MysqlNettyServer {
         server = new ServerBootstrap();
         eventLoopGroup = new NioEventLoopGroup(151,
             new ThreadPoolBuilder().name("mysql server " + port).coreThreads(151).maximumThreads(151).build());
+        GlobalTrafficShapingHandler globalTrafficHandler = new GlobalTrafficShapingHandler(
+            eventLoopGroup,
+            4024 * 4096,
+            0
+        );
         server
             .channel(NioServerSocketChannel.class)
+            .handler(new LoggingHandler(LogLevel.DEBUG))
             .group(eventLoopGroup)
             .childOption(ChannelOption.TCP_NODELAY, true)
             .childOption(ChannelOption.SO_KEEPALIVE, Boolean.TRUE)
+            .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+            .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK,
+                new WriteBufferWaterMark(8 * 1024, 67108864 * 30))
             .childOption(NioChannelOption.of(StandardSocketOptions.SO_KEEPALIVE), Boolean.TRUE)
-            .childHandler(channelInitializer());
+            .childHandler(channelInitializer(globalTrafficHandler));
         if (host != null) {
             server.localAddress(host, port);
         } else {
             server.localAddress(port);
         }
+        LogUtils.info(log, "mysql server started");
         try {
             server.bind().sync().await();
         } catch (Exception e) {
@@ -70,7 +87,7 @@ public class MysqlNettyServer {
         }
     }
 
-    private ChannelInitializer<SocketChannel> channelInitializer() {
+    private ChannelInitializer<SocketChannel> channelInitializer(GlobalTrafficShapingHandler globalTrafficHandler) {
         return new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) {
@@ -80,7 +97,11 @@ public class MysqlNettyServer {
                         connections.remove(mysqlConnection.getId());
                     }
                 }).addListener(f -> mysqlConnection.close());
+                //ch.pipeline().addLast("globalTrafficShaping", globalTrafficHandler);
+                ch.pipeline().addLast("logHandler", new LoggingHandler(LogLevel.DEBUG));
                 ch.pipeline().addLast("handshake", new HandshakeHandler(mysqlConnection));
+                ch.pipeline().addLast("zeroWindow", new ZeroWindowHandlingHandler());
+                ch.pipeline().addLast("chunkWrite", new ChunkedWriteHandler());
                 ch.pipeline().addLast("decoder", new MysqlDecoder());
                 MysqlIdleStateHandler mysqlIdleStateHandler = new MysqlIdleStateHandler(
                     28800, 60);

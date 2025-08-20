@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql.util;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.netty.buffer.ByteBuf;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
@@ -27,6 +28,11 @@ import java.util.Calendar;
 
 public class BufferUtil {
     public static final BigInteger NEGATIVE_INC_VAL = new BigInteger("2").pow(64);
+
+    public static void writeUB2(ByteArrayOutputStream outputStream, int operand) {
+        outputStream.write(operand & 0xff);
+        outputStream.write((byte) (operand >>> 8));
+    }
 
     public static void writeUB2(ByteBuf buffer, int operand) {
         buffer.writeByte(operand & 0xff);
@@ -37,6 +43,12 @@ public class BufferUtil {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
         buffer.writeByte((byte) (operand >>> 16));
+    }
+
+    public static void writeUB3(ByteArrayOutputStream outputStream, int operand) {
+        outputStream.write((byte) (operand & 0xff));
+        outputStream.write((byte) (operand >>> 8));
+        outputStream.write((byte) (operand >>> 16));
     }
 
     public static void writeInt(ByteBuf buffer, int operand) {
@@ -57,6 +69,17 @@ public class BufferUtil {
         buffer.writeByte((byte) (operand >>> 24));
     }
 
+    public static void writeLong(ByteArrayOutputStream outputStream, long operand) {
+        outputStream.write((byte) (operand & 0xff));
+        outputStream.write((byte) (operand >>> 8));
+        outputStream.write((byte) (operand >>> 16));
+        outputStream.write((byte) (operand >>> 24));
+        outputStream.write((byte) (operand >>> 32));
+        outputStream.write((byte) (operand >>> 40));
+        outputStream.write((byte) (operand >>> 48));
+        outputStream.write((byte) (operand >>> 56));
+    }
+
     public static void writeLong(ByteBuf buffer, long operand) {
         buffer.writeByte((byte) (operand & 0xff));
         buffer.writeByte((byte) (operand >>> 8));
@@ -70,6 +93,31 @@ public class BufferUtil {
 
     public static void writeDouble(ByteBuf buffer, double operand) {
         writeLong(buffer, Double.doubleToLongBits(operand));
+    }
+
+    public static void writeLength(ByteArrayOutputStream outputStream, long operand) {
+        if (operand < 0) {
+            outputStream.write((byte)254);
+            BigInteger operandTmp = new BigInteger(String.valueOf(operand));
+            BigInteger operandFinal = NEGATIVE_INC_VAL.add(operandTmp);
+            byte[] original = operandFinal.toByteArray();
+            byte[] actual = new byte[8];
+            System.arraycopy(original, 1, actual, 0, actual.length);
+            for (int i = 7; i >= 0; i--) {
+                outputStream.write(actual[i]);
+            }
+        } else if (operand < 251) {
+            outputStream.write((byte) operand);
+        } else if (operand < 0x10000L) {
+            outputStream.write((byte) 252);
+            writeUB2(outputStream, (int) operand);
+        } else if (operand < 0x1000000L) {
+            outputStream.write((byte) 253);
+            writeUB3(outputStream, (int) operand);
+        } else {
+            outputStream.write((byte) 254);
+            writeLong(outputStream, operand);
+        }
     }
 
     public static void writeLength(ByteBuf buffer, long operand) {
@@ -117,6 +165,23 @@ public class BufferUtil {
             writeLong(buffer, length);
         }
         buffer.writeBytes(src);
+    }
+
+    public static void writeWithLength(ByteArrayOutputStream outputStream, byte[] src) {
+        int length = src.length;
+        if (length < 251) {
+            outputStream.write((byte) length);
+        } else if (length < 0x10000L) {
+            outputStream.write((byte) 252);
+            writeUB2(outputStream, length);
+        } else if (length < 0x1000000L) {
+            outputStream.write((byte) 253);
+            writeUB3(outputStream, length);
+        } else {
+            outputStream.write((byte) 254);
+            writeLong(outputStream, length);
+        }
+        outputStream.writeBytes(src);
     }
 
     public static int getLength(long length) {

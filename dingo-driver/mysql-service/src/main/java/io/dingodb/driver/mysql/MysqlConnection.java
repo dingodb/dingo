@@ -20,10 +20,13 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.util.CharsetUtil;
 import io.dingodb.driver.DingoConnection;
-import io.dingodb.driver.ServerMeta;
+import io.dingodb.driver.mysql.netty.DingoDataStream;
 import io.dingodb.driver.mysql.netty.MysqlIdleStateHandler;
 import io.dingodb.driver.mysql.netty.MysqlNettyServer;
 import io.dingodb.driver.mysql.packet.AuthPacket;
+import io.dingodb.exec.utils.QueueUtils;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.SocketChannel;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,6 +54,11 @@ public class MysqlConnection {
 
     public SocketChannel channel;
 
+    @Setter
+    ChannelHandlerContext ctx;
+
+    public DingoDataStream dingoDataStream;
+
     @Getter
     private Connection connection;
 
@@ -66,12 +75,18 @@ public class MysqlConnection {
 
     public MysqlConnection(SocketChannel channel) {
         this.channel = channel;
+        //this.dingoDataStream = new DingoDataStream();
     }
 
     public void setConnection(DingoConnection dingoConnection) {
         connection = dingoConnection;
         this.id = dingoConnection.id;
         setCharsetIndex(authPacket);
+        try {
+            connection.setClientInfo("max_allowed_packet", String.valueOf(authPacket.maxPacketSize));
+        } catch (SQLClientInfoException e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 
     public void close() {
@@ -89,10 +104,13 @@ public class MysqlConnection {
                     connection.close();
                 }
             }
+            if (dingoDataStream != null) {
+                dingoDataStream.close();
+            }
             Map connectionMap = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
             connectionMap.remove("mysql:" + threadId);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtils.error(log, e.getMessage(), e);
         }
         LogUtils.info(log, "mysql connections count:" + MysqlNettyServer.connections.size());
     }
@@ -120,4 +138,34 @@ public class MysqlConnection {
         }
         return false;
     }
+
+    public long maxAllowedPacket() {
+        try {
+            return Long.parseLong(this.getConnection().getClientInfo("max_allowed_packet"));
+        } catch (SQLException e) {
+            return 67108864;
+        }
+    }
+
+    public void writeAndFlushImmediately(ByteBuf byteBuf) {
+        channel.writeAndFlush(byteBuf);
+    }
+
+    public synchronized void writeAndFlushByStream(ByteBuf byteBuf) {
+        if (dingoDataStream == null) {
+            dingoDataStream = new DingoDataStream(byteBuf);
+        }
+        LogUtils.info(log, "channel is writeable:{}", channel.isWritable());
+        dingoDataStream.addLength(byteBuf.readableBytes());
+        ctx.writeAndFlush(dingoDataStream);
+    }
+
+    public void writeAndFlush(byte[] bytes) {
+        if (dingoDataStream != null) {
+            LogUtils.info(log, "chunk block size:{}", dingoDataStream.blockingQueue.size());
+            dingoDataStream.addLength(bytes.length);
+            QueueUtils.forcePut(dingoDataStream.blockingQueue, bytes);
+        }
+    }
+
 }

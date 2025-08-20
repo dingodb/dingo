@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Setter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -49,6 +50,14 @@ public class ResultSetRowPacket extends MysqlPacket {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public void write(ByteArrayOutputStream outputStream) {
+        //int max = 16777215;
+        //int size = calcPacketSize();
+        BufferUtil.writeUB3(outputStream, calcPacketSize());
+        outputStream.write(packetId);
+        writeItem(outputStream);
     }
 
     @Override
@@ -79,6 +88,17 @@ public class ResultSetRowPacket extends MysqlPacket {
             BufferUtil.writeUB3(buffer, calcPacketSize());
             buffer.writeByte(packetId);
             writeItem(buffer);
+        }
+    }
+
+    private void writeItem(ByteArrayOutputStream outputStream) {
+        for (byte[] val : values) {
+            if (val == null) {
+                outputStream.write(NULL_MARK);
+            } else {
+                BufferUtil.writeLength(outputStream, val.length);
+                outputStream.writeBytes(val);
+            }
         }
     }
 
