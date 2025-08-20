@@ -603,12 +603,12 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 "select name, avg(id) as avg_id, avg(amount) as avg_amount from {table} group by name",
                 csv(
                     "name, avg_id, avg_amount",
-                    "STRING, INTEGER, DOUBLE",
-                    "Alice, 5, 5.5",
-                    "Betty, 5, 5.25",
-                    "Cindy, 6, 6.0",
-                    "Doris, 4, 5.0",
-                    "Emily, 5, 5.5"
+                    "STRING, DECIMAL, DOUBLE",
+                    "Alice, 5.0000, 5.5",
+                    "Betty, 4.5000, 5.25",
+                    "Cindy, 6.0000, 6.0",
+                    "Doris, 4.0000, 5.0",
+                    "Emily, 5.0000, 5.5"
                 )
             );
 
@@ -630,9 +630,9 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                     + " where id in (1,3,5,7,9,13,35) or name<>'zhangsan' group by address order by ma limit 2",
                 csv(
                     "AA, MA, ADDRESS",
-                    "INT, DOUBLE, STRING",
-                    "544, 0.0, 543",
-                    "76, 2.3, beijing changyang"
+                    "DECIMAL, DOUBLE, STRING",
+                    "544.0000, 0.0, 543",
+                    "76.0000, 2.3, beijing changyang"
                 )
             );
 
@@ -821,11 +821,9 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs0_i40_i80_f40_f80_vs0_dt0_tm0_ts0_vs0_l0")
             .step(
                 "select avg(age) aag,avg(gmt) agm,avg(price) apr,round(avg(amount),2) aam from {table}",
-                is(
-                    new String[]{"aag", "agm", "apr", "aam"},
-                    ImmutableList.of(
-                        new Object[]{108, -17057004875L, 9.3410291E8f, 1.305008494926E10}
-                    ))
+                csv("aag, agm, apr, aam",
+                    "DECIMAL, DECIMAL, FLOAT, DOUBLE",
+                    "107.6000, -17057004875.5000, 9.341029E8, 1.305008494926E10")
             );
     }
 }

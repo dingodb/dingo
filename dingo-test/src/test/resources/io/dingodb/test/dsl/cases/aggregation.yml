@@ -50,5 +50,5 @@ cases:
       - sql: 'select avg(age) aa, sum(amount) sa, min(birthday) mb from {table} where id between 10 and 20'
         result:
           - 'aa, sa, mb'
-          - 'INT, DOUBLE, STRING'
-          - '83, 5816.605655600001, 1949-10-01'
+          - 'DECIMAL, DOUBLE, STRING'
+          - '83.3000, 5816.605655600001, 1949-10-01'
