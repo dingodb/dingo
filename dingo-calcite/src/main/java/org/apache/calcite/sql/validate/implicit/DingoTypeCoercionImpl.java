@@ -262,6 +262,21 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         RelDataType right) {
         boolean coerced = false;
 
+        if (binding.getOperator().getKind() == SqlKind.DIVIDE) {
+            if ((SqlTypeUtil.isInt(left) && SqlTypeUtil.isInt(right)) ||
+                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isBigint(right))) {
+                RelDataType target = factory.createSqlType(SqlTypeName.DECIMAL);
+
+                if (left.getSqlTypeName() != target.getSqlTypeName()) {
+                    coerced = coerceOperandType(binding.getScope(), binding.getCall(), 0, target);
+                }
+                if (right.getSqlTypeName() != target.getSqlTypeName()) {
+                    coerced = coerced || coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
+                }
+                return coerced;
+            }
+        }
+
         if(SqlTypeUtil.isFloat(left) && SqlTypeUtil.isDouble(right)) {
             return coerceOperandType(binding.getScope(), binding.getCall(), 0,
                 DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));

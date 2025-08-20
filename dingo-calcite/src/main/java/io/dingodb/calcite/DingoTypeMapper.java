@@ -216,7 +216,7 @@ public class DingoTypeMapper {
                 -------------------------------------------------
      */
     public static RelDataType getAggregateResultType(SqlAggFunction func, RelDataType sourceType) {
-        //SUM, AVG
+        //common for SUM, AVG
         if(func instanceof SqlSumAggFunction || func instanceof SqlAvgAggFunction) {
             if (sourceType.getSqlTypeName() == SqlTypeName.VARCHAR) {
                 return DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.DOUBLE);
@@ -224,7 +224,6 @@ public class DingoTypeMapper {
                 return DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.DOUBLE);
             }
         }
-        //TODO: Need adding more relations here to be compatible with MYSQL aggregation functions.
 
         //If no rule for mapper then we return the origin type.
         return null;
