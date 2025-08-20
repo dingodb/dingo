@@ -761,10 +761,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
             .map(tableDefinitionWithIds -> tableDefinitionWithIds.get(0))
             .toList();
         if (!duplicateTableList.isEmpty()) {
-            LogUtils.error(log, "duplicate key Table");
             try {
-                duplicateTableList.forEach(e -> io.dingodb.meta.MetaService.root()
-                    .dropTable(tenantId, schemaId, e.getTableDefinition().getName(), -1));
+                duplicateTableList.forEach(e -> {
+                    LogUtils.error(log, "duplicate table name:{}, id:{}, createTime:{}",
+                        e.getTableDefinition().getName(), e.getTableId(), e.getTableDefinition().getCreateTimestamp());
+                    io.dingodb.meta.MetaService.root().dropTable(
+                        tenantId, schemaId, e.getTableDefinition().getName(), -1);
+                });
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
             }

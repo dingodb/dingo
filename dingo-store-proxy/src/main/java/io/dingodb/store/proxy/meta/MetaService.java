@@ -755,6 +755,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
             io.dingodb.meta.MetaService metaService = io.dingodb.meta.MetaService.root();
             metaService.getRangeDistribution(table.tableId).values().forEach(rangeDistribution -> {
                 try {
+                    if (rangeDistribution.getId().seq < 80016) {
+                        LogUtils.error(log, "rollbackCreate table drop region, but get meta region. id:{}, " +
+                            "tableId:{}, tableName:{}", rangeDistribution.getId(), table.getTableId(), table.getName());
+                    }
                     coordinatorService.dropRegion(
                         tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
                     );
@@ -772,6 +776,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
                 metaService.getRangeDistribution(index.tableId).values()
                     .forEach(rangeDistribution -> {
                         try {
+                            if (rangeDistribution.getId().seq < 80016) {
+                                LogUtils.error(log, "rollbackCreate table index drop region, " +
+                                    "but get meta region. id:{}, " +
+                                    "tableId:{}, tableName:{}, indexId:{},indexName:{}", rangeDistribution.getId(),
+                                    table.getTableId(), table.getName(), index.getTableId(), index.getName());
+                            }
                             coordinatorService.dropRegion(
                                 tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
                             );
