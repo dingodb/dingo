@@ -311,6 +311,12 @@ public class MetaCache {
                 regionList
                     .forEach(object -> {
                         ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                        if (scanRegionInfo.getRegionId() < 80016) {
+                            LogUtils.error(log, "get table range, but get meta region:{}, regionRange:{} " +
+                                "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
+                                scanRegionInfo.getRange(),
+                                tableWithId.getTableId(), tableDefinition.getName(), partition);
+                        }
                         rangeDistributionList.add(
                             new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
                         );
@@ -324,6 +330,12 @@ public class MetaCache {
         boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
         rangeDistributionList.forEach(scanRegionWithPartId -> {
             RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
+            if (distribution.getId().seq < 80016) {
+                LogUtils.error(log, "get table range, but mapping meta, distributionId:{}, " +
+                        "tableId:{}, tableName:{}, partId:{}, regionRange:{}", distribution.getId(),
+                    tableWithId.getTableId(), tableDefinition.getName(), scanRegionWithPartId.getPartId(),
+                    scanRegionWithPartId.getScanRegionInfo().getRange());
+            }
             result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
         });
         return result;
