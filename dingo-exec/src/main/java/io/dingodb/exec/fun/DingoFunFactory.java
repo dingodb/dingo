@@ -66,7 +66,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(VectorHammingDistanceFun.NAME, VectorHammingDistanceFun.INSTANCE);
         registerBinaryFun(VectorDistanceFun.NAME, VectorDistanceFun.INSTANCE);
         registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
-        registerBinaryFun(JsonExtractFun.NAME, JsonExtractFun.INSTANCE);
+        registerVariadicFun(JsonExtractFun.NAME, JsonExtractFun.INSTANCE);
         registerBinaryFun(DatabaseFun.NAME, DatabaseFun.INSTANCE);
         registerBinaryFun(ScopeVarFun.NAME, ScopeVarFun.INSTANCE);
         registerBinaryFun(UserDefVarFun.NAME, UserDefVarFun.INSTANCE);

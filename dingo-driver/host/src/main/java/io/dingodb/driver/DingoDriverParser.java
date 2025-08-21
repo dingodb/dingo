@@ -472,6 +472,8 @@ public final class DingoDriverParser extends DingoParser {
         } catch (CalciteContextException e) {
             LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
+        } catch (RuntimeException e) {
+            throw DingoErrUtil.newStdErr(e.getMessage());
         }
         planProfile.endValidator();
 
