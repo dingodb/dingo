@@ -127,6 +127,10 @@ public class IndexScanAggRule extends RelRule<IndexScanAggRule.Config> implement
                 if (indexTable == null) {
                     return;
                 }
+                boolean allIndexOpExpr  = exprList.stream().allMatch(expr -> expr instanceof IndexOpExpr);
+                if (!allIndexOpExpr) {
+                    return;
+                }
 
                 Expr[] exprsReplace = exprList.stream().map(expr -> {
                     IndexOpExpr expr1 = (IndexOpExpr) expr;

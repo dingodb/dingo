@@ -221,6 +221,8 @@ SqlAlterTable dropIndex(Span s, String scope, SqlIdentifier id): {
    <INDEX> { s.add(this); }
    { index = getNextToken().image; }
    {
+       index = SqlParserUtil.trim(index, "`");
+       index = SqlParserUtil.trim(index, "'");
      return new SqlAlterDropIndex(s.end(this), id, index);
    }
 }

@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 
 import java.util.List;
 
@@ -38,7 +39,7 @@ public class SqlDropIndex extends SqlDrop {
 
     public SqlDropIndex(SqlParserPos pos, boolean ifExists, String index, SqlIdentifier table) {
         super(OPERATOR, pos, ifExists);
-        this.index = index.startsWith("'") ? index.replace("'", "") : index;
+        this.index = index;
         this.table = table;
     }
 

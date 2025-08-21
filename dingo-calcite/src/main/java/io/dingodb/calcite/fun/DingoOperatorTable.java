@@ -402,7 +402,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             JsonExtractFun.NAME,
             ReturnTypes.VARCHAR_2000,
             DingoInferTypes.VARCHAR,
-            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING
         );
         registerFunction(

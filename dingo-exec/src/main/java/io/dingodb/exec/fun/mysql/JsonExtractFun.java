@@ -20,17 +20,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
-import io.dingodb.expr.runtime.op.BinaryOp;
+import io.dingodb.expr.runtime.op.OpKey;
+import io.dingodb.expr.runtime.op.OpKeys;
+import io.dingodb.expr.runtime.op.VariadicOp;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.units.qual.A;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class JsonExtractFun extends BinaryOp {
+@Slf4j
+public class JsonExtractFun extends VariadicOp {
     private static final long serialVersionUID = -8343792468386621027L;
 
     public static final JsonExtractFun INSTANCE = new JsonExtractFun();
@@ -48,10 +53,36 @@ public class JsonExtractFun extends BinaryOp {
     }
 
     @Override
-    public Object evalValue(Object value0, Object value1, ExprConfig config) {
+    public Object evalValue(Object @NonNull [] values, ExprConfig config) {
+        if (values.length < 2) {
+            return null;
+        }
+        Object value0 = values[0];
         if (value0 == null) {
             return null;
         }
+        if (values.length == 2) {
+            Object value1 = values[1];
+            return getPathVal(value1, value0);
+        } else {
+            StringBuilder stringBuilder = new StringBuilder("[");
+            for (int i = 1; i < values.length; i ++) {
+                Object valueItem = values[i];
+                Object val = getPathVal(valueItem, value0);
+                if (val != null) {
+                    stringBuilder.append(val).append(",");
+                }
+            }
+            if (stringBuilder.length() > 1) {
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            } else {
+                return null;
+            }
+            return stringBuilder.append("]").toString();
+        }
+    }
+
+    private static @Nullable Object getPathVal(Object value1, Object value0) {
         if (value1 == null) {
             return value0;
         }
@@ -192,11 +223,20 @@ public class JsonExtractFun extends BinaryOp {
             }
             return null;
         } catch (JsonProcessingException e) {
+            LogUtils.error(log, e.getMessage(), e);
+            return null;
+        } catch (Exception e) {
+            LogUtils.error(log, "json extract failed,json:{}, path:{}", value0, value1);
             return null;
         }
     }
 
     public static boolean isNumeric(String str) {
         return str != null && str.matches("-?\\d+(\\.\\d+)?");
+    }
+
+    @Override
+    public OpKey keyOf(@NonNull Type @NonNull ... types) {
+        return OpKeys.ALL_STRING.keyOf(types);
     }
 }

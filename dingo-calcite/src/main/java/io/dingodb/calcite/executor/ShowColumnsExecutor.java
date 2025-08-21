@@ -20,6 +20,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.common.util.SqlLikeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
+import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.Setter;
@@ -75,6 +76,8 @@ public class ShowColumnsExecutor extends QueryExecutor {
         if (table == null) {
             throw new RuntimeException("Table " + tableName + " doesn't exist");
         }
+        List<IndexTable> uniqueIndexList = table.getIndexes().stream()
+            .filter(indexTable -> indexTable.isUnique() && indexTable.visible).toList();
 
         List<Column> columns = table.getColumns();
         List<List<String>> columnList = new ArrayList<>();
@@ -108,7 +111,19 @@ public class ShowColumnsExecutor extends QueryExecutor {
             }
             columnValues.add(type.toLowerCase());
             columnValues.add(column.isNullable() ? "YES" : "NO");
-            columnValues.add(column.isPrimary() ? "PRI" : " ");
+            String key = " ";
+            if (column.isPrimary()) {
+                key = "PRI";
+            } else {
+                boolean uniqueKey = uniqueIndexList.stream().anyMatch(indexTable -> {
+                    return indexTable.getColumns().stream()
+                        .anyMatch(column1 -> column1.getName().equalsIgnoreCase(column.getName()));
+                });
+                if (uniqueKey) {
+                    key = "UNI";
+                }
+            }
+            columnValues.add(key);
             columnValues.add(column.defaultValueExpr != null ? column.defaultValueExpr : "NULL");
 
             columnList.add(columnValues);

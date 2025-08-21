@@ -308,7 +308,7 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
         {
-            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine)); 
+            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine));
         }
     |
         <PRIMARY>  { s.add(this); } <KEY>
@@ -1211,7 +1211,7 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
 {
     final boolean ifExists;
     final SqlIdentifier id;
-    final String index;
+    String index;
 }
 {
     <INDEX> ifExists = IfExistsOpt()
@@ -1219,6 +1219,8 @@ SqlDrop SqlDropIndex(Span s, boolean replace) :
     <ON>
     id = CompoundIdentifier()
     {
+      index = SqlParserUtil.trim(index, "`");
+      index = SqlParserUtil.trim(index, "'");
       return new SqlDropIndex(s.end(this), ifExists, index, id);
     }
 }
