@@ -2135,6 +2135,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             partDefinition.setFuncName(DingoPartitionServiceProvider.RANGE_FUNC_NAME);
             partDefinition.setColumns(keyList);
             partDefinition.setDetails(new ArrayList<>());
+        } else {
+            if (partDefinition.getColumns() != null && !partDefinition.getColumns().isEmpty()) {
+                boolean res = partDefinition.getColumns().stream()
+                    .allMatch(colName -> tableDefinition.getKeyColumns().stream()
+                        .anyMatch(keyCol -> keyCol.getName().equalsIgnoreCase(colName)));
+                if (!res) {
+                    throw DingoErrUtil.newStdErr("part column must be primary key");
+                }
+            }
         }
 
         List<PartitionDetailDefinition> details = new ArrayList<>();

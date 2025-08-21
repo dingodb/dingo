@@ -550,6 +550,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     String comment = null;
     int codecVersion = 2;
     String rowFormat = "Dynamic";
+    List<String> partColumnList;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -564,8 +565,11 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
        {
            partitionDefinition = new PartitionDefinition();
            partitionDefinition.setFuncName(getNextToken().image);
-           partitionDefinition.setDetails(readPartitionDetails());
        }
+       [ partColumnList = readNames() { partitionDefinition.setColumns(partColumnList); } ]
+        {
+            partitionDefinition.setDetails(readPartitionDetails());
+        }
     |
         <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
     |
@@ -621,7 +625,6 @@ List<PartitionDetailDefinition> readPartitionDetails() : {
         )*
         { return partitionDetailDefinitions; }
     |
-      readNames()
      <LPAREN>
       <PARTITION> pName=dingoIdentifier() <VALUES> <LESS> <THAN>
       <LPAREN>
