@@ -109,21 +109,6 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         if (withOutPrimaryRowType(stackTraceElement)) {
             return getWithoutPriRowType();
         }
-        //else {
-        //    if (stackTrace.length >= 13) {
-        //        StackTraceElement stackTraceElement9 = stackTrace[9];
-        //        StackTraceElement stackTraceElement11 = stackTrace[11];
-        //        StackTraceElement stackTraceElement12 = stackTrace[12];
-        //        if (stackTraceElement9 != null
-        //            && "validateQuery".equals(stackTraceElement9.getMethodName()) && stackTraceElement11 != null
-        //            && "validateSelect".equals(stackTraceElement11.getMethodName()) && stackTraceElement12 != null
-        //            && "validateInsert".equals(stackTraceElement12.getMethodName())) {
-        //            return getWithoutPriRowType();
-        //        } else if (withOutPrimaryRowType(stackTrace)) {
-        //            return getWithoutPriRowType();
-        //        }
-        //    }
-        //}
         return relOptTable.getRowType();
     }
 

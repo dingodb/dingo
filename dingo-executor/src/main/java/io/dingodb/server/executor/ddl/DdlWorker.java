@@ -2294,16 +2294,6 @@ public class DdlWorker {
                 List<Object> regionInfoList = InfoSchemaService.root()
                     .scanRegions(matchPart.getRange().getStartKey(), matchPart.getRange().getEndKey());
                 LogUtils.info(log, "delete region size:{}, partId:{}", regionInfoList.size(), matchPart.getId());
-                MetaService.root().deleteRegionByPart(regionInfoList, job.getId(), tableId);
-                // find next part
-                int matchIdx = partitionList.indexOf(matchPart);
-                Partition nextPart = partitionList.get(matchIdx + 1);
-                byte[] originNextPartStartKey = nextPart.getRange().getStartKey();
-                // modify next part range
-                nextPart.getRange().setStartKey(matchPart.getRange().getStartKey());
-                CodecService.getDefault().setId(nextPart.getRange().getStartKey(), nextPart.getId().getEntityId());
-                partitionList.remove(matchPart);
-
                 try {
                     List<Long> regionIdList = regionInfoList.stream().map(ScanRegionInfo.class::cast)
                         .map(ScanRegionInfo::getRegionId)
@@ -2320,6 +2310,15 @@ public class DdlWorker {
                 } catch (Exception e) {
                     LogUtils.error(log, "drop part with index error,reason:{}", e.getMessage(), e);
                 }
+                MetaService.root().deleteRegionByPart(regionInfoList, job.getId(), tableId);
+                // find next part
+                int matchIdx = partitionList.indexOf(matchPart);
+                Partition nextPart = partitionList.get(matchIdx + 1);
+                byte[] originNextPartStartKey = nextPart.getRange().getStartKey();
+                // modify next part range
+                nextPart.getRange().setStartKey(matchPart.getRange().getStartKey());
+                CodecService.getDefault().setId(nextPart.getRange().getStartKey(), nextPart.getId().getEntityId());
+                partitionList.remove(matchPart);
 
                 // rebase region
                 MetaService.root().rebaseRegion(tableWithId, nextPart, nextPart.getRange().getStartKey(), originNextPartStartKey);
