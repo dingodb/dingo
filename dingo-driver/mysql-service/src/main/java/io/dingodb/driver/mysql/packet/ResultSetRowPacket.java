@@ -152,6 +152,13 @@ public class ResultSetRowPacket extends MysqlPacket {
             try {
                 if (val instanceof BigDecimal) {
                     values.add(((BigDecimal) val).toPlainString().getBytes(characterSet));
+                } else if (val instanceof Float || val instanceof Double) {
+                    BigDecimal bd = new BigDecimal(val.toString());
+                    if (bd.scale() <= 0) {
+                        values.add(((BigDecimal) bd).toPlainString().getBytes(characterSet));
+                    } else {
+                        values.add(val.toString().getBytes(characterSet));
+                    }
                 } else {
                     values.add(val.toString().getBytes(characterSet));
                 }
