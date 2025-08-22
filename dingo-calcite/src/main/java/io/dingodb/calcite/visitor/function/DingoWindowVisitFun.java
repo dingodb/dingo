@@ -187,7 +187,7 @@ public final class DingoWindowVisitFun {
             // The output from this stage is the input plus the aggregate functions.
             JavaTypeFactory typeFactory = DingoSqlTypeFactory.INSTANCE;
             final RelDataTypeFactory.Builder typeBuilder = typeFactory.builder();
-            typeBuilder.addAll(rel.getInput().getRowType().getFieldList());
+            typeBuilder.addAll(inputPhysType.getRowType().getFieldList());
             for (AggImpState agg : aggs) {
                 // CALCITE-4326
                 String name = Objects.requireNonNull(agg.call.name,
@@ -494,7 +494,7 @@ public final class DingoWindowVisitFun {
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
-
+            LogUtils.info(log, "outputPhysType field count:{}", outputPhysType.getRowType().getFieldCount());
             inputPhysType = outputPhysType;
         }
         builder.add(Expressions.return_(null, source));

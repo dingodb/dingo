@@ -191,20 +191,41 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         table.getName(), "dataPrivilege");
                     return table.partitions != null && !table.getPartitions().isEmpty() && authed;
                 })
-                .flatMap(table -> table.getPartitions()
-                    .stream()
-                    .map(partition -> getPartitionDetail(
-                        schemaTables.getSchemaInfo().getName(), table, partition))))
+                .flatMap(table -> {
+                    int partSize = table.getPartitions().size();
+                    List<Object[]> parts = new ArrayList<>();
+                    for (int i = 0; i < partSize; i ++) {
+                        Partition partition = table.getPartitions().get(i);
+                        Object[] operands = null;
+                        if (i < partSize - 1) {
+                            operands = table.getPartitions().get(i + 1).getOperand();
+                        }
+                        parts.add(getPartitionDetail(
+                            schemaTables.getSchemaInfo().getName(), table, partition, operands, i));
+                    }
+                    return parts.stream();
+                })
+            )
             .iterator();
     }
 
-    private static Object[] getPartitionDetail(String schemaName, Table td, Partition partition) {
+    private static Object[] getPartitionDetail(String schemaName, Table td,
+        Partition partition, Object[] operands, int position) {
         if (partition == null) {
             return new Object[]{};
         }
         String operand = null;
-        if (partition != null && partition.getOperand() != null) {
-            operand = Arrays.toString(partition.getOperand());
+        if (operands != null) {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (Object operandItem : operands) {
+                if (operandItem != null) {
+                    stringBuilder.append(operandItem).append(",");
+                }
+            }
+            if (!stringBuilder.isEmpty()) {
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            }
+            operand = stringBuilder.toString();
         }
         return new Object[]{
             "def",
@@ -215,7 +236,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             // sub part name
             null,
             // part ordinal position
-            null,
+            position + 1,
             // sub part ordinal position
             null,
             // part method
