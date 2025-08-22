@@ -36,6 +36,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterModifyColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameIndex;
 import io.dingodb.calcite.grammar.ddl.SqlAlterRenameTable;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableAddPart;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableComment;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart;
@@ -576,7 +577,8 @@ public class DingoParser {
             || sqlNode instanceof SqlAlterTableOptions
             || sqlNode instanceof SqlAlterIndex
             || sqlNode instanceof SqlCreateSequence
-            || sqlNode instanceof SqlDropSequence;
+            || sqlNode instanceof SqlDropSequence
+            || sqlNode instanceof SqlAlterTableAddPart;
     }
 
     public long getGcLifeTime() {

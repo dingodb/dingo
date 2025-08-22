@@ -1096,7 +1096,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         } catch (Exception e) {
             throw DINGO_RESOURCE.illegalArgumentException().ex();
         }
-        LogUtils.info(log, "DDL execute SqlAlterTableDistribution tableName: {}, partitionDefinition: {}",
+        LogUtils.info(log, "DDL execute SqlAlterTable add partition tableName: {}, partitionDefinition: {}",
             tableName, detail);
         boolean duplicatePart = table.getPartitions().stream()
             .anyMatch(partition -> detail.getPartName().equalsIgnoreCase(partition.getName()));
