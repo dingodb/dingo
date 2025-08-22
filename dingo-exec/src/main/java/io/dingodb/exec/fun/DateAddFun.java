@@ -43,7 +43,13 @@ public class DateAddFun extends BinaryOp {
 
     @Override
     public Object evalValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
-        int delta = (int) value1;
+        int delta = 0;
+        if (value1 instanceof Integer) {
+            delta = (int) value1;
+        } else if (value1 instanceof Long) {
+            Long deltaLong = (Long) value1;
+            delta = deltaLong.intValue();
+        }
         if (value0 instanceof Date) {
             Date date = (Date) value0;
             Calendar calendar = Calendar.getInstance();
