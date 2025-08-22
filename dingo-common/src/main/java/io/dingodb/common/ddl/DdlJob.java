@@ -143,6 +143,7 @@ public class DdlJob {
             || actionType == ActionType.ActionModifyColumn
             || actionType == ActionType.ActionRenameTable
             || actionType == ActionType.ActionRenameIndex
+            || actionType == ActionType.ActionDropTablePartition
         ) {
             return true;
         }

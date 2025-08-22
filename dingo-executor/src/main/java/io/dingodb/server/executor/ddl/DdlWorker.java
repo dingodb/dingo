@@ -2239,9 +2239,11 @@ public class DdlWorker {
             job.setState(JobState.jobStateCancelled);
             return Pair.of(0L, "add distribution failed");
         }
+        LogUtils.info(log, "add partition split region done, partId:{}", partId);
         TableDefinitionWithId newTableWithId = (TableDefinitionWithId) MetaService.root().addPart(
             job.getSchemaName(), job.getTableName(), part, partId, tableWithId);
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+        LogUtils.info(log, "add partition merge part done, partId:{}", partId);
         return TableUtil.updateVersionAndTableInfos(dc, job, newTableWithId, true);
     }
 
