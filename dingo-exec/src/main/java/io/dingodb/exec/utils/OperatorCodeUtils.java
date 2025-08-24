@@ -105,6 +105,8 @@ public final class OperatorCodeUtils {
 
     public static final CommonId OPTIMISTIC_ROLL_BACK = new CommonId(CommonId.CommonType.OP, OP, 74);
     public static final CommonId FOR_UPDATE = new CommonId(CommonId.CommonType.OP, OP, 75);
+    public static final CommonId TXN_PART_REPLACE_INTO = new CommonId(CommonId.CommonType.OP, OP, 76);
+    public static final CommonId PESSIMISTIC_LOCK_REPLACE_INTO = new CommonId(CommonId.CommonType.OP, OP, 77);
 
     // sink
     public static final CommonId ROOT = new CommonId(CommonId.CommonType.OP, SINK, 80);

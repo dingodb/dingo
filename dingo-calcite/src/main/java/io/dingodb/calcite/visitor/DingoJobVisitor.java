@@ -94,6 +94,7 @@ import io.dingodb.calcite.visitor.function.DingoReduceAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoReduceVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRepeatUnionVisitFun;
+import io.dingodb.calcite.visitor.function.DingoReplaceInsertVisitFun;
 import io.dingodb.calcite.visitor.function.DingoRootVisitFun;
 import io.dingodb.calcite.visitor.function.DingoScanWithRelOpVisitFun;
 import io.dingodb.calcite.visitor.function.DingoSortVisitFun;
@@ -248,8 +249,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     @Override
     public Collection<Vertex> visit(@NonNull DingoTableModify rel) {
+        if (replaceInto) {
+            return DingoReplaceInsertVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel,
+                forUpdate, true, isIgnore, updateLimit);
+        }
         return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel,
-            forUpdate, replaceInto, isIgnore, updateLimit);
+            forUpdate, false, isIgnore, updateLimit);
     }
 
     @Override
