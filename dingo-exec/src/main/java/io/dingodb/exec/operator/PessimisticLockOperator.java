@@ -25,7 +25,9 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Status;
@@ -67,12 +69,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.utils.ByteUtils.encode;
 import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
+import static io.dingodb.exec.utils.ColumnDefaultValueUtils.getDefaultValue;
 
 @Slf4j
 public class PessimisticLockOperator extends SoleOutOperator {
@@ -239,6 +243,19 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
                 }
                 key = wrap(codec::encodeKey).apply(newTuple);
+            }
+            if (param.isIgnore()) {
+                boolean containsNull = newTuple != null && Arrays.stream(newTuple).anyMatch(Objects::isNull);
+                if (containsNull) {
+                    DingoType[] fields = ((TupleType) schema).getFields();
+                    for (int i = 0; i < newTuple.length; i++) {
+                        DingoType type = fields[i];
+                        if(newTuple[i] == null && !((NullableType)type).isNullable()) {
+                            newTuple[i] = getDefaultValue(type);
+                        }
+                    }
+                    key = wrap(codec::encodeKey).apply(newTuple);
+                }
             }
             CodecService.getDefault().setId(key, partId.domain);
             byte[] originalKey;

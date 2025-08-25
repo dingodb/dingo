@@ -24,7 +24,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.DingoSqlBasicCall;
-import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
@@ -40,8 +39,6 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
@@ -220,16 +217,14 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                 scope,
                 rowConstructor);
 
-            if (targetRowType.isStruct()) {
-                for (Pair<SqlNode, RelDataTypeField> pair
-                    : Pair.zip(rowConstructor.getOperandList(),
-                    targetRowType.getFieldList())) {
-                    if (!pair.right.getType().isNullable()
-                        && SqlUtil.isNullLiteral(pair.left, false)) {
-                        throw newValidationError(node,
-                            RESOURCE.columnNotNullable(pair.right.getName()));
-                    }
-                }
+            final SqlNode top = getTop();
+            boolean isIgnore = false;
+            if (top instanceof io.dingodb.calcite.grammar.dml.SqlInsert) {
+                io.dingodb.calcite.grammar.dml.SqlInsert sqlInsert = (io.dingodb.calcite.grammar.dml.SqlInsert) top;
+                isIgnore = sqlInsert.isIgnore();
+            }
+            if (!isIgnore) {
+                checkNullable(node, targetRowType, rowConstructor);
             }
         }
 
@@ -276,6 +271,20 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                     throw newValidationError(node,
                         RESOURCE.incompatibleValueType(
                             SqlStdOperatorTable.VALUES.getName()));
+                }
+            }
+        }
+    }
+
+    private void checkNullable(SqlCall node, RelDataType targetRowType, SqlCall rowConstructor) {
+        if (targetRowType.isStruct()) {
+            for (Pair<SqlNode, RelDataTypeField> pair
+                : Pair.zip(rowConstructor.getOperandList(),
+                targetRowType.getFieldList())) {
+                if (!pair.right.getType().isNullable()
+                    && SqlUtil.isNullLiteral(pair.left, false)) {
+                    throw newValidationError(node,
+                        RESOURCE.columnNotNullable(pair.right.getName()));
                 }
             }
         }
