@@ -24,7 +24,11 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -42,6 +46,23 @@ public class DingoUnion extends Union implements DingoRel {
         boolean all
     ) {
         super(cluster, traits, inputs, all);
+    }
+
+    @Override
+    public RelDataType getRowType() {
+        if (rowType == null) {
+            if(this instanceof DingoUnion) {
+                if (((DingoUnion)this).kind == SqlKind.UNION) {
+                    rowType = deriveRowTypeWithContext(SqlOperator.CallContext.IN_UNION);
+                } else {
+                    rowType = deriveRowType();
+                }
+            } else {
+                rowType = deriveRowType();
+            }
+            assert rowType != null : this;
+        }
+        return rowType;
     }
 
     @Override

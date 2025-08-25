@@ -22,6 +22,7 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFamily;
 import org.apache.calcite.sql.SqlCollation;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -126,12 +127,16 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
     }
 
     public @Nullable RelDataType leastRestrictive(List<RelDataType> types) {
+        return leastRestrictiveWithContext(types, SqlOperator.CallContext.INVALID);
+    }
+
+    public @Nullable RelDataType leastRestrictiveWithContext(List<RelDataType> types, SqlOperator.CallContext context) {
         assert types != null;
         assert types.size() >= 1;
 
         RelDataType type0 = types.get(0);
         if (type0.getSqlTypeName() != null) {
-            RelDataType resultType = leastRestrictiveSqlType(types);
+            RelDataType resultType = leastRestrictiveSqlTypeWithContext(types, context);
             if (resultType != null) {
                 return resultType;
             }
@@ -189,7 +194,8 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     }  else if (!type.getSqlTypeName().getName().equalsIgnoreCase("BINARY")
                         && resultType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
                         continue;
-                    } else if (resultType.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
+                    }
+                    else if (resultType.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
                         && type.getSqlTypeName().getName().equalsIgnoreCase("INTEGER")) {
                         continue;
                     } else if (type.getSqlTypeName().getName().equalsIgnoreCase("CHAR")
@@ -239,6 +245,11 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
     }
 
     private @Nullable RelDataType leastRestrictiveSqlType(List<RelDataType> types) {
+        return leastRestrictiveSqlTypeWithContext(types, SqlOperator.CallContext.INVALID);
+    }
+
+    private @Nullable RelDataType leastRestrictiveSqlTypeWithContext(List<RelDataType> types, SqlOperator.CallContext context) {
+        //1, in union ; 0- not in union;
         RelDataType resultType = null;
         int nullCount = 0;
         int nullableCount = 0;
@@ -295,7 +306,11 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                 resultType = type;
                 SqlTypeName sqlTypeName = resultType.getSqlTypeName();
                 if (sqlTypeName == SqlTypeName.ROW) {
-                    return leastRestrictiveStructuredType(types);
+                    if(context == SqlOperator.CallContext.IN_UNION) {
+                        return leastRestrictiveStructuredTypeWithContext(types, context);
+                    } else {
+                        return leastRestrictiveStructuredType(types);
+                    }
                 }
                 if (sqlTypeName == SqlTypeName.ARRAY
                     || sqlTypeName == SqlTypeName.MULTISET) {
@@ -391,6 +406,15 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     // interval + datetime = datetime
                     if (types.size() > (i + 1)) {
                         RelDataType type1 = types.get(i + 1);
+
+                        if(context == SqlOperator.CallContext.IN_UNION) {
+                            if ((types.get(0).getSqlTypeName() == SqlTypeName.INTEGER && types.get(1).getSqlTypeName() == SqlTypeName.TIME) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.BIGINT && types.get(1).getSqlTypeName() == SqlTypeName.TIME)) {
+                                return createTypeWithNullability(this.createSqlType(SqlTypeName.VARCHAR),
+                                    nullCount > 0 || nullableCount > 0);
+                            }
+                        }
+
                         if (SqlTypeUtil.isDatetime(type1)) {
                             resultType = type1;
                             return createTypeWithNullability(resultType,
@@ -501,7 +525,11 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                 // datetime +/- interval (or integer) = datetime
                 if (types.size() > (i + 1)) {
                     RelDataType type1 = types.get(i + 1);
-                    if (SqlTypeUtil.isInterval(type1)
+                    if ((type.getSqlTypeName() == SqlTypeName.TIME || type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIME || type1.getSqlTypeName() == SqlTypeName.BIGINT)) {
+                        return createTypeWithNullability(this.createSqlType(SqlTypeName.VARCHAR),
+                            nullCount > 0 || nullableCount > 0);
+                    } else if (SqlTypeUtil.isInterval(type1)
                         || SqlTypeUtil.isIntType(type1)) {
                         SqlTypeName sqlTypeName = type1.getSqlTypeName();
                         if (SqlTypeUtil.isDate(type) && (sqlTypeName.equals(SqlTypeName.INTERVAL_HOUR)
