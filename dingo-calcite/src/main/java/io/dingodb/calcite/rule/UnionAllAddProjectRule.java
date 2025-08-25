@@ -33,6 +33,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.immutables.value.Value;
@@ -52,7 +53,7 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
         if (union.addProject) {
             return;
         }
-        RelDataType rowType = union.getRowType();
+        RelDataType rowType = union.getRowTypeWithContext(SqlOperator.CallContext.IN_UNION);
         RelDataType input0Type = union.getInput(0).getRowType();
         boolean rowTypeCountEq = rowType.getFieldCount() == input0Type.getFieldCount();
         if (!rowTypeCountEq) {
@@ -60,6 +61,7 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
         }
         List<RexNode> rexNodeList = new ArrayList<>();
         int fieldsCount = rowType.getFieldCount();
+
         int diffCnt = 0;
         for (int i = 0; i < fieldsCount; i++) {
             RelDataTypeField typeField = rowType.getFieldList().get(i);
@@ -94,7 +96,7 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
         try {
             RelNode logicalProject = LogicalProject.create(
                 union,
-                ImmutableList.of(), rexNodeList, union.getRowType(), ImmutableSet.of()
+                ImmutableList.of(), rexNodeList, union.getRowTypeWithContext(SqlOperator.CallContext.IN_UNION), ImmutableSet.of()
             );
             union.addProject = true;
             call.transformTo(logicalProject);

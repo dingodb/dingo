@@ -39,6 +39,7 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
@@ -344,6 +345,12 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                 if (node instanceof SqlDynamicParam) {
                     continue;
                 }
+
+                if(sourceType.getSqlTypeName() == SqlTypeName.VARCHAR &&
+                    targetType.getSqlTypeName() == SqlTypeName.TIME) {
+                    continue;
+                }
+
                 String targetTypeString;
                 String sourceTypeString;
                 if (SqlTypeUtil.areCharacterSetsMismatched(
