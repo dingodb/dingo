@@ -17,12 +17,11 @@
 package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ErrorCode;
 import io.dingodb.common.mysql.constant.ServerStatus;
-import io.dingodb.common.util.Pair;
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
@@ -146,7 +145,7 @@ public class MysqlCommands {
                 MysqlResponseHandler.responseOk(okPacket, mysqlConnection.channel);
             }
         } else {
-            executeSingleQuery(sql, packetId, mysqlConnection);
+            executeSingleQuery(sql, packetId, mysqlConnection, 3);
         }
     }
 
@@ -237,15 +236,33 @@ public class MysqlCommands {
     }
 
     public void executeSingleQuery(String sql, AtomicLong packetId,
-                                   MysqlConnection mysqlConnection) {
+                                   MysqlConnection mysqlConnection, int retry) {
         Statement statement = null;
-        boolean hasResults;
+        boolean hasResults = true;
         String connCharSet = null;
 
         try {
             statement = mysqlConnection.getConnection().createStatement();
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-            hasResults = statement.execute(sql);
+            try {
+                hasResults = statement.execute(sql);
+            } catch (Exception e) {
+                if (e.getMessage() != null
+                    && (e.getMessage().contains("epoch is not match, region_epoch")
+                    || e.getMessage().contains("RegionSplitException"))) {
+                    LogUtils.info(log, "sql execute regionSplit,{}, cause:{}", sql, e);
+                    retry --;
+                    Utils.sleep(1000);
+                    if (retry == 0) {
+                        throw e;
+                    } else {
+                        executeSingleQuery(sql, packetId, mysqlConnection, retry);
+                        return;
+                    }
+                } else {
+                    throw e;
+                }
+            }
             if (hasResults) {
                 // select
                 do {
@@ -304,7 +321,7 @@ public class MysqlCommands {
             throw e;
         } finally {
             try {
-                if (statement != null) {
+                if (statement != null && !statement.isClosed()) {
                     statement.close();
                 }
             } catch (SQLException e) {
