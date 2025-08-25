@@ -25,8 +25,6 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.NullableType;
-import io.dingodb.common.type.TupleType;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.converter.ValueConverter;
@@ -34,7 +32,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.operator.data.Context;
-import io.dingodb.exec.operator.params.PessimisticLockReplaceIntoParam;
+import io.dingodb.exec.operator.params.PessimisticLockInsertIgnoreParam;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
@@ -46,30 +44,27 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
-import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.utils.ByteUtils.decodePessimisticKey;
 import static io.dingodb.exec.utils.ByteUtils.encode;
 import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
-import static io.dingodb.exec.utils.ColumnDefaultValueUtils.getDefaultValue;
 
 @Slf4j
-public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
-    public static final PessimisticLockReplaceIntoOperator INSTANCE = new PessimisticLockReplaceIntoOperator();
+public class PessimisticLockInsertIgnoreOperator extends SoleOutOperator {
+    public static final PessimisticLockInsertIgnoreOperator INSTANCE = new PessimisticLockInsertIgnoreOperator();
 
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
-            PessimisticLockReplaceIntoParam param = vertex.getParam();
+            PessimisticLockInsertIgnoreParam param = vertex.getParam();
             param.setContext(context);
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
@@ -80,7 +75,6 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
             KeyValueCodec codec = param.getCodec();
             boolean isVector = false;
             boolean isDocument = false;
-            boolean isUnique = false;
             Object[] rowTuple = null;
 
             //Only for origin table.
@@ -103,7 +97,6 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
 
             byte[] key = null;
             if (context.getIndexId() != null) {
-                rowTuple = tuple;
                 Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
                     LogUtils.error(log, "[ddl] Pessimistic insert get index table null, indexId:{}", context.getIndexId());
@@ -141,30 +134,15 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
                 if (index.indexType == IndexType.DOCUMENT) {
                     isDocument = true;
                 }
-                if (index.unique) {
-                    throw new RuntimeException("Pessimistic transaction replace into unique index not support, " +
-                        "please use optimistic transaction");
-                }
                 localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
                 codec = CodecService.getDefault().createKeyValueCodec(
                     indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
                 );
+
             }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
-            assert newTuple != null;
             KeyValue keyValue = wrap(codec::encode).apply(newTuple);
-            boolean containsNull = tuple != null && Arrays.stream(tuple).anyMatch(Objects::isNull);
-            if (containsNull) {
-                DingoType[] fields = ((TupleType) schema).getFields();
-                for (int i = 0; i < tuple.length; i++) {
-                    DingoType type = fields[i];
-                    if(tuple[i] == null && !((NullableType)type).isNullable()) {
-                        newTuple[i] = getDefaultValue(type);
-                    }
-                }
-                keyValue = wrap(codec::encode).apply(newTuple);
-            }
             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
             key = keyValue.getKey();
 
@@ -287,11 +265,18 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
                 // get lock success, delete deadLockKey
                 localStore.delete(deadLockKeyBytes);
                 if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                    context.setReplaceIntoKey(true);
+                    LogUtils.info(log, "PessimisticLockInsertIgnore RESIDUAL_LOCK jobId:{}",
+                        CommonId.decode(jobIdByte));
+                    byte[] rollBackKey = ByteUtils.getKeyByOp(
+                        CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK,
+                        Op.DELETE,
+                        deadLockKeyBytes
+                    );
+                    localStore.put(new KeyValue(rollBackKey, kvKeyValue.getValue()));
                 } else {
+                    context.setDuplicateKey(false);
                     context.setReplaceIntoKey(false);
                 }
-
                 byte[] lockKey = getKeyByOp(CommonId.CommonType.TXN_CACHE_LOCK, Op.LOCK, deadLockKeyBytes);
                 // lockKeyValue
                 KeyValue lockKeyValue = new KeyValue(lockKey, forUpdateTsByte);
@@ -312,14 +297,6 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
                 Object[] resultTuple = rowTuple == null ? newTuple : rowTuple;
                 vertex.getOutList().forEach(o -> o.transformToNext(context, resultTuple));
             } else {
-                if (context.getIndexId() == null && !isVector && !isDocument) {
-                    KeyValue kvKeyValue = kvStore.txnGet(
-                        TsoService.getDefault().tso(), originalKey, param.getLockTimeOut()
-                    );
-                    if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        context.setReplaceIntoKey(true);
-                    }
-                }
                 @Nullable Object[] resultTuple = rowTuple == null ? tuple : rowTuple;
                 vertex.getOutList().forEach(o -> o.transformToNext(context, resultTuple));
             }
@@ -329,7 +306,7 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
 
     @Override
     public synchronized void fin(int pin, Fin fin, Vertex vertex) {
-        PessimisticLockReplaceIntoParam param = vertex.getParam();
+        PessimisticLockInsertIgnoreParam param = vertex.getParam();
         vertex.getSoleEdge().fin(fin);
         // Reset
         param.reset();

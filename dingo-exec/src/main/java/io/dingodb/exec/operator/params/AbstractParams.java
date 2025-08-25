@@ -128,7 +128,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECT
     @JsonSubTypes.Type(TxnDiskAnnResetParam.class),
     @JsonSubTypes.Type(ForUpdateParam.class),
     @JsonSubTypes.Type(TxnPartReplaceIntoParam.class),
-    @JsonSubTypes.Type(PessimisticLockReplaceIntoParam.class)
+    @JsonSubTypes.Type(PessimisticLockReplaceIntoParam.class),
+    @JsonSubTypes.Type(TxnPartInsertIgnoreParam.class),
+    @JsonSubTypes.Type(PessimisticLockInsertIgnoreParam.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)
