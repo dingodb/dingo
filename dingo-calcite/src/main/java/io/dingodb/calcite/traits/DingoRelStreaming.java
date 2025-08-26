@@ -57,6 +57,12 @@ public class DingoRelStreaming implements RelTrait {
         return new DingoRelStreaming(ImmutableSet.of(partition), partition);
     }
 
+    public static @NonNull DingoRelStreaming of(
+        CommonId indexId, List<RelOptTable> targetTables, List<RelOptTable> sourceTables) {
+        DingoRelPartition partition = DingoRelPartition.of(indexId, targetTables, sourceTables);
+        return new DingoRelStreaming(ImmutableSet.of(partition), partition);
+    }
+
     public boolean isRoot() {
         return partitions != null && partitions.isEmpty() && distribution == null;
     }

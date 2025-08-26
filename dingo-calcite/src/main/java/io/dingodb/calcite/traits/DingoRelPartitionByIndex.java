@@ -34,6 +34,10 @@ public class DingoRelPartitionByIndex extends DingoRelPartition {
     @EqualsAndHashCode.Include
     @Getter
     private final RelOptTable table;
+    @Getter
+    private final List<RelOptTable> targetTableList;
+    @Getter
+    private final List<RelOptTable> sourceTableList;
 
     @Override
     public String toString() {

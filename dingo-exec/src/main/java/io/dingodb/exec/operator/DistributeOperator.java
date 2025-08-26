@@ -57,7 +57,12 @@ public class DistributeOperator extends SoleOutOperator {
             try {
                 Object[] newTuple = tuple;
                 if (tuple.length > param.getTable().columns.size()) {
-                    newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
+                    if (param.isRight()) {
+                        newTuple = Arrays.copyOfRange(tuple, param.getLeftLength(),
+                            param.getLeftLength() + param.getTable().columns.size());
+                    } else {
+                        newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
+                    }
                 }
                 IndexTable indexTable = param.getIndexTable();
                 PartitionService ps = PartitionService.getService(
@@ -71,11 +76,18 @@ public class DistributeOperator extends SoleOutOperator {
                     PartitionService indexPs = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+                    Object[] oldIndexTuple;
+                    if (param.isRight()) {
+                        oldIndexTuple = Arrays.copyOfRange(
+                            tuple, param.getLeftLength(), param.getLeftLength() + param.getTable().columns.size());
+                    } else {
+                        oldIndexTuple = tuple;
+                    }
                     Object[] indexTuple = new Object[indexTable.columns.size()];
                     for (int i = 0; i < indexTable.getMapping().size(); i++) {
                         int colIx;
                         if ((colIx = indexTable.getMapping().get(i)) > -1) {
-                            indexTuple[i] = tuple[colIx];
+                            indexTuple[i] = oldIndexTuple[colIx];
                         }
                     }
                     KeyValueCodec indexCodec = CodecService.getDefault()
@@ -87,6 +99,7 @@ public class DistributeOperator extends SoleOutOperator {
                     tablePartId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), distribution);
                 } else {
                     partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+                    context.setTableId(param.getTableId());
                 }
                 RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
                 context.setDistribution(distribution);

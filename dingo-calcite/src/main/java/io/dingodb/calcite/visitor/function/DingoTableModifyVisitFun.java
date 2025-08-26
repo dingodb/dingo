@@ -246,30 +246,50 @@ public final class DingoTableModifyVisitFun {
                 case UPDATE:
                     TableModify.TableInfo tableInfo = rel.getTableInfo();
                     DingoType dingoType;
+                    TupleMapping updateMapping;
+                    CommonId joinTableId = null;
+                    boolean isLeft = false;
                     if (!tableInfo.isSingleSource() && tableInfo.getRefTables().size() >= 2) {
-                        RelOptTable leftTable = tableInfo.getRefTables().get(0);
-                        RelOptTable rightTable = tableInfo.getRefTables().get(1);
-                        List<DingoType> leftTypeName = leftTable.getRowType().getFieldList().stream()
+                        RelOptTable leftOptTable = tableInfo.getRefTables().get(0);
+                        RelOptTable rightOptTable = tableInfo.getRefTables().get(1);
+                        List<DingoType> leftTypeName = leftOptTable.getRowType().getFieldList().stream()
                             .map(t -> DingoTypeFactory.INSTANCE.fromName(
                                 t.getType().getSqlTypeName().getName(),
                                 null, t.getType().isNullable()))
                             .collect(Collectors.toList());
-                        List<DingoType> rightTypeName = rightTable.getRowType().getFieldList().stream()
+                        List<DingoType> rightTypeName = rightOptTable.getRowType().getFieldList().stream()
                             .map(t -> DingoTypeFactory.INSTANCE.fromName(
                                 t.getType().getSqlTypeName().getName(),
                                 null, t.getType().isNullable()))
-                            .toList();
+                            .collect(Collectors.toList());
                         leftTypeName.addAll(rightTypeName);
                         DingoType[] dingoTypes = leftTypeName.toArray(DingoType[]::new);
                         dingoType = DingoTypeFactory.tuple(dingoTypes);
+                        Table leftTable = leftOptTable.unwrap(DingoTable.class).getTable();
+                        Table rightTable = rightOptTable.unwrap(DingoTable.class).getTable();
+                        List<String> leftColumns = leftTable.getColumns().stream()
+                            .map(Column::getName)
+                            .map(String::toUpperCase)
+                            .collect(Collectors.toList());
+                        List<String> rightColumns = rightTable.getColumns().stream()
+                            .map(Column::getName)
+                            .map(String::toUpperCase)
+                            .collect(Collectors.toList());
+                        leftColumns.addAll(rightColumns);
+                        updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream().map(String::toUpperCase).map(leftColumns::indexOf).toList());
+                        if (td == leftTable) {
+                            joinTableId = MetaServiceUtils.getTableId(rightOptTable);
+                            isLeft = true;
+                        } else {
+                            joinTableId = MetaServiceUtils.getTableId(leftOptTable);
+                        }
                     } else {
                         dingoType = td.tupleType();
+                        List<String> colNames = td.getColumns().stream()
+                            .map(Column::getName).map(String::toUpperCase).toList();
+                        updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream()
+                            .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList()));
                     }
-                    List<String> colNames = td.getColumns().stream()
-                        .map(Column::getName).map(String::toUpperCase).toList();
-                    TupleMapping updateMapping = TupleMapping.of(rel.getUpdateColumnList().stream()
-                        .map(String::toUpperCase).map(colNames::indexOf).collect(Collectors.toList())
-                    );
                     boolean updatePrimaryKey = false;
                     List<String> updateList = rel.getUpdateColumnList();
                     TupleMapping keyMapping = td.keyMapping();
@@ -360,7 +380,11 @@ public final class DingoTableModifyVisitFun {
                                     rel.getAutoIncrementColIndex(),
                                     updatePrimaryKey,
                                     updateLimit,
-                                    rel.getRelOp()
+                                    rel.getRelOp(),
+                                    joinTableId,
+                                    tableInfo,
+                                    rel.getTargetTableNames(),
+                                    isLeft
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -393,7 +417,11 @@ public final class DingoTableModifyVisitFun {
                                     rel.getAutoIncrementColIndex(),
                                     updatePrimaryKey,
                                     updateLimit,
-                                    rel.getRelOp()
+                                    rel.getRelOp(),
+                                    joinTableId,
+                                    tableInfo,
+                                    rel.getTargetTableNames(),
+                                    isLeft
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));

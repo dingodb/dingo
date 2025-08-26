@@ -49,6 +49,10 @@ public class DistributionParam extends AbstractParams {
     @Setter
     private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
 
+    // multi-table update
+    private int leftLength = -1;
+    private boolean isRight = false;
+
     public DistributionParam(
         CommonId tableId,
         Table table,
@@ -61,12 +65,37 @@ public class DistributionParam extends AbstractParams {
         CommonId tableId,
         Table table,
         NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
+        int leftLength,
+        boolean isRight
+    ) {
+        this(tableId, table, distributions, null);
+        this.leftLength = leftLength;
+        this.isRight = isRight;
+    }
+
+    public DistributionParam(
+        CommonId tableId,
+        Table table,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
         IndexTable indexTable
     ) {
         this.tableId = tableId;
         this.table = table;
         this.distributions = distributions;
         this.indexTable = indexTable;
+    }
+
+    public DistributionParam(
+        CommonId tableId,
+        Table table,
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions,
+        IndexTable indexTable,
+        int leftLength,
+        boolean isRight
+    ) {
+        this(tableId, table, distributions, indexTable);
+        this.leftLength = leftLength;
+        this.isRight = isRight;
     }
 
     @Override

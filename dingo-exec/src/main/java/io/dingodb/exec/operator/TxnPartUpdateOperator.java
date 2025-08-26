@@ -25,6 +25,7 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -53,10 +54,12 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.rel.core.TableModify;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -87,8 +90,30 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
         try {
             CommonId txnId = vertex.getTask().getTxnId();
             CommonId tableId = param.getTableId();
-            List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
+            List<Column> originColumns = new ArrayList<>();
+            CommonId joinTableId = param.getJoinTableId();
+            boolean isLeft = true;
+            if (joinTableId != null) {
+                if (context.getTableId() != null && !context.getTableId().equals(tableId)) {
+                    tableId = context.getTableId();
+                    joinTableId = param.getTableId();
+                    isLeft = false;
+                }
+                List<Column> originCols = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
+                List<Column> joinColumns = ((Table) TransactionManager
+                    .getTable(txnId, joinTableId)).getColumns();
+                if (param.isLeft() && isLeft) {
+                    originColumns.addAll(originCols);
+                    originColumns.addAll(joinColumns);
+                } else {
+                    originColumns.addAll(joinColumns);
+                    originColumns.addAll(originCols);
+                }
+            } else {
+                originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();
+            }
 
+            KeyValueCodec codec = param.getCodec();
             for (i = 0; i < mapping.size(); ++i) {
                 // Object newValue = updates.get(i).eval(tuple);
                 Object newValue = ((Object[]) ((PipeOp) relOp).put(tuple))[i];
@@ -116,16 +141,39 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     updated = true;
                 }
             }
+            TableModify.TableInfo tableInfo = param.getTableInfo();
+            if (!tableInfo.isSingleSource()) {
+                // Multi-table update, extract the tuple of the current table
+                MetaService metaService = MetaService.root();
+                for (int i1 = 0; i1 < tableInfo.getTargetTableIndexes().size(); i1++) {
+                    int tableIndex = tableInfo.getTargetTableIndexes().get(i1);
+                    String tableName = tableInfo.getRefTableNames().get(tableIndex);
+                    Table table = metaService.getTable(tableId);
+                    if (table.getName().equals(tableName)) {
+                        Object[] tableIndexes = tableInfo.getSourceColumnIndexMap().get(tableIndex)
+                            .values().stream().sorted(Integer::compare).toArray(Object[]::new);
+                        Object[] tuples = new Object[tableIndexes.length];
+                        DingoType[] types = new DingoType[tableIndexes.length];
+                        for (int j = 0; j < tableIndexes.length; j++) {
+                            tuples[j] = newTuple[(Integer) tableIndexes[j]];
+                            types[j] = originColumns.get((Integer) tableIndexes[j]).getType();
+                        }
+                        schema = DingoTypeFactory.tuple(types);
+                        newTuple = (Object[]) schema.convertFrom(tuples, ValueConverter.INSTANCE);
+                        codec = CodecService.getDefault().createKeyValueCodec(
+                            table.getCodecVersion(), table.version, schema, table.keyMapping());
+                    }
+                }
+            }
             if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
                 if (newTuple[param.getAutoIncColIdx()] != null) {
                     long autoIncVal = Long.parseLong(newTuple[param.getAutoIncColIdx()].toString());
                     MetaService metaService = MetaService.root();
-                    metaService.updateAutoIncrement(param.getTableId(), autoIncVal);
+                    metaService.updateAutoIncrement(tableId, autoIncVal);
                 }
             }
 
             CommonId partId = context.getDistribution().getId();
-            KeyValueCodec codec = param.getCodec();
             boolean calcPartId = false;
             boolean isVector = false;
             boolean isDocument = false;
@@ -354,7 +402,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.put(new KeyValue(deleteKey, Arrays.copyOf(oldKeyValue.getValue(), oldKeyValue.getValue().length)));
                 }
             } else {
-                if (param.getUpdateLimit() != -1L) {
+                if (param.getUpdateLimit() != -1L || !param.getTableInfo().isSingleSource()) {
                     long scanCount = param.getUpdateScanCount();
                     long limit = param.getUpdateLimit();
 
@@ -367,7 +415,16 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                                 return false;
                             }
                         } else {
-                            return false;
+                            if (!param.getTableInfo().isSingleSource()) {
+                                TupleKey tupleKey = new TupleKey(newTuple);
+                                if (!param.getUpdateKeys().containsKey(tupleKey)) {
+                                    param.getUpdateKeys().putIfAbsent(tupleKey, 0);
+                                } else {
+                                    return false;
+                                }
+                            } else {
+                                return false;
+                            }
                         }
                     } else {
                         if (context.getIndexId() == null) {
