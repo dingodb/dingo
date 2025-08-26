@@ -34,6 +34,7 @@ import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
+import org.apache.calcite.rel.core.TableModify;
 
 import java.util.List;
 import java.util.Map;
@@ -86,6 +87,12 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     private transient Map<TupleKey, Integer> updateKeys;
 
+    // multi-table update
+    private CommonId joinTableId;
+    private TableModify.TableInfo tableInfo;
+    private List<String> targetTableNames;
+    private boolean isLeft;
+
     public TxnPartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -103,7 +110,11 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
         @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
         @JsonProperty("updateLimit") long updateLimit,
-        RelOp relOp
+        RelOp relOp,
+        CommonId joinTableId,
+        TableModify.TableInfo tableInfo,
+        List<String> targetTableNames,
+        boolean isLeft
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
@@ -119,6 +130,10 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         this.indexSize = 0;
         this.codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.version, schema, table.keyMapping());
+        this.joinTableId = joinTableId;
+        this.tableInfo = tableInfo;
+        this.targetTableNames = targetTableNames;
+        this.isLeft = isLeft;
     }
 
     @Override
@@ -140,6 +155,9 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
         if (updateLimit != -1L) {
             indexSize = table.getIndexes().size();
+            updateKeys = new ConcurrentHashMap<>();
+        }
+        if (!tableInfo.isSingleSource()) {
             updateKeys = new ConcurrentHashMap<>();
         }
     }

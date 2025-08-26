@@ -37,6 +37,11 @@ public abstract class DingoRelPartition {
     }
 
     public static @NonNull DingoRelPartition of(@NonNull CommonId indexId, @NonNull RelOptTable table) {
-        return new DingoRelPartitionByIndex(indexId, table);
+        return new DingoRelPartitionByIndex(indexId, table, List.of(table), List.of(table));
+    }
+
+    public static @NonNull DingoRelPartition of(
+        @NonNull CommonId indexId, @NonNull List<RelOptTable> targetTables, List<RelOptTable> sourceTables) {
+        return new DingoRelPartitionByIndex(indexId, targetTables.get(0), targetTables, sourceTables);
     }
 }

@@ -51,6 +51,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -132,6 +133,9 @@ public final class DingoStreamingConverterVisitFun {
         }
         if (dstPartitions.size() < media.getPartitions().size()) {
             assert dstDistribution == null && dstPartitions.isEmpty() || dstPartitions.size() == 1;
+            if (dstDistribution instanceof DingoRelPartitionByIndex && ((DingoRelPartitionByIndex) dstDistribution).getTargetTableList().size() > 1) {
+                return outputs;
+            }
             outputs = DingoCoalesce.coalesce(idGenerator, outputs, dstPartitions, media.getPartitions());
         }
         return outputs;
@@ -179,45 +183,63 @@ public final class DingoStreamingConverterVisitFun {
         ITransaction transaction
     ) {
         List<Vertex> outputs = new LinkedList<>();
-        final Table table = copy.getTable().unwrap(DingoTable.class).getTable();
         for (Vertex input : inputs) {
-            final TableInfo tableInfo = MetaServiceUtils.getTableInfo(copy.getTable());
-            NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
-            Task task = input.getTask();
-            CopyParam copyParam = new CopyParam();
-            Vertex copyVertex = new Vertex(COPY, copyParam);
-            copyVertex.setId(idGenerator.getOperatorId(task.getId()));
-            Edge inputEdge = new Edge(input, copyVertex);
-            input.addEdge(inputEdge);
-            copyVertex.addIn(inputEdge);
-            task.putVertex(copyVertex);
+            int leftLength = -1;
+            boolean isRight = false;
+            for (RelOptTable optTable : copy.getTargetTableList().stream().distinct().toList()) {
+                final Table table = optTable.unwrap(DingoTable.class).getTable();
+                final TableInfo tableInfo = MetaServiceUtils.getTableInfo(optTable);
+                NavigableMap<ComparableByteArray, RangeDistribution> distributions = tableInfo.getRangeDistributions();
+                Task task = input.getTask();
+                CopyParam copyParam = new CopyParam();
+                Vertex copyVertex = new Vertex(COPY, copyParam);
+                copyVertex.setId(idGenerator.getOperatorId(task.getId()));
+                Edge inputEdge = new Edge(input, copyVertex);
+                input.addEdge(inputEdge);
+                copyVertex.addIn(inputEdge);
+                task.putVertex(copyVertex);
 
-            DistributionParam distributionParam = new DistributionParam(table.tableId, table, distributions);
-            Vertex distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
-            distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
-            Edge copyEdge = new Edge(copyVertex, distributionVertex);
-            copyVertex.addEdge(copyEdge);
-            distributionVertex.addIn(copyEdge);
-            OutputHint hint = new OutputHint();
-            hint.setLocation(MetaService.root().currentLocation());
-            distributionVertex.setHint(hint);
-            task.putVertex(distributionVertex);
-            outputs.add(distributionVertex);
+                if (leftLength == -1) {
+                    leftLength = table.columns.size();
+                } else {
+                    isRight = true;
+                }
+                DistributionParam distributionParam = new DistributionParam(
+                    table.tableId, table, distributions, leftLength, isRight);
+                Vertex distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
+                distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+                Edge copyEdge = new Edge(copyVertex, distributionVertex);
+                copyVertex.addEdge(copyEdge);
+                distributionVertex.addIn(copyEdge);
+                OutputHint hint = new OutputHint();
+                hint.setLocation(MetaService.root().currentLocation());
+                distributionVertex.setHint(hint);
+                task.putVertex(distributionVertex);
+                outputs.add(distributionVertex);
 
-            if (transaction != null) {
-                for (IndexTable index : table.getIndexes()) {
-                    distributions = MetaService.root().getRangeDistribution(index.tableId);
-                    distributionParam = new DistributionParam(index.tableId, table, distributions, index);
-                    distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
-                    distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
-                    copyEdge = new Edge(copyVertex, distributionVertex);
-                    copyVertex.addEdge(copyEdge);
-                    distributionVertex.addIn(copyEdge);
-                    hint = new OutputHint();
-                    hint.setLocation(MetaService.root().currentLocation());
-                    distributionVertex.setHint(hint);
-                    task.putVertex(distributionVertex);
-                    outputs.add(distributionVertex);
+                if (transaction != null) {
+                    if (copy.getSourceTableList().size() > 1 && copy.getTargetTableList().size() == 1) {
+                        if (copy.getSourceTableList().get(1).equals(copy.getTargetTableList().get(0))) {
+                            Table leftTable = copy.getSourceTableList().get(0).unwrap(DingoTable.class).getTable();
+                            leftLength = leftTable.columns.size();
+                            isRight = true;
+                        }
+                    }
+                    for (IndexTable index : table.getIndexes()) {
+                        distributions = MetaService.root().getRangeDistribution(index.tableId);
+                        distributionParam = new DistributionParam(
+                            index.tableId, table, distributions, index, leftLength, isRight);
+                        distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
+                        distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
+                        copyEdge = new Edge(copyVertex, distributionVertex);
+                        copyVertex.addEdge(copyEdge);
+                        distributionVertex.addIn(copyEdge);
+                        hint = new OutputHint();
+                        hint.setLocation(MetaService.root().currentLocation());
+                        distributionVertex.setHint(hint);
+                        task.putVertex(distributionVertex);
+                        outputs.add(distributionVertex);
+                    }
                 }
             }
         }

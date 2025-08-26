@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Context {
 
     private int pin;
+    private CommonId tableId;
     private CommonId indexId;
     private CommonId tablePartId;
     private RangeDistribution distribution;
