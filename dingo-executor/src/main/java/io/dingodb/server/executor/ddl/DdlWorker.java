@@ -409,9 +409,17 @@ public class DdlWorker {
         }
         SchemaInfo schemaInfo = resSchemaInfo.getKey();
         if (schemaInfo == null) {
+            ddlJob.setState(JobState.jobStateCancelled);
             ddlJob.setDingoErr(DingoErrUtil.newInternalErr(ErrDBDropExists, ddlJob.getSchemaName()));
-            return Pair.of(0L, "ErrDatabaseDropExists");
+            return Pair.of(0L, ddlJob.getDingoErr().errorMsg);
+        } else {
+            if (schemaInfo.getSchemaState() == SchemaState.SCHEMA_NONE) {
+                ddlJob.setState(JobState.jobStateCancelled);
+                ddlJob.setDingoErr(DingoErrUtil.newInternalErr(ErrDBDropExists, ddlJob.getSchemaName()));
+                return Pair.of(0L, ddlJob.getDingoErr().errorMsg);
+            }
         }
+
         Pair<Long, String> res = updateSchemaVersion(dc, ddlJob);
         if (res.getValue() != null) {
             return res;

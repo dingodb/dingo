@@ -100,6 +100,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -356,6 +357,20 @@ public class MetaService implements io.dingodb.meta.MetaService {
         int directReplica = tableDefinition.getReplica();
         if (tableDefinition.getReplica() == 0) {
             tableDefinition.setReplica(io.dingodb.meta.InfoSchemaService.root().getStoreReplica());
+        }
+        if (tableDefinition.getPartDefinition() != null
+            && tableDefinition.getPartDefinition().getColumns() == null
+            && "range".equalsIgnoreCase(tableDefinition.getPartDefinition().getFuncName())
+            && tableDefinition.getPartDefinition().getDetails() != null) {
+            // range
+            List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+            keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
+            PartitionDetailDefinition partition = tableDefinition.getPartDefinition().getDetails().get(0);
+            List<String> partColumns = new ArrayList<>();
+            for (int i = 0; i < partition.getOperand().length; i ++) {
+                partColumns.add(keyColumns.get(i).getName());
+            }
+            tableDefinition.getPartDefinition().setColumns(partColumns);
         }
         TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(tableIdWithPartIds, tableDefinition,
             TenantConstant.TENANT_ID);
