@@ -28,11 +28,13 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlCastFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.NlsString;
+import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Objects;
@@ -84,7 +86,6 @@ public class RuleUtils {
                     && rexCall.getOperands().size() == 1
                     && rexCall.getOperands().get(0).getKind() == SqlKind.LITERAL
                 ) {
-                    info.index = ((RexInputRef) op0).getIndex();
                     RexLiteral rexLiteral = (RexLiteral) rexCall.getOperands().get(0);
                     if (rexLiteral.getValue() instanceof NlsString) {
                         NlsString val = (NlsString) rexLiteral.getValue();
@@ -95,6 +96,7 @@ public class RuleUtils {
                             return false;
                         }
                         calendar.setTime(date);
+                        info.index = ((RexInputRef) op0).getIndex();
                         info.value = rexBuilder.makeDateLiteral(calendar);
                         return true;
                     }
@@ -102,7 +104,6 @@ public class RuleUtils {
                     && rexCall.type.getSqlTypeName() == SqlTypeName.TIMESTAMP
                     && rexCall.getOperands().size() == 1
                     && rexCall.getOperands().get(0).getKind() == SqlKind.LITERAL) {
-                    info.index = ((RexInputRef) op0).getIndex();
                     RexLiteral rexLiteral = (RexLiteral) rexCall.getOperands().get(0);
                     if (rexLiteral.getValue() instanceof NlsString) {
                         NlsString val = (NlsString) rexLiteral.getValue();
@@ -114,7 +115,25 @@ public class RuleUtils {
                         Calendar calendar = Calendar.getInstance();
                         calendar.setTimeInMillis(timestamp.getTime());
                         TimestampString timestampString = TimestampString.fromCalendarFields(calendar);
+                        info.index = ((RexInputRef) op0).getIndex();
                         info.value = rexBuilder.makeTimestampLiteral(timestampString, 19);
+                        return true;
+                    }
+                } else if (rexCall.op instanceof SqlCastFunction
+                    && rexCall.type.getSqlTypeName() == SqlTypeName.TIME
+                    && rexCall.getOperands().size() == 1
+                    && rexCall.getOperands().get(0).getKind() == SqlKind.LITERAL) {
+                    RexLiteral rexLiteral = (RexLiteral) rexCall.getOperands().get(0);
+                    if (rexLiteral.getValue() instanceof NlsString) {
+                        NlsString val = (NlsString) rexLiteral.getValue();
+                        RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
+                        try {
+                            TimeString timeString = new TimeString(val.getValue());
+                            info.value = rexBuilder.makeTimeLiteral(timeString, 8);
+                            info.index = ((RexInputRef) op0).getIndex();
+                        } catch (Exception e) {
+                            return false;
+                        }
                         return true;
                     }
                 }

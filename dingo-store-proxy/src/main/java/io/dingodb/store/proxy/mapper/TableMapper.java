@@ -203,6 +203,7 @@ public interface TableMapper {
         }
         PartitionRule partitionRule = definition.getTablePartition();
         if (partitionRule != null) {
+            builder.partColumns(partitionRule.getColumns());
             builder.partitionStrategy(fromPartitionStrategy(partitionRule.getStrategy()));
         }
         KeyValueCodec codec = CodecService.INSTANCE

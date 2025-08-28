@@ -69,6 +69,8 @@ public class Table {
     public final String partitionStrategy;
     @JsonProperty
     public final List<Partition> partitions;
+    @JsonProperty
+    public List<String> partColumns;
 
     @JsonProperty
     public final String engine;

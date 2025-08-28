@@ -52,7 +52,7 @@ public class DingoErr {
     }
 
     public void encodeError() {
-        if (this.errorMsg != null) {
+        if (this.errorMsg != null && !this.encodeError) {
             this.errorMsg = Base64.getEncoder().encodeToString(errorMsg.getBytes());
             this.encodeError = true;
         }

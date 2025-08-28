@@ -34,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -174,6 +175,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             createTableSqlStr.append(",");
             createTableSqlStr.append("\r\n");
             createTableSqlStr.append("    PRIMARY KEY (");
+            keyColumnList.sort(Comparator.comparingInt(Column::getPrimaryKeyIndex));
             for (int i = 0; i < keySize; i ++) {
                 createTableSqlStr.append("`").append(keyColumnList.get(i).getName()).append("`");
                 if (i < keySize - 1) {
@@ -328,19 +330,32 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                 createTableSqlStr.append("HASH PARTITIONS=").append(table.getPartitions().size());
             } else {
                 createTableSqlStr.append("RANGE VALUES");
+                List<Integer> partIndices;
+                if (table.getPartColumns() != null) {
+                    partIndices = table.getColumnIndices(table.partColumns);
+                } else {
+                    partIndices = List.of();
+                }
                 table.getPartitions().forEach(partition -> {
                     if (Arrays.stream(partition.getOperand()).allMatch(Objects::isNull)) {
                         return;
                     }
                     createTableSqlStr.append("(");
-                    int size = partition.getOperand().length;
-                    for (int i = 0; i < size; i ++) {
-                        if (partition.getOperand()[i] == null) {
-                            continue;
+                    if (!partIndices.isEmpty()) {
+                        for (int index : partIndices) {
+                            createTableSqlStr.append(partition.getOperand()[index]).append(",");
                         }
-                        createTableSqlStr.append(partition.getOperand()[i]).append(",");
+                        createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
+                    } else {
+                        int size = partition.getOperand().length;
+                        for (int i = 0; i < size; i ++) {
+                            if (partition.getOperand()[i] == null) {
+                                continue;
+                            }
+                            createTableSqlStr.append(partition.getOperand()[i]).append(",");
+                        }
+                        createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
                     }
-                    createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
                     createTableSqlStr.append("),");
                 });
                 createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
