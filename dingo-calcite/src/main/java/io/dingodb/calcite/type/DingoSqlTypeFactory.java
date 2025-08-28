@@ -409,7 +409,14 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
 
                         if(context == SqlOperator.CallContext.IN_UNION) {
                             if ((types.get(0).getSqlTypeName() == SqlTypeName.INTEGER && types.get(1).getSqlTypeName() == SqlTypeName.TIME) ||
-                                (types.get(0).getSqlTypeName() == SqlTypeName.BIGINT && types.get(1).getSqlTypeName() == SqlTypeName.TIME)) {
+                                (types.get(0).getSqlTypeName() == SqlTypeName.BIGINT && types.get(1).getSqlTypeName() == SqlTypeName.TIME) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.DECIMAL && types.get(1).getSqlTypeName() == SqlTypeName.TIME) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.INTEGER && types.get(1).getSqlTypeName() == SqlTypeName.TIMESTAMP) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.BIGINT && types.get(1).getSqlTypeName() == SqlTypeName.TIMESTAMP) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.DECIMAL && types.get(1).getSqlTypeName() == SqlTypeName.TIMESTAMP) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.INTEGER && types.get(1).getSqlTypeName() == SqlTypeName.DATE) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.BIGINT && types.get(1).getSqlTypeName() == SqlTypeName.DATE) ||
+                                (types.get(0).getSqlTypeName() == SqlTypeName.DECIMAL && types.get(1).getSqlTypeName() == SqlTypeName.DATE)) {
                                 return createTypeWithNullability(this.createSqlType(SqlTypeName.VARCHAR),
                                     nullCount > 0 || nullableCount > 0);
                             }
@@ -525,8 +532,15 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                 // datetime +/- interval (or integer) = datetime
                 if (types.size() > (i + 1)) {
                     RelDataType type1 = types.get(i + 1);
-                    if ((type.getSqlTypeName() == SqlTypeName.TIME || type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
-                        (type.getSqlTypeName() == SqlTypeName.TIME || type1.getSqlTypeName() == SqlTypeName.BIGINT)) {
+                    if ((type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.DECIMAL) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.DECIMAL) ||
+                        (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
+                        (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
+                        (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.DECIMAL)) {
                         return createTypeWithNullability(this.createSqlType(SqlTypeName.VARCHAR),
                             nullCount > 0 || nullableCount > 0);
                     } else if (SqlTypeUtil.isInterval(type1)
