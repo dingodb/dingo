@@ -41,6 +41,9 @@ public class DingoTypeMapper {
            put(SqlTypeName.BIGINT, SqlTypeName.DOUBLE);
            put(SqlTypeName.BOOLEAN, SqlTypeName.DOUBLE);
            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+           put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+           put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+           put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
        }});
        put(SqlTypeName.FLOAT, new HashMap<>() {{
             put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
@@ -49,6 +52,9 @@ public class DingoTypeMapper {
            put(SqlTypeName.BIGINT, SqlTypeName.FLOAT);
            put(SqlTypeName.BOOLEAN, SqlTypeName.FLOAT);
            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+           put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+           put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+           put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
         }});
        put(SqlTypeName.INTEGER, new HashMap<>() {{
             put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
@@ -84,12 +90,20 @@ public class DingoTypeMapper {
         put(SqlTypeName.TIME, new HashMap<>() {{
             put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            //put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
         }});
         put(SqlTypeName.DATE, new HashMap<>() {{
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            //put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
         }});
         put(SqlTypeName.TIMESTAMP, new HashMap<>() {{
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
         }});
     }};
 
