@@ -88,7 +88,6 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.traits.DingoRelStreamingDef;
 import io.dingodb.calcite.utils.SqlUtil;
-import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.error.DingoError;
 import io.dingodb.common.error.DingoException;
 import io.dingodb.common.log.LogUtils;
@@ -99,9 +98,9 @@ import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.InfoSchemaService;
-import io.dingodb.tso.TsoService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -121,6 +120,7 @@ import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
@@ -241,6 +241,7 @@ public class DingoParser {
         this.context = context;
         // Create Planner.
         planner = new VolcanoPlanner(DingoCost.FACTORY, context);
+        //planner.setExecutor(new RexExecutorImpl(DataContexts.EMPTY));
         // Set to `true` to use `TopDownRuleDriver`, or `IterativeRuleDriver` is used.
         // It seems that `TopDownRuleDriver` is faster than `IterativeRuleDriver`.
         planner.setTopDownOpt(context.getConfig().topDownOpt());

@@ -138,6 +138,19 @@ public class RuleUtils {
                     }
                 }
             }
+        } else if (op0 instanceof RexCall) {
+            RexCall rexCall = (RexCall) op0;
+            if (rexCall.op instanceof SqlCastFunction
+                && rexCall.type.getSqlTypeName() == SqlTypeName.INTEGER
+                && rexCall.getOperands().size() == 1
+                && rexCall.getOperands().get(0).getKind() == SqlKind.INPUT_REF
+                && op1.getKind() == SqlKind.LITERAL
+            ) {
+                RexInputRef rexInputRef = (RexInputRef) rexCall.getOperands().get(0);
+                info.index = rexInputRef.getIndex();
+                info.value = (RexLiteral) op1;
+                return true;
+            }
         }
         return false;
     }
