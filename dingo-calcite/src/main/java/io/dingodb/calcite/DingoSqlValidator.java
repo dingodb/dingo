@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.dingodb.common.environment.ExecutionEnvironment.IMPLICT_NAME;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
@@ -338,7 +339,11 @@ public class DingoSqlValidator extends SqlValidatorImpl {
 
         // Fall back to default behavior: compare the type families.
         for (int i = 0; i < sourceCount; ++i) {
-            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataTypeField sourceTypeField = sourceFields.get(i);
+            if (IMPLICT_NAME.equals(sourceTypeField.getName())) {
+                continue;
+            }
+            RelDataType sourceType = sourceTypeField.getType();
             RelDataType targetType = targetFields.get(i).getType();
             if (!SqlTypeUtil.canAssignFrom(targetType, sourceType)) {
                 SqlNode node = getNthExpr(query, i, sourceCount);

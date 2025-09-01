@@ -96,7 +96,12 @@ public class TupleType extends AbstractDingoType {
 
     @Override
     public DingoType getChild(@NonNull Object index) {
-        return fields[(int) index];
+        int idx = (int) index;
+        if (idx < fieldCount()) {
+            return fields[(int) index];
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -171,9 +176,11 @@ public class TupleType extends AbstractDingoType {
     private Object @NonNull [] checkFieldCount(Object @NonNull [] tuple) {
         if (tuple.length == fieldCount()) {
             return tuple;
+        } else {
+            return tuple;
         }
-        throw new IllegalArgumentException(
-            "Required " + fieldCount() + " elements, but " + tuple.length + " provided."
-        );
+        //throw new IllegalArgumentException(
+        //    "Required " + fieldCount() + " elements, but " + tuple.length + " provided."
+        //);
     }
 }

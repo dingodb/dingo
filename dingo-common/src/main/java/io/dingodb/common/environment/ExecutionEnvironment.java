@@ -46,6 +46,7 @@ public class ExecutionEnvironment {
     public MdlCheckTableInfo mdlCheckTableInfo = new MdlCheckTableInfo();
 
     public ClientIdentity clientIdentity = new ClientIdentity();
+    public static final String IMPLICT_NAME = "_ROWID";
 
     public volatile long safePointTs;
 

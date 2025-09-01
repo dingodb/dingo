@@ -131,6 +131,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import static io.dingodb.common.SimpleExecuteVariablesFactory.variablesFactory;
+import static io.dingodb.common.environment.ExecutionEnvironment.IMPLICT_NAME;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnknown;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.exec.transaction.base.TransactionType.NONE;
@@ -179,6 +180,9 @@ public final class DingoDriverParser extends DingoParser {
             RelDataTypeField field = fieldList.get(i);
             List<String> colList = originList.get(i);
             boolean hidden = SchemaStateUtils.columnHidden(connection, colList);
+            if (!hidden) {
+                hidden = IMPLICT_NAME.equals(field.getName());
+            }
             //continue;
             columns.add(metaData(
                 typeFactory,
@@ -473,6 +477,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
             throw ExceptionUtils.toRuntime(e);
         } catch (RuntimeException e) {
+            LogUtils.error(log, "Parse and validate error, sql: <[{}]>.", sql, e);
             throw DingoErrUtil.newStdErr(e.getMessage());
         }
         planProfile.endValidator();

@@ -45,6 +45,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import static io.dingodb.calcite.DingoTypeMapper.getAggregateResultType;
+import static io.dingodb.common.environment.ExecutionEnvironment.IMPLICT_NAME;
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 @Slf4j
@@ -59,7 +60,11 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         final List<RelDataTypeField> targetFields = targetRowType.getFieldList();
         final int sourceCount = sourceFields.size();
         for (int i = 0; i < sourceCount; i++) {
-            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataTypeField sourceTypeField = sourceFields.get(i);
+            if (IMPLICT_NAME.equals(sourceTypeField.getName())) {
+                continue;
+            }
+            RelDataType sourceType = sourceTypeField.getType();
             RelDataType targetType = targetFields.get(i).getType();
             if (!SqlTypeUtil.equalSansNullability(validator.getTypeFactory(), sourceType, targetType)
                 && !SqlTypeUtil.canCastFrom(targetType, sourceType, true)) {
@@ -83,6 +88,10 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         }
         boolean coerced = false;
         for (int i = 0; i < sourceFields.size(); i++) {
+            RelDataTypeField sourceTypeField = sourceFields.get(i);
+            if (IMPLICT_NAME.equals(sourceTypeField.getName())) {
+                continue;
+            }
             RelDataType targetType = targetFields.get(i).getType();
             coerced = coerceSourceRowType1(scope, query, i, targetType) || coerced;
         }
