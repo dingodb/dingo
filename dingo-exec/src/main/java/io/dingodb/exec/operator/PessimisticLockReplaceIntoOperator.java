@@ -97,6 +97,12 @@ public class PessimisticLockReplaceIntoOperator extends SoleOutOperator {
                                 throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(i).getName() + "'");
                             }
                         }
+                    } else if(originColumns.get(i).getSqlTypeName().equalsIgnoreCase("TINYINT")) {
+                        if(tuple[i] instanceof Integer) {
+                            if ( (Integer)tuple[i] >= 127 || (Integer)tuple[i] <= -128) {
+                                throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(i).getName() + "'");
+                            }
+                        }
                     }
                 }
             }
