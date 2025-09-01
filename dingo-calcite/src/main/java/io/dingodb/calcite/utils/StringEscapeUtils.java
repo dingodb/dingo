@@ -43,7 +43,7 @@ public class StringEscapeUtils {
     public static final CharSequenceTranslator UNESCAPE_DINGO =
         new AggregateTranslator(new CharSequenceTranslator[]{
             new LookupTranslator(CHARS_UNESCAPE),
-            new LookupTranslator(new String[][]{{"\\\\", "\\"}, {"\\\"", "\""}})});
+            new LookupTranslator(new String[][]{{"\\\\", "\\"}, {"\\\"", "\""}, {"\\f", "f"}, {"\\b", ""}})});
 
     public static String unescape(String str) {
         return UNESCAPE_DINGO.translate(str);

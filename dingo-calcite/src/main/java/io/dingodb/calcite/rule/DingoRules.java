@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rule.dingo.DingoPhysicalRules;
 import io.dingodb.calcite.rule.dingo.DingoRepeatUnionRule;
 import io.dingodb.calcite.rule.dingo.DingoWindowRule;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.rel.core.Correlate;
@@ -216,9 +217,12 @@ public final class DingoRules {
     public static final List<RelOptRule> BASE_RULES = ImmutableList.of(
         CoreRules.AGGREGATE_STAR_TABLE,
         CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
+        CalciteSystemProperty.COMMUTE.value()
+            ? CoreRules.JOIN_ASSOCIATE
+            : CoreRules.PROJECT_MERGE,
         CoreRules.FILTER_SCAN,
         CoreRules.PROJECT_FILTER_TRANSPOSE,
-        //CoreRules.FILTER_PROJECT_TRANSPOSE,
+        CoreRules.FILTER_PROJECT_TRANSPOSE,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_PUSH_EXPRESSIONS,
         CoreRules.AGGREGATE_EXPAND_WITHIN_DISTINCT,
@@ -227,7 +231,7 @@ public final class DingoRules {
         CoreRules.FILTER_AGGREGATE_TRANSPOSE,
         CoreRules.PROJECT_WINDOW_TRANSPOSE,
         CoreRules.MATCH,
-        CoreRules.JOIN_COMMUTE,
+        //CoreRules.JOIN_COMMUTE,
         JoinPushThroughJoinRule.RIGHT,
         JoinPushThroughJoinRule.LEFT,
         CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
@@ -238,7 +242,7 @@ public final class DingoRules {
         CoreRules.JOIN_CONDITION_PUSH,
         CoreRules.FILTER_SET_OP_TRANSPOSE,
         AbstractConverter.ExpandConversionRule.INSTANCE,
-        CoreRules.JOIN_COMMUTE,
+        //CoreRules.JOIN_COMMUTE,
         CoreRules.UNION_TO_DISTINCT,
         CoreRules.PROJECT_AGGREGATE_MERGE,
         CoreRules.AGGREGATE_JOIN_TRANSPOSE,
