@@ -234,6 +234,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                     //Should not push down for decimal key column.
                     if (column.getType() instanceof DecimalType && ((IndexTable) td).originKeyList.contains(column.getName())) {
                         pushDown = false;
+                        break;
                     }
                 }
             }
