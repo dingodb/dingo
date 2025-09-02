@@ -22,6 +22,7 @@ import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlByteUtil;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.parser.ByteString;
+import io.dingodb.common.util.Utils;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.DingoPreparedStatement;
 import io.dingodb.driver.DingoStatement;
@@ -123,7 +124,7 @@ public class MysqlCommands {
         }
         for (int i = 0; i < statements.size(); i ++) {
             if (!executeStatement(statements.get(i), packetId, mysqlConnection,
-             i < statements.size() - 1, characterSet)) {
+             i < statements.size() - 1, characterSet, 3)) {
                 break;
             }
         }
@@ -220,7 +221,8 @@ public class MysqlCommands {
         AtomicLong packetId,
         MysqlConnection mysqlConnection,
         boolean hasMore,
-        String charsetStr
+        String charsetStr,
+        int retry
     ) {
         Statement statement = null;
         boolean hasResults;
@@ -236,7 +238,25 @@ public class MysqlCommands {
             }
             statement = mysqlConnection.getConnection().createStatement();
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-            hasResults = statement.execute(sqlSample);
+            try {
+                hasResults = statement.execute(sqlSample);
+            } catch (Exception e) {
+                if (e.getMessage() != null
+                    && (e.getMessage().contains("epoch is not match, region_epoch")
+                    || e.getMessage().contains("RegionSplitException"))) {
+                    LogUtils.info(log, "sql execute regionSplit,{}, cause:{}", sql, e);
+                    retry --;
+                    Utils.sleep(1000);
+                    if (retry == 0) {
+                        throw e;
+                    } else {
+                        executeStatement(sql, packetId, mysqlConnection, hasMore, charsetStr, retry);
+                        return true;
+                    }
+                } else {
+                    throw e;
+                }
+            }
             if (hasResults) {
                 // select
                 do {
@@ -310,7 +330,7 @@ public class MysqlCommands {
         } finally {
             try {
                 if (!stream) {
-                    if (statement != null) {
+                    if (statement != null && !statement.isClosed()) {
                         statement.close();
                     }
                 }
