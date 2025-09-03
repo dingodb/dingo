@@ -109,6 +109,10 @@ public class DingoConfiguration {
         return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getGcDeleteRegionPeriod, () -> 60);
     }
 
+    public static boolean enableGcSdkRegion() {
+        return Optional.mapOrGet(INSTANCE.common, CommonConfiguration::getEnableGcSdkRegion, () -> true);
+    }
+
     public static Integer lowerCaseTableNames() {
         return Optional.mapOrGet(INSTANCE.variable, VariableConfiguration::getLowerCaseTableNames, () -> 2);
     }
