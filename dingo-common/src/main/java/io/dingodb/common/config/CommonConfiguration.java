@@ -31,4 +31,5 @@ public class CommonConfiguration {
     private Integer globalCoreThreads;
     private Integer gcSafePointPeriod;
     private Integer gcDeleteRegionPeriod;
+    private Boolean enableGcSdkRegion;
 }

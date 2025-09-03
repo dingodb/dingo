@@ -116,7 +116,8 @@ public class Gc {
             for (Region region : regions) {
                 long regionId = region.getId();
                 // skip non txn region
-                if (region.getDefinition().getRange().getStartKey()[0] != 't') {
+                if (!isShouldProcessRegion(region)) {
+                    LogUtils.info(log, "Skipped region regionId: {}", region.getId());
                     continue;
                 }
                 LogUtils.info(log, "Scan {} locks.", regionId);
@@ -171,6 +172,12 @@ public class Gc {
         } finally {
             GcApi.running.set(false);
         }
+    }
+
+    private static boolean isShouldProcessRegion(Region region) {
+        byte[] startKey = region.getDefinition().getRange().getStartKey();
+        return startKey[0] == 't' ||
+            (startKey[0] == 'x' && DingoConfiguration.enableGcSdkRegion());
     }
 
     private static List<Region> getRegions(Set<Location> coordinators, long reqTs) {
@@ -228,7 +235,8 @@ public class Gc {
             for (Region region : regions) {
                 long regionId = region.getId();
                 // skip non txn region
-                if (region.getDefinition().getRange().getStartKey()[0] != 't') {
+                if (!isShouldProcessRegion(region)) {
+                    LogUtils.info(log, "Skipped region regionId: {}", region.getId());
                     continue;
                 }
                 LogUtils.info(log, "Back up scan {} locks.", regionId);
@@ -351,7 +359,8 @@ public class Gc {
                 for (Region region : regions) {
                     long regionId = region.getId();
                     // skip non txn region
-                    if (region.getDefinition().getRange().getStartKey()[0] != 't') {
+                    if (!isShouldProcessRegion(region)) {
+                        LogUtils.info(log, "Skipped region regionId: {}", region.getId());
                         continue;
                     }
                     LogUtils.info(log, "Back up Tenant id {}  scan {} locks.", te.getId(), regionId);

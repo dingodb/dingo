@@ -20,6 +20,7 @@ common:
     globalCoreThreads: 0
     gcSafePointPeriod: 300
     gcDeleteRegionPeriod: 60
+    enableGcSdkRegion: true
 store:
     bufferSize: 67108864
     bufferNumber: 2
