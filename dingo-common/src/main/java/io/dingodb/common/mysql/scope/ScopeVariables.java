@@ -114,6 +114,21 @@ public final class ScopeVariables {
         return txnScanByStream.equalsIgnoreCase("on");
     }
 
+    /**
+     * Set max length of sql digests for per transaction record in dingo_trx result.
+     * The default value is 1024 bytes.
+     * @return The max length of sql digests for per transaction record in dingo_trx result.
+     */
+    public static int getDingoTrxMaxDigestLength() {
+        try {
+            String maxCount = executorProp.getOrDefault("dingo_trx_max_digest_length", "1024").toString();
+            return Integer.parseInt(maxCount);
+        } catch (Exception e) {
+            //Default value as 1024.
+            return 1024;
+        }
+    }
+
     public static long getDdlWaitTimeout() {
         try {
             String timeoutStr = executorProp.getOrDefault("ddl_timeout", "180000").toString();

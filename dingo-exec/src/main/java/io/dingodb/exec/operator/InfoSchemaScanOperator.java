@@ -20,6 +20,7 @@ import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
@@ -47,6 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -515,13 +517,24 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
      */
     private static Iterator<Object[]> getTxnInfo() {
         List<Object[]> result = new ArrayList<>();
+        final int maxDigestLength = ScopeVariables.getDingoTrxMaxDigestLength();
 
         //get remote txn infos.
-        ClusterService.getDefault().getComputingLocations().stream()
+        List<List<Object[]>> remoteTrxs =  ClusterService.getDefault().getComputingLocations().stream()
             .filter($ -> !$.equals(DingoConfiguration.location()))
             .map($ -> ApiRegistry.getDefault().proxy(InfoSchemaScanOperator.Api.class, $))
             .map(InfoSchemaScanOperator.Api::getTxnInfos)
-            .forEach(result::addAll);
+            .collect(Collectors.toList());
+
+        remoteTrxs.forEach( itemList -> {
+                for (Object[] item : itemList) {
+                    if (item[5] != null && (String.valueOf(item[5]).length() > maxDigestLength)) {
+                        item[5] = ((String)item[5]).substring(0, maxDigestLength) + " ...";
+                    }
+
+                    result.add(item);
+                }
+            });
 
         //get local txn infos.
         Iterator<Object[]> iterator = TransactionService.getDefault().getTxnInfo();
