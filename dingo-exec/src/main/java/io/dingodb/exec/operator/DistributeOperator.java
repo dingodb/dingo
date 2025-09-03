@@ -19,8 +19,6 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -32,7 +30,6 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
-import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -52,68 +49,57 @@ public class DistributeOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         context = context.copy();
         DistributionParam param = vertex.getParam();
-        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
-        while (retry-- > 0) {
-            try {
-                Object[] newTuple = tuple;
-                if (tuple.length > param.getTable().columns.size()) {
-                    if (param.isRight()) {
-                        newTuple = Arrays.copyOfRange(tuple, param.getLeftLength(),
-                            param.getLeftLength() + param.getTable().columns.size());
-                    } else {
-                        newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
-                    }
-                }
-                IndexTable indexTable = param.getIndexTable();
-                PartitionService ps = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                CommonId partId;
-                CommonId tablePartId = null;
-                if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
-                    && indexTable != null) {
-                    context.setIndexId(param.getTableId());
-                    PartitionService indexPs = PartitionService.getService(
-                        Optional.ofNullable(indexTable.getPartitionStrategy())
-                            .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
-                    Object[] oldIndexTuple;
-                    if (param.isRight()) {
-                        oldIndexTuple = Arrays.copyOfRange(
-                            tuple, param.getLeftLength(), param.getLeftLength() + param.getTable().columns.size());
-                    } else {
-                        oldIndexTuple = tuple;
-                    }
-                    Object[] indexTuple = new Object[indexTable.columns.size()];
-                    for (int i = 0; i < indexTable.getMapping().size(); i++) {
-                        int colIx;
-                        if ((colIx = indexTable.getMapping().get(i)) > -1) {
-                            indexTuple[i] = oldIndexTuple[colIx];
-                        }
-                    }
-                    KeyValueCodec indexCodec = CodecService.getDefault()
-                        .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
-                        indexTable.tupleType(), indexTable.keyMapping());
-                    partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
-                    NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
-                        MetaService.root().getRangeDistribution(param.getTable().tableId);
-                    tablePartId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), distribution);
-                } else {
-                    partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
-                    context.setTableId(param.getTableId());
-                }
-                RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
-                context.setDistribution(distribution);
-                context.setTablePartId(tablePartId);
-
-                return vertex.getSoleEdge().transformToNext(context, tuple);
-            } catch (RegionSplitException e) {
-                LogUtils.error(log, e.getMessage());
-                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions =
-                    MetaService.root().getRangeDistribution(param.getTableId());
-                param.setDistributions(distributions);
+        Object[] newTuple = tuple;
+        if (tuple.length > param.getTable().columns.size()) {
+            if (param.isRight()) {
+                newTuple = Arrays.copyOfRange(tuple, param.getLeftLength(),
+                    param.getLeftLength() + param.getTable().columns.size());
+            } else {
+                newTuple = Arrays.copyOfRange(tuple, 0, param.getTable().columns.size());
             }
         }
-        return true;
+        IndexTable indexTable = param.getIndexTable();
+        PartitionService ps = PartitionService.getService(
+            Optional.ofNullable(param.getTable().getPartitionStrategy())
+                .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+        CommonId partId;
+        CommonId tablePartId = null;
+        if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
+            && indexTable != null) {
+            context.setIndexId(param.getTableId());
+            PartitionService indexPs = PartitionService.getService(
+                Optional.ofNullable(indexTable.getPartitionStrategy())
+                    .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
+            Object[] oldIndexTuple;
+            if (param.isRight()) {
+                oldIndexTuple = Arrays.copyOfRange(
+                    tuple, param.getLeftLength(), param.getLeftLength() + param.getTable().columns.size());
+            } else {
+                oldIndexTuple = tuple;
+            }
+            Object[] indexTuple = new Object[indexTable.columns.size()];
+            for (int i = 0; i < indexTable.getMapping().size(); i++) {
+                int colIx;
+                if ((colIx = indexTable.getMapping().get(i)) > -1) {
+                    indexTuple[i] = oldIndexTuple[colIx];
+                }
+            }
+            KeyValueCodec indexCodec = CodecService.getDefault()
+                .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
+                    indexTable.tupleType(), indexTable.keyMapping());
+            partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
+                MetaService.root().getRangeDistribution(param.getTable().tableId);
+            tablePartId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), distribution);
+        } else {
+            partId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), param.getDistributions());
+            context.setTableId(param.getTableId());
+        }
+        RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
+        context.setDistribution(distribution);
+        context.setTablePartId(tablePartId);
+
+        return vertex.getSoleEdge().transformToNext(context, tuple);
     }
 
     @Override

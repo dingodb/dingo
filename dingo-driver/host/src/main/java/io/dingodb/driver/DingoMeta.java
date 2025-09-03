@@ -51,6 +51,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
@@ -562,11 +563,12 @@ public class DingoMeta extends MetaImpl {
         long offset,
         int fetchMaxRowCount
     ) throws NoSuchStatementException {
-        return getFrame(sh, offset, fetchMaxRowCount);
+        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
+        return getFrame(sh, offset, fetchMaxRowCount, retry);
     }
 
     @NonNull
-    private Frame getFrame(StatementHandle sh, long offset, int fetchMaxRowCount) throws NoSuchStatementException {
+    private Frame getFrame(StatementHandle sh, long offset, int fetchMaxRowCount, int retry) throws NoSuchStatementException {
         final long startTime = System.currentTimeMillis();
         AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         SqlProfile sqlProfile = null;
@@ -637,7 +639,8 @@ public class DingoMeta extends MetaImpl {
                                 resultSet,
                                 signature,
                                 transaction,
-                                (RuntimeException) e)
+                                (RuntimeException) e,
+                                retry)
                         );
                     } else if (e instanceof TaskFinException) {
                         if (((TaskFinException)e).getErrorType().equals(ErrorType.LockWait)) {
@@ -650,7 +653,8 @@ public class DingoMeta extends MetaImpl {
                                     resultSet,
                                     signature,
                                     transaction,
-                                    (RuntimeException) e)
+                                    (RuntimeException) e,
+                                    retry)
                             );
                         }
                     }
@@ -666,6 +670,34 @@ public class DingoMeta extends MetaImpl {
                         LogUtils.error(log, throwable.getMessage(), throwable);
                         throw ExceptionUtils.toRuntime(e);
                     }
+                }
+                if (e instanceof RegionSplitException || (e.getMessage() != null
+                    && (e.getMessage().contains("epoch is not match, region_epoch")
+                    || e.getMessage().contains("RegionSplitException")))
+                ) {
+                    if (transaction != null && transaction.isPessimistic()) {
+                        ((DingoStatement) statement).removeJob(jobManager);
+                        if (isDml(signature) || forUpdate) {
+                            transaction.rollBackPessimisticLock(jobManager);
+                        }
+                    } else if (transaction != null && transaction.isOptimistic()) {
+                        try {
+                            if (isDml(signature) || forUpdate) {
+                                transaction.rollBackOptimisticCurrentJobData(jobManager);
+                            }
+                        } catch (Throwable throwable) {
+                            LogUtils.error(log, throwable.getMessage(), throwable);
+                            throw ExceptionUtils.toRuntime(e);
+                        }
+                    }
+                    return requireNonNull(resolveRegionSplit(
+                        sh,
+                        offset,
+                        fetchMaxRowCount,
+                        statement,
+                        signature,
+                        resultSet,
+                        retry));
                 }
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
@@ -798,11 +830,10 @@ public class DingoMeta extends MetaImpl {
     private Frame resolveLockWait(StatementHandle sh, long offset, int fetchMaxRowCount,
                                        AvaticaStatement statement, DingoResultSet resultSet,
                                        Signature signature, ITransaction transaction,
-                                       RuntimeException exception) throws NoSuchStatementException {
+                                       RuntimeException exception, int retry) throws NoSuchStatementException {
         RuntimeException lockWaitException = exception;
-        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         LogUtils.info(log, "resolveLockWait retry:{}, startTs:{}", retry, transaction.getStartTs());
-        while (retry-- > 0 && transaction.isPessimistic()) {
+        if (retry-- > 0 && transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
             // rollback pessimistic lock
             transaction.rollBackPessimisticLock(jobManager);
@@ -814,10 +845,28 @@ public class DingoMeta extends MetaImpl {
                 dingoSignature.allColumnMetaDataList, false, dingoSignature.columns);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
-            return getFrame(sh, offset, fetchMaxRowCount);
+            return getFrame(sh, offset, fetchMaxRowCount, retry);
         }
         if (lockWaitException != null) {
             throw lockWaitException;
+        }
+        return null;
+    }
+
+    private Frame resolveRegionSplit(StatementHandle sh, long offset, int fetchMaxRowCount,
+                                     AvaticaStatement statement, Signature signature, DingoResultSet resultSet,
+                                     int retry) throws NoSuchStatementException {
+        LogUtils.info(log, "resolveRegionSplit retry:{}", retry);
+        if (retry-- > 0) {
+            DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
+            DingoSignature dingoSignature = (DingoSignature) signature;
+            Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
+                ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
+                ((DingoSignature) sh.signature).getParasType(),
+                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns);
+            ((DingoStatement) statement).setSignature(signature1);
+            resultSet.setIterator(null);
+            return getFrame(sh, offset, fetchMaxRowCount, retry);
         }
         return null;
     }
@@ -829,7 +878,7 @@ public class DingoMeta extends MetaImpl {
         int txnRetryLimit = getTxnRetryLimit();
         LogUtils.info(log, "retry txnRetryLimit is {} txnAutoRetry is {}", txnRetryLimit, isDisableTxnRetry());
         RuntimeException conflictException = exception;
-        while (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
+        if (isDisableTxnRetry() && (txnRetryLimit-- > 0) && !transaction.isPessimistic()) {
             ((DingoStatement) statement).removeJob(jobManager);
             DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
             DingoSignature dingoSignature = (DingoSignature) signature;
@@ -840,7 +889,7 @@ public class DingoMeta extends MetaImpl {
                  true, dingoSignature.columns);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
-            return getFrame(sh, offset, fetchMaxRowCount);
+            return getFrame(sh, offset, fetchMaxRowCount, txnRetryLimit);
         }
         if (conflictException != null) {
             throw conflictException;
