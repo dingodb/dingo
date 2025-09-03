@@ -18,6 +18,8 @@ package io.dingodb.driver;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
@@ -26,6 +28,7 @@ import io.dingodb.transaction.api.LockType;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +136,20 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                 //Get sql list in transaction as string.
                 StringBuilder sqlBuilder = new StringBuilder();
                 List<String> sqlList = dc.getTransaction().getSqlList();
+                int maxLength = ScopeVariables.getDingoTrxMaxDigestLength();
+
                 for (String sql : sqlList) {
+                    if (sqlBuilder.length() > maxLength) {
+                        break;
+                    }
+
+                    int remain = maxLength - sqlBuilder.length();
+                    if (remain < sql.length()) {
+                        sqlBuilder.append(sql, 0, remain).append(" ... ");
+                        sqlBuilder.append(";");
+                        break;
+                    }
+
                     sqlBuilder.append(sql).append(";");
                 }
                 res[5] = sqlBuilder.toString();
