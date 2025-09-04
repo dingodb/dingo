@@ -52,6 +52,7 @@ import static io.dingodb.common.CommonId.CommonType.DDL;
 import static io.dingodb.common.CommonId.CommonType.META;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
+import static io.dingodb.store.proxy.meta.MetaCache.zeroPart;
 
 @Slf4j
 public class MetaCacheSnapShot {
@@ -166,6 +167,18 @@ public class MetaCacheSnapShot {
         List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
         tableDefinition.getTablePartition().getPartitions()
             .forEach(partition -> {
+                int isEmptyPartStart = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                int isEmptyPartEnd = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                if (isEmptyPartStart == 0 || isEmptyPartEnd == 0) {
+                    LogUtils.error(log, "get table range, but part range error,  " +
+                            "tableId:{}, tableName:{}, part:{}",
+                        tableWithId.getTableId(), tableDefinition.getName(), partition);
+                    throw new RuntimeException("table part is empty");
+                }
                 List<Object> regionList = infoSchemaService
                     .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
                 regionList
@@ -176,6 +189,7 @@ public class MetaCacheSnapShot {
                                     "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
                                 tableWithId.getTableId(), tableDefinition.getName(), partition);
+                            return;
                         }
                         rangeDistributionList.add(
                             new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
@@ -195,6 +209,7 @@ public class MetaCacheSnapShot {
                         "tableId:{}, tableName:{}, partId:{}, regionRange:{}", distribution.getId(),
                     tableWithId.getTableId(), tableDefinition.getName(), scanRegionWithPartId.getPartId(),
                     scanRegionWithPartId.getScanRegionInfo().getRange());
+                return;
             }
             result.put(new ByteArrayUtils.ComparableByteArray(distribution.getStartKey(), 1), distribution);
         });
