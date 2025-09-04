@@ -18,10 +18,13 @@ package io.dingodb.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.rules.SubstitutionRule;
@@ -39,6 +42,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.immutables.value.Value;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Value.Enclosing
 public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Config>
@@ -99,6 +103,13 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
                 ImmutableList.of(), rexNodeList, union.getRowTypeWithContext(SqlOperator.CallContext.IN_UNION), ImmutableSet.of()
             );
             union.addProject = true;
+
+            if (!union.all) {
+                LogicalAggregate agg = (LogicalAggregate) RelOptUtil.createDistinctRel(logicalProject);
+                call.transformTo(agg);
+                return;
+            }
+
             call.transformTo(logicalProject);
         } catch (Throwable ignored) {
 

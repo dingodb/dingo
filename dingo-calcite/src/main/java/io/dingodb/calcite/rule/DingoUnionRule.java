@@ -58,25 +58,29 @@ public class DingoUnionRule extends ConverterRule {
                 .collect(Collectors.toList()),
             true
         );
+
         if (!union.all) {
-            LogicalUnion newUnion = (LogicalUnion) union.copy(
-                traits,
-                union.getInputs().stream()
-                    .map(n -> convert(n, traits))
-                    .collect(Collectors.toList()),
-                true
-            );
-            LogicalAggregate agg = (LogicalAggregate) RelOptUtil.createDistinctRel(newUnion);
-            return new DingoAggregate(
-                agg.getCluster(),
-                traits,
-                agg.getHints(),
-                dingoUnion,
-                agg.getGroupSet(),
-                agg.getGroupSets(),
-                agg.getAggCallList()
-            );
+            if(union instanceof LogicalUnion && !((LogicalUnion) union).addProject) {
+                LogicalUnion newUnion = (LogicalUnion) union.copy(
+                    traits,
+                    union.getInputs().stream()
+                        .map(n -> convert(n, traits))
+                        .collect(Collectors.toList()),
+                    true
+                );
+                LogicalAggregate agg = (LogicalAggregate) RelOptUtil.createDistinctRel(newUnion);
+                return new DingoAggregate(
+                    agg.getCluster(),
+                    traits,
+                    agg.getHints(),
+                    dingoUnion,
+                    agg.getGroupSet(),
+                    agg.getGroupSets(),
+                    agg.getAggCallList()
+                );
+            }
         }
+
         return dingoUnion;
     }
 }
