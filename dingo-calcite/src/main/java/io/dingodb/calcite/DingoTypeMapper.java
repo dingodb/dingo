@@ -90,25 +90,29 @@ public class DingoTypeMapper {
             put(SqlTypeName.BIGINT, SqlTypeName.VARCHAR);
             put(SqlTypeName.DECIMAL, SqlTypeName.VARCHAR);
             put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
-           put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+            put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+            put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
         }});
         put(SqlTypeName.TIME, new HashMap<>() {{
             put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
             put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
             put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
             //put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
         }});
         put(SqlTypeName.DATE, new HashMap<>() {{
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
             put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
             put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
             //put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
         }});
         put(SqlTypeName.TIMESTAMP, new HashMap<>() {{
             put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
             put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
             put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
         }});
         put(SqlTypeName.DECIMAL, new HashMap<>() {{
             put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
