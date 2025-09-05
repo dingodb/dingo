@@ -28,6 +28,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
+import io.dingodb.expr.rel.PipeOp;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -176,6 +177,17 @@ public class HashJoinOperator extends SoleOutOperator {
                 return true;
             }
         } else {
+            if (param.getRelOp() != null) {
+                Object object;
+                synchronized (param.getRelOp()) {
+                    object = ((Object[]) ((PipeOp) param.getRelOp()).put(tmpTuple))[0];
+                }
+                if (object != null && (Boolean) object) {
+                    return edge.transformToNext(context, tuple);
+                } else {
+                    return true;
+                }
+            }
             return edge.transformToNext(context, tuple);
         }
     }

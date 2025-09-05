@@ -25,6 +25,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -66,6 +67,9 @@ public class HashJoinParam extends AbstractParams {
 
     @Setter
     public SqlExpr otherExpr;
+
+    @Setter
+    public RelOp relOp;
 
     @Setter
     public String joinType;
