@@ -117,7 +117,7 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                 SelectionObj selectionObj = new SelectionObj(selections, true);
                 boolean isSelection = false;
                 if (isAutoCommit() && RelOpSelectionVisitor.INSTANCE.visit(relOp, selectionObj) == SelectionFlag.OK
-                    && selectionObj.isProject() && selections.size() != selection.size()) {
+                    && selectionObj.isProject() && selections.size() != selection.size() && !selections.isEmpty()) {
                     try {
                         selection.clear();
                         selection.addAll(selections);
