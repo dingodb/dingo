@@ -33,7 +33,7 @@ DingoDB provides disk-based vector search capabilities to minimize memory consum
 All Documentation [Docs](https://dingodb.readthedocs.io/en/latest/)
 
 ### Install
-How to install and deploy [Docker](https://dingodb.readthedocs.io/en/latest/deployment/deploy_in_single_node_using_docker.html) or [Ansible](https://dingodb.readthedocs.io/en/latest/deployment/deploy_on_cluster_by_ansible.html#)
+How to install and deploy [Docker](https://dingodb.readthedocs.io/en/latest/deployment/cluster/deploy_in_single_node_using_docker.html) or [Ansible](https://dingodb.readthedocs.io/en/latest/deployment/cluster/deploy_on_cluster_by_ansible/index.html)
 
 ### Usage
 How to use DingoDB [Usage](https://dingodb.readthedocs.io/en/latest/usage/how_to_use_dingodb.html)
