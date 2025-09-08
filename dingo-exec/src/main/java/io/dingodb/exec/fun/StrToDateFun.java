@@ -25,19 +25,16 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;
-import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.text.ParsePosition;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
-import java.time.temporal.TemporalAccessor;
-import java.util.Locale;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,9 +44,6 @@ public class StrToDateFun extends BinaryOp {
     private static final long serialVersionUID = 8883906487235211037L;
 
     public static final StrToDateFun INSTANCE = new StrToDateFun();
-
-    private static final Pattern FORMAT_PATTERN = Pattern.compile("%([a-zA-Z])");
-    private static final Pattern ESCAPED_PERCENT = Pattern.compile("%%");
 
     public static final String NAME = "str_to_date";
 
@@ -70,263 +64,276 @@ public class StrToDateFun extends BinaryOp {
         }
     }
 
-    public static Object strToDate(String dateString, String formatString) {
-        if (dateString == null || formatString == null || dateString.isEmpty() || formatString.isEmpty()) {
+    private static final Map<String, String> FORMAT_PATTERNS = new HashMap<>();
+    static {
+        FORMAT_PATTERNS.put("Y", "(?<Y>\\d{2,4})");          // year(2 or 4 digits)
+        FORMAT_PATTERNS.put("m", "(?<m>\\d{1,2})");          // month(1 or 2 digits)
+        FORMAT_PATTERNS.put("d", "(?<d>\\d{1,2})");          // day(1 or 2 digits)
+        FORMAT_PATTERNS.put("H", "(?<H>\\d{1,2})");          // hour(00-23)
+        FORMAT_PATTERNS.put("h", "(?<h>\\d{1,2})");          // hour(01-12)
+        FORMAT_PATTERNS.put("i", "(?<i>\\d{1,2})");          // minute(00-59)
+        FORMAT_PATTERNS.put("s", "(?<s>\\d{1,2})");          // Second(00-59)
+        FORMAT_PATTERNS.put("f", "(?<f>\\d{1,6})");          // Microseconds(1-6 digits)
+        FORMAT_PATTERNS.put("p", "(?<p>[AP]M)");             // AM/PM
+    }
+
+    public static Object strToDate(String dateStr, String format) {
+        if (dateStr == null || format == null) {
             return null;
         }
 
-        try {
-            // Analyze the format string to determine the date and time part contained
-            boolean hasDate = false;
-            boolean hasTime = false;
-            boolean hasMicroseconds = false;
+        boolean formatHasTime = format.contains("%H") || format.contains("%h") ||
+            format.contains("%i") || format.contains("%s") ||
+            format.contains("%f") || format.contains("%p");
 
-            Matcher matcher = FORMAT_PATTERN.matcher(formatString);
-            while (matcher.find()) {
-                String specifier = matcher.group(1);
-                switch (specifier) {
-                    case "Y":
-                    case "y":
-                    case "m":
-                    case "c":
-                    case "M":
-                    case "b":
-                    case "D":
-                    case "d":
-                    case "e":
-                    case "j":
-                    case "U":
-                    case "u":
-                    case "V":
-                    case "v":
-                    case "W":
-                    case "w":
-                    case "a":
-                    case "X":
-                    case "x":
-                        hasDate = true;
-                        break;
-                    case "H":
-                    case "h":
-                    case "I":
-                    case "i":
-                    case "s":
-                    case "f":
-                    case "p":
-                    case "r":
-                    case "T":
-                        hasTime = true;
-                        if ("f".equals(specifier)) {
-                            hasMicroseconds = true;
-                        }
-                        break;
+        StringBuilder regex = new StringBuilder();
+        StringBuilder currentText = new StringBuilder();
+        List<String> formatSpecifiers = new ArrayList<>();
+
+        for (int i = 0; i < format.length(); i++) {
+            char c = format.charAt(i);
+            if (c == '%' && i + 1 < format.length()) {
+                if (currentText.length() > 0) {
+                    regex.append(Pattern.quote(currentText.toString()));
+                    currentText.setLength(0);
                 }
-            }
 
-            // Replace escaped percent sign
-            String cleanFormat = ESCAPED_PERCENT.matcher(formatString).replaceAll("\\\\%");
-
-            // Convert to Java DateTimeFormatter mode
-            String javaPattern = convertToJavaPattern(cleanFormat);
-
-            // Create a formatter - parse using LENIENT mode
-            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                .parseCaseInsensitive()
-                .appendPattern(javaPattern)
-                .toFormatter(Locale.ENGLISH)
-                .withResolverStyle(ResolverStyle.LENIENT);
-
-            ParsePosition position = new ParsePosition(0);
-            TemporalAccessor temporal;
-            if (hasDate && hasTime) {
-                temporal = formatter.parse(dateString, position);
-                if (position.getErrorIndex() >= 0 || position.getIndex() == 0) {
-                    return null;
-                }
-                try {
-                    LocalDateTime dateTime = LocalDateTime.from(temporal);
-                    // Handle double-digit years
-                    if (formatString.contains("%y")) {
-                        dateTime = adjustTwoDigitYear(dateTime, formatString, dateString);
-                    }
-                    // Check whether the format string contains text specifiers
-                    if (!hasTextSpecifier(formatString)) {
-                        String parsedPart = dateString.substring(0, position.getIndex());
-                        String formatted = formatter.format(dateTime);
-                        if (!parsedPart.equalsIgnoreCase(formatted)) {
-                            return null;
-                        }
-                    }
-                    return Timestamp.valueOf(dateTime);
-                } catch (Exception e) {
-                    return null;
-                }
-            } else if (hasDate) {
-                temporal = formatter.parse(dateString, position);
-                if (position.getErrorIndex() >= 0 || position.getIndex() == 0) {
-                    return null;
-                }
-                try {
-                    LocalDate date = LocalDate.from(temporal);
-                    // Handle double-digit years
-                    if (formatString.contains("%y")) {
-                        date = adjustTwoDigitYear(date, formatString, dateString);
-                    }
-                    // Check whether the format string contains text specifiers
-                    if (!hasTextSpecifier(formatString)) {
-                        String parsedPart = dateString.substring(0, position.getIndex());
-                        String formatted = formatter.format(date);
-                        if (!parsedPart.equalsIgnoreCase(formatted)) {
-                            return null;
-                        }
-                    }
-                    return Date.valueOf(date);
-                } catch (Exception e) {
-                    return null;
-                }
-            } else if (hasTime) {
-                temporal = formatter.parse(dateString, position);
-                if (position.getErrorIndex() >= 0 || position.getIndex() == 0) {
-                    return null;
-                }
-                try {
-                    LocalTime time = LocalTime.from(temporal);
-                    // Check whether the format string contains text specifiers
-                    if (!hasTextSpecifier(formatString)) {
-                        String parsedPart = dateString.substring(0, position.getIndex());
-                        String formatted = formatter.format(time);
-                        if (!parsedPart.equalsIgnoreCase(formatted)) {
-                            return null;
-                        }
-                    }
-                    return Time.valueOf(time);
-                } catch (Exception e) {
-                    return null;
-                }
-            } else {
-                // Neither date nor time specifier, return null
-                return null;
-            }
-        } catch (DateTimeParseException e) {
-            return null;
-        }
-    }
-
-    // Check whether the format string contains text specifiers
-    private static boolean hasTextSpecifier(String formatString) {
-        return formatString.contains("%M") || formatString.contains("%b") || formatString.contains("%D")
-            || formatString.contains("%W") || formatString.contains("%a");
-    }
-
-    private static String convertToJavaPattern(String mysqlFormat) {
-        StringBuilder javaPattern = new StringBuilder();
-        int len = mysqlFormat.length();
-        boolean inEscape = false;
-
-        for (int i = 0; i < len; i++) {
-            char c = mysqlFormat.charAt(i);
-
-            if (inEscape) {
-                // Handle escape sequences
-                switch (c) {
-                    case 'Y': javaPattern.append("yyyy"); break;
-                    case 'y': javaPattern.append("yy"); break;
-                    case 'm': javaPattern.append("MM"); break;
-                    case 'c': javaPattern.append("M"); break;
-                    case 'M':
-                        // Month Name - Support full name and abbreviation
-                        javaPattern.append("MMMM");
-                        break;
-                    case 'b':
-                        // Month abbreviation
-                        javaPattern.append("MMM");
-                        break;
-                    case 'D':
-                        // Date with English suffix
-                        javaPattern.append("d");
-                        break;
-                    case 'd': javaPattern.append("dd"); break;
-                    case 'e': javaPattern.append("d"); break;
-                    case 'j': javaPattern.append("D"); break;
-                    case 'H': javaPattern.append("HH"); break;
-                    case 'h':
-                    case 'I': javaPattern.append("hh"); break;
-                    case 'i': javaPattern.append("mm"); break;
-                    case 's': javaPattern.append("ss"); break;
-                    case 'f':
-                        // Microseconds - Support 1-6 bits
-                        javaPattern.append("SSSSSS");
-                        break;
-                    case 'p':
-                        // AM/PM - Supports case
-                        javaPattern.append("a");
-                        break;
-                    case 'r':
-                        // 12-hour time
-                        javaPattern.append("hh:mm:ss a");
-                        break;
-                    case 'T': javaPattern.append("HH:mm:ss"); break;
-                    case 'U':
-                    case 'u': javaPattern.append("ww"); break;
-                    case 'V':
-                    case 'v': javaPattern.append("ww"); break;
-                    case 'W':
-                        // The full name of the week
-                        javaPattern.append("EEEE");
-                        break;
-                    case 'w': javaPattern.append("e"); break;
-                    case 'a':
-                        // Abbreviation of the day of the week
-                        javaPattern.append("EEE");
-                        break;
-                    case 'X':
-                    case 'x': javaPattern.append("YYYY"); break;
-                    case '%': javaPattern.append("%"); break;
-                    default:
-                        // Unknown format specifiers, literal
-                        javaPattern.append("%").append(c);
-                }
-                inEscape = false;
-            } else if (c == '%') {
-                inEscape = true;
-            } else {
-                // Escape special characters in Java pattern
-                if ("GyYMwdDEaHkKhmsSzZX".indexOf(c) >= 0) {
-                    javaPattern.append("'").append(c).append("'");
+                char specifier = format.charAt(++i);
+                String pattern = FORMAT_PATTERNS.get(String.valueOf(specifier));
+                if (pattern != null) {
+                    regex.append(pattern);
+                    formatSpecifiers.add(String.valueOf(specifier));
                 } else {
-                    javaPattern.append(c);
+                    currentText.append('%').append(specifier);
                 }
+            } else {
+                currentText.append(c);
             }
         }
 
-        // If the escape sequence is not completed, add the last %
-        if (inEscape) {
-            javaPattern.append("%");
+        if (currentText.length() > 0) {
+            regex.append(Pattern.quote(currentText.toString()));
         }
 
-        return javaPattern.toString();
-    }
+        Pattern pattern = Pattern.compile(regex.toString());
+        Matcher matcher = pattern.matcher(dateStr);
 
-    private static LocalDateTime adjustTwoDigitYear(LocalDateTime dateTime, String format, String dateString) {
-        int year = dateTime.getYear();
-        // MySQL rules: 70-99 -> 1970-1999, 00-69 -> 2000-2069
-        if (year >= 70 && year <= 99) {
-            return dateTime.withYear(1900 + year);
-        } else if (year >= 0 && year <= 69) {
-            return dateTime.withYear(2000 + year);
-        }
-        return dateTime;
-    }
+        if (!matcher.find()) {
+            if (formatHasTime) {
+                StringBuilder dateOnlyRegex = new StringBuilder();
+                StringBuilder dateOnlyText = new StringBuilder();
+                List<String> dateOnlySpecifiers = new ArrayList<>();
 
-    private static LocalDate adjustTwoDigitYear(LocalDate date, String format, String dateString) {
-        int year = date.getYear();
-        // MySQL rules: 70-99 -> 1970-1999, 00-69 -> 2000-2069
-        if (year >= 70 && year <= 99) {
-            return date.withYear(1900 + year);
-        } else if (year >= 0 && year <= 69) {
-            return date.withYear(2000 + year);
+                for (int i = 0; i < format.length(); i++) {
+                    char c = format.charAt(i);
+                    if (c == '%' && i + 1 < format.length()) {
+                        if (dateOnlyText.length() > 0) {
+                            dateOnlyRegex.append(Pattern.quote(dateOnlyText.toString()));
+                            dateOnlyText.setLength(0);
+                        }
+
+                        char specifier = format.charAt(++i);
+                        String patternStr = FORMAT_PATTERNS.get(String.valueOf(specifier));
+                        if (patternStr != null) {
+                            if (specifier == 'H' || specifier == 'h' ||
+                                specifier == 'i' || specifier == 's' ||
+                                specifier == 'f' || specifier == 'p') {
+                                break;
+                            }
+                            dateOnlyRegex.append(patternStr);
+                            dateOnlySpecifiers.add(String.valueOf(specifier));
+                        } else {
+                            dateOnlyText.append('%').append(specifier);
+                        }
+                    } else {
+                        dateOnlyText.append(c);
+                    }
+                }
+
+                if (dateOnlyText.length() > 0) {
+                    dateOnlyRegex.append(Pattern.quote(dateOnlyText.toString()));
+                }
+
+                Pattern dateOnlyPattern = Pattern.compile(dateOnlyRegex.toString());
+                Matcher dateOnlyMatcher = dateOnlyPattern.matcher(dateStr);
+
+                if (dateOnlyMatcher.find()) {
+                    Map<String, String> values = new HashMap<>();
+                    for (String specifier : dateOnlySpecifiers) {
+                        try {
+                            String value = dateOnlyMatcher.group(specifier);
+                            if (value != null) {
+                                values.put(specifier, value);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            // ignore
+                        }
+                    }
+
+                    Calendar cal = Calendar.getInstance();
+                    cal.set(Calendar.YEAR, 1970);
+                    cal.set(Calendar.MONTH, 0);
+                    cal.set(Calendar.DAY_OF_MONTH, 1);
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+
+                    boolean hasDate = false;
+
+                    if (values.containsKey("Y")) {
+                        hasDate = true;
+                        int year = Integer.parseInt(values.get("Y"));
+                        if (year < 70) {
+                            year += 2000;
+                        } else if (year < 100) {
+                            year += 1900;
+                        }
+                        cal.set(Calendar.YEAR, year);
+                    }
+
+                    if (values.containsKey("m")) {
+                        hasDate = true;
+                        int month = Integer.parseInt(values.get("m")) - 1;
+                        cal.set(Calendar.MONTH, month);
+                    }
+
+                    if (values.containsKey("d")) {
+                        hasDate = true;
+                        int day = Integer.parseInt(values.get("d"));
+                        cal.set(Calendar.DAY_OF_MONTH, day);
+                    }
+
+                    if (hasDate) {
+                        return new Timestamp(cal.getTimeInMillis());
+                    }
+                }
+            }
+
+            return null;
         }
-        return date;
+
+        Map<String, String> values = new HashMap<>();
+        for (String specifier : formatSpecifiers) {
+            try {
+                String value = matcher.group(specifier);
+                if (value != null) {
+                    values.put(specifier, value);
+                }
+            } catch (IllegalArgumentException e) {
+                // ignore
+            }
+        }
+
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR, 1970);
+        cal.set(Calendar.MONTH, 0);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+
+        int microsecond = 0;
+        boolean hasDate = false;
+        boolean hasTime = false;
+        boolean hasMicrosecond = values.containsKey("f");
+
+        if (values.containsKey("Y")) {
+            hasDate = true;
+            int year = Integer.parseInt(values.get("Y"));
+            if (year < 70) {
+                year += 2000;
+            } else if (year < 100) {
+                year += 1900;
+            }
+            cal.set(Calendar.YEAR, year);
+        }
+
+        if (values.containsKey("m")) {
+            hasDate = true;
+            int month = Integer.parseInt(values.get("m")) - 1;
+            cal.set(Calendar.MONTH, month);
+        }
+
+        if (values.containsKey("d")) {
+            hasDate = true;
+            int day = Integer.parseInt(values.get("d"));
+            cal.set(Calendar.DAY_OF_MONTH, day);
+        }
+
+        if (values.containsKey("H")) {
+            hasTime = true;
+            int hour = Integer.parseInt(values.get("H"));
+            cal.set(Calendar.HOUR_OF_DAY, hour);
+        } else if (formatHasTime) {
+            hasTime = true;
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+        }
+
+        if (values.containsKey("h")) {
+            hasTime = true;
+            int hour = Integer.parseInt(values.get("h"));
+            if (values.containsKey("p")) {
+                String ampm = values.get("p");
+                if ("PM".equalsIgnoreCase(ampm) && hour < 12) {
+                    hour += 12;
+                } else if ("AM".equalsIgnoreCase(ampm) && hour == 12) {
+                    hour = 0;
+                }
+            }
+            cal.set(Calendar.HOUR_OF_DAY, hour);
+        } else if (formatHasTime && !values.containsKey("H")) {
+            hasTime = true;
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+        }
+
+        if (values.containsKey("i")) {
+            hasTime = true;
+            int minute = Integer.parseInt(values.get("i"));
+            cal.set(Calendar.MINUTE, minute);
+        } else if (formatHasTime) {
+            hasTime = true;
+            cal.set(Calendar.MINUTE, 0);
+        }
+
+        if (values.containsKey("s")) {
+            hasTime = true;
+            int second = Integer.parseInt(values.get("s"));
+            cal.set(Calendar.SECOND, second);
+        } else if (formatHasTime) {
+            hasTime = true;
+            cal.set(Calendar.SECOND, 0);
+        }
+
+        if (hasMicrosecond) {
+            String microStr = values.get("f");
+            if (microStr.length() < 6) {
+                microStr = String.format("%-6s", microStr).replace(' ', '0');
+            } else if (microStr.length() > 6) {
+                microStr = microStr.substring(0, 6);
+            }
+            microsecond = Integer.parseInt(microStr);
+        } else if (format.contains("%f")) {
+            hasMicrosecond = true;
+            microsecond = 0;
+        }
+
+        if (hasDate && (hasTime || formatHasTime)) {
+            Timestamp ts = new Timestamp(cal.getTimeInMillis());
+            if (hasMicrosecond) {
+                ts.setNanos(microsecond * 1000);
+            }
+            return ts;
+        } else if (hasDate) {
+            return new java.sql.Date(cal.getTimeInMillis());
+        } else if (hasTime || formatHasTime) {
+            LocalDateTime t = new Timestamp(cal.getTimeInMillis()).toLocalDateTime();
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(t, ZoneOffset.UTC);
+            return new Time(zonedDateTime.toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli());
+        } else {
+            return null;
+        }
     }
 
     @Override

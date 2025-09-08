@@ -78,6 +78,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.InferTypes;
+import org.apache.calcite.sql.type.MySQLStandardTypeInference;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -484,10 +485,10 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             StrToDateFun.NAME,
-            ReturnTypes.explicit(SqlTypeName.ANY),
+            MySQLStandardTypeInference.STR_TO_DATE,
             DingoInferTypes.VARCHAR1024_VARCHAR1024,
             family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
-            SqlFunctionCategory.NUMERIC
+            SqlFunctionCategory.TIMEDATE
         );
         registerFunction(
             ValuesFun.NAME,
