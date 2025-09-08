@@ -62,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
@@ -93,6 +92,8 @@ public class MetaCache {
     private boolean isClose = false;
 
     private static int cnt = 0;
+
+    public static final byte[] zeroPart = new byte[]{0, 0, 0, 0, 0, 0, 0, 0};
 
     public MetaCache(Set<Location> coordinators) {
         this.metaService = Services.metaService(coordinators);
@@ -306,12 +307,24 @@ public class MetaCache {
         List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
         tableDefinition.getTablePartition().getPartitions()
             .forEach(partition -> {
+                int isEmptyPartStart = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                int isEmptyPartEnd = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                if (isEmptyPartStart == 0 || isEmptyPartEnd == 0) {
+                    LogUtils.error(log, "get table range, but part range error,  " +
+                            "tableId:{}, tableName:{}, part:{}",
+                        tableWithId.getTableId(), tableDefinition.getName(), partition);
+                    throw new RuntimeException("table part is empty");
+                }
                 List<Object> regionList = infoSchemaService
                     .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
                 regionList
                     .forEach(object -> {
                         ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                        if (scanRegionInfo.getRegionId() < 80016) {
+                        if (scanRegionInfo.getRegionId() < 80016 && tableWithId.getTableId().getParentEntityId() > 50001) {
                             LogUtils.error(log, "get table range, but get meta region:{}, regionRange:{} " +
                                 "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
@@ -330,12 +343,6 @@ public class MetaCache {
         boolean isOriginalKey = tableDefinition.getTablePartition().getStrategy().number() == 1;
         rangeDistributionList.forEach(scanRegionWithPartId -> {
             RangeDistribution distribution = mapping(scanRegionWithPartId, codec, isOriginalKey);
-            if (distribution.getId().seq < 80016) {
-                LogUtils.error(log, "get table range, but mapping meta, distributionId:{}, " +
-                        "tableId:{}, tableName:{}, partId:{}, regionRange:{}", distribution.getId(),
-                    tableWithId.getTableId(), tableDefinition.getName(), scanRegionWithPartId.getPartId(),
-                    scanRegionWithPartId.getScanRegionInfo().getRange());
-            }
             result.put(new ComparableByteArray(distribution.getStartKey(), 1), distribution);
         });
         return result;

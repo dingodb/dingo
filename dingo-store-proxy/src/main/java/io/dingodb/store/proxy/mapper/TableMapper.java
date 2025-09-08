@@ -149,8 +149,8 @@ public interface TableMapper {
             .build();
     }
 
-    default Object[] operandFrom(Range key, KeyValueCodec codec) {
-        return codec.decodeKeyPrefix(CodecService.INSTANCE.setId(key.getStartKey(), 0));
+    default Object[] operandFrom(byte[] startKey, KeyValueCodec codec) {
+        return codec.decodeKeyPrefix(CodecService.INSTANCE.setId(startKey, 0));
     }
 
     default io.dingodb.meta.entity.Partition partitionFrom(
@@ -158,18 +158,20 @@ public interface TableMapper {
     ) {
         byte[] start = partition.getRange().getStartKey();
         byte[] end = partition.getRange().getEndKey();
+        byte[] startTarget;
+        byte[] endTarget;
         if (HASH_FUNC_NAME.equals(strategy)) {
-            start = Arrays.copyOf(start, start.length);
-            end = Arrays.copyOf(end, end.length);
+            startTarget = Arrays.copyOf(start, start.length);
+            endTarget = Arrays.copyOf(end, end.length);
         } else {
-            start = CodecService.INSTANCE.setId(Arrays.copyOf(start, start.length), 0);
-            end = CodecService.INSTANCE.setId(Arrays.copyOf(end, end.length), 0);
+            startTarget = CodecService.INSTANCE.setId(Arrays.copyOf(start, start.length), 0);
+            endTarget = CodecService.INSTANCE.setId(Arrays.copyOf(end, end.length), 0);
         }
         return io.dingodb.meta.entity.Partition.builder()
             .id(MAPPER.idFrom(partition.getId()))
-            .operand(operandFrom(partition.getRange(), codec))
-            .start(start)
-            .end(end)
+            .operand(operandFrom(Arrays.copyOf(start, start.length), codec))
+            .start(startTarget)
+            .end(endTarget)
             .name(partition.getName())
             .build();
     }
