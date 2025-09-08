@@ -28,6 +28,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.converter.ValueConverter;
@@ -151,7 +152,7 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                         }
                     } else if(originColumns.get(index).getSqlTypeName().equalsIgnoreCase("TINYINT")) {
                         if(newValue instanceof Integer) {
-                            if ( (Integer)newValue >= 127 || (Integer)newValue <= -128) {
+                            if (!Utils.tinyintInRange((Integer)tuple[i])) {
                                 throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(index).getName() + "'");
                             }
                         }
