@@ -273,6 +273,10 @@ public final class Utils {
         return -1;
     }
 
+    public static boolean tinyintInRange( Integer value) {
+        return value <= 127 && value >= -128;
+    }
+
     public static String quoteForSql(String value) {
         return "'" + value + "'";
     }
