@@ -52,6 +52,7 @@ import static io.dingodb.common.CommonId.CommonType.DDL;
 import static io.dingodb.common.CommonId.CommonType.META;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
+import static io.dingodb.store.proxy.meta.MetaCache.zeroPart;
 
 @Slf4j
 public class MetaCacheSnapShot {
@@ -166,12 +167,24 @@ public class MetaCacheSnapShot {
         List<ScanRegionWithPartId> rangeDistributionList = new ArrayList<>();
         tableDefinition.getTablePartition().getPartitions()
             .forEach(partition -> {
+                int isEmptyPartStart = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                int isEmptyPartEnd = io.dingodb.common.util.ByteArrayUtils.compare(
+                    partition.getRange().getStartKey(), zeroPart, true, 1
+                );
+                if (isEmptyPartStart == 0 || isEmptyPartEnd == 0) {
+                    LogUtils.error(log, "get table range, but part range error,  " +
+                            "tableId:{}, tableName:{}, part:{}",
+                        tableWithId.getTableId(), tableDefinition.getName(), partition);
+                    throw new RuntimeException("table part is empty");
+                }
                 List<Object> regionList = infoSchemaService
                     .scanRegions(partition.getRange().getStartKey(), partition.getRange().getEndKey());
                 regionList
                     .forEach(object -> {
                         ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                        if (scanRegionInfo.getRegionId() < 80016) {
+                        if (scanRegionInfo.getRegionId() < 80016 && tableWithId.getTableId().getParentEntityId() > 50001) {
                             LogUtils.error(log, "get table range, but get meta region:{}, regionRange:{} " +
                                     "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
