@@ -89,7 +89,7 @@ public class JsonExtractFun extends BinaryOp {
                     if (pathItem.contains("[") && pathItem.contains("]")) {
                         int start = pathItem.indexOf("[");
                         int end = pathItem.indexOf("]");
-                        if (end >= start + 1) {
+                        if (node != null && end >= start + 1) {
                             int item = Integer.parseInt(pathItem.substring(start + 1, end));
                             pathItem = pathItem.substring(0, start);
                             node = node.get(pathItem).get(item);
@@ -109,7 +109,7 @@ public class JsonExtractFun extends BinaryOp {
                 return node.toString();
             }
             return null;
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             return null;
         }
     }
