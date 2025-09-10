@@ -25,6 +25,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.apache.calcite.avatica.util.ByteString;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -172,8 +173,19 @@ public interface DataConverter {
         String className = value.getClass().getName();
         long val = 0;
         if(value instanceof org.apache.calcite.avatica.util.ByteString) {
-            String v = ((ByteString) value).toString(16);
-            val= Long.parseLong(v, 16);
+            byte[] bytes = ((ByteString) value).getBytes();
+
+            int i = 0;
+            for (; i < bytes.length; i++) {
+                if(bytes[i] != 0x0) {
+                    break;
+                }
+            }
+
+            byte[] newBytes = new byte[8];
+            System.arraycopy(bytes, i, newBytes, 8 - (bytes.length - i), bytes.length - i);
+            ByteBuffer buffer = ByteBuffer.wrap(newBytes);
+            val = buffer.getLong();
         } else if( value instanceof Long) {
             val = (Long) value;
         } else {
