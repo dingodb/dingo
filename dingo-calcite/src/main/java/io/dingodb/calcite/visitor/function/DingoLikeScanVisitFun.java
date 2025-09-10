@@ -39,6 +39,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
+import org.apache.calcite.sql.SqlKind;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -77,7 +78,7 @@ public final class DingoLikeScanVisitFun {
             true,
             true,
             null,
-            false,
+            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()

@@ -359,7 +359,7 @@ public class LoadDataExecutor implements DmlExecutor {
         }
         List<Object[]> objects = new ArrayList<>();
         objects.add(new Object[] {insertCount});
-        StmtSummaryMap.addAnalyzeEvent(schemaName, table.getName(), insertCount);
+        //StmtSummaryMap.addAnalyzeEvent(schemaName, table.getName(), insertCount);
         return objects.iterator();
     }
 

@@ -126,7 +126,7 @@ public final class DingoScanWithRelOpVisitFun {
                 visitor.setScan(true);
                 return outputs;
             } else {
-                if (!Utils.parallel(rel.getKeepSerialOrder())) {
+                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
@@ -289,32 +289,6 @@ public final class DingoScanWithRelOpVisitFun {
         throw new NeverRunHere();
     }
 
-    private static @NonNull Vertex createCalcHashDistributionVertex(
-        @NonNull DingoScanWithRelOp rel,
-        @NonNull NavigableMap<ComparableByteArray, RangeDistribution> ranges,
-        byte[] startKey,
-        byte[] endKey,
-        boolean withEnd,
-        DingoJobVisitor visitor
-    ) {
-        final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
-        // TODO: need to create range by filters.
-        DistributionSourceParam distributionParam = new DistributionSourceParam(
-            td,
-            ranges,
-            startKey,
-            endKey,
-            true,
-            withEnd,
-            null,
-            false,
-            false,
-            null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
-        );
-        return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
-    }
-
     private static @NonNull Vertex createCalcDistributionVertex(
         @NonNull DingoScanWithRelOp rel,
         @NonNull TableInfo tableInfo,
@@ -326,6 +300,7 @@ public final class DingoScanWithRelOpVisitFun {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
         SqlExpr filter = null;
+        boolean withStart = true;
 
         if (rel.getFilter() != null) {
             filter = SqlExprUtils.toSqlExpr(rel.getFilter());
@@ -336,10 +311,10 @@ public final class DingoScanWithRelOpVisitFun {
             ranges,
             startKey,
             endKey,
-            true,
+            withStart,
             withEnd,
             filter,
-            false,
+            Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()
