@@ -622,7 +622,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         };
         List<RexNode> projects = project.getProjects();
         RexNode filter = scan.getFilter();
-        visitor.visitEach(projects);
+        //visitor.visitEach(projects);
         if (filter != null) {
             filter.accept(visitor);
         }
@@ -650,9 +650,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 int originIndex = (selection == null ? k : selection.get(k));
                 Column column = table.getColumns().get(originIndex);
                 // match primary key
-                if (column.primaryKeyIndex == 0) {
-                    return null;
-                }
+                //if (column.primaryKeyIndex == 0) {
+                //    return null;
+                //}
                 if (result.matchIndexTable.getColumnIndex(column) == 0 && !result.isDocumentIndex) {
                     match = false;
                 }
@@ -709,6 +709,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (!match) {
             return null;
         }
+        visitor.visitEach(projects);
         selectedColumns.sort(Comparator.naturalOrder());
         Mapping mapping = Mappings.target(selectedColumns, scan.getRowType().getFieldCount());
         final List<RexNode> newProjectRexNodes = RexUtil.apply(mapping, project.getProjects());
