@@ -23,7 +23,6 @@ import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.SourceProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.TupleMapping;
@@ -35,6 +34,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnIndexRangeScanParam;
 import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.utils.LookUpBatchIterator;
 import io.dingodb.exec.utils.RelOpUtils;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.meta.MetaService;
@@ -45,11 +45,8 @@ import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -102,43 +99,6 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
         return param.getLookupCodec().decode(store.txnGet(param.getScanTs(), keys, param.getTimeout()));
     }
 
-    public static List<Object[]> lookUp(List<Object[]> tupleList, TxnIndexRangeScanParam param, Task task) {
-        Map<CommonId, List<byte[]>> keyList = new HashMap<>();
-        for (Object[] tuples : tupleList) {
-            CommonId txnId = task.getTxnId();
-            TransactionType transactionType = task.getTransactionType();
-            TupleMapping indices = param.getKeyMapping();
-            Table tableDefinition = param.getTable();
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
-                MetaService.root().getRangeDistribution(tableDefinition.tableId);
-            Object[] keyTuples = new Object[tableDefinition.getColumns().size()];
-            for (int i = 0; i < indices.getMappings().length; i++) {
-                keyTuples[indices.get(i)] = tuples[i];
-            }
-            byte[] keys = param.getLookupCodec().encodeKey(keyTuples);
-            CommonId regionId = PartitionService.getService(
-                    Optional.ofNullable(tableDefinition.getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keys, ranges);
-
-            keys = CodecService.getDefault().setId(keys, regionId.domain);
-            if (keyList.containsKey(regionId)) {
-                keyList.get(regionId).add(keys);
-            } else {
-                List<byte[]> valList = new ArrayList<>();
-                valList.add(keys);
-                keyList.put(regionId, valList);
-            }
-        }
-
-        List<Object[]> lookupResult = new ArrayList<>();
-        for (Map.Entry<CommonId, List<byte[]>> item : keyList.entrySet()) {
-            StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), item.getKey());
-            List<KeyValue> res = store.txnGet(param.getScanTs(), item.getValue(), param.getTimeout());
-            lookupResult.addAll(res.stream().map(keyValue -> param.getLookupCodec().decode(keyValue)).toList());
-        }
-        return lookupResult;
-    }
 
     private static Object[] transformTuple(Object[] tuple, TxnIndexRangeScanParam param) {
         Table table = param.getTable();
@@ -187,22 +147,17 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                     }
                 }
                 if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
-                    List<Object[]> tupleRes = new ArrayList<>();
-                    List<Object[]> tupleList = new ArrayList<>();
-                    while (iterator.hasNext()) {
-                        tupleList.add(iterator.next());
-                        if (tupleList.size() % 4096 == 0) {
-                            List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                            tupleList.clear();
-                            tupleRes.addAll(res);
-                        }
-                    }
-                    if (!tupleList.isEmpty()) {
-                        List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                        tupleRes.addAll(res);
-                    }
-
-                    iterator = getOtherRelIterator(param, tupleRes.iterator());
+                    Iterator<Object[]> lookupIterator = new LookUpBatchIterator(
+                        iterator,
+                        param.getKeyMapping(),
+                        param.getTable(),
+                        param.getLookupCodec(),
+                        param.getTableId(),
+                        param.getScanTs(),
+                        param.getTimeout(),
+                        ScopeVariables.lookupBatchSize()
+                    );
+                    iterator = getOtherRelIterator(param, lookupIterator);
 
                     if (param.getSelection2() != null) {
                         iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
@@ -244,22 +199,17 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                 }
             }
             if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
-                List<Object[]> tupleRes = new ArrayList<>();
-                List<Object[]> tupleList = new ArrayList<>();
-                while (iterator.hasNext()) {
-                    tupleList.add(iterator.next());
-                    if (tupleList.size() % 4096 == 0) {
-                        List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                        tupleList.clear();
-                        tupleRes.addAll(res);
-                    }
-                }
-                if (!tupleList.isEmpty()) {
-                    List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                    tupleRes.addAll(res);
-                }
-
-                iterator = getOtherRelIterator(param, tupleRes.iterator());
+                Iterator<Object[]> lookupIterator = new LookUpBatchIterator(
+                    iterator,
+                    param.getKeyMapping(),
+                    param.getTable(),
+                    param.getLookupCodec(),
+                    param.getTableId(),
+                    param.getScanTs(),
+                    param.getTimeout(),
+                    4096
+                );
+                iterator = getOtherRelIterator(param, lookupIterator);
 
                 if (param.getSelection2() != null) {
                     iterator = Iterators.transform(iterator, param.getSelection2()::revMap);
@@ -288,22 +238,17 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
         profile.incrTxnScanTime(start);
         Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
         if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
-            List<Object[]> tupleRes = new ArrayList<>();
-            List<Object[]> tupleList = new ArrayList<>();
-            while (iterator.hasNext()) {
-                tupleList.add(iterator.next());
-                if (tupleList.size() % 4096 == 0) {
-                    List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                    tupleList.clear();
-                    tupleRes.addAll(res);
-                }
-            }
-            if (!tupleList.isEmpty()) {
-                List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                tupleRes.addAll(res);
-            }
-
-            iterator = getOtherRelIterator(param, tupleRes.iterator());
+            Iterator<Object[]> lookupIterator = new LookUpBatchIterator(
+                iterator,
+                param.getKeyMapping(),
+                param.getTable(),
+                param.getLookupCodec(),
+                param.getTableId(),
+                param.getScanTs(),
+                param.getTimeout(),
+                4096
+            );
+            iterator = getOtherRelIterator(param, lookupIterator);
 
             if (param.getSelection2() != null) {
                 iterator = Iterators.transform(iterator, param.getSelection2()::revMap);

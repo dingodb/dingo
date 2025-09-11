@@ -53,7 +53,7 @@ public class Context {
     }
 
     public Context copy() {
-        return Context.builder().pin(pin).keyState(keyState).build();
+        return Context.builder().pin(pin).keyState(new ArrayList<>(keyState)).build();
     }
 
     public void addKeyState(boolean state) {
