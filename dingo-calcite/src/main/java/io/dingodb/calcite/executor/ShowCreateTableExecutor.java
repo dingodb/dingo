@@ -127,7 +127,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         Table table = is.getTable(schemaName, tableName);
 
         StringBuilder createTableSqlStr = new StringBuilder();
-        createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toUpperCase()).append("`");
+        createTableSqlStr.append("CREATE ").append("TABLE ").append("`").append(tableName.toLowerCase()).append("`");
         createTableSqlStr.append("(");
         int colSize = table.getColumns().size();
         for (int i = 0; i < colSize; i ++) {
@@ -137,7 +137,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                 continue;
             }
             createTableSqlStr.append("\r\n").append("    ");
-            createTableSqlStr.append("`").append(column.getName()).append("` ");
+            createTableSqlStr.append("`").append(column.getName().toLowerCase()).append("` ");
             createTableSqlStr.append(getTypeName(column.getSqlTypeName(), column.getElementTypeName()));
             if (column.getPrecision() > 0) {
                 createTableSqlStr.append("(").append(column.getPrecision());
@@ -173,7 +173,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             createTableSqlStr.append("\r\n");
             createTableSqlStr.append("    PRIMARY KEY (");
             for (int i = 0; i < keySize; i ++) {
-                createTableSqlStr.append("`").append(keyColumnList.get(i).getName()).append("`");
+                createTableSqlStr.append("`").append(keyColumnList.get(i).getName().toLowerCase()).append("`");
                 if (i < keySize - 1) {
                     createTableSqlStr.append(",");
                 }
@@ -280,7 +280,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         if (table.getComment() != null) {
             createTableSqlStr.append(" comment=").append("'").append(table.getComment()).append("'");
         }
-        boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
+        boolean autoInc = table.getColumns().stream().anyMatch(column -> column.getState() != 2 && column.isAutoIncrement());
         if (autoInc) {
             long autoIncVal = MetaService.root().getNextAutoIncrement(table.tableId);
             if (autoIncVal > 2) {
@@ -296,7 +296,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             createTableSqlStr.append("(");
             int indexKeyColLen = indexTable.originKeyList.size();
             for (int j = 0; j < indexKeyColLen; j++) {
-                createTableSqlStr.append("`").append(indexTable.originKeyList.get(j)).append("`");
+                createTableSqlStr.append("`").append(indexTable.originKeyList.get(j).toLowerCase()).append("`");
                 if (j < indexKeyColLen - 1) {
                     createTableSqlStr.append(",");
                 }
@@ -307,7 +307,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             createTableSqlStr.append(" WITH(");
             int withColSize = indexTable.originWithKeyList.size();
             for (int j = 0; j < withColSize; j ++) {
-                createTableSqlStr.append("`").append(indexTable.originWithKeyList.get(j)).append("`");
+                createTableSqlStr.append("`").append(indexTable.originWithKeyList.get(j).toLowerCase()).append("`");
                 if (j < withColSize - 1) {
                     createTableSqlStr.append(",");
                 }
