@@ -26,9 +26,7 @@ import java.util.Properties;
 
 public final class ScopeVariables {
 
-    private static final Properties executorProp = new Properties();
-
-    private static Properties globalVariablesValidator = new Properties();
+    public static final Properties executorProp = new Properties();
 
     public static final List<String> immutableVariables = new ArrayList<>();
 
@@ -68,7 +66,6 @@ public final class ScopeVariables {
         }
         Properties globalVariables = new Properties();
         globalVariables.putAll(globalVariableMap);
-        globalVariablesValidator = globalVariables;
         return globalVariables;
     }
 
@@ -78,10 +75,6 @@ public final class ScopeVariables {
         } else if ("off".equalsIgnoreCase(metricLogEnable)) {
             DingoMetrics.stopReporter();
         }
-    }
-
-    public static synchronized boolean containsGlobalVarKey(String key) {
-        return globalVariablesValidator.containsKey(key);
     }
 
     public static boolean containsGlobalVariable(String key) {
@@ -188,7 +181,7 @@ public final class ScopeVariables {
 
     public static int getLookupConcurrency() {
         try {
-            String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "1").toString();
+            String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "5").toString();
             return Integer.parseInt(lookupConcurrency);
         } catch (Exception e) {
             return 1;
@@ -201,6 +194,15 @@ public final class ScopeVariables {
             return Integer.parseInt(scanConcurrency);
         } catch (Exception e) {
             return 5;
+        }
+    }
+
+    public static boolean lookupBatchGet() {
+        try {
+            String lookupBatchGet = executorProp.getOrDefault("lookup_batch_get", "on").toString();
+            return "on".equalsIgnoreCase(lookupBatchGet);
+        } catch (Exception e) {
+            return true;
         }
     }
 

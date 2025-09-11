@@ -67,6 +67,8 @@ SqlShow SqlShow(): {
     show = SqlShowExecutors(s)
     |
     show = SqlShowIndexs(s)
+    |
+    show = SqlShowExecutorVariables(s)
   )
   {
     return show;
@@ -75,6 +77,7 @@ SqlShow SqlShow(): {
 
 SqlShow SqlShowTable(Span s): {
    SqlIdentifier tableName = null;
+      SqlIdentifier indexName = null;
    String schema = null;
    String pattern = null;
 } {
@@ -91,7 +94,9 @@ SqlShow SqlShowTable(Span s): {
      (
       (<DISTRIBUTION>|<REGIONS>) { return new SqlShowTableDistribution(s.end(this), tableName); }
      |
-      <INDEX> { return new SqlShowTableIndex(s.end(this), tableName); }
+      <INDEX>
+      [ indexName = CompoundTableIdentifier() <REGIONS> { return new SqlShowTableIndexRegions(s.end(this), tableName, indexName); }]
+              { return new SqlShowTableIndex(s.end(this), tableName); }
      )
    )
 }
@@ -302,3 +307,12 @@ SqlShow SqlShowIndexs(Span s): {
   <INDEX> <FROM> tableName = CompoundTableIdentifier()
   { return new SqlShowIndexFromTable(s.end(this), tableName); }
 }
+
+SqlShow SqlShowExecutorVariables(Span s): {
+          String pattern = null;
+} {
+  <EXECUTOR> <VARIABLES> [ <LIKE> <QUOTED_STRING> { pattern = SqlParserUtil.trim(token.image, "'"); } ]
+  { return new SqlShowExecutorVariables(s.end(this), pattern); }
+}
+
+

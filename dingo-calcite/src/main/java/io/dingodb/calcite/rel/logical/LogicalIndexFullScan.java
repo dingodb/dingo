@@ -44,6 +44,7 @@ import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
+import static io.dingodb.common.mysql.scope.ScopeVariables.getLookupConcurrency;
 
 public class LogicalIndexFullScan extends LogicalDingoTableScan {
 
@@ -111,7 +112,7 @@ public class LogicalIndexFullScan extends LogicalDingoTableScan {
             double estimateRowCount = estimateRowCount(mq);
             double tableScanCost = getScanCost(estimateRowCount, rowSize);
             double tableNetCost = estimateRowCount * rowSize * netFactor;
-            cost += (tableScanCost + tableNetCost) / scanConcurrency;
+            cost += (tableScanCost + tableNetCost) / getLookupConcurrency();
         }
 
         return planner.getCostFactory().makeCost(cost * 0.8, 0, 0);

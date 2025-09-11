@@ -21,6 +21,7 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.CoprocessorV2;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.SourceProfile;
@@ -185,7 +186,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                         LogUtils.error(log, "index range scan cop is null,local is not empty, but rel op :{}", param.getRelOp());
                     }
                 }
-                if (param.isLookup() && param.isAutoCommit()) {
+                if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
                     List<Object[]> tupleRes = new ArrayList<>();
                     List<Object[]> tupleList = new ArrayList<>();
                     while (iterator.hasNext()) {
@@ -242,7 +243,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
                     LogUtils.error(log, "index range scan cop is null, but rel op :{}", param.getRelOp());
                 }
             }
-            if (param.isLookup() && param.isAutoCommit()) {
+            if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
                 List<Object[]> tupleRes = new ArrayList<>();
                 List<Object[]> tupleList = new ArrayList<>();
                 while (iterator.hasNext()) {
@@ -286,7 +287,7 @@ public class TxnIndexRangeScanOperator extends TxnScanOperatorBase {
 
         profile.incrTxnScanTime(start);
         Iterator<Object[]> iterator = Iterators.transform(storeIterator, wrap(param.getPushDownCodec()::decode)::apply);
-        if (param.isLookup() && param.isAutoCommit()) {
+        if (param.isLookup() && param.isAutoCommit() && ScopeVariables.lookupBatchGet()) {
             List<Object[]> tupleRes = new ArrayList<>();
             List<Object[]> tupleList = new ArrayList<>();
             while (iterator.hasNext()) {
