@@ -263,10 +263,15 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         boolean coerced = false;
 
         if (binding.getOperator().getKind() == SqlKind.DIVIDE) {
-            if ((SqlTypeUtil.isInt(left) && SqlTypeUtil.isInt(right)) ||
+            if ((SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isTinyint(right)) ||
+                (SqlTypeUtil.isInt(left) && SqlTypeUtil.isInt(right)) ||
                 (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isBigint(right)) ||
                 (SqlTypeUtil.isInt(left) && SqlTypeUtil.isBigint(right)) ||
-                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isInt(right))) {
+                (SqlTypeUtil.isInt(left) && SqlTypeUtil.isTinyint(right)) ||
+                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isInt(right)) ||
+                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isTinyint(right)) ||
+                (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isInt(right)) ||
+                (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isBigint(right))) {
                 RelDataType target = factory.createSqlType(SqlTypeName.DECIMAL);
 
                 if (left.getSqlTypeName() != target.getSqlTypeName()) {
