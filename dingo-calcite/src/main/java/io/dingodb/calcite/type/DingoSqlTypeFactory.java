@@ -532,12 +532,15 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                 // datetime +/- interval (or integer) = datetime
                 if (types.size() > (i + 1)) {
                     RelDataType type1 = types.get(i + 1);
-                    if ((type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
+                    if ((type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.TINYINT) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
                         (type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
                         (type.getSqlTypeName() == SqlTypeName.TIME && type1.getSqlTypeName() == SqlTypeName.DECIMAL) ||
+                        (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.TINYINT) ||
                         (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
                         (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
                         (type.getSqlTypeName() == SqlTypeName.TIMESTAMP && type1.getSqlTypeName() == SqlTypeName.DECIMAL) ||
+                        (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.TINYINT) ||
                         (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.INTEGER) ||
                         (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.BIGINT) ||
                         (type.getSqlTypeName() == SqlTypeName.DATE && type1.getSqlTypeName() == SqlTypeName.DECIMAL)) {
