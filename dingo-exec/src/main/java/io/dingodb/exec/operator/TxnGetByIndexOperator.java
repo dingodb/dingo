@@ -20,6 +20,7 @@ import com.google.common.collect.Iterators;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
@@ -76,7 +77,7 @@ public class TxnGetByIndexOperator extends FilterProjectOperator {
                 new StoreInstance.Range(keys, keys, true, true),
                 param.getTimeout());
             Iterator<Object[]> iterator = DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
-            if (param.isLookup()) {
+            if (param.isLookup() && ScopeVariables.lookupBatchGet()) {
                 List<Object[]> tupleRes = new ArrayList<>();
                 List<Object[]> tupleList = new ArrayList<>();
                 while (iterator.hasNext()) {

@@ -18,6 +18,7 @@ package io.dingodb.calcite.executor;
 
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
+import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
@@ -41,6 +42,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
 import io.dingodb.calcite.grammar.dql.SqlShowEngines;
+import io.dingodb.calcite.grammar.dql.SqlShowExecutorVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutors;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
@@ -52,6 +54,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowStartTs;
 import io.dingodb.calcite.grammar.dql.SqlShowStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
+import io.dingodb.calcite.grammar.dql.SqlShowTableIndexRegions;
 import io.dingodb.calcite.grammar.dql.SqlShowTableStatus;
 import io.dingodb.calcite.grammar.dql.SqlShowTables;
 import io.dingodb.calcite.grammar.dql.SqlShowTenants;
@@ -272,6 +275,15 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlTenantsBackUpTimePoint) {
             SqlTenantsBackUpTimePoint sqlTenantsBackUpTimePoint = (SqlTenantsBackUpTimePoint) sqlNode;
             return Optional.of(new AdminTenantsBackUpTimePointExecutor(sqlTenantsBackUpTimePoint.timeStr));
+        } else if (sqlNode instanceof SqlShowTableIndexRegions) {
+            SqlShowTableIndexRegions showIndexRegions = (SqlShowTableIndexRegions) sqlNode;
+            if (StringUtils.isEmpty(showIndexRegions.schemaName)) {
+                showIndexRegions.schemaName = getSchemaName(context);
+            }
+            return Optional.of(new ShowTableIndexRegionsExecutor(showIndexRegions));
+        } else if (sqlNode instanceof SqlShowExecutorVariables) {
+            SqlShowExecutorVariables sqlShowExecutorVariables = (SqlShowExecutorVariables) sqlNode;
+            return Optional.of(new ShowExecutorVariablesExecutor(sqlShowExecutorVariables.sqlLikePattern));
         } else {
             return Optional.empty();
         }
