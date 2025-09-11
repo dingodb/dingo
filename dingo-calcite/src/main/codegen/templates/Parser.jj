@@ -1389,7 +1389,7 @@ SqlNode SqlSelect() :
     final SqlLiteral keyword;
     final SqlNodeList keywordList;
     final List<SqlNode> selectList = new ArrayList<SqlNode>();
-    final SqlNode fromClause;
+    SqlNode fromClause = null;
     final SqlNode where;
     final SqlNodeList groupBy;
     final SqlNode having;
@@ -1426,7 +1426,7 @@ SqlNode SqlSelect() :
     ( <COMMA> AddSelectItem(selectList) )*
     [ exportOptions = exportOptions() ]
     (
-        <FROM> fromClause = FromClause()
+        [ <FROM> fromClause = FromClause() ]
         ( where = Where() | { where = null; } )
         ( groupBy = GroupBy() | { groupBy = null; } )
         ( having = Having() | { having = null; } )

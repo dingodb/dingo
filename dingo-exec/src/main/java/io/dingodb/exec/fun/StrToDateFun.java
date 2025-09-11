@@ -86,6 +86,14 @@ public class StrToDateFun extends BinaryOp {
             format.contains("%i") || format.contains("%s") ||
             format.contains("%f") || format.contains("%p");
 
+        boolean formatIsContinuous = format.matches("^(%[a-zA-Z])+$");
+
+        boolean inputHasSeparators = dateStr.matches(".*[^0-9].*");
+
+        if (formatIsContinuous && inputHasSeparators) {
+            return null;
+        }
+
         StringBuilder regex = new StringBuilder();
         StringBuilder currentText = new StringBuilder();
         List<String> formatSpecifiers = new ArrayList<>();
@@ -115,20 +123,36 @@ public class StrToDateFun extends BinaryOp {
             regex.append(Pattern.quote(currentText.toString()));
         }
 
+        regex.append(".*?");
+
         Pattern pattern = Pattern.compile(regex.toString());
         Matcher matcher = pattern.matcher(dateStr);
 
-        if (!matcher.find()) {
+        boolean matched = formatIsContinuous ? matcher.matches() : matcher.find();
+
+        if (!matched) {
             if (formatHasTime) {
                 StringBuilder dateOnlyRegex = new StringBuilder();
                 StringBuilder dateOnlyText = new StringBuilder();
                 List<String> dateOnlySpecifiers = new ArrayList<>();
+                boolean spaces = false;
+                int tmpRegexLength = -1;
+                int tmpSpacesLength = -1;
+                boolean containsTime = false;
 
                 for (int i = 0; i < format.length(); i++) {
                     char c = format.charAt(i);
                     if (c == '%' && i + 1 < format.length()) {
                         if (dateOnlyText.length() > 0) {
-                            dateOnlyRegex.append(Pattern.quote(dateOnlyText.toString()));
+                            if (dateOnlyText.toString().equals(" ")) {
+                                spaces = true;
+                                tmpRegexLength = dateOnlyRegex.length();
+                            }
+                            String quote = Pattern.quote(dateOnlyText.toString());
+                            if (spaces) {
+                                tmpSpacesLength = quote.length();
+                            }
+                            dateOnlyRegex.append(quote);
                             dateOnlyText.setLength(0);
                         }
 
@@ -137,8 +161,21 @@ public class StrToDateFun extends BinaryOp {
                         if (patternStr != null) {
                             if (specifier == 'H' || specifier == 'h' ||
                                 specifier == 'i' || specifier == 's' ||
-                                specifier == 'f' || specifier == 'p') {
+                                specifier == 'f') {
+                                if (spaces && tmpRegexLength >= 0 && tmpSpacesLength == 5) {
+                                    dateOnlyRegex.delete(tmpRegexLength, tmpRegexLength + tmpSpacesLength);
+                                }
+                                try {
+                                    dateStr.charAt(++i);
+                                    containsTime = true;
+                                } catch (Exception ignored) {
+                                }
                                 break;
+                            }
+                            if (spaces) {
+                                spaces = false;
+                                tmpRegexLength = -1;
+                                tmpSpacesLength = -1;
                             }
                             dateOnlyRegex.append(patternStr);
                             dateOnlySpecifiers.add(String.valueOf(specifier));
@@ -154,10 +191,14 @@ public class StrToDateFun extends BinaryOp {
                     dateOnlyRegex.append(Pattern.quote(dateOnlyText.toString()));
                 }
 
+                dateOnlyRegex.append(".*?");
+
                 Pattern dateOnlyPattern = Pattern.compile(dateOnlyRegex.toString());
                 Matcher dateOnlyMatcher = dateOnlyPattern.matcher(dateStr);
 
-                if (dateOnlyMatcher.find()) {
+                boolean dateOnlyMatched = formatIsContinuous ? dateOnlyMatcher.matches() : dateOnlyMatcher.find();
+
+                if (dateOnlyMatched) {
                     Map<String, String> values = new HashMap<>();
                     for (String specifier : dateOnlySpecifiers) {
                         try {
@@ -181,6 +222,10 @@ public class StrToDateFun extends BinaryOp {
 
                     boolean hasDate = false;
 
+                    Integer parsedYear = null;
+                    Integer parsedMonth = null;
+                    Integer parsedDay = null;
+
                     if (values.containsKey("Y")) {
                         hasDate = true;
                         int year = Integer.parseInt(values.get("Y"));
@@ -189,27 +234,39 @@ public class StrToDateFun extends BinaryOp {
                         } else if (year < 100) {
                             year += 1900;
                         }
+                        parsedYear = year;
                         cal.set(Calendar.YEAR, year);
                     }
 
                     if (values.containsKey("m")) {
                         hasDate = true;
                         int month = Integer.parseInt(values.get("m")) - 1;
+                        parsedMonth = month;
                         cal.set(Calendar.MONTH, month);
                     }
 
                     if (values.containsKey("d")) {
                         hasDate = true;
                         int day = Integer.parseInt(values.get("d"));
+                        parsedDay = day;
                         cal.set(Calendar.DAY_OF_MONTH, day);
                     }
 
-                    if (hasDate) {
+                    if (parsedYear != null && cal.get(Calendar.YEAR) != parsedYear) {
+                        return null;
+                    }
+                    if (parsedMonth != null && cal.get(Calendar.MONTH) != parsedMonth) {
+                        return null;
+                    }
+                    if (parsedDay != null && cal.get(Calendar.DAY_OF_MONTH) != parsedDay) {
+                        return null;
+                    }
+
+                    if (hasDate && !containsTime) {
                         return new Timestamp(cal.getTimeInMillis());
                     }
                 }
             }
-
             return null;
         }
 
@@ -239,6 +296,13 @@ public class StrToDateFun extends BinaryOp {
         boolean hasTime = false;
         boolean hasMicrosecond = values.containsKey("f");
 
+        Integer parsedYear = null;
+        Integer parsedMonth = null;
+        Integer parsedDay = null;
+        Integer parsedHour = null;
+        Integer parsedMinute = null;
+        Integer parsedSecond = null;
+
         if (values.containsKey("Y")) {
             hasDate = true;
             int year = Integer.parseInt(values.get("Y"));
@@ -247,24 +311,28 @@ public class StrToDateFun extends BinaryOp {
             } else if (year < 100) {
                 year += 1900;
             }
+            parsedYear = year;
             cal.set(Calendar.YEAR, year);
         }
 
         if (values.containsKey("m")) {
             hasDate = true;
             int month = Integer.parseInt(values.get("m")) - 1;
+            parsedMonth = month;
             cal.set(Calendar.MONTH, month);
         }
 
         if (values.containsKey("d")) {
             hasDate = true;
             int day = Integer.parseInt(values.get("d"));
+            parsedDay = day;
             cal.set(Calendar.DAY_OF_MONTH, day);
         }
 
         if (values.containsKey("H")) {
             hasTime = true;
             int hour = Integer.parseInt(values.get("H"));
+            parsedHour = hour;
             cal.set(Calendar.HOUR_OF_DAY, hour);
         } else if (formatHasTime) {
             hasTime = true;
@@ -282,6 +350,7 @@ public class StrToDateFun extends BinaryOp {
                     hour = 0;
                 }
             }
+            parsedHour = hour;
             cal.set(Calendar.HOUR_OF_DAY, hour);
         } else if (formatHasTime && !values.containsKey("H")) {
             hasTime = true;
@@ -291,6 +360,7 @@ public class StrToDateFun extends BinaryOp {
         if (values.containsKey("i")) {
             hasTime = true;
             int minute = Integer.parseInt(values.get("i"));
+            parsedMinute = minute;
             cal.set(Calendar.MINUTE, minute);
         } else if (formatHasTime) {
             hasTime = true;
@@ -300,6 +370,7 @@ public class StrToDateFun extends BinaryOp {
         if (values.containsKey("s")) {
             hasTime = true;
             int second = Integer.parseInt(values.get("s"));
+            parsedSecond = second;
             cal.set(Calendar.SECOND, second);
         } else if (formatHasTime) {
             hasTime = true;
@@ -317,6 +388,25 @@ public class StrToDateFun extends BinaryOp {
         } else if (format.contains("%f")) {
             hasMicrosecond = true;
             microsecond = 0;
+        }
+
+        if (parsedYear != null && cal.get(Calendar.YEAR) != parsedYear) {
+            return null;
+        }
+        if (parsedMonth != null && cal.get(Calendar.MONTH) != parsedMonth) {
+            return null;
+        }
+        if (parsedDay != null && cal.get(Calendar.DAY_OF_MONTH) != parsedDay) {
+            return null;
+        }
+        if (parsedHour != null && cal.get(Calendar.HOUR_OF_DAY) != parsedHour) {
+            return null;
+        }
+        if (parsedMinute != null && cal.get(Calendar.MINUTE) != parsedMinute) {
+            return null;
+        }
+        if (parsedSecond != null && cal.get(Calendar.SECOND) != parsedSecond) {
+            return null;
         }
 
         if (hasDate && (hasTime || formatHasTime)) {
