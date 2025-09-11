@@ -206,6 +206,15 @@ public final class ScopeVariables {
         }
     }
 
+    public static int lookupBatchSize() {
+        try {
+            String lookupBatchGetSize = executorProp.getOrDefault("lookup_batch_get_size", "4096").toString();
+            return Integer.parseInt(lookupBatchGetSize);
+        } catch (Exception e) {
+            return 4096;
+        }
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);

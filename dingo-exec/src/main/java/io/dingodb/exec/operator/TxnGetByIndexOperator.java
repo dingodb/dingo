@@ -34,6 +34,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnGetByIndexParam;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.exec.utils.LookUpBatchIterator;
 import io.dingodb.exec.utils.TxnMergedIterator;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -48,10 +49,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -78,21 +77,18 @@ public class TxnGetByIndexOperator extends FilterProjectOperator {
                 param.getTimeout());
             Iterator<Object[]> iterator = DingoTransformedIterator.transform(storeIterator, wrap(param.getCodec()::decode)::apply);
             if (param.isLookup() && ScopeVariables.lookupBatchGet()) {
-                List<Object[]> tupleRes = new ArrayList<>();
-                List<Object[]> tupleList = new ArrayList<>();
-                while (iterator.hasNext()) {
-                    tupleList.add(iterator.next());
-                    if (tupleList.size() % 4096 == 0) {
-                        List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                        tupleList.clear();
-                        tupleRes.addAll(res);
-                    }
-                }
-                if (!tupleList.isEmpty()) {
-                    List<Object[]> res = lookUp(tupleList, param, vertex.getTask());
-                    tupleRes.addAll(res);
-                }
-                return tupleRes.iterator();
+                Iterator<Object[]> lookupIterator = new LookUpBatchIterator(
+                    iterator,
+                    param.getKeyMapping(),
+                    param.getTable(),
+                    param.getLookupCodec(),
+                    param.getTableId(),
+                    param.getScanTs(),
+                    param.getTimeout(),
+                    ScopeVariables.lookupBatchSize()
+                );
+                profile.time(start);
+                return lookupIterator;
             } else {
                 iterator = Iterators.transform(iterator, tuples -> revMap(tuples, vertex));
                 profile.time(start);
@@ -156,44 +152,6 @@ public class TxnGetByIndexOperator extends FilterProjectOperator {
 
         StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), regionId);
         return param.getLookupCodec().decode(store.txnGet(param.getScanTs(), keys, param.getTimeout()));
-    }
-
-    public static List<Object[]> lookUp(List<Object[]> tupleList, TxnGetByIndexParam param, Task task) {
-        Map<CommonId, List<byte[]>> keyList = new HashMap<>();
-        for (Object[] tuples : tupleList) {
-            CommonId txnId = task.getTxnId();
-            TransactionType transactionType = task.getTransactionType();
-            TupleMapping indices = param.getKeyMapping();
-            Table tableDefinition = param.getTable();
-            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> ranges =
-                MetaService.root().getRangeDistribution(tableDefinition.tableId);
-            Object[] keyTuples = new Object[tableDefinition.getColumns().size()];
-            for (int i = 0; i < indices.getMappings().length; i++) {
-                keyTuples[indices.get(i)] = tuples[i];
-            }
-            byte[] keys = param.getLookupCodec().encodeKey(keyTuples);
-            CommonId regionId = PartitionService.getService(
-                    Optional.ofNullable(tableDefinition.getPartitionStrategy())
-                        .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-                .calcPartId(keys, ranges);
-
-            keys = CodecService.getDefault().setId(keys, regionId.domain);
-            if (keyList.containsKey(regionId)) {
-                keyList.get(regionId).add(keys);
-            } else {
-                List<byte[]> valList = new ArrayList<>();
-                valList.add(keys);
-                keyList.put(regionId, valList);
-            }
-        }
-
-        List<Object[]> lookupResult = new ArrayList<>();
-        for (Map.Entry<CommonId, List<byte[]>> item : keyList.entrySet()) {
-            StoreInstance store = Services.KV_STORE.getInstance(param.getTableId(), item.getKey());
-            List<KeyValue> res = store.txnGet(param.getScanTs(), item.getValue(), param.getTimeout());
-            lookupResult.addAll(res.stream().map(keyValue -> param.getLookupCodec().decode(keyValue)).toList());
-        }
-        return lookupResult;
     }
 
     private static Object[] transformTuple(Object[] tuple, TxnGetByIndexParam param) {
