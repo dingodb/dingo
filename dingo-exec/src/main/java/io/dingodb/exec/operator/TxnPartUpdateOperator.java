@@ -134,7 +134,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         }
                     } else if(originColumns.get(index).getSqlTypeName().equalsIgnoreCase("TINYINT")) {
                         if(newValue instanceof Integer) {
-                            if (!Utils.tinyintInRange((Integer)tuple[i])) {
+                            if (!Utils.tinyintInRange((Integer) newValue)) {
                                 throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(index).getName() + "'");
                             }
                         }
