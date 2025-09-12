@@ -585,10 +585,12 @@ public class LoadDataExecutor implements DmlExecutor {
     }
 
     private void recodePriTable(KeyValue keyValue, CommonId txnId) {
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions1
+            = metaService.getRangeDistribution(table.tableId);
         CommonId partId = PartitionService.getService(
                 Optional.ofNullable(table.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))
-            .calcPartId(keyValue.getKey(), distributions);
+            .calcPartId(keyValue.getKey(), distributions1);
         CodecService.getDefault().setId(keyValue.getKey(), partId.domain);
         byte[] txnIdByte = txnId.encode();
         byte[] tableIdByte = table.getTableId().encode();
