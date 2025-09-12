@@ -328,4 +328,18 @@ public class TxnIgnore extends Txn {
         System.arraycopy(txnIdKey, 0, prefix, 1, txnIdKey.length);
         return cache.scan(prefix);
     }
+
+    public void close() {
+        if (this.future != null) {
+            this.future.cancel(true);
+        }
+        Iterator<KeyValue> iterator = getLocalIterator();
+        StoreInstance cache = Services.LOCAL_STORE.getInstance(null, null);
+        long cnt = 0;
+        while (iterator.hasNext()) {
+            cache.delete(iterator.next().getKey());
+            cnt ++;
+        }
+        LogUtils.info(log, "del local cnt:{}", cnt);
+    }
 }
