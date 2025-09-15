@@ -224,6 +224,15 @@ public final class ScopeVariables {
         }
     }
 
+    public static boolean autocommitSwitch() {
+        try {
+            String autocommitSwitch = executorProp.getOrDefault("autocommit_switch", "false").toString();
+            return "true".equalsIgnoreCase(autocommitSwitch);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean aliasCaseSensitivity() {
         try {
             String aliasCaseSensitivity = executorProp.getOrDefault("alias_case_sensitivity", "false").toString();

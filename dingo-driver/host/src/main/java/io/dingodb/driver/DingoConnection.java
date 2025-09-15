@@ -525,6 +525,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         sessionVariables.setProperty(name, value);
         if (name.equalsIgnoreCase("autocommit")) {
             try {
+                if (!ScopeVariables.autocommitSwitch() && value.equalsIgnoreCase("off")) {
+                    return;
+                }
                 setAutoCommit(value.equalsIgnoreCase("on"));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
