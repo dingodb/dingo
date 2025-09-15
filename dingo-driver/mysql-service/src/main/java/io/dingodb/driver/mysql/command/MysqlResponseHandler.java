@@ -23,6 +23,7 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.State;
 import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.mysql.error.ErrorMessage;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.driver.DingoConnection;
 import io.dingodb.driver.common.DingoArray;
 import io.dingodb.driver.mysql.MysqlConnection;
@@ -210,7 +211,7 @@ public final class MysqlResponseHandler {
             }
             cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
-            if (cnt.get() % 100000 == 0) {
+            if (cnt.get() % ScopeVariables.getMysqlStreamSize() == 0) {
                 LogUtils.info(log, "write big data. " +
                     " cnt:{}, packetId:{}",
                     cnt.get(), packetId.get());
