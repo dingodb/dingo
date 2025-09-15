@@ -18,6 +18,7 @@ package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.packet.EOFPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
@@ -97,7 +98,7 @@ public class AsyncStreamReader implements Runnable {
                 }
                 cnt.incrementAndGet();
                 resultSetRowPacket.write(outputStream);
-                if (cnt.get() % 100000 == 0) {
+                if (cnt.get() % ScopeVariables.getMysqlStreamSize() == 0) {
                     LogUtils.info(log, "write big data. " +
                             " cnt:{}, packetId:{}",
                         cnt.get(), packetId.get());
