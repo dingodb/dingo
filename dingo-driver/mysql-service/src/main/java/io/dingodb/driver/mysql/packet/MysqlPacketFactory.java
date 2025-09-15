@@ -19,6 +19,7 @@ package io.dingodb.driver.mysql.packet;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.constant.ColumnStatus;
 import io.dingodb.common.mysql.constant.ColumnType;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.driver.mysql.NativeConstants;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -199,6 +200,9 @@ public class MysqlPacketFactory {
                 String dataType = resultSet.getString("DATA_TYPE");
                 String tableName = resultSet.getString("TABLE_NAME");
                 String columnName = resultSet.getString("COLUMN_NAME");
+                if (!ScopeVariables.aliasCaseSensitivity()) {
+                    columnName = columnName.toLowerCase();
+                }
                 String schemaName = resultSet.getString("TABLE_SCHEM");
                 ColumnPacket columnPacket = getColumnPacket(catalog,
                     schemaName,
@@ -234,6 +238,15 @@ public class MysqlPacketFactory {
         for (int i = 1; i <= columnCount; i++) {
             String columnLabel = metaData.getColumnLabel(i);
             String columnName = metaData.getColumnName(i);
+            if (!ScopeVariables.aliasCaseSensitivity()) {
+                if (columnLabel != null) {
+                    columnLabel = columnLabel.toLowerCase();
+                }
+                if (columnName != null) {
+                    columnName = columnName.toLowerCase();
+                }
+            }
+
             if ("mysql".equalsIgnoreCase(schema) && "user".equalsIgnoreCase(table)
                 && "name".equalsIgnoreCase(columnName)) {
                 columnName = "user";
