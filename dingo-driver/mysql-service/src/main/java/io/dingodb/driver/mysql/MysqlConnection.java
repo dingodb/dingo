@@ -152,12 +152,24 @@ public class MysqlConnection {
     }
 
     public synchronized void writeAndFlushByStream(ByteBuf byteBuf) {
-        if (dingoDataStream == null) {
-            dingoDataStream = new DingoDataStream(byteBuf);
+        try {
+            int readableBytes = byteBuf.readableBytes();
+            byte[] bytesArray = new byte[readableBytes];
+            byteBuf.getBytes(byteBuf.readerIndex(), bytesArray);
+
+            if (dingoDataStream == null) {
+                dingoDataStream = new DingoDataStream(bytesArray);
+            } else {
+                QueueUtils.forcePut(dingoDataStream.blockingQueue, bytesArray);
+            }
+            LogUtils.info(log, "channel is writeable:{}", channel.isWritable());
+            dingoDataStream.addLength(readableBytes);
+            ctx.writeAndFlush(dingoDataStream);
+        } catch (Exception e) {
+            LogUtils.info(log, "writeAndFlushByStream error", e);
+        } finally {
+            byteBuf.release();
         }
-        LogUtils.info(log, "channel is writeable:{}", channel.isWritable());
-        dingoDataStream.addLength(byteBuf.readableBytes());
-        ctx.writeAndFlush(dingoDataStream);
     }
 
     public void writeAndFlush(byte[] bytes) {

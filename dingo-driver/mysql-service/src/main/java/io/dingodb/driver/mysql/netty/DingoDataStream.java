@@ -41,11 +41,11 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
 
     boolean first;
 
-    ByteBuf byteBuf;
+    byte[] firstBytes;
     boolean end;
 
-    public DingoDataStream(ByteBuf byteBuf) {
-        this.byteBuf = byteBuf;
+    public DingoDataStream(byte[] bytes) {
+        this.firstBytes = bytes;
         this.total = 0;
         this.first = true;
         this.end = false;
@@ -64,10 +64,10 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
     @Override
     public void close() throws Exception {
         this.total = 0;
-        this.first = true;
         this.offset = 0;
         this.end = false;
         blockingQueue.clear();
+        this.firstBytes = null;
         LogUtils.info(log, "chunk close");
     }
 
@@ -81,16 +81,17 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
     public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
         LogUtils.info(log, "read chunk, thread:{}", Thread.currentThread().getId());
         if (first) {
-            if (byteBuf == null) {
+            if (firstBytes == null) {
                 return null;
             }
-            int readableBytes = byteBuf.readableBytes();
-            byte[] bytesArray = new byte[readableBytes];
-            byteBuf.getBytes(byteBuf.readerIndex(), bytesArray);
+            if (this.firstBytes.length == 0) {
+                return null;
+            }
+            int readableBytes = this.firstBytes.length;
             LogUtils.info(log, "chunk size:{}", readableBytes);
             offset += readableBytes;
             ByteBuf buf =  allocator.buffer(readableBytes);
-            buf.writeBytes(bytesArray);
+            buf.writeBytes(this.firstBytes);
             first = false;
             return buf;
         } else {

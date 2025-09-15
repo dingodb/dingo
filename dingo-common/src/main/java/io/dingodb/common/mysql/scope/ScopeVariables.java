@@ -181,10 +181,19 @@ public final class ScopeVariables {
 
     public static int getLookupConcurrency() {
         try {
-            String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "5").toString();
+            String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "100").toString();
             return Integer.parseInt(lookupConcurrency);
         } catch (Exception e) {
             return 1;
+        }
+    }
+
+    public static int getMysqlStreamSize() {
+        try {
+            String mysqlStreamSize = executorProp.getOrDefault("mysql_stream_size", "1000000").toString();
+            return Integer.parseInt(mysqlStreamSize);
+        } catch (Exception e) {
+            return 1000000;
         }
     }
 
