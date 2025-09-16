@@ -61,6 +61,17 @@ public class HashJoinOperator extends SoleOutOperator {
             if (pin == 0) { // left
                 waitRightFinFlag(param);
                 TupleKey leftKey = HashJoinParam.rtrimTupleKey(new TupleKey(leftMapping.revMap(tuple)));
+
+                if (HashJoinParam.containsNull(leftKey)) {
+                    if ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType())) {
+                        return true;
+                    } else if ("left".equalsIgnoreCase(param.getJoinType()) || "full".equalsIgnoreCase(param.getJoinType())) {
+                        Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
+                        Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                        return pushToNext(param, edge, context, newTuple);
+                    }
+                }
+
                 boolean isEmpty = isEmpty(leftKey, param);
                 if (isEmpty && ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType()))) {
                     return true;
@@ -87,12 +98,23 @@ public class HashJoinOperator extends SoleOutOperator {
                 }
             } else if (pin == 1) { //right
                 TupleKey rightKey = HashJoinParam.rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
-                if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
-                    return true;
+                if (HashJoinParam.containsNull(rightKey)) {
+                    if ("inner".equalsIgnoreCase(param.getJoinType()) || "left".equalsIgnoreCase(param.getJoinType())) {
+                        return true;
+                    } else if ("right".equalsIgnoreCase(param.getJoinType()) || "full".equalsIgnoreCase(param.getJoinType())) {
+                        List<TupleWithJoinFlag> list = param.getHashMap()
+                            .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
+                        list.add(new TupleWithJoinFlag(tuple));
+                    }
+                } else {
+                    if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
+                        return true;
+                    }
+                    List<TupleWithJoinFlag> list = param.getHashMap()
+                        .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
+                    list.add(new TupleWithJoinFlag(tuple));
                 }
-                List<TupleWithJoinFlag> list = param.getHashMap()
-                    .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
-                list.add(new TupleWithJoinFlag(tuple));
+
             }
             return true;
         } finally {
