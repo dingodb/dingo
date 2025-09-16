@@ -144,6 +144,15 @@ public class HashJoinParam extends AbstractParams {
         return arrayList.toArray();
     }
 
+    public static boolean containsNull(TupleKey key) {
+        for (Object item : key.getTuple()) {
+            if (item == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void init(Vertex vertex) {
         rightFinFlag = false;
