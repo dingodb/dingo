@@ -30,7 +30,6 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
-import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -339,11 +338,11 @@ public class LoadDataExecutor implements DmlExecutor {
         LogUtils.info(log, "load data done, path:{}, cost:{}, insertCount:{}" , filePath, sub, insertCount);
         if (errMessage != null) {
             if (insertCount == 0) {
-                if (errMessage.contains("Duplicate entry")) {
-                    throw DingoResource.DINGO_RESOURCE.duplicateKey().ex();
-                } else {
+                //if (errMessage.contains("Duplicate entry")) {
+                    //throw DingoResource.DINGO_RESOURCE.duplicateKey().ex();
+                //} else {
                     throw new RuntimeException(errMessage);
-                }
+                //}
             } else {
                 List<SQLWarning> sqlWarningList = context.getWarningList();
                 if (sqlWarningList == null) {
@@ -547,6 +546,8 @@ public class LoadDataExecutor implements DmlExecutor {
                 cacheKey = Base64.getEncoder().encodeToString(keyValue.getKey());
                 if (!caches.containsKey(cacheKey)) {
                     caches.put(cacheKey, keyValue);
+                } else if (indexTable.unique) {
+                    duplicateKey(tuplesTmp, indexTable);
                 }
             }
         }
@@ -554,7 +555,7 @@ public class LoadDataExecutor implements DmlExecutor {
             long start = System.currentTimeMillis();
             int cacheSize;
             Txn txn;
-            if (ignore) {
+            if (!ignore) {
                 txn = new Txn(
                     txnId, txnRetry, txnRetryCnt, timeOut
                 );
@@ -820,4 +821,17 @@ public class LoadDataExecutor implements DmlExecutor {
         return StringUtils.isNotBlank(engine) && engine.contains("TXN");
     }
 
+    public void duplicateKey(Object[] tuple, IndexTable indexTable) {
+        StringBuilder duplicateKey = new StringBuilder("'");
+        for (int i = 0; i < indexTable.getColumns().size(); i ++) {
+            Column column = indexTable.getColumns().get(i);
+            if (column.isPrimary()) {
+                duplicateKey.append(tuple[i]).append("-");
+            }
+        }
+        duplicateKey.deleteCharAt(duplicateKey.length() - 1);
+        duplicateKey.append("'");
+        throw new RuntimeException("Duplicate entry " + duplicateKey
+            + " for key '" + indexTable.getName() + ".PRIMARY'");
+    }
 }

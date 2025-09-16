@@ -121,6 +121,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Getter
     private Map<Long, Long> mdlLockJobMap = new ConcurrentHashMap<>();
 
+    @Setter
+    @Getter
+    private boolean sessionStateChanged = false;
+
     @Getter
     @Setter
     private InternalTimeZone internalTimeZone = InternalTimeZone.defaultTimeZone;
@@ -320,6 +324,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
         this.checkOpen();
+        this.sessionStateChanged = true;
         this.meta.connectionSync(this.handle, (new ConnectionPropertiesImpl()).setAutoCommit(autoCommit));
         if (this.autoCommit == autoCommit) {
             // true==true and false == false: nothing

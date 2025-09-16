@@ -30,8 +30,6 @@ public final class ScopeVariables {
 
     public static final List<String> immutableVariables = new ArrayList<>();
 
-    public static final List<String> characterSet = new ArrayList<>();
-
     public static final List<String> globalVariables = List.of("job_need_gc", "txn_history_duration",
         "safepoint_ts", "ssl_enable", "log_bin_trust_function_creators", "innodb_online_alter_log_max_size",
         "max_allowed_packet", "table_definition_cache");
@@ -49,11 +47,18 @@ public final class ScopeVariables {
         immutableVariables.add("last_insert_id");
         immutableVariables.add("@begin_transaction");
 
-        characterSet.add("utf8mb4");
-        characterSet.add("utf8");
-        characterSet.add("utf-8");
-        characterSet.add("gbk");
-        characterSet.add("latin1");
+        executorProp.put("transaction_stream_scan", "on");
+        executorProp.put("run_ddl", "on");
+        executorProp.put("dingo_trx_max_digest_length", "1024");
+        executorProp.put("lookup_batch_get_size", "4096");
+        executorProp.put("lookup_batch_get", "on");
+        executorProp.put("scan_concurrency", "5");
+        executorProp.put("mysql_stream_size", "100000");
+        executorProp.put("lookup_concurrency", "100");
+        executorProp.put("rpc_batch_size", "40960");
+        executorProp.put("stats_default_count", "10000");
+        executorProp.put("request_factor", "15000");
+        executorProp.put("ddl_timeout", "180000");
     }
 
     private ScopeVariables() {
@@ -82,15 +87,30 @@ public final class ScopeVariables {
     }
 
     public static Integer getRpcBatchSize() {
-        return (Integer) executorProp.getOrDefault("rpc_batch_size", 40960);
+        String rpcBatchSize = executorProp.getOrDefault("rpc_batch_size", "40960").toString();
+        try {
+            return Integer.parseInt(rpcBatchSize);
+        } catch (Exception e) {
+            return 40960;
+        }
     }
 
     public static Double getStatsDefaultCount() {
-        return (Double) executorProp.getOrDefault("stats_default_count", 10000D);
+        String statsDefaultCount = executorProp.getOrDefault("stats_default_count", "10000").toString();
+        try {
+            return Double.parseDouble(statsDefaultCount);
+        } catch (Exception e) {
+            return 10000D;
+        }
     }
 
     public static Double getRequestFactor() {
-        return (Double) executorProp.getOrDefault("request_factor", 15000D);
+        String requestFactor = executorProp.getOrDefault("request_factor", "15000").toString();
+        try {
+            return Double.parseDouble(requestFactor);
+        } catch (Exception e) {
+            return 15000D;
+        }
     }
 
     public static boolean runDdl() {

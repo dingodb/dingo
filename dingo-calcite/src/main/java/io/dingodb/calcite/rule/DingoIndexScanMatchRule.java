@@ -77,12 +77,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getDocumentIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.calcite.rule.DingoIndexCollationRule.getIndexByExpr;
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 
 @Slf4j
@@ -286,7 +284,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         if (RuleUtils.validateDisableIndex(scan.getHints())) {
             return;
         }
-        LogicalProject logicalProject1 = getLogicalProject(scan, logicalProject);
+        LogicalProject logicalProject1 = indexRangeTransform(scan, logicalProject);
         if (logicalProject1 == null) {
             return;
         }
@@ -295,7 +293,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
     }
 
     @Nullable
-    private static LogicalProject getLogicalProject(LogicalDingoTableScan scan, LogicalProject logicalProject) {
+    private static LogicalProject indexRangeTransform(LogicalDingoTableScan scan, LogicalProject logicalProject) {
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
         IndexRangeVisitor indexRangeVisitor = new IndexRangeVisitor(scan.getCluster().getRexBuilder());
         IndexRangeMapSet<Integer, RexNode> ixV = rexNode.accept(indexRangeVisitor);

@@ -39,6 +39,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.jdbc.CalciteSchema;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -87,6 +88,7 @@ public final class MessageProcess {
             connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
         } catch (SQLException e) {
             log.error("Fail to get connection characterSet, {}", e.toString());
+            connCharSet = "UTF-8";
         }
 
         if (flg != NativeConstants.COM_QUIT && flg != NativeConstants.COM_QUERY && mysqlConnection.passwordExpire)  {
@@ -108,7 +110,12 @@ public final class MessageProcess {
                 byte[] schemaBytes = new byte[length - 2];
                 System.arraycopy(array, 2, schemaBytes, 0, schemaBytes.length);
                 DingoConnection connection = (DingoConnection) mysqlConnection.getConnection();
-                String usedSchema = new String(schemaBytes);
+                String usedSchema;
+                try {
+                    usedSchema = new String(schemaBytes, connCharSet);
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
                 String user = connection.getContext().getOption("user");
                 String host = connection.getContext().getOption("host");
                 if (!PrivilegeVerify.verify(user, host, usedSchema, null, "use")) {

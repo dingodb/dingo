@@ -19,6 +19,7 @@ package io.dingodb.calcite.rule;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.DataContexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -36,6 +37,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexExecutor;
+import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -312,7 +314,8 @@ public class DingoFilterReduceExpressionsRule extends RelRule implements Substit
             // final RexExecutorImpl executor =
             //   new RexExecutorImpl(Schemas.createDataContext(null));
             // rootRel.getCluster().getPlanner().setExecutor(executor);
-            return changed;
+            //return changed;
+            executor = new RexExecutorImpl(DataContexts.EMPTY);
         }
 
         final List<RexNode> reducedValues = new ArrayList<>();
