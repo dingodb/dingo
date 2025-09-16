@@ -2490,11 +2490,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .toList();
 
         // Primary key list
-        List<String> columns = indexDeclaration.columnList;
-        List<String> columnsUpper = columns.stream().map(String::toUpperCase).toList();
-        List<String> originKeyList = new ArrayList<>(columns);
+        List<String> columnsUpper = indexDeclaration.columnList.stream().map(String::toUpperCase).toList();
+        List<String> originKeyList = new ArrayList<>(indexDeclaration.columnList);
+        List<String> copyColumnList = new ArrayList<>(indexDeclaration.columnList);
 
-        int keySize = columns.size();
+        int keySize = indexDeclaration.columnList.size();
         List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
         AtomicInteger num = new AtomicInteger(0);
         keyColumns.stream()
@@ -2507,7 +2507,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
             })
             .filter(__ -> !columnsUpper.contains(__))
-            .forEach(columns::add);
+            .forEach(copyColumnList::add);
 
         Properties properties = indexDeclaration.getProperties();
         if (properties == null) {
@@ -2519,8 +2519,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         int type = 1;
         if (indexDeclaration.getIndexType().equalsIgnoreCase("scalar")) {
             properties.put("indexType", "scalar");
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
+            for (int i = 0; i < copyColumnList.size(); i++) {
+                String columnName = copyColumnList.get(i);
                 if (!tableColumnNames.contains(columnName.toUpperCase())) {
                     throw new RuntimeException("Invalid column name: " + columnName);
                 }
@@ -2553,18 +2553,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
             String errorMsg = "Index column includes at least two columns, The first one must be text_id";
             if (num.get() > 0) {
-                if (columns.size() < 2) {
+                if (copyColumnList.size() < 2) {
                     throw new RuntimeException(errorMsg);
                 }
             } else {
-                if (columns.size() <= 2) {
+                if (copyColumnList.size() <= 2) {
                     throw new RuntimeException(errorMsg);
                 }
             }
             type = 3;
             int primary = 0;
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
+            for (int i = 0; i < copyColumnList.size(); i++) {
+                String columnName = copyColumnList.get(i);
                 if (!tableColumnNames.contains(columnName.toUpperCase())) {
                     throw new RuntimeException("Invalid column name: " + columnName);
                 }
@@ -2623,8 +2623,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
             type = 2;
             int primary = 0;
-            for (int i = 0; i < columns.size(); i++) {
-                String columnName = columns.get(i);
+            for (int i = 0; i < copyColumnList.size(); i++) {
+                String columnName = copyColumnList.get(i);
                 if (!tableColumnNames.contains(columnName.toUpperCase())) {
                     throw new RuntimeException("Invalid column name: " + columnName);
                 }

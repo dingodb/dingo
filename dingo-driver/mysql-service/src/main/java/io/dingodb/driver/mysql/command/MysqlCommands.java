@@ -260,6 +260,7 @@ public class MysqlCommands {
                         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
                         loadDataResPacket.write(buffer);
                         mysqlConnection.writeAndFlushImmediately(buffer);
+                        mysqlConnection.getConnection().clearWarnings();
                         return true;
                     }
                 }
@@ -270,7 +271,7 @@ public class MysqlCommands {
                 }
                 DingoStatement dingoStatement = (DingoStatement) statement;
                 OKPacket okPacket;
-                int initServerStatus = dingoStatement.getServerStatus();
+                int initServerStatus = getInitServerStatus((DingoConnection) mysqlConnection.getConnection());
                 if (hasMore) {
                     initServerStatus |= SERVER_MORE_RESULTS_EXISTS;
                 }
@@ -467,7 +468,7 @@ public class MysqlCommands {
             autoCommit = !("off".equalsIgnoreCase(connection.getClientInfo("autocommit")));
         }
         int initServerStatus = 0;
-        if (!autoCommit) {
+        if (!autoCommit && !connection.isSessionStateChanged()) {
             initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
         }
         if (connection.getAutoCommit()) {
@@ -478,6 +479,10 @@ public class MysqlCommands {
         boolean txReadOnly = tranReadOnly.equalsIgnoreCase("on");
         if (txReadOnly) {
             initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
+        }
+        if (connection.isSessionStateChanged()) {
+            initServerStatus |= ServerStatus.SERVER_SESSION_STATE_CHANGED;
+            connection.setSessionStateChanged(false);
         }
         return initServerStatus;
     }
