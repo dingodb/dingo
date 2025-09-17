@@ -226,7 +226,7 @@ public final class ScopeVariables {
 
     public static boolean autocommitSwitch() {
         try {
-            String autocommitSwitch = executorProp.getOrDefault("autocommit_switch", "false").toString();
+            String autocommitSwitch = executorProp.getOrDefault("autocommit_switch", "true").toString();
             return "true".equalsIgnoreCase(autocommitSwitch);
         } catch (Exception e) {
             return false;
