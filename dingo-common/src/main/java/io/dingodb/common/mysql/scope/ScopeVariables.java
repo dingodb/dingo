@@ -244,6 +244,16 @@ public final class ScopeVariables {
         }
     }
 
+    // for DTS
+    public static boolean ignoreHeartBeatTxn() {
+        try {
+            String autocommitSwitch = executorProp.getOrDefault("ignore_heartbeat_txn", "true").toString();
+            return "true".equalsIgnoreCase(autocommitSwitch);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);

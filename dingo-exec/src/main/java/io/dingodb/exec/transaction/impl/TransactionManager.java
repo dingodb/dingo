@@ -31,7 +31,9 @@ import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -205,5 +207,22 @@ public final class TransactionManager {
 
     public static long getMinTs() {
         return trans.keySet().stream().mapToLong(txnId -> txnId.seq).min().orElse(Long.MAX_VALUE);
+    }
+
+    public static long getIgnoreHeartBeatMinTs() {
+        long minTs = Long.MAX_VALUE;
+        Set<CommonId> txnIds = trans.keySet();
+        for (CommonId txnId : txnIds) {
+            if (txnId.seq < minTs) {
+                ITransaction iTransaction = trans.get(txnId);
+                List<String> sqlList = iTransaction.getSqlList();
+                if (!sqlList.isEmpty() && sqlList.stream().allMatch("select 1"::equals)) {
+                    LogUtils.info(log, "ignore heartbeat sql, txnId:{}", txnId);
+                    continue;
+                }
+                minTs = txnId.seq;
+            }
+        }
+        return minTs;
     }
 }

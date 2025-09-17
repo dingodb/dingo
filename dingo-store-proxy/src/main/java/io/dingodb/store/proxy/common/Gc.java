@@ -21,6 +21,7 @@ import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -110,7 +111,7 @@ public class Gc {
             LogUtils.info(log, "Run safe point update task.");
             Set<Location> coordinators = coordinatorSet();
             long reqTs = tso();
-            long safeTs = safeTs(getTxnDurationSafeTs(reqTs));
+            long safeTs = safeTs(getTxnDurationSafeTs(reqTs), false);
             List<Region> regions = getRegions(coordinators, reqTs);
             LogUtils.info(log, "Run safe point update task, current ts: {}, safe ts: {}", reqTs, safeTs);
             for (Region region : regions) {
@@ -228,7 +229,7 @@ public class Gc {
         try {
             LogUtils.info(log, "Run back up safe point update task.");
             Set<Location> coordinators = coordinatorSet();
-            long safeTs = safeTs(point);
+            long safeTs = safeTs(point, ScopeVariables.ignoreHeartBeatTxn());
             List<Region> regions = getRegions(coordinators, latestTso);
             LogUtils.info(log, "Run back up safe point update task, current ts: {}, safe ts: {}",
                 latestTso, safeTs);
@@ -450,7 +451,7 @@ public class Gc {
         return requestId - (TimeUnit.SECONDS.toMillis(duration) << GcApi.PHYSICAL_SHIFT);
     }
 
-    private static long safeTs(long safeTs) {
+    private static long safeTs(long safeTs, boolean ignoreHeartBeat) {
         Integer retry = Optional.mapOrGet(
             DingoConfiguration.instance().find("retry", int.class),
             __ -> __,
@@ -469,7 +470,7 @@ public class Gc {
                 LogUtils.warn(log, "Cross node get remote min start ts failed, retry times: {}", retry, e);
             }
         }
-        long localMinTs = TransactionManager.getMinTs();
+        long localMinTs = ignoreHeartBeat ? TransactionManager.getIgnoreHeartBeatMinTs() : TransactionManager.getMinTs();
         long minTxnTs = Math.min(remoteMinStartTs, localMinTs);
 
         return Math.min(minTxnTs, safeTs);
