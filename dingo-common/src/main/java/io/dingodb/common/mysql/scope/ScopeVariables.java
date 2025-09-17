@@ -233,6 +233,16 @@ public final class ScopeVariables {
         }
     }
 
+    // for DTS
+    public static boolean ignoreHeartBeatTxn() {
+        try {
+            String autocommitSwitch = executorProp.getOrDefault("ignore_heartbeat_txn", "true").toString();
+            return "true".equalsIgnoreCase(autocommitSwitch);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean aliasCaseSensitivity() {
         try {
             String aliasCaseSensitivity = executorProp.getOrDefault("alias_case_sensitivity", "false").toString();
