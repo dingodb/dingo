@@ -44,6 +44,18 @@ public class TupleType extends AbstractDingoType {
     @Getter
     private final Type type;
 
+    // create table b(id int,age int);
+    // When executing insert into tab select * from b on a table without a primary key,
+    // the hidden primary key is found but the target table does not have the relevant schema.
+    // In this case, the fieldCount and tuple. length are inconsistent, No need to check
+    // example: TxnPartInsertOperator,TxnPartInsertIgnoreOperator
+    public boolean checkFieldCount;
+
+    @Override
+    public void setCheckFieldCount(boolean checkFieldCount) {
+        this.checkFieldCount = checkFieldCount;
+    }
+
     @JsonCreator
     public TupleType(
         @JsonProperty("fields") DingoType[] fields
@@ -65,6 +77,7 @@ public class TupleType extends AbstractDingoType {
                 }
             }
         ).toArray(Type[]::new));
+        this.checkFieldCount = true;
     }
 
     private void setElementIds() {
@@ -96,7 +109,15 @@ public class TupleType extends AbstractDingoType {
 
     @Override
     public DingoType getChild(@NonNull Object index) {
-        return fields[(int) index];
+        int idx = (int) index;
+        if (idx < fieldCount()) {
+            return fields[(int) index];
+        } else {
+            // When executing insert into tab select * from without PrimaryTab on a table without a primary key,
+            // the hidden primary key is found but the target table does not have the relevant schema
+            // set type = null
+            return null;
+        }
     }
 
     @Override
@@ -169,11 +190,16 @@ public class TupleType extends AbstractDingoType {
     }
 
     private Object @NonNull [] checkFieldCount(Object @NonNull [] tuple) {
-        if (tuple.length == fieldCount()) {
+        if (checkFieldCount) {
+            if (tuple.length == fieldCount()) {
+                return tuple;
+            } else {
+                throw new IllegalArgumentException(
+                    "Required " + fieldCount() + " elements, but " + tuple.length + " provided."
+                );
+            }
+        } else {
             return tuple;
         }
-        throw new IllegalArgumentException(
-            "Required " + fieldCount() + " elements, but " + tuple.length + " provided."
-        );
     }
 }

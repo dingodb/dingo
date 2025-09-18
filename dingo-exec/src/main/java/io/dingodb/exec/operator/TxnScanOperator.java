@@ -24,6 +24,8 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnScanParam;
 import io.dingodb.exec.utils.RelOpUtils;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -42,6 +44,14 @@ public final class TxnScanOperator extends TxnScanOperatorBase {
         SourceProfile profile = param.getSourceProfile("scanBase");
         long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
+        Table table = DdlService.root().getTable(tableId);
+        if (table != null) {
+            boolean withoutPrimary = table.getColumns()
+                .stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
+            if (withoutPrimary) {
+                context.setWithoutPrimary(true);
+            }
+        }
         CommonId txnId = vertex.getTask().getTxnId();
         RangeDistribution distribution = context.getDistribution();
         if (param.isAutoCommit()) {

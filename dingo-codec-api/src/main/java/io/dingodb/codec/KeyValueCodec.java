@@ -17,6 +17,7 @@
 package io.dingodb.codec;
 
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 public interface KeyValueCodec {
@@ -72,4 +73,6 @@ public interface KeyValueCodec {
     default Object[] mapKeyAndDecodeValue(Object[] keys, byte[] bytes) {
         throw new UnsupportedOperationException();
     }
+
+    default DingoType getDingoType() { return null; }
 }

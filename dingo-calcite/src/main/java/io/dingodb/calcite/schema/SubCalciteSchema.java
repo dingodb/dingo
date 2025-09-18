@@ -68,19 +68,9 @@ public class SubCalciteSchema extends CalciteSchema {
 
     @Override
     public @Nullable TableEntry getImplicitTable(String tableName, boolean caseSensitive) {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        boolean forValidate = false;
-        if (stackTrace.length > 19) {
-            forValidate = stackTrace[19].getMethodName().equalsIgnoreCase("validate");
-        }
         SubSnapshotSchema subSnapshotSchema = (SubSnapshotSchema) schema;
         boolean inTxn = subSnapshotSchema.inTransaction();
-        Table table;
-        if (forValidate) {
-            table = ((SubSnapshotSchema) schema).getValidateTable(tableName);
-        } else {
-            table = schema.getTable(tableName);
-        }
+        Table table = schema.getTable(tableName);
         if (table != null && inTxn) {
             DingoTable dingoTable = (DingoTable) table;
             rootCalciteSchema.putRelatedTable(dingoTable.getTableId().seq, ((SubSnapshotSchema) schema).getSchemaVer());

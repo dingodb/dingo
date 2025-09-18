@@ -47,8 +47,6 @@ public class ExecutionEnvironment {
 
     public ClientIdentity clientIdentity = new ClientIdentity();
 
-    public volatile long safePointTs;
-
     @Getter
     @Setter
     private DingoRole role;

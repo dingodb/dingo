@@ -278,7 +278,13 @@ public interface DataConverter {
     default Object[] convertTupleFrom(@NonNull Object value, @NonNull DingoType type) {
         Object[] tuple = (Object[]) value;
         return IntStream.range(0, tuple.length)
-            .mapToObj(i -> Objects.requireNonNull(type.getChild(i)).convertFrom(tuple[i], this))
+            .mapToObj(i -> {
+                DingoType dingoType = type.getChild(i);
+                if (dingoType == null) {
+                    return null;
+                }
+                return Objects.requireNonNull(dingoType).convertFrom(tuple[i], this);
+            })
             .toArray(Object[]::new);
     }
 

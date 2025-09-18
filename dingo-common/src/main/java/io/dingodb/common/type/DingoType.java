@@ -119,4 +119,8 @@ public interface DingoType extends CompileContext {
     default void setHidden(boolean hidden){};
 
     default boolean isHidden() { return false; };
+
+    default void setCheckFieldCount(boolean check) {};
+
+    default boolean checkFieldCount() { return true; }
 }

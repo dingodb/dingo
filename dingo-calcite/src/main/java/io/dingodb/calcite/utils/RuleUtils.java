@@ -18,7 +18,6 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -34,10 +33,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.Objects;
+import java.util.TimeZone;
 
 public class RuleUtils {
 
@@ -114,6 +112,7 @@ public class RuleUtils {
                         }
                         Calendar calendar = Calendar.getInstance();
                         calendar.setTimeInMillis(timestamp.getTime());
+                        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
                         TimestampString timestampString = TimestampString.fromCalendarFields(calendar);
                         info.index = ((RexInputRef) op0).getIndex();
                         info.value = rexBuilder.makeTimestampLiteral(timestampString, 19);

@@ -26,6 +26,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.TxnScanWithRelOpParam;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.DingoTransformedIterator;
 import io.dingodb.store.api.transaction.ProfileScanIterator;
@@ -65,6 +67,14 @@ public abstract class TxnScanWithRelOpOperatorBase extends TxnScanOperatorBase {
     protected @NonNull Iterator<Object[]> createIterator(@NonNull Context context, @NonNull Vertex vertex) {
         TxnScanWithRelOpParam param = vertex.getParam();
         SourceProfile profile = param.getSourceProfile("scanBase");
+        Table table = DdlService.root().getTable(param.tableId);
+        if (table != null) {
+            boolean withoutPrimary = table.getColumns()
+                .stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
+            if (withoutPrimary) {
+                context.setWithoutPrimary(true);
+            }
+        }
         long start = System.currentTimeMillis();
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();

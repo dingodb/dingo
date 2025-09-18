@@ -18,7 +18,6 @@ package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.codec.CodecServiceProvider;
-import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
@@ -115,6 +114,10 @@ public final class CodecService implements io.dingodb.codec.CodecService {
             );
         }
 
+        @Override
+        public DingoType getDingoType() {
+            return type;
+        }
     }
 
     @Override
