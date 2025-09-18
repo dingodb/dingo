@@ -91,6 +91,8 @@ public class RexLiteralConverter implements DataConverter {
         } else if (value instanceof Double) {
             Double valDouble = (Double) value;
             return valDouble.floatValue();
+        } else if (value instanceof NlsString) {
+            return new BigDecimal(((NlsString) value).getValue()).floatValue();
         } else {
             try {
                 return new BigDecimal(value.toString()).floatValue();
@@ -108,6 +110,8 @@ public class RexLiteralConverter implements DataConverter {
             return valFloat.doubleValue();
         } else if (value instanceof Double) {
             return (Double) value;
+        } else if (value instanceof NlsString) {
+            return new BigDecimal(((NlsString) value).getValue()).doubleValue();
         } else {
             try {
                 return new BigDecimal(value.toString()).doubleValue();
