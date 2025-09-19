@@ -773,6 +773,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     if (rangeDistribution.getId().seq < 80016) {
                         LogUtils.error(log, "rollbackCreate table drop region, but get meta region. id:{}, " +
                             "tableId:{}, tableName:{}", rangeDistribution.getId(), table.getTableId(), table.getName());
+                        return;
                     }
                     coordinatorService.dropRegion(
                         tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
@@ -796,6 +797,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
                                     "but get meta region. id:{}, " +
                                     "tableId:{}, tableName:{}, indexId:{},indexName:{}", rangeDistribution.getId(),
                                     table.getTableId(), table.getName(), index.getTableId(), index.getName());
+                                return;
                             }
                             coordinatorService.dropRegion(
                                 tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
@@ -1221,6 +1223,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
         for (RangeDistribution rangeDistribution : rangeDistributions) {
             LogUtils.info(log, "dropRegion id:{}, tableId:{}", rangeDistribution.getId(), tableId);
             try {
+                if (rangeDistribution.id().seq < 80016) {
+                    LogUtils.error(log, "drop region error:{}", rangeDistribution.getId());
+                    return;
+                }
                 DropRegionRequest r = DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build();
                 coordinatorService.dropRegion(tso(), r);
             } catch (Exception e) {
@@ -1256,6 +1262,10 @@ public class MetaService implements io.dingodb.meta.MetaService {
             long regionId = scanRegionInfo.getRegionId();
             LogUtils.info(log, "dropRegion id:{}", regionId);
             try {
+                if (regionId < 80016) {
+                    LogUtils.error(log, "drop region by part error:{}", regionId);
+                    continue;
+                }
                 DropRegionRequest r = DropRegionRequest.builder().regionId(regionId).build();
                 coordinatorService.dropRegion(tso(), r);
             } catch (Exception e) {
