@@ -56,6 +56,13 @@ then
      -jar ${PROXY_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-proxy.yaml \
      > ${ROOT}/log/proxy.out
+elif [[ $ROLE == "web"]]
+    ${JAVA_HOME}/bin/java \
+    -Dlogging.config=file:${ROOT}/conf/logback-web.xml \
+    -jar ${ROOT}/libs/dingo-web.jar \
+    --spring.config.location=${ROOT}/conf/application-web.yaml \
+    > ${ROOT}/log/web.out
+then 
 else
     echo -e "Invalid DingoDB cluster roles"
 fi
