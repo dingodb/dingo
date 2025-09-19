@@ -329,6 +329,7 @@ public class MetaCache {
                                 "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
                                 tableWithId.getTableId(), tableDefinition.getName(), partition);
+                            return;
                         }
                         rangeDistributionList.add(
                             new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())

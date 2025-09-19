@@ -741,6 +741,10 @@ public class Gc {
                 // eleType: schema table table_auto index
                 String eleType = (String) objects[6];
                 long regionId = (long) objects[0];
+                if (regionId < 80016) {
+                    LogUtils.error(log, "gc drop region:{}", regionId);
+                    return;
+                }
                 if ("SCHEMA".equalsIgnoreCase(eleType)) {
                     String eleId = (String) objects[5];
                     long schemaId = Long.parseLong(eleId);

@@ -189,6 +189,7 @@ public class MetaCacheSnapShot {
                                     "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
                                 tableWithId.getTableId(), tableDefinition.getName(), partition);
+                            return;
                         }
                         rangeDistributionList.add(
                             new ScanRegionWithPartId(scanRegionInfo, partition.getId().getEntityId())
@@ -208,6 +209,7 @@ public class MetaCacheSnapShot {
                         "tableId:{}, tableName:{}, partId:{}, regionRange:{}", distribution.getId(),
                     tableWithId.getTableId(), tableDefinition.getName(), scanRegionWithPartId.getPartId(),
                     scanRegionWithPartId.getScanRegionInfo().getRange());
+                return;
             }
             result.put(new ByteArrayUtils.ComparableByteArray(distribution.getStartKey(), 1), distribution);
         });
