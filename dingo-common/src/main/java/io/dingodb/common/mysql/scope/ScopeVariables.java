@@ -103,7 +103,7 @@ public final class ScopeVariables {
      * @return streamScan
      */
     public static boolean txnScanByStream() {
-        String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
+        String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "off").toString();
         return txnScanByStream.equalsIgnoreCase("on");
     }
 
@@ -190,7 +190,7 @@ public final class ScopeVariables {
 
     public static int getMysqlStreamSize() {
         try {
-            String mysqlStreamSize = executorProp.getOrDefault("mysql_stream_size", "1000000").toString();
+            String mysqlStreamSize = executorProp.getOrDefault("mysql_stream_size", "200000").toString();
             return Integer.parseInt(mysqlStreamSize);
         } catch (Exception e) {
             return 1000000;
