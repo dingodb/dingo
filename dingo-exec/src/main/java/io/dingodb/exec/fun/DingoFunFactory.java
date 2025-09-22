@@ -17,7 +17,6 @@
 package io.dingodb.exec.fun;
 
 import io.dingodb.exec.fun.mysql.HexFun;
-import io.dingodb.exec.fun.mysql.InstrFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
@@ -41,6 +40,7 @@ import io.dingodb.exec.fun.vector.VectorTextFun;
 import io.dingodb.expr.parser.DefaultFunFactory;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.op.string.InstrFun;
 import io.dingodb.expr.runtime.op.time.CurrentTimestampFun;
 
 public class DingoFunFactory extends DefaultFunFactory {
