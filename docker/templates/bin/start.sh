@@ -36,6 +36,7 @@ sed -i 's/HOSTNAME/'"$HOSTNAME"'/g' ${ROOT}/conf/application-proxy-dev.yaml
 sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/executor.yaml
 sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/client.yaml
 sed -i 's/COORDINATORS/'"$COORDINATORS"'/g' ${ROOT}/conf/application-proxy-dev.yaml
+sed -i 's/coordinators/'"$COORDINATORS"'/g' ${ROOT}/conf/application-web-dev.yaml
 
 if [[ $ROLE == "executor" ]]
 then
@@ -56,7 +57,7 @@ then
      -jar ${PROXY_JAR_PATH} \
      --spring.config.location=${ROOT}/conf/application-proxy.yaml \
      > ${ROOT}/log/proxy.out
-elif [[ $ROLE == "web"]]
+elif [[ $ROLE == "web" ]]
 then
     ${JAVA_HOME}/bin/java \
     -Dlogging.config=file:${ROOT}/conf/logback-web.xml \
