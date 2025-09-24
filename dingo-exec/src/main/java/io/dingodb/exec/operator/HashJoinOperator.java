@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.base.Status;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
@@ -36,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public class HashJoinOperator extends SoleOutOperator {
@@ -59,7 +62,7 @@ public class HashJoinOperator extends SoleOutOperator {
             int pin = context.getPin();
             param.setContext(context);
             if (pin == 0) { // left
-                waitRightFinFlag(param);
+                waitRightFinFlag(param, vertex);
                 TupleKey leftKey = HashJoinParam.rtrimTupleKey(new TupleKey(leftMapping.revMap(tuple)));
 
                 if (HashJoinParam.containsNull(leftKey)) {
@@ -118,6 +121,10 @@ public class HashJoinOperator extends SoleOutOperator {
             }
             return true;
         } finally {
+            if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
+                LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+                param.interrupt();
+            }
             profile.time(start);
         }
     }
@@ -125,18 +132,23 @@ public class HashJoinOperator extends SoleOutOperator {
     @Override
     public void fin(int pin, Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
+        HashJoinParam param = vertex.getParam();
+        if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
+            LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+            param.interrupt();
+        }
         if (fin instanceof FinWithException) {
+            param.interrupt();
             edge.fin(fin);
             return;
         }
-        HashJoinParam param = vertex.getParam();
         boolean rightRequired = param.isRightRequired();
         int leftLength = param.getLeftLength();
         int rightLength = param.getRightLength();
         if (pin == 0) { // left
             if (rightRequired) {
                 // should wait in case of no data push to left.
-                waitRightFinFlag(param);
+                waitRightFinFlag(param, vertex);
                 outer:
                 for (List<TupleWithJoinFlag> tList : param.getHashMap().values()) {
                     for (TupleWithJoinFlag t : tList) {
@@ -169,6 +181,10 @@ public class HashJoinOperator extends SoleOutOperator {
             edge.fin(fin);
             // Reset
             param.clear();
+            if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
+                LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+                param.interrupt();
+            }
         } else if (pin == 1) { //right
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
@@ -179,10 +195,30 @@ public class HashJoinOperator extends SoleOutOperator {
         }
     }
 
-    private static void waitRightFinFlag(HashJoinParam param) {
-        param.getFuture().join();
+    private static void waitRightFinFlag(HashJoinParam param, Vertex vertex) {
+        if (param.isInterrupted()) {
+            throw new RuntimeException("HashJoin operation interrupted before waiting");
+        }
+        if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
+            LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+            param.interrupt();
+            throw new RuntimeException("task is cancel");
+        }
+        try {
+            param.getFuture().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            param.interrupt();
+            throw new RuntimeException("Wait for right side completion interrupted", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Error while waiting for right side completion", e);
+        }
+        if (param.isInterrupted()) {
+            throw new RuntimeException("HashJoin operation interrupted after waiting");
+        }
+
         if (!param.isRightFinFlag()) {
-            throw new RuntimeException();
+            throw new RuntimeException("Right fin flag not set after future completed");
         }
     }
 
