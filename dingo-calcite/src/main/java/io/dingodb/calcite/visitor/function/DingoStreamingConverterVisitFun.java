@@ -204,6 +204,13 @@ public final class DingoStreamingConverterVisitFun {
                 } else {
                     isRight = true;
                 }
+                if (copy.getSourceTableList().size() > 1 && copy.getTargetTableList().size() == 1) {
+                    if (copy.getSourceTableList().get(1).equals(copy.getTargetTableList().get(0))) {
+                        Table leftTable = copy.getSourceTableList().get(0).unwrap(DingoTable.class).getTable();
+                        leftLength = leftTable.columns.size();
+                        isRight = true;
+                    }
+                }
                 DistributionParam distributionParam = new DistributionParam(
                     table.tableId, table, distributions, leftLength, isRight);
                 Vertex distributionVertex = new Vertex(DISTRIBUTE, distributionParam);
@@ -218,13 +225,6 @@ public final class DingoStreamingConverterVisitFun {
                 outputs.add(distributionVertex);
 
                 if (transaction != null) {
-                    if (copy.getSourceTableList().size() > 1 && copy.getTargetTableList().size() == 1) {
-                        if (copy.getSourceTableList().get(1).equals(copy.getTargetTableList().get(0))) {
-                            Table leftTable = copy.getSourceTableList().get(0).unwrap(DingoTable.class).getTable();
-                            leftLength = leftTable.columns.size();
-                            isRight = true;
-                        }
-                    }
                     for (IndexTable index : table.getIndexes()) {
                         distributions = MetaService.root().getRangeDistribution(index.tableId);
                         distributionParam = new DistributionParam(

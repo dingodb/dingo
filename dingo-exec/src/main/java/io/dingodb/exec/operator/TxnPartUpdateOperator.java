@@ -148,25 +148,38 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     updated = true;
                 }
             }
+            Table table = param.getTable();
             TableModify.TableInfo tableInfo = param.getTableInfo();
             if (!tableInfo.isSingleSource()) {
                 // Multi-table update, extract the tuple of the current table
                 MetaService metaService = MetaService.root();
+                Object[] finalNewTuple = newTuple;
                 for (int i1 = 0; i1 < tableInfo.getTargetTableIndexes().size(); i1++) {
                     int tableIndex = tableInfo.getTargetTableIndexes().get(i1);
                     String tableName = tableInfo.getRefTableNames().get(tableIndex);
-                    Table table = metaService.getTable(tableId);
+                    table = metaService.getTable(tableId);
                     if (table.getName().equals(tableName)) {
                         Object[] tableIndexes = tableInfo.getSourceColumnIndexMap().get(tableIndex)
                             .values().stream().sorted(Integer::compare).toArray(Object[]::new);
-                        Object[] tuples = new Object[tableIndexes.length];
-                        DingoType[] types = new DingoType[tableIndexes.length];
-                        for (int j = 0; j < tableIndexes.length; j++) {
-                            tuples[j] = newTuple[(Integer) tableIndexes[j]];
-                            types[j] = originColumns.get((Integer) tableIndexes[j]).getType();
+                        Object[] tuples = new Object[finalNewTuple.length];
+                        DingoType[] types = new DingoType[finalNewTuple.length];
+                        for (Object index : tableIndexes) {
+                            tuples[(Integer) index] = finalNewTuple[(Integer) index];
+                            types[(Integer) index] = originColumns.get((Integer) index).getType();
                         }
+                        tuples = Arrays.copyOfRange(tuples,
+                            (Integer) tableIndexes[0],
+                            (Integer) tableIndexes[tableIndexes.length - 1] + 1);
+                        types = Arrays.copyOfRange(types,
+                            (Integer) tableIndexes[0],
+                            (Integer) tableIndexes[tableIndexes.length - 1] + 1);
                         schema = DingoTypeFactory.tuple(types);
                         newTuple = (Object[]) schema.convertFrom(tuples, ValueConverter.INSTANCE);
+                        if (copyTuple.length > tableIndexes.length) {
+                            copyTuple = Arrays.copyOfRange(copyTuple,
+                                (Integer) tableIndexes[0],
+                                (Integer) tableIndexes[tableIndexes.length - 1] + 1);
+                        }
                         codec = CodecService.getDefault().createKeyValueCodec(
                             table.getCodecVersion(), table.version, schema, table.keyMapping());
                     }
@@ -185,7 +198,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             boolean isVector = false;
             boolean isDocument = false;
             if (context.getIndexId() != null) {
-                Table indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
+                IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
                     LogUtils.error(log, "[ddl] TxnPartUpdate get index table null, indexId:{}", context.getIndexId());
                     return false;
@@ -193,7 +206,10 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (!OpStateUtils.allowWrite(indexTable.getSchemaState())) {
                     return true;
                 }
-                List<Integer> columnIndices = param.getTable().getColumnIndices(indexTable.columns.stream()
+                if (!table.getIndexes().contains(indexTable)) {
+                    table = MetaService.root().getTable(indexTable.primaryId);
+                }
+                List<Integer> columnIndices = table.getColumnIndices(indexTable.columns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
                 Object defaultVal = null;
@@ -225,7 +241,9 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     }
                     return copyNewTuple[c];
                 }).toArray();
-                if (updated && columnIndices.stream().anyMatch(mapping::contains)) {
+                if (updated && (columnIndices.stream().anyMatch(mapping::contains)
+                    || table.copyWithColumns(originColumns).getColumnIndices2(originColumns)
+                    .stream().anyMatch(mapping::contains))) {
                     PartitionService ps = PartitionService.getService(
                         Optional.ofNullable(indexTable.getPartitionStrategy())
                             .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
@@ -253,7 +271,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             // new key need calcPartId
             if (updated && param.isUpdatePrimaryKey() && context.getIndexId() == null) {
                 PartitionService ps = PartitionService.getService(
-                    Optional.ofNullable(param.getTable().getPartitionStrategy())
+                    Optional.ofNullable(table.getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));
                 partId = ps.calcPartId(key, MetaService.root().getRangeDistribution(tableId));
                 CodecService.getDefault().setId(key, partId.domain);

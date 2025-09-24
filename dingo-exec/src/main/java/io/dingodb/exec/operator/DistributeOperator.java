@@ -67,6 +67,7 @@ public class DistributeOperator extends SoleOutOperator {
         if (param.getTableId().type.code == CommonId.CommonType.INDEX.code
             && indexTable != null) {
             context.setIndexId(param.getTableId());
+            context.setTableId(indexTable.primaryId);
             PartitionService indexPs = PartitionService.getService(
                 Optional.ofNullable(indexTable.getPartitionStrategy())
                     .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME));

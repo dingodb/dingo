@@ -693,14 +693,16 @@ public class DingoMeta extends MetaImpl {
                             throw ExceptionUtils.toRuntime(e);
                         }
                     }
-                    return requireNonNull(resolveRegionSplit(
-                        sh,
-                        offset,
-                        fetchMaxRowCount,
-                        statement,
-                        signature,
-                        resultSet,
-                        retry));
+                    if (signature instanceof DingoSignature) {
+                        return requireNonNull(resolveRegionSplit(
+                            sh,
+                            offset,
+                            fetchMaxRowCount,
+                            statement,
+                            signature,
+                            resultSet,
+                            retry));
+                    }
                 }
                 if (transaction != null) {
                     transaction.addSql(signature.sql);
