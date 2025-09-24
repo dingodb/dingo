@@ -138,6 +138,8 @@ public class LookUpBatchIterator implements Iterator<Object[]> {
             List<KeyValue> res = store.txnGet(scanTs, item.getValue(), timeout);
             lookupResult.addAll(res.stream().map(lookupCodec::decode).toList());
         }
+        keyList.clear();
+        tupleList.clear();
         return lookupResult;
     }
 }
