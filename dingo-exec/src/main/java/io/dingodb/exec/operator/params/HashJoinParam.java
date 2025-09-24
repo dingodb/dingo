@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -28,6 +29,7 @@ import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
+@Slf4j
 @JsonTypeName("hashJoin")
 @JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
 public class HashJoinParam extends AbstractParams {
@@ -76,6 +79,8 @@ public class HashJoinParam extends AbstractParams {
 
     public boolean leftMappingEmpty;
     public boolean rightMappingEmpty;
+
+    private volatile boolean interrupted = false;
 
 
     public HashJoinParam(
@@ -164,5 +169,13 @@ public class HashJoinParam extends AbstractParams {
         rightFinFlag = false;
         hashMap.clear();
         future = new CompletableFuture<>();
+    }
+
+    public void interrupt() {
+        this.interrupted = true;
+        LogUtils.warn(log, "HashJoin operation interrupted");
+        if (!future.isDone()) {
+            future.completeExceptionally(new InterruptedException("HashJoin operation interrupted"));
+        }
     }
 }
