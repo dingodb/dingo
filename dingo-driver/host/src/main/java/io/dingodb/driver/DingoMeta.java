@@ -388,6 +388,9 @@ public class DingoMeta extends MetaImpl {
 
     private void printDingoAudit(@NonNull StatementHandle sh, String sql, @NonNull DingoConnection dingoConnection,
                                  long jobSeqId, @NonNull DingoDriverParser parser) throws SQLException {
+        if (!isDisableIncrementBackup() && !isDisableAudit()) {
+            return;
+        }
         String user = dingoConnection.getContext().getOption("user");
         String client = dingoConnection.getContext().getOption("client");
         ITransaction transaction = dingoConnection.getTransaction();
