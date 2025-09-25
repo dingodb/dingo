@@ -148,6 +148,13 @@ public class PessimisticLockInsertIgnoreOperator extends SoleOutOperator {
 
             }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
+            if (context.isWithoutPrimary()) {
+                schema.setCheckFieldCount(false);
+                DingoType dingoType = codec.getDingoType();
+                if (dingoType != null) {
+                    dingoType.setCheckFieldCount(false);
+                }
+            }
             Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
             KeyValue keyValue = wrap(codec::encode).apply(newTuple);
             CodecService.getDefault().setId(keyValue.getKey(), partId.domain);

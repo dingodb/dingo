@@ -205,7 +205,7 @@ public class DingoParser {
 
             /**
              * Whether to allow INSERT (or UPSERT) with no column list but fewer values than the target table.
-             * If a table does not have a primary key but has a hidden primary key _rowid,
+             * If a table does not have a primary key but has a hidden primary key IMPLICIT_COL_NAME,
              * then it is necessary to support insert into table values ('value ')
              * @return true
              */

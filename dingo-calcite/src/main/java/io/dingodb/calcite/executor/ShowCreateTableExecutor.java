@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static io.dingodb.common.util.NameCaseUtils.convertName;
+import static org.apache.calcite.sql.validate.SqlValidatorImpl.IMPLICIT_COL_NAME;
 
 public class ShowCreateTableExecutor extends QueryExecutor {
 
@@ -135,7 +136,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         int colSize = table.getColumns().size();
         for (int i = 0; i < colSize; i ++) {
             Column column = table.getColumns().get(i);
-            if (column.getName().equalsIgnoreCase("_ROWID") && column.getState() == 2) {
+            if (column.getName().equalsIgnoreCase(IMPLICIT_COL_NAME) && column.getState() == 2) {
                 createTableSqlStr.deleteCharAt(createTableSqlStr.length() - 1);
                 continue;
             }
@@ -170,7 +171,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         List<Column> keyColumnList = table.keyColumns();
         int keySize = keyColumnList.size();
         if (!(keySize == 1
-            && keyColumnList.get(0).getName().equalsIgnoreCase("_ROWID")
+            && keyColumnList.get(0).getName().equalsIgnoreCase(IMPLICIT_COL_NAME)
             && keyColumnList.get(0).getState() == 2)) {
             createTableSqlStr.append(",");
             createTableSqlStr.append("\r\n");

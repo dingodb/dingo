@@ -162,6 +162,13 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                 );
 
                 if (duplicate && context.getTablePartId() != null) {
+                    if (context.isWithoutPrimary()) {
+                        param.getSchema().setCheckFieldCount(false);
+                        DingoType dingoType = param.getCodec().getDingoType();
+                        if (dingoType != null) {
+                            dingoType.setCheckFieldCount(false);
+                        }
+                    }
                     Object[] primaryTuple = (Object[]) param.getSchema().convertFrom(finalTuple, ValueConverter.INSTANCE);
                     KeyValue primaryKv = wrap(param.getCodec()::encode).apply(primaryTuple);
                     StoreInstance store =
@@ -170,6 +177,13 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
 
                     Object[] getPrimaryTuple = null;
                     boolean exists = getPrimaryKv != null && getPrimaryKv.getValue() != null;
+                    if (context.isWithoutPrimary()) {
+                        schema.setCheckFieldCount(false);
+                        DingoType dingoType = codec.getDingoType();
+                        if (dingoType != null) {
+                            dingoType.setCheckFieldCount(false);
+                        }
+                    }
                     if (getPrimaryKv == null || getPrimaryKv.getValue() == null) {
                         primaryTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
                         byte[] originalKey;
@@ -452,6 +466,13 @@ public class PessimisticLockInsertOperator extends SoleOutOperator {
                             return false;
                         }
                     }
+                }
+            }
+            if (context.isWithoutPrimary()) {
+                schema.setCheckFieldCount(false);
+                DingoType dingoType = codec.getDingoType();
+                if (dingoType != null) {
+                    dingoType.setCheckFieldCount(false);
                 }
             }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);

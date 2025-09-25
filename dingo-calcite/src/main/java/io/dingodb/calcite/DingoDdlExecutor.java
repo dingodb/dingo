@@ -218,6 +218,7 @@ import static io.dingodb.common.util.NameCaseUtils.convertName;
 import static io.dingodb.common.util.NameCaseUtils.convertSql;
 import static io.dingodb.common.util.Optional.mapOrNull;
 import static io.dingodb.common.util.PrivilegeUtils.getRealAddress;
+import static org.apache.calcite.sql.validate.SqlValidatorImpl.IMPLICIT_COL_NAME;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 @Slf4j
@@ -469,9 +470,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .filter(col -> col.getKind() == SqlKind.COLUMN_DECL)
             .map(col -> fromSqlColumnDeclaration((DingoSqlColumn) col, validator, finalPks))
             .collect(Collectors.toCollection(ArrayList::new));
-        // If it is a table without a primary key, create an invisible column _rowid is a self increasing primary key
+        boolean useReserved = columns.stream()
+            .anyMatch(columnDefinition -> IMPLICIT_COL_NAME.equalsIgnoreCase(columnDefinition.getName()));
+        if (useReserved) {
+            throw DingoErrUtil.newStdErr(IMPLICIT_COL_NAME + " is a system reserved field");
+        }
+        // If it is a table without a primary key, create an invisible column IMPLICIT_COL_NAME
+        // is a self increasing primary key
         if (pks.isEmpty()) {
-            pks.add("_ROWID");
+            pks.add(IMPLICIT_COL_NAME);
             columns.add(createRowIdColDef(validator));
         }
 
@@ -2809,15 +2816,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         RelDataType dataType = typeSpec.deriveType(validator, true);
         SqlTypeName typeName = dataType.getSqlTypeName();
 
-        String name = "_ROWID";
-
         String defaultValue = "";
 
         int scale = typeName.allowsScale() ? dataType.getScale() : RelDataType.SCALE_NOT_SPECIFIED;
         RelDataType elementType = dataType.getComponentType();
         SqlTypeName elementTypeName = elementType != null ? elementType.getSqlTypeName() : null;
         return ColumnDefinition.builder()
-            .name(name)
+            .name(IMPLICIT_COL_NAME)
             .type(typeName.getName())
             .elementType(mapOrNull(elementTypeName, SqlTypeName::getName))
             .precision(-1)

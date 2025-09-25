@@ -110,6 +110,7 @@ import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_ONLY
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_REORG;
 import static io.dingodb.server.executor.ddl.BackFilling.typeDelIndexWorker;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
+import static org.apache.calcite.sql.validate.SqlValidatorImpl.IMPLICIT_COL_NAME;
 
 @Slf4j
 public class DdlWorker {
@@ -972,7 +973,7 @@ public class DdlWorker {
                 List<ColumnDefinition> columnDefinitions = definitionWithId.getTableDefinition().getColumns();
                 boolean withoutPriTable = columnDefinitions.stream()
                     .anyMatch(columnDefinition1 -> columnDefinition1.getState() == 2
-                        && columnDefinition1.getName().equalsIgnoreCase("_ROWID")
+                        && columnDefinition1.getName().equalsIgnoreCase(IMPLICIT_COL_NAME)
                         && columnDefinition1.getIndexOfKey() >= 0);
                 if (addPos > -1) {
                     columnDefinitions.add(addPos, MapperImpl.MAPPER.columnTo(columnDefinition));

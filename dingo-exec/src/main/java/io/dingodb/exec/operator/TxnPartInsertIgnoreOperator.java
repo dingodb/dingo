@@ -168,6 +168,13 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                 indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
             );
         }
+        if (context.isWithoutPrimary()) {
+            schema.setCheckFieldCount(false);
+            DingoType dingoType = codec.getDingoType();
+            if (dingoType != null) {
+                dingoType.setCheckFieldCount(false);
+            }
+        }
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
         assert newTuple != null;
         KeyValue keyValue = wrap(codec::encode).apply(newTuple);

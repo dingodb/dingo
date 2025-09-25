@@ -47,13 +47,15 @@ public class Context {
 
     private boolean isReplaceIntoKey;
 
+    private boolean withoutPrimary;
+
     public Context setPin(int pin) {
         this.pin = pin;
         return this;
     }
 
     public Context copy() {
-        return Context.builder().pin(pin).keyState(new ArrayList<>(keyState)).build();
+        return Context.builder().pin(pin).keyState(new ArrayList<>(keyState)).withoutPrimary(withoutPrimary).build();
     }
 
     public void addKeyState(boolean state) {
