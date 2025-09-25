@@ -170,12 +170,26 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 isDocument = true;
             }
             schema = indexTable.tupleType();
+            if (context.isWithoutPrimary()) {
+                schema.setCheckFieldCount(false);
+                DingoType dingoType = codec.getDingoType();
+                if (dingoType != null) {
+                    dingoType.setCheckFieldCount(false);
+                }
+            }
             localStore = Services.LOCAL_STORE.getInstance(context.getIndexId(), partId);
             codec = CodecService.getDefault().createKeyValueCodec(
                 indexTable.getCodecVersion(), indexTable.version, indexTable.tupleType(), indexTable.keyMapping()
             );
             // index duplicate key check
             if (duplicate && context.getTablePartId() != null) {
+                if (context.isWithoutPrimary()) {
+                    param.getSchema().setCheckFieldCount(false);
+                    DingoType dingoType = param.getCodec().getDingoType();
+                    if (dingoType != null) {
+                        dingoType.setCheckFieldCount(false);
+                    }
+                }
                 Object[] primaryTuple = (Object[]) param.getSchema().convertFrom(primaryOldTuple, ValueConverter.INSTANCE);
                 KeyValue primaryKv = wrap(param.getCodec()::encode).apply(primaryTuple);
                 StoreInstance store = Services.KV_STORE.getInstance(param.getTable().tableId, context.getTablePartId());
@@ -254,6 +268,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         }
                     }
                 } else {
+                    if (context.isWithoutPrimary()) {
+                        schema.setCheckFieldCount(false);
+                        DingoType dingoType = codec.getDingoType();
+                        if (dingoType != null) {
+                            dingoType.setCheckFieldCount(false);
+                        }
+                    }
                     Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
                     KeyValue keyValue = wrap(codec::encode).apply(newTuple);
                     StoreInstance kvStore = Services.KV_STORE.getInstance(context.getIndexId(), partId);
@@ -263,6 +284,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             + TransactionUtil.duplicateEntryKey(tableId, keyValue.getKey(), txnId) + " for key 'PRIMARY'");
                     }
                 }
+            }
+        }
+        if (context.isWithoutPrimary()) {
+            schema.setCheckFieldCount(false);
+            DingoType dingoType = codec.getDingoType();
+            if (dingoType != null) {
+                dingoType.setCheckFieldCount(false);
             }
         }
         Object[] newTuple = (Object[]) schema.convertFrom(tuple, ValueConverter.INSTANCE);
@@ -777,6 +805,13 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     newTuple[index] = newValue;
                     updateNum++;
                 }
+            }
+        }
+        if (context.isWithoutPrimary()) {
+            schema.setCheckFieldCount(false);
+            DingoType dingoType = codec.getDingoType();
+            if (dingoType != null) {
+                dingoType.setCheckFieldCount(false);
             }
         }
         Object[] convertTuple = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);

@@ -107,7 +107,6 @@ public class LoadDataExecutor implements DmlExecutor {
     private volatile String errMessage;
     private Table table;
     private final KeyValueCodec codec;
-    private NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions;
     private final DingoType schema;
 
     MetaService metaService;
@@ -183,7 +182,6 @@ public class LoadDataExecutor implements DmlExecutor {
         codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping()
         );
-        distributions = metaService.getRangeDistribution(table.tableId);
         schema = table.tupleType();
         this.isTxn = checkEngine();
         this.statementId = UUID.randomUUID().toString();
@@ -445,9 +443,7 @@ public class LoadDataExecutor implements DmlExecutor {
 
     public void insertWithoutTxn(Object[] tuples, boolean retry) {
         try {
-            if (retry) {
-                distributions = metaService.getRangeDistribution(table.tableId);
-            }
+            NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distributions = metaService.getRangeDistribution(table.tableId);
             CommonId partId = PartitionService.getService(
                     Optional.ofNullable(table.getPartitionStrategy())
                         .orElse(DingoPartitionServiceProvider.RANGE_FUNC_NAME))

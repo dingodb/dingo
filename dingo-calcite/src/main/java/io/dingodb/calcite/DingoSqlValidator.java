@@ -338,7 +338,11 @@ public class DingoSqlValidator extends SqlValidatorImpl {
 
         // Fall back to default behavior: compare the type families.
         for (int i = 0; i < sourceCount; ++i) {
-            RelDataType sourceType = sourceFields.get(i).getType();
+            RelDataTypeField sourceTypeField = sourceFields.get(i);
+            if (IMPLICIT_COL_NAME.equals(sourceTypeField.getName())) {
+                continue;
+            }
+            RelDataType sourceType = sourceTypeField.getType();
             RelDataType targetType = targetFields.get(i).getType();
             if (!SqlTypeUtil.canAssignFrom(targetType, sourceType)) {
                 SqlNode node = getNthExpr(query, i, sourceCount);

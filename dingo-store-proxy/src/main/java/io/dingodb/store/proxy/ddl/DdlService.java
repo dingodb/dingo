@@ -141,6 +141,9 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
 
     @Override
     public Table getTable(CommonId id) {
+        if (id == null) {
+            return null;
+        }
         InfoSchema[] infoSchemas = InfoCache.infoCache.cache;
         for (InfoSchema is : infoSchemas) {
             if (is == null) {

@@ -24,6 +24,8 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.ScanParam;
 import io.dingodb.exec.utils.RelOpUtils;
+import io.dingodb.meta.DdlService;
+import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +49,14 @@ public final class ScanOperator extends ScanOperatorBase {
         byte[] endKey = rd.getEndKey();
         boolean includeStart = rd.isWithStart();
         boolean includeEnd = rd.isWithEnd();
+        Table table = DdlService.root().getTable(param.tableId);
+        if (table != null) {
+            boolean withoutPrimary = table.getColumns()
+                .stream().anyMatch(column -> column.isPrimary() && column.getState() == 2);
+            if (withoutPrimary) {
+                context.setWithoutPrimary(true);
+            }
+        }
         SourceProfile profile = param.getSourceProfile("scanBase");
         long start = System.currentTimeMillis();
         StoreInstance storeInstance = Services.KV_STORE.getInstance(param.getTableId(), rd.getId());

@@ -92,23 +92,6 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
 
     @Override
     public RelDataType getRowType() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        StackTraceElement stackTraceElement = null;
-        if (stackTrace.length >= 2) {
-            stackTraceElement = stackTrace[2];
-        }
-        DingoTable table = relOptTable.unwrap(DingoTable.class);
-        if (table == null) {
-            throw new RuntimeException("getRowType exception, table is null");
-        }
-        boolean withoutPri =
-            table.getTable().getColumns().stream().anyMatch(col -> col.getState() == 2);
-        if (!withoutPri) {
-            return relOptTable.getRowType();
-        }
-        if (withOutPrimaryRowType(stackTraceElement)) {
-            return getWithoutPriRowType();
-        }
         return relOptTable.getRowType();
     }
 

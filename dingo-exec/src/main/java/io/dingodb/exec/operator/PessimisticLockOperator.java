@@ -203,6 +203,13 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 codec = CodecService.getDefault().createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
                     indexTable.tupleType(), indexTable.keyMapping());
             }
+            if (context.isWithoutPrimary()) {
+                schema.setCheckFieldCount(false);
+                DingoType dingoType = codec.getDingoType();
+                if (dingoType != null) {
+                    dingoType.setCheckFieldCount(false);
+                }
+            }
             StoreInstance kvStore = Services.KV_STORE.getInstance(tableId, partId);
             Object[] newTuple = Arrays.copyOf(tuple, tupleSize);
             byte[] key;
@@ -367,7 +374,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 }
                 boolean isUpdateMainTablePrimaryKey = (param.isUpdatePrimaryKey() && context.getIndexId() == null && updated);
                 if (param.isInsert() || isUpdateMainTablePrimaryKey) {
-                    if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
+                    if (!kvKeyValue.isEmpty() && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
                         if (!param.isDuplicateUpdate() && !param.isReplaceInto() && !param.isIgnore()) {
                             if (future != null) {
                                 future.cancel(true);
@@ -415,7 +422,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                 }
                 transaction.setForUpdateTs(forUpdateTs);
                 transaction.setPrimaryKeyFuture(future);
-                if (kvKeyValue.size() != 0 && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
+                if (!kvKeyValue.isEmpty() && kvKeyValue.get(0) != null && kvKeyValue.get(0).getValue() != null) {
                     // extraKeyValue
                     KeyValue extraKeyValue = new KeyValue(
                         ByteUtils.encode(
