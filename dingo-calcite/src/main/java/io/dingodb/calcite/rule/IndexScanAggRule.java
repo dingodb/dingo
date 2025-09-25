@@ -165,7 +165,7 @@ public class IndexScanAggRule extends RelRule<IndexScanAggRule.Config> implement
         int index = -1;
         for (int i = 0; i < indexTableList.size(); i ++) {
             IndexTable indexTable = indexTableList.get(i);
-            if (indexTable.getSchemaState() != SchemaState.SCHEMA_PUBLIC) {
+            if (indexTable.getSchemaState() != SchemaState.SCHEMA_PUBLIC || !indexTable.isVisible()) {
                 continue;
             }
             if (indexTable.getIndexType() != IndexType.SCALAR) {
@@ -186,7 +186,7 @@ public class IndexScanAggRule extends RelRule<IndexScanAggRule.Config> implement
     public static IndexTable matchIndex(List<Column> columnList, List<IndexTable> indexTableList) {
         return indexTableList.stream()
             .filter(indexTable -> indexTable.getSchemaState() == SchemaState.SCHEMA_PUBLIC
-                && indexTable.getIndexType() == IndexType.SCALAR)
+                && indexTable.getIndexType() == IndexType.SCALAR && indexTable.visible)
             .filter(indexTable -> indexTable.getColumns().containsAll(columnList))
             .findFirst().orElse(null);
     }

@@ -26,6 +26,7 @@ import io.dingodb.calcite.utils.RangeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.IndexTable;
@@ -49,9 +50,10 @@ import java.util.List;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 
 public class DingoIndexScanWithRelOp extends LogicalIndexScanWithRelOp implements DingoRel {
+    @Getter
+    private double planCost;
     @Getter
     private double rowCount;
     @Getter
@@ -145,8 +147,9 @@ public class DingoIndexScanWithRelOp extends LogicalIndexScanWithRelOp implement
         double rowSize = getAvgRowSize(indexTable.columns, indexTable, schemaName);
         double tableScanCost = getScanCost(rowCount, rowSize);
         double tableNetCost = getNetCost(rowCount, rowSize);
-        double rangeCost = (tableScanCost + tableNetCost) / scanConcurrency;
-        return DingoCost.FACTORY.makeCost(rangeCost * 0.7, 0, 0);
+        double rangeCost = (tableScanCost + tableNetCost) / ScopeVariables.getScanConcurrency();
+        this.planCost = rangeCost * 0.7;
+        return DingoCost.FACTORY.makeCost(planCost, 0, 0);
     }
 
 }

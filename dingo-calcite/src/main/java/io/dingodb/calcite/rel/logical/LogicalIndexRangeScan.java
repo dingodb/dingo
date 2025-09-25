@@ -113,8 +113,8 @@ public class LogicalIndexRangeScan extends LogicalDingoTableScan {
             tableSideCost = (tableSideCost + doubleReadCost) / getLookupConcurrency();
             cost += tableSideCost;
         }
-
-        return planner.getCostFactory().makeCost(cost * 0.8, 0, 0);
+        this.planCost = cost * 0.8;
+        return planner.getCostFactory().makeCost(planCost, 0, 0);
     }
 
     @Override

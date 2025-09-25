@@ -68,4 +68,8 @@ public interface DingoRel extends PhysicalNode {
     default double getRowCount() {
         return 0;
     }
+
+    default double getPlanCost() {
+        return 0;
+    }
 }

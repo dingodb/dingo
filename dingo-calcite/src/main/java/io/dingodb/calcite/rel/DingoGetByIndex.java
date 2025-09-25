@@ -55,7 +55,6 @@ import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getSelectionCdList;
 import static io.dingodb.calcite.meta.DingoCostModelV1.needLookUp;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
 import static io.dingodb.common.mysql.scope.ScopeVariables.getLookupConcurrency;
 
@@ -63,6 +62,9 @@ import static io.dingodb.common.mysql.scope.ScopeVariables.getLookupConcurrency;
 public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
     @Getter
     private double rowCount;
+
+    @Getter
+    private double planCost;
 
     @Getter
     protected final Map<CommonId, Set> indexSetMap;
@@ -139,7 +141,7 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         double estimateRowCount = estimateRowCount(mq);
         double indexScanCost = estimateRowCount * (Math.log(indexRowSize) / Math.log(2)) * scanFactor;
         double indexNetCost = estimateRowCount * indexRowSize * netFactor;
-        double cost = (indexNetCost + indexScanCost) / scanConcurrency;
+        double cost = (indexNetCost + indexScanCost) / ScopeVariables.getScanConcurrency();
         if (isLookup()) {
             double rowSize = getScanAvgRowSize(this);
             double tableScanCost = getScanCost(estimateRowCount, rowSize);
@@ -148,7 +150,8 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
             tableScanCost += estimateRowCount * ScopeVariables.getSeekFactor();
             cost += (tableScanCost) / getLookupConcurrency();
         }
-        return DingoCost.FACTORY.makeCost(cost * 0.7, 0, 0);
+        planCost = cost * 0.7;
+        return DingoCost.FACTORY.makeCost(planCost, 0, 0);
     }
 
     public boolean isLookup() {

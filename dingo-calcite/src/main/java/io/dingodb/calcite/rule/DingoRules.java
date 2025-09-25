@@ -40,8 +40,8 @@ public final class DingoRules {
         = DingoAggregateScanRule.Config.DEFAULT.toRule();
     public static final DingoFilterRule DINGO_FILTER_RULE
         = DingoFilterRule.DEFAULT.toRule(DingoFilterRule.class);
-    public static final DingoGetByIndexRule DINGO_GET_BY_INDEX_RULE
-        = DingoGetByIndexRule.DEFAULT.toRule(DingoGetByIndexRule.class);
+    public static final DingoGetByIndexCostRule DINGO_GET_BY_INDEX_RULE
+        = DingoGetByIndexCostRule.Config.DEFAULT.toRule();
     public static final DingoLikeRule DINGO_LIKE_RULE
         = DingoLikeRule.Config.DEFAULT.toRule();
     public static final DingoPartCountRule DINGO_PART_COUNT_RULE
@@ -140,8 +140,8 @@ public final class DingoRules {
     public static final DingoIndexScanMatchRule INDEX_PROJECT_SORT
         = DingoIndexScanMatchRule.Config.PROJECT_SORT.toRule();
 
-    public static final DingoIndexScanMatchRule INDEX_NONLEFT
-        = DingoIndexScanMatchRule.Config.NONLEFT.toRule();
+    public static final DingoIndexNonLeftMatchRule INDEX_NONLEFT
+        = DingoIndexNonLeftMatchRule.Config.DEFAULT.toRule();
 
     public static final DingoIndexScanMatchRule INDEX_NONLEFT_ORDER
         = DingoIndexScanMatchRule.Config.NONLEFT_ORDER.toRule();
