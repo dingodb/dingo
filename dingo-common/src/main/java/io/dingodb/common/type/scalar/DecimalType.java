@@ -37,12 +37,12 @@ public class DecimalType extends AbstractScalarType {
 
     @JsonCreator
     public DecimalType(@JsonProperty("nullable") boolean nullable) {
-        super(Types.DECIMAL, nullable);
+        super(new io.dingodb.expr.common.type.DecimalType(), nullable);
     }
 
     @Override
     public Type getType() {
-        return Types.DECIMAL;
+        return super.getType();
     }
 
     @Override
@@ -58,6 +58,20 @@ public class DecimalType extends AbstractScalarType {
     @Override
     public <R, T> R accept(@NonNull DingoTypeVisitor<R, T> visitor, T obj) {
         return visitor.visitDecimalType(this, obj);
+    }
+
+    @Override
+    public void setPrecision(long precision) {
+        this.precision = precision;
+        super.setPrecision(precision);
+        ((io.dingodb.expr.common.type.DecimalType) super.getType()).setPrecision(precision);
+    }
+
+    @Override
+    public void setScale(long scale) {
+        this.scale = scale;
+        super.setScale(scale);
+        ((io.dingodb.expr.common.type.DecimalType) super.getType()).setScale(scale);
     }
 
     @Override
