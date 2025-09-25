@@ -59,6 +59,7 @@ public final class ScopeVariables {
         executorProp.put("stats_default_count", "10000");
         executorProp.put("request_factor", "15000");
         executorProp.put("ddl_timeout", "180000");
+        executorProp.put("seek_factor", "80");
     }
 
     private ScopeVariables() {
@@ -204,7 +205,7 @@ public final class ScopeVariables {
             String lookupConcurrency = executorProp.getOrDefault("lookup_concurrency", "100").toString();
             return Integer.parseInt(lookupConcurrency);
         } catch (Exception e) {
-            return 1;
+            return 100;
         }
     }
 

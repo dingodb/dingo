@@ -17,6 +17,7 @@
 package io.dingodb.calcite.rel;
 
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,6 @@ import java.util.Map;
 
 import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 
 @Slf4j
 public final class DingoGetByKeys extends DingoGetByIndex {
@@ -71,7 +71,7 @@ public final class DingoGetByKeys extends DingoGetByIndex {
     public @Nullable RelOptCost computeSelfCost(@NonNull RelOptPlanner planner, @NonNull RelMetadataQuery mq) {
         double rowCount = estimateRowCount(mq);
         double rowSize = getScanAvgRowSize(this);
-        double indexNetCost = getNetCost(rowCount, rowSize) / scanConcurrency;
+        double indexNetCost = getNetCost(rowCount, rowSize) / ScopeVariables.getScanConcurrency();
 
         return DingoCost.FACTORY.makeCost(indexNetCost, 0, 0);
     }

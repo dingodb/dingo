@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
 import lombok.Getter;
 import org.apache.calcite.plan.RelOptCluster;
@@ -43,7 +44,6 @@ import java.util.List;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getNetCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.common.mysql.scope.ScopeVariables.getStatsDefaultCount;
 
 public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
@@ -137,7 +137,8 @@ public class DingoTableScan extends LogicalDingoTableScan implements DingoRel {
         double rowSize = getScanAvgRowSize(this);
         double tableScanCost = getScanCost(rowCount, rowSize);
         double tableNetCost = getNetCost(rowCount, rowSize);
-        double rangeCost = (tableScanCost + tableNetCost) / scanConcurrency;
-        return DingoCost.FACTORY.makeCost(rangeCost, 0, 0);
+        double rangeCost = (tableScanCost + tableNetCost) / ScopeVariables.getScanConcurrency();
+        this.planCost = rangeCost;
+        return DingoCost.FACTORY.makeCost(planCost, 0, 0);
     }
 }

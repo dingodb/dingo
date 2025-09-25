@@ -19,6 +19,7 @@ package io.dingodb.calcite.rel.logical;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.LogicalDingoTableScan;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
@@ -41,7 +42,6 @@ import static io.dingodb.calcite.meta.DingoCostModelV1.getAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanAvgRowSize;
 import static io.dingodb.calcite.meta.DingoCostModelV1.getScanCost;
 import static io.dingodb.calcite.meta.DingoCostModelV1.netFactor;
-import static io.dingodb.calcite.meta.DingoCostModelV1.scanConcurrency;
 import static io.dingodb.calcite.meta.DingoCostModelV1.scanFactor;
 
 public class LogicalDocumentScanFilter extends LogicalDingoTableScan {
@@ -98,14 +98,14 @@ public class LogicalDocumentScanFilter extends LogicalDingoTableScan {
 
         double indexScanCost = rowCount * (Math.log(indexRowSize) / Math.log(2)) * scanFactor;
         double indexNetCost = rowCount * indexRowSize * netFactor;
-        double cost = (indexNetCost + indexScanCost) / scanConcurrency;
+        double cost = (indexNetCost + indexScanCost) / ScopeVariables.getScanConcurrency();
 
         if (lookup) {
             double rowSize = getScanAvgRowSize(this);
             double estimateRowCount = estimateRowCount(mq);
             double tableScanCost = getScanCost(estimateRowCount, rowSize);
             double tableNetCost = estimateRowCount * rowSize * netFactor;
-            cost += (tableScanCost + tableNetCost) / scanConcurrency;
+            cost += (tableScanCost + tableNetCost) / ScopeVariables.getScanConcurrency();
         }
 
         return planner.getCostFactory().makeCost(cost * 0.8, 0, 0);

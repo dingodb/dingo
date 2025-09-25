@@ -117,7 +117,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             .map(id -> tableIndexes.get(id).getName())
             .collect(Collectors.toList());
         String table = StringUtils.join(nameList);
-        return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info.toString());
+        return new Explain("dingoGetByIndex", rel.getRowCount(), "root", table, info.toString(), rel.getPlanCost());
     }
 
     @Override
@@ -127,7 +127,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             info = rel.getFilter().toString();
         }
         String table = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable().getName();
-        return new Explain("dingoGetByKeys", rel.getPoints().size(), "root", table, info);
+        return new Explain("dingoGetByKeys", rel.getPoints().size(), "root", table, info, rel.getPlanCost());
     }
 
     @Override
@@ -226,7 +226,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         }
         return new Explain(
             "dingoTableScan", rel.getRowCount(), "root",
-            accessObj, filter
+            accessObj, filter, rel.getPlanCost()
         );
     }
 
@@ -426,7 +426,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         rootInfo.append(", parallel = ").append(Utils.parallel(rel.getKeepSerialOrder())).append(" ");
         Explain explain1 = new Explain(
             "indexFullScanReader", rel.getRowCount(), "root",
-            "", rootInfo.toString()
+            "", rootInfo.toString(), rel.getPlanCost()
         );
         if (rel.isPushDown() && rel.getFilter() != null) {
             Explain explain = new Explain("indexFullScan", rel.getFullRowCount(),
@@ -446,7 +446,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         filter.append(", lookup:").append(indexRangeScan.isLookup());
         return new Explain(
             "indexRangeScan", indexRangeScan.getRowCount(), "root",
-            indexRangeScan.getIndexTable().getName(), filter.toString()
+            indexRangeScan.getIndexTable().getName(), filter.toString(), indexRangeScan.getPlanCost()
         );
     }
 
@@ -462,7 +462,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
     private Explain getCommonExplain(DingoRel rel, String id, String accessObj, String info) {
         Explain explain = dingo(rel.getInput(0)).accept(this);
         Explain explain1 = new Explain(
-            id, rel.getRowCount(), "root", accessObj, info
+            id, rel.getRowCount(), "root", accessObj, info, rel.getPlanCost()
         );
         explain1.getChildren().add(explain);
         return explain1;
@@ -503,7 +503,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
             limit = ScopeVariables.getRpcBatchSize();
         }
         String rootInfo = "batchSize:" + limit;
-        Explain explain1 = new Explain("dingoScanRelOp", rel.getRowCount(), "root", "", rootInfo);
+        Explain explain1 = new Explain("dingoScanRelOp", rel.getRowCount(), "root", "", rootInfo, rel.getPlanCost());
         explain1.getChildren().add(explain);
         return explain1;
     }
@@ -535,7 +535,7 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         StringBuilder rootInfo = new StringBuilder("rpcBatchSize:" + ScopeVariables.getRpcBatchSize());
         rootInfo.append(", parallel = ").append(Utils.parallel(rel.getKeepSerialOrder())).append(" ");
         Explain explain1 = new Explain(
-            "dingoIndexScanRelOp", rel.getRowCount(), "root", "", rootInfo.toString()
+            "dingoIndexScanRelOp", rel.getRowCount(), "root", "", rootInfo.toString(), rel.getPlanCost()
             );
         explain1.getChildren().add(explain);
         return explain1;

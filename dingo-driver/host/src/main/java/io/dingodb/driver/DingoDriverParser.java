@@ -1136,12 +1136,15 @@ public final class DingoDriverParser extends DingoParser {
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
         ColumnMetaData colMeta5 = metaData(typeFactory, 3, "info",
             new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false);
+        ColumnMetaData colMeta6 = metaData(typeFactory, 3, "planCost",
+            new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.DOUBLE), null, false);
         List<ColumnMetaData> metaDataList = new ArrayList<>();
         metaDataList.add(colMeta1);
         metaDataList.add(colMeta2);
         metaDataList.add(colMeta3);
         metaDataList.add(colMeta4);
         metaDataList.add(colMeta5);
+        metaDataList.add(colMeta6);
         return metaDataList;
     }
 

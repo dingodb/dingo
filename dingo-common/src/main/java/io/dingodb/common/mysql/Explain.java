@@ -36,6 +36,8 @@ public class Explain {
     String accessObject;
     @JsonProperty("info")
     String info;
+    @JsonProperty("cost")
+    double cost;
 
     List<Explain> children;
 
@@ -57,15 +59,34 @@ public class Explain {
         this.children = new ArrayList<>();
     }
 
+    public Explain(String id, double estRows, String task, String accessObject, String info, double cost) {
+        this.id = id;
+        this.estRows = estRows;
+        if ("".equals(accessObject)) {
+            accessObject = " ";
+        }
+        this.accessObject = accessObject;
+        if ("".equals(info)) {
+            info = " ";
+        }
+        this.info = info;
+        if ("".equals(task)) {
+            task = " ";
+        }
+        this.task = task;
+        this.cost = cost;
+        this.children = new ArrayList<>();
+    }
+
     public void output(List<Object[]> outputs, String space) {
-        Object[] rows = new Object[]{space + id, estRows, task, accessObject, info};
+        Object[] rows = new Object[]{space + id, estRows, task, accessObject, info, cost};
         outputs.add(rows);
     }
 
     public static void loopOutput(Explain explain, List<Object[]> outputs, String space) {
         double round = Math.round(explain.getEstRows());
         Object[] rows = new Object[]{space + explain.id, round, explain.task,
-            explain.accessObject, explain.info};
+            explain.accessObject, explain.info, explain.cost};
         outputs.add(rows);
 
         space = space + " ";

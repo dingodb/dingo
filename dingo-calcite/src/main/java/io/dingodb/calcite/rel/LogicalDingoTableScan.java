@@ -63,6 +63,8 @@ public class LogicalDingoTableScan extends TableScan {
     @Getter
     private double rowCount;
     @Getter
+    protected double planCost;
+    @Getter
     protected final RexNode filter;
     @Getter
     protected TupleMapping selection;

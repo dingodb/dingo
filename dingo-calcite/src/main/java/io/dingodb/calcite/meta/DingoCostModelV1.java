@@ -42,7 +42,6 @@ public class DingoCostModelV1 extends DingoCostModel {
     public static final double scanFactor = 40.7;
     public static final double netFactor = 3.96;
     public static final double cpuFactor = 49.9;
-    public static final double scanConcurrency = 5;
 
     public static final double memFactor = 0.01;
 
