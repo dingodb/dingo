@@ -107,21 +107,23 @@ public class DingoGetByIndexCostRule extends RelRule<DingoGetByIndexCostRule.Con
             .replace(DingoConvention.INSTANCE)
             .replace(DingoRelStreaming.of(scan.getTable()));
         if (indexSetMap.size() > 1) {
-            for (Map.Entry<CommonId, Set> indexSet : indexSetMap.entrySet()) {
-                Map<CommonId, Set> itemIndex = new HashMap<>();
-                itemIndex.put(indexSet.getKey(), indexSet.getValue());
-                call.transformTo(new DingoGetByIndex(
-                    scan.getCluster(),
-                    traits,
-                    scan.getHints(),
-                    scan.getTable(),
-                    scan.getFilter(),
-                    scan.getRealSelection(),
-                    false,
-                    itemIndex,
-                    indexTdMap,
-                    scan.isForDml()
-                ));
+            if (indexValueMapSet.getSet().size() == 1) {
+                for (Map.Entry<CommonId, Set> indexSet : indexSetMap.entrySet()) {
+                    Map<CommonId, Set> itemIndex = new HashMap<>();
+                    itemIndex.put(indexSet.getKey(), indexSet.getValue());
+                    call.transformTo(new DingoGetByIndex(
+                        scan.getCluster(),
+                        traits,
+                        scan.getHints(),
+                        scan.getTable(),
+                        scan.getFilter(),
+                        scan.getRealSelection(),
+                        false,
+                        itemIndex,
+                        indexTdMap,
+                        scan.isForDml()
+                    ));
+                }
             }
         } else {
             call.transformTo(new DingoGetByIndex(

@@ -319,7 +319,11 @@ public class DingoFilterReduceExpressionsRule extends RelRule implements Substit
         }
 
         final List<RexNode> reducedValues = new ArrayList<>();
-        executor.reduce(simplify.rexBuilder, constExps2, reducedValues);
+        try {
+            executor.reduce(simplify.rexBuilder, constExps2, reducedValues);
+        } catch (Throwable e) {
+            return false;
+        }
 
         // Use RexNode.digest to judge whether each newly generated RexNode
         // is equivalent to the original one.
