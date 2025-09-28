@@ -40,7 +40,9 @@ public class WindowFunctionOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         WindowFunctionParam param = vertex.getParam();
-        param.getList().add(tuple);
+        synchronized (param) {
+            param.getList().add(tuple);
+        }
         return true;
     }
 
