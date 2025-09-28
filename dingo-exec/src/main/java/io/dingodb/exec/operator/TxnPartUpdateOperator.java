@@ -54,6 +54,7 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.core.TableModify;
 
@@ -62,6 +63,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -70,7 +73,19 @@ import static io.dingodb.common.util.NoBreakFunctions.wrap;
 public class TxnPartUpdateOperator extends PartModifyOperator {
     public static final TxnPartUpdateOperator INSTANCE = new TxnPartUpdateOperator();
 
+    @Getter
+    private transient Map<TupleKey, Integer> updateKeys;
+
+    @Getter
+    private long updateScanCount;
+
     private TxnPartUpdateOperator() {
+        updateKeys = new ConcurrentHashMap<>();
+        this.updateScanCount = 0L;
+    }
+
+    private void incUpdateScanCount() {
+        updateScanCount++;
     }
 
     @Override
@@ -410,22 +425,22 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 }
             } else {
                 if (param.getUpdateLimit() != -1L || !param.getTableInfo().isSingleSource()) {
-                    long scanCount = param.getUpdateScanCount();
+                    long scanCount = getUpdateScanCount();
                     long limit = param.getUpdateLimit();
 
                     if (scanCount >= limit) {
                         if (scanCount == limit && param.getIndexSize() > 0) {
                             TupleKey tupleKey = new TupleKey(tuple);
-                            if (param.getUpdateKeys().containsKey(tupleKey)) {
-                                param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                            if (getUpdateKeys().containsKey(tupleKey)) {
+                                getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
                             } else {
                                 return false;
                             }
                         } else {
                             if (!param.getTableInfo().isSingleSource()) {
                                 TupleKey tupleKey = new TupleKey(newTuple);
-                                if (!param.getUpdateKeys().containsKey(tupleKey)) {
-                                    param.getUpdateKeys().putIfAbsent(tupleKey, 0);
+                                if (!getUpdateKeys().containsKey(tupleKey)) {
+                                    getUpdateKeys().putIfAbsent(tupleKey, 0);
                                 } else {
                                     return false;
                                 }
@@ -435,12 +450,12 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         }
                     } else {
                         if (context.getIndexId() == null) {
-                            param.incUpdateScanCount();
-                            param.getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
+                            incUpdateScanCount();
+                            getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
                         } else {
                             TupleKey tupleKey = new TupleKey(tuple);
-                            if (param.getUpdateKeys().containsKey(tupleKey)) {
-                                param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                            if (getUpdateKeys().containsKey(tupleKey)) {
+                                getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
                             } else {
                                 return false;
                             }

@@ -54,12 +54,7 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
     @JsonProperty("updateLimit")
     private final long updateLimit;
 
-    private long updateScanCount;
-
     private int indexSize;
-
-    private transient Map<TupleKey, Integer> updateKeys;
-
 
     private RelOp relOp;
     public final DingoRelConfig config;
@@ -89,7 +84,6 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         this.isScan = isScan;
         this.updatePrimaryKey = updatePrimaryKey;
         this.updateLimit = updateLimit;
-        this.updateScanCount = 0L;
         this.relOp = relOp;
         this.config = new DingoRelConfig();
         this.indexSize = 0;
@@ -110,16 +104,11 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         }
         if (updateLimit != -1L) {
             indexSize = table.getIndexes().size();
-            updateKeys = new ConcurrentHashMap<>();
         }
     }
 
     public void inc() {
         count++;
-    }
-
-    public void incUpdateScanCount() {
-        updateScanCount++;
     }
 
     @Override

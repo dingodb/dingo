@@ -59,6 +59,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.pessimisticlock.TxnPessimisticLock;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.tso.TsoService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -66,6 +67,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -78,20 +81,37 @@ import static io.dingodb.exec.utils.ByteUtils.getKeyByOp;
 public class PessimisticLockUpdateOperator extends SoleOutOperator {
     public static final PessimisticLockUpdateOperator INSTANCE = new PessimisticLockUpdateOperator();
 
+    @Getter
+    private long updateScanCount;
+
+    @Getter
+    private transient Map<TupleKey, Integer> updateKeys;
+
+    protected PessimisticLockUpdateOperator()
+    {
+        super();
+        this.updateScanCount = 0L;
+        updateKeys = new ConcurrentHashMap<>();
+    }
+
+    public void incUpdateScanCount() {
+        updateScanCount++;
+    }
+
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
             PessimisticLockUpdateParam param = vertex.getParam();
             param.setContext(context);
             if (param.getUpdateLimit() != -1L) {
-                long scanCount = param.getUpdateScanCount();
+                long scanCount = getUpdateScanCount();
                 long limit = param.getUpdateLimit();
 
                 if (scanCount >= limit) {
                     if (scanCount == limit && param.getIndexSize() > 0) {
                         TupleKey tupleKey = new TupleKey(tuple);
-                        if (param.getUpdateKeys().containsKey(tupleKey)) {
-                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        if (getUpdateKeys().containsKey(tupleKey)) {
+                            getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
                         } else {
                             return false;
                         }
@@ -100,12 +120,12 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
                     }
                 } else {
                     if (context.getIndexId() == null) {
-                        param.incUpdateScanCount();
-                        param.getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
+                        incUpdateScanCount();
+                        getUpdateKeys().putIfAbsent(new TupleKey(Arrays.copyOf(tuple, tuple.length)), 0);
                     } else {
                         TupleKey tupleKey = new TupleKey(tuple);
-                        if (param.getUpdateKeys().containsKey(tupleKey)) {
-                            param.getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
+                        if (getUpdateKeys().containsKey(tupleKey)) {
+                            getUpdateKeys().computeIfPresent(tupleKey, (k, v) -> v + 1);
                         } else {
                             return false;
                         }

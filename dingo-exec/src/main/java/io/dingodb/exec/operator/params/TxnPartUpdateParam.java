@@ -77,15 +77,11 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
     @JsonProperty("updateLimit")
     private final long updateLimit;
 
-    private long updateScanCount;
-
     @JsonProperty("relOp")
     private RelOp relOp;
     public final DingoRelConfig config;
 
     private int indexSize;
-
-    private transient Map<TupleKey, Integer> updateKeys;
 
     // multi-table update
     private CommonId joinTableId;
@@ -124,7 +120,6 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         this.autoIncColIdx = autoIncColIdx;
         this.updatePrimaryKey =  updatePrimaryKey;
         this.updateLimit = updateLimit;
-        this.updateScanCount = 0L;
         this.relOp = relOp;
         this.config = new DingoRelConfig();
         this.indexSize = 0;
@@ -155,19 +150,11 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
         if (updateLimit != -1L) {
             indexSize = table.getIndexes().size();
-            updateKeys = new ConcurrentHashMap<>();
-        }
-        if (!tableInfo.isSingleSource()) {
-            updateKeys = new ConcurrentHashMap<>();
         }
     }
 
     public void inc() {
         count++;
-    }
-
-    public void incUpdateScanCount() {
-        updateScanCount++;
     }
 
     @Override
