@@ -60,7 +60,6 @@ import org.apache.calcite.rel.core.TableModify;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -197,6 +196,7 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
             boolean calcPartId = false;
             boolean isVector = false;
             boolean isDocument = false;
+            Object[] tableKeyTuple = null;
             if (context.getIndexId() != null) {
                 IndexTable indexTable = (IndexTable) TransactionManager.getIndex(txnId, context.getIndexId());
                 if (indexTable == null) {
@@ -209,7 +209,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (!table.getIndexes().contains(indexTable)) {
                     table = MetaService.root().getTable(indexTable.primaryId);
                 }
-                List<Integer> columnIndices = table.getColumnIndices(indexTable.columns.stream()
+                List<Column> indexColumns = indexTable.columns;
+                List<Integer> columnIndices = table.getColumnIndices(indexColumns.stream()
                     .map(Column::getName)
                     .collect(Collectors.toList()));
                 Object defaultVal = null;
@@ -234,6 +235,14 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     }
                     return finalNewTuple[c];
                 }).toArray();
+                List<Column> tableKeys = table.keyColumns();
+                List<Object> tableKeyIndex = new ArrayList<>(tableKeys.size());
+                for (int j = 0; j < indexColumns.size(); j++) {
+                    if (tableKeys.contains(indexColumns.get(j))) {
+                        tableKeyIndex.add(newTuple[j]);
+                    }
+                }
+                tableKeyTuple = tableKeyIndex.toArray(Object[]::new);
                 Object[] copyNewTuple = copyTuple;
                 copyTuple = columnIndices.stream().map(c -> {
                     if (c == -1) {
@@ -264,6 +273,8 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                 if (index.indexType == IndexType.DOCUMENT) {
                     isDocument = true;
                 }
+            } else {
+                tableKeyTuple = table.keyMapping().revMap(newTuple);
             }
             Object[] newTuple2 = (Object[]) schema.convertFrom(newTuple, ValueConverter.INSTANCE);
 
@@ -348,9 +359,34 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             new TxnPartData(tableId, partId),
                             (!isVector && !isDocument)
                         );
-                        localStore.delete(dataKey);
-                        if (localStore.put(keyValue) && context.getIndexId() == null) {
-                            param.inc();
+                        boolean isUpdate = true;
+                        if (!tableInfo.isSingleSource()) {
+                            TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                            if (context.getIndexId() == null) {
+                                if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                                    localStore.delete(keyValue.getKey());
+                                }
+                            } else {
+                                if (param.getTableIndexMap().containsKey(tupleKey)) {
+                                    // Main table exists, but the index is written for the first time
+                                    if (param.getTableIndexMap().get(tupleKey) == null) {
+                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
+                                    } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                        // The same index, updated multiple times
+                                        isUpdate = false;
+                                    }
+                                } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                                }
+                            }
+                        } else {
+                            localStore.delete(dataKey);
+                        }
+                        if (isUpdate) {
+                            if (localStore.put(keyValue) && context.getIndexId() == null) {
+                                param.inc();
+                            }
                         }
                     }
                 } else {
@@ -556,10 +592,38 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                                 new TxnPartData(tableId, partId),
                                 (!isVector && !isDocument)
                             );
-                            localStore.put(
-                                new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
-                            );
-                            localStore.put(keyValue);
+                            boolean isUpdate = true;
+                            if (!tableInfo.isSingleSource()) {
+                                TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                                if (context.getIndexId() == null) {
+                                    // main table
+                                    if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                                        localStore.delete(keyValue.getKey());
+                                    }
+                                } else {
+                                    // index
+                                    if (param.getTableIndexMap().containsKey(tupleKey)) {
+                                        // Main table exists, but the index is written for the first time
+                                        if (param.getTableIndexMap().get(tupleKey) == null) {
+                                            param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
+                                        } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                            // The same index, updated multiple times
+                                            isUpdate = false;
+                                        }
+                                    } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                                    }
+                                }
+                            } else {
+                                localStore.delete(keyValue.getKey());
+                            }
+                            if (isUpdate) {
+                                localStore.put(
+                                    new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
+                                );
+                                localStore.put(keyValue);
+                            }
                         }
                         // delete old key
                         {
@@ -642,14 +706,39 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     localStore.put(
                         new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length))
                     );
-                    localStore.delete(keyValue.getKey());
+                    boolean isUpdate = true;
+                    if (!tableInfo.isSingleSource()) {
+                        TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                        if (context.getIndexId() == null) {
+                            if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                                localStore.delete(keyValue.getKey());
+                            }
+                        } else {
+                            if (param.getTableIndexMap().containsKey(tupleKey)) {
+                                // Main table exists, but the index is written for the first time
+                                if (param.getTableIndexMap().get(tupleKey) == null) {
+                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
+                                } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                    // The same index, updated multiple times
+                                    isUpdate = false;
+                                }
+                            } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
+                                param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                            }
+                        }
+                    } else {
+                        localStore.delete(keyValue.getKey());
+                    }
                     vertex.getTask().getPartData().put(
                         new TxnPartData(tableId, partId),
                         (!isVector && !isDocument)
                     );
-                    if (localStore.put(keyValue) && context.getIndexId() == null) {
-                        param.inc();
-                        context.addKeyState(true);
+                    if (isUpdate) {
+                        if (localStore.put(keyValue) && context.getIndexId() == null) {
+                            param.inc();
+                            context.addKeyState(true);
+                        }
                     }
                 }
             }
