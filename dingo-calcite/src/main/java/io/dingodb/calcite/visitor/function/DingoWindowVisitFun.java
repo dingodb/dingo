@@ -659,17 +659,18 @@ public final class DingoWindowVisitFun {
                     Expression timestamp = Expressions.call(val1, "getTime");
                     Expression newDate;
                     if (bound.isFollowing()) {
-                        Expression newTimestamp = Expressions.add(val, offs);
+                        Expression newTimestamp = Expressions.add(timestamp, offs);
                         newDate = Expressions.new_(java.sql.Date.class, newTimestamp);
                     } else {
                         Expression newTimestamp = Expressions.subtract(timestamp, offs);
                         newDate = Expressions.new_(java.sql.Date.class, newTimestamp);
                     }
+                    Expression paramDate = Expressions.condition(Expressions.equal(val, Expressions.constant(null)), Expressions.constant(null), newDate);
                     return Expressions.call(
                         (lower
                             ? BuiltInMethod.BINARY_SEARCH6_LOWER
                             : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
-                        rows_, newDate, searchLower, searchUpper,
+                        rows_, paramDate, searchLower, searchUpper,
                         Objects.requireNonNull(keySelector, "keySelector"),
                         Objects.requireNonNull(keyComparator, "keyComparator"));
                 }
@@ -677,21 +678,22 @@ public final class DingoWindowVisitFun {
                 if (val instanceof ParameterExpression && !"java.sql.Timestamp".equalsIgnoreCase(val.getType().getTypeName())) {
                     val1 = Expressions.convert_(
                         val,
-                        java.sql.Date.class);
+                        java.sql.Timestamp.class);
                     Expression timestamp = Expressions.call(val1, "getTime");
                     Expression newDate;
                     if (bound.isFollowing()) {
-                        Expression newTimestamp = Expressions.add(val, offs);
+                        Expression newTimestamp = Expressions.add(timestamp, offs);
                         newDate = Expressions.new_(java.sql.Timestamp.class, newTimestamp);
                     } else {
                         Expression newTimestamp = Expressions.subtract(timestamp, offs);
                         newDate = Expressions.new_(java.sql.Timestamp.class, newTimestamp);
                     }
+                    Expression paramDate = Expressions.condition(Expressions.equal(val, Expressions.constant(null)), Expressions.constant(null), newDate);
                     return Expressions.call(
                         (lower
                             ? BuiltInMethod.BINARY_SEARCH6_LOWER
                             : BuiltInMethod.BINARY_SEARCH6_UPPER).method,
-                        rows_, newDate, searchLower, searchUpper,
+                        rows_, paramDate, searchLower, searchUpper,
                         Objects.requireNonNull(keySelector, "keySelector"),
                         Objects.requireNonNull(keyComparator, "keyComparator"));
                 }

@@ -58,6 +58,7 @@ import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.mapping.Mapping;
@@ -114,6 +115,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
         LogicalProject logicalProject = call.rel(1);
         List<RexNode> projects = logicalProject.getProjects();
         if (!(projects.size() > collationIndex && projects.get(collationIndex) instanceof RexInputRef)) {
+            return;
+        }
+        if (projects.stream().anyMatch(rexNode -> rexNode instanceof RexOver)) {
             return;
         }
         int projectIndex = ((RexInputRef) projects.get(collationIndex)).getIndex();
