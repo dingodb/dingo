@@ -247,8 +247,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         lockTables = null;
     }
 
-    public synchronized ITransaction createTransaction(TransactionType type, boolean autoCommit, boolean isReadOnly) {
-        if (transaction == null) {
+    public synchronized ITransaction createTransaction(TransactionType type, boolean autoCommit, boolean isReadOnly,
+                                                       boolean autoCommitAndRetry) {
+        if (transaction == null || autoCommitAndRetry) {
             long startTs = TransactionManager.getStartTs();
             String txIsolation;
             if (oneTimeTxIsolation != null) {
@@ -285,7 +286,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     public ITransaction initTransaction(boolean isTxn, boolean once) {
         if (!isTxn && once) {
             cleanTransaction();
-            transaction = createTransaction(NONE, getAutoCommit(), false);
+            transaction = createTransaction(NONE, getAutoCommit(), false, false);
             return transaction;
         }
         return transaction;
@@ -317,6 +318,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         LogUtils.debug(log, "begin transaction...");
         createTransaction(pessimistic ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
             false,
+            false,
             false
         );
     }
@@ -344,7 +346,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         }
         if (!autoCommit) {
             createTransaction("pessimistic".equalsIgnoreCase(getClientInfo("txn_mode"))
-                ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false, false);
+                ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC, false, false, false);
             this.autoCommit = false;
         }
     }

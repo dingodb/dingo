@@ -393,6 +393,7 @@ public final class DingoDriverParser extends DingoParser {
                 transaction = connection.createTransaction(
                     TransactionType.OPTIMISTIC,
                     connection.getAutoCommit(),
+                    false,
                     false
                 );
             } else {
@@ -400,7 +401,7 @@ public final class DingoDriverParser extends DingoParser {
                 transaction = connection.createTransaction(
                     "pessimistic".equalsIgnoreCase(connection.getClientInfo("txn_mode"))
                         ? TransactionType.PESSIMISTIC : TransactionType.OPTIMISTIC,
-                    connection.getAutoCommit(), (isReadOnlySql && connection.getAutoCommit()));
+                    connection.getAutoCommit(), (isReadOnlySql && connection.getAutoCommit()), false);
             }
             txnId = transaction.getTxnId();
             newTxn = true;
@@ -742,7 +743,8 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType parasType,
         List<ColumnMetaData> columns,
         boolean lockTable,
-        List<ColumnMetaData> visitColumns
+        List<ColumnMetaData> visitColumns,
+        boolean autoCommitAndRetry
     ) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
@@ -759,10 +761,15 @@ public final class DingoDriverParser extends DingoParser {
                 break;
         }
 
+        if (autoCommitAndRetry && connection.getTransaction() != null) {
+            connection.getTransaction().close(jobManager);
+        }
+
         ITransaction transaction = connection.createTransaction(
             TransactionType.OPTIMISTIC,
             connection.getAutoCommit(),
-            false
+            false,
+            autoCommitAndRetry
         );
         long startTs = transaction.getStartTs();
         long jobSeqId = TsoService.getDefault().cacheTso();
