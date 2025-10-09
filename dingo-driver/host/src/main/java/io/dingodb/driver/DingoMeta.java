@@ -847,7 +847,7 @@ public class DingoMeta extends MetaImpl {
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns);
+                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns, false);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, retry);
@@ -860,15 +860,16 @@ public class DingoMeta extends MetaImpl {
 
     private Frame resolveRegionSplit(StatementHandle sh, long offset, int fetchMaxRowCount,
                                      AvaticaStatement statement, Signature signature, DingoResultSet resultSet,
-                                     int retry) throws NoSuchStatementException {
+                                     int retry) throws NoSuchStatementException, SQLException {
         LogUtils.info(log, "resolveRegionSplit retry:{}", retry);
         if (retry-- > 0) {
             DingoDriverParser parser = new DingoDriverParser((DingoConnection) connection);
             DingoSignature dingoSignature = (DingoSignature) signature;
+            boolean autoCommit = connection.getAutoCommit();
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns);
+                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns, autoCommit);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, retry);
@@ -891,7 +892,7 @@ public class DingoMeta extends MetaImpl {
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
                 ((DingoSignature) signature).allColumnMetaDataList,
-                 true, dingoSignature.columns);
+                 true, dingoSignature.columns, false);
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, txnRetryLimit);
@@ -1018,6 +1019,7 @@ public class DingoMeta extends MetaImpl {
                     transaction = dingoConnection.createTransaction(
                         task.getTransactionType(),
                         true,
+                        false,
                         false
                     );
                     statement.setTxnId(jobManager, transaction.getTxnId());
