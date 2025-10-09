@@ -152,7 +152,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             IfNullFunFactory.NAME,
-            ReturnTypes.explicit(SqlTypeName.ANY),
+            MySQLStandardTypeInference.CONTROL_FLOW_TYPE,
             InferTypes.ANY_NULLABLE,
             OperandTypes.ANY_ANY,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
