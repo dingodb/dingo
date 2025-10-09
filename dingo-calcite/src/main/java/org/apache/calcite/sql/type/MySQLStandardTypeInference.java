@@ -16,9 +16,20 @@
 
 package org.apache.calcite.sql.type;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCallBinding;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorBinding;
+import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.validate.SqlValidatorImpl;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class MySQLStandardTypeInference {
 
@@ -87,4 +98,64 @@ public class MySQLStandardTypeInference {
             }
         }
     };
+
+    public static final SqlReturnTypeInference CONTROL_FLOW_TYPE = new SqlReturnTypeInference() {
+        // Some SqlOperator is invisible in this class, so we use String other than SqlOperator to recognize operators.
+        private final Set<String> supportedOperators = ImmutableSet.of(
+            "IF",
+            "IFNULL",
+            "COALESCE"
+        );
+
+        @Override
+        public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
+            Preconditions.checkArgument(opBinding instanceof SqlCallBinding,
+                "this method must be invoke during validating, rather than RexNode building.");
+            SqlCallBinding callBinding = (SqlCallBinding) opBinding;
+            SqlCall ifCall = callBinding.getCall();
+            String operatorName = callBinding.getOperator().getName().toUpperCase();
+
+            if(!supportedOperators.contains(operatorName)) {
+                throw new RuntimeException("Unsupported operator: " + operatorName);
+            }
+            int startPos = "IF".equals(operatorName) ? 1 : 0;
+
+            List<SqlNode> operandList = ifCall.getOperandList();
+
+            ArrayList<SqlNode> nullList = new ArrayList<>();
+            List<RelDataType> argTypesNotNull = new ArrayList<>();
+
+            for (int i = startPos; i < operandList.size(); i++) {
+                SqlNode operand = operandList.get(i);
+                if (SqlUtil.isNullLiteral(operand, false)) {
+                    nullList.add(operand);
+                } else {
+                    RelDataType operandType = callBinding.getValidator().deriveType(callBinding.getScope(), operand);
+                    argTypesNotNull.add(operandType);
+                }
+            }
+
+            return returnTypeOfControlFlowFunction(nullList, argTypesNotNull, callBinding);
+        }
+    };
+
+    private static RelDataType returnTypeOfControlFlowFunction(ArrayList<SqlNode> nullList, List<RelDataType> argTypesNotNull, SqlCallBinding callBinding) {
+        RelDataType returnType;
+        final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
+        boolean isAllNulls = argTypesNotNull.isEmpty();
+        boolean isAllNumeric = !isAllNulls && argTypesNotNull.stream().allMatch((t) -> SqlTypeUtil.isNumeric(t));
+        boolean isAllDateTime = !isAllNulls && argTypesNotNull.stream().allMatch((t) -> SqlTypeUtil.isDatetime(t));
+        boolean isAllString = !isAllNulls && argTypesNotNull.stream().allMatch((t) -> SqlTypeUtil.isString(t));
+        boolean needStringType = !(isAllNumeric || isAllDateTime || isAllString);
+
+        returnType = needStringType ?
+            typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.VARCHAR, 2000), true) :
+            typeFactory.leastRestrictive(argTypesNotNull);
+        final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
+        for (SqlNode node : nullList) {
+            validator.setValidatedNodeType(node, returnType);
+        }
+
+        return returnType;
+    }
 }
