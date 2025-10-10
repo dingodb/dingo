@@ -78,6 +78,8 @@ public class PessimisticLockInsertIgnoreOperator extends SoleOutOperator {
             boolean isDocument = false;
             Object[] rowTuple = null;
 
+            Utils.checkAndUpdateTuples(schema, tuple);
+
             //Only for origin table.
             if (context.getIndexId() == null) {
                 List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();

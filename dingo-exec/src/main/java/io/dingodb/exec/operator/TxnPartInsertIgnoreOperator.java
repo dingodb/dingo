@@ -98,6 +98,8 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
         boolean isDocument = false;
         Table indexTable = null;
 
+        Utils.checkAndUpdateTuples(schema, tuple);
+
         //Only for origin table.
         if (context.getIndexId() == null && !param.isPessimisticTxn()) {
             List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();

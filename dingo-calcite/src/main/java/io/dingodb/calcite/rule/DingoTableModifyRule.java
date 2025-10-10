@@ -19,20 +19,32 @@ package io.dingodb.calcite.rule;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.expr.common.type.DecimalType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.ProjectOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.Exprs;
+import io.dingodb.expr.runtime.expr.Val;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
 
 public class DingoTableModifyRule extends ConverterRule {
     public static final Config DEFAULT = Config.INSTANCE
@@ -70,8 +82,20 @@ public class DingoTableModifyRule extends ConverterRule {
             case UPDATE:
                 // Only support update in part.
                 checkUpdateInPart(modify);
+
                 Expr[] exprs = modify.getSourceExpressionList().stream()
                     .map(RexConverter::convert)
+                    .map(obj -> {
+                        if (obj instanceof Val) {
+                            if (((Val)obj).getType() instanceof io.dingodb.expr.common.type.DecimalType) {
+                                if(((DecimalType) ((Val)obj).getType()).getScale() == 0) {
+                                    BigDecimal bigDecimal = ((BigDecimal) (((Val) obj).getValue())).setScale(0, RoundingMode.HALF_UP);
+                                    return Exprs.val(bigDecimal, ((Val) obj).getType());
+                                }
+                            }
+                        }
+                        return obj;
+                    })
                     .toArray(Expr[]::new);
                 relOp = RelOpBuilder.builder()
                     .project(exprs)

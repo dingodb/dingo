@@ -44,6 +44,8 @@ import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -56,6 +58,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -97,6 +100,9 @@ public class TxnPartReplaceIntoOperator extends PartModifyOperator {
         boolean isUnique = false;
         Table indexTable = null;
         Object[] copyTuple = null;
+
+        Utils.checkAndUpdateTuples(schema, tuple);
+
         //Only for origin table.
         if (context.getIndexId() == null && !param.isPessimisticTxn()) {
             List<Column> originColumns = ((Table) TransactionManager.getTable(txnId, tableId)).getColumns();

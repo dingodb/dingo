@@ -83,6 +83,10 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
         synchronized (vertex) {
             PessimisticLockUpdateParam param = vertex.getParam();
             param.setContext(context);
+            DingoType schema = param.getSchema();
+
+            Utils.checkAndUpdateTuples(schema, tuple);
+
             if (param.getUpdateLimit() != -1L) {
                 long scanCount = param.getUpdateScanCount();
                 long limit = param.getUpdateLimit();
@@ -116,7 +120,6 @@ public class PessimisticLockUpdateOperator extends SoleOutOperator {
             CommonId tableId = param.getTableId();
             CommonId partId = context.getDistribution().getId();
             byte[] primaryLockKey = param.getPrimaryLockKey();
-            DingoType schema = param.getSchema();
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
             KeyValueCodec codec = param.getCodec();
             int tupleSize = schema.fieldCount();
