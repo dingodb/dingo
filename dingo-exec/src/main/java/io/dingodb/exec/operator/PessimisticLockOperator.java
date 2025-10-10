@@ -93,10 +93,15 @@ public class PessimisticLockOperator extends SoleOutOperator {
             CommonId partId = context.getDistribution().getId();
             CommonId jobId = vertex.getTask().getJobId();
             byte[] primaryLockKey = param.getPrimaryLockKey();
+            DingoType schema = param.getSchema();
+
             ITransaction transaction = TransactionManager.getTransaction(txnId);
             if (transaction == null || (primaryLockKey == null && transaction.getPrimaryKeyLock() != null)) {
                 return false;
             }
+
+            Utils.checkAndUpdateTuples(schema, tuple);
+
             if (param.getUpdateLimit() != -1L) {
                 long scanCount = param.getUpdateScanCount();
                 long limit = param.getUpdateLimit();
@@ -126,7 +131,7 @@ public class PessimisticLockOperator extends SoleOutOperator {
                     }
                 }
             }
-            DingoType schema = param.getSchema();
+
             StoreInstance localStore = Services.LOCAL_STORE.getInstance(tableId, partId);
             KeyValueCodec codec = param.getCodec();
             boolean updated = false;

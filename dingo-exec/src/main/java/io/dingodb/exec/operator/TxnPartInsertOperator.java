@@ -26,6 +26,7 @@ import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -45,7 +46,8 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
-import io.dingodb.expr.common.type.DecimalType;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.UnaryOpExpr;
@@ -64,6 +66,7 @@ import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -103,6 +106,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         boolean isDocument = false;
         Object[] primaryOldTuple = tuple;
         Table indexTable = null;
+
+        Utils.checkAndUpdateTuples(schema, tuple);
 
         //Only for origin table.
         if (context.getIndexId() == null && !param.isPessimisticTxn()) {

@@ -17,12 +17,17 @@
 package io.dingodb.common.util;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.common.type.Type;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.util.Collection;
@@ -275,6 +280,20 @@ public final class Utils {
 
     public static boolean tinyintInRange( Integer value) {
         return value <= 127 && value >= -128;
+    }
+
+    public static void checkAndUpdateTuples(DingoType schema, Object[] tuple) {
+        Type schemaType = schema.getType();
+        if (schemaType instanceof TupleType) {
+            Type[] dingoTypes = ((TupleType)schemaType).getTypes();
+            for (int i = 0; i < dingoTypes.length; i++) {
+                if (dingoTypes[i] instanceof io.dingodb.expr.common.type.DecimalType) {
+                    if (((io.dingodb.expr.common.type.DecimalType)dingoTypes[i]).getScale() == 0) {
+                        tuple[i] = ((BigDecimal)tuple[i]).setScale(0, RoundingMode.HALF_UP);
+                    }
+                }
+            }
+        }
     }
 
     public static String quoteForSql(String value) {
