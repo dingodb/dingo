@@ -6162,8 +6162,6 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     |
         <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT; }
     |
-        <SMALLINT> { s.add(this); sqlTypeName = SqlTypeName.SMALLINT; }
-    |
         <BIT> [<LPAREN> precision = UnsignedIntLiteral()
            [
                                            <COMMA>
