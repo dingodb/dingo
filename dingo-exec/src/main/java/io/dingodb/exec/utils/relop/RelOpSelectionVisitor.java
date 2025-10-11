@@ -72,6 +72,12 @@ public class RelOpSelectionVisitor extends RelOpVisitorBase<SelectionFlag, @NonN
             if (EXPR_SELECTION.visit(expr, selected.getSelection()) != SelectionFlag.OK) {
                 return null;
             }
+
+            if (selected.getProjectCount() > 0) {
+                return null;
+            } else {
+                selected.setProjectCount(1);
+            }
         }
         selected.setProject(true);
         return SelectionFlag.OK;
