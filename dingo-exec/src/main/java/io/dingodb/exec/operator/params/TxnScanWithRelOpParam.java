@@ -114,7 +114,7 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             if (RelOpCoder.INSTANCE.visit(relOpCompile, os) == CodingFlag.OK) {
                 Set<Integer> selections = new HashSet<>();
-                SelectionObj selectionObj = new SelectionObj(selections, true);
+                SelectionObj selectionObj = new SelectionObj(selections, true, 0);
                 boolean isSelection = false;
                 if (isAutoCommit() && RelOpSelectionVisitor.INSTANCE.visit(relOp, selectionObj) == SelectionFlag.OK
                     && selectionObj.isProject() && selections.size() != selection.size() && !selections.isEmpty()) {
@@ -126,13 +126,13 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                         LogUtils.debug(log, "jobId:{}, new relOp: {}", vertex.getTask().getJobId(), relOpCompile);
                         isSelection = true;
                     } catch (Exception e) {
-                        LogUtils.error(log, e.getMessage(), e);
+                        LogUtils.error(log, "relOp failed via selection, " + e.getMessage(), e);
                         selection = IntStream.range(0, schema.fieldCount())
                             .boxed()
                             .collect(Collectors.toList());
                     }
                 } else {
-                    LogUtils.debug(log, "jobId:{}, origin relOp: {}", vertex.getTask().getJobId(), relOp);
+                    LogUtils.debug(log, "disable selection, jobId:{}, origin relOp: {}", vertex.getTask().getJobId(), relOp);
                 }
                 if (isSelection) {
                     relOpCompile = relOpCompile.compile(new DingoCompileContext(

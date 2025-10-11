@@ -28,4 +28,7 @@ public class SelectionObj {
     Set<Integer> selection;
     @Setter
     boolean isProject;
+
+    @Setter
+    int projectCount;
 }
