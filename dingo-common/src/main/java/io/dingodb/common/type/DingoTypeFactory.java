@@ -102,6 +102,7 @@ public final class DingoTypeFactory {
         switch (typeId) {
             case Types.TINYINT:
             case Types.INTEGER:
+            case Types.SMALLINT:
                 return "INT";
             case Types.BIGINT:
                 return "LONG";

@@ -44,6 +44,7 @@ import io.dingodb.common.type.scalar.TimestampType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.ByteUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TxnLocalData;
@@ -97,35 +98,7 @@ public class AddColumnFiller extends IndexAddFiller {
         DingoType type = newColumn.getType();
         if (newColumn.getDefaultValueExpr() == null) {
             if (!newColumn.isNullable()) {
-                if (type instanceof StringType) {
-                    return "";
-                } else if (type instanceof LongType) {
-                    return 0L;
-                } else if (type instanceof IntegerType) {
-                    return 0;
-                } else if (type instanceof DoubleType) {
-                    return 0D;
-                } else if (type instanceof FloatType) {
-                    return 0F;
-                } else if (type instanceof DecimalType) {
-                    return new BigDecimal(0);
-                } else if (type instanceof DateType) {
-                    return DateTimeUtils.parseDate("0000-00-00");
-                } else if (type instanceof BooleanType) {
-                    return false;
-                } else if (type instanceof TimestampType) {
-                    return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
-                } else if (type instanceof TimeType) {
-                    return DateTimeUtils.parseTime("00:00:00");
-                } else if (type instanceof ListType) {
-                    return new ArrayList<>();
-                } else if (type instanceof MapType) {
-                    return new LinkedHashMap<>();
-                } else if (type instanceof BitType) {
-                    return 0L;
-                } else if (type instanceof BinaryType) {
-                    return "00000000".getBytes();
-                }
+                return newColumn.getInitVal();
             }
         } else {
             String defaultValueExpr = newColumn.defaultValueExpr;
@@ -133,7 +106,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
             }
             if (type instanceof StringType) {
-                return defaultValueExpr;
+                return Utils.unicodeToChinese(defaultValueExpr);
             } else if (type instanceof LongType) {
                 return Long.parseLong(defaultValueExpr);
             } else if (type instanceof IntegerType) {
@@ -252,15 +225,6 @@ public class AddColumnFiller extends IndexAddFiller {
             throw new RuntimeException("new column not found");
         }
         defaultVal = getFillerValue(addColumn);
-        //columnIndices = table.getColumnIndices(indexTable.columns.stream()
-        //    .map(Column::getName)
-        //    .collect(Collectors.toList()));
-        //colLen = columnIndices.size();
-        //if (columnIndices.contains(-1)) {
-        //    defaultVal = addColumn.getDefaultVal();
-        //    columnIndices.removeIf(index -> index == -1);
-        //    colLen = columnIndices.size();
-        //}
         if (indexTable.getProperties() != null) {
             addPos = Integer.parseInt(indexTable.getProperties().getProperty("addPos"));
         }

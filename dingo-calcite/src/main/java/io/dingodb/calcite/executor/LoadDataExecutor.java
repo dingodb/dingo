@@ -433,7 +433,9 @@ public class LoadDataExecutor implements DmlExecutor {
         } catch (Exception e) {
             LogUtils.warn(log, e.getMessage(), e);
         }
-
+        if (tuples != null) {
+            validateCol(tuples);
+        }
         if (isTxn) {
             insertWithTxn(tuples);
         } else {
@@ -782,6 +784,20 @@ public class LoadDataExecutor implements DmlExecutor {
         patternBuilder.append("$)");
         String pattern = patternBuilder.toString();
         return str.replaceAll(pattern, "");
+    }
+
+    private Object[] validateCol(Object[] tuples) {
+        for (int i = 0; i < tuples.length; i ++) {
+            if (tuples[i] == null) {
+                Column colDef = table.getColumns().get(i);
+                if (colDef != null) {
+                    if (!colDef.isNullable()) {
+                        tuples[i] = colDef.getInitVal();
+                    }
+                }
+            }
+        }
+        return tuples;
     }
 
     private Object[] processHideCol(Object[] tuples) {
