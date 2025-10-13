@@ -16,6 +16,7 @@
 
 package io.dingodb.common.session;
 
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
@@ -60,7 +61,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         java.sql.Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:dingo:", properties);
-            connection.setClientInfo("ddl_inner_profile", "on");
+            connection.setClientInfo("ddl_inner_profile", ScopeVariables.getInnerProfile());
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }

@@ -60,6 +60,7 @@ public final class ScopeVariables {
         executorProp.put("request_factor", "15000");
         executorProp.put("ddl_timeout", "180000");
         executorProp.put("seek_factor", "80");
+        executorProp.put("ddl_inner_profile", "off");
     }
 
     private ScopeVariables() {
@@ -242,6 +243,14 @@ public final class ScopeVariables {
             return Integer.parseInt(lookupBatchGetSize);
         } catch (Exception e) {
             return 4096;
+        }
+    }
+
+    public static String getInnerProfile() {
+        try {
+            return executorProp.getOrDefault("ddl_inner_profile", "off").toString();
+        } catch (Exception e) {
+            return "off";
         }
     }
 

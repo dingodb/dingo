@@ -20,6 +20,7 @@ import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -155,7 +156,13 @@ public class ShowCreateTableExecutor extends QueryExecutor {
             }
             if (column.getDefaultValueExpr() != null) {
                 if (!(!column.isNullable() && "NULL".equalsIgnoreCase(column.getDefaultValueExpr()))) {
-                    createTableSqlStr.append(" DEFAULT ").append(column.getDefaultValueExpr());
+                    String defaultValExpr;
+                    if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName()) || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
+                        defaultValExpr = Utils.unicodeToChinese(column.defaultValueExpr);
+                    } else {
+                        defaultValExpr = column.defaultValueExpr;
+                    }
+                    createTableSqlStr.append(" DEFAULT ").append(defaultValExpr);
                 }
             }
             if (column.isAutoIncrement()) {

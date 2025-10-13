@@ -18,6 +18,7 @@ package io.dingodb.calcite.executor;
 
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
 import io.dingodb.common.util.SqlLikeUtils;
+import io.dingodb.common.util.Utils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
@@ -124,7 +125,13 @@ public class ShowColumnsExecutor extends QueryExecutor {
                 }
             }
             columnValues.add(key);
-            columnValues.add(column.defaultValueExpr != null ? column.defaultValueExpr : "NULL");
+            String defaultValExpr;
+            if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName()) || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
+                defaultValExpr = Utils.unicodeToChinese(column.defaultValueExpr);
+            } else {
+                defaultValExpr = column.defaultValueExpr;
+            }
+            columnValues.add(defaultValExpr != null ? defaultValExpr : "NULL");
 
             columnList.add(columnValues);
         }

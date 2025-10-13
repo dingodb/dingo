@@ -47,7 +47,7 @@ public class ShowNextAutoIncrementExecutor extends QueryExecutor {
         List<Object[]> tuples = new ArrayList<>();
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName, tableName);
-        Long nextAutoIncrement = metaService.getNextAutoIncrement(table.getTableId());
+        Long nextAutoIncrement = metaService.getLastId(table.getTableId());
         Object[] values = new Object[]{nextAutoIncrement};
         tuples.add(values);
         return tuples.iterator();

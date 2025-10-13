@@ -211,9 +211,9 @@ public final class DingoRules {
     public static final List<RelOptRule> BASE_RULES = ImmutableList.of(
         CoreRules.AGGREGATE_STAR_TABLE,
         CoreRules.AGGREGATE_PROJECT_STAR_TABLE,
-        CalciteSystemProperty.COMMUTE.value()
-            ? CoreRules.JOIN_ASSOCIATE
-            : CoreRules.PROJECT_MERGE,
+        //CalciteSystemProperty.COMMUTE.value()
+        //    ? CoreRules.JOIN_ASSOCIATE
+        //    : CoreRules.PROJECT_MERGE,
         CoreRules.FILTER_SCAN,
         CoreRules.PROJECT_FILTER_TRANSPOSE,
         CoreRules.FILTER_PROJECT_TRANSPOSE,
@@ -225,7 +225,6 @@ public final class DingoRules {
         CoreRules.FILTER_AGGREGATE_TRANSPOSE,
         CoreRules.PROJECT_WINDOW_TRANSPOSE,
         CoreRules.MATCH,
-        //CoreRules.JOIN_COMMUTE,
         JoinPushThroughJoinRule.RIGHT,
         JoinPushThroughJoinRule.LEFT,
         CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
@@ -236,7 +235,6 @@ public final class DingoRules {
         CoreRules.JOIN_CONDITION_PUSH,
         CoreRules.FILTER_SET_OP_TRANSPOSE,
         AbstractConverter.ExpandConversionRule.INSTANCE,
-        //CoreRules.JOIN_COMMUTE,
         CoreRules.UNION_TO_DISTINCT,
         CoreRules.PROJECT_AGGREGATE_MERGE,
         CoreRules.AGGREGATE_JOIN_TRANSPOSE,

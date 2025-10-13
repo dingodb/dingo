@@ -40,6 +40,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.Parameters.cleanNull;
@@ -329,6 +331,37 @@ public final class Utils {
             queue.put(element);
         } catch (InterruptedException e) {
             LogUtils.error(log, e.getMessage(), e);
+        }
+    }
+
+    public static String unicodeToChinese(String unicode) {
+        if (unicode == null) {
+            return null;
+        }
+        if (unicode.trim().isEmpty()) {
+            return "";
+        }
+
+        Pattern pattern = Pattern.compile("\\\\[0-9a-fA-F]{4}");
+        Matcher matcher = pattern.matcher(unicode);
+
+        StringBuilder resultBuilder = new StringBuilder();
+        while (matcher.find()) {
+            String unicodeSeq = matcher.group();
+            String hex = unicodeSeq.substring(1);
+            try {
+                int codePoint = Integer.parseInt(hex, 16);
+                resultBuilder.append(Character.toChars(codePoint));
+            } catch (NumberFormatException e) {
+                resultBuilder.append(unicodeSeq);
+            }
+        }
+
+        String result =  resultBuilder.toString();
+        if (result.isEmpty()) {
+            return unicode;
+        } else {
+            return result;
         }
     }
 

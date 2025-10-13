@@ -23,6 +23,8 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
 import io.dingodb.common.type.NullableType;
+import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
@@ -191,6 +193,39 @@ public class Column {
             return mapVal;
         }
         return defaultValueExpr;
+    }
+
+    public Object getInitVal() {
+        if (type instanceof StringType) {
+            return "";
+        } else if (type instanceof LongType) {
+            return 0L;
+        } else if (type instanceof IntegerType) {
+            return 0;
+        } else if (type instanceof DoubleType) {
+            return 0D;
+        } else if (type instanceof FloatType) {
+            return 0F;
+        } else if (type instanceof DecimalType) {
+            return new BigDecimal(0);
+        } else if (type instanceof DateType) {
+            return DateTimeUtils.parseDate("0000-00-00");
+        } else if (type instanceof BooleanType) {
+            return false;
+        } else if (type instanceof TimestampType) {
+            return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+        } else if (type instanceof TimeType) {
+            return DateTimeUtils.parseTime("00:00:00");
+        } else if (type instanceof ListType) {
+            return new ArrayList<>();
+        } else if (type instanceof MapType) {
+            return new LinkedHashMap<>();
+        } else if (type instanceof BitType) {
+            return 0L;
+        } else if (type instanceof BinaryType) {
+            return "00000000".getBytes();
+        }
+        return null;
     }
 
 }

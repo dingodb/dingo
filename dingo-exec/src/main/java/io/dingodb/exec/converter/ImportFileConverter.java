@@ -28,6 +28,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,9 +52,9 @@ public class ImportFileConverter implements DataConverter {
             return null;
         } else {
             try {
-                return Integer.parseInt(valStr);
-            } catch (Exception e) {
                 return new BigDecimal(valStr).intValue();
+            } catch (Exception e) {
+                return 0;
             }
         }
     }
@@ -65,9 +66,9 @@ public class ImportFileConverter implements DataConverter {
             return null;
         } else {
             try {
-                return Long.parseLong(valStr);
-            } catch (Exception e) {
                 return new BigDecimal(valStr).longValue();
+            } catch (Exception e) {
+                return 0L;
             }
         }
     }
@@ -78,7 +79,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return Float.parseFloat(valStr);
+            try {
+                return Float.parseFloat(valStr);
+            } catch (Exception e) {
+                return 0F;
+            }
         }
     }
 
@@ -88,7 +93,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return Double.parseDouble(valStr);
+            try {
+                return Double.parseDouble(valStr);
+            } catch (Exception e) {
+                return 0D;
+            }
         }
     }
 
@@ -112,7 +121,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return new BigDecimal(valStr);
+            try {
+                return new BigDecimal(valStr);
+            } catch (Exception e) {
+                return new BigDecimal(0);
+            }
         }
     }
 
@@ -122,7 +135,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return DateTimeUtils.parseDate(valStr);
+            try {
+                return DateTimeUtils.parseDate(valStr);
+            } catch (Exception e) {
+                return DateTimeUtils.parseDate("0000-00-00");
+            }
         }
     }
 
@@ -132,7 +149,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return DateTimeUtils.parseTime(valStr);
+            try {
+                return DateTimeUtils.parseTime(valStr);
+            } catch (Exception e) {
+                return DateTimeUtils.parseTime("00:00:00");
+            }
         }
     }
 
@@ -142,7 +163,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return DateTimeUtils.parseTimestamp(valStr);
+            try {
+                return DateTimeUtils.parseTimestamp(valStr);
+            } catch (Exception e) {
+                return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+            }
         }
     }
 
@@ -162,7 +187,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return splitArray(value.toString().getBytes(), (byte) ARRAY_SPLIT);
+            try {
+                return splitArray(value.toString().getBytes(), (byte) ARRAY_SPLIT);
+            } catch (Exception e) {
+                return new Object[]{};
+            }
         }
     }
 
@@ -172,13 +201,17 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            valStr = valStr.substring(1, valStr.length() - 1);
-            Object[] tuples = splitArray(valStr.getBytes(), (byte) ARRAY_SPLIT);
-            List<Object> res = new ArrayList<>();
-            for (Object obj : tuples) {
-                res.add(elementType.convertFrom(obj, this));
+            try {
+                valStr = valStr.substring(1, valStr.length() - 1);
+                Object[] tuples = splitArray(valStr.getBytes(), (byte) ARRAY_SPLIT);
+                List<Object> res = new ArrayList<>();
+                for (Object obj : tuples) {
+                    res.add(elementType.convertFrom(obj, this));
+                }
+                return res;
+            } catch (Exception e) {
+                return new ArrayList<>();
             }
-            return res;
         }
     }
 
@@ -190,7 +223,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return mapStringToMap(valStr);
+            try {
+                return mapStringToMap(valStr);
+            } catch (Exception e) {
+                return new LinkedHashMap<>();
+            }
         }
     }
 
@@ -200,7 +237,11 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
-            return Base64.getDecoder().decode(valStr);
+            try {
+                return Base64.getDecoder().decode(valStr);
+            } catch (Exception e) {
+                return new byte[]{};
+            }
         }
     }
 
