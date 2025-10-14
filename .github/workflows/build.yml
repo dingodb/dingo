@@ -9,9 +9,9 @@ name: Build
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, quickBI-v3.0.0 ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, quickBI-v3.0.0 ]
 
 jobs:
   build:
@@ -61,3 +61,58 @@ jobs:
       with:
           name: dingo.zip
           path: ./dingo.zip
+    
+    - name: Record event type
+      run: |
+        branchName=$(echo "${{ github.ref_name }}")
+        echo "branch name is: $branchName"
+        echo "$branchName" > branch_name.txt
+
+        commitId="${{ github.sha }}"
+        shortCommitId=${commitId:0:8}
+        echo "commit id is: $shortCommitId"
+        echo "$shortCommitId" > commit_id.txt
+
+        echo "hello dingofs" > event.txt
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "pull_request" > event.txt
+        elif [ "${{ github.event_name }}" == "push" ]; then
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "tag" > event.txt
+            tagInfo=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///')
+            echo "$tagInfo" > tag_name.txt
+            echo "TAG_NAME=$tagInfo" >> $GITHUB_ENV
+          else
+            echo "push" > event.txt
+            echo "TAG_NAME=latest" >> $GITHUB_ENV
+          fi
+        fi
+
+    - name: Save event type info
+      uses: actions/upload-artifact@v4
+      with:
+        name: event
+        path: event.txt
+        compression-level: 0
+
+    - name: Save tag name info
+      if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: tag_name
+        path: tag_name.txt
+        compression-level: 0
+
+    - name: Save branch name info
+      uses: actions/upload-artifact@v4
+      with:
+        name: branch_name
+        path: branch_name.txt
+        compression-level: 0
+
+    - name: Save commit id info
+      uses: actions/upload-artifact@v4
+      with:
+        name: commit_id
+        path: commit_id.txt
+        compression-level: 0
