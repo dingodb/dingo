@@ -129,7 +129,7 @@ jobs:
         id: dingo-meta
         uses: docker/metadata-action@v5
         with:
-          images: dingodatabase/dingo-store
+          images: dingodatabase/dingo
           tags: |
             type=raw,enable=${{ env.EVENT == 'tag' }},value=${{ env.TAG_NAME }}
             type=raw,value=latest,enable=${{ env.BRANCH_NAME == 'main' && env.EVENT != 'tag'}}
