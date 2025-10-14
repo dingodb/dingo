@@ -21,11 +21,13 @@ import io.dingodb.expr.rel.TupleCompileContext;
 import io.dingodb.expr.rel.TupleCompileContextImpl;
 import io.dingodb.expr.runtime.CompileContext;
 import io.dingodb.expr.runtime.ExprContext;
+import io.dingodb.expr.runtime.ExprPushdownCond;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.Exprs;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -42,6 +44,9 @@ public final class DingoCompileContext implements TupleCompileContext {
     private final TupleType parasType;
 
     private ExprContext exprContext;
+
+    private ExprPushdownCond exprPushdownCond;
+    private boolean notPushdown;
 
     public static @NonNull Expr createTupleVar(int index) {
         return Exprs.op(Exprs.INDEX, Exprs.var(TUPLE_VAR_NAME), index);
@@ -75,5 +80,25 @@ public final class DingoCompileContext implements TupleCompileContext {
     @Override
     public void setExprContext(ExprContext exprContext) {
         this.exprContext = exprContext;
+    }
+
+    @Override
+    public ExprPushdownCond getExprPushdownCond() {
+        return exprPushdownCond;
+    }
+
+    @Override
+    public void setExprPushdownCond(ExprPushdownCond exprPushdownCond) {
+        this.exprPushdownCond = exprPushdownCond;
+    }
+
+    @Override
+    public boolean getNotPushdown() {
+        return notPushdown;
+    }
+
+    @Override
+    public void setNotPushdown(boolean notPushdown) {
+        this.notPushdown = notPushdown;
     }
 }

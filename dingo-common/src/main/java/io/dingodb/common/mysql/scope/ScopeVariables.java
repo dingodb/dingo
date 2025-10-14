@@ -62,6 +62,8 @@ public final class ScopeVariables {
         executorProp.put("seek_factor", "80");
         executorProp.put("ddl_inner_profile", "off");
         executorProp.put("ddl_mdl_log", "on");
+        executorProp.put("show_coprocessor_expr", "off");
+        executorProp.put("enable_decimal_pushdown", "on");
     }
 
     private ScopeVariables() {
@@ -121,6 +123,11 @@ public final class ScopeVariables {
         return runDdl.equalsIgnoreCase("on");
     }
 
+    public static boolean enableDecimalPushdown() {
+        String runDdl = executorProp.getOrDefault("enable_decimal_pushdown", "on").toString();
+        return runDdl.equalsIgnoreCase("on");
+    }
+
     /**
      * enable txnScan via stream or not.
      * @return streamScan
@@ -128,6 +135,11 @@ public final class ScopeVariables {
     public static boolean txnScanByStream() {
         String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
         return txnScanByStream.equalsIgnoreCase("on");
+    }
+
+    public static boolean showCoprocessorExpr() {
+        String showCoprocessorExpr = executorProp.getOrDefault("show_coprocessor_expr", "on").toString();
+        return showCoprocessorExpr.equalsIgnoreCase("on");
     }
 
     /**

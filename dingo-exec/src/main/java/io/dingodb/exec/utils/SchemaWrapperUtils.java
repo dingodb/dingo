@@ -23,6 +23,8 @@ import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.scalar.AbstractScalarType;
+import io.dingodb.expr.common.type.DecimalType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,6 +48,17 @@ public final class SchemaWrapperUtils {
                 .build();
         }
         String typeName = type.getType().toString();
+
+        if (type.getType() instanceof DecimalType) {
+            return ColumnDefinition.builder()
+                .type(typeName)
+                .precision((int)((AbstractScalarType)type).getPrecision())
+                .scale((int)((AbstractScalarType)type).getScale())
+                .primary(primary)
+                .nullable(type.isNullable())
+                .build();
+        }
+
         return ColumnDefinition.builder()
             .type(typeName)
             .primary(primary)

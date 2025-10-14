@@ -35,17 +35,22 @@ import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.runtime.ExprPushdownCond;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static io.dingodb.common.mysql.scope.ScopeVariables.enableDecimalPushdown;
+import static io.dingodb.common.mysql.scope.ScopeVariables.showCoprocessorExpr;
 
 @Slf4j
 @Getter
@@ -106,11 +111,18 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                 .boxed()
                 .collect(Collectors.toList());
         }
-        RelOp relOpCompile = relOp.compile(new DingoCompileContext(
+
+        DingoCompileContext dingoCompileContext = new DingoCompileContext(
             (TupleType) schema.getType(),
             (TupleType) vertex.getParasType().getType()
-        ), config);
-        if (pushDown) {
+        );
+
+        if(!enableDecimalPushdown()) {
+            dingoCompileContext.setExprPushdownCond(ExprPushdownCond.NOT_PUSHDOWN_DECIMAL);
+        }
+
+        RelOp relOpCompile = relOp.compile(dingoCompileContext, config);
+        if (pushDown && !dingoCompileContext.getNotPushdown()) {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             if (RelOpCoder.INSTANCE.visit(relOpCompile, os) == CodingFlag.OK) {
                 Set<Integer> selections = new HashSet<>();
@@ -155,6 +167,14 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                     .build();
                 if (limit > 0) {
                     coprocessor.setLimit(limit);
+                }
+
+                if(showCoprocessorExpr()) {
+                    StringBuffer sb = new StringBuffer();
+                    for(byte b : coprocessor.getRelExpr()) {
+                        sb.append(String.format("%02X",b));
+                    }
+                    LogUtils.info(log, "Pushing down expression {} via coprocessor.", sb.toString());
                 }
             }
         }
