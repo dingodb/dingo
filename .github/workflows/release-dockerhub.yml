@@ -9,12 +9,6 @@ on:
     workflows: ["Build"]
     types:
       - completed
-    on:
-      branches:
-        - develop
-        - main
-      pull_requests:
-        - merged
 
 env:
   IMAGE_NAME: dingo-ubuntu
@@ -30,6 +24,83 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download branch name file
+        uses: actions/download-artifact@v4
+        with:
+          name: branch_name
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Config trigger branch env
+        run: |
+          if [ -f branch_name.txt ]; then
+            echo "BRANCH_NAME=$(cat branch_name.txt)" >> $GITHUB_ENV
+          fi
+
+      - name: Download commit id file
+        uses: actions/download-artifact@v4
+        with:
+          name: commit_id
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Config commit id env
+        run: |
+          if [ -f commit_id.txt ]; then
+            echo "COMMIT_ID=$(cat commit_id.txt)" >> $GITHUB_ENV
+          fi
+
+      - name: Download event type file
+        uses: actions/download-artifact@v4
+        with:
+          name: event
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Config trigger event env
+        run: |
+          if [ -f event.txt ]; then
+            echo "EVENT=$(cat event.txt)" >> $GITHUB_ENV
+          fi
+
+      - name: Download tag name file
+        if: ${{ env.EVENT == 'tag' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: tag_name
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Config push tag env
+        if: ${{ env.EVENT == 'tag' }}
+        run: |
+          if [ -f tag_name.txt ]; then
+            echo "TAG_NAME=$(cat tag_name.txt)" >> $GITHUB_ENV
+          fi
+
+      - name: Print env info
+        id: check-event
+        run: |
+          echo "trigger event type is ${{ env.EVENT }}"
+          echo "continue=true" >> $GITHUB_OUTPUT
+          if [ "${{ env.EVENT }}" == "pull_request" ]; then
+            echo "pull request haven't merged, not need to publish image."
+            echo "continue=false" >> $GITHUB_OUTPUT
+          fi
+          if [ -n "${{ env.TAG_NAME }}" ]; then
+            echo "tag name is ${{ env.TAG_NAME }}, need to publish image."
+          fi
+          if [ -n "${{ env.BRANCH_NAME }}" ]; then
+            echo "branch name is ${{ env.BRANCH_NAME }}"
+          fi
+          if [ -n "${{ env.COMMIT_ID }}" ]; then
+            echo "commit id is ${{ env.COMMIT_ID }}"
+          fi
 
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v6
@@ -53,15 +124,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Docker meta info
+        if: steps.check-event.outputs.continue == 'true'
+        id: dingo-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: dingodatabase/dingo-store
+          tags: |
+            type=raw,enable=${{ env.EVENT == 'tag' }},value=${{ env.TAG_NAME }}
+            type=raw,value=latest,enable=${{ env.BRANCH_NAME == 'main' && env.EVENT != 'tag'}}
+            type=sha,prefix=,format=short,enable=${{ env.BRANCH_NAME == 'main' && env.EVENT != 'tag' }}
+            type=sha,prefix=${{ env.BRANCH_NAME }}-,format=short,enable=${{ env.EVENT != 'tag' && env.BRANCH_NAME != 'main' }}
+
       - name: Build image and push to Docker Hub and GitHub Container Registry
         uses: docker/build-push-action@v6
+        if: steps.check-event.outputs.continue == 'true'
         with:
-          # relative path to the place where source code with Dockerfile is located
           context: ./docker
-          # Note: tags has to be all lower-case
-          tags: dingodatabase/dingo:latest
-          # build on feature branches, push only on develop branch
-          push: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' }}
+          tags: ${{ steps.dingo-meta.outputs.tags }}
+          push: true
 
       - name: Image digest
+        if: steps.check-event.outputs.continue == 'true'
         run: echo ${{ steps.docker_build.outputs.digest }}
