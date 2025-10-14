@@ -162,6 +162,9 @@ public interface EntityMapper {
                     case STRING:
                         type = Type.STRING;
                         break;
+                    case DECIMAL:
+                        type = Type.DECIMAL;
+                        break;
                     case BOOLEANLIST:
                         type = Type.BOOLLIST;
                         break;
@@ -188,6 +191,8 @@ public interface EntityMapper {
                     .isKey(schema.isKey())
                     .isNullable(schema.isAllowNull())
                     .index(schema.getIndex())
+                    .precision(schema.getPrecision())
+                    .scale(schema.getScale())
                     .build();
             }).collect(Collectors.toList());
     }
