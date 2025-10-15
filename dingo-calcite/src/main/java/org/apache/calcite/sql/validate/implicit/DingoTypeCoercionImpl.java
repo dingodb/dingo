@@ -76,6 +76,9 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
                 } else if (targetType.getSqlTypeName().getName().equalsIgnoreCase("DOUBLE")
                     && sourceType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
                     continue;
+                } else if (targetType.getSqlTypeName().getName().equalsIgnoreCase("TINYINT")
+                    && sourceType.getSqlTypeName().getName().equalsIgnoreCase("BINARY")) {
+                    continue;
                 } else {
                     return false;
                 }
