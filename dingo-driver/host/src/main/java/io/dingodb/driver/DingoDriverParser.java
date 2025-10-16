@@ -95,6 +95,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.CalciteContextException;
+import org.apache.calcite.schema.impl.ListTransientTable;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlExplain;
@@ -974,6 +975,8 @@ public final class DingoDriverParser extends DingoParser {
                         name = fullName.get(1) + "." + fullName.get(2);
                         tableList.add(name);
                     }
+                } else if (relOptTable.table() instanceof ListTransientTable) {
+                    engine = "TXN_LSM";
                 }
             } else if (table instanceof DingoRelOptTable) {
                 DingoRelOptTable dingoRelOptTable = (DingoRelOptTable) table;
