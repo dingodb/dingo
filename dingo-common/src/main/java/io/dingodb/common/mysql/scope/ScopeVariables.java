@@ -31,7 +31,7 @@ public final class ScopeVariables {
     public static final List<String> immutableVariables = new ArrayList<>();
 
     public static final List<String> globalVariables = List.of("job_need_gc", "txn_history_duration",
-        "safepoint_ts", "ssl_enable", "log_bin_trust_function_creators", "innodb_online_alter_log_max_size",
+        "safepoint_ts", "ssl_enable", "innodb_online_alter_log_max_size",
         "max_allowed_packet", "table_definition_cache");
 
     static {

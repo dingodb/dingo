@@ -159,6 +159,10 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                     String defaultValExpr;
                     if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName()) || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
                         defaultValExpr = Utils.unicodeToChinese(column.defaultValueExpr);
+                        if (defaultValExpr != null && !"".equalsIgnoreCase(defaultValExpr)
+                            && !(defaultValExpr.startsWith("'") && defaultValExpr.endsWith("'"))) {
+                            defaultValExpr = "'" + defaultValExpr + "'";
+                        }
                     } else {
                         defaultValExpr = column.defaultValueExpr;
                     }

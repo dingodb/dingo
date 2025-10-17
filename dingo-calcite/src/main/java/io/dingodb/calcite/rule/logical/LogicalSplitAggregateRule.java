@@ -48,7 +48,9 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
         SqlKind.SUM0,
         SqlKind.MAX,
         SqlKind.MIN,
-        SqlKind.SINGLE_VALUE
+        SqlKind.SINGLE_VALUE,
+        SqlKind.FIRST_VALUE,
+        SqlKind.__FIRST_VALUE
     );
 
     protected LogicalSplitAggregateRule(Config config) {
@@ -92,6 +94,9 @@ public class LogicalSplitAggregateRule extends RelRule<LogicalSplitAggregateRule
                 return Exprs.op(Exprs.MIN_AGG, var);
             case SINGLE_VALUE:
                 return Exprs.op(Exprs.SINGLE_VALUE_AGG, var);
+            case FIRST_VALUE:
+            case __FIRST_VALUE:
+                return Exprs.op(Exprs.FIRST_VALUE_AGG, var);
             default:
                 break;
         }

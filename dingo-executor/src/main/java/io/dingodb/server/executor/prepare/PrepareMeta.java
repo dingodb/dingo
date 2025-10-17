@@ -256,7 +256,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"time_zone", "SYSTEM"});
         values.add(new Object[]{"system_time_zone", TimeZone.getDefault().getID()});
         values.add(new Object[]{"sql_mode",
-            "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"});
+            "STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"});
         values.add(new Object[]{"query_cache_type", "OFF"});
         values.add(new Object[]{"query_cache_size", "16777216"});
         values.add(new Object[]{"performance_schema", "0"});

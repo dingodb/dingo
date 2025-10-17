@@ -778,7 +778,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (dingoSqlColumn.isAutoIncrement()) {
             throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
         }
-        validateAddColumn(newColumn);
+        validateAddOrModifyColumn(newColumn, true);
         SqlIdentifier afterCol = sqlAlterAddColumn.getAfterCol();
         String afterColName;
         if (afterCol != null) {
@@ -2241,13 +2241,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         return targetReplica;
     }
 
-    private static void validateAddColumn(ColumnDefinition newColumn) {
+    private static void validateAddOrModifyColumn(ColumnDefinition newColumn, boolean addCol) {
         DingoType type = newColumn.getType();
         if ("NULL".equalsIgnoreCase(newColumn.getDefaultValue())) {
             newColumn.setDefaultValue(null);
         }
         if (newColumn.getDefaultValue() == null) {
-            if (!newColumn.isNullable()) {
+            if (!newColumn.isNullable() && addCol) {
                 if (type instanceof DateType) {
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", "0000-00-00");
                 } else if (type instanceof TimestampType) {
@@ -3088,7 +3088,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (exception != null) {
             throw exception;
         }
-        validateAddColumn(toColDef);
+        validateAddOrModifyColumn(toColDef, false);
         // checkModifyCharsetAndCollation
     }
 
