@@ -82,6 +82,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerTertiaryFun(ConcatFun.NAME, ConcatFun.INSTANCE);
         registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);
         registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
+        registerBinaryFun(DateSubFun.NAME, DateSubFun.INSTANCE);
         registerUnaryFun(DateFun.NAME, DateFun.INSTANCE);
         registerUnaryFun(ValuesFun.NAME, ValuesFun.INSTANCE);
         registerUnaryFun(UnHexFun.NAME, UnHexFun.INSTANCE);

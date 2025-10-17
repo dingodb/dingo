@@ -50,7 +50,7 @@ public class DoubleType extends AbstractScalarType {
 
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
-        return super.convertValueTo(value, converter);
+        return converter.convertDoubleFrom(value);
     }
 
     @Override
