@@ -184,6 +184,9 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public byte[] convertBinaryFrom(@NonNull Object value) {
+        if( value instanceof NlsString) {
+            return ((NlsString)value).getValue().getBytes();
+        }
         return ((ByteString) value).getBytes();
     }
 
