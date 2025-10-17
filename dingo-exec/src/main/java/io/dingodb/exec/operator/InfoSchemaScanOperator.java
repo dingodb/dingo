@@ -146,6 +146,33 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                         if (column.state == 2) {
                             continue;
                         }
+                        String extra = "";
+                        if (column.isAutoIncrement()) {
+                            extra = "auto_increment";
+                        }
+                        String type = column.getSqlTypeName();
+                        String charsetName = null;
+                        String collationName = null;
+                        if (type.equalsIgnoreCase("INTEGER")) {
+                            type = "int";
+                            if (column.getPrecision() > 0) {
+                                type = type + "(" + column.getPrecision() + ")";
+                            }
+                        } else if (type.equals("VARCHAR")) {
+                            if (column.getPrecision() > 0) {
+                                type = type + "(" + column.getPrecision() + ")";
+                            }
+                            charsetName = "utf8";
+                            collationName = "utf8_bin";
+                        } else if (type.equalsIgnoreCase("CHAR")) {
+                            charsetName = "utf8";
+                            collationName = "utf8_bin";
+                        } else if (type.equalsIgnoreCase("DECIMAL")) {
+                            if (column.getPrecision() > 0 && column.getScale() >= 0) {
+                                type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
+                            }
+                        }
+                        type = type.toLowerCase();
                         colRes.add(new Object[]{
                             "def",
                             schemaTables.getSchemaInfo().getName(),
@@ -164,12 +191,12 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             null,
                             null,
                             null,
-                            "utf8",
-                            "utf8_bin",
-                            column.getSqlTypeName(),
+                            charsetName,
+                            collationName,
+                            type,
                             // is key
                             column.isPrimary() ? "PRI" : "",
-                            "",
+                            extra,
                             // privileges fix
                             "select,insert,update,references",
                             column.comment,
