@@ -175,7 +175,11 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                return DateTimeUtils.parseTimestamp(valStr);
+                Timestamp timestamp = DateTimeUtils.parseTimestamp(valStr);
+                if (timestamp == null) {
+                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", valStr);
+                }
+                return timestamp;
             } catch (Exception e) {
                 throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", valStr);
             }

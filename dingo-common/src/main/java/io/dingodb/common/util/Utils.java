@@ -357,7 +357,7 @@ public final class Utils {
             }
         }
 
-        String result =  resultBuilder.toString();
+        String result = resultBuilder.toString();
         if (result.isEmpty()) {
             return unicode;
         } else {
