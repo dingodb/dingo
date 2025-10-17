@@ -23,6 +23,7 @@ import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.util.Utils;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.session.SessionManager;
@@ -73,7 +74,7 @@ public final class MetaLockCheckHandler {
             if (maxVer > saveMaxSchemaVersion) {
                 saveMaxSchemaVersion = maxVer;
             } else if (!jobNeedToSync) {
-                if (DdlUtil.timeOutError.get()) {
+                if (DdlUtil.timeOutError.get() && ScopeVariables.ddlMetaMdlLockLog()) {
                     LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
                         maxVer, saveMaxSchemaVersion);
                 }
@@ -103,7 +104,7 @@ public final class MetaLockCheckHandler {
             if (jobCache.size() > 1000) {
                 jobCache = new HashMap<>();
             }
-            if (DdlUtil.timeOutError.get()) {
+            if (DdlUtil.timeOutError.get() && ScopeVariables.ddlMetaMdlLockLog()) {
                 LogUtils.info(log, "[ddl] mdl check jobs id map size:{}, "
                     + "jobs ver map size:{}, jobNeedToSync:{}", jobsIdsMap.size(),
                     jobsVerMap.size(), jobNeedToSync);
