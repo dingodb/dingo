@@ -24,7 +24,12 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.ProjectOp;
+import io.dingodb.expr.runtime.ExprContext;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
@@ -46,6 +51,9 @@ public class PartUpdateParam extends PartModifyParam {
     @JsonProperty("autoIncColIdx")
     private final int autoIncColIdx;
 
+    @JsonProperty("relOp")
+    private RelOp relOp;
+
     public PartUpdateParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
@@ -54,7 +62,8 @@ public class PartUpdateParam extends PartModifyParam {
         @JsonProperty("updates") List<SqlExpr> updates,
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
-        @JsonProperty("autoIncColIdx") int autoIncColIdx
+        @JsonProperty("autoIncColIdx") int autoIncColIdx,
+        RelOp relOp
     ) {
         super(tableId, schema, keyMapping, table);
         this.mapping = mapping;
@@ -63,12 +72,29 @@ public class PartUpdateParam extends PartModifyParam {
         this.autoIncColIdx = autoIncColIdx;
         this.codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.version, schema, table.keyMapping());
+        this.relOp = relOp;
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+
+        if(this.relOp != null) {
+            DingoCompileContext dingoCompileContext = new DingoCompileContext(
+                (TupleType) schema.getType(),
+                (TupleType) vertex.getParasType().getType()
+            );
+
+            if (this.relOp instanceof ProjectOp) {
+                if (((ProjectOp) (this.relOp)).getExprConfig().getExprContext() == ExprContext.CALC_VALUE) {
+                    dingoCompileContext.setExprContext(io.dingodb.expr.runtime.ExprContext.CALC_VALUE);
+                }
+            }
+
+            updates.forEach(expr -> expr.compileInWithContext(schema, vertex.getParasType(), dingoCompileContext));
+        } else {
+            updates.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
     }
 
     public void inc() {

@@ -84,6 +84,16 @@ public class SqlExpr {
         }
     }
 
+    public void compileInWithContext(DingoType tupleType, DingoType parasType, DingoCompileContext dingoCompileContext ) {
+        try {
+            //CompileContext context = new SqlExprCompileContext(tupleType, parasType);
+            expr = ExprCompiler.ADVANCED.visit(parseExpr(), dingoCompileContext);
+            etx = new SqlExprEvalContext();
+        } catch (ExprParseException | ExprCompileException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public void setParas(Object[] paras) {
         etx.setParas(paras);
     }
