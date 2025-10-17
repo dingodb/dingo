@@ -1983,6 +1983,7 @@ public class DdlWorker {
                     }
                     schemaInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                     currentInfoService.updateSchema(schemaInfo);
+                    JobTableUtil.recoverGcDeleteSchema(schemaInfo.getSchemaId());
                     return updateSchemaVersion(dc, job);
                 }
             default:
