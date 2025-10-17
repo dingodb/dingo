@@ -134,7 +134,8 @@ jobs:
             type=raw,enable=${{ env.EVENT == 'tag' }},value=${{ env.TAG_NAME }}
             type=raw,value=latest,enable=${{ env.BRANCH_NAME == 'main' && env.EVENT != 'tag'}}
             type=sha,prefix=,format=short,enable=${{ env.BRANCH_NAME == 'main' && env.EVENT != 'tag' }}
-            type=sha,prefix=${{ env.BRANCH_NAME }}-,format=short,enable=${{ env.EVENT != 'tag' && env.BRANCH_NAME != 'main' }}
+            type=raw,value=${{ env.BRANCH_NAME }}-${{ env.COMMIT_ID }},enable=${{ env.EVENT != 'tag' && env.BRANCH_NAME != 'main' }}
+            type=raw,value=${{ env.BRANCH_NAME }}-latest,enable=${{ env.EVENT != 'tag' && env.BRANCH_NAME != 'main' }}
 
       - name: Build image and push to Docker Hub and GitHub Container Registry
         uses: docker/build-push-action@v6
