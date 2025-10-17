@@ -42,6 +42,7 @@ import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
 import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.service.ClusterService;
+import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.service.AutoIncrementService;
 import io.dingodb.store.service.MetaStoreKv;
 import io.dingodb.tso.TsoService;
@@ -131,7 +132,10 @@ public class Starter {
         }
         String caseTableName = globalVariables.get(LOWER_CASE_TABLE_NAMES);
         if ("-1".equals(caseTableName)) {
-            infoSchemaService.putGlobalVariable(LOWER_CASE_TABLE_NAMES, DingoConfiguration.lowerCaseTableNames());
+            try {
+                infoSchemaService.putGlobalVariable(LOWER_CASE_TABLE_NAMES, DingoConfiguration.lowerCaseTableNames());
+            } catch (WriteConflictException ignore) {
+            }
         }
         if (!"-1".equals(caseTableName)
             && !caseTableName.equals(String.valueOf(DingoConfiguration.lowerCaseTableNames()))) {

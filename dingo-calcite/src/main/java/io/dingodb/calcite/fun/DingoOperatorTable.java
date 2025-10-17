@@ -21,15 +21,16 @@ import com.google.common.collect.Multimap;
 import io.dingodb.exec.fun.AutoIncrementFun;
 import io.dingodb.exec.fun.DateAddFun;
 import io.dingodb.exec.fun.DateFun;
+import io.dingodb.exec.fun.DateSubFun;
 import io.dingodb.exec.fun.DaySubFun;
 import io.dingodb.exec.fun.GetDateFun;
 import io.dingodb.exec.fun.LengthFun;
 import io.dingodb.exec.fun.PowFunFactory;
 import io.dingodb.exec.fun.StrToDateFun;
 import io.dingodb.exec.fun.ValuesFun;
+import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.HexFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
-import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
 import io.dingodb.exec.fun.mysql.UnHexFun;
@@ -324,10 +325,17 @@ public class DingoOperatorTable implements SqlOperatorTable {
         // special
         registerFunction(
             DateAddFun.NAME,
-            ReturnTypes.DATE,
-            DingoInferTypes.DATE_LONG,
-            family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
-            SqlFunctionCategory.NUMERIC
+            MySQLStandardTypeInference.DATE_ADD_INTERVAL,
+            InferTypes.FIRST_KNOWN,
+            OperandTypes.ANY_ANY,
+            SqlFunctionCategory.TIMEDATE
+        );
+        registerFunction(
+            DateSubFun.NAME,
+            MySQLStandardTypeInference.DATE_ADD_INTERVAL,
+            InferTypes.FIRST_KNOWN,
+            OperandTypes.ANY_ANY,
+            SqlFunctionCategory.TIMEDATE
         );
         registerFunction(
             ThrowFun.NAME,

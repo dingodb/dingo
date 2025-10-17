@@ -46,13 +46,14 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
 
-public class DateAddFun extends BinaryOp {
+public class DateSubFun extends BinaryOp {
+
     @Serial
-    private static final long serialVersionUID = -1914862455684545159L;
+    private static final long serialVersionUID = 7812448436186646785L;
 
-    public static final DateAddFun INSTANCE = new DateAddFun();
+    public static final DateSubFun INSTANCE = new DateSubFun();
 
-    public static final String NAME = "DATE_ADD";
+    public static final String NAME = "DATE_SUB";
 
     @Override
     public OpKey keyOf(@NonNull Type type0, @NonNull Type type1) {
@@ -137,6 +138,7 @@ public class DateAddFun extends BinaryOp {
         if (value0 == null) {
             return null;
         }
+        amount = Math.negateExact(amount);
         if (value0 instanceof Date) {
             Date date = (Date) value0;
             LocalDate l;

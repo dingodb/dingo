@@ -22,13 +22,17 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.util.MySQLIntervalType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class MySQLStandardTypeInference {
@@ -138,6 +142,78 @@ public class MySQLStandardTypeInference {
             return returnTypeOfControlFlowFunction(nullList, argTypesNotNull, callBinding);
         }
     };
+
+    public static final SqlReturnTypeInference DATE_ADD_INTERVAL = new SqlReturnTypeInference() {
+        @Override
+        public @Nullable RelDataType inferReturnType(SqlOperatorBinding opBinding) {
+            final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
+            RelDataType operandType = opBinding.getOperandType(0);
+            MySQLIntervalType intervalType;
+            SqlCall call;
+            SqlLiteral literal;
+            int intervalDecimal = 6;
+            if (!(opBinding instanceof SqlCallBinding)
+                && opBinding.getOperandType(1) instanceof IntervalSqlType) {
+                IntervalSqlType intervalSqlType = (IntervalSqlType) opBinding.getOperandType(1);
+                intervalType = MySQLIntervalType.of(intervalSqlType.getIntervalQualifier().timeUnitRange.name());
+
+            } else if (opBinding instanceof SqlCallBinding
+                && (call = ((SqlCallBinding) opBinding).getCall()).getOperandList().get(1) instanceof SqlLiteral
+                && ((SqlLiteral) call.getOperandList().get(1)).getTypeName().getName().startsWith("INTERVAL_")) {
+                literal = (SqlLiteral) call.getOperandList().get(1);
+                String interval = literal.getTypeName().getName();
+                intervalType = MySQLIntervalType.of(interval);
+            } else {
+                intervalType = MySQLIntervalType.INTERVAL_DAY;
+            }
+
+            if (isDatetimeOrTimestamp(operandType)) {
+                int scale = Math.max(operandType.getScale(), intervalDecimal);
+                return typeFactory.createSqlType(
+                    SqlTypeName.TIMESTAMP,
+                    typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIMESTAMP),
+                    scale
+                );
+            } else if (SqlTypeUtil.isDate(operandType) ||
+                (SqlTypeUtil.isString(operandType) && intervalType != MySQLIntervalType.INTERVAL_DAY)) {
+                if (intervalType == MySQLIntervalType.INTERVAL_DAY
+                    || intervalType == MySQLIntervalType.INTERVAL_MONTH
+                    || intervalType == MySQLIntervalType.INTERVAL_YEAR
+                    || intervalType == MySQLIntervalType.INTERVAL_QUARTER
+                    || intervalType == MySQLIntervalType.INTERVAL_WEEK) {
+                    // to date
+                    return typeFactory.createSqlType(
+                        SqlTypeName.DATE
+                    );
+                } else {
+                    return typeFactory.createSqlType(
+                        SqlTypeName.TIMESTAMP,
+                        typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIMESTAMP),
+                        intervalDecimal
+                    );
+                }
+            } else if (SqlTypeUtil.isTime(operandType)) {
+                int scale = Math.max(operandType.getScale(), intervalDecimal);
+                return typeFactory.createSqlType(
+                    SqlTypeName.TIME,
+                    typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIME),
+                    scale
+                );
+            } else {
+                return typeFactory.createSqlType(SqlTypeName.VARCHAR);
+            }
+        }
+    };
+
+    private static boolean isDatetimeOrTimestamp(RelDataType operandType) {
+        return Optional.ofNullable(operandType)
+            .map(RelDataType::getSqlTypeName)
+            .map(
+                t -> t == SqlTypeName.TIMESTAMP
+                    || t == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE
+            )
+            .orElse(false);
+    }
 
     private static RelDataType returnTypeOfControlFlowFunction(ArrayList<SqlNode> nullList, List<RelDataType> argTypesNotNull, SqlCallBinding callBinding) {
         RelDataType returnType;
