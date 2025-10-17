@@ -447,7 +447,8 @@ public final class DingoTableModifyVisitFun {
                                     .collect(Collectors.toList()),
                                 td,
                                 rel.isHasAutoIncrement(),
-                                rel.getAutoIncrementColIndex()
+                                rel.getAutoIncrementColIndex(),
+                                rel.getRelOp()
                             )
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
