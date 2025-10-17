@@ -187,76 +187,6 @@ public final class JobTableUtil {
         return Pair.of(ddlJobList, null);
     }
 
-    public static Pair<DdlJob, String> getJob(
-        Session session, int jobType, Function<DdlJob, Pair<Boolean, String>> filter
-    ) {
-        String not = "not";
-        if (jobType == 1) {
-            not = "";
-        }
-        String sql = convertSql(String.format(getJobSQL, not, DdlContext.INSTANCE.excludeJobIDs()));
-        try {
-            long start = System.currentTimeMillis();
-            List<Object[]> resList = session.executeQuery(sql);
-            long cost = System.currentTimeMillis() - start;
-
-            if (!resList.isEmpty()) {
-                DingoMetrics.metricRegistry.timer("getJobSql").update(cost, TimeUnit.MILLISECONDS);
-            }
-            if (cost > 200) {
-                LogUtils.info(log, "get job size:{}", resList.size()
-                    + ", runningJobs:" + DdlContext.INSTANCE.getRunningJobs().size()
-                    + ", query job sql cost:" + cost);
-            }
-            for (Object[] rows : resList) {
-                byte[] bytes = (byte[]) rows[0];
-                DdlJob ddlJob;
-                try {
-                    ddlJob = objectMapper.readValue(bytes, DdlJob.class);
-                } catch (Exception e) {
-                    LogUtils.error(log, e.getMessage(), e);
-                    return Pair.of(null, e.getMessage());
-                }
-                boolean processing = Boolean.parseBoolean(rows[1].toString());
-                if (processing) {
-                    if (DdlContext.INSTANCE.getRunningJobs().containJobId(ddlJob.getId())) {
-                        //LogUtils.info(log, "get job process check has running,jobId:{}", ddlJob.getId());
-                        continue;
-                    } else {
-                        //LogUtils.info(log, "get job processing true, jobId:{}", ddlJob.getId());
-                        return Pair.of(ddlJob, null);
-                    }
-                }
-                Pair<Boolean, String> res = filter.apply(ddlJob);
-                if (res.getValue() != null) {
-                    return Pair.of(null, res.getValue());
-                }
-                if (res.getKey()) {
-                    if (markJobProcessing(session, ddlJob) != null) {
-                        return Pair.of(null, null);
-                    }
-                    return Pair.of(ddlJob, null);
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return Pair.of(null, null);
-    }
-
-    public static String markJobProcessing(Session session, DdlJob job) {
-        Session session1 = SessionUtil.INSTANCE.getSession();
-        try {
-            Timer.Context timeCtx = DingoMetrics.getTimeContext("markJobProcessing");
-            String sql = "update mysql.dingo_ddl_job set processing = true where job_id = " + job.getId();
-            String res = markJobProcessing(session1, convertSql(sql), 3);
-            timeCtx.stop();
-            return res;
-        } finally {
-            SessionUtil.INSTANCE.closeSession(session1);
-        }
-    }
-
     public static String markJobProcessing(Session session, String sql, int retry) {
         try {
             return session.executeUpdate(sql);
@@ -308,6 +238,21 @@ public final class JobTableUtil {
         }
         LogUtils.info(log, "gcDeleteDone, regionId:{}, jobId:{}", regionId, jobId);
         return true;
+    }
+
+    public static void recoverGcDeleteSchema(long schemaId) {
+        Session session = SessionUtil.INSTANCE.getSession();
+        try {
+            String removeSql = "delete from mysql.gc_delete_range where " +
+                "element_type='SCHEMA' and element_id='" + schemaId + "'";
+            session.executeUpdate(convertSql(removeSql));
+            session.commit();
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+            session.rollback();
+        } finally {
+            SessionUtil.INSTANCE.closeSession(session);
+        }
     }
 
     public static void insertGcDeleteRange(
