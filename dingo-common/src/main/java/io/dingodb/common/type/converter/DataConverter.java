@@ -188,6 +188,8 @@ public interface DataConverter {
             val = buffer.getLong();
         } else if( value instanceof Long) {
             val = (Long) value;
+        } else if( value instanceof BigDecimal) {
+            val = ((BigDecimal)(value)).longValue();
         } else {
             throw new IllegalArgumentException("Unsupported value type for bit: " + value.getClass().getName());
         }
