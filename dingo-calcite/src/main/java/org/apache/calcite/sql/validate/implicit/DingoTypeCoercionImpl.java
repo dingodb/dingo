@@ -205,6 +205,7 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
     }
 
     public static EnumMap<SqlTypeFamily, DingoSqlTypeFamily> faimily2DingoFaimily = new EnumMap<>(SqlTypeFamily.class);
+
     static {
         faimily2DingoFaimily.put(SqlTypeFamily.CHARACTER, DingoSqlTypeFamily.CHARACTER);
         faimily2DingoFaimily.put(SqlTypeFamily.BINARY, DingoSqlTypeFamily.BINARY);
@@ -238,9 +239,8 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         SqlCallBinding binding,
         List<RelDataType> operandTypes,
         List<SqlTypeFamily> expectedFamilies) {
-
         List<DingoSqlTypeFamily> newExpectedFamilies = new ArrayList<>();
-        for(SqlTypeFamily expectedFamily : expectedFamilies) {
+        for (SqlTypeFamily expectedFamily : expectedFamilies) {
             newExpectedFamilies.add(DingoTypeCoercionImpl.faimily2DingoFaimily.get(expectedFamily));
         }
 
@@ -252,8 +252,10 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         for (int i = 0; i < operandTypes.size(); i++) {
             RelDataType implicitType = myImplicitCast(operandTypes.get(i), newExpectedFamilies.get(i));
 
-            if(binding.getCall().getOperator() instanceof SqlAggFunction) {
-                RelDataType wrapperedAggArgType = getAggregateResultType((SqlAggFunction)binding.getCall().getOperator(), operandTypes.get(i));
+            if (binding.getCall().getOperator() instanceof SqlAggFunction) {
+                RelDataType wrapperedAggArgType = getAggregateResultType(
+                    (SqlAggFunction)binding.getCall().getOperator(), operandTypes.get(i)
+                );
                 implicitType = wrapperedAggArgType == null ? implicitType : wrapperedAggArgType;
             }
 
@@ -273,15 +275,15 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         boolean coerced = false;
 
         if (binding.getOperator().getKind() == SqlKind.DIVIDE) {
-            if ((SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isTinyint(right)) ||
-                (SqlTypeUtil.isInt(left) && SqlTypeUtil.isInt(right)) ||
-                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isBigint(right)) ||
-                (SqlTypeUtil.isInt(left) && SqlTypeUtil.isBigint(right)) ||
-                (SqlTypeUtil.isInt(left) && SqlTypeUtil.isTinyint(right)) ||
-                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isInt(right)) ||
-                (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isTinyint(right)) ||
-                (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isInt(right)) ||
-                (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isBigint(right))) {
+            if ((SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isTinyint(right))
+                || (SqlTypeUtil.isInt(left) && SqlTypeUtil.isInt(right))
+                || (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isBigint(right))
+                || (SqlTypeUtil.isInt(left) && SqlTypeUtil.isBigint(right))
+                || (SqlTypeUtil.isInt(left) && SqlTypeUtil.isTinyint(right))
+                || (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isInt(right))
+                || (SqlTypeUtil.isBigint(left) && SqlTypeUtil.isTinyint(right))
+                || (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isInt(right))
+                || (SqlTypeUtil.isTinyint(left) && SqlTypeUtil.isBigint(right))) {
                 RelDataType target = factory.createSqlType(SqlTypeName.DECIMAL);
 
                 if (left.getSqlTypeName() != target.getSqlTypeName()) {
@@ -294,27 +296,27 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
             }
         }
 
-        if(SqlTypeUtil.isFloat(left) && SqlTypeUtil.isDouble(right)) {
+        if (SqlTypeUtil.isFloat(left) && SqlTypeUtil.isDouble(right)) {
             return coerceOperandType(binding.getScope(), binding.getCall(), 0,
                 DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));
-        } else if(SqlTypeUtil.isInt(left) && SqlTypeUtil.isBigint(right)) {
+        } else if (SqlTypeUtil.isInt(left) && SqlTypeUtil.isBigint(right)) {
             return coerceOperandType(binding.getScope(), binding.getCall(), 0,
                 DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));
-        } else if(SqlTypeUtil.isInt(right) && SqlTypeUtil.isBigint(left)) {
+        } else if (SqlTypeUtil.isInt(right) && SqlTypeUtil.isBigint(left)) {
             return coerceOperandType(binding.getScope(), binding.getCall(), 1,
                 DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));
-        } else if((SqlTypeUtil.isInt(left) || SqlTypeUtil.isBigint(left))
+        } else if ((SqlTypeUtil.isInt(left) || SqlTypeUtil.isBigint(left))
             && (SqlTypeUtil.isFloat(right) || (SqlTypeUtil.isDouble(right)))) {
             RelDataType target  = DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory);
 
             if (left.getSqlTypeName() != target.getSqlTypeName()) {
                 coerced = coerceOperandType(binding.getScope(), binding.getCall(), 0, target);
             }
-            if(right.getSqlTypeName() != target.getSqlTypeName()) {
+            if (right.getSqlTypeName() != target.getSqlTypeName()) {
                 coerced = coerced || coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
             }
             return coerced;
-        } else if((SqlTypeUtil.isInt(right) || SqlTypeUtil.isBigint(right))
+        } else if ((SqlTypeUtil.isInt(right) || SqlTypeUtil.isBigint(right))
             && (SqlTypeUtil.isFloat(left) || (SqlTypeUtil.isDouble(left)))) {
             RelDataType target  = DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory);
 

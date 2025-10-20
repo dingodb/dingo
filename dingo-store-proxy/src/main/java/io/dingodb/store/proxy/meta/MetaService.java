@@ -148,7 +148,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     public final DingoCommonId id;
     public final String name;
-    public static final io.dingodb.sdk.service.MetaService service = Services.metaService(Configuration.coordinatorSet());
+    public static final io.dingodb.sdk.service.MetaService service
+        = Services.metaService(Configuration.coordinatorSet());
     public final TsoService tsoService = TsoService.getDefault();
     public static MetaCache cache = new MetaCache(Configuration.coordinatorSet());
     public MetaCacheSnapShot cacheSnapShot;
@@ -771,8 +772,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
             metaService.getRangeDistribution(table.tableId).values().forEach(rangeDistribution -> {
                 try {
                     if (rangeDistribution.getId().seq < 80016) {
-                        LogUtils.error(log, "rollbackCreate table drop region, but get meta region. id:{}, " +
-                            "tableId:{}, tableName:{}", rangeDistribution.getId(), table.getTableId(), table.getName());
+                        LogUtils.error(log, "rollbackCreate table drop region, but get meta region. id:{}, "
+                            + "tableId:{}, tableName:{}", rangeDistribution.getId(),
+                            table.getTableId(), table.getName());
                     }
                     coordinatorService.dropRegion(
                         tso(), DropRegionRequest.builder().regionId(rangeDistribution.id().seq).build()
@@ -792,9 +794,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
                     .forEach(rangeDistribution -> {
                         try {
                             if (rangeDistribution.getId().seq < 80016) {
-                                LogUtils.error(log, "rollbackCreate table index drop region, " +
-                                    "but get meta region. id:{}, " +
-                                    "tableId:{}, tableName:{}, indexId:{},indexName:{}", rangeDistribution.getId(),
+                                LogUtils.error(log, "rollbackCreate table index drop region, "
+                                    + "but get meta region. id:{}, "
+                                    + "tableId:{}, tableName:{}, indexId:{},indexName:{}", rangeDistribution.getId(),
                                     table.getTableId(), table.getName(), index.getTableId(), index.getName());
                             }
                             coordinatorService.dropRegion(
@@ -939,6 +941,7 @@ public class MetaService implements io.dingodb.meta.MetaService {
         Table table = DdlService.root().getTable(index);
         return table != null && ((IndexTable)table).getIndexType() == io.dingodb.meta.entity.IndexType.VECTOR_DISKANN;
     }
+
     @Override
     public Map<CommonId, TableDefinition> getTableIndexDefinitions(@NonNull CommonId id) {
         return infoSchemaService.listIndex(id.domain, id.seq)

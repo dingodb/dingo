@@ -170,7 +170,8 @@ public final class PrepareMeta {
 
         long dingoSchemaId = infoSchemaService.genSchemaId();
         infoSchemaService.createSchema(dingoSchemaId,
-            SchemaInfo.builder().schemaId(dingoSchemaId).name(DINGO_SCHEMA).schemaState(SchemaState.SCHEMA_PUBLIC).build()
+            SchemaInfo.builder().schemaId(dingoSchemaId).name(DINGO_SCHEMA)
+                .schemaState(SchemaState.SCHEMA_PUBLIC).build()
         );
         LogUtils.info(log, "create schema done");
     }
@@ -223,7 +224,8 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("PLUGINS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("KEYWORDS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
-        initTableByTemplate(schemaName, convertName("REFERENTIAL_CONSTRAINTS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("REFERENTIAL_CONSTRAINTS", CASE_NAMES),
+            SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
 
@@ -239,7 +241,8 @@ public final class PrepareMeta {
     public static List<Object[]> getGlobalVariablesList() {
         List<Object[]> values = new ArrayList<>();
         String name = System.getProperty("os.name").toLowerCase();
-        values.add(new Object[]{"version_comment", "DingoDB Server (Apache License 2.0) Community Edition, MySQL 8.0 compatible"});
+        values.add(new Object[]{"version_comment",
+            "DingoDB Server (Apache License 2.0) Community Edition, MySQL 8.0 compatible"});
         values.add(new Object[]{"wait_timeout", "28800"});
         values.add(new Object[]{"interactive_timeout", "28800"});
         values.add(new Object[]{"max_allowed_packet", "67108864"});
@@ -312,7 +315,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"async_commit_sleep_time", String.valueOf(5000)});
         values.add(new Object[]{"enable_document_scan_filter", "on"});
         values.add(new Object[]{"job_need_gc", "on"});
-        values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1" : name.indexOf("mac") >= 0 ? "2" : "0"});
+        values.add(new Object[]{"lower_case_table_names", name.indexOf("win") >= 0 ? "1"
+            : name.indexOf("mac") >= 0 ? "2" : "0"});
         values.add(new Object[]{"automatic_sp_privileges", "1"});
         values.add(new Object[]{"log_bin_trust_function_creators", "TRUE"});
         values.add(new Object[]{"innodb_online_alter_log_max_size", "134217728"});

@@ -329,9 +329,10 @@ public class TransactionStoreInstance {
                     joinedKey.set(joinPrimaryKeys(joinedKey.get(), joinPrimaryKey(keyValues, keyMapping)))
                 )
         );
-        DuplicateEntryException duplicateEntryException = new DuplicateEntryException("Duplicate entry " + joinedKey.get()
+        DuplicateEntryException duplicateEntryException = new DuplicateEntryException("Duplicate entry "
+            + joinedKey.get()
             + " for key '" + table.getName() + ".PRIMARY'");
-        duplicateEntryException.keys= keysAlreadyExist.stream().map(AlreadyExist::getKey).collect(Collectors.toList());
+        duplicateEntryException.keys = keysAlreadyExist.stream().map(AlreadyExist::getKey).collect(Collectors.toList());
         throw duplicateEntryException;
     }
 
@@ -555,20 +556,6 @@ public class TransactionStoreInstance {
         return txnScan(ts, range, timeOut, null);
     }
 
-    public Pair<Iterator<io.dingodb.common.store.KeyValue>, RpcProfile> txnScanWithProfile(
-        long ts, StoreInstance.Range range, long timeOut
-    ) {
-        return txnScanWithProfile(ts, range, timeOut, null);
-    }
-
-    public Iterator<io.dingodb.common.store.KeyValue> documentScanFilter(
-        long ts,
-        DocumentSearchParameter documentSearchParameter,
-        long timeout
-    ) {
-        return getDocumentScanFilterStreamIterator(ts, documentSearchParameter, timeout);
-    }
-
     public Iterator<io.dingodb.common.store.KeyValue> txnScan(
         long ts,
         StoreInstance.Range range,
@@ -616,6 +603,20 @@ public class TransactionStoreInstance {
                 new IteratorProxy(scanIterator)
             ), new RpcProfile(scanIterator.initRpcProfile, scanIterator.rpcProfile));
         }
+    }
+
+    public Pair<Iterator<io.dingodb.common.store.KeyValue>, RpcProfile> txnScanWithProfile(
+        long ts, StoreInstance.Range range, long timeOut
+    ) {
+        return txnScanWithProfile(ts, range, timeOut, null);
+    }
+
+    public Iterator<io.dingodb.common.store.KeyValue> documentScanFilter(
+        long ts,
+        DocumentSearchParameter documentSearchParameter,
+        long timeout
+    ) {
+        return getDocumentScanFilterStreamIterator(ts, documentSearchParameter, timeout);
     }
 
     public Iterator<io.dingodb.common.store.KeyValue> txnScanWithoutStream(
@@ -725,8 +726,7 @@ public class TransactionStoreInstance {
                     if (e.getErrorCode() == 130003) {
                         LogUtils.error(log, "ETXN_MEMORY_LOCK_CONFLICT, Error:" + e.getMessage(), e);
                         if (timeOut < 0) {
-                            throw new RuntimeException("startTs:" + startTs + " txnBatchGet error:" +
-                                e);
+                            throw new RuntimeException("startTs:" + startTs + " txnBatchGet error:" + e);
                         }
                         try {
                             long lockTtl = TxnVariables.WaitFixTime;
@@ -875,9 +875,8 @@ public class TransactionStoreInstance {
         if (resultInfo == null) {
             long lockTtl = statusResponse.getLockTtl();
             long commitTs = statusResponse.getCommitTs();
-            if (statusResponse.getLockInfo() != null &&
-                statusResponse.getLockInfo().isUseAsyncCommit() &&
-                !forceSyncCommit) {
+            if (statusResponse.getLockInfo() != null && statusResponse.getLockInfo().isUseAsyncCommit()
+                && !forceSyncCommit) {
                 if (lockTtl > 0 && !TsoService.INSTANCE.IsExpired(lockTtl)) {
                     LogUtils.info(log, "startTs:{}, lockTs:{} useAsyncCommit lockTtl not IsExpired, lockTtl:{}",
                         startTs, lockInfo.getLockTs(), lockTtl);
@@ -979,8 +978,8 @@ public class TransactionStoreInstance {
                 if (lockInfo.isUseAsyncCommit() && !forceSyncCommit) {
                     long lockTtl = lockInfo.getLockTtl();
                     if (lockTtl > 0 && !TsoService.INSTANCE.IsExpired(lockTtl)) {
-                        LogUtils.info(log, "startTs:{}, lockTs:{} useAsyncCommit lockTtl not IsExpired, " +
-                                "lockTtl:{}", startTs, lockInfo.getLockTs(), lockTtl);
+                        LogUtils.info(log, "startTs:{}, lockTs:{} useAsyncCommit lockTtl not IsExpired, "
+                            + "lockTtl:{}", startTs, lockInfo.getLockTs(), lockTtl);
                         if (lockInfo.getMinCommitTs() >= startTs && forRead) {
                             resolvedLocks.add(lockInfo.getLockTs());
                         }
@@ -1022,8 +1021,8 @@ public class TransactionStoreInstance {
                     }
                 }
                 // success
-                if (forRead && statusResponse.getAction() == Action.MinCommitTSPushed &&
-                    statusResponse.getLockTtl() > 0) {
+                if (forRead && statusResponse.getAction() == Action.MinCommitTSPushed
+                    && statusResponse.getLockTtl() > 0) {
                     resolvedLocks.add(lockInfo.getLockTs());
                     return ResolveLockStatus.MIN_COMMIT_TS_PUSHED;
                 }
@@ -1306,7 +1305,9 @@ public class TransactionStoreInstance {
                     hasMore = txnScanResponse.isHasMore();
                     if (hasMore) {
                         withStart = false;
-                        current = new StoreInstance.Range(txnScanResponse.getEndKey(), range.end, withStart, range.withEnd);
+                        current = new StoreInstance.Range(
+                            txnScanResponse.getEndKey(), range.end, withStart, range.withEnd
+                        );
                     }
                     break;
                 } catch (RequestErrorException e) {
@@ -1617,7 +1618,7 @@ public class TransactionStoreInstance {
             boolean closeStream = false;
 
             DocumentSearchAllRequest documentSearchAllRequest = DocumentSearchAllRequest.builder().parameter(
-               MAPPER.documentSearchParamTo(documentSearchParameter)
+                MAPPER.documentSearchParamTo(documentSearchParameter)
             ).build();
 
             if (documentSearchAllRequest.getStreamMeta() == null) {

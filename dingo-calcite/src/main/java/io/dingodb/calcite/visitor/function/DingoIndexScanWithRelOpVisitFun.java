@@ -121,7 +121,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                     scanVertexCreator
                 ));
             } else {
-                if (!Utils.parallel(rel.getKeepSerialOrder())) {
+                if (rel.getRangeDistribution() != null || !Utils.parallel(rel.getKeepSerialOrder())) {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
