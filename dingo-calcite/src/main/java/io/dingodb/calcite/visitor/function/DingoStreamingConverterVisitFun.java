@@ -133,7 +133,8 @@ public final class DingoStreamingConverterVisitFun {
         }
         if (dstPartitions.size() < media.getPartitions().size()) {
             assert dstDistribution == null && dstPartitions.isEmpty() || dstPartitions.size() == 1;
-            if (dstDistribution instanceof DingoRelPartitionByIndex && ((DingoRelPartitionByIndex) dstDistribution).getTargetTableList().size() > 1) {
+            if (dstDistribution instanceof DingoRelPartitionByIndex && ((DingoRelPartitionByIndex) dstDistribution)
+                .getTargetTableList().stream().distinct().toList().size() > 1) {
                 return outputs;
             }
             outputs = DingoCoalesce.coalesce(idGenerator, outputs, dstPartitions, media.getPartitions());
