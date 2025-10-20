@@ -48,7 +48,9 @@ import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
 public final class ResolveLockUtil {
-    private ResolveLockUtil() {}
+    private ResolveLockUtil() {
+
+    }
 
     public static TxnCheckTxnStatusResponse txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
         long start = System.currentTimeMillis();
@@ -152,16 +154,16 @@ public final class ResolveLockUtil {
             if (!asyncResolveData.isMissingLock()) {
                 // commitTS == 0 => lock has been rolled back.
                 if (asyncCommitTs != 0 && asyncCommitTs < asyncResolveData.getCommitTs()) {
-                    throw new RuntimeException("commit TS must be greater or equal to " +
-                        "min commit TS: commit ts: " + asyncCommitTs +
-                        ", min commit ts: " + asyncResolveData.getCommitTs());
+                    throw new RuntimeException("commit TS must be greater or equal to "
+                        + "min commit TS: commit ts: " + asyncCommitTs
+                        + ", min commit ts: " + asyncResolveData.getCommitTs());
                 }
                 asyncResolveData.setCommitTs(asyncCommitTs);
             }
             asyncResolveData.setMissingLock(true);
             if (asyncResolveData.getCommitTs() != asyncCommitTs) {
-                throw new RuntimeException("commit TS mismatch in async commit recovery:" +
-                    asyncResolveData.getCommitTs() + " and " + asyncCommitTs);
+                throw new RuntimeException("commit TS mismatch in async commit recovery:"
+                    + asyncResolveData.getCommitTs() + " and " + asyncCommitTs);
             }
             // We do not need to resolve the remaining locks because Store will have resolved them as appropriate.
             return;
@@ -169,17 +171,16 @@ public final class ResolveLockUtil {
         // Save all locks to be resolved.
         for (LockInfo asyncLockInfo: locks) {
             if (asyncLockInfo.getLockTs() != lockInfo.getLockTs()) {
-                throw new RuntimeException("unexpected timestamp, expected:" +
-                    lockInfo.getLockTs() + ", found: " +
-                    asyncLockInfo.getLockTs());
+                throw new RuntimeException("unexpected timestamp, expected:"
+                    + lockInfo.getLockTs() + ", found: "
+                    + asyncLockInfo.getLockTs());
             }
             if (!asyncLockInfo.isUseAsyncCommit()) {
                 // nonAsyncCommitLock error
                 LogUtils.info(log, "startTs: {}, asyncResolveLock nonAsyncCommitLock", startTs);
                 throw new NonAsyncCommitLockException(startTs + " asyncResolveLock nonAsyncCommitLock error");
             }
-            if (!asyncResolveData.isMissingLock() &&
-                asyncLockInfo.getMinCommitTs() > asyncResolveData.getCommitTs()) {
+            if (!asyncResolveData.isMissingLock() && asyncLockInfo.getMinCommitTs() > asyncResolveData.getCommitTs()) {
                 asyncResolveData.setCommitTs(asyncLockInfo.getMinCommitTs());
             }
             asyncResolveData.getKeys().add(lockInfo.getKey());

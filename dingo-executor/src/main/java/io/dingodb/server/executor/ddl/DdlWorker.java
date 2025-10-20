@@ -1266,7 +1266,7 @@ public class DdlWorker {
                 builder.sequence(ddlJob.getSequence());
             }
             SchemaDiff schemaDiff = builder.build();
-                switch (ddlJob.getActionType()) {
+            switch (ddlJob.getActionType()) {
                 case ActionTruncateTable:
                     String err = ddlJob.decodeArgs();
                     if (err != null) {
@@ -1660,7 +1660,8 @@ public class DdlWorker {
                     List<String> originKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginKeys();
                     handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originKeys);
                     indexWithId.getTableDefinition().getIndexParameter().setOriginKeys(originKeys);
-                    List<String> originWithKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginWithKeys();
+                    List<String> originWithKeys = indexWithId.getTableDefinition()
+                        .getIndexParameter().getOriginWithKeys();
                     handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originWithKeys);
                     indexWithId.getTableDefinition().getIndexParameter().setOriginWithKeys(originWithKeys);
                 }
@@ -1707,7 +1708,8 @@ public class DdlWorker {
                     job.setState(JobState.jobStateCancelled);
                     return Pair.of(0L, job.getDingoErr().errorMsg);
                 }
-                io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition = definitionWithId.getTableDefinition();
+                io.dingodb.sdk.service.entity.meta.TableDefinition tableDefinition
+                    = definitionWithId.getTableDefinition();
                 List<ColumnDefinition> columnDefinitionList = definitionWithId.getTableDefinition().getColumns();
                 definitionWithId.getTableDefinition().setSchemaState(SCHEMA_DELETE_ONLY);
                 modifyColumnInfo.getNewCol().setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
@@ -1777,11 +1779,17 @@ public class DdlWorker {
                         indexWithId.getTableDefinition().getColumns().set(idx.get(), columnDefinition1);
                         indexWithId.getTableDefinition().setName(DdlUtil.ddlTmpIndexName + "_" + originIndexName);
                         if (indexWithId.getTableDefinition().getIndexParameter() != null) {
-                            List<String> originKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginKeys();
-                            handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originKeys);
+                            List<String> originKeys = indexWithId.getTableDefinition().getIndexParameter()
+                                .getOriginKeys();
+                            handleModifyIndexKey(
+                                modifyColumnInfo.getOldColName(), columnDefinition.getName(), originKeys
+                            );
                             indexWithId.getTableDefinition().getIndexParameter().setOriginKeys(originKeys);
-                            List<String> originWithKeys = indexWithId.getTableDefinition().getIndexParameter().getOriginWithKeys();
-                            handleModifyIndexKey(modifyColumnInfo.getOldColName(), columnDefinition.getName(), originWithKeys);
+                            List<String> originWithKeys = indexWithId.getTableDefinition().getIndexParameter()
+                                .getOriginWithKeys();
+                            handleModifyIndexKey(
+                                modifyColumnInfo.getOldColName(), columnDefinition.getName(), originWithKeys
+                            );
                             indexWithId.getTableDefinition().getIndexParameter().setOriginWithKeys(originWithKeys);
                         }
                         if (indexWithId.getTableDefinition().getProperties() == null) {
@@ -1968,7 +1976,8 @@ public class DdlWorker {
                     if (schemaInfoTmp != null) {
                         SchemaInfo schemaInfoTmp1 = (SchemaInfo) schemaInfoTmp;
                         if (schemaInfoTmp1.getSchemaState() == SchemaState.SCHEMA_PUBLIC) {
-                            String errFormat = "Schema '%s' already been recover to '%s', can not be recover repeatedly";
+                            String errFormat = "Schema '%s' already been recover to '%s', "
+                                + "can not be recover repeatedly";
                             String newSchemaNm = schemaInfoTmp1.getName();
                             String errMsg = String.format(errFormat, recoverInfo.getOldSchemaName(), newSchemaNm);
                             DingoErr dingoErr = DingoErrUtil.newInternalErr(errMsg);
@@ -2333,7 +2342,9 @@ public class DdlWorker {
                 partitionList.remove(matchPart);
 
                 // rebase region
-                MetaService.root().rebaseRegion(tableWithId, nextPart, nextPart.getRange().getStartKey(), originNextPartStartKey);
+                MetaService.root().rebaseRegion(
+                    tableWithId, nextPart, nextPart.getRange().getStartKey(), originNextPartStartKey
+                );
 
                 tableWithId.getTableDefinition().getTablePartition().setPartitions(partitionList);
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
@@ -2517,7 +2528,8 @@ public class DdlWorker {
             CreateRegionRequest request = CreateRegionRequest.builder()
                 .regionName("I_" + job.getSchemaId() + "_" + definition.getName() + "_part_"
                     + partition.getId().getEntityId())
-                .regionType(definition.getIndexParameter().getIndexType() == io.dingodb.sdk.service.entity.common.IndexType.INDEX_TYPE_SCALAR
+                .regionType(definition.getIndexParameter().getIndexType()
+                    == io.dingodb.sdk.service.entity.common.IndexType.INDEX_TYPE_SCALAR
                     ? RegionType.STORE_REGION : RegionType.INDEX_REGION)
                 .replicaNum(indexWithId.getTableDefinition().getReplica())
                 .range(partition.getRange())

@@ -73,10 +73,6 @@ public final class MetaLockCheckHandler {
             if (maxVer > saveMaxSchemaVersion) {
                 saveMaxSchemaVersion = maxVer;
             } else if (!jobNeedToSync) {
-                if (DdlUtil.timeOutError.get()) {
-                    LogUtils.info(log, "[ddl] mdl check not need to sync,max ver:{} saveMaxSchema ver:{}",
-                        maxVer, saveMaxSchemaVersion);
-                }
                 DingoMetrics.counter("jobNeedToSync").inc();
             }
             int jobNeedToCheckCnt = mdlCheckTableInfo.getJobsVerMap().size();
@@ -102,11 +98,6 @@ public final class MetaLockCheckHandler {
             }
             if (jobCache.size() > 1000) {
                 jobCache = new HashMap<>();
-            }
-            if (DdlUtil.timeOutError.get()) {
-                LogUtils.info(log, "[ddl] mdl check jobs id map size:{}, "
-                    + "jobs ver map size:{}, jobNeedToSync:{}", jobsIdsMap.size(),
-                    jobsVerMap.size(), jobNeedToSync);
             }
 
             if (jobsVerMap.isEmpty()) {

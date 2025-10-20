@@ -42,31 +42,36 @@ public class SqlDiskAnnOperator extends SqlFunction implements SqlTableFunction 
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DISK_ANN_BUILD,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator()
+                    .getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DISK_ANN_LOAD,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator()
+                    .getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DISK_ANN_STATUS,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator()
+                    .getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DISK_ANN_RESET,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator()
+                    .getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
         StandardConvertletTable.INSTANCE.registerOp(SqlUserDefinedOperators.DISK_ANN_COUNT_MEMORY,
             (cx, call) -> {
                 RexBuilder rexBuilder = cx.getRexBuilder();
-                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator().getNamespace(call);
+                TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) cx.getValidator()
+                    .getNamespace(call);
                 return  rexBuilder.makeCall(namespace.getRowType(), call.getOperator(), Collections.EMPTY_LIST);
             });
     }
