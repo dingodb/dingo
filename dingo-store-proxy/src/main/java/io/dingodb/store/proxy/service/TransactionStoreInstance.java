@@ -318,7 +318,9 @@ public class TransactionStoreInstance {
         CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
             TransactionManager.getServerId().seq, txnPreWrite.getStartTs());
         Table table = (Table) TransactionManager.getTable(txnId, tableId);
-        assert table != null;
+        if (table == null) {
+            throw new DuplicateEntryException("Duplicate entry for meta key ");
+        }
         KeyValueCodec codec = CodecService.getDefault()
             .createKeyValueCodec(table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         AtomicReference<String> joinedKey = new AtomicReference<>("");

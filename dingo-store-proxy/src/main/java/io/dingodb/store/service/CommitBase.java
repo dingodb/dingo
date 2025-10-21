@@ -23,6 +23,8 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
+import io.dingodb.exec.transaction.base.TransactionType;
+import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.meta.MetaService;
 import io.dingodb.partition.DingoPartitionServiceProvider;
 import io.dingodb.partition.PartitionService;
@@ -142,6 +144,9 @@ public abstract class CommitBase {
             .lockTtl(lockTtl)
             .txnSize(1L)
             .tryOnePc(enableOnePc)
+            .lockExtraDatas(TransactionUtil.toLockExtraDataList(CommonId.EMPTY_TABLE, partId,
+                CommonId.EMPTY_TRANSACTION,
+                TransactionType.OPTIMISTIC.getCode(), 1))
             .maxCommitTs(0L)
             .build();
         try {

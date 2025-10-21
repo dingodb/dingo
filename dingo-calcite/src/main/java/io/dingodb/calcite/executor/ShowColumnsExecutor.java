@@ -26,6 +26,7 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Table;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -126,8 +127,12 @@ public class ShowColumnsExecutor extends QueryExecutor {
             }
             columnValues.add(key);
             String defaultValExpr;
-            if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName()) || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
-                defaultValExpr = Utils.unicodeToChinese(column.defaultValueExpr);
+            if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName())
+                || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
+                defaultValExpr = Utils.decodePostgresUnicode(column.defaultValueExpr);
+                if (defaultValExpr != null && defaultValExpr.startsWith("'") && defaultValExpr.endsWith("'")) {
+                    defaultValExpr = SqlParserUtil.trim(defaultValExpr, "'");
+                }
             } else {
                 defaultValExpr = column.defaultValueExpr;
             }

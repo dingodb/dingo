@@ -882,8 +882,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
             })
             .peek(td -> td.getTableDefinition().setName(tableName + "." + td.getTableDefinition().getName()))
             .findAny().get();
-        createIndexRegion(indexWithId, tableId, directReplica);
         io.dingodb.meta.InfoSchemaService.root().createIndex(tableId.domain, tableId.seq, indexWithId);
+        createIndexRegion(indexWithId, tableId, directReplica);
     }
 
     @Override
