@@ -60,6 +60,7 @@ import io.dingodb.sdk.service.entity.version.Kv;
 import io.dingodb.sdk.service.entity.version.PutRequest;
 import io.dingodb.sdk.service.entity.version.RangeRequest;
 import io.dingodb.sdk.service.entity.version.RangeResponse;
+import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.meta.MetaService;
 import io.dingodb.store.proxy.service.TsoService;
@@ -206,7 +207,13 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
 
         byte[] indexKey = indexKey(indexWithId.getTableId().getEntityId());
         byte[] val = getBytesFromObj(index);
-        txn.hInsert(tableKey, indexKey, val);
+        try {
+            txn.hInsert(tableKey, indexKey, val);
+        } catch (DuplicateEntryException e) {
+            LogUtils.error(log, "create index duplicate key, schemaId:{}, tableId:{}, indexId:{}",
+                schemaId, tableId, indexWithId.getTableId().getEntityId());
+            throw e;
+        }
     }
 
     @SneakyThrows

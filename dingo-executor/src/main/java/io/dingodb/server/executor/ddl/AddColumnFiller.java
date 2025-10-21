@@ -106,7 +106,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
             }
             if (type instanceof StringType) {
-                return Utils.unicodeToChinese(defaultValueExpr);
+                return Utils.decodePostgresUnicode(defaultValueExpr);
             } else if (type instanceof LongType) {
                 return Long.parseLong(defaultValueExpr);
             } else if (type instanceof IntegerType) {

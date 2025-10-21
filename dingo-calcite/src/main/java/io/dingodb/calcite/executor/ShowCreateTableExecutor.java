@@ -158,7 +158,7 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                 if (!(!column.isNullable() && "NULL".equalsIgnoreCase(column.getDefaultValueExpr()))) {
                     String defaultValExpr;
                     if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName()) || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
-                        defaultValExpr = Utils.unicodeToChinese(column.defaultValueExpr);
+                        defaultValExpr = Utils.decodePostgresUnicode(column.defaultValueExpr);
                         if (defaultValExpr != null && !"".equalsIgnoreCase(defaultValExpr)
                             && !(defaultValExpr.startsWith("'") && defaultValExpr.endsWith("'"))) {
                             defaultValExpr = "'" + defaultValExpr + "'";

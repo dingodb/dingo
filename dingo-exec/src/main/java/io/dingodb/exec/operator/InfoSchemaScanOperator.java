@@ -24,6 +24,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.DdlService;
@@ -37,18 +38,17 @@ import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -173,6 +173,17 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             }
                         }
                         type = type.toLowerCase();
+                        String defaultValExpr;
+                        if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName())
+                            || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
+                            defaultValExpr = Utils.decodePostgresUnicode(column.defaultValueExpr);
+                            if (defaultValExpr != null && defaultValExpr.startsWith("'") && defaultValExpr.endsWith("'")) {
+                                defaultValExpr = SqlParserUtil.trim(defaultValExpr, "'");
+                            }
+                        } else {
+                            defaultValExpr = column.defaultValueExpr;
+                        }
+
                         colRes.add(new Object[]{
                             "def",
                             schemaTables.getSchemaInfo().getName(),
@@ -181,7 +192,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // ordinal position
                             i + 1L,
                             // default value
-                            column.defaultValueExpr,
+                            defaultValExpr,
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
@@ -531,7 +542,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         default List<Object[]> getTxnInfos() {
             List<Object[]> results = new ArrayList<>();
             Iterator<Object[]> iterator = TransactionService.getDefault().getTxnInfo();
-            while(iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 results.add(iterator.next());
             }
             return results;
@@ -554,14 +565,13 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .collect(Collectors.toList());
 
         remoteTrxs.forEach( itemList -> {
-                for (Object[] item : itemList) {
-                    if (item[5] != null && (String.valueOf(item[5]).length() > maxDigestLength)) {
-                        item[5] = ((String)item[5]).substring(0, maxDigestLength) + " ...";
-                    }
-
-                    result.add(item);
+            for (Object[] item : itemList) {
+                if (item[5] != null && (String.valueOf(item[5]).length() > maxDigestLength)) {
+                    item[5] = ((String)item[5]).substring(0, maxDigestLength) + " ...";
                 }
-            });
+                result.add(item);
+            }
+        });
 
         //get local txn infos.
         Iterator<Object[]> iterator = TransactionService.getDefault().getTxnInfo();

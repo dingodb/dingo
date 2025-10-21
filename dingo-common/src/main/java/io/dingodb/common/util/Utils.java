@@ -38,7 +38,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -101,54 +100,6 @@ public final class Utils {
     public static <T> T returned(T target, Consumer<T> task) {
         task.accept(target);
         return target;
-    }
-
-    public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate) {
-        try {
-            while (predicate.get()) {
-            }
-        } catch (Exception e) {
-            return;
-        }
-        while (true) {
-            try {
-                if (!predicate.get()) {
-                    break;
-                }
-            } catch (Throwable e) {
-                break;
-            }
-        }
-    }
-
-    public static void noBreakLoop(NoBreakFunctions.Supplier<Boolean> predicate, Consumer<Throwable> exceptionHandler) {
-        while (true) {
-            try {
-                if (!predicate.get()) {
-                    break;
-                }
-            } catch (Throwable e) {
-                exceptionHandler.accept(e);
-                break;
-            }
-        }
-    }
-
-    public static <T extends AutoCloseable, R> R tryWithResource(Supplier<T> supplier, Function<T, R> function) {
-        try (T resource = supplier.get()) {
-            return function.apply(resource);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    public static <T extends AutoCloseable> void tryWithResource(Supplier<T> supplier, Consumer<T> consumer) {
-        try (T resource = supplier.get()) {
-            consumer.accept(resource);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static int currentSecond() {
@@ -334,35 +285,43 @@ public final class Utils {
         }
     }
 
-    public static String unicodeToChinese(String unicode) {
-        if (unicode == null) {
+    public static String decodePostgresUnicode(String input) {
+        if (input == null) {
             return null;
         }
-        if (unicode.trim().isEmpty()) {
-            return "";
+
+        if (!input.startsWith("u&'") || !input.endsWith("'") || input.length() < 5) {
+            return input;
         }
 
-        Pattern pattern = Pattern.compile("\\\\[0-9a-fA-F]{4}");
-        Matcher matcher = pattern.matcher(unicode);
+        String content = input.substring(3, input.length() - 1);
+        StringBuilder result = new StringBuilder();
+        Pattern pattern = Pattern.compile("\\\\[0-9a-fA-F]{4}|\\\\.");
+        Matcher matcher = pattern.matcher(content);
 
-        StringBuilder resultBuilder = new StringBuilder();
+        int lastIndex = 0;
         while (matcher.find()) {
-            String unicodeSeq = matcher.group();
-            String hex = unicodeSeq.substring(1);
-            try {
-                int codePoint = Integer.parseInt(hex, 16);
-                resultBuilder.append(Character.toChars(codePoint));
-            } catch (NumberFormatException e) {
-                resultBuilder.append(unicodeSeq);
+            result.append(content, lastIndex, matcher.start());
+
+            String escapeSeq = matcher.group();
+            if (escapeSeq.length() == 5 && escapeSeq.charAt(0) == '\\') {
+                String hex = escapeSeq.substring(1);
+                try {
+                    int codePoint = Integer.parseInt(hex, 16);
+                    result.append((char) codePoint);
+                } catch (NumberFormatException e) {
+                    result.append(escapeSeq);
+                }
+            } else {
+                result.append(escapeSeq);
             }
+
+            lastIndex = matcher.end();
         }
 
-        String result = resultBuilder.toString();
-        if (result.isEmpty()) {
-            return unicode;
-        } else {
-            return result;
-        }
+        result.append(content.substring(lastIndex));
+
+        return result.toString();
     }
 
     public static final int INTEGER_LEN_IN_BYTES = 4;
