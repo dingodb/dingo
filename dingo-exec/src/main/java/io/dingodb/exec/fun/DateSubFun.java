@@ -84,7 +84,10 @@ public class DateSubFun extends BinaryOp {
             delta = deltaLong.intValue();
         } else if (value1 instanceof Float) {
             Float deltaFloat = (Float) value1;
-            delta = deltaFloat.intValue();
+            delta = (int) Math.round(deltaFloat);
+        } else if (value1 instanceof Double) {
+            Double deltaDouble = (Double) value1;
+            delta = (int) Math.round(deltaDouble);
         } else if (value1 instanceof BigDecimal) {
             BigDecimal decimal = (BigDecimal) value1;
             delta = decimal.intValue();

@@ -61,6 +61,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -362,22 +363,23 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                         boolean isUpdate = true;
                         if (!tableInfo.isSingleSource()) {
                             TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                            Map<TupleKey, TxnPartUpdateParam.TableIndex> tableIndexMap = param.getTableIndexMap();
                             if (context.getIndexId() == null) {
-                                if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                                if (!tableIndexMap.containsKey(tupleKey)) {
+                                    tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
                                     localStore.delete(keyValue.getKey());
                                 }
                             } else {
-                                if (param.getTableIndexMap().containsKey(tupleKey)) {
+                                if (tableIndexMap.containsKey(tupleKey)) {
                                     // Main table exists, but the index is written for the first time
-                                    if (param.getTableIndexMap().get(tupleKey) == null) {
-                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
-                                    } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                    if (tableIndexMap.get(tupleKey).indexKeyCount < 1) {
+                                        tableIndexMap.put(tupleKey, tableIndexMap.get(tupleKey).plusIndexCount());
+                                    } else if (tableIndexMap.get(tupleKey).indexKeyCount >= 1) {
                                         // The same index, updated multiple times
                                         isUpdate = false;
                                     }
-                                } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                                } else {
+                                    tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
                                 }
                             }
                         } else {
@@ -595,24 +597,27 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                             boolean isUpdate = true;
                             if (!tableInfo.isSingleSource()) {
                                 TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                                Map<TupleKey, TxnPartUpdateParam.TableIndex> tableIndexMap = param.getTableIndexMap();
                                 if (context.getIndexId() == null) {
                                     // main table
-                                    if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                                    if (!tableIndexMap.containsKey(tupleKey)) {
+                                        tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
                                         localStore.delete(keyValue.getKey());
                                     }
                                 } else {
                                     // index
-                                    if (param.getTableIndexMap().containsKey(tupleKey)) {
+                                    if (tableIndexMap.containsKey(tupleKey)) {
                                         // Main table exists, but the index is written for the first time
-                                        if (param.getTableIndexMap().get(tupleKey) == null) {
-                                            param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
-                                        } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                        if (tableIndexMap.get(tupleKey).indexKeyCount < 1) {
+                                            tableIndexMap.put(
+                                                tupleKey,
+                                                tableIndexMap.get(tupleKey).plusIndexCount());
+                                        } else if (tableIndexMap.get(tupleKey).indexKeyCount >= 1) {
                                             // The same index, updated multiple times
                                             isUpdate = false;
                                         }
-                                    } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                        param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                                    } else {
+                                        tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
                                     }
                                 }
                             } else {
@@ -709,22 +714,23 @@ public class TxnPartUpdateOperator extends PartModifyOperator {
                     boolean isUpdate = true;
                     if (!tableInfo.isSingleSource()) {
                         TupleKey tupleKey = new TupleKey(tableKeyTuple);
+                        Map<TupleKey, TxnPartUpdateParam.TableIndex> tableIndexMap = param.getTableIndexMap();
                         if (context.getIndexId() == null) {
-                            if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
+                            if (!tableIndexMap.containsKey(tupleKey)) {
+                                tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 0));
                                 localStore.delete(keyValue.getKey());
                             }
                         } else {
-                            if (param.getTableIndexMap().containsKey(tupleKey)) {
+                            if (tableIndexMap.containsKey(tupleKey)) {
                                 // Main table exists, but the index is written for the first time
-                                if (param.getTableIndexMap().get(tupleKey) == null) {
-                                    param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(0, 1));
-                                } else if (param.getTableIndexMap().get(tupleKey).tableKeyCount.get() >= 1) {
+                                if (tableIndexMap.get(tupleKey).indexKeyCount < 1) {
+                                    tableIndexMap.put(tupleKey, tableIndexMap.get(tupleKey).plusIndexCount());
+                                } else if (tableIndexMap.get(tupleKey).indexKeyCount >= 1) {
                                     // The same index, updated multiple times
                                     isUpdate = false;
                                 }
-                            } else if (!param.getTableIndexMap().containsKey(tupleKey)) {
-                                param.getTableIndexMap().put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
+                            } else {
+                                tableIndexMap.put(tupleKey, new TxnPartUpdateParam.TableIndex(1, 1));
                             }
                         }
                     } else {

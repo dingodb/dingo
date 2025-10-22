@@ -83,10 +83,13 @@ public class DateAddFun extends BinaryOp {
             delta = deltaLong.intValue();
         } else if (value1 instanceof Float) {
             Float deltaFloat = (Float) value1;
-            delta = deltaFloat.intValue();
+            delta = (int) Math.round(deltaFloat);
         } else if (value1 instanceof BigDecimal) {
             BigDecimal decimal = (BigDecimal) value1;
             delta = decimal.intValue();
+        } else if (value1 instanceof Double) {
+            Double deltaDouble = (Double) value1;
+            delta = (int) Math.round(deltaDouble);
         } else if (value1 instanceof IntervalType) {
             if (value1 instanceof IntervalYearType.IntervalYear) {
                 IntervalYearType.IntervalYear intervalYear = (IntervalYearType.IntervalYear) value1;
@@ -151,6 +154,9 @@ public class DateAddFun extends BinaryOp {
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTime(date);
                     calendar.add(field, amount);
+                    if (calendar.get(Calendar.YEAR) > 9999) {
+                        return null;
+                    }
                     return new Date(calendar.getTimeInMillis());
                 case Calendar.HOUR:
                     l = date.toLocalDate();
@@ -180,6 +186,9 @@ public class DateAddFun extends BinaryOp {
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(timestamp);
             calendar.add(field, amount);
+            if (calendar.get(Calendar.YEAR) > 9999) {
+                return null;
+            }
             return new Timestamp(calendar.getTimeInMillis());
         }
         return null;
