@@ -39,7 +39,6 @@ import org.apache.calcite.rel.core.TableModify;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 @JsonTypeName("txn_update")
@@ -183,12 +182,17 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
 
     @Getter
     public static class TableIndex {
-        public static AtomicInteger tableKeyCount = new AtomicInteger(-1);
-        public static AtomicInteger indexKeyCount = new AtomicInteger(-1);
+        public Integer tableKeyCount = 0;
+        public Integer indexKeyCount = 0;
 
         public TableIndex(int tableCount, int indexCount) {
-            tableKeyCount.addAndGet(tableCount);
-            indexKeyCount.addAndGet(indexCount);
+            tableKeyCount += tableCount;
+            indexKeyCount += indexCount;
+        }
+
+        public TableIndex plusIndexCount() {
+            indexKeyCount++;
+            return this;
         }
     }
 }
