@@ -73,7 +73,8 @@ public class SubCalciteSchema extends CalciteSchema {
         Table table = schema.getTable(tableName);
         if (table != null && inTxn) {
             DingoTable dingoTable = (DingoTable) table;
-            rootCalciteSchema.putRelatedTable(dingoTable.getTableId().seq, ((SubSnapshotSchema) schema).getSchemaVer());
+            rootCalciteSchema.putRelatedTable(dingoTable.getTableId().seq,
+                ((SubSnapshotSchema) schema).getSchemaVer(), subSnapshotSchema.txnId);
         }
         return Optional.mapOrNull(
             table,

@@ -30,6 +30,7 @@ import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.time.InternalTimeZone;
 import io.dingodb.common.time.TimeZoneUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -634,12 +635,10 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     }
 
     public void removeLockDDLJobs(Map<Long, Long> jobsVerMap, Map<Long, String> jobsIdsMap) {
-        Map<Long, Long> relatedTableForMdl = this.context.getRootSchema().getRelatedTableForMdl();
-        //LogUtils.info(log, "[ddl] check mdl, rootCalciteSchema:{}, mdl size:{}",
-        //    this.context.getRootSchema(), relatedTableForMdl.size());
-        for (Map.Entry<Long, Long> useRelated : relatedTableForMdl.entrySet()) {
+        Map<Long, Pair<Long, CommonId>> relatedTableForMdl = this.context.getRootSchema().getRelatedTableForMdl();
+        for (Map.Entry<Long, Pair<Long, CommonId>> useRelated : relatedTableForMdl.entrySet()) {
             Long tableId = useRelated.getKey();
-            long useSchemaVer = useRelated.getValue();
+            long useSchemaVer = useRelated.getValue().getKey();
             Iterator<Map.Entry<Long, Long>> jobVerIterator = jobsVerMap.entrySet().iterator();
             while (jobVerIterator.hasNext()) {
                 Map.Entry<Long, Long> jobIdVerEntry = jobVerIterator.next();
@@ -649,11 +648,12 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 if (ids.containsKey(tableId)) {
                     if (useSchemaVer < ver) {
                         jobVerIterator.remove();
-                        mdlLockJobMap.put(jobId, jobId);
-                        if (DdlUtil.timeOutError.get()) {
-                            LogUtils.info(log, "[ddl] conn remove mdl lock,jobId:{}, use ver:{}, "
-                                + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);
+                        if (ScopeVariables.ddlMdlLog() && !mdlLockJobMap.containsKey(jobId)) {
+                            LogUtils.info(log, "[ddl] mdl lock,jobId:{}, use ver:{}, "
+                                    + "ver:{}, tableId:{}, txnId:{}", jobId, useSchemaVer, ver, tableId,
+                                useRelated.getValue().getValue());
                         }
+                        mdlLockJobMap.put(jobId, jobId);
                     } else {
                         LogUtils.debug(log, "[ddl] conn remove ddl, but ver is newest,jobId:{}, use ver:{},"
                             + "ver:{}, tableId:{}", jobId, useSchemaVer, ver, tableId);

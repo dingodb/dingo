@@ -71,6 +71,13 @@ public class RootSnapshotSchema implements Schema {
         this.names = names;
     }
 
+    public RootSnapshotSchema(CommonId txnId, InfoSchema is, DingoParserContext context, List<String> names) {
+        this.is = is;
+        this.context = context;
+        this.names = names;
+        this.txnId = txnId;
+    }
+
     public void initTxn(InfoSchema is, CommonId txnId) {
         if (is == null) {
             DdlService ddlService = DdlService.root();
@@ -140,7 +147,7 @@ public class RootSnapshotSchema implements Schema {
         if (!isTmp.schemaMap.containsKey(schema)) {
             return null;
         }
-        return new SubSnapshotSchema(isTmp, schema, context, ImmutableList.of(ROOT_SCHEMA_NAME, schema));
+        return new SubSnapshotSchema(txnId, isTmp, schema, context, ImmutableList.of(ROOT_SCHEMA_NAME, schema));
     }
 
     @Override

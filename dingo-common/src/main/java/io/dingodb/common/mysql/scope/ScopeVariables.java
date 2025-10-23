@@ -61,6 +61,7 @@ public final class ScopeVariables {
         executorProp.put("ddl_timeout", "180000");
         executorProp.put("seek_factor", "80");
         executorProp.put("ddl_inner_profile", "off");
+        executorProp.put("ddl_mdl_log", "on");
     }
 
     private ScopeVariables() {
@@ -251,6 +252,15 @@ public final class ScopeVariables {
             return executorProp.getOrDefault("ddl_inner_profile", "off").toString();
         } catch (Exception e) {
             return "off";
+        }
+    }
+
+    public static boolean ddlMdlLog() {
+        try {
+            String ddlMdlLog = executorProp.getOrDefault("ddl_mdl_log", "off").toString();
+            return "on".equalsIgnoreCase(ddlMdlLog);
+        } catch (Exception e) {
+            return false;
         }
     }
 
