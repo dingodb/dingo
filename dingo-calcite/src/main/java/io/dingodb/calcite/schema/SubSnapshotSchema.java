@@ -19,6 +19,7 @@ package io.dingodb.calcite.schema;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.DingoTable;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.meta.DdlService;
@@ -54,6 +55,19 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
                 schemaId = schemaTables.getSchemaInfo().getSchemaId();
             }
         }
+    }
+
+    public SubSnapshotSchema(CommonId txnId, InfoSchema is, String schemaName,
+                             DingoParserContext context, List<String> names) {
+        super(is, context, names);
+        this.schemaName = schemaName;
+        if (is != null) {
+            SchemaTables schemaTables = is.getSchemaMap().get(schemaName);
+            if (schemaTables != null) {
+                schemaId = schemaTables.getSchemaInfo().getSchemaId();
+            }
+        }
+        this.txnId = txnId;
     }
 
     @Override

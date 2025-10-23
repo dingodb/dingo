@@ -54,6 +54,7 @@ public final class ScopeVariables {
         characterSet.add("utf-8");
         characterSet.add("gbk");
         characterSet.add("latin1");
+        executorProp.put("ddl_mdl_log", "on");
     }
 
     private ScopeVariables() {
@@ -228,6 +229,15 @@ public final class ScopeVariables {
         try {
             String autocommitSwitch = executorProp.getOrDefault("autocommit_switch", "true").toString();
             return "true".equalsIgnoreCase(autocommitSwitch);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean ddlMdlLog() {
+        try {
+            String ddlMdlLog = executorProp.getOrDefault("ddl_mdl_log", "off").toString();
+            return "on".equalsIgnoreCase(ddlMdlLog);
         } catch (Exception e) {
             return false;
         }
