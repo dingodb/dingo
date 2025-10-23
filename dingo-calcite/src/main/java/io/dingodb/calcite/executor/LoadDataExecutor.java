@@ -212,7 +212,7 @@ public class LoadDataExecutor implements DmlExecutor {
             try {
                 byte[] preBytes = null;
                 long ver = DdlService.root().getIsLatest().getSchemaMetaVersion();
-                context.getRootSchema().putRelatedTable(table.tableId.seq, ver);
+                context.getRootSchema().putRelatedTable(table.tableId.seq, ver, txnId);
                 while (true) {
                     Object val = queue.take();
                     if (val instanceof byte[]) {
