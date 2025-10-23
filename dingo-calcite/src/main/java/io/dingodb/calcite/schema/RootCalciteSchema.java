@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.util.Pair;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.entity.InfoSchema;
 import lombok.Builder;
@@ -46,7 +47,7 @@ import static io.dingodb.common.util.NameCaseUtils.convertName;
 public class RootCalciteSchema extends CalciteSchema {
 
     @Getter
-    private volatile Map<Long, Long> relatedTableForMdl = new ConcurrentHashMap<>();
+    private volatile Map<Long, Pair<Long, CommonId>> relatedTableForMdl = new ConcurrentHashMap<>();
 
     @Builder
     protected RootCalciteSchema(
@@ -177,8 +178,8 @@ public class RootCalciteSchema extends CalciteSchema {
         this.relatedTableForMdl.clear();
     }
 
-    public void putRelatedTable(long tableId, long ver) {
-        this.relatedTableForMdl.put(tableId, ver);
+    public void putRelatedTable(long tableId, long ver, CommonId txnId) {
+        this.relatedTableForMdl.put(tableId, Pair.of(ver, txnId));
     }
 
     public void removeRelatedTable(long tableId) {

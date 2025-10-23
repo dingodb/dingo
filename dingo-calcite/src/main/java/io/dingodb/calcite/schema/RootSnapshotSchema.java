@@ -140,7 +140,7 @@ public class RootSnapshotSchema implements Schema {
         if (!isTmp.schemaMap.containsKey(schema)) {
             return null;
         }
-        return new SubSnapshotSchema(isTmp, schema, context, ImmutableList.of(ROOT_SCHEMA_NAME, schema));
+        return new SubSnapshotSchema(txnId, isTmp, schema, context, ImmutableList.of(ROOT_SCHEMA_NAME, schema));
     }
 
     @Override
