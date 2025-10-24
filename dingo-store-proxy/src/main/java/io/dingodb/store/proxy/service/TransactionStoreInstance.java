@@ -47,6 +47,7 @@ import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.common.TableData;
 import io.dingodb.sdk.service.entity.document.DocumentSearchAllRequest;
 import io.dingodb.sdk.service.entity.document.DocumentSearchAllResponse;
+import io.dingodb.sdk.service.entity.error.Errno;
 import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.AlreadyExist;
 import io.dingodb.sdk.service.entity.store.LockInfo;
@@ -223,57 +224,85 @@ public class TransactionStoreInstance {
                         + "max:" + TransactionUtil.maxRpcDataSize + " cur:" + request.sizeOf());
                 }
 
-                long start1 = System.currentTimeMillis();
-                Mutation mutation = request.getMutations().get(0);
-                if (mutation.getVector() == null && mutation.getDocument() == null) {
-                    response = storeService.txnPrewrite(startTs, request);
-                } else if (mutation.getDocument() != null) {
-                    response = documentService.txnPrewrite(startTs, request);
-                } else {
-                    response = indexService.txnPrewrite(startTs, request);
-                }
-                long sub = System.currentTimeMillis() - start1;
-                DingoMetrics.timer("txnPreWriteRpc").update(sub, TimeUnit.MILLISECONDS);
-                if (response.getKeysAlreadyExist() != null && !response.getKeysAlreadyExist().isEmpty()) {
-                    getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
-                }
-                if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
-                    if (request.isTryOnePc() && response.getOnePcCommitTs() == 0) {
-                        //1pc failed, Need 2pc commit, but not 2pc pre-write.
-                        throw new OnePcNeedTwoPcCommit("one pc phase 1pc commit ts is 0 in response, "
-                            + "so need 2pc commit, ts:" + response.getOnePcCommitTs());
+                try {
+                    long start1 = System.currentTimeMillis();
+                    Mutation mutation = request.getMutations().get(0);
+                    if (mutation.getVector() == null && mutation.getDocument() == null) {
+                        response = storeService.txnPrewrite(startTs, request);
+                    } else if (mutation.getDocument() != null) {
+                        response = documentService.txnPrewrite(startTs, request);
+                    } else {
+                        response = indexService.txnPrewrite(startTs, request);
                     }
-                    if (txnPreWrite.isUseAsyncCommit()) {
-                        LogUtils.info(log, "UseAsyncCommit txnPreWrite MinCommitTs:{}, response MinCommitTs:{}",
-                            txnPreWrite.getMinCommitTs(), response.getMinCommitTs());
-                        txnPreWrite.setMinCommitTs(response.getMinCommitTs());
+                    long sub = System.currentTimeMillis() - start1;
+                    DingoMetrics.timer("txnPreWriteRpc").update(sub, TimeUnit.MILLISECONDS);
+                    if (response.getKeysAlreadyExist() != null && !response.getKeysAlreadyExist().isEmpty()) {
+                        getJoinedPrimaryKey(txnPreWrite, response.getKeysAlreadyExist());
                     }
-                    return true;
-                }
-                ResolveLockStatus resolveLockStatus = resolveLockConflict(
-                    response.getTxnResult(),
-                    isolationLevel.getCode(),
-                    startTs,
-                    resolvedLocks,
-                    "txnPreWrite",
-                    false
-                );
-                if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
-                    || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
-                    if (timeOut < 0) {
-                        throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
-                    }
-                    try {
-                        long lockTtl = TxnVariables.WaitFixTime;
-                        if (n < TxnVariables.WaitFixNum) {
-                            lockTtl = TxnVariables.WaitTime * n;
+                    if (response.getTxnResult() == null || response.getTxnResult().isEmpty()) {
+                        if (request.isTryOnePc() && response.getOnePcCommitTs() == 0) {
+                            //1pc failed, Need 2pc commit, but not 2pc pre-write.
+                            throw new OnePcNeedTwoPcCommit("one pc phase 1pc commit ts is 0 in response, "
+                                + "so need 2pc commit, ts:" + response.getOnePcCommitTs());
                         }
-                        Thread.sleep(lockTtl);
-                        n++;
-                        timeOut -= lockTtl;
-                        LogUtils.info(log, "txnPreWrite lockInfo wait {} ms end.", lockTtl);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        if (txnPreWrite.isUseAsyncCommit()) {
+                            LogUtils.info(log, "UseAsyncCommit txnPreWrite MinCommitTs:{}, response MinCommitTs:{}",
+                                txnPreWrite.getMinCommitTs(), response.getMinCommitTs());
+                            txnPreWrite.setMinCommitTs(response.getMinCommitTs());
+                        }
+                        return true;
+                    }
+                    ResolveLockStatus resolveLockStatus = resolveLockConflict(
+                        response.getTxnResult(),
+                        isolationLevel.getCode(),
+                        startTs,
+                        resolvedLocks,
+                        "txnPreWrite",
+                        false
+                    );
+                    if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                        || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                        if (timeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            timeOut -= lockTtl;
+                            LogUtils.info(log, "txnPreWrite lockInfo wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } catch (RequestErrorException e) {
+                    if ((request.isTryOnePc() || request.isUseAsyncCommit()) &&
+                        (e.getErrorCode() == 50002 || e.getErrorCode() == 50003)) {
+                        LogUtils.error(log, "txnPreWrite Error:" + e.getMessage(), e);
+                        if (timeOut < 0) {
+                            throw new RuntimeException("startTs:" + startTs + " txnPreWrite error:" + e);
+                        }
+                        try {
+                            long lockTtl = TxnVariables.WaitFixTime;
+                            if (n < TxnVariables.WaitFixNum) {
+                                lockTtl = TxnVariables.WaitTime * n;
+                            }
+                            Thread.sleep(lockTtl);
+                            n++;
+                            timeOut -= lockTtl;
+                            LogUtils.info(log, "txnPreWrite error wait {} ms end.", lockTtl);
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
+                        }
+                        long commitTs = TsoService.INSTANCE.tso();
+                        LogUtils.info(log, "txnPreWrite error retry commitTs:{}.", commitTs);
+                        txnPreWrite.setMinCommitTs(commitTs);
+                    } else {
+                        LogUtils.error(log, "txnPreWrite Error:" + e.getMessage(), e);
+                        throw e;
                     }
                 }
             }
