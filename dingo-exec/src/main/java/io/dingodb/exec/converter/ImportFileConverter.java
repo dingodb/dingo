@@ -245,6 +245,20 @@ public class ImportFileConverter implements DataConverter {
         }
     }
 
+    @Override
+    public Long convertBitFrom(@NonNull Object value) {
+        String valStr = value.toString();
+        if (NULL_FLG.equalsIgnoreCase(valStr)) {
+            return null;
+        } else {
+            try {
+                return Long.parseLong(valStr);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
     public static Map<Object, Object> mapStringToMap(String str) {
         str = str.substring(1, str.length() - 1);
         String[] strs = str.split(",");

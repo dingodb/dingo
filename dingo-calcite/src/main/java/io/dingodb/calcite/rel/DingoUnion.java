@@ -24,7 +24,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Union;
-import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlKind;
@@ -39,6 +38,7 @@ import java.util.List;
 public class DingoUnion extends Union implements DingoRel {
     @Getter
     private double rowCount;
+
     public DingoUnion(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -51,12 +51,8 @@ public class DingoUnion extends Union implements DingoRel {
     @Override
     public RelDataType getRowType() {
         if (rowType == null) {
-            if(this instanceof DingoUnion) {
-                if (((DingoUnion)this).kind == SqlKind.UNION) {
-                    rowType = deriveRowTypeWithContext(SqlOperator.CallContext.IN_UNION);
-                } else {
-                    rowType = deriveRowType();
-                }
+            if (this.kind == SqlKind.UNION) {
+                rowType = deriveRowTypeWithContext(SqlOperator.CallContext.IN_UNION);
             } else {
                 rowType = deriveRowType();
             }

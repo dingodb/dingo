@@ -29,6 +29,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+
 @Slf4j
 @Setter
 @Getter
@@ -49,7 +50,7 @@ public class Edge {
     }
 
     public boolean transformToNext(Context context, Object[] tuple) {
-        if(next.getTask().getStatus() == Status.CANCEL) {
+        if (next.getTask().getStatus() == Status.CANCEL) {
             LogUtils.info(log, "task status is cancel");
             throw new TaskCancelException("task is cancel");
         } else if (next.getTask().getStatus() == Status.STOPPED) {

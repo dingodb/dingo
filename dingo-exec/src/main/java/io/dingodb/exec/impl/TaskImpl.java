@@ -203,8 +203,8 @@ public final class TaskImpl implements Task {
             try {
                 vertex.init();
             } catch (Exception ex) {
-                LogUtils.error(log, "Init operator:" + vertex.getOp() + "in jobId:" + jobId.toString() +
-                        " task:" + this.id.toString() + " failed catch exception:", ex);
+                LogUtils.error(log, "Init operator:" + vertex.getOp() + "in jobId:" + jobId.toString()
+                    + " task:" + this.id.toString() + " failed catch exception:", ex);
                 statusErrMsg = ex.toString();
                 isStatusOK = false;
             }
@@ -273,8 +273,8 @@ public final class TaskImpl implements Task {
                     try {
                         operator.fin(0, FinWithException.of(taskStatus), vertex);
                     } catch (RuntimeException exception) {
-                        LogUtils.error(log, "Run Task Fin:" + getId() + " catch operator:" + vertex.getId() +
-                            " run Exception:", exception);
+                        LogUtils.error(log, "Run Task Fin:" + getId() + " catch operator:" + vertex.getId()
+                            + " run Exception:", exception);
                         throw exception;
                     }
                 } catch (RuntimeException e) {
@@ -299,8 +299,8 @@ public final class TaskImpl implements Task {
                     try {
                         operator.fin(0, FinWithException.of(taskStatus), vertex);
                     } catch (RuntimeException exception) {
-                        LogUtils.error(log, "Run Task Fin:" + getId() + " catch operator:" + vertex.getId() +
-                            " run Exception:", exception);
+                        LogUtils.error(log, "Run Task Fin:" + getId() + " catch operator:" + vertex.getId()
+                            + " run Exception:", exception);
                         throw exception;
                     }
                 } finally {
