@@ -52,8 +52,8 @@ public final class CalcValueUtils {
         ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
 
         try {
-            if ((rexNode instanceof RexCall) &&
-            (((RexCall)rexNode).getOperator().getCallContext() == SqlOperator.CallContext.IN_VALUES)) {
+            if ((rexNode instanceof RexCall)
+                && (((RexCall)rexNode).getOperator().getCallContext() == SqlOperator.CallContext.IN_VALUES)) {
                 exprCompiler.setExprContext(ExprContext.CALC_VALUE);
             } else {
                 exprCompiler.setExprContext(ExprContext.INVALID);

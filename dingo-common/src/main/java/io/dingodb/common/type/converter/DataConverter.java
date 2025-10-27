@@ -169,7 +169,7 @@ public interface DataConverter {
         return (Boolean) value;
     }
 
-    default long convertBitFrom(@NonNull Object value) {
+    default Long convertBitFrom(@NonNull Object value) {
         String className = value.getClass().getName();
         long val = 0;
         if(value instanceof org.apache.calcite.avatica.util.ByteString) {

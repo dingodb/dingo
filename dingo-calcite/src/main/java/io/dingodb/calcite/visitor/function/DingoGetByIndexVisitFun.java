@@ -129,8 +129,7 @@ public final class DingoGetByIndexVisitFun {
                 task.putVertex(distributionVertex);
 
                 List<String> columnNames = indexTd.getColumns().stream().map(Column::getName).toList();
-                TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames)
-                );
+                TupleMapping tupleMapping = TupleMapping.of(td.getColumnIndices(columnNames));
                 if (!needLookup) {
                     needLookup = isNeedLookUp(rel.getSelection(), tupleMapping, td.columns.size());
                 }
