@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+plugins {
+    id "com.vanniktech.maven.publish" version "0.34.0"
+}
 
 group GROUP
 version VERSION
@@ -33,10 +36,12 @@ allprojects {
             url 'https://packages.confluent.io/maven/'
             allowInsecureProtocol = true
         }
-//        maven {
-//            url 'http://maven.aliyun.com/nexus/content/groups/public/'
-//        }
     }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
 }
 
 tasks.withType(Jar).configureEach {

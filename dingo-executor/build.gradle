@@ -20,6 +20,7 @@ plugins {
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.vanniktech.maven.publish"
 }
 
 application {
@@ -40,7 +41,7 @@ dependencies {
     implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: 'grpc'.v()
     implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
 
-    // implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    // implementation group: 'io.dingodb', name: 'dingo-sdk', version:'dingo-sdk'.v()
 
     implementation ("io.dingodb:dingo-sdk:$project.version") {
         exclude group: 'io.grpc', module: 'grpc-netty-shaded'
@@ -75,7 +76,7 @@ task fatJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'io.dingodb.server.executor.Starter'
     }
-    classifier 'all'
+    archiveClassifier.set('all')
     zip64=true
     from(
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
@@ -97,6 +98,44 @@ tasks.withType(Jar).configureEach {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
+fatJar.dependsOn(':dingo-license-api:fatJar')
+startScripts.dependsOn(':dingo-license-api:fatJar')
+shadowJar.dependsOn(':dingo-license-api:fatJar')
+
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
+}
+
+mavenPublishing {
+    coordinates(project.property("GROUP"), "dingo-executor", project.property("VERSION") as String)
+
+    pom {
+        name = "dingo-executor"
+        description = "Dingo executor for DingoDB cluster"
+        url= "https://www.dingodb.com/"
+
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            }
+        }
+
+        developers {
+            developer {
+                id = "dingodb"
+                name = "DingoDB develop team"
+                email = "dingodb@zetyun.com"
+            }
+        }
+
+        scm {
+            connection = "scm:git:git://github.com/dingodb/dingo.git"
+            developerConnection = "scm:git:ssh://github.com/dingodb/dingo.git"
+            url = "https://github.com/dingodb/dingo"
+        }
+    }
+
+    publishToMavenCentral()
+    signAllPublications()
 }

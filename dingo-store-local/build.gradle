@@ -35,7 +35,7 @@ dependencies {
 }
 
 task fatJar(type: Jar) {
-    classifier 'all'
+    archiveClassifier.set('all')
     from(
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) },
     )

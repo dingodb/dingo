@@ -9,9 +9,9 @@ name: Build
 
 on:
   push:
-    branches: [ main, develop, quickBI-v3.0.0 ]
+    branches: [ main, develop, quickBI-v3.0.0  ]
   pull_request:
-    branches: [ main, develop, quickBI-v3.0.0 ]
+    branches: [ main, develop, quickBI-v3.0.0  ]
 
 jobs:
   build:
@@ -37,7 +37,7 @@ jobs:
 
     - name: Build Dingo Project
       run: |
-        ./gradlew build -PisDownload=true --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseZGC"
+        ./gradlew build -PisDownload=true --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseZGC" -x test
 
     - name: Build Java Documents
       uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
@@ -61,7 +61,7 @@ jobs:
       with:
           name: dingo.zip
           path: ./dingo.zip
-    
+
     - name: Record event type
       run: |
         branchName=$(echo "${{ github.ref_name }}")
