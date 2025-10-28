@@ -18,7 +18,7 @@ plugins {
     id 'java-conventions'
     id 'java-library'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
-    id "com.github.johnrengelman.shadow" version "5.0.0"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 configurations {
@@ -36,7 +36,7 @@ dependencies {
     implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version:'dingo-sdk'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
 
     implementation project(":dingo-client")
