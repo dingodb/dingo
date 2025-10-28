@@ -15,11 +15,19 @@ on:
     workflows: ["Build"]
     types:
       - completed
+    on:
+      branches:
+        - develop
+        - main
+      pull_requests:
+        - merged
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +35,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'adopt'
 
       - name: Clean Cache
         run: |
