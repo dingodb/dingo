@@ -7,17 +7,16 @@
 # GitHub recommends pinning actions to a commit SHA.
 # To get a newer version, you will need to update the SHA.
 # You can also reference a tag or branch, but the action may change without warning.
-
 name: Publish package
+
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
+  push:
+    branches: [ main, develop, quickBI-v3.0.0  ]
+  pull_request:
+    branches: [ main, develop, quickBI-v3.0.0  ]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,8 +28,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
-          settings-path: ${{ github.workspace }} # location for the settings.xml file
 
       - name: Clean Cache
         run: |
