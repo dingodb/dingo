@@ -61,7 +61,7 @@ jobs:
       with:
           name: dingo.zip
           path: ./dingo.zip
-    
+
     - name: Record event type
       run: |
         branchName=$(echo "${{ github.ref_name }}")
