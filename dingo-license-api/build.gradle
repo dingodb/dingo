@@ -17,8 +17,7 @@
 plugins {
     id 'java-conventions'
     id 'java-library'
-    id 'maven-publish'
-    id 'signing'
+    id "com.vanniktech.maven.publish"
 }
 
 dependencies {
@@ -26,12 +25,12 @@ dependencies {
 }
 
 tasks.register('javadocJar', Jar) {
-    classifier 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc
 }
 
 tasks.register('sourcesJar', Jar) {
-    classifier 'sources'
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
 }
 
@@ -54,81 +53,47 @@ fatJar.dependsOn([
     ':dingo-serial:jar'
 ])
 
+// Ensure that the fatJar is built before generating the Maven publication metadata
+tasks.matching { it.name.contains("generateMetadataFileForMavenPublication") }.configureEach {
+    dependsOn fatJar
+}
 
 tasks.named("build") { x ->
     x.finalizedBy("fatJar")
 }
 
-publishing {
-    repositories {
-        maven {
-            name = "OSSRH"
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            /**
-             * will manually release the artifactory
-             */
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl;
-            credentials {
-                username = System.getenv("MAVEN_USERNAME") != null ? System.getenv("MAVEN_USERNAME") : project.findProperty("ossrhUsername")
-                password = System.getenv("MAVEN_TOKEN") != null ? System.getenv("MAVEN_TOKEN") : project.findProperty("ossrhPassword")
+mavenPublishing {
+    coordinates(project.property("GROUP"), "dingo-license-api", project.property("VERSION") as String)
+    
+    pom {
+        name = "dingo-license-api" 
+        description = "License API for DingoDB"
+        url= "https://www.dingodb.com/"
+        
+        licenses {
+            license {
+                name = "The Apache License, Version 2.0"
+                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
             }
+        }
+        
+        developers {
+            developer {
+                id = "dingodb"
+                name = "DingoDB develop team"
+                email = "dingodb@zetyun.com"
+            }
+        }
+        
+        scm {
+            connection = "scm:git:git://github.com/dingodb/dingo.git"
+            developerConnection = "scm:git:ssh://github.com/dingodb/dingo.git"
+            url = "https://github.com/dingodb/dingo"
         }
     }
-
-    publications {
-        maven(MavenPublication) {
-            groupId = 'io.dingodb'
-            artifactId = 'dingo-license-api'
-            artifacts = [fatJar, sourcesJar, javadocJar]
-        }
-        maven(MavenPublication) {
-            pom {
-                name = 'dingo-license-api'
-                packaging = 'jar'
-                // optionally artifactId can be defined here
-                description = 'License API for DingoDB'
-                url = 'http://www.dingodb.datacanvas.com/'
-
-                scm {
-                    connection = 'scm:svn:http://foo.googlecode.com/svn/trunk/'
-                    developerConnection = 'scm:svn:https://foo.googlecode.com/svn/trunk/'
-                    url = 'http://foo.googlecode.com/svn/trunk/'
-                }
-
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'dingodb'
-                        name = 'DingoDB develop team'
-                        email = 'dingodb@zetyun.com'
-                    }
-                }
-            }
-            pom.withXml {
-                def dependenciesNode = asNode().appendNode('dependencies')
-                configurations.implementation.allDependencies.each {
-                    if (!it.name.startsWith('dingo')) {
-                        def dependencyNode = dependenciesNode.appendNode('dependency')
-                        dependencyNode.appendNode('groupId', it.group)
-                        dependencyNode.appendNode('artifactId', it.name)
-                        dependencyNode.appendNode('version', it.version)
-                    }
-                }
-            }
-            if (!version.endsWith("SNAPSHOT")) {
-                signing {
-                    sign publishing.publications.maven
-                }
-            }
-        }
-    }
+    
+    publishToMavenCentral()
+    signAllPublications()
 }
 
 

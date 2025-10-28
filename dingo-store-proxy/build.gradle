@@ -20,6 +20,9 @@ plugins {
 }
 
 dependencies {
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
+
     annotationProcessor group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
     compileOnly group: 'com.google.auto.service', name: 'auto-service', version: 'auto-service'.v()
 
@@ -28,7 +31,7 @@ dependencies {
 
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
-    implementation group: 'io.dingodb', name: 'dingo-sdk', version: project.version
+    implementation group: 'io.dingodb', name: 'dingo-sdk', version:'dingo-sdk'.v()
     implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
     api group: 'io.grpc', name: 'grpc-api', version: 'grpc'.v()
@@ -46,6 +49,7 @@ dependencies {
     implementation project(":dingo-calcite")
 
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
+    implementation 'org.slf4j:slf4j-api:' + 'slf4j'.v()
 
 }
 
