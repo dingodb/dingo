@@ -26,6 +26,7 @@ import io.dingodb.calcite.utils.DocumentScanFilterOb;
 import io.dingodb.calcite.utils.DocumentScanFilterVisitor;
 import io.dingodb.calcite.utils.IndexRangeMapSet;
 import io.dingodb.calcite.utils.IndexRangeVisitor;
+import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -38,6 +39,7 @@ import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -45,6 +47,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -53,6 +56,7 @@ import org.immutables.value.Value;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -60,12 +64,28 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
-import static io.dingodb.calcite.rule.DingoIndexScanMatchRule.getResult;
+import static io.dingodb.calcite.rule.DingoGetByIndexRule.getDocumentIndices;
+import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
+import static org.apache.calcite.sql.SqlKind.AND;
+import static org.apache.calcite.sql.SqlKind.EQUALS;
+import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
+import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.IN;
+import static org.apache.calcite.sql.SqlKind.IS_NULL;
+import static org.apache.calcite.sql.SqlKind.LESS_THAN;
+import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 
 @Slf4j
 @Value.Enclosing
 public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRule.Config> {
+
+    public static final Set<SqlKind> INDEX_KIND =
+        EnumSet.of(
+            IN, EQUALS, AND,
+            LESS_THAN, GREATER_THAN,
+            GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL,
+            IS_NULL);
 
     protected DingoIndexNonLeftMatchRule(Config config) {
         super(config);
@@ -83,7 +103,9 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
             return;
         }
         LogicalDingoTableScan scan = call.rel(1);
-
+        if (scan.getFilter() != null && !scan.getFilter().isA(INDEX_KIND)) {
+            return;
+        }
         RelNode relNode = getIndexFullScanRelNode(project, scan);
         if (relNode == null) {
             return;
@@ -105,7 +127,6 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
                 }
                 return null;
             }
-
         };
         List<RexNode> projects = project.getProjects();
         RexNode filter = scan.getFilter();
@@ -132,7 +153,7 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
             return null;
         }
         boolean match = true;
-        outer:for (Map<Integer, RexNode> map : set) {
+        outer : for (Map<Integer, RexNode> map : set) {
             for (int k : map.keySet()) {
                 int originIndex = (selection == null ? k : selection.get(k));
                 Column column = table.getColumns().get(originIndex);
@@ -145,8 +166,8 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
                 }
                 if (result.isDocumentIndex && match) {
                     DingoType type = column.getType();
-                    if (!(type instanceof StringType || type instanceof LongType || type instanceof DoubleType ||
-                        type instanceof TimestampType || type instanceof BooleanType)) {
+                    if (!(type instanceof StringType || type instanceof LongType || type instanceof DoubleType
+                        || type instanceof TimestampType || type instanceof BooleanType)) {
                         match = false;
                         break outer;
                     }
@@ -279,6 +300,51 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
             );
         }
         return relNode;
+    }
+
+    public static DingoIndexScanMatchRule.Result getResult(
+        LogicalDingoTableScan scan, List<Integer> ixList, RelOptTable relOptTable
+    ) {
+        boolean matchIndex = false;
+        Table matchIndexTable = null;
+        CommonId indexId = null;
+        boolean isDocumentIndex = false;
+
+        Table table = Objects.requireNonNull(relOptTable.unwrap(DingoTable.class)).getTable();
+        Map<CommonId, Table> indexTdMap = getScalaIndices(relOptTable);
+        for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
+            Table indexTable = index.getValue();
+            if (!"range".equalsIgnoreCase(indexTable.getPartitionStrategy())) {
+                continue;
+            }
+            List<Integer> indices = table.getColumnIndices2(indexTable.getColumns());
+            if (indices.containsAll(ixList)) {
+                matchIndex = true;
+                matchIndexTable = indexTable;
+                indexId = index.getKey();
+                break;
+            } else if (ixList.stream().anyMatch(indices::contains)) {
+                matchIndex = true;
+                matchIndexTable = indexTable;
+                indexId = index.getKey();
+                break;
+            }
+        }
+        if (!matchIndex) {
+            indexTdMap = getDocumentIndices(scan, relOptTable);
+            for (Map.Entry<CommonId, Table> index : indexTdMap.entrySet()) {
+                Table indexTable = index.getValue();
+                List<Integer> indices = table.getColumnIndices2(indexTable.getColumns());
+                if (indices.containsAll(ixList)) {
+                    matchIndex = true;
+                    isDocumentIndex = true;
+                    matchIndexTable = indexTable;
+                    indexId = index.getKey();
+                    break;
+                }
+            }
+        }
+        return new DingoIndexScanMatchRule.Result(matchIndex, matchIndexTable, indexId, ixList, isDocumentIndex);
     }
 
     @Value.Immutable
