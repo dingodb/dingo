@@ -72,6 +72,11 @@ dependencies {
     testImplementation project(":dingo-store-local")
 }
 
+test {
+    dependsOn ':dingo-license-api:fatJar'
+    mustRunAfter ':dingo-license-api:fatJar'
+}
+
 task fatJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'io.dingodb.server.executor.Starter'
