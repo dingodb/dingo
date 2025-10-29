@@ -163,7 +163,7 @@ public final class MysqlByteUtil {
             .withDayOfMonth(day)
             .withHour(hour)
             .withMinute(minute)
-            .withSecond(second);
+            .withSecond(second).withNano(0);
         return Timestamp.valueOf(dateTime);
     }
 

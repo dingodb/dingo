@@ -60,6 +60,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -78,6 +79,7 @@ import java.util.Set;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getDocumentIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.calcite.rule.DingoIndexCollationRule.getIndexByExpr;
+import static io.dingodb.calcite.rule.DingoIndexNonLeftMatchRule.INDEX_KIND;
 import static io.dingodb.common.util.Utils.isNeedLookUp;
 
 @Slf4j
@@ -296,6 +298,9 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
 
     @Nullable
     private static LogicalProject indexRangeTransform(LogicalDingoTableScan scan, LogicalProject logicalProject) {
+        if (scan.getFilter() != null && !scan.getFilter().isA(INDEX_KIND)) {
+            return null;
+        }
         RexNode rexNode = RexUtil.toDnf(scan.getCluster().getRexBuilder(), scan.getFilter());
         IndexRangeVisitor indexRangeVisitor = new IndexRangeVisitor(scan.getCluster().getRexBuilder());
         IndexRangeMapSet<Integer, RexNode> ixV = rexNode.accept(indexRangeVisitor);
@@ -742,7 +747,7 @@ public class DingoIndexScanMatchRule extends RelRule<DingoIndexScanMatchRule.Con
                 }
                 // Leftmost matching principle
                 // index a columns(b, c, d)  -> where b = v  ==> matched index a
-                if (newMap.containsKey(0) && allMatch) {
+                if (newMap.containsKey(0)) {
                     Set<Map<Integer, RexNode>> newSet
                         = indexMap.computeIfAbsent(index.getKey(), e -> new HashSet());
                     newSet.add(newMap);
