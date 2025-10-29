@@ -39,3 +39,13 @@ dependencies {
     implementation group: 'org.luaj', name: 'luaj-jse', version: 'luaj'.v()
     implementation group: 'io.jsonwebtoken', name: 'jjwt', version: '0.2'
 }
+
+test {
+    useJUnitPlatform()
+    jvmArgs(
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.time=ALL-UNNAMED',
+        '--add-opens', 'java.base/sun.util.calendar=ALL-UNNAMED'
+    )
+}
