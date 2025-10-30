@@ -144,6 +144,7 @@ public class DdlJob {
             || actionType == ActionType.ActionRenameTable
             || actionType == ActionType.ActionRenameIndex
             || actionType == ActionType.ActionDropTablePartition
+            || actionType == ActionType.ActionCreateTableAsQuery
         ) {
             return true;
         }
@@ -248,7 +249,8 @@ public class DdlJob {
                 return null;
             }
             TypeReference t = null;
-            if (actionType == ActionType.ActionCreateTable || actionType == ActionType.ActionCreateView) {
+            if (actionType == ActionType.ActionCreateTable || actionType == ActionType.ActionCreateView
+                || actionType == ActionType.ActionCreateTableAsQuery) {
                 t = new TypeReference<List<TableDefinition>>() {};
             } else if (actionType == ActionType.ActionCreateSchema) {
                 t = new TypeReference<List<SchemaInfo>>() {};

@@ -16,9 +16,9 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.HexFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
-import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
 import io.dingodb.exec.fun.mysql.UnHexFun;

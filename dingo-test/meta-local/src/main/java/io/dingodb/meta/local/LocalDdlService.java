@@ -18,6 +18,7 @@ package io.dingodb.meta.local;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.sequence.SequenceDefinition;
@@ -77,6 +78,11 @@ public class LocalDdlService implements DdlService {
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaInfo.getName());
         ms.dropTable(ms.id().seq, tableName, -1);
+    }
+
+    @Override
+    public void createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
+
     }
 
     @Override

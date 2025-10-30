@@ -72,52 +72,56 @@ public final class RangeUtils {
         List<RexNode> filters = sourceFilter.getKind() == SqlKind.AND
             ? ((RexCall) sourceFilter).operands
             : Collections.singletonList(sourceFilter);
-        byte[] conditionValue;
-        for (RexNode filter : filters) {
-            conditionValue = calcConditionValue(
-                RuleUtils.checkCondition(filter), codec, realIndex, table.columns.size(), table
-            );
-            if (conditionValue == null) {
-                continue;
-            }
-            int compare = 0;
-            switch (filter.getKind()) {
-                case LESS_THAN_OR_EQUAL: {
-                    compare = 1;
+        try {
+            byte[] conditionValue;
+            for (RexNode filter : filters) {
+                conditionValue = calcConditionValue(
+                    RuleUtils.checkCondition(filter), codec, realIndex, table.columns.size(), table
+                );
+                if (conditionValue == null) {
+                    continue;
                 }
-                case LESS_THAN: {
-                    if (end == null || ByteArrayUtils.compare(conditionValue, end) <= compare) {
-                        end = conditionValue;
-                        withEnd = compare == 1;
+                int compare = 0;
+                switch (filter.getKind()) {
+                    case LESS_THAN_OR_EQUAL: {
+                        compare = 1;
                     }
-                    break;
-                }
-                case GREATER_THAN_OR_EQUAL: {
-                    compare = 1;
-                }
-                case GREATER_THAN: {
-                    if (start == null || ByteArrayUtils.compare(conditionValue, start) >= compare) {
+                    case LESS_THAN: {
+                        if (end == null || ByteArrayUtils.compare(conditionValue, end) <= compare) {
+                            end = conditionValue;
+                            withEnd = compare == 1;
+                        }
+                        break;
+                    }
+                    case GREATER_THAN_OR_EQUAL: {
+                        compare = 1;
+                    }
+                    case GREATER_THAN: {
+                        if (start == null || ByteArrayUtils.compare(conditionValue, start) >= compare) {
+                            start = conditionValue;
+                            withStart = compare == 1;
+                        }
+                        break;
+                    }
+                    case EQUALS:
                         start = conditionValue;
-                        withStart = compare == 1;
-                    }
-                    break;
+                        end = conditionValue;
+                        withEnd = true;
+                        withStart = true;
+                        break;
+                    default:
+                        return null;
                 }
-                case EQUALS:
-                    start = conditionValue;
-                    end = conditionValue;
-                    withEnd = true;
-                    withStart = true;
-                    break;
-                default:
-                    return null;
             }
+            return RangeDistribution.builder()
+                .startKey(start)
+                .endKey(end)
+                .withStart(withStart)
+                .withEnd(withEnd)
+                .build();
+        } catch (Throwable e) {
+            return null;
         }
-        return RangeDistribution.builder()
-            .startKey(start)
-            .endKey(end)
-            .withStart(withStart)
-            .withEnd(withEnd)
-            .build();
     }
 
     private static byte[] calcConditionValue(RuleUtils.ConditionInfo info,

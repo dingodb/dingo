@@ -284,10 +284,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 return;
             }
         }
-        long schemaId;
         if (subSchema.getTableNames().isEmpty()) {
             SchemaInfo schemaInfo = subSchema.getSchemaInfo(schemaName);
-            schemaId = schemaInfo.getSchemaId();
+            long schemaId = schemaInfo.getSchemaId();
             DdlService ddlService = DdlService.root();
             try {
                 ddlService.dropSchema(schemaInfo, connId);
@@ -414,6 +413,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         long start = System.currentTimeMillis();
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         LogUtils.info(log, "DDL execute: {}", create.getOriginalCreateSql());
+        final String tableName = getTableName(create.name);
+        if (create.query != null) {
+            executeCreateTableAsQuery(create, context);
+            return;
+        }
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
             throw SqlUtil.newContextException(create.name.getParserPosition(),
@@ -422,7 +426,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (columnList.stream().anyMatch(SqlForeign.class::isInstance)) {
             throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
         }
-        final String tableName = getTableName(create.name);
 
         // Get all primary key
         List<String> pks = create.columnList.stream()
@@ -581,6 +584,138 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             LogUtils.info(log, "[ddl] create table success, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
         }
+    }
+
+    public void executeCreateTableAsQuery(DingoSqlCreateTable sqlCreateTable, CalcitePrepare.Context context) {
+        SubSnapshotSchema schema = getSnapShotSchema(sqlCreateTable.name, context, false);
+        if (schema == null) {
+            if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
+                throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
+            } else {
+                throw DINGO_RESOURCE.unknownSchema("DINGO").ex();
+            }
+        }
+        final String tableName = getTableName(sqlCreateTable.name);
+        // Check table exist
+        if (schema.getTable(tableName) != null && !sqlCreateTable.getReplace()) {
+            throw DINGO_RESOURCE.tableExists(tableName).ex();
+        }
+        SqlNode query = renameColumns(sqlCreateTable.columnList, sqlCreateTable.query);
+
+        SqlDialect.Context context1 = SqlDialect.EMPTY_CONTEXT.withDatabaseProduct(SqlDialect.DatabaseProduct.MYSQL)
+            .withIdentifierQuoteString("\"");
+        SqlDialect sqlDialect = new CalciteSqlDialect(context1);
+        String sql = query.toSqlString(sqlDialect).getSql();
+        List<String> schemas = new ArrayList<>();
+        schemas.add(schema.getSchemaName());
+        List<List<String>> schemaPaths = new ArrayList<>();
+        schemaPaths.add(schemas);
+        schemaPaths.add(new ArrayList<>());
+
+        CalciteConnectionConfigImpl config;
+        config = new CalciteConnectionConfigImpl(new Properties());
+        config.set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(PARSER_CONFIG.caseSensitive()));
+        DingoCatalogReader catalogReader = new DingoCatalogReader(context.getRootSchema(),
+            schemaPaths, DingoSqlTypeFactory.INSTANCE, config);
+        DingoSqlValidator sqlValidator = new DingoSqlValidator(catalogReader, DingoSqlTypeFactory.INSTANCE);
+        SqlNode sqlNode = sqlValidator.validate(query);
+        CalciteSchema rootSchema = context.getRootSchema();
+        if (rootSchema instanceof RootCalciteSchema) {
+            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) rootSchema;
+            rootCalciteSchema.cleanMdl();
+        }
+        RelDataType type = sqlValidator.getValidatedNodeType(sqlNode);
+
+        RelDataType jdbcType = type;
+        if (!type.isStruct()) {
+            jdbcType = sqlValidator.getTypeFactory().builder().add("$0", type).build();
+        }
+        List<List<String>> originList = sqlValidator.getFieldOrigins(sqlNode);
+        AtomicInteger colIndex = new AtomicInteger(0);
+        List<ColumnDefinition> columnDefinitionList = jdbcType.getFieldList()
+            .stream().map(f -> {
+                if ("_DINGO_IMPLICIT_ROWID_".equalsIgnoreCase(f.getName())) {
+                    return null;
+                }
+                String defaultValExpr = null;
+                List<String> originCol = originList.get(colIndex.getAndIncrement());
+                if (originCol != null) {
+                    InfoSchema is = DdlService.root().getIsLatest();
+                    Table table = is.getTable(originCol.get(1), originCol.get(2));
+                    if (table != null) {
+                        Column column = table.getColumn(originCol.get(3));
+                        if (column != null) {
+                            defaultValExpr = column.getDefaultValueExpr();
+                        }
+                    }
+                }
+                int precision = f.getType().getPrecision();
+                int scale = f.getType().getScale();
+                String name = f.getType().getSqlTypeName().getName();
+                if ("BIGINT".equals(name) || "FLOAT".equals(name)
+                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)
+                    || "DOUBLE".equals(name) || "BOOLEAN".equals(name)) {
+                    precision = -1;
+                    scale = -2147483648;
+                }
+                boolean nullable = f.getType().isNullable();
+                if (sqlValidator.isHybridSearch() && "BIGINT".equals(name)) {
+                    nullable = true;
+                }
+                String typeName = f.getType().getSqlTypeName().getName();
+                if ("NULL".equalsIgnoreCase(typeName)) {
+                    typeName = "INTEGER";
+                }
+                RelDataType relDataType = f.getValue();
+                String elementType = null;
+                if (relDataType instanceof ArraySqlType) {
+                    ArraySqlType arraySqlType = (ArraySqlType) relDataType;
+                    elementType = arraySqlType.getComponentType().getSqlTypeName().getName();
+                }
+                return ColumnDefinition
+                    .builder()
+                    .name(f.getName())
+                    .type(typeName)
+                    .scale(scale)
+                    .elementType(elementType)
+                    .precision(precision)
+                    .nullable(nullable)
+                    .defaultValue(defaultValExpr)
+                    .build();
+            }).filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        List<String> pks = new ArrayList<>();
+        pks.add(IMPLICIT_COL_NAME);
+        SqlValidator validator = new ContextSqlValidator(context, true);
+        columnDefinitionList.add(createRowIdColDef(validator));
+
+        String schemaName = schema.getSchemaName();
+
+        // build tableDefinition
+        TableDefinition tableDefinition = TableDefinition.builder()
+            .name(tableName)
+            .columns(columnDefinitionList)
+            .version(1)
+            .ttl(0)
+            .replica(0)
+            .createSql(sql)
+            .charset("utf8mb4")
+            .collate("utf8mb4_bin")
+            .tableType("BASE TABLE")
+            .rowFormat("Dynamic")
+            .engine(sqlCreateTable.getEngine())
+            .createTime(System.currentTimeMillis())
+            .updateTime(0)
+            .build();
+        // Validate partition strategy
+        validatePartitionBy(pks, tableDefinition, tableDefinition.getPartDefinition());
+
+        Properties properties = new Properties();
+        properties.setProperty("querySql", sql);
+        tableDefinition.setProperties(properties);
+        DdlService ddlService = DdlService.root();
+
+        ddlService.createTableAsQuery(schemaName, tableDefinition,sqlCreateTable.getReplace());
     }
 
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {

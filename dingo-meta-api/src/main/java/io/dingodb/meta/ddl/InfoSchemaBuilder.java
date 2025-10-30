@@ -181,6 +181,7 @@ public class InfoSchemaBuilder {
                 return applyDropIndex(schemaDiff);
             case ActionCreateView:
             case ActionCreateTable:
+            case ActionCreateTableAsQuery:
                 return applyCreateTable(schemaDiff);
             case ActionTruncateTable:
                 return applyTruncateTable(schemaDiff);
