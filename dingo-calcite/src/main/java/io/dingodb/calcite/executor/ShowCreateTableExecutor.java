@@ -299,7 +299,9 @@ public class ShowCreateTableExecutor extends QueryExecutor {
         if (table.getComment() != null) {
             createTableSqlStr.append(" comment=").append("'").append(table.getComment()).append("'");
         }
-        boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
+        boolean autoInc = table.getColumns().stream().anyMatch(column -> {
+            return column.isAutoIncrement() && column.getState() != 2;
+        });
         if (autoInc) {
             long autoIncVal = MetaService.root().getNextAutoIncrement(table.tableId);
             if (autoIncVal > 2) {

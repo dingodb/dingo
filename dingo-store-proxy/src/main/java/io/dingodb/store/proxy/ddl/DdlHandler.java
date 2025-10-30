@@ -177,6 +177,11 @@ public class DdlHandler {
         doDdlJob(ddlJob);
     }
 
+    public void createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
+        DdlJob ddlJob = createTableAsQueryWithInfoJob(schemaName, tableDefinition, replace);
+        doDdlJob(ddlJob);
+    }
+
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
         DdlJob job = DdlJob.builder()
             .actionType(ActionType.ActionDropTable)
@@ -516,6 +521,35 @@ public class DdlHandler {
             .state(JobState.jobStateQueueing)
             .args(args)
             .tableId(tableEntityId)
+            .id(0)
+            .replace(replace)
+            .build();
+    }
+
+    public static DdlJob createTableAsQueryWithInfoJob(
+        String schemaName, TableDefinition tableDefinition, boolean replace
+    ) {
+        InfoSchemaService infoSchemaService = InfoSchemaService.root();
+        SchemaInfo schemaInfo = infoSchemaService.getSchema(schemaName);
+        List<Object> args = new ArrayList<>();
+        args.add(tableDefinition);
+
+        CoordinatorService coordinatorService = Services.coordinatorService(Configuration.coordinatorSet());
+        long tableEntityId = coordinatorService.createIds(
+            TsoService.getDefault().tso(),
+            CreateIdsRequest.builder()
+                .idEpochType(IdEpochType.ID_NEXT_TABLE).count(1)
+                .build()
+        ).getIds().get(0);
+        return DdlJob.builder()
+            .schemaId(schemaInfo.getSchemaId())
+            .schemaName(schemaInfo.getName())
+            .tableName(tableDefinition.getName())
+            .actionType(ActionType.ActionCreateTableAsQuery)
+            .state(JobState.jobStateQueueing)
+            .args(args)
+            .tableId(tableEntityId)
+            .schemaState(SchemaState.SCHEMA_NONE)
             .id(0)
             .replace(replace)
             .build();

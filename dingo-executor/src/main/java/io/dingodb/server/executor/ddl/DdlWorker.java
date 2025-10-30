@@ -40,6 +40,7 @@ import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.sequence.SequenceDefinition;
 import io.dingodb.common.session.Session;
+import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.util.ByteArrayUtils;
@@ -80,6 +81,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -325,6 +327,9 @@ public class DdlWorker {
                 break;
             case ActionAlterIndex:
                 res = onAlterIndex(dc, job);
+                break;
+            case ActionCreateTableAsQuery:
+                res = onCreateTableAsQuery(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -2559,5 +2564,78 @@ public class DdlWorker {
         );
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
         return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+    }
+
+    public Pair<Long, String> onCreateTableAsQuery(DdlContext dc, DdlJob job) {
+        String error = job.decodeArgs();
+        if (error != null) {
+            job.setState(JobState.jobStateCancelled);
+            return Pair.of(0L, error);
+        }
+        TableDefinition tableInfo = (TableDefinition) job.getArgs().get(0);
+        switch (job.getSchemaState()) {
+            case SCHEMA_NONE:
+                tableInfo.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                long tableId = job.getTableId();
+                tableInfo.setPrepareTableId(tableId);
+
+                try {
+                    MetaService.root().createTables(job.getSchemaId(), tableInfo, new ArrayList<>());
+                } catch (Exception e) {
+                    LogUtils.error(log, "[ddl-error]" + e.getMessage(), e);
+                    job.setState(JobState.jobStateCancelled);
+                    if (e instanceof NullPointerException) {
+                        return Pair.of(0L, "epx");
+                    }
+                    return Pair.of(0L, e.getMessage());
+                }
+                job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_DELETE_ONLY:
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_ONLY);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_ONLY:
+                job.setSchemaState(SchemaState.SCHEMA_WRITE_REORG);
+                return updateSchemaVersion(dc, job);
+            case SCHEMA_WRITE_REORG:
+                String sql = (String) tableInfo.getProperties().get("querySql");
+                //String fileName = UUID.randomUUID().toString();
+                //String filePath = "/root/tcpdump/" + fileName;
+                //sql = sql + " into outfile '" + filePath + "'";
+                //SessionUtil.INSTANCE.exeUpdateInTxn(sql);
+                //LoadDataExecutor dataExecutor = new LoadDataExecutor(filePath, job.getSchemaName(), job.getTableName());
+                //dataExecutor.execute();
+                //dataExecutor.getIterator();
+
+                //File file = new File(filePath);
+                //if (file.exists()) {
+                //    file.deleteOnExit();
+                //}
+                Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
+                String createTableWithoutData = globalVariables.getOrDefault("create_table_with_data", "on");
+                if ("on".equalsIgnoreCase(createTableWithoutData)) {
+                    sql = "insert into %s.%s " + sql;
+                    sql = String.format(sql, job.getSchemaName(), job.getTableName());
+                    LogUtils.info(log, "create as table sql:{}", sql);
+                    long start = System.currentTimeMillis();
+                    String err = SessionUtil.INSTANCE.exeUpdateInTxn(sql, 2);
+                    long sub = System.currentTimeMillis() - start;
+                    if (err == null) {
+                        LogUtils.info(log, "create as table end, cost:{}", sub);
+                    } else {
+                        LogUtils.info(log, "create as table faled, reason:{}", err);
+                    }
+                }
+
+                Object tableObj = InfoSchemaService.root().getTable(job.getSchemaId(), job.getTableId());
+                TableDefinitionWithId tableWithId = (TableDefinitionWithId) tableObj;
+                ((TableDefinitionWithId) tableObj).getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
+                job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+                job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+                return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);
+            default:
+                break;
+        }
+        return Pair.of(0L, error);
     }
 }
