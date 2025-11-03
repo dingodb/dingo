@@ -538,6 +538,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
                 throw new RuntimeException(e);
             }
         }
+        if ("sql_mode".equalsIgnoreCase(name)) {
+            this.context.setSqlNode(value);
+        }
 
         SessionVariableWatched.getInstance().notifyObservers(
             SessionVariableChange.builder().id(id).name(name).value(value).build()

@@ -19,6 +19,8 @@ package io.dingodb.calcite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import io.dingodb.common.config.DingoConfiguration;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -86,6 +88,10 @@ public class DingoCatalogReader implements Prepare.CatalogReader {
     private List<List<String>> schemaPaths;
     protected final SqlNameMatcher nameMatcher;
     protected final CalciteConnectionConfig config;
+
+    @Getter
+    @Setter
+    private long sqlModeFlags;
 
     public DingoCatalogReader(CalciteSchema rootSchema,
                               List<List<String>> array,

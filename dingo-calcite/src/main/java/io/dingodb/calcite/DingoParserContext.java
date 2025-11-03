@@ -22,6 +22,7 @@ import io.dingodb.calcite.schema.RootCalciteSchema;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.SQLMode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -154,6 +155,9 @@ public final class DingoParserContext implements Context {
             getTypeFactory(),
             this.config
         );
+        if (sessionVariables != null) {
+            catalogReader.setSqlModeFlags(SQLMode.convertToFlag(sessionVariables.getProperty("sql_mode")));
+        }
 
         // Register operators
         SqlStdOperatorTable tableInstance = SqlStdOperatorTable.instance();
@@ -283,5 +287,9 @@ public final class DingoParserContext implements Context {
                 array.set(0, schema.getName());
             }
         }
+    }
+
+    public void setSqlNode(String sqlNodeStr) {
+        this.catalogReader.setSqlModeFlags(SQLMode.convertToFlag(sqlNodeStr));
     }
 }
