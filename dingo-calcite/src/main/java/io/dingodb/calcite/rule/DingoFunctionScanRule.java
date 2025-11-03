@@ -23,6 +23,7 @@ import io.dingodb.calcite.rel.DingoDiskAnnReset;
 import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoHybridSearch;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnBuild;
@@ -33,6 +34,7 @@ import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoHybridSearch;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rel.LogicalGenerateSeries;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import lombok.extern.slf4j.Slf4j;
@@ -190,6 +192,17 @@ public class DingoFunctionScanRule extends ConverterRule {
                 scan.getCall(),
                 scan.getTable(),
                 scan.getOperands()
+            );
+        } else if (rel instanceof LogicalGenerateSeries && !(rel instanceof DingoGenerateSeries)) {
+            LogicalGenerateSeries series = (LogicalGenerateSeries) rel;
+            return new DingoGenerateSeries(
+                series.getCluster(),
+                traits,
+                series.getCall(),
+                series.getTable(),
+                series.getOperands(),
+                series.getSelection(),
+                series.getFilter()
             );
         }
 

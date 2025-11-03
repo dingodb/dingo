@@ -27,6 +27,7 @@ import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -149,6 +150,8 @@ public interface DingoRelVisitor<T> {
     T visit(DingoWindow dingoWindow);
 
     T visit(DingoRepeatUnion dingoRepeatUnion);
+
+    T visit(DingoGenerateSeries dingoGenerateSeries);
 
     default T visit(DingoTransientTableScan dingoTransientTableScan) {
         return null;

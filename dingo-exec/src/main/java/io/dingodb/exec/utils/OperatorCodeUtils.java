@@ -130,6 +130,7 @@ public final class OperatorCodeUtils {
     public static final CommonId WINDOW_FUNCTION = new CommonId(CommonId.CommonType.OP, OP, 97);
     public static final CommonId REPEAT_UNION = new CommonId(CommonId.CommonType.OP, SOURCE, 98);
     public static final CommonId TABLE_SPOOL = new CommonId(CommonId.CommonType.OP, OP, 99);
+    public static final CommonId TXN_GENERATE_SERIES = new CommonId(CommonId.CommonType.OP, SOURCE, 100);
 
     private OperatorCodeUtils() {
     }

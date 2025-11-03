@@ -28,6 +28,7 @@ import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -618,6 +619,17 @@ public class DingoExplainVisitor implements DingoRelVisitor<Explain> {
         return new Explain(
             "dingoDiskAnnLoad", dingoDiskAnnLoad.getRowCount(), "root",
             tableNames, filter
+        );
+    }
+
+    @Override
+    public Explain visit(DingoGenerateSeries dingoGenerateSeries) {
+        String table = "";
+        if (dingoGenerateSeries.getTable() != null) {
+            table = dingoGenerateSeries.getTable().getTableName();
+        }
+        return new Explain(
+            "dingoGenerateSeries", dingoGenerateSeries.getRowCount(), "root", table, ""
         );
     }
 

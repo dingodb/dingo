@@ -50,12 +50,14 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql.validate.TableGenerateSeriesFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql.validate.implicit.DingoTypeCoercionImpl;
 import org.apache.calcite.sql.validate.implicit.TypeCoercion;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlGenerateSeriesOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.apache.calcite.util.BitString;
@@ -151,6 +153,15 @@ public class DingoSqlValidator extends SqlValidatorImpl {
             super.registerNamespace(
                 usingScope, alias,
                 new TableDiskAnnFunctionNamespace(this, (SqlBasicCall) enclosingNode),
+                forceNullable
+            );
+            return;
+        } else if (enclosingNode instanceof SqlBasicCall
+            && (((SqlBasicCall) enclosingNode).getOperator() instanceof SqlGenerateSeriesOperator)
+        ) {
+            super.registerNamespace(
+                usingScope, alias,
+                new TableGenerateSeriesFunctionNamespace(this, (SqlBasicCall) enclosingNode),
                 forceNullable
             );
             return;

@@ -76,6 +76,7 @@ import io.dingodb.exec.operator.TxnDiskAnnLoadOperator;
 import io.dingodb.exec.operator.TxnDiskAnnResetOperator;
 import io.dingodb.exec.operator.TxnDiskAnnStatusOperator;
 import io.dingodb.exec.operator.TxnDocumentScanOperator;
+import io.dingodb.exec.operator.TxnGenerateSeriesOperator;
 import io.dingodb.exec.operator.TxnGetByIndexOperator;
 import io.dingodb.exec.operator.TxnGetByKeysOperator;
 import io.dingodb.exec.operator.TxnIndexRangeScanOperator;
@@ -175,6 +176,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_COUNT_MEMORY;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_LOAD;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_RESET;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_DISK_ANN_STATUS;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GENERATE_SERIES;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_INDEX;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_GET_BY_KEYS;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_INDEX_RANGE_SCAN;
@@ -289,6 +291,7 @@ public final class OperatorFactory {
         OPERATORS.put(REPEAT_UNION, RepeatUnionOperator.INSTANCE);
         OPERATORS.put(TABLE_SPOOL, TableSpoolOperator.INSTANCE);
         OPERATORS.put(LIST_TRANSIENT_SCAN, ListTransientScanOperator.INSTANCE);
+        OPERATORS.put(TXN_GENERATE_SERIES, TxnGenerateSeriesOperator.INSTANCE);
     }
 
     private OperatorFactory() {
