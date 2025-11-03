@@ -26,6 +26,7 @@ import org.apache.calcite.sql2rel.SqlCosineSimilarityOperator;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlGenerateSeriesOperator;
 import org.apache.calcite.sql2rel.SqlHammingDistanceOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlIPDistanceOperator;
@@ -71,4 +72,5 @@ public class SqlUserDefinedOperators {
     public static SqlHammingDistanceOperator HAMMING_DISTANCE
         = new SqlHammingDistanceOperator(VectorHammingDistanceFun.NAME, SqlKind.OTHER_FUNCTION);
 
+    public static SqlGenerateSeriesOperator GENERATE_SERIES = new SqlGenerateSeriesOperator("GENERATE_SERIES", SqlKind.COLLECTION_TABLE);
 }

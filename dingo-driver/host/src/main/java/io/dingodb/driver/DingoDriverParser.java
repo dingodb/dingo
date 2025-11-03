@@ -42,6 +42,7 @@ import io.dingodb.calcite.rel.DingoDiskAnnLoad;
 import io.dingodb.calcite.rel.DingoDiskAnnReset;
 import io.dingodb.calcite.rel.DingoDiskAnnStatus;
 import io.dingodb.calcite.rel.DingoDocument;
+import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
@@ -883,7 +884,7 @@ public final class DingoDriverParser extends DingoParser {
                 if (other instanceof DingoVector || other instanceof DingoDocument
                     || other instanceof DingoDiskAnnStatus || other instanceof DingoDiskAnnCountMemory
                     || other instanceof DingoDiskAnnReset || other instanceof DingoDiskAnnBuild
-                    || other instanceof DingoDiskAnnLoad) {
+                    || other instanceof DingoDiskAnnLoad || other instanceof DingoGenerateSeries) {
                     return other;
                 }
                 if (!other.getInputs().isEmpty()) {
@@ -919,6 +920,8 @@ public final class DingoDriverParser extends DingoParser {
                     return child2;
                 } else if (child2 instanceof DingoDiskAnnReset) {
                     return child2;
+                } else if (child2 instanceof DingoGenerateSeries) {
+                    return child2;
                 }
                 return null;
             }
@@ -945,6 +948,9 @@ public final class DingoDriverParser extends DingoParser {
         } else if (relNode1 instanceof DingoDiskAnnReset) {
             DingoDiskAnnReset dingoDiskAnnReset = (DingoDiskAnnReset) relNode1;
             return dingoDiskAnnReset.getTable();
+        } else if (relNode1 instanceof DingoGenerateSeries) {
+            DingoGenerateSeries generateSeries = (DingoGenerateSeries) relNode1;
+            return generateSeries.getTable();
         }
         return null;
     }

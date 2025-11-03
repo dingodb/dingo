@@ -27,6 +27,7 @@ import io.dingodb.calcite.rel.LogicalDingoDiskAnnReset;
 import io.dingodb.calcite.rel.LogicalDingoDiskAnnStatus;
 import io.dingodb.calcite.rel.LogicalDingoDocument;
 import io.dingodb.calcite.rel.LogicalDingoVector;
+import io.dingodb.calcite.rel.LogicalGenerateSeries;
 import io.dingodb.calcite.rel.logical.LogicalTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.utils.DingoRelOptUtil;
@@ -85,10 +86,12 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
+import org.apache.calcite.sql.validate.TableGenerateSeriesFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
 import org.apache.calcite.sql2rel.SqlDiskAnnOperator;
 import org.apache.calcite.sql2rel.SqlDocumentOperator;
 import org.apache.calcite.sql2rel.SqlFunctionScanOperator;
+import org.apache.calcite.sql2rel.SqlGenerateSeriesOperator;
 import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
@@ -489,6 +492,7 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
             && !(operator instanceof SqlDocumentOperator)
             && !(operator instanceof SqlHybridSearchOperator)
             && !(operator instanceof SqlDiskAnnOperator)
+            && !(operator instanceof SqlGenerateSeriesOperator)
         ) {
             super.convertCollectionTable(bb, call);
             return;
@@ -548,6 +552,22 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
             if (operator instanceof SqlHybridSearchOperator) {
                 assert namespace != null;
                 throw new RuntimeException("Not support convert hybrid search node.");
+            }
+        } else if (validator.getNamespace(call) instanceof TableGenerateSeriesFunctionNamespace) {
+            TableGenerateSeriesFunctionNamespace namespace = (TableGenerateSeriesFunctionNamespace) validator.getNamespace(call);
+
+            if (operator instanceof SqlGenerateSeriesOperator) {
+                assert namespace != null;
+                List<Object> operands = new ArrayList<>(call.getOperandList());
+                callRel = new LogicalGenerateSeries(
+                    cluster,
+                    traits,
+                    (RexCall) rexCall,
+                    namespace.getTable(),
+                    operands,
+                    null,
+                    null
+                );
             }
         } else if (validator.getNamespace(call) instanceof TableDiskAnnFunctionNamespace) {
             TableDiskAnnFunctionNamespace namespace = (TableDiskAnnFunctionNamespace) validator.getNamespace(call);

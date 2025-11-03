@@ -27,6 +27,7 @@ import io.dingodb.calcite.rel.DingoExportData;
 import io.dingodb.calcite.rel.DingoFilter;
 import io.dingodb.calcite.rel.DingoForUpdate;
 import io.dingodb.calcite.rel.DingoFunctionScan;
+import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoGetByIndex;
 import io.dingodb.calcite.rel.DingoGetByIndexMerge;
 import io.dingodb.calcite.rel.DingoGetByKeys;
@@ -77,6 +78,7 @@ import io.dingodb.calcite.visitor.function.DingoExportDataVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFilterVisitFun;
 import io.dingodb.calcite.visitor.function.DingoForUpdateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoFunctionScanVisitFun;
+import io.dingodb.calcite.visitor.function.DingoGenerateSeriesVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByIndexMergeVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByIndexVisitFun;
 import io.dingodb.calcite.visitor.function.DingoGetByKeysFun;
@@ -128,6 +130,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
+import java.util.List;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 
@@ -448,6 +451,12 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
         return DingoRepeatUnionVisitFun.visit(
             job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion, executeVariables
         );
+    }
+
+    @Override
+    public Collection<Vertex> visit(@NonNull DingoGenerateSeries dingoGenerateSeries) {
+        return DingoGenerateSeriesVisitFun.visit(
+            job, idGenerator, currentLocation, transaction, this, dingoGenerateSeries);
     }
 
     public Collection<Vertex> visit(@NonNull DingoTransientTableScan dingoTransientTableScan) {

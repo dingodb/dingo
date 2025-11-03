@@ -306,6 +306,7 @@ data: {
       "FIXED"
       "MEMORY"
       "COLUMN_FORMAT"
+      "GENERATE_SERIES"
     ]
 
     # List of non-reserved keywords to add;
