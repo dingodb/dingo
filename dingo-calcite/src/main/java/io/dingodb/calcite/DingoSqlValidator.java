@@ -17,6 +17,8 @@
 package io.dingodb.calcite;
 
 import io.dingodb.calcite.fun.DingoOperatorTable;
+import io.dingodb.common.mysql.DingoErrUtil;
+import io.dingodb.common.mysql.SQLMode;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,6 +29,7 @@ import org.apache.calcite.sql.DingoSqlBasicCall;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -39,15 +42,18 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.AggregatingSelectScope;
 import org.apache.calcite.sql.validate.SqlNonNullableAccessors;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql.validate.TableDiskAnnFunctionNamespace;
 import org.apache.calcite.sql.validate.TableFunctionNamespace;
 import org.apache.calcite.sql.validate.TableHybridFunctionNamespace;
@@ -66,10 +72,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.Calendar;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.dingodb.common.mysql.error.ErrorCode.ErrFieldNotInGroupBy;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrMixOfGroupFuncAndFields;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 public class DingoSqlValidator extends SqlValidatorImpl {
@@ -88,6 +98,9 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     static Config CONFIG = Config.DEFAULT
         .withTypeCoercionFactory(DingoSqlValidator::createTypeCoercion)
         .withConformance(DingoParser.PARSER_CONFIG.conformance());
+
+    public static final Set<SqlKind> AGGREGATE_KIND =
+        EnumSet.of(SqlKind.SUM, SqlKind.SUM0, SqlKind.AVG, SqlKind.COUNT, SqlKind.MIN, SqlKind.MAX);
 
     public static TypeCoercion createTypeCoercion(RelDataTypeFactory typeFactory,
                                                   SqlValidator validator) {
@@ -482,6 +495,65 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                 sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
         } else {
             return resNode;
+        }
+    }
+
+    public void expandSelectItemWithNotInGroupBy(List<SqlNode> selectItems, SqlValidatorScope scope) {
+        if (!(scope instanceof AggregatingSelectScope)) {
+            return;
+        }
+        AggregatingSelectScope aggScope = (AggregatingSelectScope) scope;
+        boolean itemAggregateCall = false;
+        boolean hasNotGroupExpr = false;
+        boolean groupExprsEmpty = aggScope.getGroupExprs() != null && aggScope.getGroupExprs().getKey().isEmpty()
+            && aggScope.getGroupExprs().getValue().isEmpty();
+        int errIndex = -1;
+        String errCol = "";
+        for (int i = 0; i < selectItems.size(); i++) {
+            SqlNode item = selectItems.get(i);
+            if (item instanceof SqlBasicCall) {
+                SqlBasicCall sqlBasicCall = (SqlBasicCall) item;
+                if (sqlBasicCall.isA(AGGREGATE_KIND)) {
+                    itemAggregateCall = true;
+                }
+            }
+            if (aggScope.isNotGroupExpr(item)) {
+                hasNotGroupExpr = true;
+                SqlNode sqlNode = null;
+                SqlNode sqlNodeAs = null;
+                if (item.getKind() == SqlKind.AS) {
+                    SqlCall as = (SqlCall) item;
+                    sqlNode = as.operand(0);
+                    sqlNodeAs = as.operand(1);
+                } else {
+                    sqlNode = item;
+                    sqlNodeAs = new SqlIdentifier(SqlValidatorUtil.getAlias(item, 0), SqlParserPos.ZERO);
+                }
+                if (groupExprsEmpty) {
+                    if (itemAggregateCall) {
+                        throw DingoErrUtil.newStdErr(ErrMixOfGroupFuncAndFields, i + 1, item.toString());
+                    }
+                    final SqlNode newNode = aggScope.replaceNotGroupExpr(sqlNode);
+                    selectItems.set(i, SqlStdOperatorTable.AS.createCall(newNode.getParserPosition(),
+                        newNode, new SqlIdentifier(SqlValidatorUtil.getAlias(sqlNodeAs, 0), SqlParserPos.ZERO)));
+                    errIndex = i;
+                    errCol = item.toString();
+                } else if (this.getCatalogReader() instanceof DingoCatalogReader) {
+                    DingoCatalogReader dingoCatalogReader = (DingoCatalogReader) this.getCatalogReader();
+                    if (SQLMode.isOnlyFullGroupBy(dingoCatalogReader.getSqlModeFlags())
+                        && !sqlNode.toString().toUpperCase().contains(IMPLICIT_COL_NAME)) {
+                        throw DingoErrUtil.newStdErr(ErrFieldNotInGroupBy, i + 1, "SELECT list", item.toString());
+                    } else {
+                        final SqlNode newNode = aggScope.replaceNotGroupExpr(sqlNode);
+                        selectItems.set(i, SqlStdOperatorTable.AS.createCall(newNode.getParserPosition(),
+                            newNode, new SqlIdentifier(SqlValidatorUtil.getAlias(sqlNodeAs, 0), SqlParserPos.ZERO)));
+                    }
+                }
+
+            }
+        }
+        if (groupExprsEmpty && itemAggregateCall && hasNotGroupExpr) {
+            throw DingoErrUtil.newStdErr(ErrMixOfGroupFuncAndFields, errIndex + 1, errCol);
         }
     }
 }

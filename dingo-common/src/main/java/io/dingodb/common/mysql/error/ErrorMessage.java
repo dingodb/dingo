@@ -58,6 +58,11 @@ public final class ErrorMessage {
         errorMap.put(ErrAccessDenied, "Access denied for user '%s'@'%s' (using password: %s)");
         errorMap.put(ErrMustChangePassword, "You must reset your password using ALTER USER statement before "
             + "executing this statement.");
+        errorMap.put(ErrFieldNotInGroupBy, "Expression #%d of %s is not in GROUP BY clause and contains "
+            + "nonaggregated column '%s' which is not functionally dependent on columns in GROUP BY clause; "
+            + "this is incompatible with sql_mode=only_full_group_by");
+        errorMap.put(ErrMixOfGroupFuncAndFields, "In aggregated query without GROUP BY, expression #%d of "
+            + "SELECT list contains nonaggregated column '%s'; this is incompatible with sql_mode=only_full_group_by");
     }
 
     private ErrorMessage() {
