@@ -21,11 +21,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.Profile;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
+import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 import lombok.Setter;
@@ -73,6 +77,9 @@ public class HashJoinParam extends AbstractParams {
 
     @Setter
     public RelOp relOp;
+    public DingoRelConfig config;
+    @Setter
+    public DingoType schema;
 
     @Setter
     public String joinType;
@@ -99,6 +106,7 @@ public class HashJoinParam extends AbstractParams {
         this.rightRequired = rightRequired;
         this.leftMappingEmpty = this.leftMapping.size() == 0;
         this.rightMappingEmpty = this.rightMapping.size() == 0;
+        this.config = new DingoRelConfig();
     }
 
     public static TupleKey rtrimTupleKey(TupleKey key) {
@@ -163,6 +171,12 @@ public class HashJoinParam extends AbstractParams {
         rightFinFlag = false;
         hashMap = new ConcurrentHashMap<>();
         future = new CompletableFuture<>();
+        if (relOp != null) {
+            relOp = relOp.compile(new DingoCompileContext(
+                (TupleType) schema.getType(),
+                (TupleType) vertex.getParasType().getType()
+            ), config);
+        }
     }
 
     public void clear() {

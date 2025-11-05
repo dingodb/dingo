@@ -70,6 +70,7 @@ public class DingoHashJoinVisitFun {
         JoinInfo joinInfo = rel.analyzeCondition();
         SqlExpr otherCondition = null;
         RelOp relOp = null;
+        DingoType dingoType = null;
         if (!joinInfo.nonEquiConditions.isEmpty()) {
             RexNode nonEquiCondition = RexUtil.composeConjunction(
                 rel.getCluster().getRexBuilder(), joinInfo.nonEquiConditions, true);
@@ -88,10 +89,8 @@ public class DingoHashJoinVisitFun {
                     tmp.setId(i);
                     dingoTypes[i] = tmp;
                 }
-                DingoType dingoType = DingoTypeFactory.tuple(dingoTypes);
+                dingoType = DingoTypeFactory.tuple(dingoTypes);
                 relOp = RelOpBuilder.builder().project(new Expr[]{RexConverter.convert(nonEquiCondition)}).build();
-                relOp = relOp.compile(
-                    new DingoCompileContext((TupleType) dingoType.getType(), null), new DingoRelConfig());
                 // otherCondition.compileIn(dingoType, null);
             }
         }
@@ -122,6 +121,7 @@ public class DingoHashJoinVisitFun {
             param.setJoinType(rel.getJoinType().lowerName);
             param.setOtherExpr(otherCondition);
             param.setRelOp(relOp);
+            param.setSchema(dingoType);
             Vertex vertex = new Vertex(HASH_JOIN, param);
             vertex.setId(idGenerator.getOperatorId(taskId));
             left.setPin(0);
