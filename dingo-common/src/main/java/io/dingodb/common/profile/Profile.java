@@ -33,50 +33,50 @@ import java.util.concurrent.atomic.AtomicLong;
 @Data
 public class Profile {
     @JsonProperty("type")
-    String type;
+    public String type;
     @JsonProperty("start")
-    long start;
+    public long start;
     @JsonProperty("end")
-    long end;
+    public long end;
     @JsonProperty("count")
-    AtomicLong count;
+    public AtomicLong count;
     @JsonProperty("opCount")
-    AtomicLong opCount;
+    public AtomicLong opCount;
     @JsonProperty("duration")
-    AtomicLong duration;
+    public AtomicLong duration;
     @JsonProperty("relOpDuration")
-    AtomicLong opDuration;
+    public AtomicLong opDuration;
 
     @JsonProperty("cacheDuration")
-    AtomicLong cacheDuration;
+    public AtomicLong cacheDuration;
 
     @JsonProperty("decodeDuration")
-    AtomicLong decodeDuration;
+    public AtomicLong decodeDuration;
 
-    long decodeRate;
+    public long decodeRate;
 
     @JsonProperty("max")
-    long max;
+    public long max;
     @JsonProperty("min")
-    long min;
+    public long min;
     @JsonProperty("avg")
-    long avg;
+    public long avg;
 
     @JsonProperty("children")
-    List<Profile> children;
+    public List<Profile> children;
     @JsonProperty("autoIncId")
-    long autoIncId;
+    public long autoIncId;
     @JsonProperty("hasAutoInc")
-    boolean hasAutoInc;
+    public boolean hasAutoInc;
 
     @JsonProperty("location")
-    String location = "";
+    public String location = "";
     @JsonIgnore
-    StringBuilder dagText;
+    public StringBuilder dagText;
     @JsonIgnore
-    final byte[] terminated = ByteUtils.hexStringToByteArray("a9b8a9a4");
+    public final byte[] terminated = ByteUtils.hexStringToByteArray("a9b8a9a4");
     @JsonIgnore
-    final byte[] space = new byte[]{0x20, 0x20};
+    public final byte[] space = new byte[]{0x20, 0x20};
 
     public Profile() {
         this.duration = new AtomicLong(0);

@@ -41,7 +41,7 @@ public class FinWithProfiles implements Fin {
     public String id;
 
     @JsonProperty("profile")
-    Profile profile;
+    public Profile profile;
 
     public FinWithProfiles() {
 

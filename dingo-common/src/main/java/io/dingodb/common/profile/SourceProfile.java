@@ -22,10 +22,10 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SourceProfile extends Profile {
-    long regionId;
-    String taskType;
-    long localScan;
-    long txnScan;
+    public long regionId;
+    public String taskType;
+    public long localScan;
+    public long txnScan;
 
     public SourceProfile(String type) {
         super(type);

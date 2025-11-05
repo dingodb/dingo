@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.5.15'
+    id 'org.springframework.boot' version '2.7.18'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id "com.gorylenko.gradle-git-properties" version "${gradleGitCommitVersion}"
@@ -29,10 +29,12 @@ dependencies {
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: 'logback'.v()
     implementation group: 'ch.qos.logback', name: 'logback-core', version: 'logback'.v()
 
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter:2.7.18'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.7.18'
+    implementation 'org.springframework.boot:spring-boot-starter-aop:2.7.18'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.7.18'
 
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: 'jackson-annotations'.v()
     implementation group: 'io.springfox', name: 'springfox-boot-starter', version: '3.0.0'
     implementation group: 'org.mapstruct', name: 'mapstruct', version: 'mapstruct'.v()
 
@@ -53,7 +55,6 @@ dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.projectlombok', name: 'lombok', version: 'lombok'.v()
     annotationProcessor group: 'org.mapstruct', name: 'mapstruct-processor', version: 'mapstruct'.v()
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly group: 'mysql', name:'mysql-connector-java', version: 'mysql-connector'.v()
 }
 
