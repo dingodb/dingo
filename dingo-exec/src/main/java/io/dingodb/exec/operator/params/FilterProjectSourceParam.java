@@ -25,6 +25,7 @@ import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
@@ -48,6 +49,8 @@ public abstract class FilterProjectSourceParam extends SourceParam {
     protected TupleMapping selection;
     @JsonProperty("keyMapping")
     protected final TupleMapping keyMapping;
+    @JsonProperty("relOp")
+    protected RelOp relOp;
 
     public FilterProjectSourceParam(
         CommonId tableId,
@@ -67,6 +70,28 @@ public abstract class FilterProjectSourceParam extends SourceParam {
         this.selection = selection;
         this.keyMapping = keyMapping;
         this.codecVersion = codecVersion;
+    }
+
+    public FilterProjectSourceParam(
+        CommonId tableId,
+        CommonId partId,
+        DingoType schema,
+        int schemaVersion,
+        SqlExpr filter,
+        TupleMapping selection,
+        TupleMapping keyMapping,
+        int codecVersion,
+        RelOp relOp
+    ) {
+        super(partId, null);
+        this.tableId = tableId;
+        this.schema = schema;
+        this.schemaVersion = schemaVersion;
+        this.filter = filter;
+        this.selection = selection;
+        this.keyMapping = keyMapping;
+        this.codecVersion = codecVersion;
+        this.relOp = relOp;
     }
 
     public FilterProjectSourceParam(

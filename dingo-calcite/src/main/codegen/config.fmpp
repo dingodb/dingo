@@ -461,6 +461,7 @@ data: {
     "BEFORE"
     "BERNOULLI"
     "BREADTH"
+    "BINARY"
     "C"
     "CASCADE"
     "CATALOG"
