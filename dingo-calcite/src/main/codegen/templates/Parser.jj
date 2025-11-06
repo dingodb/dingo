@@ -4816,6 +4816,8 @@ SqlNode NonIntervalLiteral() :
         e = SpecialLiteral()
     |
         e = DateTimeLiteral()
+    |
+        e = SpecialBinaryLiteral()
 <#-- additional literal parser methods are included here -->
 <#list (parser.literalParserMethods!) as method>
     |
@@ -5184,6 +5186,17 @@ SqlLiteral SpecialDateTimeLiteral() :
 {
     <DATE> { s = span(); } p = SimpleStringLiteral() {
       return SqlLiteral.createUnknown("DATE", p, s.end(this));
+    }
+}
+
+SqlLiteral SpecialBinaryLiteral() :
+{
+    final String p;
+    final Span s;
+}
+{
+    <BINARY> { s = span(); } p = SimpleStringLiteral() {
+      return SqlLiteral.createUnknown("BINARY", p, s.end(this));
     }
 }
 
