@@ -21,6 +21,8 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.FilterProjectSourceParam;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.FilterOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Iterator;
@@ -34,6 +36,7 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
         FilterProjectSourceParam param = vertex.getParam();
         Iterator<Object[]> iterator = createSourceIterator(vertex);
         SqlExpr filter = param.getFilter();
+        RelOp relOp = param.getRelOp();
         TupleMapping selection = param.getSelection();
         if (selection != null) {
             iterator = Iterators.transform(iterator, selection::revMap);
@@ -46,6 +49,13 @@ public abstract class FilterProjectSourceOperator extends IteratorSourceOperator
                     return v != null && (Boolean) v;
                 }
             );
+        }
+        if (relOp != null && filter == null) {
+            if (relOp instanceof FilterOp) {
+                iterator = Iterators.filter(
+                    iterator,
+                    tuple -> ((FilterOp) relOp).put(tuple) != null);
+            }
         }
         return iterator;
     }

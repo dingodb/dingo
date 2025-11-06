@@ -18,15 +18,17 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoInfoSchemaScan;
-import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -48,9 +50,12 @@ public final class DingoInfoSchemaScanVisitFun {
         @NonNull DingoInfoSchemaScan rel
     ) {
         final Table td = rel.getTable().unwrap(DingoTable.class).getTable();
-        SqlExpr filter = null;
+        RelOp relOp = null;
         if (rel.getFilter() != null) {
-            filter = SqlExprUtils.toSqlExpr(rel.getFilter());
+            Expr expr = RexConverter.convert(rel.getFilter());
+            relOp = RelOpBuilder.builder()
+                .filter(expr)
+                .build();
         }
         String tableName;
         if (rel.getTable().getQualifiedName() != null && rel.getTable().getQualifiedName().size() > 2) {
@@ -63,11 +68,12 @@ public final class DingoInfoSchemaScanVisitFun {
         InfoSchemaScanParam param = new InfoSchemaScanParam(
             td.tupleType(),
             td.version,
-            filter,
+            null,
             rel.getSelection(),
             tableName,
             user,
-            host
+            host,
+            relOp
         );
 
         Task task = job.getOrCreate(currentLocation, idGenerator);
