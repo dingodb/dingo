@@ -107,27 +107,32 @@ public class DateSubFun extends BinaryOp {
             } else if (value1 instanceof IntervalDayType.IntervalDay) {
                 IntervalDayType.IntervalDay intervalDay = (IntervalDayType.IntervalDay) value1;
                 if (intervalDay.elementType instanceof IntervalDayTimeType) {
-                    return compute(value0, Calendar.DAY_OF_MONTH, intervalDay.value.intValue() / (24 * 60 * 60 * 1000));
+                    long value = intervalDay.value.longValue() / (24 * 60 * 60 * 1000);
+                    return compute(value0, Calendar.DAY_OF_MONTH, Math.toIntExact(value));
                 }
             } else if (value1 instanceof IntervalWeekType.IntervalWeek) {
                 IntervalWeekType.IntervalWeek intervalWeek = (IntervalWeekType.IntervalWeek) value1;
                 if (intervalWeek.elementType instanceof IntervalDayTimeType) {
-                    return compute(value0, Calendar.WEEK_OF_YEAR, intervalWeek.value.intValue() / (60 * 60 * 1000));
+                    long value = intervalWeek.value.longValue() / (60 * 60 * 1000);
+                    return compute(value0, Calendar.WEEK_OF_YEAR, Math.toIntExact(value));
                 }
             } else if (value1 instanceof IntervalHourType.IntervalHour) {
                 IntervalHourType.IntervalHour intervalHour = (IntervalHourType.IntervalHour) value1;
                 if (intervalHour.elementType instanceof IntervalDayTimeType) {
-                    return compute(value0, Calendar.HOUR, intervalHour.value.intValue() / (60 * 60 * 1000));
+                    long value = intervalHour.value.longValue() / (60 * 60 * 1000);
+                    return compute(value0, Calendar.HOUR, Math.toIntExact(value));
                 }
             } else if (value1 instanceof IntervalMinuteType.IntervalMinute) {
                 IntervalMinuteType.IntervalMinute intervalMinute = (IntervalMinuteType.IntervalMinute) value1;
                 if (intervalMinute.elementType instanceof IntervalDayTimeType) {
-                    return compute(value0, Calendar.MINUTE, intervalMinute.value.intValue() / (60 * 1000));
+                    long value = intervalMinute.value.longValue() / (60 * 1000);
+                    return compute(value0, Calendar.MINUTE, Math.toIntExact(value));
                 }
             } else if (value1 instanceof IntervalSecondType.IntervalSecond) {
                 IntervalSecondType.IntervalSecond intervalSecond = (IntervalSecondType.IntervalSecond) value1;
                 if (intervalSecond.elementType instanceof IntervalDayTimeType) {
-                    return compute(value0, Calendar.SECOND, intervalSecond.value.intValue() / 1000);
+                    long value = intervalSecond.value.longValue() / 1000;
+                    return compute(value0, Calendar.SECOND, Math.toIntExact(value));
                 }
             } else {
                 return null;
