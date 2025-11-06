@@ -17,7 +17,6 @@
 package io.dingodb.common;
 
 import io.dingodb.common.util.Optional;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -28,6 +27,7 @@ import java.util.Properties;
 public class ExecuteVariables {
     public final static int CONCURRENCY_COUNT = 5;
     private boolean isJoinConcurrency = false;
+    private boolean isExecutorShuffle = false;
     private int concurrencyLevel = CONCURRENCY_COUNT;
     private boolean isInsertCheckInplace = false;
     private int iterationLimit;
@@ -37,6 +37,7 @@ public class ExecuteVariables {
         this.isJoinConcurrency = isJoinConcurrency(properties);
         this.concurrencyLevel = getConcurrencyLevel(properties);
         this.isInsertCheckInplace = isInsertCheckInplace(properties);
+        this.isExecutorShuffle = isExecutorShuffle(properties);
     }
 
     public int getConcurrencyLevel(Properties properties) {
@@ -61,5 +62,9 @@ public class ExecuteVariables {
 
     public boolean isInsertCheckInplace(Properties properties) {
         return "on".equalsIgnoreCase(properties.getProperty("dingo_constraint_check_in_place"));
+    }
+
+    public boolean isExecutorShuffle(Properties properties) {
+        return "on".equalsIgnoreCase(properties.getProperty("dingo_execute_shuffle_enable"));
     }
 }
