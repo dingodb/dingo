@@ -21,7 +21,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 
 @Getter
@@ -48,13 +53,25 @@ public class InfoSchemaScanParam extends FilterProjectSourceParam {
                                int schemaVersion,
                                SqlExpr filter,
                                TupleMapping selection,
-                               String target, String user, String host) {
-        super(null, null, schema, schemaVersion, filter, selection, null, 2);
+                               String target, String user, String host, RelOp relOp) {
+        super(null, null, schema, schemaVersion, filter, selection, null, 2, relOp);
         this.schema = schema;
         this.filter = filter;
         this.selection = selection;
         this.target = target;
         this.user = user;
         this.host = host;
+        this.relOp = relOp;
+    }
+
+    @Override
+    public void init(Vertex vertex) {
+        super.init(vertex);
+        if (relOp != null) {
+            relOp = relOp.compile(new DingoCompileContext(
+                (TupleType) schema.getType(),
+                (TupleType) vertex.getParasType().getType()
+            ), new DingoRelConfig());
+        }
     }
 }
