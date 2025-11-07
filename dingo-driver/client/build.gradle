@@ -126,7 +126,9 @@ mavenPublishing {
     }
     
     publishToMavenCentral()
-    signAllPublications()
+    if (gradle.startParameter.taskNames.any { it.contains('MavenCentral') || it.contains('publishToMavenCentral') }) {
+        signAllPublications()
+    }
 }
 
 project.gradle.taskGraph.whenReady { graph ->
