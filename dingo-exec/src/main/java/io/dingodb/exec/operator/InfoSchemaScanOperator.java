@@ -200,7 +200,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // privileges fix
                             "select,insert,update,references",
                             column.comment,
-                            ""
+                            "",
+                            null
                         });
                     }
                     return colRes.stream();

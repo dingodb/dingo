@@ -392,6 +392,19 @@ public class DdlHandler {
         doDdlJob(job);
     }
 
+    public void refreshMeta(SchemaInfo schemaInfo, String tableName) {
+        DdlJob job = DdlJob.builder()
+            .schemaName(schemaInfo.getName())
+            .schemaId(schemaInfo.getSchemaId())
+            .tableName(tableName)
+            .actionType(ActionType.ActionRefreshMeta)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        List<Object> args = new ArrayList<>();
+        job.setArgs(args);
+        doDdlJob(job);
+    }
+
     public void addColumn(SchemaInfo schemaInfo, Table table, AddingColInfo addingColInfo, String connId) {
         DdlJob job = DdlJob.builder()
             .schemaId(schemaInfo.getSchemaId())

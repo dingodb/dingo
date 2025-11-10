@@ -62,12 +62,12 @@ import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 @Slf4j
 public final class PrepareMeta {
-    private static final String BASE_TABLE = "BASE TABLE";
-    private static final String SYSTEM_VIEW = "SYSTEM VIEW";
+    public static final String BASE_TABLE = "BASE TABLE";
+    public static final String SYSTEM_VIEW = "SYSTEM VIEW";
     // for format
-    private static final String DYNAMIC = "Dynamic";
-    private static final String FIXED = "Fixed";
-    private static final String TXN_LSM = Common.Engine.TXN_LSM.name();
+    public static final String DYNAMIC = "Dynamic";
+    public static final String FIXED = "Fixed";
+    public static final String TXN_LSM = Common.Engine.TXN_LSM.name();
     private static final long tenantId = TenantConstant.TENANT_ID;
 
     private static int exceptionRetries = 0;
@@ -88,6 +88,7 @@ public final class PrepareMeta {
     public static synchronized void prepare(String coordinators) {
         io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
         synchronizeTenant();
+        initTableFiles();
         if (infoSchemaService.prepareStarted()) {
             return;
         }
@@ -105,7 +106,6 @@ public final class PrepareMeta {
             LogUtils.error(log, "Tenant not exists :{}", tenantId);
             System.exit(0);
         }
-        initTableFiles();
         prepareSchema(tenantId);
         prepareMysql();
 
@@ -483,9 +483,15 @@ public final class PrepareMeta {
     }
 
     private static List<ColumnDefinition> getColumnList(String tableName) throws IOException {
+        if (TABLE_MAP == null) {
+            initTableFiles();
+        }
         String jsonFile = TABLE_MAP.get(tableName);
-        if (jsonFile == null) {
-            throw new RuntimeException("table not found");
+        if (jsonFile == null && tableName != null) {
+            jsonFile = TABLE_MAP.get(tableName.toUpperCase());
+            if (jsonFile == null) {
+                throw new RuntimeException("table not found");
+            }
         }
         InputStream is = PrepareMeta.class.getResourceAsStream(jsonFile);
         assert is != null;
@@ -578,6 +584,38 @@ public final class PrepareMeta {
                     subMetaService.createTables(tableDefinition, new ArrayList<>());
                 } else {
                     subMetaService.createView(subMetaService.id().seq, tableName, tableDefinition);
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, "create table failed:{}, schemaName:{}, tableName:{}",
+                e.getMessage(), schema, tableName, e);
+        }
+    }
+
+    public static void updateTableByTemplate(String schema,
+                                           String tableName,
+                                           String tableType,
+                                           String engine,
+                                           String rowFormat) {
+        tableName = convertName(tableName, CASE_NAMES);
+        io.dingodb.meta.InfoSchemaService infoSchemaService = io.dingodb.meta.InfoSchemaService.root();
+        TableDefinitionWithId tableWithId = (TableDefinitionWithId) infoSchemaService.getTable(schema, tableName);
+        try {
+            if (tableWithId == null) {
+                TableDefinition tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
+                MetaService metaService = MetaService.ROOT;
+                MetaService subMetaService = metaService.getSubMetaService(schema);
+                if (!SYSTEM_VIEW.equalsIgnoreCase(tableType)) {
+                    subMetaService.createTables(tableDefinition, new ArrayList<>());
+                } else {
+                    subMetaService.createView(subMetaService.id().seq, tableName, tableDefinition);
+                }
+            } else {
+                TableDefinition tableDefinition = getTableDefinition(tableName, tableType, engine, rowFormat);
+                MetaService metaService = MetaService.ROOT;
+                MetaService subMetaService = metaService.getSubMetaService(schema);
+                if (SYSTEM_VIEW.equalsIgnoreCase(tableType)) {
+                    subMetaService.updateView(subMetaService.id().seq, tableWithId, tableDefinition);
                 }
             }
         } catch (Exception e) {
