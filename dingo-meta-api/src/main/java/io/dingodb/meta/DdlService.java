@@ -152,4 +152,6 @@ public interface DdlService {
     default void alterTableTruncatePart(SchemaInfo schemaInfo, Table table, String part) {
 
     }
+
+    void refreshMeta(SchemaInfo schemaInfo, String tableName);
 }

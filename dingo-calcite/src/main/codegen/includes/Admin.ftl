@@ -54,5 +54,6 @@ SqlAdmin SqlAdmin(): {
   | <BATCH> <CREATE> <TABLE>
   { return new SqlBatchCreateTable(s.end(this), true); }
   | <CANCEL> <BATCH> <CREATE> <TABLE>  { return new SqlBatchCreateTable(s.end(this), false); }
+  | <REFRESH>{ SqlIdentifier tableName = null;} tableName = CompoundTableIdentifier() { return new SqlRefreshMeta(s.end(this), tableName); }
   )
 }

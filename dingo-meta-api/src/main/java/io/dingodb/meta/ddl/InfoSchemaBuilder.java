@@ -212,6 +212,8 @@ public class InfoSchemaBuilder {
             case ActionDropTablePartition:
             case ActionTruncateTablePartition:
                 return applyRenameTable(schemaDiff);
+            case ActionRefreshMeta:
+                return applyRefreshMeta(schemaDiff);
             default:
                 break;
         }
@@ -518,6 +520,12 @@ public class InfoSchemaBuilder {
         applyCreateTable(diff);
         return Pair.of(new ArrayList<>(), null);
     }
+
+    public Pair<List<Long>, String> applyRefreshMeta(SchemaDiff diff) {
+        dropTable(diff.getSchemaId(), diff.getTableId());
+        return applyCreateTable(diff);
+    }
+
 
     public static int bucketIdx(long tableId) {
         return (int) (tableId % bucketCount);
