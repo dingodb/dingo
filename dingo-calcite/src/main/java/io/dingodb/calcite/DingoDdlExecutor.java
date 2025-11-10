@@ -67,6 +67,7 @@ import io.dingodb.calcite.grammar.ddl.SqlForeign;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
 import io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration;
 import io.dingodb.calcite.grammar.ddl.SqlRecoverTable;
+import io.dingodb.calcite.grammar.ddl.SqlRefreshMeta;
 import io.dingodb.calcite.grammar.ddl.SqlRevoke;
 import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
@@ -2225,6 +2226,20 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 }
             }
         }
+    }
+
+    public void execute(SqlRefreshMeta sqlRefreshMeta, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlRefreshMeta);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlRefreshMeta.table, context);
+        final String tableName = schemaTableName.right;
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        if (schemaInfo == null) {
+            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        }
+        DdlService.root().refreshMeta(schemaInfo, tableName);
+        LogUtils.info(log, "DDL execute:{} done", sqlRefreshMeta);
     }
 
     public void validateMultiSchemaChange(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {

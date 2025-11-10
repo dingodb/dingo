@@ -126,4 +126,9 @@ public class LocalDdlService implements DdlService {
     public void dropSequence(String sequenceName, String connId) {
 
     }
+
+    @Override
+    public void refreshMeta(SchemaInfo schemaInfo, String tableName) {
+
+    }
 }
