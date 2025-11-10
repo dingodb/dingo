@@ -68,6 +68,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterTableOptions"
       "io.dingodb.calcite.grammar.ddl.SqlAlterTruncatePart"
       "io.dingodb.calcite.grammar.ddl.SqlAlterSchema"
+      "io.dingodb.calcite.grammar.ddl.SqlRefreshMeta"
       "io.dingodb.calcite.grammar.ddl.SqlAnalyze"
       "io.dingodb.calcite.grammar.ddl.SqlCreateTenant"
       "io.dingodb.calcite.grammar.ddl.SqlCreateSchema"
@@ -306,6 +307,7 @@ data: {
       "FIXED"
       "MEMORY"
       "COLUMN_FORMAT"
+      "REFRESH"
     ]
 
     # List of non-reserved keywords to add;

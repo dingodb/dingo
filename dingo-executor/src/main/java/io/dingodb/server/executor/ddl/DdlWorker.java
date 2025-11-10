@@ -67,6 +67,7 @@ import io.dingodb.sdk.service.entity.meta.EntityType;
 import io.dingodb.sdk.service.entity.meta.Partition;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.sdk.service.entity.meta.TableIdWithPartIds;
+import io.dingodb.server.executor.prepare.PrepareMeta;
 import io.dingodb.server.executor.schedule.SafePointUpdateTask;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.mapper.Mapper;
@@ -109,6 +110,8 @@ import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_PUBLIC;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_ONLY;
 import static io.dingodb.sdk.service.entity.common.SchemaState.SCHEMA_WRITE_REORG;
 import static io.dingodb.server.executor.ddl.BackFilling.typeDelIndexWorker;
+import static io.dingodb.server.executor.prepare.PrepareMeta.CASE_NAMES;
+import static io.dingodb.server.executor.prepare.PrepareMeta.DYNAMIC;
 import static io.dingodb.store.proxy.mapper.Mapper.MAPPER;
 
 @Slf4j
@@ -324,6 +327,9 @@ public class DdlWorker {
                 break;
             case ActionAlterIndex:
                 res = onAlterIndex(dc, job);
+                break;
+            case ActionRefreshMeta:
+                res = onRefreshMeta(dc, job);
                 break;
             default:
                 job.setState(JobState.jobStateCancelled);
@@ -1280,6 +1286,7 @@ public class DdlWorker {
                     break;
                 default:
                     schemaDiff.setTableId(ddlJob.getTableId());
+                    schemaDiff.setTableName(ddlJob.getTableName());
                     break;
             }
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
@@ -2545,5 +2552,29 @@ public class DdlWorker {
         );
         job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
         return TableUtil.updateVersionAndIndexInfos(dc, job, indexWithId, true);
+    }
+
+    public Pair<Long, String> onRefreshMeta(DdlContext dc, DdlJob job) {
+        if (job.getSchemaState() == SchemaState.SCHEMA_NONE) {
+            String schemaName = job.getSchemaName();
+            String tableName = job.getTableName();
+            String tableType = PrepareMeta.BASE_TABLE;
+            if (PrepareMeta.MYSQL_SCHEMA.equalsIgnoreCase(schemaName)) {
+                schemaName = PrepareMeta.MYSQL_SCHEMA;
+                tableType = PrepareMeta.BASE_TABLE;
+            } else if (PrepareMeta.INFORMATION_SCHEMA.equalsIgnoreCase(schemaName)) {
+                schemaName = PrepareMeta.INFORMATION_SCHEMA;
+                tableType = PrepareMeta.SYSTEM_VIEW;
+            }
+            tableName = convertName(tableName, CASE_NAMES);
+            PrepareMeta.updateTableByTemplate(schemaName, tableName, tableType, PrepareMeta.TXN_LSM, DYNAMIC);
+            job.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+            return updateSchemaVersion(dc, job);
+        } else if (job.getSchemaState() == SchemaState.SCHEMA_DELETE_ONLY) {
+            job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+            job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
+            return updateSchemaVersion(dc, job);
+        }
+        return Pair.of(0L, null);
     }
 }

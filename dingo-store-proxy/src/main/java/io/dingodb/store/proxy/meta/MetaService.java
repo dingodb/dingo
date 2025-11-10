@@ -307,6 +307,14 @@ public class MetaService implements io.dingodb.meta.MetaService {
         );
     }
 
+    public void updateView(long schemaId, TableDefinitionWithId view, TableDefinition viewDef) {
+        TableIdWithPartIds tableIdWithPartIds =
+            TableIdWithPartIds.builder().tableId(view.getTableId()).build();
+        TableDefinitionWithId tableDefinitionWithId = MAPPER.tableTo(
+            tableIdWithPartIds, viewDef, TenantConstant.TENANT_ID
+        );
+        infoSchemaService.createTableOrView(schemaId, view.getTableId().getEntityId(), tableDefinitionWithId);
+    }
 
     @Override
     public long createTables(

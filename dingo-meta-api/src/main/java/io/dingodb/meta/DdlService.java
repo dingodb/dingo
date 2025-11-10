@@ -100,6 +100,10 @@ public interface DdlService {
 
     }
 
+    default void refreshMeta(SchemaInfo schemaInfo, String tableName) {
+
+    }
+
     InfoSchema getIsLatest();
 
     default InfoSchema getPointIs(long pointTs) {
