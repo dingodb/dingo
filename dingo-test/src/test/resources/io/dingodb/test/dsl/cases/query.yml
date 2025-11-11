@@ -42,9 +42,9 @@ cases:
     use:
       table: table1
     steps:
-      - sql: 'select mod(amount, age) from {table}'
+      - sql: 'select mod(amount, age) mod1 from {table}'
         result:
-          - 'EXPR$0'
+          - 'mod1'
           - 'DECIMAL'
           - '2.58'
           - '9.11'

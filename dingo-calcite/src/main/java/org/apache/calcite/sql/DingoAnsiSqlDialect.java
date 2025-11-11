@@ -18,6 +18,7 @@ package org.apache.calcite.sql;
 
 import io.dingodb.calcite.type.DingoRelDataTypeSystemImpl;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
+import org.apache.commons.lang3.StringUtils;
 
 public class DingoAnsiSqlDialect extends AnsiSqlDialect {
 
@@ -36,12 +37,28 @@ public class DingoAnsiSqlDialect extends AnsiSqlDialect {
     public void unparseSqlIntervalLiteral(SqlWriter writer, SqlIntervalLiteral literal, int leftPrec, int rightPrec) {
         SqlIntervalLiteral.IntervalValue interval =
             literal.getValueAs(SqlIntervalLiteral.IntervalValue.class);
-        writer.keyword("INTERVAL");
+        SqlIntervalQualifier sqlIntervalQualifier = interval.getIntervalQualifier();
+        String intervalAlias = sqlIntervalQualifier.getAliasString("intervalAlias");
+        if (StringUtils.isEmpty(intervalAlias)) {
+            writer.keyword("INTERVAL");
+        } else {
+            writer.keyword(intervalAlias);
+        }
         if (interval.getSign() == -1) {
             writer.print("-");
         }
-        writer.literal("'" + interval.getIntervalLiteral() + "'");
-        unparseSqlIntervalQualifier(writer, interval.getIntervalQualifier(),
-            DingoRelDataTypeSystemImpl.DEFAULT);
+        String intervalLiteralAlias = sqlIntervalQualifier.getAliasString("intervalLiteralAlias");
+        if (StringUtils.isEmpty(intervalLiteralAlias)) {
+            writer.literal("'" + interval.getIntervalLiteral() + "'");
+        } else {
+            writer.literal(intervalLiteralAlias);
+        }
+        String timeUnitRange = sqlIntervalQualifier.getAliasString("aliasName");
+        if (StringUtils.isEmpty(timeUnitRange)) {
+            unparseSqlIntervalQualifier(writer, interval.getIntervalQualifier(),
+                DingoRelDataTypeSystemImpl.DEFAULT);
+        } else {
+            writer.keyword(timeUnitRange);
+        }
     }
 }

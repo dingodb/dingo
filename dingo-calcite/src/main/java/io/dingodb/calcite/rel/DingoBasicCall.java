@@ -32,6 +32,7 @@ public class DingoBasicCall extends SqlBasicCall {
     public DingoBasicCall(SqlBasicCall sqlBasicCall) {
         super(sqlBasicCall.getOperator(), sqlBasicCall.getOperandList(),
             sqlBasicCall.getParserPosition(), sqlBasicCall.getFunctionQuantifier());
+        this.setAliasProp(sqlBasicCall.getAliasProp());
         operandList = new ArrayList<>(sqlBasicCall.getOperandList());
     }
 

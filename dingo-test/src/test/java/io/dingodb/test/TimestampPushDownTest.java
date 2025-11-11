@@ -189,7 +189,7 @@ public class TimestampPushDownTest {
     public void testProjectMin() throws SQLException {
         String sql = "select min(a) from {table}";
         context.execSql(sql).test(is(
-            new String[]{"EXPR$0"},
+            new String[]{"min(a)"},
             ImmutableList.of(
                 new Object[]{Timestamp.valueOf("2020-02-01 12:12:12")}
             )
@@ -200,7 +200,7 @@ public class TimestampPushDownTest {
     public void testProjectMax() throws SQLException {
         String sql = "select max(a) from {table}";
         context.execSql(sql).test(is(
-            new String[]{"EXPR$0"},
+            new String[]{"max(a)"},
             ImmutableList.of(
                 new Object[]{Timestamp.valueOf("2020-02-03 12:12:12")}
             )
@@ -211,7 +211,7 @@ public class TimestampPushDownTest {
     public void testProjectCount() throws SQLException {
         String sql = "select count(a) from {table}";
         context.execSql(sql).test(is(
-            new String[]{"EXPR$0"},
+            new String[]{"count(a)"},
             ImmutableList.of(
                 new Object[]{3L}
             )
@@ -222,7 +222,7 @@ public class TimestampPushDownTest {
     public void testProjectCountStar() throws SQLException {
         String sql = "select count(*) from {table}";
         context.execSql(sql).test(is(
-            new String[]{"EXPR$0"},
+            new String[]{"count(*)"},
             ImmutableList.of(
                 new Object[]{4L}
             )

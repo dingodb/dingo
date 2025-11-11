@@ -1059,9 +1059,9 @@ SqlLiteral AllOrDistinct() :
 {
 }
 {
-    <DISTINCT> { return SqlSelectKeyword.DISTINCT.symbol(getPos()); }
+    <DISTINCT> { SqlLiteral sqlLiteral = SqlSelectKeyword.DISTINCT.symbol(getPos()); sqlLiteral.putAlias("aliasName", this.token.image); sqlLiteral.putAlias("fullAlias", "true"); return sqlLiteral;}
 |
-    <ALL> { return SqlSelectKeyword.ALL.symbol(getPos()); }
+    <ALL> { SqlLiteral sqlLiteral = SqlSelectKeyword.ALL.symbol(getPos()); sqlLiteral.putAlias("aliasName", this.token.image); sqlLiteral.putAlias("fullAlias", "true"); return sqlLiteral;}
 }
 
 void AddArg0(List<SqlNode> list, ExprContext exprContext) :
@@ -3981,6 +3981,7 @@ List<Object> Expression2(ExprContext exprContext) :
     SqlNodeList nodeList;
     SqlNode e;
     SqlOperator op;
+    StringBuilder opAlias = new StringBuilder();
     SqlIdentifier p;
     final Span s = span();
 }
@@ -4066,9 +4067,9 @@ List<Object> Expression2(ExprContext exprContext) :
                 }
                 (
                     (
-                        <NOT>
+                        <NOT> { opAlias.append(this.token.image); }
                         (
-                            <LIKE> { op = SqlStdOperatorTable.NOT_LIKE; }
+                            <LIKE> { op = SqlStdOperatorTable.NOT_LIKE; opAlias.append(" ").append(this.token.image); }
                         |
                             <ILIKE> { op = SqlLibraryOperators.NOT_ILIKE; }
                         |
@@ -4079,7 +4080,7 @@ List<Object> Expression2(ExprContext exprContext) :
                             <SIMILAR> <TO> { op = SqlStdOperatorTable.NOT_SIMILAR_TO; }
                         )
                     |
-                        <LIKE> { op = SqlStdOperatorTable.LIKE; }
+                        <LIKE> { op = SqlStdOperatorTable.LIKE; opAlias.append(this.token.image); }
                     |
                         <ILIKE> { op = SqlLibraryOperators.ILIKE; }
                     |
@@ -4099,7 +4100,7 @@ List<Object> Expression2(ExprContext exprContext) :
                 </#if>
                 )
                 list2 = Expression2(ExprContext.ACCEPT_SUB_QUERY) {
-                    list.add(new SqlParserUtil.ToTreeListItem(op, s.pos()));
+                    list.add(new SqlParserUtil.ToTreeListItem(op, s.pos(), opAlias.toString()));
                     list.addAll(list2);
                 }
                 [
@@ -4108,7 +4109,7 @@ List<Object> Expression2(ExprContext exprContext) :
                         s.clear().add(this);
                         list.add(
                             new SqlParserUtil.ToTreeListItem(
-                                SqlStdOperatorTable.ESCAPE, s.pos()));
+                                SqlStdOperatorTable.ESCAPE, s.pos(), opAlias.toString()));
                         list.add(e);
                     }
                 ]
@@ -4119,7 +4120,7 @@ List<Object> Expression2(ExprContext exprContext) :
             </#list>
                 LOOKAHEAD(3) op = BinaryRowOperator() {
                     checkNonQueryExpression(exprContext);
-                    list.add(new SqlParserUtil.ToTreeListItem(op, getPos()));
+                    list.add(new SqlParserUtil.ToTreeListItem(op, getPos(), opAlias.toString()));
                 }
                 AddExpression2b(list, ExprContext.ACCEPT_SUB_QUERY)
                 {
@@ -4506,35 +4507,42 @@ SqlNode CaseExpression() :
     final SqlNode elseClause;
     final List<SqlNode> whenList = new ArrayList<SqlNode>();
     final List<SqlNode> thenList = new ArrayList<SqlNode>();
+    StringBuilder caseAlias = new StringBuilder();
 }
 {
-    <CASE> { s = span(); }
+    <CASE> { s = span(); caseAlias.append(this.token.image); }
     (
-        caseIdentifier = Expression(ExprContext.ACCEPT_SUB_QUERY)
+        caseIdentifier = Expression(ExprContext.ACCEPT_SUB_QUERY) { caseAlias.append(" ").append(caseIdentifier.toString());}
     |   { caseIdentifier = null; }
     )
     (
-        <WHEN> { whenSpan.add(this); }
+        <WHEN> { whenSpan.add(this); caseAlias.append(" ").append(this.token.image);}
         e = ExpressionCommaList(s, ExprContext.ACCEPT_SUB_QUERY) {
             if (((SqlNodeList) e).size() == 1) {
                 e = ((SqlNodeList) e).get(0);
             }
+            caseAlias.append(" ").append(e.toString());
             whenList.add(e);
         }
-        <THEN> { thenSpan.add(this); }
+        <THEN> { thenSpan.add(this); caseAlias.append(" ").append(this.token.image);}
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
             thenList.add(e);
+            caseAlias.append(" ").append(e.toString());
         }
     )+
     (
-        <ELSE> elseClause = Expression(ExprContext.ACCEPT_SUB_QUERY)
+        <ELSE> { caseAlias.append(" ").append(this.token.image);} elseClause = Expression(ExprContext.ACCEPT_SUB_QUERY) { caseAlias.append(" ").append(elseClause.toString()); }
     |   { elseClause = null; }
     )
     <END> {
-        return SqlCase.createSwitched(s.end(this), caseIdentifier,
+        caseAlias.append(" ").append(this.token.image);
+        SqlNode sqlNode = SqlCase.createSwitched(s.end(this), caseIdentifier,
             new SqlNodeList(whenList, whenSpan.addAll(whenList).pos()),
             new SqlNodeList(thenList, thenSpan.addAll(thenList).pos()),
             elseClause);
+        sqlNode.putAlias("aliasName", caseAlias.toString());
+        sqlNode.putAlias("fullAlias", "true");
+        return sqlNode;
     }
 }
 
@@ -4897,7 +4905,7 @@ SqlLiteral SpecialLiteral() :
 |
     <UNKNOWN> { return SqlLiteral.createUnknown(getPos()); }
 |
-    <NULL> { return SqlLiteral.createNull(getPos()); }
+    <NULL> { SqlLiteral sqlLiteral = SqlLiteral.createNull(getPos()); sqlLiteral.putAlias("aliasName", this.token.image); sqlLiteral.putAlias("fullAlias", "true"); return sqlLiteral; }
 }
 
 /**
@@ -5361,18 +5369,23 @@ SqlLiteral IntervalLiteral() :
     final SqlIntervalQualifier intervalQualifier;
     int sign = 1;
     final Span s;
+    StringBuilder alias = new StringBuilder();
 }
 {
-    <INTERVAL> { s = span(); }
+    <INTERVAL> { s = span(); alias.append(this.token.image);}
     [
-        <MINUS> { sign = -1; }
+        <MINUS> { sign = -1; alias.append(" ").append(this.token.image); }
     |
-        <PLUS> { sign = 1; }
+        <PLUS> { sign = 1; alias.append(" ").append(this.token.image); }
     ]
-    p = SimpleStringLiteral()
+    p = SimpleStringLiteral() { alias.append(" ").append(this.token.image); }
     intervalQualifier = IntervalQualifier() {
-        return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
+        alias.append(" ").append(intervalQualifier.getAliasName());
+        SqlLiteral sqlLiteral = DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
             sign, p, intervalQualifier);
+        sqlLiteral.putAlias("aliasName", alias.toString());
+        sqlLiteral.putAlias("fullAlias", "true");
+        return sqlLiteral;
     }
 }
 
@@ -5386,9 +5399,10 @@ SqlNode IntervalLiteralOrExpression() :
     int sign = 1;
     final Span s;
     SqlNode e;
+    String intervalAlias = null;
 }
 {
-    <INTERVAL> { s = span(); }
+    <INTERVAL> { s = span(); intervalAlias = this.token.image; }
     [
         <MINUS> { sign = -1; }
     |
@@ -5396,14 +5410,18 @@ SqlNode IntervalLiteralOrExpression() :
     ]
     (
         // literal (with quoted string)
-        e = UnsignedNumericLiteral()
+        e = UnsignedNumericLiteral() { String intervalLiteralAlias = this.token.image; }
         intervalQualifier = IntervalQualifier() {
+            intervalQualifier.putAlias("intervalAlias", intervalAlias);
+            intervalQualifier.putAlias("intervalLiteralAlias", intervalLiteralAlias);
             return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
                 sign, ((SqlNumericLiteral) e).toValue(), intervalQualifier);
         }
     |
-        p = SimpleStringLiteral()
+        p = SimpleStringLiteral() { String intervalLiteralAlias = this.token.image; }
         intervalQualifier = IntervalQualifier() {
+            intervalQualifier.putAlias("intervalAlias", intervalAlias);
+            intervalQualifier.putAlias("intervalLiteralAlias", intervalLiteralAlias);
             return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
                 sign, p, intervalQualifier);
         }
@@ -5423,6 +5441,7 @@ SqlNode IntervalLiteralOrExpression() :
             if (sign == -1) {
                 e = SqlStdOperatorTable.UNARY_MINUS.createCall(e.getParserPosition(), e);
             }
+            intervalQualifier.putAlias("intervalAlias", intervalAlias);
             return SqlStdOperatorTable.INTERVAL.createCall(s.end(this), e,
                 intervalQualifier);
         }
@@ -5508,25 +5527,26 @@ SqlIntervalQualifier IntervalQualifier() :
     final TimeUnit end;
     final int startPrec;
     int secondFracPrec = RelDataType.PRECISION_NOT_SPECIFIED;
+    StringBuilder alias = new StringBuilder();
 }
 {
     (
-        start = Year() { s = span(); } startPrec = PrecisionOpt()
+        start = Year() { s = span(); alias.append(this.token.image); } startPrec = PrecisionOpt()
         (
             LOOKAHEAD(2) <TO> end = Month()
         |   { end = null; }
         )
     |
-        start = Quarter() { s = span(); } startPrec = PrecisionOpt()
+        start = Quarter() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         { end = null; }
     |
-        start = Month() { s = span(); } startPrec = PrecisionOpt()
+        start = Month() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         { end = null; }
     |
-        start = Week() { s = span(); } startPrec = PrecisionOpt()
+        start = Week() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         { end = null; }
     |
-        start = Day() { s = span(); } startPrec = PrecisionOpt()
+        start = Day() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         (
             LOOKAHEAD(2) <TO>
             (
@@ -5539,7 +5559,7 @@ SqlIntervalQualifier IntervalQualifier() :
         |   { end = null; }
         )
     |
-        start = Hour() { s = span(); } startPrec = PrecisionOpt()
+        start = Hour() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         (
             LOOKAHEAD(2) <TO>
             (
@@ -5551,7 +5571,7 @@ SqlIntervalQualifier IntervalQualifier() :
         |   { end = null; }
         )
     |
-        start = Minute() { s = span(); } startPrec = PrecisionOpt()
+        start = Minute() { s = span(); alias.append(this.token.image);} startPrec = PrecisionOpt()
         (
             LOOKAHEAD(2) <TO>
             end = Second()
@@ -5559,7 +5579,7 @@ SqlIntervalQualifier IntervalQualifier() :
         |   { end = null; }
         )
     |
-        start = Second() { s = span(); }
+        start = Second() { s = span(); alias.append(this.token.image);}
         (
             <LPAREN> startPrec = UnsignedIntLiteral()
             [ <COMMA> secondFracPrec = UnsignedIntLiteral() ]
@@ -5569,8 +5589,10 @@ SqlIntervalQualifier IntervalQualifier() :
         { end = null; }
     )
     {
-        return new SqlIntervalQualifier(start, startPrec, end, secondFracPrec,
+        SqlIntervalQualifier sqlIntervalQualifier = new SqlIntervalQualifier(start, startPrec, end, secondFracPrec,
             s.end(this));
+        sqlIntervalQualifier.putAlias("aliasName", alias.toString());
+        return sqlIntervalQualifier;
     }
 }
 
@@ -6574,33 +6596,44 @@ SqlNode BuiltinFunctionCall() :
     SqlDataTypeSpec dt;
     final SqlIntervalQualifier unit;
     final SqlNode node;
+    String alias = null;
+    String intervalStr = null;
 }
 {
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
     (
-        <CAST> { s = span(); }
-        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
-        <AS>
+        <CAST> { s = span(); StringBuilder aliasBuilder = new StringBuilder(this.token.image); aliasBuilder.append("("); }
+        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) { aliasBuilder.append(this.token.image); }
+        <AS> { aliasBuilder.append(" ").append(this.token.image); }
         (
-            dt = DataType() { args.add(dt); }
+            dt = DataType() { args.add(dt); aliasBuilder.append(" ").append(this.token.image); }
         |
-            <INTERVAL> e = IntervalQualifier() { args.add(e); }
+            <INTERVAL> { aliasBuilder.append(" ").append(this.token.image); } e = IntervalQualifier() { args.add(e); aliasBuilder.append(this.token.image); }
         )
         <RPAREN> {
-            return SqlStdOperatorTable.CAST.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlStdOperatorTable.CAST.createCall(s.end(this), args);
+            aliasBuilder.append(")");
+            sqlNode.putAlias("aliasName", aliasBuilder.toString());
+            sqlNode.putAlias("fullAlias", "true");
+            return sqlNode;
         }
     |
-        <EXTRACT> { s = span(); }
+        <EXTRACT> { s = span(); StringBuilder aliasBuilder = new StringBuilder(this.token.image); }
         <LPAREN> unit = TimeUnitOrName() {
             args.add(unit);
+            aliasBuilder.append("(").append(this.token.image);
         }
-        <FROM>
-        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <FROM> { aliasBuilder.append(" ").append(this.token.image); }
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) { aliasBuilder.append(" ").append(this.token.image);}
         <RPAREN> {
-            return SqlStdOperatorTable.EXTRACT.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlStdOperatorTable.EXTRACT.createCall(s.end(this), args);
+            aliasBuilder.append(")");
+            sqlNode.putAlias("aliasName", aliasBuilder.toString());
+            sqlNode.putAlias("fullAlias", "true");
+            return sqlNode;
         }
     |
-        <POSITION> { s = span(); }
+        <POSITION> { s = span(); alias = this.token.image; }
         <LPAREN>
         // FIXME jvs 31-Aug-2006:  FRG-192:  This should be
         // Expression(ExprContext.ACCEPT_SUB_QUERY), but that doesn't work
@@ -6610,68 +6643,84 @@ SqlNode BuiltinFunctionCall() :
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         [ <FROM> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) ]
         <RPAREN> {
-            return SqlStdOperatorTable.POSITION.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlStdOperatorTable.POSITION.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            return sqlNode;
         }
     |
-        <CONVERT> { s = span(); }
+        <CONVERT> { s = span(); alias = this.token.image; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <USING> name = SimpleIdentifier() { args.add(name); }
         <RPAREN> {
-            return SqlStdOperatorTable.CONVERT.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlStdOperatorTable.CONVERT.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            return sqlNode;
         }
     |
-        <TRANSLATE> { s = span(); }
+        <TRANSLATE> { s = span(); alias = this.token.image; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         (
             <USING> name = SimpleIdentifier() { args.add(name); }
             <RPAREN> {
-                return SqlStdOperatorTable.TRANSLATE.createCall(s.end(this),
+                SqlNode sqlNode = SqlStdOperatorTable.TRANSLATE.createCall(s.end(this),
                     args);
+                sqlNode.putAlias("aliasName", alias);
+                return sqlNode;
             }
         |
             ( <COMMA> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) )*
             <RPAREN> {
-                return SqlLibraryOperators.TRANSLATE3.createCall(s.end(this),
+                SqlNode sqlNode = SqlLibraryOperators.TRANSLATE3.createCall(s.end(this),
                     args);
+                sqlNode.putAlias("aliasName", alias);
+                return sqlNode;
             }
         )
     |
-        <OVERLAY> { s = span(); }
+        <OVERLAY> { s = span(); alias = this.token.image; }
         <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <PLACING> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <FROM> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         [ <FOR> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) ]
         <RPAREN> {
-            return SqlStdOperatorTable.OVERLAY.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlStdOperatorTable.OVERLAY.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);return sqlNode;
         }
     |
-        <FLOOR> { s = span(); }
+        <FLOOR> { s = span(); alias = this.token.image; }
         e = FloorCeilOptions(s, true) {
+            e.putAlias("aliasName", alias);
             return e;
         }
     |
-        ( <CEIL> | <CEILING>) { s = span(); }
+        ( <CEIL> | <CEILING>) { s = span(); alias = this.token.image; }
         e = FloorCeilOptions(s, false) {
+            e.putAlias("aliasName", alias);
             return e;
         }
     |
-        ( <SUBSTR> | <SUBSTRING>)  { s = span(); }
+        ( <SUBSTR> | <SUBSTRING>)  { s = span(); alias = this.token.image; String fromIdentifier=null; String forIdentifier = null; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
-        ( <FROM> | <COMMA>)
+        ( <FROM> {fromIdentifier = this.token.image;} | <COMMA>)
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         [
-            (<FOR> | <COMMA>)
+            (<FOR> { forIdentifier = this.token.image; } | <COMMA>)
             AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         ]
         <RPAREN> {
-            return SqlStdOperatorTable.SUBSTRING.createCall(
+            SqlNode sqlNode = SqlStdOperatorTable.SUBSTRING.createCall(
                 s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            sqlNode.putAlias("aliasName", alias);
+            sqlNode.putAlias("fromIdentifier", fromIdentifier);
+            sqlNode.putAlias("forIdentifier", forIdentifier);
+            return sqlNode;
         }
     |
-        <SUBSTRING_INDEX> { s = span(); }
+        <SUBSTRING_INDEX> { s = span(); alias = this.token.image; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <COMMA>
@@ -6679,45 +6728,56 @@ SqlNode BuiltinFunctionCall() :
         <COMMA>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <RPAREN> {
-            return SqlLibraryOperators.SUBSTRING_INDEX.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlLibraryOperators.SUBSTRING_INDEX.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            return sqlNode;
         }
     |
-        <LEFT> { s = span(); }
+        <LEFT> { s = span(); alias = this.token.image; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <COMMA>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
         <RPAREN> {
-            return SqlLibraryOperators.LEFT.createCall(s.end(this), args);
+            SqlNode sqlNode = SqlLibraryOperators.LEFT.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            return sqlNode;
         }
     |
         <TRIM> {
+            alias = this.token.image;
             SqlLiteral flag = null;
             SqlNode trimChars = null;
             s = span();
+            StringBuilder trimAlias = new StringBuilder();
+            trimAlias.append(alias);
         }
-        <LPAREN>
+        <LPAREN> { trimAlias.append(this.token.image); }
         [
             LOOKAHEAD(2)
             [
                 <BOTH> {
+                    trimAlias.append(this.token.image);
                     s.add(this);
                     flag = SqlTrimFunction.Flag.BOTH.symbol(getPos());
                 }
             |
                 <TRAILING> {
+                    trimAlias.append(this.token.image);
                     s.add(this);
                     flag = SqlTrimFunction.Flag.TRAILING.symbol(getPos());
                 }
             |
                 <LEADING> {
+                    trimAlias.append(this.token.image);
                     s.add(this);
                     flag = SqlTrimFunction.Flag.LEADING.symbol(getPos());
                 }
             ]
-            [ trimChars = Expression(ExprContext.ACCEPT_SUB_QUERY) ]
+            [ trimChars = Expression(ExprContext.ACCEPT_SUB_QUERY) { if (!trimAlias.toString().endsWith("(")) { trimAlias.append(" "); } trimAlias.append(trimChars.toString()); }]
             (
                 <FROM> {
+                    trimAlias.append(" ").append(this.token.image);
                     if (null == flag && null == trimChars) {
                         throw SqlUtil.newContextException(getPos(),
                             RESOURCE.illegalFromEmpty());
@@ -6725,6 +6785,7 @@ SqlNode BuiltinFunctionCall() :
                 }
             |
                 <RPAREN> {
+                    trimAlias.append(this.token.image);
                     // This is to handle the case of TRIM(x)
                     // (FRG-191).
                     if (flag == null) {
@@ -6733,12 +6794,16 @@ SqlNode BuiltinFunctionCall() :
                     args.add(flag);
                     args.add(null); // no trim chars
                     args.add(trimChars); // reinterpret trimChars as source
-                    return SqlStdOperatorTable.TRIM.createCall(s.end(this),
+                    SqlNode sqlNode = SqlStdOperatorTable.TRIM.createCall(s.end(this),
                         args);
+                    sqlNode.putAlias("aliasName", trimAlias.toString());
+                    sqlNode.putAlias("fullAlias", "true");
+                    return sqlNode;
                 }
             )
         ]
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+            trimAlias.append(" ").append(e.toString());
             if (flag == null) {
                 flag = SqlTrimFunction.Flag.BOTH.symbol(SqlParserPos.ZERO);
             }
@@ -6747,7 +6812,11 @@ SqlNode BuiltinFunctionCall() :
             args.add(e);
         }
         <RPAREN> {
-            return SqlStdOperatorTable.TRIM.createCall(s.end(this), args);
+            trimAlias.append(this.token.image);
+            SqlNode sqlNode = SqlStdOperatorTable.TRIM.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", trimAlias.toString());
+            sqlNode.putAlias("fullAlias", "true");
+            return sqlNode;
         }
     |
         node = DateTruncFunctionCall() { return node; }
@@ -6902,7 +6971,7 @@ SqlCall JsonExistsFunctionCall() :
     SqlJsonExistsErrorBehavior errorBehavior;
 }
 {
-    <JSON_EXISTS> { span = span(); }
+    <JSON_EXISTS> { span = span(); String alias = this.token.image;}
     <LPAREN> commonSyntax = JsonApiCommonSyntax() {
         args.addAll(commonSyntax);
     }
@@ -6911,7 +6980,8 @@ SqlCall JsonExistsFunctionCall() :
         <ON> <ERROR>
     ]
     <RPAREN> {
-        return SqlStdOperatorTable.JSON_EXISTS.createCall(span.end(this), args);
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_EXISTS.createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -6956,7 +7026,7 @@ SqlCall JsonValueFunctionCall() :
     List<SqlNode> behavior;
 }
 {
-    <JSON_VALUE> { span = span(); }
+    <JSON_VALUE> { span = span(); String alias = this.token.image;}
     <LPAREN> commonSyntax = JsonApiCommonSyntax() {
         args.addAll(commonSyntax);
     }
@@ -6972,7 +7042,8 @@ SqlCall JsonValueFunctionCall() :
         }
     )*
     <RPAREN> {
-        return SqlStdOperatorTable.JSON_VALUE.createCall(span.end(this), args);
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_VALUE.createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7039,7 +7110,7 @@ SqlCall JsonQueryFunctionCall() :
     List<SqlNode> behavior;
 }
 {
-    <JSON_QUERY> { span = span(); }
+    <JSON_QUERY> { span = span(); String alias = this.token.image;}
     <LPAREN> commonSyntax = JsonApiCommonSyntax() {
         args[0] = commonSyntax.get(0);
         args[1] = commonSyntax.get(1);
@@ -7064,7 +7135,8 @@ SqlCall JsonQueryFunctionCall() :
         }
     )*
     <RPAREN> {
-        return SqlStdOperatorTable.JSON_QUERY.createCall(span.end(this), args);
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_QUERY.createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7127,9 +7199,10 @@ SqlCall JsonObjectFunctionCall() :
     SqlNode e;
     List<SqlNode> list;
     final Span span;
+    String alias = null;
 }
 {
-    <JSON_OBJECT> { span = span(); }
+    <JSON_OBJECT> { span = span(); alias = this.token.image;}
     <LPAREN> [
         LOOKAHEAD(2)
         list = JsonNameAndValue() {
@@ -7151,7 +7224,8 @@ SqlCall JsonObjectFunctionCall() :
         final List<SqlNode> args = new ArrayList();
         args.addAll(Arrays.asList(otherArgs));
         args.addAll(nvArgs);
-        return SqlStdOperatorTable.JSON_OBJECT.createCall(span.end(this), args);
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_OBJECT.createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7163,9 +7237,10 @@ SqlCall JsonObjectAggFunctionCall() :
     SqlJsonConstructorNullClause nullClause =
         SqlJsonConstructorNullClause.NULL_ON_NULL;
     final SqlNode e;
+    String alias = null;
 }
 {
-    <JSON_OBJECTAGG> { span = span(); }
+    <JSON_OBJECTAGG> { span = span(); alias = this.token.image;}
     <LPAREN> list = JsonNameAndValue() {
         args[0] = list.get(0);
         args[1] = list.get(1);
@@ -7176,8 +7251,9 @@ SqlCall JsonObjectAggFunctionCall() :
         }
     ]
     <RPAREN> {
-        return SqlStdOperatorTable.JSON_OBJECTAGG.with(nullClause)
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_OBJECTAGG.with(nullClause)
             .createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7187,9 +7263,10 @@ SqlCall JsonArrayFunctionCall() :
     final SqlNode[] otherArgs = new SqlNode[1];
     SqlNode e;
     final Span span;
+    String alias = null;
 }
 {
-    <JSON_ARRAY> { span = span(); }
+    <JSON_ARRAY> { span = span(); alias = this.token.image;}
     <LPAREN> [
         LOOKAHEAD(2)
         AddExpression(elements, ExprContext.ACCEPT_NON_QUERY)
@@ -7204,7 +7281,8 @@ SqlCall JsonArrayFunctionCall() :
         final List<SqlNode> args = new ArrayList();
         args.addAll(Arrays.asList(otherArgs));
         args.addAll(elements);
-        return SqlStdOperatorTable.JSON_ARRAY.createCall(span.end(this), args);
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_ARRAY.createCall(span.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7225,9 +7303,10 @@ SqlCall JsonArrayAggFunctionCall() :
     final SqlJsonConstructorNullClause nullClause;
     SqlNode e;
     final SqlNode aggCall;
+    String alias = null;
 }
 {
-    <JSON_ARRAYAGG> { span = span(); }
+    <JSON_ARRAYAGG> { span = span(); alias = this.token.image;}
     <LPAREN> e = Expression(ExprContext.ACCEPT_NON_QUERY) {
         valueExpr = e;
     }
@@ -7257,8 +7336,9 @@ SqlCall JsonArrayAggFunctionCall() :
             return SqlStdOperatorTable.JSON_ARRAYAGG.with(nullClause)
                 .createCall(span.end(this), valueExpr);
         }
-        return SqlStdOperatorTable.JSON_ARRAYAGG.with(nullClause)
+        SqlCall sqlCall = SqlStdOperatorTable.JSON_ARRAYAGG.with(nullClause)
             .createCall(span.end(this), valueExpr, orderList);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7270,9 +7350,10 @@ SqlCall TimestampAddFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIMESTAMPADD> { s = span(); }
+    <TIMESTAMPADD> { s = span(); alias = this.token.image; }
     <LPAREN>
     unit = TimeUnitOrName() { args.add(unit); }
     <COMMA>
@@ -7280,8 +7361,10 @@ SqlCall TimestampAddFunctionCall() :
     <COMMA>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.TIMESTAMP_ADD.createCall(
+        SqlCall sqlCall = SqlStdOperatorTable.TIMESTAMP_ADD.createCall(
             s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);
+        return sqlCall;
     }
 }
 
@@ -7293,9 +7376,10 @@ SqlCall TimestampDiffFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIMESTAMPDIFF> { s = span(); }
+    <TIMESTAMPDIFF> { s = span(); alias = this.token.image; }
     <LPAREN>
     unit = TimeUnitOrName() { args.add(unit); }
     <COMMA>
@@ -7303,8 +7387,9 @@ SqlCall TimestampDiffFunctionCall() :
     <COMMA>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <RPAREN> {
-        return SqlStdOperatorTable.TIMESTAMP_DIFF.createCall(
+        SqlCall sqlCall = SqlStdOperatorTable.TIMESTAMP_DIFF.createCall(
             s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7321,9 +7406,10 @@ SqlCall TimestampDiff3FunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIMESTAMP_DIFF> { s = span(); }
+    <TIMESTAMP_DIFF> { s = span(); alias = this.token.image;}
     <LPAREN>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
@@ -7331,7 +7417,8 @@ SqlCall TimestampDiff3FunctionCall() :
     <COMMA>
     unit = TimeUnitOrName() { args.add(unit); }
     <RPAREN> {
-        return SqlLibraryOperators.TIMESTAMP_DIFF3.createCall(s.end(this), args);
+        SqlCall sqlCall = SqlLibraryOperators.TIMESTAMP_DIFF3.createCall(s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7343,9 +7430,10 @@ SqlCall DateTruncFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <DATE_TRUNC> { s = span(); }
+    <DATE_TRUNC> { s = span(); alias = this.token.image; }
     <LPAREN>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
@@ -7359,7 +7447,8 @@ SqlCall DateTruncFunctionCall() :
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     )
     <RPAREN> {
-        return SqlLibraryOperators.DATE_TRUNC.createCall(s.end(this), args);
+        SqlCall sqlCall = SqlLibraryOperators.DATE_TRUNC.createCall(s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7371,15 +7460,17 @@ SqlCall TimestampTruncFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIMESTAMP_TRUNC> { s = span(); }
+    <TIMESTAMP_TRUNC> { s = span(); alias = this.token.image;}
     <LPAREN>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
     unit = TimeUnitOrName() { args.add(unit); }
     <RPAREN> {
-        return SqlLibraryOperators.TIMESTAMP_TRUNC.createCall(s.end(this), args);
+        SqlCall sqlCall = SqlLibraryOperators.TIMESTAMP_TRUNC.createCall(s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7391,9 +7482,10 @@ SqlCall TimeDiffFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIME_DIFF> { s = span(); }
+    <TIME_DIFF> { s = span(); alias = this.token.image;}
     <LPAREN>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
@@ -7401,7 +7493,8 @@ SqlCall TimeDiffFunctionCall() :
     <COMMA>
     unit = TimeUnitOrName() { args.add(unit); }
     <RPAREN> {
-        return SqlLibraryOperators.TIME_DIFF.createCall(s.end(this), args);
+        SqlCall sqlCall = SqlLibraryOperators.TIME_DIFF.createCall(s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7413,15 +7506,17 @@ SqlCall TimeTruncFunctionCall() :
     final List<SqlNode> args = new ArrayList<SqlNode>();
     final Span s;
     final SqlIntervalQualifier unit;
+    String alias = null;
 }
 {
-    <TIME_TRUNC> { s = span(); }
+    <TIME_TRUNC> { s = span(); alias = this.token.image;}
     <LPAREN>
     AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
     <COMMA>
     unit = TimeUnitOrName() { args.add(unit); }
     <RPAREN> {
-        return SqlLibraryOperators.TIME_TRUNC.createCall(s.end(this), args);
+        SqlCall sqlCall = SqlLibraryOperators.TIME_TRUNC.createCall(s.end(this), args);
+        sqlCall.putAlias("aliasName", alias);return sqlCall;
     }
 }
 
@@ -7456,12 +7551,14 @@ SqlCall MatchRecognizeFunctionCall() :
 }
 {
     (
-        <CLASSIFIER> { s = span(); } <LPAREN> <RPAREN> {
+        <CLASSIFIER> { s = span(); String alias = this.token.image; } <LPAREN> <RPAREN> {
             func = SqlStdOperatorTable.CLASSIFIER.createCall(s.end(this));
+            func.putAlias("aliasName", alias);
         }
     |
-        <MATCH_NUMBER> { s = span(); } <LPAREN> <RPAREN> {
+        <MATCH_NUMBER> { s = span(); String alias = this.token.image;} <LPAREN> <RPAREN> {
             func = SqlStdOperatorTable.MATCH_NUMBER.createCall(s.end(this));
+            func.putAlias("aliasName", alias);
         }
     |
         LOOKAHEAD(3)

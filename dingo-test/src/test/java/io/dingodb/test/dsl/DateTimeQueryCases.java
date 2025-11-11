@@ -95,21 +95,21 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .use("table", "i4k_vs_dt0")
             .step(
                 "select 'test-' || birth from {table} where id = 1",
-                csv("EXPR$0", "STRING", "test-2020-01-01")
+                csv("'test-' || birth", "STRING", "test-2020-01-01")
             );
 
         test("Concat time")
             .use("table", "i4k_vs_tm0")
             .step(
                 "select 'test-' || birth from {table} where id = 1",
-                csv("EXPR$0", "STRING", "test-00:00:01")
+                csv("'test-' || birth", "STRING", "test-00:00:01")
             );
 
         test("Concat int-string-time")
             .use("table", "i4k_vs_ts0")
             .step(
                 "select id || name || birth from {table} where id = 1",
-                csv("EXPR$0", "STRING", "1Alice2020-01-01 00:00:01")
+                csv("id || name || birth", "STRING", "1Alice2020-01-01 00:00:01")
             );
 
         test("Date as primary key")
@@ -259,7 +259,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select min(birthday) from {table}",
                 csv(
-                    "expr$0",
+                    "min(birthday)",
                     "STRING",
                     "1949-01-01"
                 )
@@ -270,7 +270,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select max(birthday) from {table}",
                 csv(
-                    "expr$0",
+                    "max(birthday)",
                     "STRING",
                     "2022-07-07"
                 )
@@ -281,7 +281,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select min(create_time) from {table}",
                 csv(
-                    "expr$0",
+                    "min(create_time)",
                     "STRING",
                     "00:00:00"
                 )
@@ -292,7 +292,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select max(create_time) from {table}",
                 csv(
-                    "expr$0",
+                    "max(create_time)",
                     "STRING",
                     "22:10:10"
                 )
@@ -303,7 +303,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select min(update_time) from {table}",
                 csv(
-                    "expr$0",
+                    "min(update_time)",
                     "TIMESTAMP",
                     "1952-12-31 12:12:12"
                 )
@@ -314,7 +314,7 @@ public class DateTimeQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select max(update_time) from {table}",
                 csv(
-                    "expr$0",
+                    "max(update_time)",
                     "TIMESTAMP",
                     "2024-05-04 12:00:00"
                 )

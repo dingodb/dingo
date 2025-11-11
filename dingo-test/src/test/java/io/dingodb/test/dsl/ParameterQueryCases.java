@@ -35,14 +35,14 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                     statement.setInt(1, 1);
                     boolean b = statement.execute();
                     check(statement, b, sql).test(is(
-                        new String[]{"EXPR$0"},
+                        new String[]{"1 + ?"},
                         ImmutableList.of(
                             new Object[]{2}
                         )));
                     statement.setInt(1, 2);
                     b = statement.execute();
                     check(statement, b, sql).test(is(
-                        new String[]{"EXPR$0"},
+                        new String[]{"1 + ?"},
                         ImmutableList.of(
                             new Object[]{3}
                         )));
