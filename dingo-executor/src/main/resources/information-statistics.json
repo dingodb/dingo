@@ -133,5 +133,21 @@
      "scale": -2147483648,
      "primary": -1,
      "nullable": false
+   },
+   {
+     "name": "IS_VISIBLE",
+     "type": "varchar",
+     "precision": 3,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "EXPRESSION",
+     "type": "varchar",
+     "precision": 65536,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
    }
  ]
