@@ -56,7 +56,7 @@ public class CollectionQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select id, name, age, amount, run_inter[1] from {table}",
                 csv(
-                    "id, name, age, amount, expr$4",
+                    "id, name, age, amount, run_inter[1]",
                     "INT, STRING, INT, DOUBLE, STRING",
                     "1, zhangsan, 18, 23.5, 1987-07-16",
                     "2, lisi, 25, 895.89, 1999-12-12",
@@ -70,7 +70,7 @@ public class CollectionQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select id, name, age, amount, test_time[1] from {table}",
                 csv(
-                    "id, name, age, amount, expr$4",
+                    "id, name, age, amount, test_time[1]",
                     "INT, STRING, INT, DOUBLE, STRING",
                     "1, zhangsan, 18, 23.5, 10:11:12",
                     "2, lisi, 25, 895.89, 23:59:59",
@@ -84,7 +84,7 @@ public class CollectionQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select id, send_time[1] from {table}",
                 csv(
-                    "id, expr$1",
+                    "id, send_time[1]",
                     "INT, LONG",
                     "1, 1669101174",
                     "2, 1"

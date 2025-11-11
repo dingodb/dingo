@@ -330,7 +330,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select 1 from {table}",
                 csv(
-                    "EXPR$0",
+                    "1",
                     "INT",
                     "1", "1", "1", "1", "1", "1", "1", "1", "1"
                 )
@@ -383,7 +383,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(*) from {table}",
                 is(
-                    new String[]{"expr$0"},
+                    new String[]{"count(*)"},
                     ImmutableList.of(new Object[]{9L})
                 )
             );
@@ -393,7 +393,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(amount) from {table}",
                 csv(
-                    "EXPR$0",
+                    "count(amount)",
                     "LONG",
                     "0"
                 )
@@ -404,7 +404,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select name, count(*) from {table} group by name",
                 csv(
-                    "name, expr$1",
+                    "name, count(*)",
                     "STRING, LONG",
                     "Alice, 3",
                     "Betty, 2",
@@ -419,7 +419,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(*) from {table} group by name",
                 csv(
-                    "expr$0",
+                    "count(*)",
                     "LONG",
                     "3",
                     "2",
@@ -434,7 +434,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select is_delete, count(*) from {table} group by is_delete",
                 csv(
-                    "IS_DELETE, EXPR$1",
+                    "IS_DELETE, count(*)",
                     "BOOL, LONG",
                     "true, 3",
                     "false, 3",
@@ -462,7 +462,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(distinct name) from {table}",
                 csv(
-                    "expr$0",
+                    "count(distinct name)",
                     "LONG",
                     "5"
                 )
@@ -473,7 +473,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select name, count(distinct id) from {table} group by name",
                 csv(
-                    "name, expr$1",
+                    "name, count(distinct id)",
                     "STRING, LONG",
                     "Alice, 3",
                     "Betty, 2",
@@ -488,7 +488,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(distinct id), count(distinct name) from {table}",
                 csv(
-                    "expr$0, expr$1",
+                    "count(distinct id), count(distinct name)",
                     "LONG, LONG",
                     "9, 5"
                 )
@@ -499,7 +499,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select name, count(distinct id), count(distinct name) from {table} group by name",
                 csv(
-                    "name, expr$1, expr$2",
+                    "name, count(distinct id), count(distinct name)",
                     "STRING, LONG, LONG",
                     "Alice, 3, 1",
                     "Betty, 2, 1",
@@ -514,7 +514,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select count(distinct name), max(id) from {table}",
                 csv(
-                    "expr$0, expr$1",
+                    "count(distinct name), max(id)",
                     "LONG, INTEGER",
                     "5, 9"
                 )
@@ -617,7 +617,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
             .step(
                 "select sum(amount), avg(amount), count(amount) from {table}",
                 csv(
-                    "expr$0, expr$1, expr$2",
+                    "sum(amount), avg(amount), count(amount)",
                     "DOUBLE, DOUBLE, LONG",
                     "49.5, 5.5, 9"
                 )
@@ -767,7 +767,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 "select name, age, avg(amount) from {table} "
                     + "where age not between 0 and 50 group by name, age",
                 is(
-                    new String[]{"name", "age", "expr$2"},
+                    new String[]{"name", "age", "avg(amount)"},
                     ImmutableList.of(
                         new Object[]{"tTATtt", 181, 18.18},
                         new Object[]{"zhngsna", 99, 32.0},

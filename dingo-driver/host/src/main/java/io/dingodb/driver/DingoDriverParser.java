@@ -1094,11 +1094,14 @@ public final class DingoDriverParser extends DingoParser {
                 SqlBasicCall call = (SqlBasicCall) sqlNode1;
                 String opName = call.getOperator().getName();
                 List<SqlNode> nodes = new ArrayList<>();
+                boolean fullAlias = false;
                 if (opName.equalsIgnoreCase("database")
                     || opName.equalsIgnoreCase("schema")
                     || opName.equalsIgnoreCase("user")) {
                     sqlNodes.remove(i);
                     nodes.add(SqlLiteral.createCharString(convertName("dingo"), call.getParserPosition()));
+                    fullAlias = true;
+                    call.setAliasName(opName + "()");
                 } else if (opName.equals("@") || opName.equals("@@")) {
                     sqlNodes.remove(i);
                     nodes.add(call.getOperandList().get(0));
@@ -1113,7 +1116,10 @@ public final class DingoDriverParser extends DingoParser {
                     continue;
                 }
                 nodes.add(SqlLiteral.createCharString(connection.id, call.getParserPosition()));
-                sqlNodes.add(i, new SqlBasicCall(call.getOperator(), nodes, call.getParserPosition()));
+                SqlBasicCall finalBasicCall = new SqlBasicCall(call.getOperator(), nodes, call.getParserPosition());
+                finalBasicCall.setAliasName(call.getAliasName());
+                finalBasicCall.putAlias("fullAlias", String.valueOf(fullAlias));
+                sqlNodes.add(i, finalBasicCall);
             }
         }
     }
