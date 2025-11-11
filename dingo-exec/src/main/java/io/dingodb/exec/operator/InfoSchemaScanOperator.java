@@ -449,7 +449,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             column.isNullable() ? "YES" : "NO",
                             table.getEngine(),
                             column.getComment(),
-                            ""
+                            "",
+                            "YES",
+                            null
                         }
                     )).collect(Collectors.toList());
                 List<Object[]> indexColList = tables.stream()
@@ -472,7 +474,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             column.isNullable() ? "YES" : "NO",
                             index.getEngine(),
                             column.getComment(),
-                            ""
+                            "",
+                            "YES",
+                            null
                         }
                     ))).collect(Collectors.toList());
                 priKeyList.addAll(indexColList);
