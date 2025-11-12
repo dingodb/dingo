@@ -4454,6 +4454,7 @@ SqlNode AtomicRowExpression() :
 }
 {
     (
+        LOOKAHEAD(2)
         e = LiteralOrIntervalExpression()
     |
         LOOKAHEAD(<DATE> <QUOTED_STRING>)
@@ -4483,6 +4484,9 @@ SqlNode AtomicRowExpression() :
     |
         LOOKAHEAD(2)
         e = ContextVariable()
+    |
+        LOOKAHEAD(2)
+        <BINARY> e = CompoundIdentifier()
     |
         e = CompoundIdentifier()
     |
