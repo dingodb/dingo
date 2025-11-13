@@ -19,6 +19,7 @@ package io.dingodb.common;
 import io.dingodb.common.util.Optional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Properties;
 
@@ -31,6 +32,12 @@ public class ExecuteVariables {
     private int concurrencyLevel = CONCURRENCY_COUNT;
     private boolean isInsertCheckInplace = false;
     private int iterationLimit;
+    @Setter
+    private String queryId;
+    @Setter
+    private String user;
+    @Setter
+    private String host;
 
     protected ExecuteVariables(Properties properties) {
         this.iterationLimit = getIterationLimit(properties);
@@ -38,6 +45,16 @@ public class ExecuteVariables {
         this.concurrencyLevel = getConcurrencyLevel(properties);
         this.isInsertCheckInplace = isInsertCheckInplace(properties);
         this.isExecutorShuffle = isExecutorShuffle(properties);
+        this.queryId = properties.getProperty("queryId", null);
+    }
+
+    protected ExecuteVariables(Properties properties, String queryId) {
+        this.iterationLimit = getIterationLimit(properties);
+        this.isJoinConcurrency = isJoinConcurrency(properties);
+        this.concurrencyLevel = getConcurrencyLevel(properties);
+        this.isInsertCheckInplace = isInsertCheckInplace(properties);
+        this.isExecutorShuffle = isExecutorShuffle(properties);
+        this.queryId = queryId;
     }
 
     public int getConcurrencyLevel(Properties properties) {
@@ -66,5 +83,13 @@ public class ExecuteVariables {
 
     public boolean isExecutorShuffle(Properties properties) {
         return "on".equalsIgnoreCase(properties.getProperty("dingo_execute_shuffle_enable"));
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public String getHost() {
+        return host;
     }
 }

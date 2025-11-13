@@ -227,6 +227,10 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("KEYWORDS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("REFERENTIAL_CONSTRAINTS", CASE_NAMES),
             SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("PROCESSLIST", CASE_NAMES),
+            SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("DINGO_SQL_JOB", CASE_NAMES),
+            SYSTEM_VIEW, TXN_LSM, FIXED);
         LogUtils.info(log, "prepare information meta table done");
     }
 
@@ -573,6 +577,8 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("PLUGINS"), "/information-plugins.json");
         TABLE_MAP.put(convertName("KEYWORDS"), "/information-keywords.json");
         TABLE_MAP.put(convertName("REFERENTIAL_CONSTRAINTS"), "/information-referentialConstraints.json");
+        TABLE_MAP.put(convertName("PROCESSLIST"), "/information-processlist.json");
+        TABLE_MAP.put(convertName("DINGO_SQL_JOB"), "/information-dingoSqlJob.json");
     }
 
     public static void initTableByTemplate(String schema,

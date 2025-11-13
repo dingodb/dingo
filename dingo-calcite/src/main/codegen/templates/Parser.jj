@@ -4289,7 +4289,10 @@ SqlNode Expression3(ExprContext exprContext) :
     {
         if (list1.size() == 1) {
             // interpret as single value or query
-            return list1.get(0);
+            SqlNode sqlNode = list1.get(0);
+            sqlNode.putAlias("aliasName", "(" + sqlNode.toMysqlString() + ")");
+            sqlNode.putAlias("fullAlias", "true");
+            return sqlNode;
         } else {
             // interpret as row constructor
             return SqlStdOperatorTable.ROW.createCall(span().end(list1),

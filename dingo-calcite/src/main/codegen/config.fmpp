@@ -635,6 +635,7 @@ data: {
     "PRESERVE"
     "PRIOR"
     "PRIVILEGES"
+    "PROCESSLIST"
     "PUBLIC"
     "QUARTER"
     "QUARTERS"

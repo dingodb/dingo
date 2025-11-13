@@ -1,0 +1,60 @@
+ [
+    {
+      "name": "job_id",
+      "type": "varchar",
+      "precision": 64,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "txn_id",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+       "name": "start_time",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": -1,
+       "nullable": false
+    },
+   {
+     "name": "is_select",
+     "type": "boolean",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "execution_time",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "sql_id",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "scan_cnt",
+     "type": "bigint",
+     "precision": -1,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

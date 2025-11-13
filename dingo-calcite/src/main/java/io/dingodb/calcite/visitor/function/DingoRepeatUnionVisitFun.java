@@ -91,7 +91,10 @@ public class DingoRepeatUnionVisitFun {
         CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION,
             TransactionManager.getServerId().seq, TransactionManager.getStartTs());
         RelDataType parasType = new RelRecordType(new ArrayList<>());
-        Job job = jobManager.createJob(startTs, jobSeqId, txnId, DefinitionMapper.mapToDingoType(parasType));
+        Job job = jobManager.createJob(startTs, jobSeqId, txnId,
+            DefinitionMapper.mapToDingoType(parasType), executeVariables.getQueryId());
+        job.setUser(executeVariables.getUser());
+        job.setHost(executeVariables.getHost());
         Location currentLocation = MetaService.root().currentLocation();
 
         DingoJobVisitor.renderJob(

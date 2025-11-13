@@ -33,16 +33,26 @@ import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
+import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.units.qual.A;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @JsonPropertyOrder({"tasks"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class JobImpl implements Job {
     public static final Parser PARSER = Parser.JSON;
+
+    @JsonProperty("queryId")
+    @Getter
+    @Setter
+    private String queryId;
 
     @JsonProperty("jobId")
     @Getter
@@ -69,6 +79,14 @@ public final class JobImpl implements Job {
 
     private final long maxExecutionTime;
     private final Boolean isSelect;
+
+    private long startTime;
+
+    @Setter
+    private String user;
+
+    @Setter
+    private String host;
 
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId) {
@@ -144,4 +162,37 @@ public final class JobImpl implements Job {
         getTasks().values().forEach( v -> v.setTxnId(txnId));
         getTasks().values().forEach( v -> v.setBathTask(true));
     }
+
+    @Override
+    public void start() {
+        this.startTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+
+    @Override
+    public boolean isSelect() {
+        return isSelect;
+    }
+
+    @Override
+    public boolean validate(String user, String host) {
+        if (this.user == null || this.host == null) {
+            return false;
+        }
+        return this.user.equalsIgnoreCase(user) && this.host.equalsIgnoreCase(host);
+    }
+
+    @Override
+    public long dataCnt() {
+        AtomicLong cnt = new AtomicLong(0);
+        tasks.values().forEach(task -> {
+            task.getVertexes().values().forEach(vertex -> cnt.addAndGet(vertex.getCnt().get()));
+        });
+        return cnt.get();
+    }
+
 }

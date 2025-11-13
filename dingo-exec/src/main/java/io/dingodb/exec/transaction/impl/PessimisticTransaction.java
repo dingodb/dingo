@@ -213,7 +213,7 @@ public class PessimisticTransaction extends BaseTransaction {
 
     public void rollBackResidualPessimisticLock(JobManager jobManager) {
         long rollBackStart = System.currentTimeMillis();
-        if(!cache.checkResidualPessimisticLockContinue()) {
+        if (!cache.checkResidualPessimisticLockContinue()) {
             LogUtils.warn(log, "The current {} has no data to rollBackResidualPessimisticLock", transactionOf());
             return;
         }

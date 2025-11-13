@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.operator.params;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -29,9 +30,12 @@ import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
+
 @Getter
 @JsonTypeName("infoSchemaScan")
 @JsonPropertyOrder({"schema", "filter", "selection", "target"})
+@JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)
 public class InfoSchemaScanParam extends FilterProjectSourceParam {
     @JsonProperty("schema")
     private final DingoType schema;

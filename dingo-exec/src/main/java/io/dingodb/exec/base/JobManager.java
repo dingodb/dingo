@@ -23,17 +23,24 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public interface JobManager {
-    default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType) {
-        return createJob(startTs, jobSeqId, txnId, parasType, 0, null);
+    default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType, String queryId) {
+        return createJob(startTs, jobSeqId, txnId, parasType, 0, null, queryId);
     }
 
-    Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType, long maxTimeout, Boolean isSelect);
+    default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType) {
+        return createJob(startTs, jobSeqId, txnId, parasType, 0, null, null);
+    }
+
+    Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType,
+                  long maxTimeout, Boolean isSelect, String queryId);
 
     default Job createJob(long startTs, long jobSeqId) {
-        return createJob(startTs, jobSeqId, null,  null, 0, null);
+        return createJob(startTs, jobSeqId, null,  null, 0, null, null);
     }
 
     Job getJob(CommonId jobId);
@@ -49,4 +56,6 @@ public interface JobManager {
     void close();
 
     void cancel(CommonId jobId);
+
+    List<Job> jobList();
 }

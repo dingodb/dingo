@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.client.SessionVariableChange;
@@ -104,8 +103,11 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
     @Setter
     private volatile String command;
 
-    @Getter
     @Setter
+    @Getter
+    private volatile String queryId;
+
+    @Getter
     private volatile long commandStartTime;
 
     @Setter
@@ -481,7 +483,9 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
         try {
             return super.executeQueryInternal(statement, signature, firstFrame, state, isUpdate);
         } finally {
+            this.command = "";
             this.commandStartTime = 0;
+            this.queryId = null;
         }
     }
 
@@ -501,6 +505,8 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             return super.prepareAndExecuteInternal(statement, sql, maxRowCount);
         } catch (Exception e) {
             this.commandStartTime = 0;
+            this.command = "";
+            this.queryId = null;
             throw e;
         }
     }
@@ -673,5 +679,13 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             res.put(Long.parseLong(str), 0L);
         }
         return res;
+    }
+
+    public void setCommandStartTime(long time) {
+        if (time == 0) {
+            this.command = "";
+            this.queryId = null;
+        }
+        this.commandStartTime = time;
     }
 }

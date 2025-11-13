@@ -17,15 +17,21 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.CommonId;
+import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.profile.StmtSummaryMap;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Utils;
+import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.impl.JobImpl;
+import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.exec.operator.params.InfoSchemaScanParam;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
@@ -35,6 +41,7 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.net.api.ApiRegistry;
+import io.dingodb.tool.api.QueryManager;
 import io.dingodb.transaction.api.TransactionService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.extern.slf4j.Slf4j;
@@ -110,6 +117,10 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                 return mysqlEngineInfos();
             case "DINGO_ENGINES":
                 return dingoEngineInfos();
+            case "DINGO_SQL_JOB":
+                return dingoSqlJobList(user, host, vertex.getTask().getTxnId());
+            case "PROCESSLIST":
+                return dingoProcessList(user, host, vertex.getTask().getTxnId());
             default:
                 throw new RuntimeException("no source");
         }
@@ -1618,5 +1629,60 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
         result.add(new Object[]{"LSM", "LSM based engine without transactions.", "NO", "YES", "NO", "NO"});
         result.add(new Object[]{"BTREE", "BTREE based engine without transactions.", "NO", "YES", "NO", "NO"});
         return result.stream().iterator();
+    }
+
+    public static Iterator<Object[]> dingoSqlJobList(String user, String host, CommonId txnId) {
+        List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
+        accessTypes.add(DingoSqlAccessEnum.PROCESS);
+        boolean processPrivilege = PrivilegeVerify.verifyDuplicate(user, host, null, null,
+            accessTypes);
+        List<Job> jobList = JobManagerImpl.INSTANCE.jobList();
+        return jobList.stream().filter(job -> processPrivilege || job.validate(user, host)).map(job -> {
+            Object[] tuples = new Object[7];
+            tuples[0] = job.getJobId().toString();
+            JobImpl jobImpl = (JobImpl) job;
+            if (txnId != null && txnId.equals(jobImpl.getTxnId())) {
+                return null;
+            }
+            tuples[1] = jobImpl.getTxnId().toString();
+            tuples[2] = job.getStartTime();
+            tuples[3] = job.isSelect();
+            tuples[4] = System.currentTimeMillis() - job.getStartTime();
+            tuples[5] = ((JobImpl) job).getQueryId();
+            tuples[6] = job.dataCnt();
+            return tuples;
+        }).filter(Objects::nonNull).iterator();
+    }
+
+    private static Iterator<Object[]> dingoProcessList(String user, String host, CommonId txnId) {
+        String txnIdStr = "";
+        if (txnId != null) {
+            txnIdStr = txnId.toString();
+        }
+        final String txnIdStrFinal = txnIdStr;
+        List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
+        accessTypes.add(DingoSqlAccessEnum.PROCESS);
+        boolean processPrivilege = PrivilegeVerify.verifyDuplicate(user, host, null, null,
+            accessTypes);
+        List<ProcessInfo> processInfoList = QueryManager.getDefault().getProcessInfoList();
+        List<Object[]> tupleList = processInfoList
+            .stream()
+            .filter(processInfo -> processPrivilege || processInfo.getUser().equals(user)
+                && processInfo.getHost().equals(host))
+            .map(processInfo -> {
+                if (txnIdStrFinal.equalsIgnoreCase(processInfo.getTxnIdStr())) {
+                    return null;
+                }
+                return new Object[]{
+                    Long.parseLong(processInfo.getId()),
+                    processInfo.getUser(),
+                    processInfo.getClient(),
+                    processInfo.getDb(),
+                    processInfo.getCommand(), Integer.parseInt(processInfo.getTime()),
+                    processInfo.getState(), processInfo.getInfo(),
+                    processInfo.getTxnIdStr(), processInfo.getSqlId()
+                };
+            }).filter(Objects::nonNull).toList();
+        return tupleList.iterator();
     }
 }

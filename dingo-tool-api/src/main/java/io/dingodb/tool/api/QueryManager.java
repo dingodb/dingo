@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.tool.api;
 
-import lombok.Data;
+import io.dingodb.common.ProcessInfo;
 
-@Data
-public class ProcessInfo {
-    private String id;
-    private String type;
-    private String host;
-    private String user;
-    private String db;
-    private String command;
-    private String time;
-    private String state;
-    private String info;
-    private String client;
-    private String txnIdStr;
-    private String sqlId;
+import java.sql.Connection;
+import java.util.List;
+
+public interface QueryManager {
+    static QueryManager getDefault() {
+        return QueryManagerProvider.getDefault().get();
+    }
+
+    List<ProcessInfo> getProcessInfoList();
+
+    Connection getConnection(String connId);
+
+    boolean hasConnection(String connId);
+
 }
