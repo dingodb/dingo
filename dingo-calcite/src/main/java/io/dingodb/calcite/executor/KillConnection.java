@@ -16,6 +16,8 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.tool.api.QueryManager;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -36,8 +38,12 @@ public class KillConnection implements DdlExecutor {
     @Override
     public void execute() {
         try {
+            connection = QueryManager.getDefault().getConnection(threadId);
             if (connection == null) {
-                return;
+                connection = QueryManager.getDefault().getConnection(getMysqlThreadId());
+                if (connection == null) {
+                    return;
+                }
             }
             connection.setClientInfo("@connection_kill", String.valueOf(threadId));
             connection.close();

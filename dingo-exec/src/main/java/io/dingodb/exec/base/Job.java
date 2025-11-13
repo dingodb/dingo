@@ -76,5 +76,23 @@ public interface Job {
         return getRoot().cancel();
     }
 
-    default void setTxnId(CommonId txnId) {}
+    default void setTxnId(CommonId txnId) {
+
+    }
+
+    void setQueryId(String queryId);
+
+    void start();
+
+    long getStartTime();
+
+    boolean isSelect();
+
+    void setUser(String user);
+
+    void setHost(String host);
+
+    boolean validate(String user, String host);
+
+    long dataCnt();
 }

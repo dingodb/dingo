@@ -50,6 +50,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -83,8 +84,10 @@ public final class JobManagerImpl implements JobManager {
                                   CommonId txnId,
                                   DingoType parasType,
                                   long maxExecutionTime,
-                                  Boolean isSelect) {
+                                  Boolean isSelect,
+                                  String queryId) {
         Job job = new JobImpl(idGenerator.getJobId(startTs, jobSeqId), txnId, parasType, maxExecutionTime, isSelect);
+        job.setQueryId(queryId);
         CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
         LogUtils.debug(log, "Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());
@@ -120,6 +123,7 @@ public final class JobManagerImpl implements JobManager {
             return Collections.emptyIterator();
         }
         if (job.getStatus() == Status.BORN) {
+            job.start();
             distributeTasks(job);
         }
         run(job, paras);
@@ -160,6 +164,11 @@ public final class JobManagerImpl implements JobManager {
             }
             cancel(job);
         }
+    }
+
+    @Override
+    public List<Job> jobList() {
+        return jobMap.values().stream().toList();
     }
 
     private void cancel(@NonNull Job job) {

@@ -28,4 +28,11 @@ public class SimpleExecuteVariablesFactory {
         return new ExecuteVariables(properties);
     }
 
+    public ExecuteVariables createExecuteVariables(Properties properties, String queryId, String user, String host) {
+        ExecuteVariables executeVariables = new ExecuteVariables(properties, queryId);
+        executeVariables.setUser(user);
+        executeVariables.setHost(host);
+        return executeVariables;
+    }
+
 }

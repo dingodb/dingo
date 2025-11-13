@@ -41,6 +41,7 @@ public abstract class FilterProjectOperator extends IteratorOperator {
             iterator = Iterators.filter(
                 iterator,
                 t -> {
+                    vertex.incrementCnt();
                     Object v = filter.eval(t);
                     return v != null && (Boolean) v;
                 }

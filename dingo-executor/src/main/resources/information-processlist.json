@@ -1,0 +1,85 @@
+ [
+    {
+      "name": "id",
+      "type": "bigint",
+      "precision": -1,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+      "name": "user",
+      "type": "varchar",
+      "precision": 512,
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    },
+    {
+       "name": "host",
+       "type": "varchar",
+       "precision": 64,
+       "scale": -2147483648,
+       "primary": -1,
+       "nullable": false
+    },
+   {
+     "name": "db",
+     "type": "varchar",
+     "precision": 64,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": null
+   },
+   {
+     "name": "command",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "time_cost",
+     "type": "int",
+     "precision": -1,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": false
+   },
+   {
+     "name": "state",
+     "type": "varchar",
+     "precision": 20,
+     "scale": -2147483648,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "info",
+     "type": "varchar",
+     "precision": 65554,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "txn_id",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   },
+   {
+     "name": "sql_id",
+     "type": "varchar",
+     "precision": 512,
+     "scale": -2147483648,
+     "default": null,
+     "primary": -1,
+     "nullable": true
+   }
+ ]

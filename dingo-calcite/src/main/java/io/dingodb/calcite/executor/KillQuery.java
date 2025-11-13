@@ -17,6 +17,7 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.tool.api.QueryManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaConnection;
 
@@ -27,19 +28,14 @@ import java.util.Map;
 @Slf4j
 public class KillQuery implements DdlExecutor {
     private String threadId;
-    private Map<String, Connection> connectionMap;
 
     public KillQuery(String threadId) {
         this.threadId = threadId;
     }
 
-    public void init(Object connectionMap) {
-        this.connectionMap = (Map<String, Connection>) connectionMap;
-    }
-
     @Override
     public void execute() {
-        Connection connection = connectionMap.get("mysql:" + threadId);
+        Connection connection = QueryManager.getDefault().getConnection("mysql:" + threadId);
         if (connection == null) {
             return;
         }

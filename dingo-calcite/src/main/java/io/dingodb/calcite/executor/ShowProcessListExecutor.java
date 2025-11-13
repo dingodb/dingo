@@ -17,6 +17,7 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.tool.api.QueryManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -43,12 +44,9 @@ public class ShowProcessListExecutor extends QueryExecutor {
         this.host = host;
     }
 
-    public void init(List<ProcessInfo> processInfoList) {
-        this.processInfoList = processInfoList;
-    }
-
     @Override
     public Iterator<Object[]> getIterator() {
+        processInfoList = QueryManager.getDefault().getProcessInfoList();
         List<Object[]> tupleList = processInfoList
             .stream()
             .filter(processInfo -> processPrivilege

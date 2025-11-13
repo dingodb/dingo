@@ -18,6 +18,7 @@ package io.dingodb.exec.utils;
 
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.util.Pair;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -64,7 +65,7 @@ public final class RelOpUtils {
     ) {
         ScanParam param = vertex.getParam();
         OperatorProfile profile = param.getProfile("scan");
-        long count = 0;
+        //long count = 0;
         long tmp = System.currentTimeMillis();
         boolean breakFlg = false;
         while (iterator.hasNext()) {
@@ -73,6 +74,7 @@ public final class RelOpUtils {
             Object[] tuple = iterator.next();
             long decodeEnd = System.currentTimeMillis();
             profile.decodeTime(current, decodeEnd);
+            vertex.incrementCnt();
             if (!vertex.getSoleEdge().transformToNext(context, tuple)) {
                 breakFlg = true;
                 break;
@@ -90,7 +92,7 @@ public final class RelOpUtils {
         profile.time(tmp);
         profile.decreaseCount();
         profile.end();
-        return Pair.of(count, !breakFlg);
+        return Pair.of(vertex.getCnt().get(), !breakFlg);
     }
 
     public static Pair<Long, Boolean> doScanWithPipeOp(
@@ -111,7 +113,8 @@ public final class RelOpUtils {
             Object[] tuple = sourceIterator.next();
             long decodeEnd = System.currentTimeMillis();
             profile.decodeTime(current, decodeEnd);
-            ++count;
+            ++ count;
+            vertex.incrementCnt();
             if (!processWithPipeOp(relOp, tuple, edge, context, profile, decodeEnd)) {
                 breakFlg = true;
                 break;
@@ -150,6 +153,7 @@ public final class RelOpUtils {
             long decodeEnd = System.currentTimeMillis();
             profile.decodeTime(current, decodeEnd);
             ++count;
+            vertex.incrementCnt();
             synchronized (relOp) {
                 relOp.put(tuple);
             }

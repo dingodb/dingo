@@ -14,22 +14,7 @@
  * limitations under the License.
  */
 
-package io.dingodb.common;
+package io.dingodb.common.mysql;
 
-import lombok.Data;
-
-@Data
-public class ProcessInfo {
-    private String id;
-    private String type;
-    private String host;
-    private String user;
-    private String db;
-    private String command;
-    private String time;
-    private String state;
-    private String info;
-    private String client;
-    private String txnIdStr;
-    private String sqlId;
+public class SessionInfo {
 }

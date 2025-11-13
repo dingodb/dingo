@@ -34,6 +34,7 @@ import lombok.Setter;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.common.util.Utils.sole;
 
@@ -64,6 +65,7 @@ public class Vertex {
     private OutputHint hint;
     @Setter
     private int pin;
+    private AtomicLong cnt = new AtomicLong(0);
 
     public Vertex(CommonId op, Object data) {
         this(op, data, new LinkedList<>(), new LinkedList<>());
@@ -159,5 +161,9 @@ public class Vertex {
 
     public long getStartTs() {
         return getTask().getTxnId().seq;
+    }
+
+    public void incrementCnt() {
+        cnt.incrementAndGet();
     }
 }

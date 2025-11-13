@@ -24,10 +24,7 @@ import io.dingodb.calcite.DingoSqlValidator;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.executor.DmlExecutor;
 import io.dingodb.calcite.executor.Executor;
-import io.dingodb.calcite.executor.KillConnection;
-import io.dingodb.calcite.executor.KillQuery;
 import io.dingodb.calcite.executor.QueryExecutor;
-import io.dingodb.calcite.executor.ShowProcessListExecutor;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateView;
 import io.dingodb.calcite.grammar.ddl.SqlCommit;
@@ -55,7 +52,6 @@ import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
-import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
@@ -288,7 +284,8 @@ public final class DingoDriverParser extends DingoParser {
         JobManager jobManager,
         long jobSeqId,
         String sql,
-        boolean prepare
+        boolean prepare,
+        String queryId
     ) {
         SqlNode sqlNode;
         try {
@@ -531,7 +528,7 @@ public final class DingoDriverParser extends DingoParser {
             && (forUpdate || sqlNode.getKind().belongsTo(SqlKind.DML))) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                variablesFactory.createExecuteVariables(connection.getClientInfo()), user, host);
+                variablesFactory.createExecuteVariables(connection.getClientInfo(), queryId, user, host));
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -539,8 +536,10 @@ public final class DingoDriverParser extends DingoParser {
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
         Job job = jobManager.createJob(
             startTs, jobSeqId, txnId, DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
-            statementType == Meta.StatementType.SELECT
+            statementType == Meta.StatementType.SELECT, queryId
         );
+        job.setUser(user);
+        job.setHost(host);
         DingoJobVisitor.renderJob(
             jobManager,
             job,
@@ -671,34 +670,12 @@ public final class DingoDriverParser extends DingoParser {
                     new BasicSqlType(RelDataTypeSystem.DEFAULT, SqlTypeName.VARCHAR), null, false))
                     .collect(Collectors.toList());
                 statementType = Meta.StatementType.SELECT;
-                if (queryOperation instanceof ShowProcessListExecutor) {
-                    ShowProcessListExecutor processListOperation = (ShowProcessListExecutor) queryOperation;
-                    List<ProcessInfo> processInfoList
-                        = getProcessInfoList(ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap);
-                    processListOperation.init(processInfoList);
-                }
             } else if (sqlNode.getKind() == SqlKind.INSERT) {
                 columns = ((DmlExecutor)operation).columns(typeFactory);
                 statementType = Meta.StatementType.IS_DML;
                 this.execProfile = new ExecProfile("dml");
                 ((DmlExecutor) operation).doExecute(execProfile);
             } else {
-                Map<String, Connection> connectionMap
-                    = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
-                if (operation instanceof KillConnection) {
-                    KillConnection killConnection = (KillConnection) operation;
-                    String threadId = killConnection.getThreadId();
-                    if (connectionMap.containsKey(threadId)) {
-                        killConnection.initConnection(connectionMap.get(threadId));
-                    } else if (connectionMap.containsKey(killConnection.getMysqlThreadId())) {
-                        killConnection.initConnection(
-                            connectionMap.get(killConnection.getMysqlThreadId())
-                        );
-                    }
-                } else if (operation instanceof KillQuery) {
-                    KillQuery killQuery = (KillQuery) operation;
-                    killQuery.init(connectionMap);
-                }
                 if (sqlNode instanceof SqlCommit) {
                     if (connection.getTransaction() != null) {
                         dingoAudit(connection.getTransaction());
@@ -744,9 +721,9 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         RelDataType parasType,
         List<ColumnMetaData> columns,
-        boolean lockTable,
         List<ColumnMetaData> visitColumns,
-        boolean autoCommitAndRetry
+        boolean autoCommitAndRetry,
+        String queryId
     ) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
@@ -779,7 +756,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                variablesFactory.createExecuteVariables(connection.getClientInfo()), user, host);
+                variablesFactory.createExecuteVariables(connection.getClientInfo(), queryId, user, host));
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -787,8 +764,10 @@ public final class DingoDriverParser extends DingoParser {
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
         Job job = jobManager.createJob(
             startTs, jobSeqId, transaction.getTxnId(), DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
-            false
+            false, queryId
         );
+        job.setUser(user);
+        job.setHost(host);
         DingoJobVisitor.renderJob(
             jobManager,
             job,
@@ -825,18 +804,20 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         Location currentLocation,
         DingoType dingoType,
-        ExecuteVariables executeVariables,
-        String user,
-        String host
+        ExecuteVariables executeVariables
     ) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         boolean forUpdate = forUpdate(sqlNode);
         while (retry-- > 0) {
-            Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId, transaction.getTxnId(), dingoType);
+            Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId,
+                transaction.getTxnId(), dingoType, executeVariables.getQueryId());
+            job.setUser(executeVariables.getUser());
+            job.setHost(executeVariables.getHost());
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
                 transaction, sqlNode.getKind(), executeVariables, 0,
-                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode), user, host
+                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode),
+                executeVariables.getUser(), executeVariables.getHost()
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);

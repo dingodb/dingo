@@ -277,9 +277,11 @@ public class DingoMeta extends MetaImpl {
             initProfile(sqlProfile, dingoConnection);
             DingoDriverParser parser = new DingoDriverParser(dingoConnection);
             long jobSeqId = TsoService.getDefault().cacheTso();
-            String stmtId = "Stmt_" + sh.toString() + "_" + jobSeqId;
+            String queryId = sh.toString();
+            String stmtId = "Stmt_" + queryId + "_" + jobSeqId;
             MdcUtils.setStmtId(stmtId);
-            sh.signature = parser.parseQuery(jobManager, jobSeqId, sql, true);
+            dingoConnection.setQueryId(queryId);
+            sh.signature = parser.parseQuery(jobManager, jobSeqId, sql, true, queryId);
             sql = sh.signature.sql;
             sqlProfile(sql, sqlProfile, parser);
             addProfileQueue(sqlProfile, connection);
@@ -320,7 +322,9 @@ public class DingoMeta extends MetaImpl {
     ) {
         DingoConnection dingoConnection = (DingoConnection) connection;
         long jobSeqId = TsoService.getDefault().cacheTso();
-        String stmtId = "Stmt_" + sh + "_" + jobSeqId;
+        String queryId = sh.toString();
+        String stmtId = "Stmt_" + queryId + "_" + jobSeqId;
+        dingoConnection.setQueryId(queryId);
         MdcUtils.setStmtId(stmtId);
         DingoStatement statement = null;
         try {
@@ -328,7 +332,7 @@ public class DingoMeta extends MetaImpl {
             statement.initSqlProfile();
             DingoDriverParser parser = new DingoDriverParser(dingoConnection);
             statement.removeJob(jobManager);
-            Signature signature = parser.parseQuery(jobManager, jobSeqId, sql, false);
+            Signature signature = parser.parseQuery(jobManager, jobSeqId, sql, false, queryId);
             sql = signature.sql;
             // add profile
             sqlProfile(sql, statement.getSqlProfile(), parser);
@@ -575,6 +579,7 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         SqlProfile sqlProfile = null;
+        boolean hasNext = false;
         try {
             DingoResultSet resultSet = (DingoResultSet) statement.getResultSet();
             if (resultSet == null) {
@@ -606,17 +611,18 @@ public class DingoMeta extends MetaImpl {
                 } else {
                     columnMetaDataList = signature.columns;
                 }
+
                 if (!trace) {
                     DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
                     GregorianCalendar calendarCST = new GregorianCalendar();
                     calendarCST.setTimeZone(((DingoConnection) connection).getInternalTimeZone().getTimeZone());
                     AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
-                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
                         rows.add(dingoType.convertTo(iterator.next(), converter));
                     }
                     sqlProfile = getProfile(iterator, statement);
                 } else {
-                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
                         iterator.next();
                     }
                     sqlProfile = getProfile(iterator, statement);
@@ -779,8 +785,10 @@ public class DingoMeta extends MetaImpl {
             throw ExceptionUtils.toRuntime(e);
         } finally {
             DingoConnection connection1 = (DingoConnection) connection;
-            connection1.setCommandStartTime(0);
-            addSqlProfile(sqlProfile, connection);
+            if (!hasNext) {
+                connection1.setCommandStartTime(0);
+                addSqlProfile(sqlProfile, connection);
+            }
             if (connection1.getContext().getOption("sql_log").equalsIgnoreCase("")) {
                 SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
             }
@@ -847,7 +855,8 @@ public class DingoMeta extends MetaImpl {
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns, false);
+                dingoSignature.allColumnMetaDataList,
+                dingoSignature.columns, false, sh.toString());
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, retry);
@@ -869,7 +878,8 @@ public class DingoMeta extends MetaImpl {
             Signature signature1 = parser.retryQuery(jobManager, sh.signature.sql,
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
-                dingoSignature.allColumnMetaDataList, false, dingoSignature.columns, autoCommit);
+                dingoSignature.allColumnMetaDataList,
+                dingoSignature.columns, autoCommit, sh.toString());
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, retry);
@@ -892,7 +902,7 @@ public class DingoMeta extends MetaImpl {
                 ((DingoSignature) sh.signature).getSqlNode(), ((DingoSignature) sh.signature).getRelNode(),
                 ((DingoSignature) sh.signature).getParasType(),
                 ((DingoSignature) signature).allColumnMetaDataList,
-                 true, dingoSignature.columns, false);
+                dingoSignature.columns, false, sh.toString());
             ((DingoStatement) statement).setSignature(signature1);
             resultSet.setIterator(null);
             return getFrame(sh, offset, fetchMaxRowCount, txnRetryLimit);
@@ -1014,6 +1024,7 @@ public class DingoMeta extends MetaImpl {
         try {
             if (job != null) {
                 Task task = job.getTasks().entrySet().stream().findFirst().get().getValue();
+                String queryId = sh.toString();
                 if (task.getTransactionType() == TransactionType.OPTIMISTIC
                     || task.getTransactionType() == TransactionType.NONE) {
                     transaction = dingoConnection.createTransaction(
@@ -1023,14 +1034,15 @@ public class DingoMeta extends MetaImpl {
                         false
                     );
                     statement.setTxnId(jobManager, transaction.getTxnId());
-                    MdcUtils.setStmtId("Stmt_" + sh + "_" + job.getJobId().seq);
+                    MdcUtils.setStmtId("Stmt_" + queryId + "_" + job.getJobId().seq);
                 } else {
                     jobManager.removeJob(statement.getJobId(jobManager));
                     DingoDriverParser parser = new DingoDriverParser(dingoConnection);
                     long jobSeqId = TsoService.getDefault().cacheTso();
-                    String stmtId = "Stmt_" + sh + "_" + jobSeqId;
+                    String stmtId = "Stmt_" + queryId + "_" + jobSeqId;
                     MdcUtils.setStmtId(stmtId);
-                    sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql(), true);
+                    dingoConnection.setQueryId(queryId);
+                    sh.signature = parser.parseQuery(jobManager, jobSeqId, statement.getSql(), true, queryId);
                     printDingoAudit(sh, statement.getSql(), (DingoConnection) connection, jobSeqId, parser);
                 }
             }
