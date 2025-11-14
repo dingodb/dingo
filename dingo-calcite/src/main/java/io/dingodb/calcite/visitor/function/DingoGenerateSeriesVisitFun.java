@@ -141,6 +141,10 @@ public class DingoGenerateSeriesVisitFun {
         } else if (operands.size() > 4 && operands.get(4) instanceof SqlIdentifier
             && ((SqlIdentifier) operands.get(4)).isStar()) {
             mapping = td.mapping();
+        } else if (operands.size() > 4 && operands.get(4) instanceof SqlIdentifier
+            && !((SqlIdentifier) operands.get(4)).isStar()) {
+            SqlIdentifier identifier = (SqlIdentifier) operands.get(4);
+            mapping = TupleMapping.of(new int[]{td.getColumnIndex(identifier.getLastName())});
         }
 
         List<Vertex> outputs = new ArrayList<>();

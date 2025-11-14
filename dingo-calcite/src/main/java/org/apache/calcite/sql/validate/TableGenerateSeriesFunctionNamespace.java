@@ -115,6 +115,17 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
                     }
                 } else if (operandList.get(4) instanceof SqlIdentifier && ((SqlIdentifier) operandList.get(4)).isStar()) {
                     columns.addAll(table.getColumns());
+                } else if (operandList.get(4) instanceof SqlIdentifier && !((SqlIdentifier) operandList.get(4)).isStar()) {
+                    SqlIdentifier identifier = (SqlIdentifier) operandList.get(4);
+                    if (identifier.names.size() > 1 && !table.getName().equalsIgnoreCase(identifier.getSimple())) {
+                        throw new RuntimeException("Parameter tableName: " + identifier.getSimple()
+                            + " must be consistent with function tableName: " + table.getName());
+                    }
+                    Column col = table.getColumn(identifier.getLastName());
+                    if (col == null) {
+                        throw new RuntimeException("Column " + identifier.getLastName() + " does not exist in table " + table.getName());
+                    }
+                    columns.add(col);
                 } else {
                     throw new IllegalArgumentException("");
                 }
