@@ -150,7 +150,7 @@ public class DateSubFun extends BinaryOp {
         if (value0 instanceof Date) {
             Date date = (Date) value0;
             LocalDate l;
-            LocalTime localTime;
+            LocalTime localTime = LocalTime.MIDNIGHT;
             ZoneId zoneId;
             ZonedDateTime zonedDateTime;
             Instant instant;
@@ -164,23 +164,20 @@ public class DateSubFun extends BinaryOp {
                     return new Date(calendar.getTimeInMillis());
                 case Calendar.HOUR:
                     l = date.toLocalDate();
-                    localTime = LocalTime.of(amount, 0);
                     zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId);
+                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusHours(amount);
                     instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
                     return Timestamp.from(instant);
                 case Calendar.MINUTE:
                     l = date.toLocalDate();
-                    localTime = LocalTime.of(0, amount);
                     zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId);
+                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusMinutes(amount);
                     instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
                     return Timestamp.from(instant);
                 case Calendar.SECOND:
                     l = date.toLocalDate();
-                    localTime = LocalTime.of(0, 0, amount);
                     zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId);
+                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusSeconds(amount);
                     instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
                     return Timestamp.from(instant);
                 default: return null;
