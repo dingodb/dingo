@@ -1285,14 +1285,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlService ddlService = DdlService.root();
         ddlService.createIndex(schema.getSchemaName() , tableName, indexDef);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionAddIndex)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "create index done, tableName:{}, index:{}", tableName, indexDef.getName());
     }
 
@@ -1491,10 +1483,13 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         // can't drop column age with composite index covered or Primary Key covered now
         List<IndexTable> matchIndices = table.getIndexes().stream().filter(indexTable -> {
-            boolean keyContains = indexTable.getOriginKeyList().stream()
-                .map(String::toUpperCase)
-                .toList()
-                .contains(dropColumn);
+            boolean keyContains = false;
+            if (indexTable.getOriginKeyList() != null) {
+                keyContains = indexTable.getOriginKeyList().stream()
+                    .map(String::toUpperCase)
+                    .toList()
+                    .contains(dropColumn);
+            }
             boolean withKeyContains = false;
             if (indexTable.getOriginWithKeyList() != null) {
                 withKeyContains = indexTable.getOriginWithKeyList().stream()
@@ -1509,11 +1504,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         // it is necessary to mark the deletion
         List<String> indicesInfo = matchIndices
             .stream().filter(indexTable -> {
-                boolean keyContains = indexTable.getOriginKeyList().stream()
-                    .map(String::toUpperCase)
-                    .toList()
-                    .contains(dropColumn);
-                return keyContains && indexTable.getOriginKeyList().size() == 1
+                boolean keyContains = false;
+                if (indexTable.getOriginKeyList() != null) {
+                    keyContains = indexTable.getOriginKeyList().stream()
+                        .map(String::toUpperCase)
+                        .toList()
+                        .contains(dropColumn);
+                }
+                return keyContains && indexTable.getOriginKeyList() != null && indexTable.getOriginKeyList().size() == 1
                     && (indexTable.getOriginWithKeyList() == null || indexTable.getOriginWithKeyList().isEmpty());
             }).map(Table::getName).collect(Collectors.toList());
         if (matchIndices.size() > indicesInfo.size()) {
@@ -2558,10 +2556,12 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         TableDefinition tableDefinition
     ) {
         // Primary key list
-        return getIndexDefinition(
+        IndexDefinition indexDefinition = getIndexDefinition(
             sqlIndexDeclaration.index,
             tableDefinition, sqlIndexDeclaration.columnList
         );
+        indexDefinition.setEngine(sqlIndexDeclaration.getEngine());
+        return indexDefinition;
     }
 
     @NonNull

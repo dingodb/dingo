@@ -64,11 +64,16 @@ public class ShowIndexFromTableExecutor extends QueryExecutor {
                     return null;
                 }
                 AtomicInteger seq = new AtomicInteger(1);
-                List<Object[]> res = index.getOriginKeyList()
-                    .stream()
-                    .map(columnName -> getIndexCol(index, columnName, seq, index.unique))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                List<Object[]> res = new ArrayList<>();
+                if (index.getOriginKeyList() != null) {
+                    index.getOriginKeyList()
+                        .forEach(columnName -> {
+                            Object[] indexCol = getIndexCol(index, columnName, seq, index.unique);
+                            if (indexCol != null) {
+                                res.add(indexCol);
+                            }
+                        });
+                }
                 if (index.getOriginWithKeyList() != null) {
                     for (String withColName : index.getOriginWithKeyList()) {
                         Object[] subItem = getIndexCol(index, withColName, seq, index.unique);
