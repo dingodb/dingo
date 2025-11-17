@@ -191,6 +191,7 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("dingo_ddl_history", CASE_NAMES), BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, convertName("dingo_mdl_info", CASE_NAMES), BASE_TABLE, TXN_LSM, DYNAMIC);
         initTableByTemplate(schemaName, convertName("sequence", CASE_NAMES), BASE_TABLE, TXN_LSM, DYNAMIC);
+        initTableByTemplate(schemaName, convertName("role_edges", CASE_NAMES), BASE_TABLE, TXN_LSM, DYNAMIC);
         LogUtils.info(log, "prepare mysql meta table done");
     }
 
@@ -566,6 +567,7 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("PLUGINS"), "/information-plugins.json");
         TABLE_MAP.put(convertName("KEYWORDS"), "/information-keywords.json");
         TABLE_MAP.put(convertName("REFERENTIAL_CONSTRAINTS"), "/information-referentialConstraints.json");
+        TABLE_MAP.put(convertName("role_edges"), "/mysql-roleEdges.json");
     }
 
     public static void initTableByTemplate(String schema,
