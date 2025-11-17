@@ -693,18 +693,21 @@ public class Gc {
         if (!infoSchemaService.prepare()) {
             return;
         }
-        try {
-            Set<Location> coordinators = coordinatorSet();
-            GetGCSafePointRequest.GetGCSafePointRequestBuilder<?, ?> getBuilder = GetGCSafePointRequest.builder();
-            GetGCSafePointRequest getGCSafePointRequest = getBuilder.build();
-            GetGCSafePointResponse gcSafePoint = Services.coordinatorService(coordinators).getGCSafePoint(
-                TsoService.getDefault().tso(), getGCSafePointRequest
-            );
-            if (gcSafePoint.isGcStop()) {
-                return;
+        if (ScopeVariables.enableGcStop()) {
+            try {
+                Set<Location> coordinators = coordinatorSet();
+                GetGCSafePointRequest.GetGCSafePointRequestBuilder<?, ?> getBuilder = GetGCSafePointRequest.builder();
+                GetGCSafePointRequest getGCSafePointRequest = getBuilder.build();
+                GetGCSafePointResponse gcSafePoint = Services.coordinatorService(coordinators).getGCSafePoint(
+                    TsoService.getDefault().tso(), getGCSafePointRequest
+                );
+                if (gcSafePoint.isGcStop()) {
+                    LogUtils.warn(log, "gc stop is true, will return");
+                    return;
+                }
+            } catch (Exception e) {
+                LogUtils.warn(log, "validator gc stop error:{}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            LogUtils.warn(log, "validator gc stop error:{}", e.getMessage(), e);
         }
         Map<String, String> globalVarMap = InfoSchemaService.root().getGlobalVariables();
         String jobGc = globalVarMap.getOrDefault("job_need_gc", "on");

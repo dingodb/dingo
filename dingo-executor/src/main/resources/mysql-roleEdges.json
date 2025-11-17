@@ -1,0 +1,39 @@
+ [
+    {
+      "name": "FROM_HOST",
+      "type": "varchar",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 0,
+      "nullable": false
+    },
+    {
+      "name": "FROM_USER",
+      "type": "varchar",
+      "scale": -2147483648,
+      "precision": -1,
+      "primary": 1,
+      "nullable": false
+    },
+    {
+      "name": "TO_HOST",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 2,
+      "nullable": false
+    },
+    {
+      "name": "TO_USER",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": 3,
+      "nullable": false
+    },
+    {
+      "name": "WITH_ADMIN_OPTION",
+      "type": "varchar",
+      "scale": -2147483648,
+      "primary": -1,
+      "nullable": false
+    }
+  ]

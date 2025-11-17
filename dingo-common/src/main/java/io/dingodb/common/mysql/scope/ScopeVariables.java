@@ -271,6 +271,15 @@ public final class ScopeVariables {
         }
     }
 
+    public static boolean enableGcStop() {
+        try {
+            String aliasCaseSensitivity = executorProp.getOrDefault("enable_gc_stop", "false").toString();
+            return "true".equalsIgnoreCase(aliasCaseSensitivity);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);

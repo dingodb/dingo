@@ -320,6 +320,9 @@ public class InfoSchemaBuilder {
             SchemaInfo schemaInfo = (SchemaInfo) schemaService.getSchema(diff.getSchemaId());
             String name = convertName(table.name);
             this.is.putTable(schemaInfo.getName(), name, table);
+            if (diff.getTableId() == 0) {
+                diff.setTableId(table.tableId.seq);
+            }
             int idx = bucketIdx(diff.getTableId());
             TableInfoCache tmp = new TableInfoCache(
                 table.tableId.seq, name, schemaInfo.getSchemaId(), schemaInfo.getName()
