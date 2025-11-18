@@ -61,6 +61,7 @@ import java.util.NavigableMap;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static io.dingodb.common.mysql.scope.ScopeVariables.enableDecimalPushdown;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_CACHE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_NO_OP;
@@ -231,12 +232,14 @@ public final class DingoIndexScanWithRelOpVisitFun {
             boolean pushDown = rel.isPushDown();
             if (pushDown && td instanceof IndexTable && ((IndexTable)td).indexType == IndexType.SCALAR) {
                 for (Column column: td.getColumns()) {
-                    //Should not push down for decimal key column.
-                    IndexTable indexTable = (IndexTable) td;
-                    if (column.getType() instanceof DecimalType && indexTable.getOriginKeyList() != null
-                        && indexTable.originKeyList.contains(column.getName())) {
-                        pushDown = false;
-                        break;
+                    if( !enableDecimalPushdown() ) {
+                        //Should not push down for decimal key column.
+                        IndexTable indexTable = (IndexTable) td;
+                        if (column.getType() instanceof DecimalType && indexTable.getOriginKeyList() != null
+                            && indexTable.originKeyList.contains(column.getName())) {
+                            pushDown = false;
+                            break;
+                        }
                     }
                 }
             }

@@ -63,6 +63,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static io.dingodb.common.mysql.scope.ScopeVariables.enableDecimalPushdown;
 import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_CACHE_OP;
 import static io.dingodb.exec.utils.OperatorCodeUtils.SCAN_WITH_NO_OP;
@@ -256,10 +257,12 @@ public final class DingoScanWithRelOpVisitFun {
             boolean pushDown = rel.isPushDown();
             if (pushDown) {
                 for (Column column: td.getColumns()) {
-                    //Should not push down for decimal key column if decimal column is primary key.
-                    if (column.getType() instanceof DecimalType && column.primaryKeyIndex >= 0) {
-                        pushDown = false;
-                        break;
+                    if( !enableDecimalPushdown() ) {
+                        //Should not push down for decimal key column if decimal column is primary key.
+                        if (column.getType() instanceof DecimalType && column.primaryKeyIndex >= 0) {
+                            pushDown = false;
+                            break;
+                        }
                     }
                 }
             }
