@@ -52,16 +52,15 @@ public class AdminBackUpTimePointExecutor extends QueryExecutor {
     }
 
     @Override
-    public Iterator getIterator() {
+    public Iterator<Object[]> getIterator() {
         long time  = DataTimeUtils.parseDate(timeStr);
         long point = TsoService.getDefault().tso(time);
         long latestTso = TsoService.getDefault().tso();
         if (point > latestTso) {
-            throw new RuntimeException("The specified time:"+ timeStr +" is greater than the " +
-                "current latest tso:" + latestTso);
+            throw new RuntimeException("The specified time:" + timeStr + " is greater than the "
+                + "current latest tso:" + latestTso);
         }
         GcObj gcObj = GcService.getDefault().startBackUpSafeByPoint(point, latestTso);
-        List<Object[]> gcColumns = new ArrayList<>();
         Object[] objects = new Object[COLUMNS.size()];
         objects[INDEX_STATUS] = gcObj.getStatus();
         long tsoValue = gcObj.getResolveLockSafePoint();
@@ -74,6 +73,7 @@ public class AdminBackUpTimePointExecutor extends QueryExecutor {
         long safeTime = TsoService.getDefault().tsoToTimestamp(safePoint);
         String safeTimeStr = DataTimeUtils.longToTimeString(safeTime);
         objects[INDEX_SAFE_TIME] = safeTimeStr;
+        List<Object[]> gcColumns = new ArrayList<>();
         gcColumns.add(objects);
         return gcColumns.iterator();
     }

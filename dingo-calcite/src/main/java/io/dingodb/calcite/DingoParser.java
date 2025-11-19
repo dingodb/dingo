@@ -18,6 +18,8 @@ package io.dingodb.calcite;
 
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.ibm.icu.impl.locale.XCldrStub;
 import io.dingodb.calcite.executor.Executor;
 import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
@@ -100,7 +102,6 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.DataContexts;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
@@ -120,7 +121,6 @@ import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexExecutorImpl;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlKind;
@@ -148,6 +148,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_REDUCE_RULE;
@@ -225,6 +226,11 @@ public class DingoParser {
             }
 
         });
+
+    protected static Set<Class> ddlResultSet = ImmutableSet.of(
+        SqlAlterAutoIncrement.class,
+        DingoSqlCreateTable.class
+    );
 
     @Getter
     private final DingoParserContext context;

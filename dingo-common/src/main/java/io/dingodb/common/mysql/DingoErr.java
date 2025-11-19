@@ -25,13 +25,15 @@ public class DingoErr {
     public String errorMsg;
     public boolean encodeError;
     public String warning;
+    public long updateCount;
 
     public DingoErr() {
 
     }
 
-    public DingoErr(String warning) {
+    public DingoErr(String warning, long updateCount) {
         this.warning = warning;
+        this.updateCount = updateCount;
     }
 
     public DingoErr(int errorCode, String state, String errorMsg) {

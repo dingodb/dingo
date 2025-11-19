@@ -346,13 +346,12 @@ public class DingoMeta extends MetaImpl {
             // For local driver, here `fetch` is called.
             callback.execute();
 
-            // for mysql protocol start
-            addMysqlProtocolState(statement);
-            // for mysql protocol end
-
             if (signature.statementType == StatementType.OTHER_DDL) {
                 addSqlProfile(statement.getSqlProfile(), connection);
                 ((DingoConnection) connection).setCommandStartTime(0);
+                if (signature instanceof DingoSignature) {
+                    statement.setUpdateCount(((DingoSignature) signature).getUpdateCount());
+                }
             }
             final MetaResultSet metaResultSet = MetaResultSet.create(
                 sh.connectionId,
@@ -438,13 +437,6 @@ public class DingoMeta extends MetaImpl {
         }
         dingoAudit.printAudit(isDisableAudit());
         dingoAudit.printIncrementBackup(isDisableIncrementBackup());
-    }
-
-    private void addMysqlProtocolState(DingoStatement statement) throws SQLException {
-        statement.setAutoCommit(connection.getAutoCommit());
-        String tranReadOnly = connection.getClientInfo("transaction_read_only");
-        tranReadOnly = tranReadOnly == null ? "off" : tranReadOnly;
-        statement.setTransReadOnly(tranReadOnly.equalsIgnoreCase("on"));
     }
 
     private static void sqlProfile(String sql, SqlProfile sqlProfile, DingoDriverParser parser) {

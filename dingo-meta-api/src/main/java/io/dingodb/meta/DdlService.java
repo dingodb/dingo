@@ -50,7 +50,7 @@ public interface DdlService {
 
     }
 
-    void createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace);
+    long createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace);
 
 
     void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId);

@@ -16,6 +16,7 @@
 
 package io.dingodb.common.partition;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,10 +26,13 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.List;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
+
 @Getter
 @Setter
 @ToString
 @AllArgsConstructor
+@JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)
 public class PartitionDefinition implements Serializable {
 
     private static final long serialVersionUID = 2252446672472101114L;

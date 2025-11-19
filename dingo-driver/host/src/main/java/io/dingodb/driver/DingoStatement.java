@@ -23,7 +23,6 @@ import io.dingodb.calcite.executor.QueryExecutor;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
-import io.dingodb.common.mysql.constant.ServerStatus;
 import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
@@ -49,18 +48,6 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class DingoStatement extends AvaticaStatement {
 
-    // for mysql protocol
-    @Setter
-    private boolean inTransaction;
-
-    // for mysql protocol
-    @Setter
-    @Getter
-    private boolean autoCommit;
-
-    // for mysql protocol
-    @Setter
-    private boolean transReadOnly;
     private String warning;
 
     @Setter
@@ -220,20 +207,20 @@ public class DingoStatement extends AvaticaStatement {
     @SneakyThrows
     public Map<TxnPartData, Boolean> getJobPartData(@NonNull JobManager jobManager) {
         Meta.Signature signature = getSignature();
-       if (signature instanceof DingoSignature) {
+        if (signature instanceof DingoSignature) {
             if (cancelFlag.get()) {
                 throw new TaskCancelException("task is cancel");
             }
             Job job = jobManager.getJob(((DingoSignature) signature).getJobId());
             this.job = job;
             this.jobManager = jobManager;
-           Map<TxnPartData, Boolean> partData = jobManager.getPartData(job);
-           if (cancelFlag.get()) {
+            Map<TxnPartData, Boolean> partData = jobManager.getPartData(job);
+            if (cancelFlag.get()) {
                 throw new TaskCancelException("task is cancel");
             }
-           return partData;
+            return partData;
         }
-       return null;
+        return null;
     }
 
     public void removeJob(JobManager jobManager) {
@@ -250,20 +237,6 @@ public class DingoStatement extends AvaticaStatement {
         }
     }
 
-    public int getServerStatus() {
-        int initServerStatus = 0;
-        if (inTransaction) {
-            initServerStatus = ServerStatus.SERVER_STATUS_IN_TRANS;
-        }
-        if (autoCommit) {
-            initServerStatus |= ServerStatus.SERVER_STATUS_AUTOCOMMIT;
-        }
-        if (transReadOnly) {
-            initServerStatus |= ServerStatus.SERVER_STATUS_IN_TRANS_READONLY;
-        }
-        return initServerStatus;
-    }
-
     public void initSqlProfile() {
         sqlProfile = new SqlProfile("statement", false);
         DingoConnection connection1 = (DingoConnection) connection;
@@ -274,6 +247,10 @@ public class DingoStatement extends AvaticaStatement {
         String host = connection1.getContext().getOption("host");
         sqlProfile.setSimpleUser(user + "@" + host);
         sqlProfile.setInstance(DingoConfiguration.location().toString());
+    }
+
+    public void setUpdateCount(long updateCount) {
+        this.updateCount = updateCount;
     }
 
 }

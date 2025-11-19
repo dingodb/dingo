@@ -150,7 +150,7 @@ void TableElement(List<SqlNode> list) :
     SqlNodeList withColumnList = null;
     final Span s = Span.of();
     ColumnStrategy strategy = null;
-            String index;
+    String index;
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
@@ -303,12 +303,19 @@ void TableElement(List<SqlNode> list) :
             <REPLICA> <EQ> {replica = Integer.parseInt(getNextToken().image);}
            |
             <ENGINE> <EQ> { engine = getNextToken().image; if (engine.equalsIgnoreCase("innodb")) { engine = "TXN_LSM";} }
+           |
+            <PARTITION> <BY>
+           {
+               partitionDefinition = new PartitionDefinition();
+               partitionDefinition.setFuncName(getNextToken().image);
+               partitionDefinition.setDetails(readPartitionDetails());
+           }
         )*
         prop = indexOption()
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
         {
-            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine));
+            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine, partitionDefinition));
         }
     |
         <PRIMARY>  { s.add(this); } <KEY>

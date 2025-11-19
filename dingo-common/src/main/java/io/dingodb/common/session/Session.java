@@ -46,10 +46,6 @@ public class Session {
         }
     }
 
-    public PreparedStatement getPrepareStatement(String sql) throws SQLException {
-        return connection.prepareStatement(sql);
-    }
-
     public String executeUpdate(String sql) {
         Statement statement = null;
         try {
@@ -80,6 +76,19 @@ public class Session {
                 throw new RuntimeException(ex);
             }
             log.error(e.getMessage(), e);
+        } finally {
+            close(null, statement);
+        }
+    }
+
+    public long executeUpdate1(String sql) throws Exception {
+        Statement statement = null;
+        try {
+            statement = connection.createStatement();
+            return statement.executeUpdate(sql);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage() + ",sql:{}" , e, sql);
+            throw e;
         } finally {
             close(null, statement);
         }

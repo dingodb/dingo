@@ -177,9 +177,10 @@ public class DdlHandler {
         doDdlJob(ddlJob);
     }
 
-    public void createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
+    public long createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
         DdlJob ddlJob = createTableAsQueryWithInfoJob(schemaName, tableDefinition, replace);
         doDdlJob(ddlJob);
+        return ddlJob.getRowCount();
     }
 
     public void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
@@ -568,6 +569,7 @@ public class DdlHandler {
             Pair<Boolean, DingoErr> res = historyJob(job.getId());
             if (res.getKey()) {
                 job.setWarning(res.getValue().warning);
+                job.setRowCount(res.getValue().updateCount);
                 return;
             } else if (res.getValue() != null) {
                 LogUtils.error(log, "[ddl-error] doDdlJob error, reason: {}, job: {}", res.getValue(), job);
@@ -601,7 +603,7 @@ public class DdlHandler {
             }
         }
         if (ddlJob.getState() == JobState.jobStateSynced && ddlJob.getError() == null) {
-            return Pair.of(true, new DingoErr(ddlJob.getWarning()));
+            return Pair.of(true, new DingoErr(ddlJob.getWarning(), ddlJob.getRowCount()));
         }
         if (ddlJob.getError() != null) {
             if (ddlJob.getDingoErr() == null || ddlJob.getDingoErr().errorCode == 0) {
