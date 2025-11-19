@@ -398,6 +398,19 @@ public class PessimisticTransaction extends BaseTransaction {
     }
 
     @Override
+    public void selectPrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
+        // 1、get first key from cache
+        if (cacheToObject == null) {
+            cacheToObject = primaryLockTo();
+            primaryKey = cacheToObject.getMutation().getKey();
+        }
+        twoPhaseCommitData.setPrimaryKey(primaryKey);
+        if (checkAsyncCommit()) {
+            checkAsyncCommit(twoPhaseCommitData);
+        }
+    }
+
+    @Override
     public boolean onePcStage() {
         if (partDataMap.size() > 1) {
             return false;

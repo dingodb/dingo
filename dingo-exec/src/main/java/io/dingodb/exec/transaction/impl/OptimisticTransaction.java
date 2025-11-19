@@ -39,6 +39,7 @@ import io.dingodb.meta.MetaService;
 import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.Mutation;
+import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.exception.OnePcDegenerateTwoPcException;
 import io.dingodb.store.api.transaction.exception.OnePcMaxSizeExceedException;
@@ -237,6 +238,23 @@ public class OptimisticTransaction extends BaseTransaction {
                 twoPhaseCommitData.setPrimaryKey(primaryKey);
                 checkAsyncCommit(twoPhaseCommitData);
             }
+            txnPreWritePrimaryKey(cacheToObject, twoPhaseCommitData);
+        }
+    }
+
+    @Override
+    public void selectPrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
+        // 1、get first key from cache
+        if (cacheToObject == null) {
+            cacheToObject = cache.getPrimaryKey();
+            byte[] key = cacheToObject.getMutation().getKey();
+            primaryKey = key;
+        }
+        twoPhaseCommitData.setPrimaryKey(primaryKey);
+        if (checkAsyncCommit()) {
+            checkAsyncCommit(twoPhaseCommitData);
+        }
+        if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
             txnPreWritePrimaryKey(cacheToObject, twoPhaseCommitData);
         }
     }

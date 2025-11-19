@@ -324,6 +324,15 @@ public interface StoreInstance {
         throw new UnsupportedOperationException();
     }
 
+    default Future<?> txnHeartBeat(long startTs, byte[] primaryLock) {
+        return txnHeartBeat(startTs, startTs, primaryLock);
+    }
+
+    default Future<?> txnHeartBeat(long requestTs, long startTs, byte[] primaryLock) {
+        throw new UnsupportedOperationException();
+    }
+
+
     default boolean txnCommit(TxnCommit txnCommit) {
         return txnCommit(txnCommit.getStartTs(), txnCommit);
     }

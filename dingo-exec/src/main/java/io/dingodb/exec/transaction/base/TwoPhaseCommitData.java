@@ -24,6 +24,7 @@ import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -51,6 +52,14 @@ public class TwoPhaseCommitData {
     private AtomicLong minCommitTs = new AtomicLong(0L);
     @Builder.Default
     private final List<byte[]> secondaries = new ArrayList<>();
+    @Builder.Default
+    private boolean isParallelPreWrite = false;
+    @Builder.Default
+    private AtomicBoolean primaryKeyPreWrite = new AtomicBoolean(false);
+    private Future future;
+    @Builder.Default
+    private boolean isParallelCommit = false;
+
 
     public boolean isPessimistic() {
         return type == TransactionType.PESSIMISTIC;

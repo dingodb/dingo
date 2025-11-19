@@ -48,6 +48,7 @@ import io.dingodb.store.api.transaction.data.commit.TxnCommit;
 import io.dingodb.store.api.transaction.data.prewrite.TxnPreWrite;
 import io.dingodb.store.api.transaction.data.rollback.TxnBatchRollBack;
 import io.dingodb.store.api.transaction.data.rollback.TxnPessimisticRollBack;
+import io.dingodb.store.api.transaction.exception.CommitTsExpiredException;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
@@ -62,6 +63,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import static io.dingodb.exec.transaction.util.TransactionUtil.keyToMutation;
@@ -93,6 +95,7 @@ public final class TwoPhaseCommitUtils {
         List<Mutation> mutations = new ArrayList<>();
         Supplier<Boolean> supplier = () -> {
             MdcUtils.setTxnId(txnId.toString());
+            boolean isPrimaryKeyPre = false;
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
                 TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
@@ -100,8 +103,12 @@ public final class TwoPhaseCommitUtils {
                 byte[] key = txnLocalData.getKey();
                 byte[] value = txnLocalData.getValue();
                 // first key is primary key
-                if (ByteArrayUtils.compare(key, primaryKey, 1) == 0) {
+                boolean isPrimaryKey = ByteArrayUtils.compare(key, primaryKey, 1) == 0;
+                if (isPrimaryKey && !twoPhaseCommitData.isParallelPreWrite()) {
                     continue;
+                }
+                if (isPrimaryKey && !twoPhaseCommitData.isPessimistic()) {
+                    isPrimaryKeyPre = true;
                 }
                 Mutation mutation = TransactionCacheToMutation.preWriteMutation(
                     txnId,
@@ -112,15 +119,29 @@ public final class TwoPhaseCommitUtils {
                     value,
                     twoPhaseCommitData.isPessimistic()
                 );
+                if (mutation.getOp() == Op.CheckNotExists) {
+                    continue;
+                }
                 LogUtils.debug(log, "mutation: {}", mutation);
                 mutations.add(mutation);
                 if (mutations.size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = TwoPhaseCommitUtils.txnPreWrite(
-                        tableId,
-                        newPartId,
-                        mutations,
-                        twoPhaseCommitData
-                    );
+                    boolean result;
+                    if (isPrimaryKeyPre) {
+                        result = TwoPhaseCommitUtils.txnPreWritePrimaryKey(
+                            tableId,
+                            newPartId,
+                            mutations,
+                            twoPhaseCommitData
+                        );
+                        isPrimaryKeyPre = false;
+                    } else {
+                        result = TwoPhaseCommitUtils.txnPreWrite(
+                            tableId,
+                            newPartId,
+                            mutations,
+                            twoPhaseCommitData
+                        );
+                    }
                     if (!result) {
                         throw new RuntimeException(txnId + " " + newPartId
                             + ", txnPreWrite false, PrimaryKey:"
@@ -131,12 +152,22 @@ public final class TwoPhaseCommitUtils {
             }
 
             if (!mutations.isEmpty()) {
-                boolean result = TwoPhaseCommitUtils.txnPreWrite(
-                    tableId,
-                    newPartId,
-                    mutations,
-                    twoPhaseCommitData
-                );
+                boolean result;
+                if (isPrimaryKeyPre) {
+                    result = TwoPhaseCommitUtils.txnPreWritePrimaryKey(
+                        tableId,
+                        newPartId,
+                        mutations,
+                        twoPhaseCommitData
+                    );
+                } else {
+                    result = TwoPhaseCommitUtils.txnPreWrite(
+                        tableId,
+                        newPartId,
+                        mutations,
+                        twoPhaseCommitData
+                    );
+                }
                 if (!result) {
                     throw new RuntimeException(txnId + " " + newPartId
                         + ", txnPreWrite false, PrimaryKey:"
@@ -242,14 +273,19 @@ public final class TwoPhaseCommitUtils {
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
         Supplier<Boolean> supplier = () -> {
             MdcUtils.setTxnId(txnId.toString());
+            boolean isPrimaryKeyCommit = false;
             List<byte[]> keys = new ArrayList<>();
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
                 TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
                 int op = txnLocalData.getOp().getCode();
                 byte[] key = txnLocalData.getKey();
-                if (ByteArrayUtils.compare(key, primaryKey, 1) == 0) {
+                boolean isPrimaryKey = ByteArrayUtils.compare(key, primaryKey, 1) == 0;
+                if (isPrimaryKey && !twoPhaseCommitData.isParallelCommit()) {
                     continue;
+                }
+                if (isPrimaryKey) {
+                    isPrimaryKeyCommit = true;
                 }
                 key = TwoPhaseCommitUtils.commitKey(
                     txnId,
@@ -264,7 +300,25 @@ public final class TwoPhaseCommitUtils {
                 }
                 keys.add(key);
                 if (keys.size() == TransactionUtil.max_pre_write_count) {
-                    boolean result = TwoPhaseCommitUtils.txnCommit(txnId, tableId, newPartId, keys, twoPhaseCommitData);
+                    boolean result;
+                    if (isPrimaryKeyCommit) {
+                        result = TwoPhaseCommitUtils.txnCommitPrimaryKey(
+                            txnId,
+                            tableId,
+                            newPartId,
+                            keys,
+                            twoPhaseCommitData
+                        );
+                        isPrimaryKeyCommit = false;
+                    } else {
+                        result = TwoPhaseCommitUtils.txnCommit(
+                            txnId,
+                            tableId,
+                            newPartId,
+                            keys,
+                            twoPhaseCommitData
+                        );
+                    }
                     if (!result) {
                         throw new RuntimeException(txnId + " " + newPartId
                             + ",txnCommit false,PrimaryKey:"
@@ -275,7 +329,24 @@ public final class TwoPhaseCommitUtils {
                 }
             }
             if (!keys.isEmpty()) {
-                boolean result = TwoPhaseCommitUtils.txnCommit(txnId, tableId, newPartId, keys, twoPhaseCommitData);
+                boolean result;
+                if (isPrimaryKeyCommit) {
+                    result = TwoPhaseCommitUtils.txnCommitPrimaryKey(
+                        txnId,
+                        tableId,
+                        newPartId,
+                        keys,
+                        twoPhaseCommitData
+                    );
+                } else {
+                    result = TwoPhaseCommitUtils.txnCommit(
+                        txnId,
+                        tableId,
+                        newPartId,
+                        keys,
+                        twoPhaseCommitData
+                    );
+                }
                 if (!result) {
                     throw new RuntimeException(txnId + " " + newPartId
                         + ",txnCommit false,PrimaryKey:"
@@ -290,6 +361,94 @@ public final class TwoPhaseCommitUtils {
             supplier,
             Executors.executor("txnCommitSecond-" + txnId + "-" + tableId + "-" + newPartId)
         );
+    }
+
+    public static boolean txnPreWritePrimaryKey(@NonNull CommonId tableId,
+                                               @Nullable CommonId newPartId,
+                                               @NonNull List<Mutation> mutations,
+                                               @Nullable TwoPhaseCommitData twoPhaseCommitData) {
+        Future future = null;
+        // 1、call sdk TxnPreWrite
+        TxnPreWrite txnPreWrite = buildTxnPreWriteRequest(twoPhaseCommitData, mutations, tableId, newPartId);
+        final int MAX_RETRY_TIMES = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 60);
+        try {
+            LogUtils.info(log, "{}-{}, txnParallelPreWrite PrimaryKey...", tableId, newPartId);
+            StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+            future = store.txnPreWritePrimaryKey(txnPreWrite, twoPhaseCommitData.getLockTimeOut());
+            if (future == null) {
+                throw new RuntimeException("Future is null, txnParallelPreWrite PrimaryKey false");
+            }
+            twoPhaseCommitData.setFuture(future);
+            twoPhaseCommitData.getPrimaryKeyPreWrite().compareAndSet(false, true);
+            LogUtils.info(log, "{}-{}, txnParallelPreWrite PrimaryKey end", tableId, newPartId);
+            return true;
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, "txnParallelPreWrite PrimaryKey regionSplitException occurred, retrying...", e);
+            for (int retry = 1; retry < MAX_RETRY_TIMES; retry++) {
+                try {
+                    // 2、regin split
+                    Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(
+                        tableId,
+                        twoPhaseCommitData.getTxnId(),
+                        mutationToKey(mutations)
+                    );
+                    for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                        CommonId regionId = entry.getKey();
+                        List<byte[]> value = entry.getValue();
+                        boolean result = txnPreWriteRegionSplitRetry(
+                            tableId,
+                            regionId,
+                            keyToMutation(value, mutations),
+                            twoPhaseCommitData,
+                            MAX_RETRY_TIMES
+                        );
+                        if (!result) {
+                            LogUtils.warn(log, "txnParallelPreWrite PrimaryKey failed for region: {}", regionId);
+                            break;
+                        }
+                    }
+                    LogUtils.info(log, "txnParallelPreWrite PrimaryKey successful after retry {}", retry);
+                    CommonId primaryKeyPartId = TransactionUtil.singleKeySplitRegionId(
+                        tableId,
+                        twoPhaseCommitData.getTxnId(),
+                        twoPhaseCommitData.getPrimaryKey()
+                    );
+                    StoreInstance store = Services.KV_STORE.getInstance(tableId, primaryKeyPartId);
+                    future = store.txnHeartBeat(twoPhaseCommitData.getTxnId().seq, twoPhaseCommitData.getPrimaryKey());
+                    if (future == null) {
+                        throw new RuntimeException("RegionSplit retry future is null, " +
+                            "txnParallelPreWrite PrimaryKey false");
+                    }
+                    twoPhaseCommitData.setFuture(future);
+                    twoPhaseCommitData.getPrimaryKeyPreWrite().compareAndSet(false, true);
+                    LogUtils.info(log, "{}-{}, txnParallelPreWrite PrimaryKey end", tableId, primaryKeyPartId);
+                    return true;
+                } catch (RegionSplitException re) {
+                    LogUtils.warn(log, "txnParallelPreWrite PrimaryKey retry:" + retry + " failed", re);
+                    if (sleep()) {
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    LogUtils.error(log, "txnParallelPreWrite PrimaryKey unexpected error during retry :" +
+                        retry, ex);
+                    return false;
+                }
+            }
+            LogUtils.error(log, "Failed to txnParallelPreWrite PrimaryKey after {} retries", MAX_RETRY_TIMES);
+            return false;
+        } finally {
+            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                if (txnPreWrite.getMinCommitTs() == 0) {
+                    LogUtils.info(log, "txnParallelPreWrite PrimaryKey Async Commit Set False");
+                    twoPhaseCommitData.getUseAsyncCommit().set(false);
+                } else if (txnPreWrite.getMinCommitTs() > twoPhaseCommitData.getMinCommitTs().get()) {
+                    twoPhaseCommitData.getMinCommitTs().set(txnPreWrite.getMinCommitTs());
+                }
+            }
+        }
     }
 
     public static boolean txnPreWrite(@NonNull CommonId tableId,
@@ -481,6 +640,75 @@ public final class TwoPhaseCommitUtils {
                 .build();
         }
         return txnPreWrite;
+    }
+
+    public static boolean txnCommitPrimaryKey(@NonNull CommonId txnId,
+                                    @Nullable CommonId tableId,
+                                    @Nullable CommonId newPartId,
+                                    @Nullable List<byte[]> keys,
+                                    @Nullable TwoPhaseCommitData twoPhaseCommitData) {
+        assert twoPhaseCommitData != null;
+
+        final int MAX_RETRY_TIMES = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 60);
+        int commitRetry = MAX_RETRY_TIMES;
+        while (commitRetry-- > 0) {
+            try {
+                // 1、Async call sdk TxnCommit
+                TxnCommit commitRequest = buildCommitRequest(keys, twoPhaseCommitData);
+                LogUtils.info(log, "{}-{}, txnParallelCommitPrimaryKey...", tableId, newPartId);
+                StoreInstance store = Services.KV_STORE.getInstance(tableId, newPartId);
+                return store.txnCommit(commitRequest);
+            } catch (RegionSplitException e) {
+                LogUtils.error(log, "txnParallelCommitPrimaryKey regionSplitException occurred, retrying...", e);
+                for (int retry = 1; retry < MAX_RETRY_TIMES; retry++) {
+                    try {
+                        Map<CommonId, List<byte[]>> partMap = multiKeySplitRegionId(tableId, txnId, keys);
+                        for (Map.Entry<CommonId, List<byte[]>> entry : partMap.entrySet()) {
+                            CommonId regionId = entry.getKey();
+                            List<byte[]> value = entry.getValue();
+                            LogUtils.info(log, "RegionSplit retry {}-{}, txnParallelCommitPrimaryKey...",
+                                tableId, regionId);
+                            boolean result = txnCommitRegionSplitRetry(
+                                txnId,
+                                tableId,
+                                regionId,
+                                value,
+                                twoPhaseCommitData,
+                                MAX_RETRY_TIMES
+                            );
+                            if (!result) {
+                                LogUtils.warn(log, "txnParallelCommitPrimaryKey failed for region: {}",
+                                    regionId);
+                                break;
+                            }
+                        }
+                        LogUtils.info(log, "txnParallelCommitPrimaryKey successful after retry {}", retry);
+                        return true;
+                    } catch (RegionSplitException re) {
+                        LogUtils.warn(log, "txnParallelCommitPrimaryKey retry:" + retry + " failed", re);
+                        if (sleep()) {
+                            return false;
+                        }
+                    } catch (Exception ex) {
+                        LogUtils.error(log, "txnParallelCommitPrimaryKey unexpected error during retry :" +
+                            retry, ex);
+                        return false;
+                    }
+                }
+                LogUtils.error(log, "Failed to txnParallelCommitPrimaryKey after {} retries", MAX_RETRY_TIMES);
+                return false;
+            } catch (CommitTsExpiredException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                long commitTs = TransactionManager.getCommitTs();
+                LogUtils.info(log, "txnParallelCommitPrimaryKey CommitTsExpiredException after retry: {}, " +
+                    "commitTs: {}", commitRetry, commitTs);
+                twoPhaseCommitData.setCommitTs(commitTs);
+            }
+        }
+        return false;
     }
 
     public static boolean txnCommit(@NonNull CommonId txnId,

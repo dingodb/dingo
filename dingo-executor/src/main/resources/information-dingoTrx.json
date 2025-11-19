@@ -24,10 +24,10 @@
       "nullable": true
     },
     {
-      "name": "txnStart",
-      "type": "bigint",
+      "name": "startTime",
+      "type": "varchar",
       "scale": -2147483648,
-      "precision": -1,
+      "precision": 32,
       "primary": -1,
       "nullable": true
     },

@@ -14,30 +14,20 @@
  * limitations under the License.
  */
 
-package io.dingodb.tso;
+package io.dingodb.store.proxy.common.transaction;
 
-public interface TsoService {
+import io.dingodb.store.api.transaction.data.resolvelock.ResolveLockStatus;
+import lombok.Builder;
+import lombok.Data;
 
-    static TsoService getDefault() {
-        return TsoServiceProvider.getDefault().get();
-    }
+import java.util.List;
 
-    // Latest TSO
-    long tso();
-
-    // No guarantee of expiration
-    long cacheTso();
-
-    long tso(long timestamp);
-
-    long timestamp();
-
-    long timestamp(long tso);
-
-    boolean IsExpired(long ttl);
-
-    long tsoToTimestamp(long tso);
-
-    long untilExpired(long ttl);
-
+@Data
+@Builder
+public class ResolveLockResult {
+    private long ttl;
+    private List<Long> ignoreLocks;
+    private List<Long> accessLocks;
+    @Builder.Default
+    private ResolveLockStatus resolveLockStatus = ResolveLockStatus.NONE;
 }

@@ -63,6 +63,11 @@ public class NoneTransaction extends BaseTransaction {
     }
 
     @Override
+    public void selectPrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void rollBackPessimisticLock(JobManager jobManager) {
         throw new UnsupportedOperationException();
     }

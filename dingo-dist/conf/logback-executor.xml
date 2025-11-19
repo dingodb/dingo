@@ -396,6 +396,9 @@
     <logger name="io.dingodb.store.proxy.service.TransactionStoreInstance" level="${log.level}" additivity="false">
         <appender-ref ref="ASYNC-Txn"/>
     </logger>
+    <logger name="io.dingodb.store.utils.ResolveLockUtil" level="${log.level}" additivity="false">
+        <appender-ref ref="ASYNC-Txn"/>
+    </logger>
 
     <appender name="ASYNC-Job" class="ch.qos.logback.classic.AsyncAppender">
         <includeCallerData>true</includeCallerData>
