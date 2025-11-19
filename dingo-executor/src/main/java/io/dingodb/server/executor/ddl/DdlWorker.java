@@ -144,7 +144,14 @@ public class DdlWorker {
         // onJobRunBefore
         onJobRunBefore(job);
         dc.rUnlock();
-        Pair<Long, String> res = runDdlJob(dc, job);
+        Pair<Long, String> res;
+        try {
+            res = runDdlJob(dc, job);
+        } catch (Exception e) {
+            job.setErrorCount(job.getErrorCount() + 1);
+            updateDDLJob(job, true);
+            return Pair.of(0L, "run ddl job error");
+        }
         if (res == null) {
             LogUtils.error(log, "run ddl job get res null");
             return Pair.of(0L, "run ddl job get res null");
@@ -248,6 +255,7 @@ public class DdlWorker {
         if (!job.isRollingback() && !job.isCancelling()) {
             job.setState(JobState.jobStateRunning);
         }
+        validateCountForError(job);
         Pair<Long, String> res = null;
         switch (job.getActionType()) {
             case ActionCreateTable:
@@ -343,6 +351,17 @@ public class DdlWorker {
         }
         LogUtils.info(log, "[ddl] runDdlJob done, jobId:{}, version:{}", job.getId(), version);
         return Pair.of(version, error);
+    }
+
+    private static void validateCountForError(DdlJob job) {
+        if (job.getErrorCount() > 5 && job.getState() == JobState.jobStateRunning && job.isRollbackable()) {
+            LogUtils.warn(log, "[ddl] DDL job error count exceed the limit, cancelling it now, jobId:{}",
+                job.getId());
+            job.setState(JobState.jobStateCancelling);
+        } else if (job.getErrorCount() > 10) {
+            LogUtils.error(log, "[ddl] DDL job error count exceed max limit,jobId:{}", job.getId());
+            job.setState(JobState.jobStateCancelling);
+        }
     }
 
     private static String countForError(DdlJob job, String error) {
