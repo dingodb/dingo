@@ -94,4 +94,9 @@ public class LocalTimestampOracle implements ITimestampOracle, io.dingodb.tso.Ts
     public long tsoToTimestamp(long tso) {
         return timestamp(tso);
     }
+
+    @Override
+    public long untilExpired(long ttl) {
+        return ttl - timestamp(tso());
+    }
 }

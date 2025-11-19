@@ -20,11 +20,13 @@ import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.mysql.util.DataTimeUtils;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.transaction.api.LockType;
+import io.dingodb.tso.TsoService;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -128,7 +130,9 @@ public class TransactionService implements io.dingodb.transaction.api.Transactio
                 res[2] = jobId;
 
                 //Get transaction start timestamp as long.
-                res[3] = transaction.getStartTs();
+                res[3] = DataTimeUtils.longToTimeString(
+                    TsoService.getDefault().tsoToTimestamp(transaction.getStartTs())
+                );
 
                 //Get transaction commit timestamp as long.
                 res[4] = transaction.getCommitTs();

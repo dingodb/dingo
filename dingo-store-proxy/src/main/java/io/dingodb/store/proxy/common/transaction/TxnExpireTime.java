@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.tso;
+package io.dingodb.store.proxy.common.transaction;
 
-public interface TsoService {
+/**
+ * Transaction expiration time tracking
+ */
+public class TxnExpireTime {
+    private boolean initialized;
+    private long txnExpire;
 
-    static TsoService getDefault() {
-        return TsoServiceProvider.getDefault().get();
+    public void update(long lockExpire) {
+        if (lockExpire <= 0) {
+            lockExpire = 0;
+        }
+        if (!initialized) {
+            txnExpire = lockExpire;
+            initialized = true;
+        } else if (lockExpire < txnExpire) {
+            txnExpire = lockExpire;
+        }
     }
 
-    // Latest TSO
-    long tso();
-
-    // No guarantee of expiration
-    long cacheTso();
-
-    long tso(long timestamp);
-
-    long timestamp();
-
-    long timestamp(long tso);
-
-    boolean IsExpired(long ttl);
-
-    long tsoToTimestamp(long tso);
-
-    long untilExpired(long ttl);
-
+    public long getValue() {
+        return initialized ? txnExpire : 0;
+    }
 }

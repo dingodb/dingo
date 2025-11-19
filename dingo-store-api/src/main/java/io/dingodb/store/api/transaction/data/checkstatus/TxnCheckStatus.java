@@ -40,4 +40,8 @@ public class TxnCheckStatus {
     // field in the primary lock is true.
     @Builder.Default
     private boolean forceSyncCommit = false;
+    // If true, then store will leave a rollback tombstone in the write CF for `primary_key`, even if
+    // that key is not locked.
+    @Builder.Default
+    private boolean rollbackIfNotExist = false;
 }

@@ -23,6 +23,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
@@ -35,6 +36,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.util.TwoPhaseCommitUtils;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
+import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.net.Channel;
@@ -213,6 +215,8 @@ public abstract class BaseTransaction implements ITransaction {
 
     public abstract void rollBackResidualPessimisticLock(JobManager jobManager);
 
+    public abstract void selectPrimaryKey(TwoPhaseCommitData twoPhaseCommitData);
+
     public String transactionOf() {
         TransactionType type = getType();
         switch (type) {
@@ -302,6 +306,7 @@ public abstract class BaseTransaction implements ITransaction {
                         cacheToObject.getTableId(), txnId, primaryKey
                     );
                     cacheToObject.setPartId(regionId);
+                    LogUtils.info(log, "commitPrimaryKey regionSplit retry regionId:{}", regionId);
                     Utils.sleep(100);
                 } catch (CommitTsExpiredException e) {
                     LogUtils.error(log, e.getMessage(), e);
@@ -309,6 +314,7 @@ public abstract class BaseTransaction implements ITransaction {
                 }
                 long elapsed = System.currentTimeMillis() - start;
                 if (elapsed > getLockTimeOut()) {
+                    LogUtils.warn(log, "commitPrimaryKey retry timeout...");
                     return false;
                 }
             }
@@ -409,51 +415,92 @@ public abstract class BaseTransaction implements ITransaction {
 
             //2PC phase.
             if (this.status == TransactionStatus.START && !only2PcCommit) {
-                this.status = TransactionStatus.PRE_WRITE_START;
-                LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
-
-                // 1、PreWritePrimaryKey 、heartBeat
-                preWritePrimaryKey(twoPhaseCommitData);
-                this.primaryKeyPreWrite.compareAndSet(false, true);
-                this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
-                commitProfile.endPreWritePrimary();
-                if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
-                    LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
-                    return;
-                }
-                LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}",
-                    transactionOf(), Arrays.toString(primaryKey));
-                checkContinue();
-                twoPhaseCommitData.setPrimaryKey(primaryKey);
-                if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
-                    LogUtils.info(log, "{} crossNodePreWriteSeconds", transactionOf());
-                    crossNodePreWriteSeconds(jobManager, currentLocation, jobId);
-                } else {
-                    if (twoPhaseCommitData.getUseAsyncCommit().get()) {
-                        if (transactionConfig.isAsyncCommitSleep()) {
-                            try {
-                                Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
+                if (transactionConfig.isParallelPreWrite() && !(isCrossNode || transactionConfig.isCrossNodeCommit())) {
+                    try {
+                        this.status = TransactionStatus.PARALLEL_PRE_WRITE_START;
+                        LogUtils.info(log, "{} Start Parallel PreWriteKey", transactionOf());
+                        twoPhaseCommitData.setParallelPreWrite(true);
+                        selectPrimaryKey(twoPhaseCommitData);
+                        if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
+                            this.primaryKeyPreWrite.compareAndSet(false, true);
+                            this.status = TransactionStatus.PARALLEL_PRE_WRITE_END;
+                            commitProfile.endPreWritePrimary();
+                            LogUtils.info(log, "{} Parallel PreWriteKey Op is CheckNotExists", transactionOf());
+                            return;
                         }
-                        // Async Commit PreWriteSecondKeys
-                        LogUtils.info(log, "{} Async Commit Start PreWriteSecondKeys", transactionOf());
+                        LogUtils.info(log, "{} Parallel PreWriteKey, PrimaryKey is {}",
+                            transactionOf(), Arrays.toString(primaryKey));
+                        checkContinue();
                         parallelPreWriteSecondKeys(twoPhaseCommitData);
                         if (twoPhaseCommitData.getUseAsyncCommit().get()) {
                             commitTs = twoPhaseCommitData.getMinCommitTs().get();
                             // todo calculateMaxCommitTS and checkSchemaValid
                         }
-                        LogUtils.info(log, "{} Async Commit PreWriteSecondKeys End", transactionOf());
-                    } else {
-                        LogUtils.info(log, "{} start parallelPreWrite", transactionOf());
-                        twoPhaseCommitData.getUseAsyncCommit().set(false);
-                        parallelPreWriteSecondKeys(twoPhaseCommitData);
-                        LogUtils.info(log, "{} parallelPreWrite end", transactionOf());
+                        LogUtils.info(log, "{} Parallel PreWriteKey End", transactionOf());
+                        this.status = TransactionStatus.PARALLEL_PRE_WRITE_END;
+                        commitProfile.endParallelPreWrite();
+                    } finally {
+                        LogUtils.info(log, "{} Parallel PreWriteKey Final, PrimaryKeyPreWrite Status:{}",
+                            transactionOf(), twoPhaseCommitData.getPrimaryKeyPreWrite().get());
+                        if (twoPhaseCommitData.getPrimaryKeyPreWrite().get()) {
+                            this.primaryKeyPreWrite.compareAndSet(false, true);
+                        }
+                        if (twoPhaseCommitData.getFuture() != null) {
+                            this.future = twoPhaseCommitData.getFuture();
+                        }
                     }
+                } else {
+                    this.status = TransactionStatus.PRE_WRITE_START;
+                    LogUtils.info(log, "{} Start PreWritePrimaryKey", transactionOf());
+
+                    // 1、PreWritePrimaryKey 、heartBeat
+                    preWritePrimaryKey(twoPhaseCommitData);
+                    this.primaryKeyPreWrite.compareAndSet(false, true);
+                    this.status = TransactionStatus.PRE_WRITE_PRIMARY_KEY;
+                    commitProfile.endPreWritePrimary();
+                    if (cacheToObject.getMutation().getOp() == Op.CheckNotExists) {
+                        LogUtils.info(log, "{} PreWritePrimaryKey Op is CheckNotExists", transactionOf());
+                        return;
+                    }
+                    LogUtils.info(log, "{} PreWritePrimaryKey end, PrimaryKey is {}",
+                        transactionOf(), Arrays.toString(primaryKey));
+                    checkContinue();
+                    twoPhaseCommitData.setPrimaryKey(primaryKey);
+                    if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
+                        LogUtils.info(log, "{} crossNodePreWriteSeconds", transactionOf());
+                        crossNodePreWriteSeconds(jobManager, currentLocation, jobId);
+                    } else {
+                        if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                            if (transactionConfig.isAsyncCommitSleep()) {
+                                try {
+                                    Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                            // Async Commit PreWriteSecondKeys
+                            LogUtils.info(log, "{} Async Commit Start PreWriteSecondKeys", transactionOf());
+                            parallelPreWriteSecondKeys(twoPhaseCommitData);
+                            if (twoPhaseCommitData.getUseAsyncCommit().get()) {
+                                commitTs = twoPhaseCommitData.getMinCommitTs().get();
+                                // todo calculateMaxCommitTS and checkSchemaValid
+                            }
+                            LogUtils.info(log, "{} Async Commit PreWriteSecondKeys End", transactionOf());
+                        } else {
+                            LogUtils.info(log, "{} start parallelPreWrite", transactionOf());
+                            twoPhaseCommitData.getUseAsyncCommit().set(false);
+                            parallelPreWriteSecondKeys(twoPhaseCommitData);
+                            LogUtils.info(log, "{} parallelPreWrite end", transactionOf());
+                        }
+                    }
+                    commitProfile.endPreWriteSecond();
                 }
-                commitProfile.endPreWriteSecond();
                 this.status = TransactionStatus.PRE_WRITE;
+            } else {
+                LogUtils.error(log, "{} unProcessable logic, txn status:{}, only2PcCommit:{}",
+                    transactionOf(), status, only2PcCommit);
+                throw new RuntimeException("UnProcessable logic, txn status:" + status +
+                    ",only2PcCommit:" + only2PcCommit);
             }
         } catch (WriteConflictException e) {
             LogUtils.error(log, e.getMessage(), e);
@@ -610,6 +657,18 @@ public abstract class BaseTransaction implements ITransaction {
                 tableId,
                 newPartId
             );
+            StoreInstance store = null;
+            byte[] txnIdByte = null;
+            byte[] tableIdByte = null;
+            byte[] partIdByte = null;
+            int len = 0;
+            if (isOptimistic()) {
+                store = Services.LOCAL_STORE.getInstance(tableId, newPartId);
+                txnIdByte = txnId.encode();
+                tableIdByte = tableId.encode();
+                partIdByte = newPartId.encode();
+                len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+            }
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
                 TxnLocalData txnLocalData = (TxnLocalData) tuple[0];
@@ -625,6 +684,32 @@ public abstract class BaseTransaction implements ITransaction {
                         "maxAsyncCommitSize:{}", transactionOf(), maxAsyncCommitCount, maxAsyncCommitSize);
                     break outerLoop;
                 }
+                if (isOptimistic()) {
+                    byte[] checkBytes = ByteUtils.encode(
+                        CommonId.CommonType.TXN_CACHE_CHECK_DATA,
+                        txnLocalData.getKey(),
+                        Op.CheckNotExists.getCode(),
+                        len,
+                        txnIdByte, tableIdByte, partIdByte);
+                    KeyValue keyValue = store.get(checkBytes);
+                    Op op = txnLocalData.getOp();
+                    if (keyValue != null && keyValue.getValue() != null) {
+                        switch (txnLocalData.getOp()) {
+                            case PUT:
+                                op = Op.PUTIFABSENT;
+                                break;
+                            case DELETE:
+                                op = Op.CheckNotExists;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    if (op == Op.CheckNotExists) {
+                        continue;
+                    }
+                }
+
                 twoPhaseCommitData.getSecondaries().add(txnLocalData.getKey());
             }
         }
@@ -746,32 +831,48 @@ public abstract class BaseTransaction implements ITransaction {
     private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData, long preWriteStart) {
         try {
             MdcUtils.setTxnId(txnId.toString());
-            LogUtils.info(log, "{} Start AsyncCommitPrimaryKey, commitTs:{}", transactionOf(), commitTs);
-            // CommitPrimaryKey
-            boolean result = commitPrimaryKey(cacheToObject);
-            commitProfile.endCommitPrimary();
-            if (!result) {
-                LogUtils.error(log, "AsyncCommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
-                    Arrays.toString(primaryKey));
-                throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
-                    + ",asyncTxnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
-                    + Arrays.toString(primaryKey));
-            }
-            this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
-            twoPhaseCommitData.setPrimaryKey(primaryKey);
-            twoPhaseCommitData.setCommitTs(commitTs);
-            LogUtils.info(log, "{} AsyncCommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
-            if (transactionConfig.isAsyncCommitSleep()) {
-                try {
-                    Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+            if (transactionConfig.isParallelCommit()) {
+                twoPhaseCommitData.setCommitTs(commitTs);
+                twoPhaseCommitData.setParallelCommit(true);
+                LogUtils.info(log, "{} Start Async Parallel Commit, commitTs:{}", transactionOf(), commitTs);
+                if (transactionConfig.isAsyncCommitSleep()) {
+                    try {
+                        Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
+                partDataMap.keySet().parallelStream()
+                    .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
+                    .forEach(future -> future.join());
+                commitProfile.endParallelCommit();
+            } else {
+                // CommitPrimaryKey
+                boolean result = commitPrimaryKey(cacheToObject);
+                commitProfile.endCommitPrimary();
+                if (!result) {
+                    LogUtils.error(log, "AsyncCommitPrimaryKey false, commit_ts:{}, PrimaryKey:{}", commitTs,
+                        Arrays.toString(primaryKey));
+                    throw new RuntimeException(txnId + " " + cacheToObject.getPartId()
+                        + ",asyncTxnCommitPrimaryKey false, commit_ts:" + commitTs + ",PrimaryKey:"
+                        + Arrays.toString(primaryKey));
+                }
+                this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
+                twoPhaseCommitData.setPrimaryKey(primaryKey);
+                twoPhaseCommitData.setCommitTs(commitTs);
+                LogUtils.info(log, "{} AsyncCommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
+                if (transactionConfig.isAsyncCommitSleep()) {
+                    try {
+                        Thread.sleep(transactionConfig.getAsyncCommitSleepTime());
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                partDataMap.keySet().parallelStream()
+                    .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
+                    .forEach(future -> future.join());
+                commitProfile.endCommitSecond();
             }
-            partDataMap.keySet().parallelStream()
-                .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
-                .forEach(future -> future.join());
-            commitProfile.endCommitSecond();
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);

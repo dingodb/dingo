@@ -40,10 +40,19 @@ public class CommitProfile extends Profile {
     private long commitSecondTime;
     private long clean;
     private long cleanTime;
+    private long parallelPreWrite;
+    private long parallelPreWriteTime;
+    private long parallelCommit;
+    private long parallelCommitTime;
 
     public void endCheckCache() {
         this.cacheContinueTime = System.currentTimeMillis();
         cacheContinue = cacheContinueTime - start;
+    }
+
+    public void endParallelPreWrite() {
+        this.parallelPreWriteTime = System.currentTimeMillis();
+        parallelPreWrite = parallelPreWriteTime - start;
     }
 
     public void endPreWritePrimary() {
@@ -58,12 +67,21 @@ public class CommitProfile extends Profile {
 
     public void endCommitPrimary() {
         this.commitPrimaryTime = System.currentTimeMillis();
-        commitPrimary = commitPrimaryTime - preWriteSecondTime;
+        if (parallelPreWrite > 0) {
+            commitPrimary = commitPrimaryTime - parallelPreWriteTime;
+        } else {
+            commitPrimary = commitPrimaryTime - preWriteSecondTime;
+        }
     }
 
     public void endCommitSecond() {
         this.commitSecondTime = System.currentTimeMillis();
         commitSecond = commitSecondTime - commitPrimaryTime;
+    }
+
+    public void endParallelCommit() {
+        this.parallelCommitTime = System.currentTimeMillis();
+        parallelCommit = parallelCommitTime - parallelPreWriteTime;
     }
 
     public void endClean() {
@@ -73,17 +91,21 @@ public class CommitProfile extends Profile {
                 clean = cleanTime - commitSecondTime;
             } else if (commitPrimaryTime > 0) {
                 clean = cleanTime - commitPrimaryTime;
+            } else if (parallelCommitTime > 0) {
+                clean = cleanTime - parallelCommitTime;
+            } else if (parallelPreWriteTime > 0) {
+                clean = cleanTime - parallelPreWriteTime;
             }
             end();
         }
     }
 
     public long getPreWrite() {
-        return preWritePrimary + preWriteSecond;
+        return parallelPreWrite > 0 ? parallelPreWrite : preWritePrimary + preWriteSecond;
     }
 
     public long getCommit() {
-        return commitPrimary + commitSecond;
+        return parallelCommit > 0 ? parallelCommit : commitPrimary + commitSecond;
     }
 
     public synchronized void reset() {
@@ -100,6 +122,10 @@ public class CommitProfile extends Profile {
         this.commitSecondTime = 0;
         this.clean = 0;
         this.cleanTime = 0;
+        this.parallelPreWrite = 0;
+        this.parallelPreWriteTime = 0;
+        this.parallelCommit = 0;
+        this.parallelCommitTime = 0;
     }
 
     public String dumpTree(byte[] prefix) {
@@ -116,8 +142,10 @@ public class CommitProfile extends Profile {
             throw new RuntimeException(e);
         }
         dag.append(termStr).append("cacheCheck:").append(cacheContinue).append("\r\n");
+        dag.append(termStr).append("parallelPreWrite:").append(parallelPreWrite).append("\r\n");
         dag.append(termStr).append("preWritePrimary:").append(preWritePrimary).append("\r\n");
         dag.append(termStr).append("preWriteSecond:").append(preWriteSecond).append("\r\n");
+        dag.append(termStr).append("parallelCommit:").append(parallelCommit).append("\r\n");
         dag.append(termStr).append("commitPrimary:").append(commitPrimary).append("\r\n");
         dag.append(termStr).append("commitSecond:").append(commitSecond).append("\r\n");
         dag.append(termStr).append("clean:").append(clean).append("\r\n");

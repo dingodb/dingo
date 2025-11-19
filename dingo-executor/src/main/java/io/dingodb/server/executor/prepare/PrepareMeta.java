@@ -332,6 +332,8 @@ public final class PrepareMeta {
         values.add(new Object[]{"lower_case_table_names", "-1"});
         values.add(new Object[]{"cte_max_recursion_depth", "1000"});
         values.add(new Object[]{"create_table_with_data", "on"});
+        values.add(new Object[]{"enable_txn_parallel_prewrite", "on"});
+        values.add(new Object[]{"enable_txn_parallel_commit", "on"});
         return values;
     }
 

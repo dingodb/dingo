@@ -103,6 +103,11 @@ public class ReadOnlyTransaction extends BaseTransaction {
     }
 
     @Override
+    public void selectPrimaryKey(TwoPhaseCommitData twoPhaseCommitData) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void rollBackPessimisticLock(JobManager jobManager) {
     }
 

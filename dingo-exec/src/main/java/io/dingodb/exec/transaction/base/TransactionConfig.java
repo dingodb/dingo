@@ -68,6 +68,14 @@ public class TransactionConfig {
         return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_async_commit_sleep"));
     }
 
+    public boolean isParallelPreWrite() {
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_txn_parallel_prewrite"));
+    }
+
+    public boolean isParallelCommit() {
+        return "on".equalsIgnoreCase(sessionVariables.getProperty("enable_txn_parallel_commit"));
+    }
+
     public long getAsyncCommitSleepTime() {
         Optional<String> retryCountOpt = Optional.ofNullable(
             sessionVariables.getProperty("async_commit_sleep_time"));

@@ -121,6 +121,11 @@ public class TsoService implements io.dingodb.tso.TsoService {
         return tso + BaseTimestampMs;
     }
 
+    @Override
+    public long untilExpired(long ttl) {
+        return ttl - timestamp(getLatestTso());
+    }
+
     public long getLatestTso() {
         TsoTimestamp startTimestamp = tsoMetaService.tsoService(
             trace(), TsoRequest.builder().opType(OP_GEN_TSO).count(1L).build()
