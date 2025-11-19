@@ -34,14 +34,14 @@ public class PartitionDetailDefinition implements Serializable {
     private static final long serialVersionUID = -2687766895780655226L;
 
     @JsonProperty("partName")
-    String partName = null;
+    public String partName = null;
 
     @JsonProperty("operator")
-    String operator = null;
+    public String operator = null;
 
     @JsonProperty("operand")
     @EqualsAndHashCode.Include
-    Object[] operand = null;
+    public Object[] operand = null;
 
     byte[] keys;
 

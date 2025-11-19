@@ -94,6 +94,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.schema.impl.ListTransientTable;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.server.DdlResult;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainFormat;
@@ -114,7 +115,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -322,13 +322,20 @@ public final class DingoDriverParser extends DingoParser {
             Integer retry = Optional.mapOrGet(
                 DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30
             );
+            long updateCount = 0;
             while (retry-- > 0) {
                 try {
                     beforeDdl(connection, sqlNode);
                     final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
-                    ddlExecutor.executeDdl(connection, sqlNode);
-                    SQLWarning warning = getWarning(sqlNode);
-                    connection.getContext().addWarning(warning);
+                    if (ddlResultSet.contains(sqlNode.getClass())) {
+                        DdlResult ddlResult = ddlExecutor.executeDdl1(connection, sqlNode);
+                        if (ddlResult != null) {
+                            connection.getContext().addWarning(ddlResult.getSqlWarning());
+                            updateCount = ddlResult.getAffectedRows();
+                        }
+                    } else {
+                        ddlExecutor.executeDdl(connection, sqlNode);
+                    }
                     break;
                 } catch (IllegalArgumentException e) {
                     // Method not found:
@@ -350,7 +357,7 @@ public final class DingoDriverParser extends DingoParser {
                 }
             }
             execProfile.end();
-            return new DingoSignature(
+            DingoSignature dingoSignature = new DingoSignature(
                 ImmutableList.of(),
                 SqlUtil.checkSql(sqlNode, sql),
                 Meta.CursorFactory.OBJECT,
@@ -359,6 +366,8 @@ public final class DingoDriverParser extends DingoParser {
                 null,
                 ImmutableList.of()
             );
+            dingoSignature.setUpdateCount(updateCount);
+            return dingoSignature;
         }
 
         SqlExplain explain = null;

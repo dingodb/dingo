@@ -81,8 +81,8 @@ public class LocalDdlService implements DdlService {
     }
 
     @Override
-    public void createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
-
+    public long createTableAsQuery(String schemaName, TableDefinition tableDefinition, boolean replace) {
+        return 0l;
     }
 
     @Override

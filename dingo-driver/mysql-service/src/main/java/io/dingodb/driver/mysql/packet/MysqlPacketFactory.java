@@ -309,7 +309,7 @@ public class MysqlPacketFactory {
         responseEof.packetId = (byte) packetId.getAndIncrement();
         responseEof.header = (byte) NativeConstants.TYPE_ID_EOF;
         responseEof.warningCount = 0;
-        responseEof.statusFlags = SERVER_STATUS_AUTOCOMMIT;
+        responseEof.statusFlags = serverStatus;
         return responseEof;
     }
 

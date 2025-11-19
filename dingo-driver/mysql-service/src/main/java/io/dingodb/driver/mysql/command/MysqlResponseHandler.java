@@ -215,8 +215,8 @@ public final class MysqlResponseHandler {
             cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
             if (cnt.get() % ScopeVariables.getMysqlStreamSize() == 0) {
-                LogUtils.info(log, "write big data. " +
-                    " cnt:{}, packetId:{}",
+                LogUtils.info(log, "write big data. "
+                    + " cnt:{}, packetId:{}",
                     cnt.get(), packetId.get());
                 AsyncStreamReader streamReader = new AsyncStreamReader(
                     resultSet, packetId, mysqlConnection, serverStatus, statement

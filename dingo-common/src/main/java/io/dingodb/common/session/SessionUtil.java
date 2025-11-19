@@ -94,6 +94,24 @@ public final class SessionUtil {
         }
     }
 
+    public long exeUpdate(String sql, int retry) throws Exception {
+        Session session = null;
+        try {
+            session = getSession();
+            return session.executeUpdate1(sql);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage());
+            retry --;
+            if (retry == 0) {
+                throw e;
+            } else {
+                return exeUpdate(sql, retry);
+            }
+        } finally {
+            closeSession(session);
+        }
+    }
+
     public void executeUpdate(List<String> sqlList) {
         Session session = getSession();
         session.executeUpdate(sqlList);

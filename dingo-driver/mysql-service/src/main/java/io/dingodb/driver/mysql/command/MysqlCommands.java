@@ -245,8 +245,7 @@ public class MysqlCommands {
                 }
                 while (!stream && getMoreResults(statement));
             } else {
-                // update insert delete
-                int count = statement.getUpdateCount();
+                // update/insert/delete/ddl
                 SQLWarning sqlWarning = statement.getWarnings();
                 if (sqlWarning == null) {
                     sqlWarning = mysqlConnection.getConnection().getWarnings();
@@ -275,6 +274,7 @@ public class MysqlCommands {
                 if (hasMore) {
                     initServerStatus |= SERVER_MORE_RESULTS_EXISTS;
                 }
+                int count = statement.getUpdateCount();
                 if (dingoStatement.isHasIncId()) {
                     Long lastInsertId = dingoStatement.getAutoIncId();
                     okPacket = MysqlPacketFactory.getInstance()

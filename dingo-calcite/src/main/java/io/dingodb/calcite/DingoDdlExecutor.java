@@ -84,7 +84,6 @@ import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.ddl.ModifyingColInfo;
 import io.dingodb.common.ddl.RecoverInfo;
-import io.dingodb.common.ddl.SchemaDiff;
 import io.dingodb.common.exception.DingoSqlException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
@@ -154,6 +153,7 @@ import org.apache.calcite.schema.ColumnStrategy;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.server.DdlExecutorImpl;
+import org.apache.calcite.server.DdlResult;
 import org.apache.calcite.sql.DingoAnsiSqlDialect;
 import org.apache.calcite.sql.SqlBasicTypeNameSpec;
 import org.apache.calcite.sql.SqlCall;
@@ -199,6 +199,7 @@ import java.util.stream.IntStream;
 
 import static io.dingodb.calcite.DingoParser.PARSER_CONFIG;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+import static io.dingodb.common.ddl.DdlUtil.notAllowedPreScaleType;
 import static io.dingodb.common.ddl.FieldTypeChecker.checkModifyTypeCompatible;
 import static io.dingodb.common.mysql.MysqlByteUtil.isBinary;
 import static io.dingodb.common.mysql.MysqlByteUtil.isHex;
@@ -238,7 +239,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0);
-        long schemaId = 0;
+        long schemaId;
         if (rootSchema.getSubSchema(schemaName) == null) {
             InfoSchemaService infoSchemaService = InfoSchemaService.root();
             schemaId = infoSchemaService.genSchemaId();
@@ -257,7 +258,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(SqlDropSchema schema, CalcitePrepare.Context context) {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("dropSchema");
         LogUtils.info(log, "DDL execute: {}", schema);
-        String connId = (String) context.getDataContext().get("connId");
         RootSnapshotSchema rootSchema = (RootSnapshotSchema) context.getMutableRootSchema().schema;
         String schemaName = schema.name.names.get(0);
         if ("dingo".equalsIgnoreCase(schemaName)) {
@@ -287,9 +287,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (subSchema.getTableNames().isEmpty()) {
             SchemaInfo schemaInfo = subSchema.getSchemaInfo(schemaName);
-            long schemaId = schemaInfo.getSchemaId();
             DdlService ddlService = DdlService.root();
             try {
+                String connId = (String) context.getDataContext().get("connId");
                 ddlService.dropSchema(schemaInfo, connId);
             } catch (DingoSqlException e) {
                 if (e.getSqlCode() == 1008 && schema.ifExists) {
@@ -409,15 +409,17 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     @SuppressWarnings({"unused"})
-    public void execute(SqlCreateTable createT, CalcitePrepare.Context context) {
+    public DdlResult execute1(SqlCreateTable createT, CalcitePrepare.Context context) {
         final Timer.Context timeCtx = DingoMetrics.getTimeContext("createTable");
         long start = System.currentTimeMillis();
         DingoSqlCreateTable create = (DingoSqlCreateTable) createT;
         LogUtils.info(log, "DDL execute: {}", create.getOriginalCreateSql());
         final String tableName = getTableName(create.name);
         if (create.query != null) {
-            executeCreateTableAsQuery(create, context);
-            return;
+            long updateCount = executeCreateTableAsQuery(create, context);
+            DdlResult ddlResult = new DdlResult();
+            ddlResult.setAffectedRows(updateCount);
+            return ddlResult;
         }
         SqlNodeList columnList = create.columnList;
         if (columnList == null) {
@@ -518,7 +520,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 // They did not specify IF NOT EXISTS, so give error.
                 throw DINGO_RESOURCE.tableExists(tableName).ex();
             } else {
-                return;
+                return null;
             }
         }
         int replica = getReplica(create.getReplica(), 1);
@@ -568,13 +570,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 connId, create.getOriginalCreateSql());
         }
 
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .type(ActionType.ActionCreateTable).build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
-
         timeCtx.stop();
         long end = System.currentTimeMillis();
         long cost = end - start;
@@ -585,9 +580,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             LogUtils.info(log, "[ddl] create table success, "
                 + "cost:{}, schemaName:{}, tableName:{}", cost, schema.getSchemaName(), tableName);
         }
+        return null;
     }
 
-    public void executeCreateTableAsQuery(DingoSqlCreateTable sqlCreateTable, CalcitePrepare.Context context) {
+    public long executeCreateTableAsQuery(DingoSqlCreateTable sqlCreateTable, CalcitePrepare.Context context) {
         SubSnapshotSchema schema = getSnapShotSchema(sqlCreateTable.name, context, false);
         if (schema == null) {
             if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
@@ -635,10 +631,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         AtomicInteger colIndex = new AtomicInteger(0);
         List<ColumnDefinition> columnDefinitionList = jdbcType.getFieldList()
             .stream().map(f -> {
-                if ("_DINGO_IMPLICIT_ROWID_".equalsIgnoreCase(f.getName())) {
+                if (IMPLICIT_COL_NAME.equalsIgnoreCase(f.getName())) {
                     return null;
                 }
                 String defaultValExpr = null;
+                String comment = null;
                 List<String> originCol = originList.get(colIndex.getAndIncrement());
                 if (originCol != null) {
                     InfoSchema is = DdlService.root().getIsLatest();
@@ -647,15 +644,14 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         Column column = table.getColumn(originCol.get(3));
                         if (column != null) {
                             defaultValExpr = column.getDefaultValueExpr();
+                            comment = column.getComment();
                         }
                     }
                 }
                 int precision = f.getType().getPrecision();
                 int scale = f.getType().getScale();
                 String name = f.getType().getSqlTypeName().getName();
-                if ("BIGINT".equals(name) || "FLOAT".equals(name)
-                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)
-                    || "DOUBLE".equals(name) || "BOOLEAN".equals(name)) {
+                if (notAllowedPreScaleType.contains(name)) {
                     precision = -1;
                     scale = -2147483648;
                 }
@@ -682,6 +678,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     .precision(precision)
                     .nullable(nullable)
                     .defaultValue(defaultValExpr)
+                    .comment(comment)
                     .build();
             }).filter(Objects::nonNull)
             .collect(Collectors.toList());
@@ -699,6 +696,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .version(1)
             .ttl(0)
             .replica(0)
+            .codecVersion(2)
             .createSql(sql)
             .charset("utf8mb4")
             .collate("utf8mb4_bin")
@@ -716,7 +714,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
 
-        ddlService.createTableAsQuery(schemaName, tableDefinition,sqlCreateTable.getReplace());
+        return ddlService.createTableAsQuery(schemaName, tableDefinition, sqlCreateTable.getReplace());
     }
 
     public void execute(SqlDropTable drop, CalcitePrepare.Context context) throws Exception {
@@ -752,12 +750,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService ddlService = DdlService.root();
         String connId = (String) context.getDataContext().get("connId");
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .type(ActionType.ActionDropTable).tableId(table.tableId.seq).build();
-        rootSnapshotSchema.applyDiff(diff);
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
@@ -797,12 +789,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlService ddlService = DdlService.root();
         ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .type(ActionType.ActionDropTable).tableId(table.tableId.seq).build();
-        rootSnapshotSchema.applyDiff(diff);
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
@@ -1011,9 +997,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 int precision = f.getType().getPrecision();
                 int scale = f.getType().getScale();
                 String name = f.getType().getSqlTypeName().getName();
-                if ("BIGINT".equals(name) || "FLOAT".equals(name)
-                    || "INTEGER".equals(name) || "DATE".equals(name) || "TIMESTAMP".equals(name)
-                    || "DOUBLE".equals(name) || "BOOLEAN".equals(name)) {
+                if (notAllowedPreScaleType.contains(name)) {
                     precision = -1;
                     scale = -2147483648;
                 }
@@ -1308,9 +1292,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             sqlAlterIndex.setPreValidate(false);
             return;
         }
-        List<ColumnDefinition> columnInfoList = indexTable.getColumns().stream().map(col -> {
-            return mapTo(col);
-        }).collect(Collectors.toList());
+        List<ColumnDefinition> columnInfoList = indexTable.getColumns().stream().map(DingoDdlExecutor::mapTo).collect(Collectors.toList());
         TableDefinition tableDefinition = IndexDefinition.builder()
             .properties(sqlAlterIndex.getProperties())
             .name(sqlAlterIndex.getIndex())
@@ -1346,13 +1328,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             schema.getSchemaId(), schema.getSchemaName(), table,
             sqlAlterIndexVisible.index, sqlAlterIndexVisible.invisible
         );
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionAlterIndexVisibility)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "alter index visible done, "
             + "tableName:{}, index:{}", tableName, sqlAlterIndexVisible.invisible);
     }
@@ -1395,14 +1370,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         indexDef.setComment(sqlIndexDeclaration.getComment());
         validateIndex(schema, tableName, indexDef);
         DdlService.root().createIndex(schema.getSchemaName(), tableName, indexDef);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionAddIndex)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(@NonNull SqlDropIndex sqlDropIndex, CalcitePrepare.Context context) {
@@ -1416,14 +1383,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         validateDropIndex(table, sqlDropIndex.index);
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, convertName(sqlDropIndex.index));
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionDropIndex)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "drop index done, tableName:{}, index:{}", tableName, sqlDropIndex.index);
     }
 
@@ -1442,14 +1401,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             return;
         }
         DdlService.root().dropIndex(schema.getSchemaName(), tableName, sqlDropIndex.getIndexNm());
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionDropIndex)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "drop index done, tableName:{}, index:{}", tableName, sqlDropIndex.getIndexNm());
     }
 
@@ -1534,14 +1485,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
              markedDelete,
              "",
              "");
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionDropColumn)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "drop column done, tableName:{}, column:{}", tableName, sqlAlterDropColumn.columnNm);
     }
 
@@ -1607,14 +1550,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         recoverInfo.setOldTableName(job.getTableName());
         recoverInfo.setNewTableName(sqlRecoverTable.newTableId);
         DdlService.root().recoverTable(recoverInfo);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(job.getTableId())
-            .type(ActionType.ActionRecoverTable)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "recover table done, tableName:{}", validateTableName);
     }
 
@@ -1652,14 +1587,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         recoverInfo.setOldTableName(job.getTableName());
         recoverInfo.setNewTableName(sqlFlashBackTable.newTableName);
         DdlService.root().recoverTable(recoverInfo);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(schema.getSchemaId())
-            .tableId(job.getTableId())
-            .type(ActionType.ActionRecoverTable)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "recover table done, tableName:{}", validateTableName);
     }
 
@@ -1703,13 +1630,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         recoverInfo.setOldTableName(job.getTableName());
         DdlService.root().recoverSchema(recoverInfo);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder().schemaId(job.getSchemaId())
-            .type(ActionType.ActionRecoverSchema)
-            .build();
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "recover schema done, schemaName:{}", schemaName);
         timeCtx.stop();
     }
@@ -1824,15 +1744,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().modifyColumn(
             schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, modifyingColInfoList
         );
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionModifyColumn)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "modify column success. tableName:{}", table.getName());
     }
 
@@ -1902,15 +1813,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().changeColumn(
             schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, modifyingColInfo
         );
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionModifyColumn)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "change column success");
     }
 
@@ -1956,19 +1858,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().changeColumn(
             schema.getSchemaId(), schema.getSchemaName(), table.getTableId().seq, modifyingColInfo
         );
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionModifyColumn)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
         LogUtils.info(log, "alter column success");
     }
 
-    public void execute(SqlAlterAutoIncrement alterAutoIncrement, CalcitePrepare.Context context) {
+    public DdlResult execute1(SqlAlterAutoIncrement alterAutoIncrement, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute: {}", alterAutoIncrement);
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(alterAutoIncrement.table, context);
@@ -1980,15 +1873,18 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         if (alterAutoIncrement.isPreValidate()) {
             alterAutoIncrement.setPreValidate(false);
-            return;
+            return null;
         }
         boolean hasInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
         if (hasInc) {
             String warning = DdlService.root().rebaseAutoInc(
                 schema.getSchemaName(), tableName, table.getTableId().seq, alterAutoIncrement.autoInc
             );
-            alterAutoIncrement.setWarning(warning);
+            DdlResult ddlResult = new DdlResult();
+            ddlResult.setSqlWarning(warning);
+            return ddlResult;
         }
+        return null;
     }
 
     public void execute(SqlAdminResetAutoInc sqlAdminResetAutoInc, CalcitePrepare.Context context) {
@@ -2049,15 +1945,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().renameIndex(
             schema.getSchemaId(), schema.getSchemaName(), table,
             originIndexName, sqlAlterRenameIndex.toIndexName);
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionRenameIndex)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(SqlAlterTableComment sqlAlterTableComment, CalcitePrepare.Context context) {
@@ -2077,15 +1964,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().alterModifyComment(
             schema.getSchemaId(), schema.getSchemaName(), table,
             sqlAlterTableComment.comment);
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionModifyTableComment)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(SqlAlterDropPart sqlAlterDropPart, CalcitePrepare.Context context) {
@@ -2118,48 +1996,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DdlService.root().alterTableDropPart(
             schemaInfo,
             table, part);
-
-        RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) context.getMutableRootSchema();
-        RootSnapshotSchema rootSnapshotSchema = (RootSnapshotSchema) rootCalciteSchema.schema;
-        SchemaDiff diff = SchemaDiff.builder()
-            .schemaId(schema.getSchemaId())
-            .tableId(table.getTableId().seq)
-            .type(ActionType.ActionDropTablePartition)
-            .build();
-        diff.setTableName(tableName);
-        rootSnapshotSchema.applyDiff(diff);
     }
 
     public void execute(SqlAlterTruncatePart sqlAlterTruncatePart, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute:{}", sqlAlterTruncatePart);
         throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
-        //final Pair<SubSnapshotSchema, String> schemaTableName
-        //    = getSchemaAndTableName(sqlAlterTruncatePart.table, context);
-        //final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
-        //final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
-        //SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
-        //if (schemaInfo == null) {
-        //    throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
-        //}
-        //Table table = schema.getTableInfo(tableName);
-        //if (table == null) {
-        //    throw DINGO_RESOURCE.tableNotExists(tableName).ex();
-        //}
-
-        //if (table.getPartitions().size() == 1) {
-        //    throw DingoErrUtil.newStdErr(ErrPartitionMgmtOnNonpartitioned);
-        //}
-        //String part = sqlAlterTruncatePart.part.getSimple();
-        //boolean noneMatch = table.getPartitions()
-        //    .stream().noneMatch(partition -> part.equalsIgnoreCase(partition.name));
-        //if (noneMatch) {
-        //    throw DingoErrUtil.newStdErr(ErrDropPartitionNonExistent);
-        //}
-        //if (sqlAlterTruncatePart.isPreValidate()) {
-        //    sqlAlterTruncatePart.setPreValidate(false);
-        //    return;
-        //}
-        //DdlService.root().alterTableTruncatePart(schemaInfo, table, part);
     }
 
     public void execute(SqlAlterExchangePart sqlAlterExchangePart, CalcitePrepare.Context context) {
@@ -2548,6 +2389,10 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (sqlKeyConstraint1.getEngine() != null) {
             indexDefinition.setEngine(sqlKeyConstraint1.getEngine().toUpperCase());
         }
+        indexDefinition.setPartDefinition(sqlKeyConstraint1.getPartDefinition());
+        validatePartitionBy(
+            indexDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            indexDefinition, indexDefinition.getPartDefinition());
         return indexDefinition;
     }
 

@@ -16,6 +16,7 @@
 
 package io.dingodb.common.ddl;
 
+import com.google.common.collect.ImmutableSet;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
@@ -31,6 +32,7 @@ import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -71,7 +73,17 @@ public final class DdlUtil {
     public static final String ddlId = String.format("%s:%d", DingoConfiguration.host(), DingoConfiguration.port());
     public static BlockingQueue<GcDeleteRegion> gcDelRegionQueue = new LinkedBlockingDeque<>(10000);
 
-    public static volatile long gcLifeTimeTso = 0;
+    public static Set<String> notAllowedPreScaleType = ImmutableSet.of(
+        "BIGINT",
+        "FLOAT",
+        "INTEGER",
+        "DATE",
+        "TIMESTAMP",
+        "DOUBLE",
+        "BOOLEAN",
+        "TINYINT",
+        "SMALLINT"
+    );
 
     private DdlUtil() {
     }

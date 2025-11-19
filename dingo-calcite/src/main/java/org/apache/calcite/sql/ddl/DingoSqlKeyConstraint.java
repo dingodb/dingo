@@ -16,6 +16,7 @@
 
 package org.apache.calcite.sql.ddl;
 
+import io.dingodb.common.partition.PartitionDefinition;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -41,12 +42,16 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
     @Getter
     String engine;
 
+    @Getter
+    PartitionDefinition partDefinition;
+
     public DingoSqlKeyConstraint(
         SqlParserPos pos,
         @Nullable SqlIdentifier name,
         SqlNodeList columnList,
         int replica,
-        String engine
+        String engine,
+        PartitionDefinition partDefinition
     ) {
         super(pos, name, columnList);
         this.replica = replica;
@@ -60,5 +65,6 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
                 ixNu.set(1);
             }
         }
+        this.partDefinition = partDefinition;
     }
 }

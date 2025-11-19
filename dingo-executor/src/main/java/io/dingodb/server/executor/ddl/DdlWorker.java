@@ -1392,7 +1392,7 @@ public class DdlWorker {
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
                     if (e instanceof NullPointerException) {
-                        error = "NullPointerException";
+                        error = "epx";
                     } else {
                         error = e.getMessage();
                     }
@@ -2625,31 +2625,19 @@ public class DdlWorker {
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_REORG:
                 String sql = (String) tableInfo.getProperties().get("querySql");
-                //String fileName = UUID.randomUUID().toString();
-                //String filePath = "/root/tcpdump/" + fileName;
-                //sql = sql + " into outfile '" + filePath + "'";
-                //SessionUtil.INSTANCE.exeUpdateInTxn(sql);
-                //LoadDataExecutor dataExecutor = new LoadDataExecutor(filePath, job.getSchemaName(), job.getTableName());
-                //dataExecutor.execute();
-                //dataExecutor.getIterator();
-
-                //File file = new File(filePath);
-                //if (file.exists()) {
-                //    file.deleteOnExit();
-                //}
                 Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
-                String createTableWithoutData = globalVariables.getOrDefault("create_table_with_data", "on");
-                if ("on".equalsIgnoreCase(createTableWithoutData)) {
+                String createTableWithData = globalVariables.getOrDefault("create_table_with_data", "on");
+                if ("on".equalsIgnoreCase(createTableWithData)) {
                     sql = "insert into %s.%s " + sql;
                     sql = String.format(sql, job.getSchemaName(), job.getTableName());
                     LogUtils.info(log, "create as table sql:{}", sql);
-                    long start = System.currentTimeMillis();
-                    String err = SessionUtil.INSTANCE.exeUpdateInTxn(sql, 2);
-                    long sub = System.currentTimeMillis() - start;
-                    if (err == null) {
-                        LogUtils.info(log, "create as table end, cost:{}", sub);
-                    } else {
-                        LogUtils.info(log, "create as table faled, reason:{}", err);
+                    try {
+                        long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2);
+                        job.setRowCount(updateCount);
+                    } catch (Exception e) {
+                        MetaService.root().dropTable(job.getSchemaId(), job.getTableId(), job.getId());
+                        job.setDingoErr(DingoErrUtil.newInternalErr(e.getMessage()));
+                        return Pair.of(0L, job.getDingoErr().errorMsg);
                     }
                 }
 

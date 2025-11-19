@@ -50,6 +50,10 @@ public final class DingoSignature extends Meta.Signature {
     public List<ColumnMetaData> allColumnMetaDataList;
     boolean trace;
 
+    @Getter
+    @Setter
+    private long updateCount;
+
     public DingoSignature(
         List<ColumnMetaData> columns,
         String sql,
