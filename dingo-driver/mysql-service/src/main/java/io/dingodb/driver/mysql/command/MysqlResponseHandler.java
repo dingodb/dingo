@@ -160,15 +160,12 @@ public final class MysqlResponseHandler {
             }
         } catch (SQLException e) {
             responseError(packetId, mysqlConnection, e, connCharSet);
-        } catch (Exception e) {
-            LogUtils.error(log, e.getMessage(), e);
-            responseError(packetId, mysqlConnection, 1105, connCharSet);
         } finally {
             if (!stream) {
                 resultSet.close();
             }
-            return stream;
         }
+        return stream;
     }
 
     private static Boolean handlerRowPacket(

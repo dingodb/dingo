@@ -18,6 +18,7 @@ package io.dingodb.calcite.rule.dingo;
 
 import io.dingodb.calcite.rel.DingoRepeatUnion;
 import io.dingodb.calcite.traits.DingoConvention;
+import io.dingodb.calcite.traits.DingoRelStreaming;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
@@ -44,7 +45,7 @@ public class DingoRepeatUnionRule extends ConverterRule {
         final LogicalRepeatUnion union = (LogicalRepeatUnion) rel;
 
         final RelTraitSet traitSet =
-            union.getTraitSet().replace(DingoConvention.INSTANCE);
+            union.getTraitSet().replace(DingoConvention.INSTANCE).replace(DingoRelStreaming.of(union.getTransientTable()));
         RelNode seedRel = union.getSeedRel();
         RelNode iterativeRel = union.getIterativeRel();
         return new DingoRepeatUnion(
