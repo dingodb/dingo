@@ -773,7 +773,7 @@ public class DingoMeta extends MetaImpl {
             }
             return new Frame(offset, done, rows) ;
         } catch (Throwable e) {
-            LogUtils.error(log, "Fetch catch exception:{}", e, e);
+            LogUtils.error(log, "Fetch catch exception:{}", e);
             throw ExceptionUtils.toRuntime(e);
         } finally {
             DingoConnection connection1 = (DingoConnection) connection;
