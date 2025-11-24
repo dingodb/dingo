@@ -575,6 +575,7 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         SqlProfile sqlProfile = null;
+        boolean hasNext = false;
         try {
             DingoResultSet resultSet = (DingoResultSet) statement.getResultSet();
             if (resultSet == null) {
@@ -611,12 +612,12 @@ public class DingoMeta extends MetaImpl {
                     GregorianCalendar calendarCST = new GregorianCalendar();
                     calendarCST.setTimeZone(((DingoConnection) connection).getInternalTimeZone().getTimeZone());
                     AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
-                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
                         rows.add(dingoType.convertTo(iterator.next(), converter));
                     }
                     sqlProfile = getProfile(iterator, statement);
                 } else {
-                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
                         iterator.next();
                     }
                     sqlProfile = getProfile(iterator, statement);
@@ -779,12 +780,15 @@ public class DingoMeta extends MetaImpl {
             throw ExceptionUtils.toRuntime(e);
         } finally {
             DingoConnection connection1 = (DingoConnection) connection;
-            connection1.setCommandStartTime(0);
-            addSqlProfile(sqlProfile, connection);
             if (connection1.getContext().getOption("sql_log").equalsIgnoreCase("")) {
-                SqlLogUtils.info("DingoMeta fetch, cost: {}ms.", System.currentTimeMillis() - startTime);
+                SqlLogUtils.info("DingoMeta fetch, hasMore:{}, cost: {}ms.", hasNext,
+                    System.currentTimeMillis() - startTime);
             }
-            MdcUtils.removeStmtId();
+            if (!hasNext) {
+                connection1.setCommandStartTime(0);
+                addSqlProfile(sqlProfile, connection);
+                MdcUtils.removeStmtId();
+            }
         }
     }
 
