@@ -2574,7 +2574,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 ColumnDefinition columnDefinition = tableColumns.stream()
                     .filter(f -> f.getName().equalsIgnoreCase(columnName))
                     .findFirst().orElseThrow(() -> new RuntimeException("not found column"));
-                if (!tableDefinition.getKeyNames().contains(columnDefinition.getName().toUpperCase())) {
+//                if (!tableDefinition.getKeyNames().contains(columnDefinition.getName().toUpperCase())) {
                     if (i == 0) {
                         if (!columnDefinition.getTypeName().equals("LONG")
                             && !columnDefinition.getTypeName().equals("BIGINT")) {
@@ -2597,7 +2597,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                         }
                         primary = -1;
                     }
-                }
+//                }
                 ColumnDefinition indexColumnDefinition = ColumnDefinition.builder()
                     .name(columnDefinition.getName().toUpperCase())
                     .type(columnDefinition.getTypeName())

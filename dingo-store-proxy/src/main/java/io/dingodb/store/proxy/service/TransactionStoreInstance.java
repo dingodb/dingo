@@ -40,6 +40,7 @@ import io.dingodb.sdk.common.DingoClientException.RequestErrorException;
 import io.dingodb.sdk.common.utils.Optional;
 import io.dingodb.sdk.service.DocumentService;
 import io.dingodb.sdk.service.IndexService;
+import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
 import io.dingodb.sdk.service.entity.common.Document;
 import io.dingodb.sdk.service.entity.common.DocumentWithScore;
@@ -92,6 +93,7 @@ import io.dingodb.store.api.transaction.exception.OnePcNeedTwoPcCommit;
 import io.dingodb.store.api.transaction.exception.PrimaryMismatchException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import io.dingodb.store.proxy.Configuration;
 import io.dingodb.store.proxy.common.transaction.ResolveLockResult;
 import io.dingodb.store.proxy.common.transaction.ResolveLocksOptions;
 import io.dingodb.store.proxy.common.transaction.TxnExpireTime;
@@ -192,22 +194,63 @@ public class TransactionStoreInstance {
     }
 
     public void heartBeat(long startTs, byte[] primaryLock, boolean pessimistic) {
-        try {
-            TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
-                .primaryLock(primaryLock)
-                .startTs(startTs)
-                .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(TransactionUtil.heartBeatLockTtl))
-                .build();
-            if (indexService != null) {
-                indexService.txnHeartBeat(request.getStartTs(), request);
-            } else if (documentService != null) {
-                documentService.txnHeartBeat(request.getStartTs(), request);
-            } else {
-                storeService.txnHeartBeat(request.getStartTs(), request);
+        Integer retry = io.dingodb.common.util.Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 30
+        );
+        boolean getService = false;
+        TxnHeartBeatRequest request = TxnHeartBeatRequest.builder()
+            .primaryLock(primaryLock)
+            .startTs(startTs)
+            .adviseLockTtl(TsoService.INSTANCE.timestamp() + SECONDS.toMillis(TransactionUtil.heartBeatLockTtl))
+            .build();
+        while (retry-- > 0) {
+            try {
+                if (indexService != null) {
+                    if (getService) {
+                        Services.indexRegionService(
+                                Configuration.coordinatorSet(),
+                                primaryLock,
+                                30)
+                            .txnHeartBeat(startTs, request);
+                    } else {
+                        indexService.txnHeartBeat(request.getStartTs(), request);
+                    }
+                } else if (documentService != null) {
+                    if (getService) {
+                        Services.documentRegionService(
+                                Configuration.coordinatorSet(),
+                                primaryLock,
+                                30)
+                            .txnHeartBeat(startTs, request);
+                    } else {
+                        documentService.txnHeartBeat(request.getStartTs(), request);
+                    }
+                } else {
+                    if (getService) {
+                        Services.storeRegionService(
+                                Configuration.coordinatorSet(),
+                                primaryLock,
+                                30)
+                            .txnHeartBeat(startTs, request);
+                    } else {
+                        storeService.txnHeartBeat(request.getStartTs(), request);
+                    }
+                }
+                break;
+            } catch (RegionSplitException | DingoClientException.InvalidRouteTableException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                getService = true;
+                try {
+                    Thread.sleep(100L);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            } catch (Exception e) {
+                LogUtils.error(log, "txn heartbeat, pessimistic:{}, startTs:{}, error:{}", pessimistic, startTs, e);
+                throw e;
             }
-        } catch (Exception e) {
-            LogUtils.error(log, "txn heartbeat, pessimistic:{}, startTs:{}, error:{}", pessimistic, startTs, e);
-            throw e;
         }
     }
 
@@ -294,9 +337,9 @@ public class TransactionStoreInstance {
                 } catch (RequestErrorException e) {
                     if ((request.isTryOnePc() || request.isUseAsyncCommit()) &&
                         (e.getErrorCode() == 50002 || e.getErrorCode() == 50003)) {
-                        LogUtils.error(log, "txnPreWrite Error:" + e.getMessage(), e);
+                        LogUtils.error(log, "txnPreWrite not leader error:" + e.getMessage(), e);
                         if (timeOut < 0) {
-                            throw new RuntimeException("startTs:" + startTs + " txnPreWrite error:" + e);
+                            throw new RuntimeException("startTs:" + startTs + " txnPreWrite not leader error:" + e);
                         }
                         try {
                             long lockTtl = TxnVariables.WaitFixTime;
@@ -306,12 +349,12 @@ public class TransactionStoreInstance {
                             Thread.sleep(lockTtl);
                             n++;
                             timeOut -= lockTtl;
-                            LogUtils.info(log, "txnPreWrite error wait {} ms end.", lockTtl);
+                            LogUtils.info(log, "txnPreWrite not leader error wait {} ms end.", lockTtl);
                         } catch (InterruptedException e1) {
                             throw new RuntimeException(e1);
                         }
                         long commitTs = TsoService.INSTANCE.tso();
-                        LogUtils.info(log, "txnPreWrite error retry commitTs:{}.", commitTs);
+                        LogUtils.info(log, "txnPreWrite not leader error retry commitTs:{}.", commitTs);
                         txnPreWrite.setMinCommitTs(commitTs);
                     } else {
                         LogUtils.error(log, "txnPreWrite Error:" + e.getMessage(), e);
@@ -560,32 +603,79 @@ public class TransactionStoreInstance {
         MdcUtils.setTxnId(txnId.toString());
         try {
             txnPessimisticRollBack.getKeys().stream().peek(this::setId).forEach($ -> $[0] = 't');
-            TxnPessimisticRollbackResponse response;
-            if (indexService != null) {
-                List<byte[]> keys = txnPessimisticRollBack.getKeys();
-                List<byte[]> newKeys = keys.stream()
-                    .map(key -> Arrays.copyOf(key, VectorKeyLen))
-                    .collect(Collectors.toList());
-                txnPessimisticRollBack.setKeys(newKeys);
-                response = indexService.txnPessimisticRollback(
-                    startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
-                );
-            } else if (documentService != null) {
-                List<byte[]> keys = txnPessimisticRollBack.getKeys();
-                List<byte[]> newKeys = keys.stream()
-                    .map(key -> Arrays.copyOf(key, VectorKeyLen))
-                    .collect(Collectors.toList());
-                txnPessimisticRollBack.setKeys(newKeys);
-                response = documentService.txnPessimisticRollback(
-                    startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
-                );
-            } else {
-                response = storeService.txnPessimisticRollback(
-                    startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
-                );
+            Integer retry = io.dingodb.common.util.Optional.mapOrGet(
+                DingoConfiguration.instance().find("retry", int.class),
+                __ -> __,
+                () -> 30
+            );
+            TxnPessimisticRollbackResponse response = null;
+            boolean getService = false;
+            while (retry-- > 0) {
+                try {
+                    if (indexService != null) {
+                        List<byte[]> keys = txnPessimisticRollBack.getKeys();
+                        List<byte[]> newKeys = keys.stream()
+                            .map(key -> Arrays.copyOf(key, VectorKeyLen))
+                            .collect(Collectors.toList());
+                        txnPessimisticRollBack.setKeys(newKeys);
+                        if (getService) {
+                            response = Services.indexRegionService(
+                                    Configuration.coordinatorSet(),
+                                    txnPessimisticRollBack.getKeys().get(0),
+                                    30)
+                                .txnPessimisticRollback(txnPessimisticRollBack.getStartTs(),
+                                    MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+                        } else {
+                            response = indexService.txnPessimisticRollback(
+                                startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
+                            );
+                        }
+                    } else if (documentService != null) {
+                        List<byte[]> keys = txnPessimisticRollBack.getKeys();
+                        List<byte[]> newKeys = keys.stream()
+                            .map(key -> Arrays.copyOf(key, VectorKeyLen))
+                            .collect(Collectors.toList());
+                        txnPessimisticRollBack.setKeys(newKeys);
+                        if (getService) {
+                            response = Services.documentRegionService(
+                                Configuration.coordinatorSet(),
+                                txnPessimisticRollBack.getKeys().get(0),
+                                30)
+                                .txnPessimisticRollback(txnPessimisticRollBack.getStartTs(),
+                                    MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+                        } else {
+                            response = documentService.txnPessimisticRollback(
+                                startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
+                            );
+                        }
+                    } else {
+                        if (getService) {
+                            response = Services.storeRegionService(
+                                Configuration.coordinatorSet(),
+                                txnPessimisticRollBack.getKeys().get(0),
+                                30)
+                                .txnPessimisticRollback(txnPessimisticRollBack.getStartTs(),
+                                    MAPPER.pessimisticRollBackTo(txnPessimisticRollBack));
+                        } else {
+                            response = storeService.txnPessimisticRollback(
+                                startTs, MAPPER.pessimisticRollBackTo(txnPessimisticRollBack)
+                            );
+                        }
+                    }
+                    break;
+                } catch (RegionSplitException | DingoClientException.InvalidRouteTableException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    getService = true;
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
             }
-            if (response.getTxnResult() != null && !response.getTxnResult().isEmpty()) {
-                LogUtils.error(log, "txnPessimisticLockRollback txnResult:{}", response.getTxnResult().toString());
+            if (response != null && response.getTxnResult() != null && !response.getTxnResult().isEmpty()) {
+                LogUtils.error(log, "txnPessimisticLockRollback txnResult:{}",
+                    response.getTxnResult().toString());
                 for (TxnResultInfo txnResultInfo : response.getTxnResult()) {
                     LockInfo lockInfo = txnResultInfo.getLocked();
                     if (lockInfo != null && lockInfo.getLockTs() == startTs && lockInfo.getLockType() != Op.Lock) {
@@ -862,6 +952,77 @@ public class TransactionStoreInstance {
         }
     }
 
+    public void txnResolveLockNew(TxnResolveLock txnResolveLock, long startTs, String funName) {
+        long start = System.currentTimeMillis();
+        Integer retry = io.dingodb.common.util.Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class),
+            __ -> __,
+            () -> 30
+        );
+        try {
+            TxnResolveLockResponse txnResolveLockResponse;
+            boolean getService = false;
+            while (retry-- > 0) {
+                try {
+                    if (indexService != null) {
+                        if (getService) {
+                            txnResolveLockResponse = Services.indexRegionService(
+                                    Configuration.coordinatorSet(),
+                                    txnResolveLock.getKeys().get(0),
+                                    30)
+                                .txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
+                        } else {
+                            txnResolveLockResponse = indexService.txnResolveLock(
+                                txnResolveLock.getStartTs(),
+                                MAPPER.resolveTxnTo(txnResolveLock)
+                            );
+                        }
+                    } else if (documentService != null) {
+                        if (getService) {
+                            txnResolveLockResponse = Services.documentRegionService(
+                                    Configuration.coordinatorSet(),
+                                    txnResolveLock.getKeys().get(0),
+                                    30)
+                                .txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
+                        } else {
+                            txnResolveLockResponse = documentService.txnResolveLock(
+                                txnResolveLock.getStartTs(),
+                                MAPPER.resolveTxnTo(txnResolveLock)
+                            );
+                        }
+                    } else {
+                        if (getService) {
+                            txnResolveLockResponse = Services.storeRegionService(
+                                    Configuration.coordinatorSet(),
+                                    txnResolveLock.getKeys().get(0),
+                                    30)
+                                .txnResolveLock(txnResolveLock.getStartTs(), MAPPER.resolveTxnTo(txnResolveLock));
+                        } else {
+                            txnResolveLockResponse = storeService.txnResolveLock(
+                                txnResolveLock.getStartTs(),
+                                MAPPER.resolveTxnTo(txnResolveLock)
+                            );
+                        }
+                    }
+                    LogUtils.debug(log,
+                        "startTs:{}, {} txnResolveLockResponse: {}", startTs,
+                        funName, txnResolveLockResponse);
+                } catch (RegionSplitException | DingoClientException.InvalidRouteTableException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    getService = true;
+                }
+            }
+        } finally {
+            long sub = System.currentTimeMillis() - start;
+            DingoMetrics.timer("txnResolveLockRpc").update(sub, TimeUnit.MILLISECONDS);
+        }
+    }
+
     private int recordResolvingLocks(List<LockInfo> locks, long callerStartTS) {
         List<LockInfo> resolving = new ArrayList<>(locks);
         resolvingConcurrency.merge(callerStartTS, 1, Integer::sum);
@@ -922,22 +1083,27 @@ public class TransactionStoreInstance {
             if (opts.isForRead()) {
                 // Asynchronous read lock resolution
                 // resolveLock store commit
-                TxnResolveLock resolveLockRequest = TxnResolveLock.builder()
-                    .isolationLevel(IsolationLevel.of(opts.getIsolationLevel()))
-                    .startTs(lock.getLockTs())
-                    .commitTs(status.getCommitTs())
-                    .keys(singletonList(lock.getKey()))
-                    .build();
-                TxnResolveLockResponse txnResolveLockResponse = txnResolveLock(resolveLockRequest);
-                LogUtils.debug(log,
-                    "startTs:{}, {} txnResolveLockResponse: {}", opts.getCallerStartTS(),
-                    opts.getFunName(), txnResolveLockResponse);
+                Executors.execute("for-read-async-resolve-lock" + opts.getCallerStartTS(), () -> {
+                    try {
+                        TxnResolveLock resolveLockRequest = TxnResolveLock.builder()
+                            .isolationLevel(IsolationLevel.of(opts.getIsolationLevel()))
+                            .startTs(lock.getLockTs())
+                            .commitTs(status.getCommitTs())
+                            .keys(singletonList(lock.getKey()))
+                            .build();
+                        txnResolveLockNew(resolveLockRequest, opts.getCallerStartTS(), opts.getFunName());
+                        LogUtils.info(log, "Async resolveAsyncCommitLock end for read");
+                    } catch (Exception e) {
+                        LogUtils.error(log, "Async resolve lock failed for read, startTS:"
+                            + opts.getCallerStartTS(), e);
+                    }
+                });
                 ResolveLockStatus resolveLockStatus = ResolveLockStatus.ROLLBACK;
                 if (status.getCommitTs() > 0) {
                     resolveLockStatus = ResolveLockStatus.COMMIT;
                 }
                 status.setResolveLockStatus(resolveLockStatus);
-                LogUtils.info(log,
+                LogUtils.debug(log,
                     "startTs:{}, {} txnResolveLock end status: {}", opts.getCallerStartTS(),
                     opts.getFunName(), resolveLockStatus);
             } else {
@@ -948,10 +1114,7 @@ public class TransactionStoreInstance {
                     .commitTs(status.getCommitTs())
                     .keys(singletonList(lock.getKey()))
                     .build();
-                TxnResolveLockResponse txnResolveLockResponse = txnResolveLock(resolveLockRequest);
-                LogUtils.debug(log,
-                    "startTs:{}, {} txnResolveLockResponse: {}", opts.getCallerStartTS(),
-                    opts.getFunName(), txnResolveLockResponse);
+                txnResolveLockNew(resolveLockRequest, opts.getCallerStartTS(), opts.getFunName());
                 ResolveLockStatus resolveLockStatus = ResolveLockStatus.ROLLBACK;
                 if (status.getCommitTs() > 0) {
                     resolveLockStatus = ResolveLockStatus.COMMIT;
@@ -1073,7 +1236,7 @@ public class TransactionStoreInstance {
 
             ResolveLockResult result = resolveLocksWithOpts(opts);
 
-            if (result.getIgnoreLocks() != null) {
+            if (result.getIgnoreLocks() != null && !result.getIgnoreLocks().isEmpty()) {
                 resolvedLocks.addAll(result.getIgnoreLocks());
             }
 
