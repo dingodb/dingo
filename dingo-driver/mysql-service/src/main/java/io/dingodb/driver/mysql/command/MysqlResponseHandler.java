@@ -164,8 +164,8 @@ public final class MysqlResponseHandler {
             if (!stream) {
                 resultSet.close();
             }
-            return stream;
         }
+        return stream;
     }
 
     private static Boolean handlerRowPacket(
