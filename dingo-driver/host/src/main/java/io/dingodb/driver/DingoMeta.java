@@ -722,7 +722,7 @@ public class DingoMeta extends MetaImpl {
                 throw ExceptionUtils.toRuntime(e);
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            if (transaction != null) {
+            if (transaction != null && !hasNext) {
                 if (StringUtil.isEmpty(((DingoConnection) connection).getContext().getOption("sql_log"))) {
                     String tmpSql = signature.sql;
                     if (signature.sql != null && signature.sql.length() > 1200) {

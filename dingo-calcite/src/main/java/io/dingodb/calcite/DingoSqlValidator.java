@@ -374,10 +374,10 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                     continue;
                 }
 
-                if(sourceType.getSqlTypeName() == SqlTypeName.VARCHAR &&
-                    (targetType.getSqlTypeName() == SqlTypeName.TIME ||
-                     targetType.getSqlTypeName() == SqlTypeName.TIMESTAMP ||
-                     targetType.getSqlTypeName() == SqlTypeName.DATE)) {
+                if (sourceType.getSqlTypeName() == SqlTypeName.VARCHAR
+                    && (targetType.getSqlTypeName() == SqlTypeName.TIME
+                    || targetType.getSqlTypeName() == SqlTypeName.TIMESTAMP
+                    || targetType.getSqlTypeName() == SqlTypeName.DATE)) {
                     continue;
                 }
 

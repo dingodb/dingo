@@ -2628,15 +2628,21 @@ public class DdlWorker {
                 Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
                 String createTableWithData = globalVariables.getOrDefault("create_table_with_data", "on");
                 if ("on".equalsIgnoreCase(createTableWithData)) {
-                    sql = "insert into %s.%s " + sql;
-                    sql = String.format(sql, job.getSchemaName(), job.getTableName());
-                    LogUtils.info(log, "create as table sql:{}", sql);
                     try {
+                        String prefix = String.format("insert into %s.%s ", job.getSchemaName(), job.getTableName());
+                        sql = prefix + sql;
+                        LogUtils.info(log, "create as table sql:{}", sql);
                         long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2);
                         job.setRowCount(updateCount);
                     } catch (Exception e) {
+                        LogUtils.error(log, e.getMessage(), e);
                         MetaService.root().dropTable(job.getSchemaId(), job.getTableId(), job.getId());
+                        ActionType originType = job.getActionType();
+                        job.setActionType(ActionType.ActionDropTable);
+                        Pair<Long, String> res = updateSchemaVersion(dc, job);
+                        job.setActionType(originType);
                         job.setDingoErr(DingoErrUtil.newInternalErr(e.getMessage()));
+                        DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
                         return Pair.of(0L, job.getDingoErr().errorMsg);
                     }
                 }

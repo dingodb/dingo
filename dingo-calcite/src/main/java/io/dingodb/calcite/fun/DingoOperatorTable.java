@@ -508,8 +508,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             HexFun.NAME,
             ReturnTypes.explicit(SqlTypeName.VARCHAR),
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING,
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.ANY,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
         registerFunction(

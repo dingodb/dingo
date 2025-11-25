@@ -111,6 +111,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.calcite.sql.validate.SqlValidatorImpl.IMPLICIT_COL_NAME;
 
 public class DingoSqlToRelConverter extends SqlToRelConverter {
 
@@ -177,6 +178,9 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
             Objects.requireNonNull(validator, "validator").getValidatedNodeType(call);
         assert targetRowType != null;
         RelNode sourceRel = convertQueryRecursive(call.getSource(), true, targetRowType).project();
+        if (sourceRel instanceof LogicalProject && call.getSource() instanceof SqlSelect) {
+            sourceRel = ignoreImplicitCol((LogicalProject) sourceRel);
+        }
         RelNode messageRel = convertColumnList(call, sourceRel);
         final List<String> targetColumnNames = new ArrayList<>();
         final List<RexNode> rexNodeSourceExpressionList = new ArrayList<>();

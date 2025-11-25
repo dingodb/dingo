@@ -23,6 +23,7 @@ import io.dingodb.expr.runtime.op.UnaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 
 public class HexFun extends UnaryOp {
     public static final String NAME = "hex";
@@ -33,7 +34,20 @@ public class HexFun extends UnaryOp {
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value, ExprConfig config) {
-        return toHex(value.toString().getBytes());
+        if (value instanceof Double) {
+            return Double.toHexString((Double) value).toUpperCase();
+        } else if (value instanceof Float) {
+            return Float.toHexString((Float) value).toUpperCase();
+        } else if (value instanceof BigDecimal) {
+            BigDecimal valueDecimal = (BigDecimal) value;
+            return valueDecimal.toBigInteger().toString(16).toUpperCase();
+        } else if (value instanceof Integer) {
+            return Integer.toHexString((Integer) value).toUpperCase();
+        } else if (value instanceof Long) {
+            return Long.toHexString((Long) value).toUpperCase();
+        } else {
+            return toHex(value.toString().getBytes()).toUpperCase();
+        }
     }
 
     @Override
@@ -49,7 +63,7 @@ public class HexFun extends UnaryOp {
             byte[] var2 = bytes;
             int var3 = bytes.length;
 
-            for(int var4 = 0; var4 < var3; ++var4) {
+            for (int var4 = 0; var4 < var3; ++var4) {
                 byte b = var2[var4];
                 stringBuilder.append(String.format("%02X", b));
             }
