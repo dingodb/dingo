@@ -449,24 +449,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .filter(DingoSqlColumn::isPrimaryKey)
                 .map(column -> column.name.getSimple())
                 .collect(Collectors.toCollection(ArrayList::new)));
-        if (pks.isEmpty()) {
-            pks = create.columnList.stream()
-                .filter(SqlKeyConstraint.class::isInstance)
-                .map(SqlKeyConstraint.class::cast)
-                .filter(constraint -> constraint.getOperator().getKind() == SqlKind.UNIQUE)
-                .findFirst()
-                .map(key -> {
-                    DingoSqlKeyConstraint sqlKeyConstraint = (DingoSqlKeyConstraint) key;
-                    sqlKeyConstraint.setUsePrimary(true);
-                    return  (SqlNodeList) sqlKeyConstraint.getOperandList().get(1);
-                }).map(sqlNodes -> sqlNodes.getList().stream()
-                    .filter(Objects::nonNull)
-                    .map(SqlIdentifier.class::cast)
-                    .map(SqlIdentifier::getSimple)
-                    .collect(Collectors.toCollection(ArrayList::new))
-                ).orElseGet(ArrayList::new);
-
-        }
 
         SqlValidator validator = new ContextSqlValidator(context, true);
 
@@ -2347,13 +2329,6 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         assert create.columnList != null;
         List<IndexDefinition> tableDefList = create.columnList.stream()
             .filter(col -> col.getKind() == SqlKind.UNIQUE)
-            .filter(col -> {
-                if (col instanceof DingoSqlKeyConstraint) {
-                    DingoSqlKeyConstraint keyConstraint = (DingoSqlKeyConstraint) col;
-                    return !keyConstraint.isUsePrimary();
-                }
-                return false;
-            })
             .map(col -> fromSqlUniqueDeclaration((SqlKeyConstraint) col, tableDefinition))
             .collect(Collectors.toCollection(ArrayList::new));
         tableDefList.addAll(create.columnList.stream()

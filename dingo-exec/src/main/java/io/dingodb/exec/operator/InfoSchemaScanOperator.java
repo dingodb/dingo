@@ -1655,11 +1655,6 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
     }
 
     private static Iterator<Object[]> dingoProcessList(String user, String host, CommonId txnId) {
-        String txnIdStr = "";
-        if (txnId != null) {
-            txnIdStr = txnId.toString();
-        }
-        final String txnIdStrFinal = txnIdStr;
         List<DingoSqlAccessEnum> accessTypes = new ArrayList<>();
         accessTypes.add(DingoSqlAccessEnum.PROCESS);
         boolean processPrivilege = PrivilegeVerify.verifyDuplicate(user, host, null, null,
@@ -1670,9 +1665,6 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             .filter(processInfo -> processPrivilege || processInfo.getUser().equals(user)
                 && processInfo.getHost().equals(host))
             .map(processInfo -> {
-                if (txnIdStrFinal.equalsIgnoreCase(processInfo.getTxnIdStr())) {
-                    return null;
-                }
                 return new Object[]{
                     Long.parseLong(processInfo.getId()),
                     processInfo.getUser(),
@@ -1682,7 +1674,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                     processInfo.getState(), processInfo.getInfo(),
                     processInfo.getTxnIdStr(), processInfo.getSqlId()
                 };
-            }).filter(Objects::nonNull).toList();
+            }).toList();
         return tupleList.iterator();
     }
 }

@@ -19,11 +19,13 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
 import io.dingodb.common.privilege.DingoSqlAccessEnum;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.meta.DdlService;
 import io.dingodb.verify.privilege.PrivilegeVerify;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
@@ -44,6 +46,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -72,6 +75,16 @@ public class DingoRelOptTable extends Prepare.AbstractPreparingTable {
         this.tableName = table.getNames().get(table.getNames().size() - 1);
         this.user = user;
         this.host = host;
+    }
+
+    public static DingoRelOptTable getDefault(RelOptCluster cluster) {
+        List<String> names = new ArrayList<>();
+        names.add("dingo_root");
+        names.add("mysql");
+        names.add("user");
+        DingoTable dingoTable = new DingoTable((DingoParserContext) cluster.getPlanner().getContext(),
+            names, DdlService.root().getIsLatest().getTable("mysql", "user"));
+        return new DingoRelOptTable(dingoTable, "root", "");
     }
 
     @Override

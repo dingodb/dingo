@@ -20,6 +20,7 @@ import io.dingodb.common.partition.PartitionDefinition;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -31,10 +32,6 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
 
     @Getter
     private String uniqueName;
-
-    @Getter
-    @Setter
-    private boolean usePrimary;
 
     @Getter
     int replica;
@@ -59,10 +56,15 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
         if (name != null) {
             this.uniqueName = name.getSimple();
         } else {
-            int ix = ixNu.getAndIncrement();
-            this.uniqueName = "UNIQUE" + ixNu.get();
-            if (ix > 100) {
-                ixNu.set(1);
+            SqlNode firstNode = columnList.stream().findFirst().orElse(null);
+            if (firstNode != null) {
+                this.uniqueName = firstNode.toString();
+            } else {
+                int ix = ixNu.getAndIncrement();
+                this.uniqueName = "unique" + ixNu.get();
+                if (ix > 100) {
+                    ixNu.set(1);
+                }
             }
         }
         this.partDefinition = partDefinition;
