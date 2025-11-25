@@ -41,12 +41,23 @@ public class TxnStatus {
     }
 
     public boolean isStatusCacheable() {
-        if (isCommitted()) return true;
+        if (isCommitted()) {
+            return true;
+        }
         if (ttl == 0) {
             return
                 action == Action.LockNotExistRollback ||
                 action == Action.TTLExpireRollback;
         }
         return false;
+    }
+
+    public boolean isDoneStatus() {
+        if (isCommitted() || isRolledBack()) {
+            return true;
+        }
+        return resolveLockStatus == ResolveLockStatus.PESSIMISTIC_ROLLBACK ||
+            resolveLockStatus == ResolveLockStatus.COMMIT ||
+            resolveLockStatus == ResolveLockStatus.ROLLBACK;
     }
 }

@@ -19,6 +19,7 @@ package io.dingodb.store.utils;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.util.TransactionUtil;
@@ -289,6 +290,7 @@ public final class ResolveLockUtil {
             // Asynchronous unlock
             Executors.execute("async-resolve-lock" + callerStartTS, () -> {
                 try {
+                    MdcUtils.removeTxnId();
                     ResolveLockStatus resolveLockStatus = resolveAsyncResolveData(
                         isolationLevel,
                         callerStartTS,
