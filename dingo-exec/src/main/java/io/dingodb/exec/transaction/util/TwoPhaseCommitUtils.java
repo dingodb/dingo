@@ -81,7 +81,7 @@ public final class TwoPhaseCommitUtils {
     private TwoPhaseCommitUtils() {
     }
 
-    public static CompletableFuture<Boolean> preWriteSecondKeys(@NonNull TxnPartData txnPartData,
+    public static CompletableFuture<Long> preWriteSecondKeys(@NonNull TxnPartData txnPartData,
                                                                 @Nullable TwoPhaseCommitData twoPhaseCommitData) {
         CommonId txnId = twoPhaseCommitData.getTxnId();
         CommonId tableId = txnPartData.getTableId();
@@ -93,8 +93,9 @@ public final class TwoPhaseCommitUtils {
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
         List<Mutation> mutations = new ArrayList<>();
-        Supplier<Boolean> supplier = () -> {
+        Supplier<Long> supplier = () -> {
             MdcUtils.setTxnId(txnId.toString());
+            long count = 0L;
             boolean isPrimaryKeyPre = false;
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
@@ -148,6 +149,7 @@ public final class TwoPhaseCommitUtils {
                             + Arrays.toString(primaryKey));
                     }
                     mutations.clear();
+                    count += TransactionUtil.max_pre_write_count;
                 }
             }
 
@@ -173,9 +175,10 @@ public final class TwoPhaseCommitUtils {
                         + ", txnPreWrite false, PrimaryKey:"
                         + Arrays.toString(primaryKey));
                 }
+                count += mutations.size();
             }
             MdcUtils.setTxnId(txnId.toString());
-            return true;
+            return count;
         };
         return CompletableFuture.supplyAsync(
             supplier,
@@ -194,7 +197,7 @@ public final class TwoPhaseCommitUtils {
                         throw new RuntimeException(ex);
                     }
                 }
-                return true;
+                return 0L;
             }
         );
     }
@@ -260,7 +263,7 @@ public final class TwoPhaseCommitUtils {
         return key;
     }
 
-    public static CompletableFuture<Boolean> commitSecondKeys(@NonNull TxnPartData txnPartData,
+    public static CompletableFuture<Long> commitSecondKeys(@NonNull TxnPartData txnPartData,
                                                        @Nullable TwoPhaseCommitData twoPhaseCommitData) {
         CommonId txnId = twoPhaseCommitData.getTxnId();
         CommonId tableId = txnPartData.getTableId();
@@ -271,9 +274,10 @@ public final class TwoPhaseCommitUtils {
             newPartId
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
-        Supplier<Boolean> supplier = () -> {
+        Supplier<Long> supplier = () -> {
             MdcUtils.setTxnId(txnId.toString());
             boolean isPrimaryKeyCommit = false;
+            long count = 0L;
             List<byte[]> keys = new ArrayList<>();
             while (cacheData.hasNext()) {
                 Object[] tuple = cacheData.next();
@@ -326,6 +330,7 @@ public final class TwoPhaseCommitUtils {
                         );
                     }
                     keys.clear();
+                    count += TransactionUtil.max_pre_write_count;
                 }
             }
             if (!keys.isEmpty()) {
@@ -353,8 +358,9 @@ public final class TwoPhaseCommitUtils {
                         + Arrays.toString(primaryKey)
                     );
                 }
+                count += keys.size();
             }
-            return true;
+            return count;
         };
 
         return CompletableFuture.supplyAsync(

@@ -1083,8 +1083,9 @@ public class TransactionStoreInstance {
             if (opts.isForRead()) {
                 // Asynchronous read lock resolution
                 // resolveLock store commit
-                Executors.execute("for-read-async-resolve-lock" + opts.getCallerStartTS(), () -> {
+                Executors.execute("for-read-async-resolve-lock-" + opts.getCallerStartTS(), () -> {
                     try {
+                        MdcUtils.removeTxnId();
                         TxnResolveLock resolveLockRequest = TxnResolveLock.builder()
                             .isolationLevel(IsolationLevel.of(opts.getIsolationLevel()))
                             .startTs(lock.getLockTs())
@@ -1092,7 +1093,8 @@ public class TransactionStoreInstance {
                             .keys(singletonList(lock.getKey()))
                             .build();
                         txnResolveLockNew(resolveLockRequest, opts.getCallerStartTS(), opts.getFunName());
-                        LogUtils.info(log, "Async resolveAsyncCommitLock end for read");
+                        LogUtils.info(log, "Async resolveAsyncLock end for read, lockTs:{}, commitTs:{}, " +
+                            "key:{}", lock.getLockTs(), status.getCommitTs(), Arrays.toString(lock.getKey()));
                     } catch (Exception e) {
                         LogUtils.error(log, "Async resolve lock failed for read, startTS:"
                             + opts.getCallerStartTS(), e);
@@ -1143,7 +1145,7 @@ public class TransactionStoreInstance {
 //        List<Long> canAccess = new ArrayList<>();
 
         // Locks in record parsing
-        int token = recordResolvingLocks(locks, callerStartTS);
+//        int token = recordResolvingLocks(locks, callerStartTS);
 
         try {
             for (LockInfo lock : locks) {
@@ -1162,6 +1164,9 @@ public class TransactionStoreInstance {
                             continue;
                         }
                     }
+                    if (status.isDoneStatus()) {
+                        continue;
+                    }
 
                     // Handling lock states in read scenarios
                     // Concurrent reads may occur when other regions have already been MinCommitTSPushed,
@@ -1176,7 +1181,7 @@ public class TransactionStoreInstance {
 //                    else if (status.isCommitted() && status.getCommitTs() <= callerStartTS) {
 //                        canAccess.add(lock.getLockTs());
 //                    }
-                    long msBeforeExpired = TsoService.INSTANCE.untilExpired( status.getTtl());
+                    long msBeforeExpired = TsoService.INSTANCE.untilExpired(status.getTtl());
                     txnExpire.update(msBeforeExpired);
                     if (msBeforeExpired > 0) {
                         status.setResolveLockStatus(ResolveLockStatus.LOCK_TTL);
@@ -1212,7 +1217,7 @@ public class TransactionStoreInstance {
                 .build();
 
         } finally {
-            resolveLocksDone(callerStartTS, token);
+//            resolveLocksDone(callerStartTS, token);
         }
     }
 

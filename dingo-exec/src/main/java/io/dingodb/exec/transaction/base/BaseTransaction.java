@@ -431,12 +431,13 @@ public abstract class BaseTransaction implements ITransaction {
                         LogUtils.info(log, "{} Parallel PreWriteKey, PrimaryKey is {}",
                             transactionOf(), Arrays.toString(primaryKey));
                         checkContinue();
-                        parallelPreWriteSecondKeys(twoPhaseCommitData);
+                        long count = parallelPreWriteSecondKeys(twoPhaseCommitData);
                         if (twoPhaseCommitData.getUseAsyncCommit().get()) {
                             commitTs = twoPhaseCommitData.getMinCommitTs().get();
                             // todo calculateMaxCommitTS and checkSchemaValid
                         }
-                        LogUtils.info(log, "{} Parallel PreWriteKey End", transactionOf());
+                        LogUtils.info(log, "{} Parallel PreWriteKey End, PreWrite Count:{}",
+                            transactionOf(), count);
                         this.status = TransactionStatus.PARALLEL_PRE_WRITE_END;
                         commitProfile.endParallelPreWrite();
                     } finally {
@@ -480,17 +481,18 @@ public abstract class BaseTransaction implements ITransaction {
                             }
                             // Async Commit PreWriteSecondKeys
                             LogUtils.info(log, "{} Async Commit Start PreWriteSecondKeys", transactionOf());
-                            parallelPreWriteSecondKeys(twoPhaseCommitData);
+                            long count = parallelPreWriteSecondKeys(twoPhaseCommitData);
                             if (twoPhaseCommitData.getUseAsyncCommit().get()) {
                                 commitTs = twoPhaseCommitData.getMinCommitTs().get();
                                 // todo calculateMaxCommitTS and checkSchemaValid
                             }
-                            LogUtils.info(log, "{} Async Commit PreWriteSecondKeys End", transactionOf());
+                            LogUtils.info(log, "{} Async Commit PreWriteSecondKeys End, Count:{}",
+                                transactionOf(), count);
                         } else {
-                            LogUtils.info(log, "{} start parallelPreWrite", transactionOf());
+                            LogUtils.info(log, "{} 2PC Start ParallelPreWrite", transactionOf());
                             twoPhaseCommitData.getUseAsyncCommit().set(false);
-                            parallelPreWriteSecondKeys(twoPhaseCommitData);
-                            LogUtils.info(log, "{} parallelPreWrite end", transactionOf());
+                            long count = parallelPreWriteSecondKeys(twoPhaseCommitData);
+                            LogUtils.info(log, "{} 2PC ParallelPreWrite End, Count:{}", transactionOf(), count);
                         }
                     }
                     commitProfile.endPreWriteSecond();
@@ -582,7 +584,7 @@ public abstract class BaseTransaction implements ITransaction {
                     rollback(jobManager);
                     throw new RuntimeException(txnId + "The transaction has been canceled");
                 }
-                LogUtils.debug(log, "{} Start CommitPrimaryKey", transactionOf());
+                LogUtils.debug(log, "{} 2PC Start CommitPrimaryKey", transactionOf());
                 // 4、get commit_ts 、CommitPrimaryKey
                 this.commitTs = TransactionManager.getCommitTs();
                 boolean result = commitPrimaryKey(cacheToObject);
@@ -596,17 +598,19 @@ public abstract class BaseTransaction implements ITransaction {
                         + Arrays.toString(primaryKey));
                 }
                 this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
-                LogUtils.info(log, "{} CommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
+                LogUtils.info(log, "{} 2PC CommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
                 CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
                     () -> {
                         if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
-                            LogUtils.info(log, "{} crossNodeCommitJobRun", transactionOf());
+                            LogUtils.info(log, "{} 2PC CrossNodeCommitJobRun", transactionOf());
                             crossNodeCommitJobRun(jobManager, currentLocation);
                         } else {
-                            LogUtils.info(log, "{} parallelCommitJobRun", transactionOf());
+                            LogUtils.info(log, "{} 2PC ParallelCommitJobRun", transactionOf());
                             twoPhaseCommitData.setPrimaryKey(cacheToObject.getMutation().getKey());
                             twoPhaseCommitData.setCommitTs(commitTs);
-                            parallelCommitJobRun(twoPhaseCommitData);
+                            long count = parallelCommitJobRun(twoPhaseCommitData) + 1;
+                            LogUtils.debug(log, "{} 2PC ParallelCommit End, CommitTs:{}, Count:{}",
+                                transactionOf(), commitTs, count);
                         }
                     },
                     Executors.executor("exec-txnCommit")
@@ -715,16 +719,19 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void parallelPreWriteSecondKeys(TwoPhaseCommitData twoPhaseCommitData) {
+    private long parallelPreWriteSecondKeys(TwoPhaseCommitData twoPhaseCommitData) {
         try {
-            Set<CompletableFuture<Boolean>> futures = new HashSet<>();
+            Set<CompletableFuture<Long>> futures = new HashSet<>();
             for (TxnPartData txnPartData: partDataMap.keySet()) {
-                CompletableFuture<Boolean> future = TwoPhaseCommitUtils.preWriteSecondKeys(txnPartData, twoPhaseCommitData);
+                CompletableFuture<Long> future = TwoPhaseCommitUtils.preWriteSecondKeys(txnPartData, twoPhaseCommitData);
                 futures.add(future);
             }
             if (!futures.isEmpty()) {
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             }
+            return futures.stream()
+                .mapToLong(CompletableFuture::join)
+                .sum();
         } catch (CompletionException exception) {
             LogUtils.error(log, exception.getCause().getMessage(), exception.getCause());
             if (exception.getCause() instanceof WriteConflictException) {
@@ -829,6 +836,7 @@ public abstract class BaseTransaction implements ITransaction {
     }
 
     private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData, long preWriteStart) {
+        long count = 0L;
         try {
             MdcUtils.setTxnId(txnId.toString());
             if (transactionConfig.isParallelCommit()) {
@@ -842,9 +850,7 @@ public abstract class BaseTransaction implements ITransaction {
                         throw new RuntimeException(e);
                     }
                 }
-                partDataMap.keySet().parallelStream()
-                    .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
-                    .forEach(future -> future.join());
+                count = parallelCommitJobRun(twoPhaseCommitData);
                 commitProfile.endParallelCommit();
             } else {
                 // CommitPrimaryKey
@@ -860,6 +866,7 @@ public abstract class BaseTransaction implements ITransaction {
                 this.status = TransactionStatus.COMMIT_PRIMARY_KEY;
                 twoPhaseCommitData.setPrimaryKey(primaryKey);
                 twoPhaseCommitData.setCommitTs(commitTs);
+                count++;
                 LogUtils.info(log, "{} AsyncCommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
                 if (transactionConfig.isAsyncCommitSleep()) {
                     try {
@@ -868,29 +875,36 @@ public abstract class BaseTransaction implements ITransaction {
                         throw new RuntimeException(e);
                     }
                 }
-                partDataMap.keySet().parallelStream()
-                    .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
-                    .forEach(future -> future.join());
+                count += parallelCommitJobRun(twoPhaseCommitData);
                 commitProfile.endCommitSecond();
             }
             this.status = TransactionStatus.COMMIT;
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
         } finally {
-            LogUtils.info(log, "{} Async Commit End commit_ts:{}, Status:{}, Cost:{}ms", transactionOf(),
-                commitTs, status, (System.currentTimeMillis() - preWriteStart));
+            LogUtils.info(log, "{} Async Commit End commit_ts:{}, Status:{}, Count:{} Cost:{}ms",
+                transactionOf(), commitTs, status, count, (System.currentTimeMillis() - preWriteStart));
             MdcUtils.removeTxnId();
         }
     }
 
-    private void parallelCommitJobRun(TwoPhaseCommitData twoPhaseCommitData) {
+    private long parallelCommitJobRun(TwoPhaseCommitData twoPhaseCommitData) {
         try {
             MdcUtils.setTxnId(txnId.toString());
-            partDataMap.keySet().parallelStream()
-                .map($ -> TwoPhaseCommitUtils.commitSecondKeys($, twoPhaseCommitData))
-                .forEach(future -> future.join());
+            Set<CompletableFuture<Long>> futures = new HashSet<>();
+            for (TxnPartData txnPartData: partDataMap.keySet()) {
+                CompletableFuture<Long> future = TwoPhaseCommitUtils.commitSecondKeys(txnPartData, twoPhaseCommitData);
+                futures.add(future);
+            }
+            if (!futures.isEmpty()) {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            }
+            return futures.stream()
+                .mapToLong(CompletableFuture::join)
+                .sum();
         } catch (Throwable throwable) {
             LogUtils.error(log, throwable.getMessage(), throwable);
+            throw new RuntimeException(throwable.getMessage());
         } finally {
             MdcUtils.removeTxnId();
         }
