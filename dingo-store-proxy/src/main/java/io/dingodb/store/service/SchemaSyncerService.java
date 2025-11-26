@@ -119,11 +119,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
 
             long end = System.currentTimeMillis();
             long cost = end - start;
-            if (cost > 40000 && !reorg) {
-                DdlUtil.timeOutError.set(true);
-            }
-            if (cost > 50000 && !reorg) {
-                DdlUtil.timeOutError.set(false);
+            if (cost > 80000 && !reorg) {
                 LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, "
                     + "jobId:{}, latestVer:{}", jobId, latestVer);
                 return "Lock wait timeout exceeded";
