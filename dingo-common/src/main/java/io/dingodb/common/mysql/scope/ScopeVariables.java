@@ -159,10 +159,10 @@ public final class ScopeVariables {
 
     public static long getDdlWaitTimeout() {
         try {
-            String timeoutStr = executorProp.getOrDefault("ddl_timeout", "180000").toString();
+            String timeoutStr = executorProp.getOrDefault("ddl_timeout", "300000").toString();
             return Long.parseLong(timeoutStr);
         } catch (Exception e) {
-            return 180000;
+            return 300000;
         }
     }
 
@@ -269,7 +269,7 @@ public final class ScopeVariables {
 
     public static boolean ddlMdlLog() {
         try {
-            String ddlMdlLog = executorProp.getOrDefault("ddl_mdl_log", "off").toString();
+            String ddlMdlLog = executorProp.getOrDefault("ddl_mdl_log", "on").toString();
             return "on".equalsIgnoreCase(ddlMdlLog);
         } catch (Exception e) {
             return false;

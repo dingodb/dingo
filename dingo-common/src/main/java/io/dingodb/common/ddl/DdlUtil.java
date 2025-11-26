@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 
 public final class DdlUtil {
-    public static AtomicBoolean timeOutError = new AtomicBoolean(false);
     public static final String DDLGlobalSchemaVersion = "/dingo/ddl/global_schema_version";
     public static final String DDLExpSchemaVersion = "/dingo/ddl/exp_schema_version";
     public static final String DDLAllSchemaVersionsByJob = "/dingo/ddl/all_schema_by_job_versions";
