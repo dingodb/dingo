@@ -271,7 +271,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             TimeFormat1FunFactory.NAME,
-            ReturnTypes.VARCHAR_2000,
+            MySQLStandardTypeInference.VARCHAR20NULL,
             DingoInferTypes.TIME_VARCHAR1024,
             OperandTypes.or(
                 family(SqlTypeFamily.TIME, SqlTypeFamily.STRING),

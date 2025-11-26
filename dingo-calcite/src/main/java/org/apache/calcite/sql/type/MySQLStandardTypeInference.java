@@ -18,6 +18,7 @@ package org.apache.calcite.sql.type;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
@@ -172,7 +173,7 @@ public class MySQLStandardTypeInference {
                 return typeFactory.createSqlType(
                     SqlTypeName.TIMESTAMP,
                     typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIMESTAMP),
-                    scale
+                    scale, true
                 );
             } else if (SqlTypeUtil.isDate(operandType) ||
                 (SqlTypeUtil.isString(operandType) && intervalType != MySQLIntervalType.INTERVAL_DAY)) {
@@ -183,13 +184,13 @@ public class MySQLStandardTypeInference {
                     || intervalType == MySQLIntervalType.INTERVAL_WEEK) {
                     // to date
                     return typeFactory.createSqlType(
-                        SqlTypeName.DATE
+                        SqlTypeName.DATE, true
                     );
                 } else {
                     return typeFactory.createSqlType(
                         SqlTypeName.TIMESTAMP,
                         typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIMESTAMP),
-                        intervalDecimal
+                        intervalDecimal, true
                     );
                 }
             } else if (SqlTypeUtil.isTime(operandType)) {
@@ -197,7 +198,7 @@ public class MySQLStandardTypeInference {
                 return typeFactory.createSqlType(
                     SqlTypeName.TIME,
                     typeFactory.getTypeSystem().getMaxPrecision(SqlTypeName.TIME),
-                    scale
+                    scale, true
                 );
             } else {
                 return typeFactory.createSqlType(SqlTypeName.VARCHAR);
@@ -224,9 +225,9 @@ public class MySQLStandardTypeInference {
         boolean isAllString = !isAllNulls && argTypesNotNull.stream().allMatch((t) -> SqlTypeUtil.isString(t));
         boolean needStringType = !(isAllNumeric || isAllDateTime || isAllString);
 
-        returnType = needStringType ?
-            typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.VARCHAR, 2000), true) :
-            typeFactory.leastRestrictive(argTypesNotNull);
+        returnType = needStringType
+            ? typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.VARCHAR, 2000), true)
+            : typeFactory.leastRestrictive(argTypesNotNull);
         final SqlValidatorImpl validator = (SqlValidatorImpl) callBinding.getValidator();
         for (SqlNode node : nullList) {
             validator.setValidatedNodeType(node, returnType);
@@ -234,4 +235,13 @@ public class MySQLStandardTypeInference {
 
         return returnType;
     }
+
+    public static final SqlReturnTypeInference VARCHAR20NULL = new SqlReturnTypeInference() {
+
+        @Override
+        public @Nullable RelDataType inferReturnType(SqlOperatorBinding sqlOperatorBinding) {
+            RelDataType type = DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.VARCHAR, 20);
+            return DingoSqlTypeFactory.INSTANCE.createTypeWithNullability(type, true);
+        }
+    };
 }

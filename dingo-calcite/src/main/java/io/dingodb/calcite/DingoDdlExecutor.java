@@ -2102,7 +2102,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     ) {
         long incCount = tableDefinition.getColumns()
             .stream()
-            .filter(ColumnDefinition::isAutoIncrement)
+            .filter(column -> column.getState() != 2 && column.isAutoIncrement())
             .count();
         if (incCount > 1) {
             throw DINGO_RESOURCE.multiAutoInc().ex();

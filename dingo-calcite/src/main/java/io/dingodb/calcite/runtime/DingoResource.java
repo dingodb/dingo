@@ -144,7 +144,7 @@ public interface DingoResource {
     @BaseMessage("Error 9001 (45000): Not allowed to set 0 replicas")
     ExInst<DingoSqlException> notAllowedZeroReplica();
 
-    @BaseMessage("Error 9001 (45000): table definition illegal, multi auto_increment column")
+    @BaseMessage("Error 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key")
     ExInst<DingoSqlException> multiAutoInc();
 
     @BaseMessage("Error 8200 (HY000): can't drop column name with composite index covered or Primary Key covered now")
