@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
+import io.dingodb.common.type.scalar.DecimalType;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -166,7 +167,12 @@ public class ColumnDefinition {
 
     @JsonIgnore
     public DingoType getType() {
-        return DingoTypeFactory.INSTANCE.fromName(type, elementType, nullable);
+        DingoType dingoType = DingoTypeFactory.INSTANCE.fromName(type, elementType, nullable);
+        if (dingoType instanceof DecimalType) {
+            ((DecimalType) dingoType).setPrecision(precision);
+            ((DecimalType) dingoType).setScale(scale);
+        }
+        return dingoType;
     }
 
     @JsonIgnore
