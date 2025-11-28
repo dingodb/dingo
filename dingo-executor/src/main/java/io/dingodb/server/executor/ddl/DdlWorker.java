@@ -176,18 +176,13 @@ public class DdlWorker {
             LogUtils.warn(log, "[ddl] job txn rollback done, jobId:{}", job.getId());
             schemaVer = 0;
         }
-        long start = System.currentTimeMillis();
         String error = registerMDLInfo(job, schemaVer);
-        long end = System.currentTimeMillis();
-        DingoMetrics.timer("registerMDLInfo").update((end - start), TimeUnit.MILLISECONDS);
         if (error != null) {
             session.rollback();
             LogUtils.warn(log, "[ddl] registerMdlInfo failed, reason:{}, jobId:{}", error, job.getId());
             return Pair.of(0L, error);
         }
         error = updateDDLJob(job, res.getValue() != null);
-        long sub = System.currentTimeMillis() - start;
-        DingoMetrics.timer("updateDDLJob").update(sub, TimeUnit.MILLISECONDS);
         if (error != null) {
             // session rollback
             session.rollback();
@@ -217,13 +212,20 @@ public class DdlWorker {
 
     public String registerMDLInfo(DdlJob job, long ver) {
         if (ver == 0) {
+            LogUtils.error(log, "registerMdlInfo error,ver is zero, jobId:{}", job.getId());
             return null;
         }
         String ids = job.job2TableIDs();
-        DingoMetrics.counter("registerMDLInfoNone").inc();
         String sql = "insert into mysql.dingo_mdl_info (job_id, version, table_ids) values (%d, %d, %s)";
         sql = convertSql(String.format(sql, job.getId(), ver, Utils.quoteForSql(ids)));
-        return session.executeUpdate(sql);
+        try {
+            long count = session.executeUpdate1(sql);
+            LogUtils.info(log, "registerMdlInfo done, insert count:{},jobId:{}, ver:{}, ids:{}",
+                count, job.getId(), ver, ids);
+            return null;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     public String updateDDLJob(DdlJob job, boolean error) {

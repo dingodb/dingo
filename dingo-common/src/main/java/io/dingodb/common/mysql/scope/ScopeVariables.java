@@ -159,10 +159,10 @@ public final class ScopeVariables {
 
     public static long getDdlWaitTimeout() {
         try {
-            String timeoutStr = executorProp.getOrDefault("ddl_timeout", "300000").toString();
+            String timeoutStr = executorProp.getOrDefault("ddl_timeout", "180000").toString();
             return Long.parseLong(timeoutStr);
         } catch (Exception e) {
-            return 300000;
+            return 180000;
         }
     }
 

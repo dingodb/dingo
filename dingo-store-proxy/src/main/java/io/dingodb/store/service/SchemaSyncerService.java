@@ -19,7 +19,6 @@ package io.dingodb.store.service;
 import com.google.auto.service.AutoService;
 import io.dingodb.cluster.ClusterService;
 import io.dingodb.common.Location;
-import io.dingodb.common.ddl.ActionType;
 import io.dingodb.common.ddl.DdlUtil;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.store.KeyValue;
@@ -119,7 +118,7 @@ public class SchemaSyncerService implements io.dingodb.meta.SchemaSyncerService 
 
             long end = System.currentTimeMillis();
             long cost = end - start;
-            if (cost > 80000 && !reorg) {
+            if (cost > 50000 && !reorg) {
                 LogUtils.error(log, "[ddl] ownerCheckAllVersions take long time, "
                     + "jobId:{}, latestVer:{}", jobId, latestVer);
                 return "Lock wait timeout exceeded";
