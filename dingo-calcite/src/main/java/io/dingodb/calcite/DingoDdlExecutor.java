@@ -2361,9 +2361,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if (sqlKeyConstraint1.getReplica() >= 0) {
             indexDefinition.setReplica(sqlKeyConstraint1.getReplica());
         }
+        String engine = "TXN_LSM";
         if (sqlKeyConstraint1.getEngine() != null) {
-            indexDefinition.setEngine(sqlKeyConstraint1.getEngine().toUpperCase());
+            engine = sqlKeyConstraint1.getEngine().toUpperCase();
         }
+        indexDefinition.setEngine(engine);
         indexDefinition.setPartDefinition(sqlKeyConstraint1.getPartDefinition());
         validatePartitionBy(
             indexDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),

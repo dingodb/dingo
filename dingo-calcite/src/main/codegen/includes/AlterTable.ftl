@@ -293,7 +293,8 @@ SqlAlterTable addIndex(Span s, String scope, SqlIdentifier id): {
 }
 
 SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
-    final String index;
+    String index = null;
+    SqlIdentifier tmpIndex = null;
     Boolean autoIncrement = false;
     Properties properties = null;
     PartitionDefinition partitionDefinition = null;
@@ -306,8 +307,13 @@ SqlAlterTable addUniqueIndex(Span s, String scope, SqlIdentifier id): {
     String indexAlg = null;
     String indexLockOpt = null;
 } {
- <UNIQUE> [<INDEX>][<KEY>] { s.add(this); }
-    { SqlIdentifier tmpIndex = SimpleIdentifier(); index = tmpIndex.getSimple();  }
+ <UNIQUE> { s.add(this); }
+    (
+          <KEY>
+          |
+          <INDEX>
+    )?
+    ( tmpIndex = SimpleIdentifier() { index = tmpIndex.getSimple(); } | { boolean hasName = false; })
     [<SCALAR>] columnList = indexColumns()
     (
        LOOKAHEAD(2)
