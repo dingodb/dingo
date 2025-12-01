@@ -222,6 +222,7 @@ public final class ResolveLockUtil {
                 LogUtils.warn(log, "startTs:{}, {} txnResult primaryLock is null ",
                     opts.getCallerStartTS(), opts.getFunName());
             } else if (primaryLock.isUseAsyncCommit() && !opts.isForceSyncCommit()) {
+                lockTtl = primaryLock.getLockTtl();
                 if (!TsoService.INSTANCE.IsExpired(lockTtl)) {
                     status.setTtl(lockTtl);
                 }
