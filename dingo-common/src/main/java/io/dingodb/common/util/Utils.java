@@ -241,7 +241,7 @@ public final class Utils {
             Type[] dingoTypes = ((TupleType)schemaType).getTypes();
             for (int i = 0; i < dingoTypes.length; i++) {
                 if (dingoTypes[i] instanceof io.dingodb.expr.common.type.DecimalType) {
-                    if (((io.dingodb.expr.common.type.DecimalType)dingoTypes[i]).getScale() == 0) {
+                    if (((io.dingodb.expr.common.type.DecimalType)dingoTypes[i]).getScale() == 0 && tuple[i] instanceof BigDecimal) {
                         tuple[i] = ((BigDecimal)tuple[i]).setScale(0, RoundingMode.HALF_UP);
                     }
                 }

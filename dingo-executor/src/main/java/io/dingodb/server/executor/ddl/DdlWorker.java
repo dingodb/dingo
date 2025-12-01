@@ -2645,6 +2645,7 @@ public class DdlWorker {
                         job.setActionType(originType);
                         job.setDingoErr(DingoErrUtil.newInternalErr(e.getMessage()));
                         DdlContext.INSTANCE.getSchemaSyncer().ownerUpdateExpVersion(res.getKey());
+                        job.setState(JobState.jobStateCancelled);
                         return Pair.of(0L, job.getDingoErr().errorMsg);
                     }
                 }

@@ -42,7 +42,8 @@ public class HexFun extends UnaryOp {
             BigDecimal valueDecimal = (BigDecimal) value;
             return valueDecimal.toBigInteger().toString(16).toUpperCase();
         } else if (value instanceof Integer) {
-            return Integer.toHexString((Integer) value).toUpperCase();
+            Integer valInt = (Integer) value;
+            return Long.toHexString(valInt.longValue()).toUpperCase();
         } else if (value instanceof Long) {
             return Long.toHexString((Long) value).toUpperCase();
         } else {

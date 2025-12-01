@@ -123,8 +123,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(i).getName() + "'");
                         }
                     }
-                } else if(originColumns.get(i).getSqlTypeName().equalsIgnoreCase("TINYINT")) {
-                    if(tuple[i] instanceof Integer) {
+                } else if (originColumns.get(i).getSqlTypeName().equalsIgnoreCase("TINYINT")) {
+                    if (tuple[i] instanceof Integer) {
                         if (!Utils.tinyintInRange((Integer)tuple[i])) {
                             throw new DingoTypeRangeException(0, "Out of range value for column '" + originColumns.get(i).getName() + "'");
                         }

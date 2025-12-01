@@ -353,7 +353,7 @@ public class DdlJob {
             + ", dependencyId=" + dependencyId
             + ", query='" + query + '\''
             + ", version=" + version
-            + ", args=" + args
+            //+ ", args=" + args
             + ", multiSchemaInfo=" + multiSchemaInfo
             + ", priority=" + priority
             + ", seqNu=" + seqNu

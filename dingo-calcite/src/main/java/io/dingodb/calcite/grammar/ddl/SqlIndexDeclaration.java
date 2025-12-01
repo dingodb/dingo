@@ -90,6 +90,9 @@ public class SqlIndexDeclaration extends SqlCall {
                 .map(SqlIdentifier.class::cast)
                 .map(SqlIdentifier::getSimple)
                 .collect(Collectors.toCollection(ArrayList::new));
+            if (this.index == null && !this.columnList.isEmpty()) {
+                this.index = this.columnList.get(0);
+            }
         }
         if (withColumnList != null) {
             this.withColumnList = withColumnList.getList().stream()
