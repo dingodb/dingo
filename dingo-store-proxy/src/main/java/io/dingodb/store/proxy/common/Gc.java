@@ -33,15 +33,9 @@ import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.net.api.ApiRegistry;
 import io.dingodb.sdk.service.CoordinatorService;
-import io.dingodb.sdk.service.DocumentService;
-import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
-import io.dingodb.sdk.service.StoreService;
-import io.dingodb.sdk.service.entity.common.IndexParameter;
-import io.dingodb.sdk.service.entity.common.IndexType;
 import io.dingodb.sdk.service.entity.common.Location;
 import io.dingodb.sdk.service.entity.common.Region;
-import io.dingodb.sdk.service.entity.common.RegionDefinition;
 import io.dingodb.sdk.service.entity.coordinator.DropRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
@@ -60,8 +54,12 @@ import io.dingodb.sdk.service.entity.store.TxnScanLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanLockResponse;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.data.checkstatus.AsyncResolveData;
+import io.dingodb.store.api.transaction.data.resolvelock.ResolveLockStatus;
 import io.dingodb.store.api.transaction.exception.NonAsyncCommitLockException;
 import io.dingodb.store.proxy.Configuration;
+import io.dingodb.store.proxy.common.transaction.LockResolveManager;
+import io.dingodb.store.proxy.common.transaction.ResolveLocksOptions;
+import io.dingodb.store.proxy.common.transaction.TxnStatus;
 import io.dingodb.transaction.api.GcApi;
 import io.dingodb.transaction.api.GcObj;
 import io.dingodb.tso.TsoService;
@@ -71,6 +69,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -86,8 +85,16 @@ import static io.dingodb.sdk.service.entity.store.Action.TTLExpirePessimisticRol
 import static io.dingodb.sdk.service.entity.store.Action.TTLExpireRollback;
 import static io.dingodb.sdk.service.entity.store.Op.Lock;
 import static io.dingodb.store.proxy.Configuration.coordinatorSet;
+import static io.dingodb.store.utils.ResolveLockUtil.checkAllSecondaries;
 import static io.dingodb.store.utils.ResolveLockUtil.checkSecondaryAllLocks;
+import static io.dingodb.store.utils.ResolveLockUtil.commitBatchResolve;
+import static io.dingodb.store.utils.ResolveLockUtil.documentService;
+import static io.dingodb.store.utils.ResolveLockUtil.getTxnStatusFromLockForGC;
+import static io.dingodb.store.utils.ResolveLockUtil.indexRegionService;
+import static io.dingodb.store.utils.ResolveLockUtil.isDocumentRegion;
+import static io.dingodb.store.utils.ResolveLockUtil.isIndexRegion;
 import static io.dingodb.store.utils.ResolveLockUtil.resolveAsyncResolveData;
+import static io.dingodb.store.utils.ResolveLockUtil.storeRegionService;
 import static java.lang.Math.min;
 
 @Slf4j
@@ -138,7 +145,7 @@ public class Gc {
                         scanLockResponse = storeRegionService(regionId).txnScanLock(reqTs, req);
                     }
                     if (scanLockResponse.getLocks() != null && !scanLockResponse.getLocks().isEmpty()) {
-                        safeTs = resolveLock(safeTs, reqTs, scanLockResponse.getLocks(), coordinators, region);
+                        safeTs = gcBatchResolveLocks(safeTs, reqTs, scanLockResponse.getLocks(), coordinators, region);
                     }
                     if (scanLockResponse.isHasMore()) {
                         startKey = scanLockResponse.getEndKey();
@@ -257,7 +264,7 @@ public class Gc {
                         scanLockResponse = storeRegionService(regionId).txnScanLock(latestTso, req);
                     }
                     if (scanLockResponse.getLocks() != null && !scanLockResponse.getLocks().isEmpty()) {
-                        safeTs = resolveLock(safeTs, latestTso, scanLockResponse.getLocks(), coordinators, region);
+                        safeTs = gcBatchResolveLocks(safeTs, latestTso, scanLockResponse.getLocks(), coordinators, region);
                     }
                     if (scanLockResponse.isHasMore()) {
                         startKey = scanLockResponse.getEndKey();
@@ -381,7 +388,7 @@ public class Gc {
                             scanLockResponse = storeRegionService(regionId).txnScanLock(latestTso, req);
                         }
                         if (scanLockResponse.getLocks() != null && !scanLockResponse.getLocks().isEmpty()) {
-                            safeTs = resolveLock(safeTs, latestTso, scanLockResponse.getLocks(), coordinators, region);
+                            safeTs = gcBatchResolveLocks(safeTs, latestTso, scanLockResponse.getLocks(), coordinators, region);
                         }
                         if (scanLockResponse.isHasMore()) {
                             startKey = scanLockResponse.getEndKey();
@@ -484,40 +491,10 @@ public class Gc {
         return tsoService().tso();
     }
 
-    private static boolean isIndexRegion(Region region) {
-        return Optional.ofNullable(region)
-            .map(Region::getDefinition)
-            .map(RegionDefinition::getIndexParameter)
-            .map(IndexParameter::getIndexType)
-            .filter($ -> $ == IndexType.INDEX_TYPE_VECTOR)
-            .isPresent();
-    }
-
-    private static boolean isDocumentRegion(Region region) {
-        return Optional.ofNullable(region)
-            .map(Region::getDefinition)
-            .map(RegionDefinition::getIndexParameter)
-            .map(IndexParameter::getIndexType)
-            .filter($ -> $ == IndexType.INDEX_TYPE_DOCUMENT)
-            .isPresent();
-    }
-
     private static boolean enable(long reqTs) {
         Map<String,String> globalVariables = InfoSchemaService.root().getGlobalVariables();
         String enableGc = globalVariables.get(GcApi.enableKeyStr);
         return "1".equalsIgnoreCase(enableGc);
-    }
-
-    private static StoreService storeRegionService(long regionId) {
-        return Services.storeRegionService(Configuration.coordinatorSet(), regionId, 30);
-    }
-
-    private static IndexService indexRegionService(long regionId) {
-        return Services.indexRegionService(Configuration.coordinatorSet(), regionId, 30);
-    }
-
-    private static DocumentService documentService(long regionId) {
-        return Services.documentRegionService(Configuration.coordinatorSet(), regionId, 30);
     }
 
     private static boolean resolve(
@@ -580,6 +557,122 @@ public class Gc {
         }
         return storeRegionService(region.getId()).txnPessimisticRollback(reqTs, req).getTxnResult() == null;
     }
+
+    private static long gcBatchResolveLocks(
+        long safeTs, long reqTs, List<LockInfo> locks, Set<Location> coordinators, Region region
+    ) {
+        long result = safeTs;
+        if (locks.isEmpty()) {
+            return result;
+        }
+        // txnId -> commitTs
+        Map<Long, Long> txnInfos = new HashMap<>();
+        boolean forceSyncCommit = false;
+        ResolveLocksOptions opts = ResolveLocksOptions.builder()
+            .callerStartTS(safeTs)
+            .locks(locks)
+            .forRead(false)
+            .lite(true)
+            .isolationLevel(IsolationLevel.SnapshotIsolation.getCode())
+            .funName("forGc")
+            .rollbackIfNotExist(true)
+            .build();
+        for (LockInfo lock : locks) {
+            if (txnInfos.containsKey(lock.getLockTs())) {
+                continue;
+            }
+            try {
+                result = resolveLockConflict(
+                    reqTs,
+                    coordinators,
+                    region,
+                    result,
+                    txnInfos,
+                    forceSyncCommit,
+                    opts,
+                    lock
+                );
+            } catch (NonAsyncCommitLockException e) {
+                opts.setForceSyncCommit(true);
+                result = resolveLockConflict(
+                    reqTs,
+                    coordinators,
+                    region,
+                    result,
+                    txnInfos,
+                    forceSyncCommit,
+                    opts,
+                    lock
+                );
+            } catch (Exception e) {
+                LogUtils.error(log, "BatchResolveLocks error for lock: {}", lock, e);
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+        if (!commitBatchResolve(reqTs, txnInfos, region)) {
+            result = txnInfos.keySet().stream()
+                .mapToLong(Long::longValue)
+                .reduce(result, Math::min);
+        }
+        return result;
+    }
+
+    private static long resolveLockConflict(long reqTs,
+                                            Set<Location> coordinators,
+                                            Region region,
+                                            long result,
+                                            Map<Long, Long> txnInfos,
+                                            boolean forceSyncCommit,
+                                            ResolveLocksOptions opts,
+                                            LockInfo lock) {
+        // Use MaxLong as the current TS to force a transaction rollback.
+        TxnStatus status = getTxnStatusFromLockForGC(lock, Long.MAX_VALUE, opts);
+
+        // Handling pessimistic locking - Direct rollback
+        if (isPessimisticRollbackStatus(lock, status.getAction())) {
+            if (!pessimisticRollback(reqTs, lock, coordinators, region)) {
+                result = min(result, lock.getLockTs());
+            } else {
+                status.setResolveLockStatus(ResolveLockStatus.PESSIMISTIC_ROLLBACK);
+            }
+        } else if (status.getPrimaryLock() != null && status.getPrimaryLock().isUseAsyncCommit() && !forceSyncCommit) {
+            // Handling asynchronous transaction commits
+            long lockTtl = status.getPrimaryLock().getLockTtl();
+            if (lockTtl > 0 && !tsoService().IsExpired(lockTtl)) {
+                LogUtils.warn(log, "reqTs:{}, lockTs:{} useAsyncCommit lockTtl not IsExpired, " +
+                    "lockTtl:{}", reqTs, status.getPrimaryLock().getLockTs(), lockTtl);
+                result = min(result, lock.getLockTs());
+            } else {
+                AsyncResolveData asyncResolveData = checkAllSecondaries(opts, lock, status);
+                txnInfos.put(lock.getLockTs(), asyncResolveData.getCommitTs());
+                LogUtils.info(log, "reqTs:{}, asyncResolveData:{}", reqTs, asyncResolveData);
+                status.setCommitTs(asyncResolveData.getCommitTs());
+                if (status.isStatusCacheable()) {
+                    LockResolveManager.saveResolved(lock.getLockTs(), status);
+                }
+                if (asyncResolveData.getCommitTs() > 0) {
+                    status.setResolveLockStatus(ResolveLockStatus.COMMIT);
+                } else {
+                    status.setResolveLockStatus(ResolveLockStatus.ROLLBACK);
+                }
+            }
+        } else if (status.getTtl() > 0) {
+            LogUtils.error(log, "BatchResolveLocks fail to clean locks, ttl still exists for txn:{}",
+                lock.getLockTs());
+            result = min(result, lock.getLockTs());
+        } else if (status.isRolledBack() || status.isCommitted()) {
+            txnInfos.put(lock.getLockTs(), status.getCommitTs());
+            if (status.getCommitTs() > 0) {
+                status.setResolveLockStatus(ResolveLockStatus.COMMIT);
+            } else {
+                status.setResolveLockStatus(ResolveLockStatus.ROLLBACK);
+            }
+        } else {
+            result = min(result, lock.getLockTs());
+        }
+        return result;
+    }
+
 
     private static long resolveLock(
         long safeTs, long reqTs, List<LockInfo> locks, Set<Location> coordinators, Region region
