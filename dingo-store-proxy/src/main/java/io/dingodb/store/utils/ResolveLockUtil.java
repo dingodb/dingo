@@ -23,13 +23,21 @@ import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.transaction.util.TransactionUtil;
+import io.dingodb.sdk.service.DocumentService;
+import io.dingodb.sdk.service.IndexService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.StoreService;
+import io.dingodb.sdk.service.entity.common.IndexParameter;
+import io.dingodb.sdk.service.entity.common.IndexType;
+import io.dingodb.sdk.service.entity.common.Region;
+import io.dingodb.sdk.service.entity.common.RegionDefinition;
 import io.dingodb.sdk.service.entity.store.Action;
 import io.dingodb.sdk.service.entity.store.LockInfo;
 import io.dingodb.sdk.service.entity.store.Op;
 import io.dingodb.sdk.service.entity.store.TxnCheckSecondaryLocksResponse;
 import io.dingodb.sdk.service.entity.store.TxnCheckTxnStatusResponse;
+import io.dingodb.sdk.service.entity.store.TxnInfo;
+import io.dingodb.sdk.service.entity.store.TxnResolveLockRequest;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockResponse;
 import io.dingodb.sdk.service.entity.store.TxnResultInfo;
 import io.dingodb.sdk.service.entity.store.WriteConflict;
@@ -50,6 +58,7 @@ import io.dingodb.store.proxy.common.transaction.ResolveLocksOptions;
 import io.dingodb.store.proxy.common.transaction.TxnStatus;
 import io.dingodb.store.proxy.service.TsoService;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,6 +145,52 @@ public final class ResolveLockUtil {
         return lockInfos;
     }
 
+    public static TxnStatus getTxnStatusFromLockForGC(LockInfo lock, long currentTs, ResolveLocksOptions opts) {
+        int retryCount = 0;
+        // Reduce the number of retries in GC scenarios
+        final int maxRetry = 5;
+
+        while (retryCount < maxRetry) {
+            try {
+                // `rollbackIfNotExist = true` forces a rollback of a non-existent lock.
+                return getTxnStatus(
+                    lock.getLockTs(),
+                    lock.getPrimaryLock(),
+                    currentTs,
+                    opts
+                );
+            } catch (Exception e) {
+                if (isTxnNotFoundError(e)) {
+                    LogUtils.warn(log, "Txn not found in GC, lock:{}, error:{}", lock, e.getMessage());
+                    // In a GC scenario, if a transaction does not exist, it is assumed that a rollback is necessary.
+                    if (lock.getLockType() == Op.Lock) {
+                        // Pessimistic locking directly returns to the state that needs to be rolled back.
+                        return TxnStatus.builder()
+                            .ttl(0L)
+                            .commitTs(0L)
+                            .action(Action.TTLExpireRollback)
+                            .build();
+                    }
+                    // For other lock types, if the transaction does not exist, it is considered a rollback.
+                    return TxnStatus.builder()
+                        .ttl(0L)
+                        .commitTs(0L)
+                        .action(Action.TTLExpireRollback)
+                        .build();
+                }
+                // Other errors are backed up.
+                if (retryCount < maxRetry - 1) {
+                    doBackoff(retryCount, "getTxnStatusFromLockForGC");
+                    retryCount++;
+                    continue;
+                }
+                LogUtils.error(log, "Failed to get txn status for GC after retries, lock:{}", lock, e);
+                throw e;
+            }
+        }
+        throw new RuntimeException("Failed to get txn status for GC");
+    }
+
     public static TxnStatus getTxnStatusFromLock(LockInfo lock, long currentTS, ResolveLocksOptions opts) {
         int retryCount = 0;
         final int maxRetry = 60;
@@ -198,8 +253,8 @@ public final class ResolveLockUtil {
             .build();
 
         TxnCheckTxnStatusResponse response = txnCheckTxnStatus(checkRequest);
-        LogUtils.info(log, "startTs:{}, {} txnCheckStatus : {}",
-            opts.getCallerStartTS(), opts.getFunName(), response);
+        LogUtils.info(log, "startTs:{}, txnID:{}, {} txnCheckStatus : {}",
+            opts.getCallerStartTS(), txnID, opts.getFunName(), response);
         LockInfo primaryLock;
         long lockTtl = response.getLockTtl();
         TxnStatus status = TxnStatus.builder()
@@ -258,30 +313,16 @@ public final class ResolveLockUtil {
 
     public static TxnStatus resolveAsyncCommitLock(ResolveLocksOptions opts, LockInfo lockInfo,
                                                     TxnStatus status) {
-        List<byte[]> secondaries = status.getPrimaryLock().getSecondaries();
-        int isolationLevel = opts.getIsolationLevel();
         long callerStartTS = opts.getCallerStartTS();
+        int isolationLevel = opts.getIsolationLevel();
         String funName = opts.getFunName();
-        AsyncResolveData asyncResolveData = AsyncResolveData.builder()
-            .missingLock(false)
-            .commitTs(lockInfo.getMinCommitTs())
-            .keys(new HashSet<>(secondaries))
-            .build();
-        // checkSecondaryLocks and asyncResolveData add keys
-        checkSecondaryAllLocks(
-            isolationLevel,
-            callerStartTS,
-            lockInfo,
-            secondaries,
-            asyncResolveData
-        );
+        AsyncResolveData asyncResolveData = checkAllSecondaries(opts, lockInfo, status);
+        LogUtils.info(log, "callerStartTS:{}, asyncResolveData:{}", callerStartTS, asyncResolveData);
         status.setCommitTs(asyncResolveData.getCommitTs());
         if (status.isStatusCacheable()) {
             LockResolveManager.saveResolved(lockInfo.getLockTs(), status);
         }
 
-        asyncResolveData.getKeys().add(lockInfo.getPrimaryLock());
-        LogUtils.info(log, "callerStartTS:{}, asyncResolveData:{}", callerStartTS, asyncResolveData);
         Integer retry = io.dingodb.common.util.Optional.mapOrGet(
             DingoConfiguration.instance().find("retry", int.class),
             __ -> __,
@@ -319,6 +360,107 @@ public final class ResolveLockUtil {
             LogUtils.info(log, "ResolveAsyncCommitLock end status:{}", resolveLockStatus);
         }
         return status;
+    }
+
+    @NonNull
+    public static AsyncResolveData checkAllSecondaries(ResolveLocksOptions opts, LockInfo lockInfo, TxnStatus status) {
+        List<byte[]> secondaries = status.getPrimaryLock().getSecondaries();
+        AsyncResolveData asyncResolveData = AsyncResolveData.builder()
+            .missingLock(false)
+            .commitTs(lockInfo.getMinCommitTs())
+            .keys(new HashSet<>(secondaries))
+            .build();
+        // checkSecondaryLocks and asyncResolveData add keys
+        checkSecondaryAllLocks(
+            opts.getIsolationLevel(),
+            opts.getCallerStartTS(),
+            lockInfo,
+            secondaries,
+            asyncResolveData
+        );
+        asyncResolveData.getKeys().add(lockInfo.getPrimaryLock());
+        return asyncResolveData;
+    }
+
+    public static boolean commitBatchResolve(long gcStartTs, Map<Long, Long> txnInfos, Region region) {
+        if (txnInfos.isEmpty()) {
+            return true;
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            List<TxnInfo> resolveInfos = new ArrayList<>();
+            for (Map.Entry<Long, Long> entry : txnInfos.entrySet()) {
+                resolveInfos.add(TxnInfo.builder()
+                    .startTs(entry.getKey())
+                    .commitTs(entry.getValue())
+                    .build());
+            }
+
+            LogUtils.debug(log, "Committing batch resolve, txnCount:{}", resolveInfos.size());
+
+            TxnResolveLockRequest batchRequest = TxnResolveLockRequest.builder()
+                .txnInfos(resolveInfos)
+                .build();
+
+            TxnResolveLockResponse response = batchResolve(gcStartTs, region, batchRequest);
+
+            boolean success = (response.getTxnResult() == null);
+
+            if (!success) {
+                LogUtils.error(log, "Batch resolve failed with txn result: {}", response.getTxnResult());
+            } else {
+                LogUtils.info(log, "Batch resolve success, resolved {} txns in {}ms",
+                    txnInfos.size(), System.currentTimeMillis() - startTime);
+            }
+            return success;
+        } catch (Exception e) {
+            LogUtils.error(log, "Error committing batch resolve", e);
+            return false;
+        }
+    }
+
+    private static TxnResolveLockResponse batchResolve(
+        long reqTs, Region region, TxnResolveLockRequest req
+    ) {
+        if (isIndexRegion(region)) {
+            return indexRegionService(region.getId()).txnResolveLock(reqTs, req);
+        }
+        if (isDocumentRegion(region)) {
+            return documentService(region.getId()).txnResolveLock(reqTs, req);
+        }
+        return storeRegionService(region.getId()).txnResolveLock(reqTs, req);
+    }
+
+    public static StoreService storeRegionService(long regionId) {
+        return Services.storeRegionService(Configuration.coordinatorSet(), regionId, 30);
+    }
+
+    public static IndexService indexRegionService(long regionId) {
+        return Services.indexRegionService(Configuration.coordinatorSet(), regionId, 30);
+    }
+
+    public static DocumentService documentService(long regionId) {
+        return Services.documentRegionService(Configuration.coordinatorSet(), regionId, 30);
+    }
+
+    public static boolean isIndexRegion(Region region) {
+        return Optional.ofNullable(region)
+            .map(Region::getDefinition)
+            .map(RegionDefinition::getIndexParameter)
+            .map(IndexParameter::getIndexType)
+            .filter($ -> $ == IndexType.INDEX_TYPE_VECTOR)
+            .isPresent();
+    }
+
+    public static boolean isDocumentRegion(Region region) {
+        return Optional.ofNullable(region)
+            .map(Region::getDefinition)
+            .map(RegionDefinition::getIndexParameter)
+            .map(IndexParameter::getIndexType)
+            .filter($ -> $ == IndexType.INDEX_TYPE_DOCUMENT)
+            .isPresent();
     }
 
     public static TxnCheckTxnStatusResponse txnCheckTxnStatus(TxnCheckStatus txnCheckStatus) {
