@@ -32,7 +32,7 @@ public final class ScopeVariables {
 
     public static final List<String> globalVariables = List.of("job_need_gc", "txn_history_duration",
         "safepoint_ts", "ssl_enable", "innodb_online_alter_log_max_size",
-        "max_allowed_packet", "table_definition_cache");
+        "max_allowed_packet", "table_definition_cache", "create_table_with_data");
 
     static {
         //immutableVariables.add("version_comment");
