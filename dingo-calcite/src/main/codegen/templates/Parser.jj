@@ -6613,9 +6613,9 @@ SqlNode BuiltinFunctionCall() :
         <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) { aliasBuilder.append(this.token.image); }
         <AS> { aliasBuilder.append(" ").append(this.token.image); }
         (
-            dt = DataType() { args.add(dt); aliasBuilder.append(" ").append(this.token.image); }
+            dt = DataType() { args.add(dt); aliasBuilder.append(" ").append(dt.toString()); }
         |
-            <INTERVAL> { aliasBuilder.append(" ").append(this.token.image); } e = IntervalQualifier() { args.add(e); aliasBuilder.append(this.token.image); }
+            <INTERVAL> { aliasBuilder.append(" ").append(this.token.image); } e = IntervalQualifier() { args.add(e); aliasBuilder.append(e.toString()); }
         )
         <RPAREN> {
             SqlNode sqlNode = SqlStdOperatorTable.CAST.createCall(s.end(this), args);

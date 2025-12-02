@@ -52,7 +52,8 @@ public final class VariableValidator {
         if (ScopeVariables.immutableVariables.contains(name)) {
             throw DingoErrUtil.newStdErr(ErrIncorrectGlobalLocalVar, name);
         }
-        if (("SESSION".equals(scope) || "USER".equals(scope)) && ScopeVariables.containsGlobalVariable(name.toLowerCase())) {
+        if (("SESSION".equals(scope) || "USER".equals(scope))
+            && ScopeVariables.containsGlobalVariable(name.toLowerCase())) {
             throw DINGO_RESOURCE.invalidSetGlobalVariable(name).ex();
         }
         if (name.equalsIgnoreCase("autocommit")

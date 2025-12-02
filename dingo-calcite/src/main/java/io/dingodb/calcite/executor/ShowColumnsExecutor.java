@@ -102,7 +102,7 @@ public class ShowColumnsExecutor extends QueryExecutor {
                 if (column.getPrecision() > 0) {
                     type = type + "(" + column.getPrecision() + ")";
                 }
-            } else if (type.equals("VARCHAR")) {
+            } else if (type.equals("VARCHAR") || type.equals("CHAR")) {
                 if (column.getPrecision() > 0) {
                     type = type + "(" + column.getPrecision() + ")";
                 }
