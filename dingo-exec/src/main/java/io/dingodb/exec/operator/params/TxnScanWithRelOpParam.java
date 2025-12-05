@@ -174,7 +174,7 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                     for(byte b : coprocessor.getRelExpr()) {
                         sb.append(String.format("%02X",b));
                     }
-                    LogUtils.info(log, "Pushing down expression {} via coprocessor.", sb.toString());
+                    LogUtils.info(log, "Pushing down expression in Scan {} via coprocessor.", sb.toString());
                 }
             }
         }
