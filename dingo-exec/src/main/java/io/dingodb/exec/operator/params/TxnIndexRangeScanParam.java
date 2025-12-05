@@ -50,6 +50,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static io.dingodb.common.mysql.scope.ScopeVariables.showCoprocessorExpr;
+
 @Slf4j
 @Getter
 public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
@@ -188,6 +190,14 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                     .relExpr(os.toByteArray())
                     .codecVersion(this.codecVersion)
                     .build();
+
+                if(showCoprocessorExpr()) {
+                    StringBuffer sb = new StringBuffer();
+                    for(byte b : coprocessor.getRelExpr()) {
+                        sb.append(String.format("%02X",b));
+                    }
+                    LogUtils.info(log, "Pushing down expression in IndexScan {} via coprocessor.", sb.toString());
+                }
             }
         }
         relOp = relOpCompile;
