@@ -88,6 +88,8 @@ public final class OperatorCodeUtils {
     public static final CommonId COPY = new CommonId(CommonId.CommonType.OP, OP, 56);
     public static final CommonId TXN_CLEAN_EXTRA_DATA_CACHE = new CommonId(CommonId.CommonType.OP, OP, 57);
 
+    public static final CommonId TXN_AUTOCOMMIT_INSERT = new CommonId(CommonId.CommonType.OP, OP, 58);
+
     public static final CommonId PIPE_OP = new CommonId(CommonId.CommonType.OP, OP, 60);
     public static final CommonId CACHE_OP = new CommonId(CommonId.CommonType.OP, OP, 61);
     public static final CommonId SCAN_WITH_NO_OP = new CommonId(CommonId.CommonType.OP, OP, 62);
