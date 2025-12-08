@@ -109,6 +109,9 @@ import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
+import io.dingodb.common.type.TupleType;
+import io.dingodb.common.type.converter.DingoConverter;
+import io.dingodb.common.type.converter.StrParseConverter;
 import io.dingodb.common.type.scalar.BinaryType;
 import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.BooleanType;
@@ -2122,6 +2125,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     throw DingoErrUtil.newStdErr("part column must be primary key");
                 }
             }
+            if ("range".equalsIgnoreCase(partDefinition.getFuncName())) {
+                checkOperandType(tableDefinition, partDefinition);
+            }
         }
 
         List<PartitionDetailDefinition> details = new ArrayList<>();
@@ -2132,6 +2138,39 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             details.add(detail);
         }
         partDefinition.setDetails(details);
+    }
+
+    private static void checkOperandType(@NonNull TableDefinition tableDefinition, PartitionDefinition partDefinition) {
+        DingoType keysType = tableDefinition.getKeyType();
+        if (keysType instanceof TupleType) {
+            TupleType keysType1 = (TupleType) keysType;
+            partDefinition.getDetails().forEach(detail -> {
+                if (detail.getOperand() == null) {
+                    return;
+                }
+                Object[] operand = detail.getOperand();
+                if (detail.getOperand().length > keysType1.fieldCount()) {
+                    throw new IllegalArgumentException(
+                        "Partition values count must be <= key columns count, but values count is "
+                            + detail.getOperand().length
+                    );
+                }
+                for (int i = 0; i < operand.length; i++) {
+                    DingoType type = keysType1.getChild(i);
+                    if (operand[i] != null) {
+                        Object object = type.convertTo(type.convertFrom(operand[i].toString(),
+                                StrParseConverter.INSTANCE),
+                            DingoConverter.INSTANCE);
+                        if (object == null) {
+                            throw new IllegalArgumentException(
+                                "For input string \""
+                                    + operand[i] + "\""
+                            );
+                        }
+                    }
+                }
+            });
+        }
     }
 
     @NonNull

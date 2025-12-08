@@ -173,7 +173,7 @@ public class DingoGenerateSeriesVisitFun {
             outputs.add(vertex);
         }
         if (outputs.isEmpty()) {
-            throw new RuntimeException("There is no matching Region, outputs cannot be empty");
+            throw new RuntimeException("The view does not support the generate_series function");
         }
         return outputs;
     }

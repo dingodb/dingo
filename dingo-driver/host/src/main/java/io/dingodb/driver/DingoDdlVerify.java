@@ -82,6 +82,9 @@ public class DingoDdlVerify {
         if (sqlNode instanceof DingoSqlCreateTable) {
             accessTypes.add(DingoSqlAccessEnum.CREATE);
             DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
+            if (sqlCreateTable.query != null) {
+                accessTypes.add(DingoSqlAccessEnum.INSERT);
+            }
             if (sqlCreateTable.columnList != null) {
                 long indexCount = sqlCreateTable.columnList.stream()
                     .filter(col -> col.getKind() == SqlKind.CREATE_INDEX).count();
@@ -90,17 +93,17 @@ public class DingoDdlVerify {
                 }
 
                 //Check column type precision and scale here.
-                sqlCreateTable.columnList.stream()
+                sqlCreateTable.columnList
                     .forEach(col -> {
-                        if(col instanceof DingoSqlColumn) {
+                        if (col instanceof DingoSqlColumn) {
                             SqlDataTypeSpec spec = ((DingoSqlColumn)col).dataType;
-                            SqlTypeNameSpec typeNameSpec = spec.getTypeNameSpec();
-                            if(spec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
+                            if (spec.getTypeNameSpec() instanceof SqlBasicTypeNameSpec) {
                                 SqlBasicTypeNameSpec t1 = (SqlBasicTypeNameSpec)spec.getTypeNameSpec();
-                                if(t1.getSqlTypeName() == SqlTypeName.BIT) {
+                                if (t1.getSqlTypeName() == SqlTypeName.BIT) {
                                     int precision = t1.getPrecision();
-                                    if(precision < 1 || precision > 64) {
-                                        throw new DingoSqlException(String.format("Display width out of range for bit type [1,64]"));
+                                    if (precision < 1 || precision > 64) {
+                                        throw new DingoSqlException(String.format("Display width out of range for "
+                                            + "bit type [1,64]"));
                                     }
                                 }
                             }

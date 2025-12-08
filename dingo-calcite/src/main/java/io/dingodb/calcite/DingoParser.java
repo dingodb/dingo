@@ -54,6 +54,7 @@ import io.dingodb.calcite.grammar.ddl.SqlDropUser;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackSchema;
 import io.dingodb.calcite.grammar.ddl.SqlFlashBackTable;
 import io.dingodb.calcite.grammar.ddl.SqlGrant;
+import io.dingodb.calcite.grammar.ddl.SqlInitSchema;
 import io.dingodb.calcite.grammar.ddl.SqlKillConnection;
 import io.dingodb.calcite.grammar.ddl.SqlKillQuery;
 import io.dingodb.calcite.grammar.ddl.SqlLoadData;
@@ -508,7 +509,8 @@ public class DingoParser {
                 || sqlNode instanceof SqlBackUpTimePoint
                 || sqlNode instanceof SqlBackUpTsoPoint
                 || sqlNode instanceof SqlTsoToTime
-                || sqlNode instanceof SqlTenantsBackUpTimePoint;
+                || sqlNode instanceof SqlTenantsBackUpTimePoint
+                || sqlNode instanceof SqlInitSchema;
         }
     }
 

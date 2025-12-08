@@ -19,14 +19,20 @@ package io.dingodb.driver;
 import com.google.auto.service.AutoService;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.common.ProcessInfo;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.tool.api.QueryManager;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.jdbc.CalciteSchema;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
+
+@Slf4j
 public class DingoQueryManager implements QueryManager {
 
     public static final DingoQueryManager DEFAULT_INSTANCE = new DingoQueryManager();
@@ -88,6 +94,26 @@ public class DingoQueryManager implements QueryManager {
     @Override
     public boolean hasConnection(String connId) {
         return SessionUtil.INSTANCE.connectionMap.containsKey(connId);
+    }
+
+    @Override
+    public void initSchema(Connection connection, String schema) {
+        if (connection instanceof DingoConnection) {
+            DingoConnection dingoConnection = (DingoConnection) connection;
+            CalciteSchema calciteSchema = dingoConnection.getContext().getRootSchema()
+                .getSubSchema(schema, caseSensitive());
+            if (calciteSchema != null) {
+                dingoConnection.getContext().setUsedSchema(calciteSchema);
+                String usedSchema;
+                if (dingoConnection.getContext().getUsedSchema() != null) {
+                    usedSchema = dingoConnection.getContext().getUsedSchema().getName();
+                } else {
+                    usedSchema = dingoConnection.getContext().getDefaultSchemaName();
+                }
+                LogUtils.info(log, "connection:{}, origin schema: {}, usedSchema:{}, init schema: {}",
+                    dingoConnection.id, dingoConnection.getSchema(), usedSchema, schema);
+            }
+        }
     }
 
     @AutoService(io.dingodb.tool.api.QueryManagerProvider.class)

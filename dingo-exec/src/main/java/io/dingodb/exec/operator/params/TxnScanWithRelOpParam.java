@@ -117,7 +117,7 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
             (TupleType) vertex.getParasType().getType()
         );
 
-        if(!enableDecimalPushdown()) {
+        if (!enableDecimalPushdown()) {
             dingoCompileContext.setExprPushdownCond(ExprPushdownCond.NOT_PUSHDOWN_DECIMAL);
         }
 

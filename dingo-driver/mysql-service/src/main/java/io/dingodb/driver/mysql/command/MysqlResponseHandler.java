@@ -360,6 +360,9 @@ public final class MysqlResponseHandler {
     }
 
     public static SQLException errorDingo2Mysql(SQLException e) {
+        if (e.getMessage() == null) {
+            return e;
+        }
         if (e.getMessage() != null && e.getMessage().contains("Duplicate data")) {
             return new SQLException("Duplicate data for key 'PRIMARY'", "23000", 1062);
         } else if (e.getMessage() != null && (e.getMessage().contains("TaskCancelException")
@@ -375,9 +378,9 @@ public final class MysqlResponseHandler {
             if (reason.contains("Duplicate entry")) {
                 code = 1062;
                 state = "23000";
-                if (reason.contains("java.lang.RuntimeException:")) {
-                    reason = reason.replace("java.lang.RuntimeException:", "");
-                }
+            }
+            if (reason.contains("java.lang.RuntimeException:")) {
+                reason = reason.replace("java.lang.RuntimeException:", "");
             }
             return new SQLException(reason, state, code);
         } else if (e.getErrorCode() == 5001 && e.getSQLState().equals("45000")) {

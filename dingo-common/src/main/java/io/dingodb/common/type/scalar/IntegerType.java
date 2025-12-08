@@ -26,8 +26,11 @@ import io.dingodb.serial.schema.DingoSchema;
 import io.dingodb.serial.schema.IntegerSchema;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Objects;
+
 @JsonTypeName("int")
 public class IntegerType extends AbstractScalarType {
+
     @JsonCreator
     public IntegerType(@JsonProperty("nullable") boolean nullable) {
         super(Types.INT, nullable);

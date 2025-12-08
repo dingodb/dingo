@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package io.dingodb.tool.api;
+package io.dingodb.calcite.executor;
 
-import io.dingodb.common.ProcessInfo;
+import io.dingodb.tool.api.QueryManager;
 
 import java.sql.Connection;
-import java.util.List;
 
-public interface QueryManager {
-    static QueryManager getDefault() {
-        return QueryManagerProvider.getDefault().get();
+public class InitSchemaExecutor implements DdlExecutor {
+
+    private final Connection connection;
+
+    private final String schema;
+
+    public InitSchemaExecutor(Connection connection, String schema) {
+        this.connection = connection;
+        this.schema = schema;
     }
 
-    List<ProcessInfo> getProcessInfoList();
-
-    Connection getConnection(String connId);
-
-    boolean hasConnection(String connId);
-
-    void initSchema(Connection connection, String schema);
-
+    @Override
+    public void execute() {
+        QueryManager.getDefault().initSchema(connection, schema);
+    }
 }

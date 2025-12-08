@@ -92,6 +92,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlForeign"
       "io.dingodb.calcite.grammar.ddl.SqlGrant"
       "io.dingodb.calcite.grammar.ddl.SqlIndexDeclaration"
+      "io.dingodb.calcite.grammar.ddl.SqlInitSchema"
       "io.dingodb.calcite.grammar.ddl.SqlKill"
       "io.dingodb.calcite.grammar.ddl.SqlKillConnection"
       "io.dingodb.calcite.grammar.ddl.SqlKillQuery"
@@ -309,6 +310,7 @@ data: {
       "COLUMN_FORMAT"
       "GENERATE_SERIES"
       "REFRESH"
+      "INIT"
     ]
 
     # List of non-reserved keywords to add;
@@ -397,6 +399,7 @@ data: {
         "SqlRecoverTable"
         "SqlRenameTable"
         "SqlReplace"
+        "SqlInitSchema"
     ]
 
     sqlTypeNameMethods: [

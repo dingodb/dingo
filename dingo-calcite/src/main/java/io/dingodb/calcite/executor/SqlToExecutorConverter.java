@@ -31,6 +31,7 @@ import io.dingodb.calcite.grammar.ddl.SqlLockTable;
 import io.dingodb.calcite.grammar.ddl.SqlRollback;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
+import io.dingodb.calcite.grammar.ddl.SqlInitSchema;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlDescTable;
@@ -284,6 +285,9 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlShowExecutorVariables) {
             SqlShowExecutorVariables sqlShowExecutorVariables = (SqlShowExecutorVariables) sqlNode;
             return Optional.of(new ShowExecutorVariablesExecutor(sqlShowExecutorVariables.sqlLikePattern));
+        } else if (sqlNode instanceof SqlInitSchema) {
+            SqlInitSchema sqlInitSchema = (SqlInitSchema) sqlNode;
+            return Optional.of(new InitSchemaExecutor(connection, sqlInitSchema.schema));
         } else {
             return Optional.empty();
         }

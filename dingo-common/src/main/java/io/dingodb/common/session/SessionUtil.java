@@ -94,10 +94,11 @@ public final class SessionUtil {
         }
     }
 
-    public long exeUpdate(String sql, int retry) throws Exception {
+    public long exeUpdate(String sql, int retry, String schema) throws Exception {
         Session session = null;
         try {
             session = getSession();
+            session.executeUpdate("init " + schema);
             return session.executeUpdate1(sql);
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage());
@@ -105,7 +106,7 @@ public final class SessionUtil {
             if (retry == 0) {
                 throw e;
             } else {
-                return exeUpdate(sql, retry);
+                return exeUpdate(sql, retry, schema);
             }
         } finally {
             closeSession(session);

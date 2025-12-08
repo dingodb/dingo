@@ -29,7 +29,6 @@ import io.dingodb.common.type.scalar.TimeType;
 
 import java.sql.Time;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +38,18 @@ import static io.dingodb.common.util.Optional.mapOrNull;
 public final class DefinitionUtils {
 
     private DefinitionUtils() {
+    }
+
+    public static void checkAndConvertRangePartition(TableDefinition tableDefinition) {
+        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
+        PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
+        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
+        checkAndConvertRangePartition(
+            keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
+            partDefinition.getColumns(),
+            keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
+            partDefinition.getDetails().stream().map(PartitionDetailDefinition::getOperand).collect(Collectors.toList())
+        );
     }
 
     public static void checkAndConvertRangePartition(
@@ -70,7 +81,7 @@ public final class DefinitionUtils {
             for (int i = 0; i < operand.length; i++) {
                 DingoType type = keyTypes.get(i);
                 if (type instanceof TimeType) {
-                   operand[i] = Time.valueOf(operand[i].toString()).getTime();
+                    operand[i] = Time.valueOf(operand[i].toString()).getTime();
                 } else {
                     operand[i] = mapOrNull(
                         operand[i],
@@ -79,35 +90,6 @@ public final class DefinitionUtils {
                 }
             }
         }
-    }
-
-    public static void checkAndConvertHashRangePartition(
-        List<String> keyNames,
-        List<String> partitionBy
-    ) {
-        if (partitionBy == null || partitionBy.isEmpty()) {
-            partitionBy = keyNames.stream().map(String::toUpperCase).toList();
-        } else {
-            partitionBy = partitionBy.stream().map(String::toUpperCase).collect(Collectors.toList());
-        }
-
-        if (!keyNames.stream().map(String::toUpperCase).toList().equals(partitionBy)) {
-            throw new IllegalArgumentException(
-                "Partition columns must be equals primary key columns, but " + partitionBy
-            );
-        }
-    }
-
-    public static void checkAndConvertRangePartition(TableDefinition tableDefinition) {
-        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
-        PartitionDefinition partDefinition = tableDefinition.getPartDefinition();
-        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
-        checkAndConvertRangePartition(
-            keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            partDefinition.getColumns(),
-            keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
-            partDefinition.getDetails().stream().map(PartitionDetailDefinition::getOperand).collect(Collectors.toList())
-        );
     }
 
     public static void checkAndConvertHashRangePartition(TableDefinition tableDefinition) {
@@ -119,7 +101,7 @@ public final class DefinitionUtils {
             partDefinition.getColumns()
         );
         List<PartitionDetailDefinition> details = partDefinition.getDetails();
-        if(details.size() != 1) {
+        if (details.size() != 1) {
             throw new IllegalArgumentException(
                 "Partition values count must be 1, but values count is " + details.size()
             );
@@ -140,29 +122,33 @@ public final class DefinitionUtils {
             v -> type.convertTo(type.convertFrom(v.toString(), fromConverter), toConverter)
         );
         int hashNum = (int) ob;
-        if(hashNum <= 0) {
+        if (hashNum <= 0) {
             throw new IllegalArgumentException(
                 "Partition values count must be non-negative number, but values count is " + hashNum
             );
         }
         List<PartitionDetailDefinition> newDetails = new ArrayList<>(hashNum);
-        for(int i = 0; i < hashNum; i++) {
+        for (int i = 0; i < hashNum; i++) {
             newDetails.add(new PartitionDetailDefinition(null, null, new Object[0]));
         }
         partDefinition.setDetails(newDetails);
     }
 
-    public static void checkAndConvertRangePartitionDetail(
-        TableDefinition tableDefinition, PartitionDetailDefinition detail
+    public static void checkAndConvertHashRangePartition(
+        List<String> keyNames,
+        List<String> partitionBy
     ) {
-        List<ColumnDefinition> keyColumns = tableDefinition.getKeyColumns();
-        keyColumns.sort(Comparator.comparingInt(ColumnDefinition::getPrimary));
-        checkAndConvertRangePartition(
-            keyColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
-            Collections.emptyList(),
-            keyColumns.stream().map(ColumnDefinition::getType).collect(Collectors.toList()),
-            Collections.singletonList(detail.getOperand())
-        );
+        if (partitionBy == null || partitionBy.isEmpty()) {
+            partitionBy = keyNames.stream().map(String::toUpperCase).toList();
+        } else {
+            partitionBy = partitionBy.stream().map(String::toUpperCase).collect(Collectors.toList());
+        }
+
+        if (!keyNames.stream().map(String::toUpperCase).toList().equals(partitionBy)) {
+            throw new IllegalArgumentException(
+                "Partition columns must be equals primary key columns, but " + partitionBy
+            );
+        }
     }
 
 }

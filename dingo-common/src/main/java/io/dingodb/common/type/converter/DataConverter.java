@@ -110,6 +110,18 @@ public interface DataConverter {
         }
     }
 
+    default Integer convertTinyIntFrom(@NonNull Object value) {
+        if (value instanceof Integer) {
+            return (Integer) value;
+        } else {
+            try {
+                return new BigDecimal(value.toString()).intValue();
+            } catch (Exception e) {
+                return 0;
+            }
+        }
+    }
+
     default Long convertLongFrom(@NonNull Object value) {
         if (value instanceof Integer) {
             return ((Integer) value).longValue();

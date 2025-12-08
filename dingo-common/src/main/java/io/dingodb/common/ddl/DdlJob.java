@@ -25,7 +25,6 @@ import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.mysql.DingoErr;
 import io.dingodb.common.partition.PartitionDetailDefinition;
 import io.dingodb.common.sequence.SequenceDefinition;
-import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import lombok.Builder;
