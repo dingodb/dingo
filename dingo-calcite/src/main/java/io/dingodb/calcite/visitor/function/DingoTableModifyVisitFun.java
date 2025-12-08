@@ -23,10 +23,10 @@ import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.TupleType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.OutputHint;
@@ -41,6 +41,7 @@ import io.dingodb.exec.operator.params.PessimisticLockDeleteParam;
 import io.dingodb.exec.operator.params.PessimisticLockInsertParam;
 import io.dingodb.exec.operator.params.PessimisticLockParam;
 import io.dingodb.exec.operator.params.PessimisticLockUpdateParam;
+import io.dingodb.exec.operator.params.TxnAutoCommitInsertParam;
 import io.dingodb.exec.operator.params.TxnPartDeleteParam;
 import io.dingodb.exec.operator.params.TxnPartInsertParam;
 import io.dingodb.exec.operator.params.TxnPartUpdateParam;
@@ -63,6 +64,7 @@ import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PESSIMISTIC_LOCK_UPDATE;
+import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_AUTOCOMMIT_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_DELETE;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_INSERT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_UPDATE;
@@ -151,8 +153,6 @@ public final class DingoTableModifyVisitFun {
                                     isScan,
                                     td,
                                     isUpdate,
-                                    replaceInto,
-                                    isIgnore,
                                     updateMapping,
                                     updates
                                 );
@@ -180,9 +180,8 @@ public final class DingoTableModifyVisitFun {
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
                                     updateMapping,
-                                    updates,
-                                    replaceInto,
-                                    isIgnore)
+                                    updates
+                                )
                             );
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge lockEdge = new Edge(lockVertex, insertVertex);
@@ -194,36 +193,66 @@ public final class DingoTableModifyVisitFun {
                             task.putVertex(insertVertex);
                             outputs.add(insertVertex);
                         } else {
-                            vertex = new Vertex(TXN_PART_INSERT,
-                                new TxnPartInsertParam(
-                                    tableId,
-                                    td.tupleType(),
-                                    td.keyMapping(),
-                                    false,
-                                    transaction.getIsolationLevel(),
-                                    null,
-                                    transaction.getStartTs(),
-                                    0L,
-                                    transaction.getLockTimeOut(),
-                                    visitor.getExecuteVariables().isInsertCheckInplace(),
-                                    td,
-                                    rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex(),
-                                    updateMapping,
-                                    updates,
-                                    replaceInto,
-                                    isIgnore)
-                            );
-                            vertex.setId(idGenerator.getOperatorId(task.getId()));
-                            task.putVertex(vertex);
-                            input.setPin(0);
-                            OutputHint hint = new OutputHint();
-                            hint.setToSumUp(true);
-                            vertex.setHint(hint);
-                            Edge edge = new Edge(input, vertex);
-                            input.addEdge(edge);
-                            vertex.addIn(edge);
-                            outputs.add(vertex);
+                            if (ScopeVariables.autoCommitInsert() && transaction.isAutoCommit() &&
+                                updateMapping == null && updates == null) {
+                                vertex = new Vertex(TXN_AUTOCOMMIT_INSERT,
+                                    new TxnAutoCommitInsertParam(
+                                        tableId,
+                                        td.tupleType(),
+                                        td.keyMapping(),
+                                        false,
+                                        transaction.getIsolationLevel(),
+                                        null,
+                                        transaction.getStartTs(),
+                                        0L,
+                                        transaction.getLockTimeOut(),
+                                        visitor.getExecuteVariables().isInsertCheckInplace(),
+                                        td,
+                                        rel.isHasAutoIncrement(),
+                                        rel.getAutoIncrementColIndex()
+                                    )
+                                );
+                                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                                task.putVertex(vertex);
+                                input.setPin(0);
+                                OutputHint hint = new OutputHint();
+                                hint.setToSumUp(true);
+                                vertex.setHint(hint);
+                                Edge edge = new Edge(input, vertex);
+                                input.addEdge(edge);
+                                vertex.addIn(edge);
+                                outputs.add(vertex);
+                            } else {
+                                vertex = new Vertex(TXN_PART_INSERT,
+                                    new TxnPartInsertParam(
+                                        tableId,
+                                        td.tupleType(),
+                                        td.keyMapping(),
+                                        false,
+                                        transaction.getIsolationLevel(),
+                                        null,
+                                        transaction.getStartTs(),
+                                        0L,
+                                        transaction.getLockTimeOut(),
+                                        visitor.getExecuteVariables().isInsertCheckInplace(),
+                                        td,
+                                        rel.isHasAutoIncrement(),
+                                        rel.getAutoIncrementColIndex(),
+                                        updateMapping,
+                                        updates
+                                    )
+                                );
+                                vertex.setId(idGenerator.getOperatorId(task.getId()));
+                                task.putVertex(vertex);
+                                input.setPin(0);
+                                OutputHint hint = new OutputHint();
+                                hint.setToSumUp(true);
+                                vertex.setHint(hint);
+                                Edge edge = new Edge(input, vertex);
+                                input.addEdge(edge);
+                                vertex.addIn(edge);
+                                outputs.add(vertex);
+                            }
                         }
                     } else {
                         vertex = new Vertex(

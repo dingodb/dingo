@@ -33,17 +33,13 @@ import java.util.Objects;
 @Getter
 @JsonTypeName("pessimistic_lock_insert")
 @JsonPropertyOrder({"isolationLevel", "startTs", "forUpdateTs", "lockTimeOut", "pessimisticTxn",
-    "isScan", "table", "schema", "keyMapping", "isReplaceInto", "isIgnore"})
+    "isScan", "table", "schema", "keyMapping"})
 public class PessimisticLockInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("isScan")
     private final boolean isScan;
     @JsonProperty("isDuplicateKeyUpdate")
     private final boolean isDuplicateUpdate;
-    @JsonProperty("isReplaceInto")
-    private final boolean isReplaceInto;
-    @JsonProperty("isIgnore")
-    private final boolean isIgnore;
     private TupleMapping updateMapping;
     private List<SqlExpr> updates;
     public PessimisticLockInsertParam(
@@ -59,8 +55,6 @@ public class PessimisticLockInsertParam extends TxnPartModifyParam {
         @JsonProperty("isScan") boolean isScan,
         Table table,
         @JsonProperty("isDuplicateKeyUpdate") boolean isDuplicateUpdate,
-        @JsonProperty("isReplaceInto") boolean isReplaceInto,
-        @JsonProperty("isIgnore") boolean isIgnore,
         TupleMapping updateMapping,
         List<SqlExpr> updates
     ) {
@@ -68,8 +62,6 @@ public class PessimisticLockInsertParam extends TxnPartModifyParam {
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.isScan = isScan;
         this.isDuplicateUpdate = isDuplicateUpdate;
-        this.isReplaceInto = isReplaceInto;
-        this.isIgnore = isIgnore;
         this.updateMapping = updateMapping;
         this.updates = updates;
     }

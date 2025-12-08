@@ -23,19 +23,17 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
-import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Getter
-@JsonTypeName("txn_insert")
+@JsonTypeName("txn_autoCommit_insert")
 @JsonPropertyOrder({"pessimisticTxn", "isolationLevel", "primaryLockKey", "lockTimeOut",
     "checkInPlace", "startTs", "forUpdateTs", "table", "schema", "keyMapping"})
-public class TxnPartInsertParam extends TxnPartModifyParam {
+public class TxnAutoCommitInsertParam extends TxnPartModifyParam {
 
     @JsonProperty("hasAutoInc")
     private final boolean hasAutoInc;
@@ -47,10 +45,8 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
     private final boolean checkInPlace;
 
     private List<Long> autoIncList = new ArrayList<>();
-    private TupleMapping updateMapping;
-    private List<SqlExpr> updates;
 
-    public TxnPartInsertParam(
+    public TxnAutoCommitInsertParam(
         @JsonProperty("table") CommonId tableId,
         @JsonProperty("schema") DingoType schema,
         @JsonProperty("keyMapping") TupleMapping keyMapping,
@@ -63,25 +59,18 @@ public class TxnPartInsertParam extends TxnPartModifyParam {
         @JsonProperty("checkInPlace") boolean checkInPlace,
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
-        @JsonProperty("autoIncColIdx") int autoIncColIdx,
-        TupleMapping updateMapping,
-        List<SqlExpr> updates
+        @JsonProperty("autoIncColIdx") int autoIncColIdx
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
             isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
         this.checkInPlace = checkInPlace;
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;
-        this.updateMapping = updateMapping;
-        this.updates = updates;
     }
 
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
-        if (updates != null) {
-            updates.stream().filter(Objects::nonNull).forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
-        }
     }
 
     public void inc() {

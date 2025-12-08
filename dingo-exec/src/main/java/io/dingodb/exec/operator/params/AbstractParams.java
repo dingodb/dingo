@@ -131,7 +131,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECT
     @JsonSubTypes.Type(PessimisticLockReplaceIntoParam.class),
     @JsonSubTypes.Type(TxnPartInsertIgnoreParam.class),
     @JsonSubTypes.Type(PessimisticLockInsertIgnoreParam.class),
-    @JsonSubTypes.Type(TxnGenerateSeriesParam.class)
+    @JsonSubTypes.Type(TxnGenerateSeriesParam.class),
+    @JsonSubTypes.Type(TxnAutoCommitInsertParam.class),
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonAutoDetect(fieldVisibility = PROTECTED_AND_PUBLIC)

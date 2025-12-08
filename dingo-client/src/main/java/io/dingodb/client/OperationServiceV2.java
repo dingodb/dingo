@@ -829,9 +829,8 @@ public class OperationServiceV2 {
                         false,
                         0,
                         null,
-                        null,
-                        false,
-                        false)
+                        null
+                    )
                 );
 
             } else {

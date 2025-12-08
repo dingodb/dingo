@@ -26,7 +26,6 @@ import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
-import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -46,8 +45,6 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.utils.ByteUtils;
 import io.dingodb.exec.utils.OpStateUtils;
-import io.dingodb.expr.common.type.TupleType;
-import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.expr.BinaryOpExpr;
 import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.expr.runtime.expr.UnaryOpExpr;
@@ -66,7 +63,6 @@ import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -388,44 +384,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             param.inc();
                         }
                     } else {
-                        if (!param.isReplaceInto() && !param.isIgnore()) {
-                            throw new DuplicateEntryException("Duplicate entry "
-                                + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
-                        } else {
-                            if (param.isIgnore()) {
-                                profile.time(start - System.currentTimeMillis());
-                                return true;
-                            }
-                            byte[] extraKey = ByteUtils.encode(
-                                CommonId.CommonType.TXN_CACHE_EXTRA_DATA,
-                                key,
-                                oldKey[oldKey.length - 2],
-                                len,
-                                jobIdByte,
-                                tableIdByte,
-                                partIdByte
-                            );
-                            KeyValue extraKeyValue;
-                            if (value.getValue() == null) {
-                                // delete
-                                extraKeyValue = new KeyValue(extraKey, null);
-                            } else {
-                                extraKeyValue = new KeyValue(
-                                    extraKey, Arrays.copyOf(value.getValue(), value.getValue().length)
-                                );
-                            }
-                            localStore.put(extraKeyValue);
-                            localStore.delete(dataKey);
-                            localStore.delete(updateKey);
-                            vertex.getTask().getPartData().put(
-                                new TxnPartData(tableId, partId),
-                                (!isVector && !isDocument)
-                            );
-                            keyValue.setKey(updateKey);
-                            if (localStore.put(keyValue) && context.getIndexId() == null) {
-                                param.inc(2L);
-                            }
-                        }
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                     }
                 } else {
                     Pair<KeyValue, Long> pair = null;
@@ -504,10 +464,6 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
                 );
                 if (localStore.get(rollBackKey) != null) {
-                    if (param.isIgnore()) {
-                        profile.time(start - System.currentTimeMillis());
-                        return true;
-                    }
                     localStore.delete(rollBackKey);
                 }
                 // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
@@ -528,16 +484,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     keyValue.setKey(insertUpKv.getKey());
                     keyValue.setValue(insertUpKv.getValue());
                 } else {
-                    if (!param.isReplaceInto()) {
-                        keyValue.setKey(dataKey);
-                    } else {
-                        if (context.isReplaceIntoKey()) {
-                            num++;
-                            keyValue.setKey(updateKey);
-                        } else {
-                            keyValue.setKey(dataKey);
-                        }
-                    }
+                    keyValue.setKey(dataKey);
                 }
                 vertex.getTask().getPartData().put(
                     new TxnPartData(tableId, partId),
@@ -612,16 +559,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                             indexTable);
                         op = Op.PUT;
                     } else {
-                        if (param.isIgnore()) {
-                            profile.time(start - System.currentTimeMillis());
-                            return true;
-                        }
-                        if (!param.isReplaceInto()) {
-                            throw new DuplicateEntryException("Duplicate entry "
-                                + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
-                        } else {
-                            num++;
-                        }
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                     }
                 } else {
                     // delete  ->  insert  convert --> put
@@ -629,8 +568,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     op = Op.DELETE;
                 }
             } else {
-                if (!context.isDuplicateKey() && (param.isCheckInPlace()
-                    || param.isReplaceInto() || param.isIgnore())) {
+                if (!context.isDuplicateKey() && param.isCheckInPlace()) {
                     byte[] originalKey;
                     if (isVector) {
                         originalKey = codec.encodeKeyPrefix(newTuple, 1);
@@ -648,16 +586,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param.getLockTimeOut()
                     );
                     if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        if (param.isIgnore()) {
-                            profile.time(start - System.currentTimeMillis());
-                            return true;
-                        }
-                        if (!param.isReplaceInto()) {
-                            throw new DuplicateEntryException("Duplicate entry " +
-                                TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
-                        } else {
-                            num++;
-                        }
+                        throw new DuplicateEntryException("Duplicate entry " +
+                            TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                     }
                 }
                 if (context.isDuplicateKey()) {
@@ -676,12 +606,10 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         indexTable);
                     op = Op.PUT;
                 } else {
-                    if (!param.isReplaceInto()) {
-                        keyValue.setKey(
-                            ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
-                        );
-                        localStore.put(keyValue);
-                    }
+                    keyValue.setKey(
+                        ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertKey)
+                    );
+                    localStore.put(keyValue);
                 }
             }
             KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
@@ -696,13 +624,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 keyValue.setKey(insertUpKv.getKey());
                 keyValue.setValue(insertUpKv.getValue());
             } else {
-                if (param.isReplaceInto()) {
-                    keyValue.setKey(ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.PUT, insertKey));
-                    localStore.delete(insertKey);
-                    localStore.delete(updateKey);
-                } else {
-                    keyValue.setKey(insertKey);
-                }
+                keyValue.setKey(insertKey);
             }
             localStore.delete(deleteKey);
             // for optimistic transaction for update

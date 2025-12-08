@@ -286,6 +286,15 @@ public final class ScopeVariables {
         }
     }
 
+    public static boolean autoCommitInsert() {
+        try {
+            String lookupBatchGet = executorProp.getOrDefault("auto_commit_insert", "on").toString();
+            return "on".equalsIgnoreCase(lookupBatchGet);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);

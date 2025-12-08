@@ -40,7 +40,6 @@ import io.dingodb.calcite.rel.DingoPartCountDelete;
 import io.dingodb.calcite.rel.DingoPartRangeDelete;
 import io.dingodb.calcite.rel.DingoProject;
 import io.dingodb.calcite.rel.DingoReduce;
-import io.dingodb.calcite.rel.DingoRel;
 import io.dingodb.calcite.rel.DingoRepeatUnion;
 import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.rel.DingoTableScan;
@@ -63,7 +62,6 @@ import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.rel.dingo.DingoStreamingConverter;
 import io.dingodb.calcite.rel.dingo.IndexFullScan;
 import io.dingodb.calcite.rel.dingo.IndexRangeScan;
-import io.dingodb.calcite.rule.DingoTableScanForSpoolRule;
 import io.dingodb.calcite.visitor.function.DingoAggregateVisitFun;
 import io.dingodb.calcite.visitor.function.DingoCountDeleteVisitFun;
 import io.dingodb.calcite.visitor.function.DingoDiskAnnBuildVisitFun;
@@ -119,18 +117,15 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.impl.IdGeneratorImpl;
-import io.dingodb.exec.operator.params.TableSpoolParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
-import java.util.List;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 
@@ -255,13 +250,13 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     public Collection<Vertex> visit(@NonNull DingoTableModify rel) {
         if (replaceInto) {
             return DingoReplaceInsertVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel,
-                forUpdate, true, isIgnore, updateLimit);
+                forUpdate, true, false, updateLimit);
         } else if (isIgnore) {
             return DingoInsertIgnoreVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel,
                 forUpdate, false, true, updateLimit);
         }
         return DingoTableModifyVisitFun.visit(job, idGenerator, currentLocation, transaction, this, rel,
-            forUpdate, false, isIgnore, updateLimit);
+            forUpdate, false, false, updateLimit);
     }
 
     @Override
