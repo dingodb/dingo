@@ -63,6 +63,7 @@ public final class ErrorMessage {
             + "this is incompatible with sql_mode=only_full_group_by");
         errorMap.put(ErrMixOfGroupFuncAndFields, "In aggregated query without GROUP BY, expression #%d of "
             + "SELECT list contains nonaggregated column '%s'; this is incompatible with sql_mode=only_full_group_by");
+        errorMap.put(ErrWarnDataOutOfRange, "Out of range value for column '%s' at row %s");
     }
 
     private ErrorMessage() {

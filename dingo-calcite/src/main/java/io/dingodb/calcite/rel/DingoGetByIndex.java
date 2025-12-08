@@ -175,12 +175,17 @@ public class DingoGetByIndex extends LogicalDingoTableScan implements DingoRel {
         }
         Table indexTd = getIndexTdMap().get(commonId);
         Table td = Objects.requireNonNull(getTable().unwrap(DingoTable.class)).getTable();
-        List<Integer> indexSelectionList = td.getColumnIndices2(indexTd.getColumns());
-        Mapping mapping = Mappings.target(indexSelectionList, td.getColumns().size());
-        Pair<RexNode, RexNode> res = DingoFilterUtils.splitRexFilter(filter, mapping, getCluster().getRexBuilder());
         RexNode indexFilter;
-        if (res != null && res.getKey() != null) {
-            indexFilter = res.getKey();
+        if (lookup) {
+            List<Integer> indexSelectionList = td.getColumnIndices2(indexTd.getColumns());
+            Mapping mapping = Mappings.target(indexSelectionList, td.getColumns().size());
+            Pair<RexNode, RexNode> res = DingoFilterUtils.splitRexFilter(filter, mapping, getCluster().getRexBuilder());
+
+            if (res != null && res.getKey() != null) {
+                indexFilter = res.getKey();
+            } else {
+                indexFilter = filter;
+            }
         } else {
             indexFilter = filter;
         }

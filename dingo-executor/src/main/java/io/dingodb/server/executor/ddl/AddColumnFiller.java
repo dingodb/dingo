@@ -222,6 +222,7 @@ public class AddColumnFiller extends IndexAddFiller {
             .filter(column -> column.getSchemaState() == SchemaState.SCHEMA_WRITE_REORG)
             .findFirst().orElse(null);
         if (addColumn == null) {
+            LogUtils.error(log, "add column but new column is not found, indexTable:{}", indexTable);
             throw new RuntimeException("new column not found");
         }
         defaultVal = getFillerValue(addColumn);

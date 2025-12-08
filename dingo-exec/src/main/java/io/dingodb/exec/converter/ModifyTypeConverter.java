@@ -19,6 +19,7 @@ package io.dingodb.exec.converter;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.common.util.Utils;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -32,11 +33,23 @@ import java.util.Map;
 
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDataOutOfRange;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrWarnDataOutOfRange;
 
 public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
+        if (value instanceof Integer) {
+            return (Integer) value;
+        } else if (value instanceof Long) {
+            Long val = (Long) value;
+            if (val >= Integer.MIN_VALUE && val <= Integer.MAX_VALUE) {
+                return val.intValue();
+            } else {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "int", val);
+            }
+        }
+
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -50,7 +63,29 @@ public class ModifyTypeConverter implements DataConverter {
     }
 
     @Override
+    public Integer convertTinyIntFrom(@NonNull Object value) {
+        String valStr = strVal(value);
+        if (valStr == null) {
+            return null;
+        } else {
+            try {
+                int val = new BigDecimal(valStr).intValue();
+                if (Utils.tinyintInRange(val)) {
+                    return val;
+                } else {
+                    throw DingoErrUtil.newStdErr(ErrWarnDataOutOfRange, "1");
+                }
+            } catch (Exception e) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "tinyint", valStr);
+            }
+        }
+    }
+
+    @Override
     public Long convertLongFrom(@NonNull Object value) {
+        if (value instanceof Long) {
+            return (Long) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -69,6 +104,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Float convertFloatFrom(@NonNull Object value) {
+        if (value instanceof Float) {
+            return (Float) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -83,6 +121,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Double convertDoubleFrom(@NonNull Object value) {
+        if (value instanceof Double) {
+            return (Double) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -124,6 +165,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public BigDecimal convertDecimalFrom(@NonNull Object value) {
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -138,6 +182,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Date convertDateFrom(@NonNull Object value) {
+        if (value instanceof Date) {
+            return (Date) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -156,6 +203,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Time convertTimeFrom(@NonNull Object value) {
+        if (value instanceof Time) {
+            return (Time) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;
@@ -170,6 +220,9 @@ public class ModifyTypeConverter implements DataConverter {
 
     @Override
     public Timestamp convertTimestampFrom(@NonNull Object value) {
+        if (value instanceof Timestamp) {
+            return (Timestamp) value;
+        }
         String valStr = strVal(value);
         if (valStr == null) {
             return null;

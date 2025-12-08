@@ -18,12 +18,12 @@ package io.dingodb.common.type;
 
 import io.dingodb.common.type.scalar.AbstractScalarType;
 import io.dingodb.common.type.scalar.BinaryType;
+import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.BooleanType;
 import io.dingodb.common.type.scalar.DateType;
 import io.dingodb.common.type.scalar.DecimalType;
 import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
-import io.dingodb.common.type.scalar.BitType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.ObjectType;

@@ -2603,7 +2603,7 @@ public class DdlWorker {
         TableDefinition tableInfo = (TableDefinition) job.getArgs().get(0);
         switch (job.getSchemaState()) {
             case SCHEMA_NONE:
-                tableInfo.setSchemaState(SchemaState.SCHEMA_DELETE_ONLY);
+                tableInfo.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                 long tableId = job.getTableId();
                 tableInfo.setPrepareTableId(tableId);
 
@@ -2634,11 +2634,11 @@ public class DdlWorker {
                         String prefix = String.format("insert into %s.%s ", job.getSchemaName(), job.getTableName());
                         sql = prefix + sql;
                         LogUtils.info(log, "create as table sql:{}", sql);
-                        long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2);
+                        long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2, job.getSchemaName());
                         job.setRowCount(updateCount);
                     } catch (Exception e) {
                         LogUtils.error(log, e.getMessage(), e);
-                        MetaService.root().dropTable(job.getSchemaId(), job.getTableId(), job.getId());
+                        MetaService.root().dropTable(job.getSchemaId(), job.getTableId(), -1);
                         ActionType originType = job.getActionType();
                         job.setActionType(ActionType.ActionDropTable);
                         Pair<Long, String> res = updateSchemaVersion(dc, job);
@@ -2652,7 +2652,6 @@ public class DdlWorker {
 
                 Object tableObj = InfoSchemaService.root().getTable(job.getSchemaId(), job.getTableId());
                 TableDefinitionWithId tableWithId = (TableDefinitionWithId) tableObj;
-                ((TableDefinitionWithId) tableObj).getTableDefinition().setSchemaState(SCHEMA_PUBLIC);
                 job.setSchemaState(SchemaState.SCHEMA_PUBLIC);
                 job.finishTableJob(JobState.jobStateDone, SchemaState.SCHEMA_PUBLIC);
                 return TableUtil.updateVersionAndTableInfos(dc, job, tableWithId, true);

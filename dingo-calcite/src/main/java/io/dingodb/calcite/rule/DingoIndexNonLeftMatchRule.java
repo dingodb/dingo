@@ -75,6 +75,7 @@ import static org.apache.calcite.sql.SqlKind.IN;
 import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.OR;
 
 @Slf4j
 @Value.Enclosing
@@ -85,7 +86,7 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
             IN, EQUALS, AND,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL,
-            IS_NULL);
+            IS_NULL, OR);
 
     protected DingoIndexNonLeftMatchRule(Config config) {
         super(config);
@@ -271,6 +272,9 @@ public class DingoIndexNonLeftMatchRule extends RelRule<DingoIndexNonLeftMatchRu
             } catch (Exception e) {
                 LogUtils.error(log, e.getMessage(), e);
             }
+            return null;
+        }
+        if (scan.getFilter().isA(OR)) {
             return null;
         }
         LogicalIndexFullScan indexFullScan = new LogicalIndexFullScan(

@@ -243,8 +243,8 @@ public final class JobTableUtil {
     public static void recoverGcDeleteSchema(long schemaId) {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
-            String removeSql = "delete from mysql.gc_delete_range where " +
-                "element_type='SCHEMA' and element_id='" + schemaId + "'";
+            String removeSql = "delete from mysql.gc_delete_range where "
+                + "element_type='SCHEMA' and element_id='" + schemaId + "'";
             session.executeUpdate(convertSql(removeSql));
             session.commit();
         } catch (Exception e) {

@@ -1299,11 +1299,12 @@ public class MetaService implements io.dingodb.meta.MetaService {
 
     @Override
     public void dropSchema(long jobId, Long schemaId) {
+        long cacheTso = TsoService.getDefault().cacheTso();
         GcDeleteRegion gcDeleteRegion = GcDeleteRegion
             .builder()
             .jobId(jobId)
-            .regionId(0)
-            .startTs(TsoService.getDefault().cacheTso())
+            .regionId(cacheTso)
+            .startTs(cacheTso)
             .startKey("")
             .endKey("")
             .eleId(schemaId.toString())
@@ -1368,6 +1369,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         if (table == null) {
             return false;
         }
+        if (jobId < 0) {
+            dropTableMeta(schemaId, tableId);
+        }
         boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
 
         long ts = TsoService.getDefault().tso();
@@ -1400,6 +1404,9 @@ public class MetaService implements io.dingodb.meta.MetaService {
         boolean autoInc = table.getColumns().stream().anyMatch(Column::isAutoIncrement);
 
         long ts = TsoService.getDefault().tso();
+        if (jobId < 0) {
+            dropTableMeta(tenantId, schemaId, table.tableId.seq);
+        }
 
         if (!"view".equalsIgnoreCase(table.getTableType())) {
             dropRegionByTable(table.getTableId(), jobId, ts, autoInc);

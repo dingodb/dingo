@@ -1415,6 +1415,12 @@ SqlUseSchema SqlUseSchema(): {
   <USE> <IDENTIFIER> { s = span(); return new SqlUseSchema(s.end(this), token.image); }
 }
 
+SqlInitSchema SqlInitSchema(): {
+   Span s;
+} {
+  <INIT> <IDENTIFIER> { s = span(); return new SqlInitSchema(s.end(this), token.image); }
+}
+
 SqlPrepare SqlPrepare(): {
    Span s;
    String statementName;
