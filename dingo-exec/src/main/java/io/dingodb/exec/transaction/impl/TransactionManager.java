@@ -160,8 +160,8 @@ public final class TransactionManager {
     }
 
     public static CommonId getServerId() {
-        return DingoConfiguration.serverId() == null ?
-            new CommonId(CommonId.CommonType.SCHEMA, 0L, 0L) : DingoConfiguration.serverId();
+        return DingoConfiguration.serverId() == null
+            ? new CommonId(CommonId.CommonType.SCHEMA, 0L, 0L) : DingoConfiguration.serverId();
     }
 
     public static long lockTtlTm() {

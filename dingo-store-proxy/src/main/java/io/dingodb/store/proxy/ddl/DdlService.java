@@ -159,12 +159,12 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
                 return obj;
             }
         }
-        LogUtils.error(log, "[ddl] ddlService getTable by id from store kv, id:{}", id);
+        LogUtils.warn(log, "[ddl] ddlService getTable by id from store kv, id:{}", id);
         InfoSchemaService service = InfoSchemaService.root();
         if (id.type == CommonId.CommonType.INDEX) {
-            return service.getTableDef(id.domain, id.seq);
-        } else {
             return service.getIndexDef(id.domain, id.seq);
+        } else {
+            return service.getTableDef(id.domain, id.seq);
         }
     }
 

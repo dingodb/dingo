@@ -100,7 +100,8 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
         try {
             RelNode logicalProject = LogicalProject.create(
                 union,
-                ImmutableList.of(), rexNodeList, union.getRowTypeWithContext(SqlOperator.CallContext.IN_UNION), ImmutableSet.of()
+                ImmutableList.of(), rexNodeList, union.getRowTypeWithContext(SqlOperator.CallContext.IN_UNION),
+                ImmutableSet.of()
             );
             union.addProject = true;
 

@@ -17,6 +17,7 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.DingoRepeatUnion;
+import io.dingodb.calcite.rel.DingoTableSpool;
 import io.dingodb.calcite.rel.dingo.DingoRoot;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -38,7 +39,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelRecordType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
@@ -48,7 +54,10 @@ import java.util.List;
 import static io.dingodb.exec.utils.OperatorCodeUtils.REPEAT_UNION;
 
 @Slf4j
-public class DingoRepeatUnionVisitFun {
+public final class DingoRepeatUnionVisitFun {
+    private DingoRepeatUnionVisitFun() {
+    }
+
     public static @NonNull Collection<Vertex> visit(
         Job job,
         @NonNull IdGenerator idGenerator,
@@ -58,8 +67,10 @@ public class DingoRepeatUnionVisitFun {
         @NonNull DingoRepeatUnion rel,
         ExecuteVariables executeVariables
     ) {
-        Job seedJob = getSpoolJob(transaction.getStartTs(), rel.getSeedRel(), transaction, executeVariables);
-        Job iterationJob = getSpoolJob(transaction.getStartTs(), rel.getIterativeRel(), transaction, executeVariables);
+        List<RexNode> rexNodeList = checkUnionType(rel.getSeedRel(), rel.getIterativeRel());
+        Job seedJob = getSpoolJob(transaction.getStartTs(), rel, transaction, executeVariables, true, rexNodeList);
+        Job iterationJob = getSpoolJob(transaction.getStartTs(), rel,
+            transaction, executeVariables, false, rexNodeList);
         RepeatUnionParam repeatUnionParam = new RepeatUnionParam(seedJob, iterationJob,
             rel.all, executeVariables.getIterationLimit());
         Task task = job.getOrCreate(currentLocation, idGenerator);
@@ -73,18 +84,40 @@ public class DingoRepeatUnionVisitFun {
     }
 
     public static Job getSpoolJob(
-        long startTs, RelNode relNode, ITransaction transaction, ExecuteVariables executeVariables
+        long startTs, DingoRepeatUnion rel,
+        ITransaction transaction, ExecuteVariables executeVariables,
+        boolean seed,
+        List<RexNode> rexNodeList
     ) {
         RelNode relInput;
-        if (relNode instanceof RelSubset) {
-            RelSubset relSubset = (RelSubset) relNode;
-            relNode = relSubset.getBest();
-
-            //List<Integer> selection = new ArrayList<>();
-            //selection.add(0);
-            relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, null);
+        if (seed) {
+            RelNode relNode = rel.getSeedRel();
+            if (relNode instanceof RelSubset) {
+                RelSubset relSubset = (RelSubset) relNode;
+                relNode = relSubset.getBest();
+                if (relNode == null) {
+                    throw new RuntimeException("can not get the best rel");
+                }
+                if (rexNodeList != null && relNode instanceof DingoTableSpool) {
+                    DingoTableSpool dingoTableSpool = (DingoTableSpool) relNode;
+                    dingoTableSpool.setRexNodeList(rexNodeList);
+                }
+                relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, null);
+            } else {
+                relInput = relNode;
+            }
         } else {
-            relInput = relNode;
+            RelNode relNode = rel.getIterativeRel();
+            if (relNode instanceof RelSubset) {
+                RelSubset relSubset = (RelSubset) relNode;
+                relNode = relSubset.getBest();
+                if (relNode == null) {
+                    throw new RuntimeException("can not get the best rel");
+                }
+                relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, null);
+            } else {
+                relInput = relNode;
+            }
         }
         JobManager jobManager = JobManagerImpl.INSTANCE;
         long jobSeqId = TsoService.getDefault().cacheTso();
@@ -103,5 +136,34 @@ public class DingoRepeatUnionVisitFun {
             false, false, false, 1, "root", "%"
         );
         return job;
+    }
+
+    public static List<RexNode> checkUnionType(RelNode seedRel, RelNode iterativeRel) {
+        RelDataType relDataType1 = seedRel.getRowType();
+        RelDataType relDataType2 = iterativeRel.getRowType();
+        if (relDataType1.getFieldCount() != relDataType2.getFieldCount()) {
+            return null;
+        }
+        List<RexNode> rexNodeList = new ArrayList<>();
+        int diffCnt = 0;
+        for (int i = 0; i < relDataType1.getFieldCount(); i ++) {
+            RelDataTypeField typeField1 = relDataType1.getFieldList().get(i);
+            RelDataTypeField typeField2 = relDataType2.getFieldList().get(i);
+            if (typeField1.getType() != typeField2.getType()) {
+                RelDataType targetType = typeField2.getType();
+                RexInputRef inputRef = new RexInputRef(i, typeField1.getType());
+                List<RexNode> operands = new ArrayList<>();
+                operands.add(inputRef);
+                RexNode cast = new RexCall(targetType, SqlStdOperatorTable.CAST, operands);
+                rexNodeList.add(cast);
+                diffCnt ++;
+            } else {
+                rexNodeList.add(new RexInputRef(i, typeField1.getType()));
+            }
+        }
+        if (diffCnt == 0) {
+            return null;
+        }
+        return rexNodeList;
     }
 }

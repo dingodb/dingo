@@ -16,14 +16,25 @@
 
 package io.dingodb.exec.operator.params;
 
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.calcite.rex.RexNode;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class TableSpoolParam extends AbstractParams {
     public Collection list;
     public Collection tempCollection;
+    @Setter
+    @Getter
+    private List<SqlExpr> projects;
+    @Setter
+    private DingoType schema;
 
     public TableSpoolParam(Collection list) {
         this.list = list;
@@ -33,5 +44,8 @@ public class TableSpoolParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
+        if (projects != null) {
+            projects.forEach(expr -> expr.compileIn(schema, vertex.getParasType()));
+        }
     }
 }

@@ -17,6 +17,7 @@
 package io.dingodb.exec.aggregate;
 
 import com.google.common.collect.Iterators;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.ArrayUtils;
 import io.dingodb.exec.tuple.TupleKey;
@@ -40,6 +41,7 @@ public class AggCache implements Iterable<Object[]> {
         this.keyMapping = keyMapping;
         this.aggList = aggList;
         this.cache = new ConcurrentHashMap<>();
+        LogUtils.info(log, "aggCache init");
     }
 
     private Object @NonNull [] getVars(TupleKey key) {
@@ -89,6 +91,7 @@ public class AggCache implements Iterable<Object[]> {
     }
 
     public void clear() {
+        LogUtils.info(log, "aggCache clear, size:{}", cache.size());
         cache.clear();
     }
 }

@@ -20,6 +20,7 @@ import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.visitor.DingoRelVisitor;
 import io.dingodb.calcite.visitor.function.DingoTableSpoolVisitFun;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -29,12 +30,19 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableSpool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.impl.ListTransientTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.List;
 
 public class DingoTableSpool extends TableSpool implements DingoRel {
     @Getter
     private ListTransientTable listTransientTable;
+
+    @Getter
+    @Setter
+    private List<RexNode> rexNodeList;
 
     public DingoTableSpool(
         RelOptCluster cluster, RelTraitSet traitSet, RelNode input, Type readType,

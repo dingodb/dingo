@@ -18,6 +18,8 @@ package io.dingodb.calcite.visitor.function;
 
 import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.rel.DingoTableSpool;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.SqlExprUtils;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
@@ -25,11 +27,13 @@ import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.Task;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.TableSpoolParam;
 import io.dingodb.exec.transaction.base.ITransaction;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Collection;
+import java.util.List;
 
 import static io.dingodb.calcite.rel.DingoRel.dingo;
 import static io.dingodb.common.util.Utils.sole;
@@ -46,8 +50,12 @@ public class DingoTableSpoolVisitFun {
         @NonNull DingoTableSpool rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(dingoJobVisitor);
-
         TableSpoolParam tableSpoolParam = new TableSpoolParam(rel.getListTransientTable().getModifiableCollection());
+        if (rel.getRexNodeList() != null) {
+            List<SqlExpr> sqlExprList = SqlExprUtils.toSqlExprList(rel.getRexNodeList(), rel.getTable().getRowType());
+            tableSpoolParam.setProjects(sqlExprList);
+            tableSpoolParam.setSchema(DefinitionMapper.mapToDingoType(rel.getTable().getRowType()));
+        }
         Vertex vertex = new Vertex(TABLE_SPOOL, tableSpoolParam);
         Vertex input = sole(inputs);
         Task task = input.getTask();
