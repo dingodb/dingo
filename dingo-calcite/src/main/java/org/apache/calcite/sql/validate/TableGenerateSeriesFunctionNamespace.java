@@ -28,6 +28,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.SqlGenerateSeriesOperator;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -76,8 +77,17 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
             if (operandList.size() < 4) {
                 throw new RuntimeException("Incorrect parameter count for generate series function");
             }
-            if (operandList.get(1) == null || operandList.get(2) == null) {
-                throw new IllegalArgumentException("Parameter cannot be null");
+            if (operandList.get(1) instanceof SqlLiteral) {
+                if (((SqlLiteral) operandList.get(1)).getValue() == null) {
+                    throw new IllegalArgumentException("Parameter cannot be null");
+                }
+                throw new IllegalArgumentException("Invalid parameter");
+            }
+            if (operandList.get(2) instanceof SqlLiteral) {
+                if (((SqlLiteral) operandList.get(2)).getValue() == null) {
+                    throw new IllegalArgumentException("Parameter cannot be null");
+                }
+                throw new IllegalArgumentException("Invalid parameter");
             }
             SqlIdentifier column1 = (SqlIdentifier) operandList.get(1);
             SqlIdentifier column2 = (SqlIdentifier) operandList.get(2);

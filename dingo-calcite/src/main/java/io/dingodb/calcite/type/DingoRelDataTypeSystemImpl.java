@@ -27,7 +27,7 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
 
     public static RelDataTypeSystem DEFAULT = new DingoRelDataTypeSystemImpl();
 
-    public static final int INTERVAL_START_PRECISION = 8;
+    public static final int INTERVAL_START_PRECISION = Integer.MAX_VALUE;
 
     @Override
     @Nullable
@@ -40,6 +40,30 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
             return typeFactory.createSqlType(SqlTypeName.DOUBLE);
         } else {
             return super.deriveDecimalDivideType(typeFactory, type1, type2);
+        }
+    }
+
+    @Override
+    public int getMaxScale(SqlTypeName typeName) {
+        switch (typeName) {
+            case DECIMAL:
+                return this.getMaxNumericScale();
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_SECOND:
+                return INTERVAL_START_PRECISION;
+            default:
+                return -1;
         }
     }
 
@@ -69,7 +93,7 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return INTERVAL_START_PRECISION;
+                return INTERVAL_START_PRECISION - 1;
             case TINYINT:
                 return 3;
             case SMALLINT:
