@@ -25,13 +25,21 @@ import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.math.BigDecimal;
+
 public final class DingoParserUtils {
 
     public static DingoIntervalLiteral parseIntervalLiteral(SqlParserPos pos,
                                                             int sign,
                                                             String s,
                                                             SqlIntervalQualifier intervalQualifier) {
-        return DingoSqlLiteral.createInterval(sign, sign == -1 ? "-" + s : s, intervalQualifier, pos);
+        if (sign == -1) {
+            s = "-" + s;
+        }
+        if (s.contains(".")) {
+            s = new BigDecimal(Math.round(new BigDecimal(s).doubleValue())).toString();
+        }
+        return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
     }
 
     public static long intervalToMonths(SqlIntervalLiteral.IntervalValue interval) {
