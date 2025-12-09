@@ -30,4 +30,5 @@ dependencies {
     implementation project(':dingo-transaction-api')
     implementation project(":dingo-driver:dingo-driver-common")
     implementation group: 'io.dropwizard.metrics', name: 'metrics-core', version: 'metrics-core'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
 }

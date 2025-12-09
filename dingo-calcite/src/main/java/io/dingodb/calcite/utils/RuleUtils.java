@@ -17,7 +17,8 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -26,6 +27,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlCastFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
@@ -35,7 +37,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.TimeZone;
 
 public class RuleUtils {
 
@@ -88,14 +89,17 @@ public class RuleUtils {
                     if (rexLiteral.getValue() instanceof NlsString) {
                         NlsString val = (NlsString) rexLiteral.getValue();
                         RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
-                        Calendar calendar = Calendar.getInstance();
-                        Date date = DateTimeUtils.parseDate(val.getValue());
-                        if (date == null) {
+                        Calendar calendar = Calendar.getInstance(DingoTimeZoneContext.getTimeZone());
+                        Object dateTime =
+                            DingoTimeZoneContext.getProcessor().processDateTime(val.getValue(), DateTimeType.DATE);
+                        if (dateTime == null) {
                             return false;
                         }
+                        Date date = (Date) dateTime;
                         calendar.setTime(date);
+                        DateString dateString = DateString.fromCalendarFields(calendar);
                         info.index = ((RexInputRef) op0).getIndex();
-                        info.value = rexBuilder.makeDateLiteral(calendar);
+                        info.value = rexBuilder.makeDateLiteral(dateString);
                         return true;
                     }
                 } else if (rexCall.op instanceof SqlCastFunction
@@ -106,13 +110,14 @@ public class RuleUtils {
                     if (rexLiteral.getValue() instanceof NlsString) {
                         NlsString val = (NlsString) rexLiteral.getValue();
                         RexBuilder rexBuilder = new RexBuilder(DingoSqlTypeFactory.INSTANCE);
-                        Timestamp timestamp = DateTimeUtils.parseTimestamp(val.getValue());
-                        if (timestamp == null) {
+                        Object dateTime =
+                            DingoTimeZoneContext.getProcessor().processDateTime(val.getValue(), DateTimeType.TIMESTAMP);
+                        if (dateTime == null) {
                             return false;
                         }
-                        Calendar calendar = Calendar.getInstance();
+                        Timestamp timestamp = (Timestamp) dateTime;
+                        Calendar calendar = Calendar.getInstance(DingoTimeZoneContext.getTimeZone());
                         calendar.setTimeInMillis(timestamp.getTime());
-                        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
                         TimestampString timestampString = TimestampString.fromCalendarFields(calendar);
                         info.index = ((RexInputRef) op0).getIndex();
                         info.value = rexBuilder.makeTimestampLiteral(timestampString, 19);

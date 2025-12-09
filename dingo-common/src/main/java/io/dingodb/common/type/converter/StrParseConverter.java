@@ -16,7 +16,8 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -104,19 +105,19 @@ public class StrParseConverter implements DataConverter {
     @Override
     public Date convertDateFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
-        return DateTimeUtils.parseDate(strValue);
+        return (Date) DingoTimeZoneContext.getProcessor().processDateTime(strValue, DateTimeType.DATE);
     }
 
     @Override
     public Time convertTimeFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
-        return DateTimeUtils.parseTime(strValue);
+        return (Time) DingoTimeZoneContext.getProcessor().processDateTime(strValue, DateTimeType.TIME);
     }
 
     @Override
     public Timestamp convertTimestampFrom(@NonNull Object value) {
         String strValue = value instanceof String ? (String) value : value.toString();
-        return DateTimeUtils.parseTimestamp(strValue);
+        return (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(strValue, DateTimeType.TIMESTAMP);
     }
 
     @Override

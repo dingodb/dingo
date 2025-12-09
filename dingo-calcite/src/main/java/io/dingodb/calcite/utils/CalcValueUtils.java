@@ -17,10 +17,12 @@
 package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.expr.SqlExprEvalContext;
 import io.dingodb.exec.type.converter.ExprConverter;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.ExprContext;
@@ -106,6 +108,11 @@ public final class CalcValueUtils {
             @Override
             public TimeZone getTimeZone() {
                 return call.getPlanner().getContext().unwrap(TimeZone.class);
+            }
+
+            @Override
+            public DingoTimeZoneProcessor getProcessor() {
+                return DingoTimeZoneContext.getProcessor();
             }
         };
     }

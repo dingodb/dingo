@@ -16,11 +16,11 @@
 
 package io.dingodb.common.type.converter;
 
-import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
-import io.dingodb.common.type.scalar.BitType;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.Type;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.apache.calcite.avatica.util.ByteString;
 
@@ -29,7 +29,9 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -233,45 +235,46 @@ public interface DataConverter {
     }
 
     default Date convertDateFrom(@NonNull Object value) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
         if (value instanceof Timestamp) {
-            Timestamp timestamp = (Timestamp) value;
-            LocalDateTime localDateTime = timestamp.toLocalDateTime();
-            return new Date(localDateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli());
+            return (Date) processor.processDateTime(value, DateTimeType.DATE);
         } else if (value instanceof Date) {
             return (Date) value;
         } else if (value instanceof String) {
-            return DateTimeUtils.parseDate((String) value);
+            return (Date) processor.processDateTime(value, DateTimeType.DATE);
         } else {
-            return new Date(System.currentTimeMillis());
+            return Date.valueOf((LocalDate) processor.currentDate().getValue());
         }
     }
 
     default Time convertTimeFrom(@NonNull Object value) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
         if (value instanceof Time) {
             return (Time) value;
         } else if (value instanceof Date) {
-            Date date = (Date) value;
-            return new Time(date.getTime());
+            return (Time) processor.processDateTime(value, DateTimeType.DATE, DateTimeType.TIME);
         } else if (value instanceof Timestamp) {
-            Timestamp timestamp = (Timestamp) value;
-            return new Time(timestamp.getTime());
+            return (Time) processor.processDateTime(value, DateTimeType.TIME);
         } else if (value instanceof String) {
-            return DateTimeUtils.parseTime((String) value);
+            return (Time) processor.processDateTime(value, DateTimeType.TIME);
         } else {
-            return new Time(System.currentTimeMillis());
+            return Time.valueOf((LocalTime) processor.currentTime().getValue());
         }
     }
 
     default Timestamp convertTimestampFrom(@NonNull Object value) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
         if (value instanceof Timestamp) {
             return (Timestamp) value;
         } else if (value instanceof Date) {
-            Date date = (Date) value;
-            return new Timestamp(date.getTime());
+            return (Timestamp) processor.processDateTime(value, DateTimeType.DATE, DateTimeType.TIMESTAMP);
         } else if (value instanceof String) {
-            return DateTimeUtils.parseTimestamp((String) value);
+            return (Timestamp) processor.processDateTime(value, DateTimeType.TIMESTAMP);
         } else {
-            return new Timestamp(System.currentTimeMillis());
+            return Timestamp.valueOf((LocalDateTime) processor.currentTimestamp().getValue());
         }
     }
 

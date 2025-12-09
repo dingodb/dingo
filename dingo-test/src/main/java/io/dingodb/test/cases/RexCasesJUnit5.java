@@ -16,7 +16,9 @@
 
 package io.dingodb.test.cases;
 
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -39,7 +41,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
  */
 public final class RexCasesJUnit5 implements ArgumentsProvider {
     private static @NonNull Arguments unixTimestampCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        Timestamp timestamp = (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(timestampStr, DateTimeType.TIMESTAMP);
         assert timestamp != null;
         return arguments(
             "unix_timestamp('" + timestampStr + "')",
@@ -49,10 +51,9 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
     }
 
     private static @NonNull Arguments unixTimestampLiteralCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        Timestamp timestamp = (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(timestampStr, DateTimeType.TIMESTAMP);
         assert timestamp != null;
         long millis = timestamp.getTime();
-        millis = millis + TimeZone.getDefault().getOffset(millis);
         return arguments(
             "unix_timestamp(TIMESTAMP '" + timestampStr + "')",
             "UNIX_TIMESTAMP(TIMESTAMP(" + DateTimeUtils.toSecond(millis, 3) + "))",
@@ -61,7 +62,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
     }
 
     private static @NonNull Arguments fromUnixTimeCase(@Nonnull String timestampStr) {
-        Timestamp timestamp = DateTimeUtils.parseTimestamp(timestampStr);
+        Timestamp timestamp = (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(timestampStr, DateTimeType.TIMESTAMP);
         assert timestamp != null;
         return arguments(
             "from_unixtime(" + timestamp.getTime() / 1000L + ")",
@@ -229,7 +230,7 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
             arguments(
                 "CAST('2020-11-01 01:01:01' AS TIMESTAMP)",
                 "CASTTIMESTAMP('2020-11-01 01:01:01')",
-                DateTimeUtils.parseTimestamp("2020-11-01 01:01:01")
+                Timestamp.valueOf("2020-11-01 01:01:01")
             ),
             /*arguments(
                 "* from (SELECT CAST('2020-11-01 01:01:01' AS TIMESTAMP))",

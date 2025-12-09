@@ -16,7 +16,17 @@
 
 package io.dingodb.common.concurrent;
 
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@NoArgsConstructor
+@AllArgsConstructor
 public class Context {
 
-
+    @Setter
+    @Getter
+    private DingoTimeZoneProcessor processor;
 }

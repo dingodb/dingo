@@ -30,6 +30,7 @@ import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleType;
 import io.dingodb.common.type.scalar.StringType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -240,6 +241,11 @@ public class LoadDataExpand {
         @Override
         public TimeZone getTimeZone() {
             return TimeZone.getDefault();
+        }
+
+        @Override
+        public DingoTimeZoneProcessor getProcessor() {
+            return new DingoTimeZoneProcessor(TimeZone.getDefault().toZoneId());
         }
     };
 

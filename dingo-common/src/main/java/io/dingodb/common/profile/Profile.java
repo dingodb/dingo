@@ -18,13 +18,14 @@ package io.dingodb.common.profile;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteUtils;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -160,7 +161,8 @@ public class Profile {
                         + ",taskType:" + sourceProfile.getTaskType();
                 }
             }
-            val[1] = DateTimeUtils.timeFormat(new Time(profile.start));
+            val[1] = DingoTimeZoneContext.getProcessor()
+                .formatDateTime(new Time(profile.start), DateTimeFormatter.ISO_LOCAL_TIME);
             val[2] = String.valueOf(profile.getDuration());
             val[3] = this.getCount();
             rowList.add(val);

@@ -16,12 +16,13 @@
 
 package io.dingodb.common.profile;
 
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -102,7 +103,8 @@ public class SqlProfile extends Profile {
             if (planEndTime > 0) {
                 Object[] val = new Object[4];
                 val[0] = termStr + "schedule job";
-                val[1] = DateTimeUtils.timeFormat(new Time(execProfile.getStart()));
+                val[1] = DingoTimeZoneContext.getProcessor()
+                    .formatDateTime(new Time(execProfile.getStart()), DateTimeFormatter.ISO_LOCAL_TIME);
                 val[2] = String.valueOf(execProfile.start - planEndTime);
                 val[3] = this.getCount();
                 rowList.add(val);

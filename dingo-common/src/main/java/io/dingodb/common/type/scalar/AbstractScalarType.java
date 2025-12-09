@@ -19,6 +19,7 @@ package io.dingodb.common.type.scalar;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.NullableType;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.serial.schema.DingoSchema;
 import lombok.EqualsAndHashCode;
@@ -27,6 +28,7 @@ import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @EqualsAndHashCode(of = {"type"}, callSuper = true)
@@ -63,6 +65,9 @@ public abstract class AbstractScalarType extends NullableType {
 
     @Override
     protected Object convertValueTo(@NonNull Object value, @NonNull DataConverter converter) {
+        if (value instanceof Timestamp) {
+            return DateTimeUtils.timestampFormat((Timestamp) value);
+        }
         return value;
     }
 

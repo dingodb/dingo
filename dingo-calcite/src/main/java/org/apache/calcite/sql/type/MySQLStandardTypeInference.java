@@ -19,6 +19,8 @@ package org.apache.calcite.sql.type;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
@@ -176,7 +178,7 @@ public class MySQLStandardTypeInference {
                     scale, true
                 );
             } else if (SqlTypeUtil.isDate(operandType) ||
-                (SqlTypeUtil.isString(operandType) && intervalType != MySQLIntervalType.INTERVAL_DAY)) {
+                (SqlTypeUtil.isString(operandType) && DingoTimeZoneContext.getProcessor().inferInputType(operandType) == DateTimeType.DATE)) {
                 if (intervalType == MySQLIntervalType.INTERVAL_DAY
                     || intervalType == MySQLIntervalType.INTERVAL_MONTH
                     || intervalType == MySQLIntervalType.INTERVAL_YEAR

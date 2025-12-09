@@ -26,14 +26,18 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +74,7 @@ public final class JobTableUtil {
     }
 
     public static String addHistoryDDLJob2Table(Session session, DdlJob job, boolean updateRawArgs) {
-        String time = DateTimeUtils.dateFormat(new Date(System.currentTimeMillis()), "yyyy-MM-dd HH:mm:ss");
+        String time = DateTimeUtils.timestampFormat(Timestamp.valueOf(LocalDateTime.now()), "yyyy-MM-dd HH:mm:ss");
         String sql = "insert into mysql.dingo_ddl_history(job_id, job_meta, schema_name, table_name, schema_ids, "
             + "table_ids, create_time, type) values (%d, %s, %s, %s, %s, %s, %s, %d)";
         try {
@@ -108,9 +112,10 @@ public final class JobTableUtil {
         DingoMetrics.timer("delMdlKeyEtcd").update(sub, TimeUnit.MILLISECONDS);
     }
 
-    public static Pair<List<DdlJob>, String> getGenerateJobs(Session session) {
+    public static Pair<List<DdlJob>, String> getGenerateJobs(Session session, DingoTimeZoneProcessor processor) {
         try {
             return getJobs(session, general, job1 -> {
+                DingoTimeZoneContext.setProcessor(processor);
                 Session session1 = SessionUtil.INSTANCE.getSession();
                 try {
                     if (job1.getActionType() == ActionType.ActionDropSchema) {

@@ -17,6 +17,8 @@
 package io.dingodb.exec.transaction.util;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Timestamp;
@@ -31,10 +33,9 @@ public class TimeUtils {
     public static final String FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     public static final String TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static String to(Timestamp timestamp) {
-        Instant instant = timestamp.toInstant();
-        ZonedDateTime zonedDateTime = instant.atZone(ZoneId.of("UTC+8"));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
-        return zonedDateTime.format(formatter);
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
+        return processor.formatDateTime(timestamp, DateTimeFormatter.ofPattern(FORMAT));
     }
 
     public static Timestamp toTimeStamp(String dateString) {

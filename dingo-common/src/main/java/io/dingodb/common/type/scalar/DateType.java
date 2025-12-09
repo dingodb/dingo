@@ -20,9 +20,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoTypeVisitor;
 import io.dingodb.common.type.NullType;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.serial.schema.DingoSchema;
@@ -32,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.sql.Date;
+import java.time.LocalDate;
 
 @Slf4j
 @JsonTypeName("date")
@@ -54,7 +58,7 @@ public class DateType extends AbstractScalarType {
     @Override
     public @NonNull String format(@Nullable Object value) {
         return value != null
-            ? DateTimeUtils.dateFormat((Date) value) + ":" + this
+            ? DingoTimeZoneContext.getProcessor().toSafeString(value) + ":" + this
             : NullType.NULL.format(null);
     }
 
@@ -76,16 +80,18 @@ public class DateType extends AbstractScalarType {
                 date = new Date((Long) value);
                 return converter.convert(date);
             } else if (value instanceof String) {
+                DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
                 try {
-                    date = DateTimeUtils.parseDate(value.toString());
+                    date = (Date) processor.processDateTime(value, DateTimeType.DATE);
                 } catch (Exception ignore) {
                     try {
-                        date = DateTimeUtils.parseDate(value.toString(), DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
+                        // date = DateTimeUtils.parseDate(value.toString(), DateTimeUtils.DEFAULT_PARSE_TIMESTAMP_FORMATTERS);
+                        date = (Date) processor.processDateTime(value, DateTimeType.DATE);
                     } catch (Exception ignore1) {
                     }
                 }
                 if (date == null) {
-                    return converter.convert(new Date(System.currentTimeMillis()));
+                    return Date.valueOf((LocalDate) processor.currentDate().getValue());
                 } else {
                     return converter.convert(date);
                 }

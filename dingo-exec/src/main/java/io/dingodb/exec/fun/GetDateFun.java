@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
@@ -43,7 +46,6 @@ import java.util.regex.Pattern;
 
 public class GetDateFun extends UnaryOp {
 
-    private static final ZoneId SERVER_ZONE = ZoneId.of("Asia/Shanghai");
     private static final Locale SERVER_LOCALE = Locale.CHINA;
     private static final Pattern SHORT_YEAR_PATTERN = Pattern.compile("^(\\d{2})[-/.]?(\\d{1,2})[-/.]?(\\d{1,2})");
     public static final DateFun INSTANCE = new DateFun();
@@ -56,78 +58,77 @@ public class GetDateFun extends UnaryOp {
     private static final List<DateTimeFormatter> DATE_FORMATTERS = new ArrayList<>();
 
     static {
-        addFormatter(DateTimeFormatter.ISO_LOCAL_DATE);                    // yyyy-MM-dd
-        addPattern("yyyy-MM-dd HH:mm:ss[.SSSSSS]");
-        addPattern("yyyy-M-d[ H:m:s[.SSSSSS]]");
+        ZoneId defaultZone = DingoTimeZoneContext.getTimeZone().toZoneId();
+        addFormatter(DateTimeFormatter.ISO_LOCAL_DATE, defaultZone);                    // yyyy-MM-dd
+        addPattern("yyyy-MM-dd HH:mm:ss[.SSSSSS]", defaultZone);
+        addPattern("yyyy-M-d[ H:m:s[.SSSSSS]]", defaultZone);
 
-        addPattern("yyyy/MM/dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/MM/d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy/M/d[ H:m:s[.SSSSSS]]");
-        addPattern("yyyy.MM.dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.dd[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.MM.d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.d[ HH:mm:ss[.SSSSSS]]");
-        addPattern("yyyy.M.d[ H:m:s[.SSSSSS]]");
-        addPattern("yyyy年M月d日");
-        addPattern("yyyy年M月dd日");
-        addPattern("yyyy年MM月d日");
-        addPattern("yyyy年M月d日[ H时m分s秒[.SSSSSS]]", SERVER_LOCALE);
+        addPattern("yyyy/MM/dd[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy/M/dd[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy/MM/d[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy/M/d[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy/M/d[ H:m:s[.SSSSSS]]", defaultZone);
+        addPattern("yyyy.MM.dd[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy.M.dd[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy.MM.d[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy.M.d[ HH:mm:ss[.SSSSSS]]", defaultZone);
+        addPattern("yyyy.M.d[ H:m:s[.SSSSSS]]", defaultZone);
+        addPattern("yyyy年M月d日", defaultZone);
+        addPattern("yyyy年M月dd日", defaultZone);
+        addPattern("yyyy年MM月d日", defaultZone);
+        addPattern("yyyy年M月d日[ H时m分s秒[.SSSSSS]]", defaultZone, SERVER_LOCALE);
 
-        addPattern("yyyy-MM-dd HH:mm:ssXXX");
+        addPattern("yyyy-MM-dd HH:mm:ssXXX", defaultZone);
 
-        addPattern("yyyyMMdd");                                            // 20231005
-        addPattern("yyyyMMddHHmm");
-        addPattern("yyyyMMddHHmmss");                                      // 20231005153045
-        addPattern("yyyyMMdd[HHmmss[SSSSSS]]");
-        addPattern("yyMMdd");                                              // 231005
-        addPattern("dd-MMM-yy", Locale.ENGLISH);                    // 05-Oct-23
+        addPattern("yyyyMMdd", defaultZone);                                            // 20231005
+        addPattern("yyyyMMddHHmm", defaultZone);
+        addPattern("yyyyMMddHHmmss", defaultZone);                                      // 20231005153045
+        addPattern("yyyyMMdd[HHmmss[SSSSSS]]", defaultZone);
+        addPattern("yyMMdd", defaultZone);                                              // 231005
+        addPattern("dd-MMM-yy", defaultZone, Locale.ENGLISH);                    // 05-Oct-23
 
-        addPattern("yy-MM-dd");
-        addPattern("yy/MM/dd");
-        addPattern("yy.MM.dd");
+        addPattern("yy-MM-dd", defaultZone);
+        addPattern("yy/MM/dd", defaultZone);
+        addPattern("yy.MM.dd", defaultZone);
     }
 
     @Override
     public Object evalValue(Object value, ExprConfig config) {
-        return date(value);
+        DingoTimeZoneProcessor processor = config.getProcessor();
+        return date(value, processor);
     }
 
-    private static void addPattern(String pattern) {
+    private static void addPattern(String pattern, ZoneId zoneId) {
         DATE_FORMATTERS.add(new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .parseLenient()
             .appendPattern(pattern)
             .toFormatter(SERVER_LOCALE)
-            .withZone(SERVER_ZONE));
+            .withZone(zoneId));
     }
 
-    private static void addPattern(String pattern, Locale locale) {
+    private static void addPattern(String pattern, ZoneId zoneId, Locale locale) {
         DATE_FORMATTERS.add(new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .parseLenient()
             .appendPattern(pattern)
             .toFormatter(locale)
-            .withZone(SERVER_ZONE));
+            .withZone(zoneId));
     }
 
-    private static void addFormatter(DateTimeFormatter formatter) {
-        DATE_FORMATTERS.add(formatter.withZone(SERVER_ZONE));
+    private static void addFormatter(DateTimeFormatter formatter, ZoneId zoneId) {
+        DATE_FORMATTERS.add(formatter.withZone(zoneId));
     }
 
-    public static String date(Object value) {
+    public static String date(Object value, DingoTimeZoneProcessor processor) {
         if (value == null) return null;
 
         try {
-            if (value instanceof Timestamp) {
-                return handleTimestamp((Timestamp) value);
-            }
-            if (value instanceof Date) {
-                return handleLegacyDate((Date) value);
+            if (value instanceof Timestamp || value instanceof Date) {
+                return processor.toSafeString(processor.processDateTime(value, DateTimeType.DATE));
             }
             if (value instanceof String) {
-                return handleString((String) value);
+                return handleString((String) value, processor);
             }
         } catch (DateTimeException e) {
             return null;
@@ -135,28 +136,17 @@ public class GetDateFun extends UnaryOp {
         return null;
     }
 
-    private static String handleTimestamp(Timestamp timestamp) {
-        return timestamp.toInstant()
-            .atZone(SERVER_ZONE)
-            .toLocalDate()
-            .toString();
-    }
-
-    private static String handleLegacyDate(Date date) {
-        return date.toInstant()
-            .atZone(SERVER_ZONE)
-            .toLocalDate()
-            .toString();
-    }
-
-    private static String handleString(String dateStr) {
+    private static String handleString(String dateStr, DingoTimeZoneProcessor processor) {
         if (!dateStr.matches(".*[年月日时].*")) {
             Matcher shortYearMatcher = SHORT_YEAR_PATTERN.matcher(dateStr);
             if (shortYearMatcher.find()) {
                 String converted = convertTwoDigitYear(shortYearMatcher.group(1),
                     shortYearMatcher.group(2),
-                    shortYearMatcher.group(3));
-                if (converted != null) return converted;
+                    shortYearMatcher.group(3),
+                    processor);
+                if (converted != null) {
+                    return converted;
+                }
             }
         }
 
@@ -168,7 +158,7 @@ public class GetDateFun extends UnaryOp {
                     YearMonth::from,
                     Year::from);
 
-                return parseToDateString(parsed);
+                return parseToDateString(parsed, processor);
             } catch (DateTimeParseException e) {
                 // ignore
             }
@@ -176,7 +166,7 @@ public class GetDateFun extends UnaryOp {
         return null;
     }
 
-    private static String convertTwoDigitYear(String yy, String mm, String dd) {
+    private static String convertTwoDigitYear(String yy, String mm, String dd, DingoTimeZoneProcessor processor) {
         try {
             int year = Integer.parseInt(yy);
             int month = Integer.parseInt(mm);
@@ -184,26 +174,27 @@ public class GetDateFun extends UnaryOp {
 
             int fullYear = (year <= 69) ? 2000 + year : 1900 + year;
 
-            return LocalDate.of(fullYear, month, day).toString();
+            return processor.toSafeString(Date.valueOf(LocalDate.of(fullYear, month, day)));
         } catch (DateTimeException e) {
             return null;
         }
     }
 
-    private static String parseToDateString(TemporalAccessor parsed) {
+    private static String parseToDateString(TemporalAccessor parsed, DingoTimeZoneProcessor processor) {
+        LocalDate localDate = null;
         if (parsed instanceof LocalDateTime) {
-            return ((LocalDateTime) parsed).toLocalDate().toString();
+             localDate = ((LocalDateTime) parsed).toLocalDate();
         }
         if (parsed instanceof LocalDate) {
-            return parsed.toString();
+            localDate = (LocalDate) parsed;
         }
         if (parsed instanceof YearMonth) {
-            return ((YearMonth) parsed).atDay(1).toString();
+            localDate = ((YearMonth) parsed).atDay(1);
         }
         if (parsed instanceof Year) {
-            return ((Year) parsed).atMonth(1).atDay(1).toString();
+            localDate = ((Year) parsed).atMonth(1).atDay(1);
         }
-        return null;
+        return localDate == null ? null : processor.toSafeString(Date.valueOf(localDate));
     }
 
     @Override

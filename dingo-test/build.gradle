@@ -48,6 +48,7 @@ dependencies {
     implementation group: 'commons-io', name: 'commons-io', version: 'commons-io'.v()
     implementation group: 'org.apache.calcite.avatica', name: 'avatica-server', version: 'avatica'.v()
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-json', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
     implementation project(':dingo-calcite')
     implementation project(':dingo-driver:dingo-driver-client')
     implementation project(':dingo-driver:dingo-driver-host')

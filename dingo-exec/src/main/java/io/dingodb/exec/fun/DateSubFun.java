@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.core.DingoDateTime;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.IntervalDayTimeType;
 import io.dingodb.expr.common.type.IntervalDayType;
 import io.dingodb.expr.common.type.IntervalHourType;
@@ -31,19 +34,13 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.OpKeys;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 
 public class DateSubFun extends BinaryOp {
@@ -62,19 +59,21 @@ public class DateSubFun extends BinaryOp {
 
     @Override
     public Object evalValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
+        DingoTimeZoneProcessor processor = config.getProcessor();
+
         int delta = 0;
         if (value0 instanceof String) {
             String date = value0.toString();
-            Date parseDate = DateTimeUtils.parseDate(date);
-            if (parseDate == null) {
-                Timestamp timestamp = DateTimeUtils.parseTimestamp(date);
-                if (timestamp == null) {
+            Object processDateTime = processor.processDateTime(date, DateTimeType.DATE, DateTimeType.DATE);
+            if (processDateTime == null) {
+                processDateTime = processor.processDateTime(date, DateTimeType.TIMESTAMP, DateTimeType.TIMESTAMP);
+                if (processDateTime == null) {
                     return null;
                 } else {
-                    value0 = timestamp;
+                    value0 = processDateTime;
                 }
             } else {
-                value0 = parseDate;
+                value0 = processDateTime;
             }
         }
         if (value1 instanceof Integer) {
@@ -90,104 +89,105 @@ public class DateSubFun extends BinaryOp {
             delta = (int) Math.round(deltaDouble);
         } else if (value1 instanceof BigDecimal) {
             BigDecimal decimal = (BigDecimal) value1;
-            delta = decimal.intValue();
-        } else if (value1 instanceof IntervalType) {
+            delta = (int) Math.round(decimal.doubleValue());
+        }
+
+        if (value1 instanceof IntervalType) {
             if (value1 instanceof IntervalYearType.IntervalYear) {
                 IntervalYearType.IntervalYear intervalYear = (IntervalYearType.IntervalYear) value1;
                 if (intervalYear.elementType instanceof IntervalMonthType) {
-                    return compute(value0, Calendar.MONTH, intervalYear.value.intValue());
+                    return compute(value0, ChronoUnit.MONTHS, intervalYear.value.intValue(), processor);
                 }
             } else if (value1 instanceof IntervalMonthType.IntervalMonth) {
                 IntervalMonthType.IntervalMonth intervalMonth = (IntervalMonthType.IntervalMonth) value1;
                 if (intervalMonth.elementType instanceof IntervalQuarterType) {
-                    return compute(value0, Calendar.MONTH, intervalMonth.value.intValue() * 3);
+                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.intValue() * 3, processor);
                 } else {
-                    return compute(value0, Calendar.MONTH, intervalMonth.value.intValue());
+                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.intValue(), processor);
                 }
             } else if (value1 instanceof IntervalDayType.IntervalDay) {
                 IntervalDayType.IntervalDay intervalDay = (IntervalDayType.IntervalDay) value1;
                 if (intervalDay.elementType instanceof IntervalDayTimeType) {
                     long value = intervalDay.value.longValue() / (24 * 60 * 60 * 1000);
-                    return compute(value0, Calendar.DAY_OF_MONTH, Math.toIntExact(value));
+                    return compute(value0, ChronoUnit.DAYS, Math.toIntExact(value), processor);
                 }
             } else if (value1 instanceof IntervalWeekType.IntervalWeek) {
                 IntervalWeekType.IntervalWeek intervalWeek = (IntervalWeekType.IntervalWeek) value1;
                 if (intervalWeek.elementType instanceof IntervalDayTimeType) {
                     long value = intervalWeek.value.longValue() / (60 * 60 * 1000);
-                    return compute(value0, Calendar.WEEK_OF_YEAR, Math.toIntExact(value));
+                    return compute(value0, ChronoUnit.WEEKS, Math.toIntExact(value), processor);
                 }
             } else if (value1 instanceof IntervalHourType.IntervalHour) {
                 IntervalHourType.IntervalHour intervalHour = (IntervalHourType.IntervalHour) value1;
                 if (intervalHour.elementType instanceof IntervalDayTimeType) {
                     long value = intervalHour.value.longValue() / (60 * 60 * 1000);
-                    return compute(value0, Calendar.HOUR, Math.toIntExact(value));
+                    return compute(value0, ChronoUnit.HOURS, Math.toIntExact(value), processor);
                 }
             } else if (value1 instanceof IntervalMinuteType.IntervalMinute) {
                 IntervalMinuteType.IntervalMinute intervalMinute = (IntervalMinuteType.IntervalMinute) value1;
                 if (intervalMinute.elementType instanceof IntervalDayTimeType) {
                     long value = intervalMinute.value.longValue() / (60 * 1000);
-                    return compute(value0, Calendar.MINUTE, Math.toIntExact(value));
+                    return compute(value0, ChronoUnit.MINUTES, Math.toIntExact(value), processor);
                 }
             } else if (value1 instanceof IntervalSecondType.IntervalSecond) {
                 IntervalSecondType.IntervalSecond intervalSecond = (IntervalSecondType.IntervalSecond) value1;
                 if (intervalSecond.elementType instanceof IntervalDayTimeType) {
                     long value = intervalSecond.value.longValue() / 1000;
-                    return compute(value0, Calendar.SECOND, Math.toIntExact(value));
+                    return compute(value0, ChronoUnit.SECONDS, Math.toIntExact(value), processor);
                 }
             } else {
                 return null;
             }
         }
 
-        return compute(value0, Calendar.DAY_OF_MONTH, delta);
+        return compute(value0, ChronoUnit.DAYS, delta, processor);
     }
 
-    private static Object compute(Object value0, int field, int amount) {
+    private static Object compute(Object value0, ChronoUnit unit, int amount, DingoTimeZoneProcessor processor) {
         if (value0 == null) {
             return null;
         }
-        amount = Math.negateExact(amount);
         if (value0 instanceof Date) {
-            Date date = (Date) value0;
-            LocalDate l;
-            LocalTime localTime = LocalTime.MIDNIGHT;
-            ZoneId zoneId;
-            ZonedDateTime zonedDateTime;
-            Instant instant;
-            switch (field) {
-                case Calendar.DAY_OF_MONTH:
-                case Calendar.MONTH:
-                case Calendar.WEEK_OF_YEAR:
+            switch (unit) {
+                case MONTHS:
+                case DAYS:
+                case WEEKS:
+                    DingoDateTime dateInput = processor.getTierProcessor().convertInput(value0, DateTimeType.DATE);
+                    DingoDateTime dateTime = processor.dateSubtract(dateInput, amount, unit);
+                    Date date = (Date) processor.getTierProcessor().convertOutput(dateTime, DateTimeType.DATE);
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTime(date);
-                    calendar.add(field, amount);
-                    return new Date(calendar.getTimeInMillis());
-                case Calendar.HOUR:
-                    l = date.toLocalDate();
-                    zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusHours(amount);
-                    instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
-                    return Timestamp.from(instant);
-                case Calendar.MINUTE:
-                    l = date.toLocalDate();
-                    zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusMinutes(amount);
-                    instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
-                    return Timestamp.from(instant);
-                case Calendar.SECOND:
-                    l = date.toLocalDate();
-                    zoneId = ZoneId.systemDefault();
-                    zonedDateTime = ZonedDateTime.of(l, localTime, zoneId).plusSeconds(amount);
-                    instant = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC).toInstant();
-                    return Timestamp.from(instant);
+                    if (calendar.get(Calendar.YEAR) > 9999) {
+                        return null;
+                    }
+                    return date;
+                case HOURS:
+                case MINUTES:
+                case SECONDS:
+                    DingoDateTime timestampInput =
+                        processor.getTierProcessor().convertInput(value0, DateTimeType.TIMESTAMP);
+                    DingoDateTime timestampDateTime = processor.dateSubtract(timestampInput, amount, unit);
+                    Timestamp timestamp = (Timestamp) processor.getTierProcessor()
+                        .convertOutput(timestampDateTime, DateTimeType.TIMESTAMP);
+                    Calendar instance = Calendar.getInstance();
+                    instance.setTimeInMillis(timestamp.getTime());
+                    if (instance.get(Calendar.YEAR) > 9999) {
+                        return null;
+                    }
+                    return timestamp;
                 default: return null;
             }
         } else if (value0 instanceof Timestamp) {
-            Timestamp timestamp = (Timestamp) value0;
+            DingoDateTime input = processor.getTierProcessor().convertInput(value0, DateTimeType.TIMESTAMP);
+            DingoDateTime dateTime = processor.dateSubtract(input, amount, unit);
+            Timestamp timestamp = (Timestamp) processor.getTierProcessor()
+                .convertOutput(dateTime, DateTimeType.TIMESTAMP);
             Calendar calendar = Calendar.getInstance();
-            calendar.setTime(timestamp);
-            calendar.add(field, amount);
-            return new Timestamp(calendar.getTimeInMillis());
+            calendar.setTimeInMillis(timestamp.getTime());
+            if (calendar.get(Calendar.YEAR) > 9999) {
+                return null;
+            }
+            return timestamp;
         }
         return null;
     }

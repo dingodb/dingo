@@ -29,6 +29,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
@@ -43,6 +44,7 @@ import io.dingodb.exec.operator.SourceOperator;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnPartData;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.store.api.transaction.exception.DuplicateEntryException;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
@@ -230,12 +232,13 @@ public final class TaskImpl implements Task {
             operator.fin(0, FinWithException.of(taskInitStatus), vertex);
             return;
         }
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         // This method should not be blocked, so schedule a running thread.
-        Executors.execute("task-" + jobId + "-" + id, () -> internalRun(paras));
+        Executors.execute("task-" + jobId + "-" + id, () -> internalRun(paras, processor));
     }
 
     // Synchronize to make sure there are only one thread run this.
-    private synchronized void internalRun(Object @Nullable [] paras) {
+    private synchronized void internalRun(Object @Nullable [] paras, DingoTimeZoneProcessor processor) {
         MdcUtils.setTxnId(txnId.toString());
         if (!status.compareAndSet(Status.READY, Status.RUNNING)) {
             throw new RuntimeException("Status should be READY.");
@@ -252,6 +255,7 @@ public final class TaskImpl implements Task {
             assert operator instanceof SourceOperator
                 : "Operators in run list must be source operator.";
             Executors.execute("operator-" + jobId + "-" + id + "-" + operatorId, () -> {
+                DingoTimeZoneContext.setProcessor(processor);
                 MdcUtils.setTxnId(txnId.toString());
                 final long startTime = System.currentTimeMillis();
                 activeTaskCount.incrementAndGet();
@@ -308,6 +312,7 @@ public final class TaskImpl implements Task {
                     LogUtils.debug(log, "TaskImpl run cost: {}ms.", System.currentTimeMillis() - startTime);
                     MdcUtils.removeTxnId();
                     activeThreads.countDown();
+                    // DingoTimeZoneContext.clear();
                 }
             });
         }

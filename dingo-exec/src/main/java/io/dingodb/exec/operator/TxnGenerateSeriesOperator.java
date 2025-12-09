@@ -21,6 +21,8 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.converter.DingoConverter;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.TxnGenerateSeriesParam;
@@ -58,6 +60,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         Object endCol = param.getEndCol();
         int startIndex = table.getColumnIndex((Column) startCol);
         int endIndex = table.getColumnIndex((Column) endCol);
+        Column endColumn = (Column) endCol;
 
         StoreInstance instance = Services.KV_STORE.getInstance(param.getTableId(), param.getPartId());
         RangeDistribution distribution = param.getRangeDistribution();
@@ -109,7 +112,8 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
                     new BigDecimal(startObj.toString()),
                     new BigDecimal(endObj.toString()),
                     param.getBigDecimalStep(),
-                    BigDecimal::add
+                    BigDecimal::add,
+                    endColumn.getType()
                 );
                 intervals.addAll(merge(keys, Arrays.asList(list.toArray())));
             } else if (startObj instanceof Timestamp && endObj instanceof Timestamp) {
@@ -196,7 +200,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
     }
 
     public static <T extends Number & Comparable<T>> List<T> generateNumericIntervals(
-        T start, T end, T interval, java.util.function.BinaryOperator<T> adder) {
+        T start, T end, T interval, java.util.function.BinaryOperator<T> adder, DingoType type) {
 
         if (start == null || end == null || interval == null || adder == null) {
             throw new IllegalArgumentException("Parameter cannot be null");
@@ -214,7 +218,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
 
         if (comparison <= 0) {
             while (current.compareTo(end) <= 0) {
-                intervals.add(current);
+                intervals.add((T) type.convertFrom(current, DingoConverter.INSTANCE));
                 current = adder.apply(current, interval);
                 /* if (intervals.size() > 1000000) {
                     throw new IllegalStateException("The generated interval is too large and may fall into an infinite loop.");
@@ -222,7 +226,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
             }
         } else {
             while (current.compareTo(end) >= 0) {
-                intervals.add(current);
+                intervals.add((T) type.convertFrom(current, DingoConverter.INSTANCE));
                 current = adder.apply(current, interval);
                 /* if (intervals.size() > 1000000) {
                     throw new IllegalStateException("The generated interval is too large and may fall into an infinite loop.");
@@ -248,8 +252,8 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         List<Date> intervals = new ArrayList<>();
         LocalDate current = start;
 
-        while (!current.isAfter(end)) {
-            intervals.add(new Date(current.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+        while (period.isNegative() ? current.isAfter(end) : current.isBefore(end)) {
+            intervals.add(Date.valueOf(current));
             current = current.plus(period);
 
         }
@@ -263,8 +267,8 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         List<Timestamp> intervals = new ArrayList<>();
         LocalDateTime current = start;
 
-        while (!current.isAfter(end)) {
-            intervals.add(new Timestamp(current.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+        while (period.isNegative() ? current.isAfter(end) : current.isBefore(end)) {
+            intervals.add(Timestamp.valueOf(current));
             current = current.plus(period);
         }
 
@@ -275,8 +279,11 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         if (start || end) {
             throw new IllegalArgumentException("Start time and end time cannot be null");
         }
-        if (start1 > 0) {
+        if (start1 > 0 && !period.isNegative()) {
             throw new IllegalArgumentException("Start time cannot be later than end time");
+        }
+        if (start1 < 0 && period.isNegative()) {
+            throw new IllegalArgumentException("Step is negative, start cannot be less than end");
         }
 
         if (period.isZero()) {
@@ -302,8 +309,8 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         List<Object[]> results = new ArrayList<>();
         for (Object obj : series) {
             Object[] tuple = new Object[keys.length + 1];
-            System.arraycopy(keys, 0, tuple, 0, keys.length);
-            tuple[keys.length] = obj;
+            tuple[0] = obj;
+            System.arraycopy(keys, 0, tuple, 1, keys.length);
             results.add(tuple.clone());
         }
         return results;

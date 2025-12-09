@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.utils;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
@@ -31,7 +32,8 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -43,6 +45,7 @@ public class ColumnDefaultValueUtils {
 
     }
     public static Object getDefaultValue(DingoType type) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         if (type instanceof StringType) {
             return "";
         } else if (type instanceof LongType) {
@@ -56,13 +59,13 @@ public class ColumnDefaultValueUtils {
         } else if (type instanceof DecimalType) {
             return new BigDecimal(0);
         } else if (type instanceof DateType) {
-            return DateTimeUtils.parseDate("0000-00-00");
+            return processor.processDateTime("0000-00-00", DateTimeType.DATE);
         } else if (type instanceof BooleanType) {
             return false;
         } else if (type instanceof TimestampType) {
-            return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+            return processor.processDateTime("0000-00-00 00:00:00", DateTimeType.TIMESTAMP);
         } else if (type instanceof TimeType) {
-            return DateTimeUtils.parseTime("00:00:00");
+            return processor.processDateTime("00:00:00", DateTimeType.TIME);
         } else if (type instanceof ListType) {
             return new ArrayList<>();
         } else if (type instanceof MapType) {

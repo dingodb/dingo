@@ -27,9 +27,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.table.Part;
 import io.dingodb.exec.table.PartInKvStore;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.StoreInstance;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,7 @@ public class CollectStatsTask implements Callable<TableStats> {
     List<Histogram> columnHistogramList;
     List<CountMinSketch> minSketchList;
     Map<String, StatsNormal> statsNormalMap;
+    DingoTimeZoneProcessor processor;
 
     /**
      * collect stats task by one region.
@@ -79,7 +82,8 @@ public class CollectStatsTask implements Callable<TableStats> {
                             List<CountMinSketch> minSketches,
                             List<StatsNormal> statsNormals,
                             long scanTs,
-                            long timeout) {
+                            long timeout,
+                            DingoTimeZoneProcessor processor) {
         this.tableName = td.getName();
         this.region = region;
         this.isTxn = td.getEngine().contains("TXN");
@@ -98,12 +102,14 @@ public class CollectStatsTask implements Callable<TableStats> {
             .collect(Collectors.toList());
         statsNormalMap = statsNormals.stream()
             .collect(Collectors.toMap(StatsNormal::getColumnName, StatsNormal::copy));
+        this.processor = processor;
     }
 
     @Override
     public TableStats call() {
         LogUtils.info(log, "collect region stats start, tableName:{}, regionId:{}",
              tableName, region.getId());
+        DingoTimeZoneContext.setProcessor(processor);
         if (!isTxn) {
             Part part = new PartInKvStore(
                 kvStore,

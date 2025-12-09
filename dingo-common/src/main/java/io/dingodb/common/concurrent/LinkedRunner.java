@@ -16,8 +16,10 @@
 
 package io.dingodb.common.concurrent;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Unsafe;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
@@ -114,8 +116,10 @@ public final class LinkedRunner implements Unsafe {
     }
 
     private void submit(final RunnerNode node) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Executors.execute(name, () -> {
             RunnerNode next = node;
+            DingoTimeZoneContext.setProcessor(processor);
             while (true) {
                 next.run();
                 if (

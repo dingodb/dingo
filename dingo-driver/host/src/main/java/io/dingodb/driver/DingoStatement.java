@@ -24,12 +24,14 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.SqlProfile;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.base.JobManager;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.transaction.base.TxnPartData;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -131,9 +133,11 @@ public class DingoStatement extends AvaticaStatement {
         super.cancel();
         if (jobManager != null && job != null) {
             if (job.getStatus() == Status.RUNNING) {
+                DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
                 LogUtils.trace(log, "dingo statement cancel jobId:{}, job:{}", job.getJobId(), job);
                 CompletableFuture.runAsync(
                     () -> {
+                        DingoTimeZoneContext.setProcessor(processor);
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {

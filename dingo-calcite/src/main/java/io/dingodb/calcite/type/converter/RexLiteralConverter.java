@@ -16,8 +16,11 @@
 
 package io.dingodb.calcite.type.converter;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.IntervalDayTimeType;
 import io.dingodb.expr.common.type.IntervalDayType;
 import io.dingodb.expr.common.type.IntervalHourType;
@@ -30,7 +33,6 @@ import io.dingodb.expr.common.type.IntervalYearType;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Exprs;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -135,27 +137,33 @@ public class RexLiteralConverter implements DataConverter {
         if (value instanceof NlsString) {
             NlsString nlsString = (NlsString) value;
             String val = nlsString.getValue();
-            return DateTimeUtils.parseDate(val);
+            return (Date) DingoTimeZoneContext.getProcessor().processDateTime(val, DateTimeType.DATE);
         } else {
-            return new Date(((Calendar) value).getTimeInMillis());
+            Calendar calendar = (Calendar) value;
+            calendar.setTimeZone(DingoTimeZoneContext.getTimeZone());
+            long v = calendar.getTimeInMillis();
+            return new Date(v - calendar.getTimeZone().getOffset(v));
         }
     }
 
     @Override
     public Time convertTimeFrom(@NonNull Object value) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
         if (value instanceof NlsString) {
             String valStr = ((NlsString) value).getValue();
-            return DateTimeUtils.parseTime(valStr);
+            return (Time) processor.processDateTime(valStr, DateTimeType.TIME);
         } else if (value instanceof Calendar) {
-            return new Time(((Calendar) value).getTimeInMillis());
+            Calendar calendar = (Calendar) value;
+            calendar.setTimeZone(DingoTimeZoneContext.getTimeZone());
+            long v = calendar.getTimeInMillis();
+            return new Time(v - calendar.getTimeZone().getOffset(v));
         } else if (value instanceof Time) {
             return (Time) value;
         } else if (value instanceof Timestamp) {
-            Timestamp timestamp = (Timestamp) value;
-            return new Time(timestamp.getTime());
+            return (Time) processor.processDateTime(value, DateTimeType.TIMESTAMP, DateTimeType.TIME);
         } else if (value instanceof Date) {
-            Date date = (Date) value;
-            return new Time(date.getTime());
+            return (Time) processor.processDateTime(value, DateTimeType.DATE, DateTimeType.TIME);
         } else if (value instanceof Number) {
             Number number = (Number) value;
             try {
@@ -164,8 +172,7 @@ public class RexLiteralConverter implements DataConverter {
                 return null;
             }
         } else {
-            String valStr = value.toString();
-            return DateTimeUtils.parseTime(valStr);
+            return (Time) processor.processDateTime(value, DateTimeType.TIME);
         }
     }
 
@@ -175,9 +182,10 @@ public class RexLiteralConverter implements DataConverter {
         if (value instanceof NlsString) {
             NlsString nlsString = (NlsString) value;
             String val = nlsString.getValue();
-            return DateTimeUtils.parseTimestamp(val);
+            return (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(val, DateTimeType.TIMESTAMP);
         }
         Calendar calendar = (Calendar) value;
+        calendar.setTimeZone(DingoTimeZoneContext.getTimeZone());
         long v = calendar.getTimeInMillis();
         return new Timestamp(v - calendar.getTimeZone().getOffset(v));
     }

@@ -238,7 +238,7 @@ public final class MysqlResponseHandler {
                 arrayVal.add(Array.get(o, index));
             }
             DingoConnection dingoConnection = (DingoConnection) mysqlConnection.getConnection();
-            arrayVal = getDateByTimezone(arrayVal, dingoConnection.getTimeZone());
+            // arrayVal = getDateByTimezone(arrayVal, dingoConnection.getTimeZone());
         } else if (val instanceof DingoArray) {
             DingoArray dingoArray = (DingoArray) val;
             arrayVal = (List<Object>) dingoArray.getArray();

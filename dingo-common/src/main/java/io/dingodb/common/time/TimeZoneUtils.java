@@ -16,11 +16,7 @@
 
 package io.dingodb.common.time;
 
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.ZoneId;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
@@ -68,78 +64,6 @@ public class TimeZoneUtils {
         } else {
             throw new RuntimeException("Invalid time_zone value:" + timeZoneStr);
         }
-    }
-
-    public static String convertToDateTimeWithMills(Timestamp timestamp, TimeZone timeZone) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SS");
-        if (timeZone != null) {
-            sdf.setTimeZone(timeZone);
-        }
-        return sdf.format(timestamp);
-    }
-
-    public static String convertToDateTime(Timestamp timestamp, TimeZone timeZone) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        if (timeZone != null) {
-            sdf.setTimeZone(timeZone);
-        }
-        return sdf.format(timestamp);
-    }
-
-    public static String convertToDateTimeWithMilliseconds(Timestamp timestamp, TimeZone timeZone) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-        if (timeZone != null) {
-            sdf.setTimeZone(timeZone);
-        }
-        return sdf.format(timestamp);
-    }
-
-    public static String convertToDate(Timestamp timestamp, TimeZone timeZone) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        if (timeZone != null) {
-            sdf.setTimeZone(timeZone);
-        }
-        return sdf.format(timestamp);
-    }
-
-    public static String convertToTime(Timestamp timestamp, TimeZone timeZone) {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-        if (timeZone != null) {
-            sdf.setTimeZone(timeZone);
-        }
-        return sdf.format(timestamp);
-    }
-
-    public static String convertBetweenTimeZone(String dateTime, TimeZone fromTz, TimeZone toTz) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        if (fromTz != null) {
-            sdf.setTimeZone(fromTz);
-        }
-        long timestamp = sdf.parse(dateTime).getTime();
-        Timestamp actualTimestamp = new Timestamp(timestamp);
-        return convertToDateTime(actualTimestamp, toTz);
-    }
-
-    public static Timestamp convertTimeZoneFromDate(String dateTime, TimeZone toTz) throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        if (toTz != null) {
-            sdf.setTimeZone(toTz);
-        }
-        long timestamp = sdf.parse(dateTime).getTime();
-        Timestamp actualTimestamp = new Timestamp(timestamp);
-        return actualTimestamp;
-    }
-
-    public static String convertBetweenTimeZone(Timestamp unrealTimestamp, TimeZone fromTz, TimeZone toTz)
-        throws ParseException {
-
-        TimeZone sysDefaultTimeZone = Calendar.getInstance().getTimeZone();
-        long sysOffset = sysDefaultTimeZone.getRawOffset();
-        long fromOffset = fromTz.getRawOffset();
-        long deltaTimeMillis = sysOffset - fromOffset;
-        long realTimestampInMills = unrealTimestamp.getTime() + deltaTimeMillis;
-        Timestamp actualTimestamp = new Timestamp(realTimestampInMills);
-        return convertToDateTime(actualTimestamp, toTz);
     }
 
 }

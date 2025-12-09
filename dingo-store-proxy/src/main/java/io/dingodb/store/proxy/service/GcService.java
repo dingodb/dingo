@@ -17,6 +17,7 @@
 package io.dingodb.store.proxy.service;
 
 import com.google.auto.service.AutoService;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Pair;
 import io.dingodb.store.proxy.common.Gc;
 import io.dingodb.transaction.api.GcObj;
@@ -24,6 +25,7 @@ import io.dingodb.transaction.api.GcServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.TimeZone;
 
 @Slf4j
 public class GcService implements io.dingodb.transaction.api.GcService {
@@ -40,13 +42,13 @@ public class GcService implements io.dingodb.transaction.api.GcService {
 
 
     @Override
-    public void safePointUpdate() {
-        Gc.safePointUpdate();
+    public void safePointUpdate(TimeZone timeZone) {
+        Gc.safePointUpdate(timeZone);
     }
 
     @Override
     public Pair<String, Long> startSafePointUpdate() {
-        return Gc.safePointUpdate();
+        return Gc.safePointUpdate(DingoTimeZoneContext.getTimeZone());
     }
 
     @Override
@@ -59,8 +61,8 @@ public class GcService implements io.dingodb.transaction.api.GcService {
     }
 
     @Override
-    public void gcDeleteRegion() {
-        Gc.gcDeleteRegion();
+    public void gcDeleteRegion(TimeZone timeZone) {
+        Gc.gcDeleteRegion(timeZone);
     }
 
 }

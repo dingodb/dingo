@@ -43,6 +43,7 @@ public class AvaticaResultSetConverter extends ConverterWithCalendar {
     @Override
     public Timestamp convert(@NonNull Timestamp value) {
         // NOTE: The following is not exact the inversion of what done in `TimestampAccessor`.
+        // TODO
         return shiftedTimestamp(value.getTime());
     }
 

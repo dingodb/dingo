@@ -16,6 +16,8 @@
 
 package io.dingodb.exec.expr;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.TupleCompileContext;
 import io.dingodb.expr.rel.TupleCompileContextImpl;
@@ -27,7 +29,6 @@ import io.dingodb.expr.runtime.expr.Exprs;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -44,6 +45,8 @@ public final class DingoCompileContext implements TupleCompileContext {
     private final TupleType parasType;
 
     private ExprContext exprContext;
+
+    private DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
 
     private ExprPushdownCond exprPushdownCond;
     private boolean notPushdown;
@@ -80,6 +83,16 @@ public final class DingoCompileContext implements TupleCompileContext {
     @Override
     public void setExprContext(ExprContext exprContext) {
         this.exprContext = exprContext;
+    }
+
+    @Override
+    public void setProcessor(DingoTimeZoneProcessor processor) {
+        this.processor = processor;
+    }
+
+    @Override
+    public DingoTimeZoneProcessor getProcessor() {
+        return processor;
     }
 
     @Override

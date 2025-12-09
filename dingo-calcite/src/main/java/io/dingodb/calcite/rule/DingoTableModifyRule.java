@@ -20,6 +20,8 @@ import io.dingodb.calcite.rel.DingoTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
 import io.dingodb.calcite.visitor.RexConverter;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.DecimalType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.ProjectOp;
@@ -117,6 +119,11 @@ public class DingoTableModifyRule extends ConverterRule {
 
                     public void setExprContext(ExprContext exprContext) {
                         this.exprContext = exprContext;
+                    }
+
+                    @Override
+                    public DingoTimeZoneProcessor getProcessor() {
+                        return DingoTimeZoneContext.getProcessor();
                     }
                 };
 

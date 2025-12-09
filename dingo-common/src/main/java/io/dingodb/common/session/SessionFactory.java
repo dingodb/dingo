@@ -52,6 +52,7 @@ public class SessionFactory extends BasePooledObjectFactory<Session> {
         String host = "%";
         Properties properties = new Properties();
         properties.setProperty("defaultSchema", convertName("dingo"));
+        // application timezone
         TimeZone timeZone = TimeZone.getDefault();
         properties.setProperty("timeZone", timeZone.getID());
         properties.setProperty("user", user);

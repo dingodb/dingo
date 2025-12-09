@@ -17,15 +17,14 @@
 package io.dingodb.common.profile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
-import java.util.Base64;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -65,7 +64,7 @@ public class ExecProfile extends Profile {
         }
         Object[] val = new Object[4];
         val[0] = prefixStr + "runStmt";
-        val[1] = DateTimeUtils.timeFormat(new Time(start));
+        val[1] = DingoTimeZoneContext.getProcessor().formatDateTime(new Time(start), DateTimeFormatter.ISO_LOCAL_TIME);
         val[2] = String.valueOf(duration);
         val[3] = this.getCount();
         rowList.add(val);
