@@ -24,6 +24,7 @@ import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
@@ -37,6 +38,7 @@ import io.dingodb.exec.transaction.util.TransactionUtil;
 import io.dingodb.exec.transaction.util.TwoPhaseCommitUtils;
 import io.dingodb.exec.transaction.visitor.DingoTransactionRenderJob;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.net.Channel;
@@ -182,9 +184,10 @@ public abstract class BaseTransaction implements ITransaction {
             return;
         }
         Location currentLocation = MetaService.root().currentLocation();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         if (cache.checkCleanContinue(isPessimistic())) {
-            CompletableFuture.runAsync(() ->
-                cleanUpJobRun(jobManager, currentLocation), Executors.executor(txnId.toString() + "-exec-txnCleanUp")
+            CompletableFuture.runAsync(() -> cleanUpJobRun(jobManager, currentLocation, processor),
+                Executors.executor(txnId.toString() + "-exec-txnCleanUp")
             ).exceptionally(
                 ex -> {
                     LogUtils.error(log, ex.toString(), ex);
@@ -194,7 +197,7 @@ public abstract class BaseTransaction implements ITransaction {
         }
         if (cache.checkCleanExtraDataContinue()) {
             CompletableFuture.runAsync(() ->
-                cleanUpExtraDataJobRun(jobManager, currentLocation),
+                cleanUpExtraDataJobRun(jobManager, currentLocation, processor),
                 Executors.executor(txnId.toString() + "-exec-cleanUpExtraData")
             ).exceptionally(
                 ex -> {
@@ -555,6 +558,7 @@ public abstract class BaseTransaction implements ITransaction {
             rollBackResidualPessimisticLock(jobManager);
         }
 
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         if (twoPhaseCommitData.getUseAsyncCommit().get()) {
             if (transactionConfig.isAsyncCommitSleep()) {
                 try {
@@ -566,7 +570,7 @@ public abstract class BaseTransaction implements ITransaction {
             CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
                 () -> {
 //                    LogUtils.info(log, "{} start asyncCommitJobRun", transactionOf());
-                    asyncCommitJobRun(twoPhaseCommitData, preWriteStart);
+                    asyncCommitJobRun(twoPhaseCommitData, preWriteStart, processor);
                 },
                 Executors.executor("exec-asyncTxnCommit")
             ).exceptionally(
@@ -601,6 +605,7 @@ public abstract class BaseTransaction implements ITransaction {
                 LogUtils.info(log, "{} 2PC CommitPrimaryKey end, commitTs:{}", transactionOf(), commitTs);
                 CompletableFuture<Void> commit_future = CompletableFuture.runAsync(
                     () -> {
+                        DingoTimeZoneContext.setProcessor(processor);
                         if (isCrossNode || transactionConfig.isCrossNodeCommit()) {
                             LogUtils.info(log, "{} 2PC CrossNodeCommitJobRun", transactionOf());
                             crossNodeCommitJobRun(jobManager, currentLocation);
@@ -759,8 +764,9 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void cleanUpJobRun(JobManager jobManager, Location currentLocation) {
+    private void cleanUpJobRun(JobManager jobManager, Location currentLocation, DingoTimeZoneProcessor processor) {
         CommonId jobId = CommonId.EMPTY_JOB;
+        DingoTimeZoneContext.setProcessor(processor);
         try {
             MdcUtils.setTxnId(txnId.toString());
             // 1、getTso
@@ -786,8 +792,10 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void cleanUpExtraDataJobRun(JobManager jobManager, Location currentLocation) {
+    private void cleanUpExtraDataJobRun(
+        JobManager jobManager, Location currentLocation, DingoTimeZoneProcessor processor) {
         CommonId jobId = CommonId.EMPTY_JOB;
+        DingoTimeZoneContext.setProcessor(processor);
         try {
             MdcUtils.setTxnId(txnId.toString());
             // 1、getTso
@@ -835,8 +843,11 @@ public abstract class BaseTransaction implements ITransaction {
         }
     }
 
-    private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData, long preWriteStart) {
+    private void asyncCommitJobRun(TwoPhaseCommitData twoPhaseCommitData,
+                                   long preWriteStart,
+                                   DingoTimeZoneProcessor processor) {
         long count = 0L;
+        DingoTimeZoneContext.setProcessor(processor);
         try {
             MdcUtils.setTxnId(txnId.toString());
             if (transactionConfig.isParallelCommit()) {

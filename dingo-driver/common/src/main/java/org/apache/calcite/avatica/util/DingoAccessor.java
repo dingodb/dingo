@@ -274,7 +274,8 @@ public class DingoAccessor implements Cursor.Accessor {
             TimeZone timeZone = TimeZone.getDefault();
             ArrayFactoryImpl factory = new ArrayFactoryImpl(timeZone);
             ResultSet resultSet = factory.create(component, list);
-            return new DingoArray(list, calendar, resultSet);        }
+            return new DingoArray(list, /*calendar*/null, resultSet);
+        }
     }
 
 }

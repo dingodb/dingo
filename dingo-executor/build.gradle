@@ -42,6 +42,7 @@ dependencies {
     implementation group: 'io.grpc', name: 'grpc-stub', version: 'grpc'.v()
 
     // implementation group: 'io.dingodb', name: 'dingo-sdk', version:'dingo-sdk'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
 
     implementation ("io.dingodb:dingo-sdk:$project.version") {
         exclude group: 'io.grpc', module: 'grpc-netty-shaded'

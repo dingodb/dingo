@@ -19,6 +19,7 @@ package io.dingodb.exec.impl;
 import com.google.common.collect.ImmutableList;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.exec.OperatorFactory;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
+import java.util.TimeZone;
 
 import static io.dingodb.exec.utils.OperatorCodeUtils.PROJECT;
 import static io.dingodb.exec.utils.OperatorCodeUtils.ROOT;
@@ -45,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestTaskImpl {
     @Test
     public void testValues() {
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), null,
             TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation, 0, null);
         ValuesParam param = new ValuesParam(
@@ -77,6 +80,7 @@ public class TestTaskImpl {
 
     @Test
     public void testParas() {
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
         DingoType parasType = DingoTypeFactory.INSTANCE.tuple("INT", "STRING");
         Task task = new TaskImpl(CommonId.EMPTY_TASK, CommonId.EMPTY_JOB, CommonId.EMPTY_TRANSACTION, Mockito.mock(Location.class), parasType,
             TransactionType.OPTIMISTIC, IsolationLevel.SnapshotIsolation, 0, null);

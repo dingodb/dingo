@@ -22,6 +22,7 @@ import io.dingodb.common.auth.DingoRole;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.driver.DingoDriver;
 import io.dingodb.exec.Services;
@@ -33,6 +34,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.TreeMap;
 
 import static io.dingodb.common.CommonId.CommonType.DISTRIBUTION;
@@ -47,6 +49,7 @@ public final class ConnectionFactory {
         env.clientIdentity.setInfo("user", "root");
         env.clientIdentity.setInfo("password", "");
 
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
         // Configure for local test.
         DingoConfiguration.parse(
             Objects.requireNonNull(ConnectionFactory.class.getResource("/config.yaml")).getPath()

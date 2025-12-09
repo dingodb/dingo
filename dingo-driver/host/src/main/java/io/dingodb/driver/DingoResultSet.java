@@ -75,6 +75,9 @@ public class DingoResultSet extends AvaticaResultSet {
                 case Types.DATE:
                     object = accessorList.get(columnIndex - 1).getDate(null);
                     break;
+                case Types.TIME:
+                    object = accessorList.get(columnIndex - 1).getTime(null);
+                    break;
                 default:
                     object = super.getObject(columnIndex);
                     break;

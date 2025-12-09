@@ -23,8 +23,10 @@ import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Table;
@@ -142,8 +144,9 @@ public final class BackFilling {
         LogUtils.info(log, "[ddl] pre write primary key done, bf type:{}, jobId:{}", bfWorkerType, job.getId());
         long start = System.currentTimeMillis();
 
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(destTaskList.stream().map(task -> {
-            Callable<BackFillResult> callable = () -> fill(filler, task, false);
+            Callable<BackFillResult> callable = () -> fill(filler, task, false, processor);
             return Executors.submit("reorg", callable);
         }).toArray(CompletableFuture[]::new));
         try {
@@ -173,7 +176,11 @@ public final class BackFilling {
         return null;
     }
 
-    public static BackFillResult fill(BackFiller filler, ReorgBackFillTask fillTask, boolean withCheck) {
+    public static BackFillResult fill(BackFiller filler,
+                                      ReorgBackFillTask fillTask,
+                                      boolean withCheck,
+                                      DingoTimeZoneProcessor processor) {
+        DingoTimeZoneContext.setProcessor(processor);
         BackFillResult backFillResult = filler.backFillDataInTxn(fillTask, withCheck);
         ReorgCtx reorgCtx = DdlContext.INSTANCE.getReorgCtx1(fillTask.getJobId());
         reorgCtx.incrementCount(backFillResult.addCount);
@@ -210,8 +217,9 @@ public final class BackFilling {
 
         long start = System.currentTimeMillis();
 
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(taskList.stream().map(task -> {
-            Callable<BackFillResult> callable = () -> fillWithCheck(filler, task, true);
+            Callable<BackFillResult> callable = () -> fillWithCheck(filler, task, true, processor);
             return Executors.submit("reorg", callable);
         }).toArray(CompletableFuture[]::new));
         try {
@@ -239,7 +247,11 @@ public final class BackFilling {
         return null;
     }
 
-    public static BackFillResult fillWithCheck(BackFiller filler, ReorgBackFillTask fillTask, boolean withCheck) {
+    public static BackFillResult fillWithCheck(BackFiller filler,
+                                               ReorgBackFillTask fillTask,
+                                               boolean withCheck,
+                                               DingoTimeZoneProcessor processor) {
+        DingoTimeZoneContext.setProcessor(processor);
         BackFillResult backFillResult = filler.backFillDataInTxnWithCheck(fillTask, withCheck);
         ReorgCtx reorgCtx = DdlContext.INSTANCE.getReorgCtx1(fillTask.getJobId());
         reorgCtx.incrementCount(backFillResult.addCount);

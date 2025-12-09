@@ -106,6 +106,7 @@ import io.dingodb.common.table.ColumnDefinition;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
@@ -128,8 +129,8 @@ import io.dingodb.common.util.DefinitionUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.type.AnyType;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
@@ -2281,7 +2282,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     if ("current_date".equalsIgnoreCase(defaultVal)) {
                         return;
                     }
-                    DateTimeUtils.parseDate(defaultVal);
+                    DingoTimeZoneContext.getProcessor().processDateTime(defaultVal, DateTimeType.DATE);
                 } else if (type instanceof DecimalType) {
                     new BigDecimal(defaultVal);
                 } else if (type instanceof BooleanType) {
@@ -2295,9 +2296,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                     if (defaultVal.equalsIgnoreCase("current_timestamp")) {
                         return;
                     }
-                    DateTimeUtils.parseTimestamp(defaultVal);
+                    DingoTimeZoneContext.getProcessor().processDateTime(defaultVal, DateTimeType.TIMESTAMP);
                 } else if (type instanceof TimeType) {
-                    DateTimeUtils.parseTime(defaultVal);
+                    DingoTimeZoneContext.getProcessor().processDateTime(defaultVal, DateTimeType.TIME);
                 } else if (type instanceof ListType) {
                     if (defaultVal.toUpperCase().startsWith("ARRAY[") && defaultVal.endsWith("]")) {
                         defaultVal = defaultVal.substring(6, defaultVal.length() - 1);
@@ -2320,16 +2321,16 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                                     Boolean.parseBoolean(item);
                                     break;
                                 case "DATE":
-                                    DateTimeUtils.parseDate(item);
+                                    DingoTimeZoneContext.getProcessor().processDateTime(item, DateTimeType.DATE);
                                     break;
                                 case "DECIMAL":
                                     new BigDecimal(item);
                                     break;
                                 case "TIMESTAMP":
-                                    DateTimeUtils.parseTimestamp(item);
+                                    DingoTimeZoneContext.getProcessor().processDateTime(item, DateTimeType.TIMESTAMP);
                                     break;
                                 case "TIME":
-                                    DateTimeUtils.parseTime(item);
+                                    DingoTimeZoneContext.getProcessor().processDateTime(item, DateTimeType.TIME);
                                     break;
                                 default:
                                     break;

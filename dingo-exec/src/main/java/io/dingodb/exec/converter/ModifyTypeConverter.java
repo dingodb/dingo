@@ -17,10 +17,11 @@
 package io.dingodb.exec.converter;
 
 import io.dingodb.common.mysql.DingoErrUtil;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.util.Utils;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -190,7 +191,7 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                Date date = DateTimeUtils.parseDate(valStr);
+                Date date = (Date) DingoTimeZoneContext.getProcessor().processDateTime(valStr, DateTimeType.DATE);
                 if (date == null) {
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", valStr);
                 }
@@ -211,7 +212,7 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                return DateTimeUtils.parseTime(valStr);
+                return (Time) DingoTimeZoneContext.getProcessor().processDateTime(valStr, DateTimeType.TIME);
             } catch (Exception e) {
                 throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "time", valStr);
             }
@@ -228,7 +229,8 @@ public class ModifyTypeConverter implements DataConverter {
             return null;
         } else {
             try {
-                Timestamp timestamp = DateTimeUtils.parseTimestamp(valStr);
+                Timestamp timestamp =
+                    (Timestamp) DingoTimeZoneContext.getProcessor().processDateTime(valStr, DateTimeType.TIMESTAMP);
                 if (timestamp == null) {
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", valStr);
                 }

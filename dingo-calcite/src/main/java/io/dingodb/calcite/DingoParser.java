@@ -99,6 +99,7 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.profile.PlanProfile;
 import io.dingodb.common.table.HybridSearchTable;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.InfoSchemaService;
 import lombok.Getter;
@@ -150,6 +151,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import java.util.stream.Collectors;
 
 import static io.dingodb.calcite.rule.DingoRules.DINGO_AGGREGATE_REDUCE_RULE;
@@ -335,7 +337,7 @@ public class DingoParser {
                     sqlSelect.getEscaped(),
                     sqlSelect.getCharset(),
                     sqlSelect.getLineStarting(),
-                    context.getTimeZone()
+                    DingoTimeZoneContext.getTimeZone()
                 );
             }
         }

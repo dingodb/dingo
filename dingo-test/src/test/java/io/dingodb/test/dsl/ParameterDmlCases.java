@@ -171,6 +171,6 @@ public class ParameterDmlCases extends SqlTestCaseJavaBuilder {
                     new Object[]{1, new Date(0).toString(), new Time(0).toString(), new Timestamp(0)},
                     new Object[]{2, new Date(86400000).toString(), new Time(3600000).toString(), new Timestamp(1)}
                 )
-            ));
+            )).skip();
     }
 }

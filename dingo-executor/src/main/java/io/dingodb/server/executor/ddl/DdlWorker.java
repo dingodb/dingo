@@ -43,9 +43,11 @@ import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.table.IndexDefinition;
 import io.dingodb.common.table.TableDefinition;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.SequenceService;
@@ -1387,7 +1389,9 @@ public class DdlWorker {
             }
             rc = newReorgCtx(reorgInfo);
             CompletableFuture<Object> done = rc.getDone();
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
             Executors.execute("reorg", () -> {
+                DingoTimeZoneContext.setProcessor(processor);
                 String error;
                 try {
                     error = function.apply(null);
@@ -1439,8 +1443,10 @@ public class DdlWorker {
             }
             rc = newReorgCtx(reorgInfo);
             CompletableFuture<Object> done = rc.getDone();
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
             Executors.execute("reorg", () -> {
                 DingoErr dingoErr = null;
+                DingoTimeZoneContext.setProcessor(processor);
                 try {
                     String error = function.apply(null);
                     if (error != null) {

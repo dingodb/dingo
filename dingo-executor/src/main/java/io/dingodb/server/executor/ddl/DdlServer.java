@@ -32,8 +32,10 @@ import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.sdk.service.WatchService;
 import io.dingodb.sdk.service.entity.common.KeyValue;
 import io.dingodb.sdk.service.entity.version.Kv;
@@ -121,14 +123,14 @@ public final class DdlServer {
         Kv kv = Kv.builder().kv(KeyValue.builder()
             .key(DdlUtil.ADDING_DDL_JOB_CONCURRENT_KEY.getBytes()).build()).build();
         try {
-            watchService.watchAllOpEvent(kv, DdlServer::startLoadDDLAndRunByEtcd);
+            watchService.watchAllOpEvent(kv, typeStr -> startLoadDDLAndRunByEtcd(typeStr, DingoTimeZoneContext.getProcessor()));
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             watchDdlKey();
         }
     }
 
-    public static String startLoadDDLAndRunByEtcd(String typeStr) {
+    public static String startLoadDDLAndRunByEtcd(String typeStr, DingoTimeZoneProcessor processor) {
         if (typeStr.equals("keyNone")) {
             Utils.sleep(1000);
             return "none";
@@ -136,7 +138,7 @@ public final class DdlServer {
         Session session = SessionUtil.INSTANCE.getSession();
         try {
             session.setAutoCommit(true);
-            startLoadDDLAndRun(session);
+            startLoadDDLAndRun(session, processor);
             return "done";
         } catch (Exception e) {
             LogUtils.error(log, "startLoadDDLAndRunByEtcd error, reason:{}", e.getMessage());
@@ -148,10 +150,11 @@ public final class DdlServer {
 
     public static boolean startLoadDDLAndRun(DdlJobEvent ddlJobEvent) {
         Session session = SessionUtil.INSTANCE.getSession();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         try {
             LogUtils.info(log, "startJob by local event");
             session.setAutoCommit(true);
-            startLoadDDLAndRun(session);
+            startLoadDDLAndRun(session, processor);
         } catch (Exception e) {
             LogUtils.error(log, "startLoadDDLAndRun by event error, reason:{}", e.getMessage());
         } finally {
@@ -160,7 +163,7 @@ public final class DdlServer {
         return true;
     }
 
-    public static void startLoadDDLAndRun(Session session) {
+    public static void startLoadDDLAndRun(Session session, DingoTimeZoneProcessor processor) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
         // if owner continue,not break;
         if (!env.ddlOwner.get()
@@ -173,7 +176,7 @@ public final class DdlServer {
             Utils.sleep(1000);
             return;
         }
-        loadDDLJobsAndRun(session, JobTableUtil::getGenerateJobs, DdlContext.INSTANCE.getDdlJobPool());
+        loadDDLJobsAndRun(session, (__) -> JobTableUtil.getGenerateJobs(session, processor), DdlContext.INSTANCE.getDdlJobPool());
     }
 
     public static void startDispatchLoop() {
@@ -186,13 +189,14 @@ public final class DdlServer {
         watchDdlKey();
         Session session = SessionUtil.INSTANCE.getSession();
         session.setAutoCommit(true);
-        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRunBySchedule(session),
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+        Executors.scheduleWithFixedDelayAsync("DdlWorker", () -> startLoadDDLAndRunBySchedule(session, processor),
             10000, 1000, TimeUnit.MILLISECONDS);
     }
 
-    public static void startLoadDDLAndRunBySchedule(Session session) {
+    public static void startLoadDDLAndRunBySchedule(Session session, DingoTimeZoneProcessor processor) {
         //LogUtils.info(log, "startJob by local schedule");
-        startLoadDDLAndRun(session);
+        startLoadDDLAndRun(session, processor);
     }
 
     static synchronized void loadDDLJobsAndRun(
@@ -251,8 +255,10 @@ public final class DdlServer {
         DdlContext dc = DdlContext.INSTANCE;
         dc.insertRunningDDLJobMap(ddlJob.getId());
         LogUtils.info(log, "delivery 2 worker, jobId:{}, state:{}", ddlJob.getId(), ddlJob.getState());
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Executors.submit("ddl-worker", () -> {
             Timer.Context timeCtx = DingoMetrics.getTimeContext("ddlJobRun");
+            DingoTimeZoneContext.setProcessor(processor);
             try {
                 if (!dc.getWc().isSynced(ddlJob.getId()) || dc.getWc().getOnce().get()) {
                     if (DdlUtil.mdlEnable) {

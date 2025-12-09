@@ -24,6 +24,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -38,6 +39,7 @@ import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.exec.transaction.impl.TransactionCache;
 import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.IndexType;
 import io.dingodb.store.api.StoreInstance;
@@ -93,7 +95,9 @@ public final class TwoPhaseCommitUtils {
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
         List<Mutation> mutations = new ArrayList<>();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Supplier<Long> supplier = () -> {
+            DingoTimeZoneContext.setProcessor(processor);
             MdcUtils.setTxnId(txnId.toString());
             long count = 0L;
             boolean isPrimaryKeyPre = false;
@@ -274,7 +278,9 @@ public final class TwoPhaseCommitUtils {
             newPartId
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Supplier<Long> supplier = () -> {
+            DingoTimeZoneContext.setProcessor(processor);
             MdcUtils.setTxnId(txnId.toString());
             boolean isPrimaryKeyCommit = false;
             long count = 0L;
@@ -857,7 +863,9 @@ public final class TwoPhaseCommitUtils {
         );
         byte[] primaryKey = twoPhaseCommitData.getPrimaryKey();
         boolean isPessimistic = twoPhaseCommitData.isPessimistic();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Supplier<Boolean> supplier = () -> {
+            DingoTimeZoneContext.setProcessor(processor);
             MdcUtils.setTxnId(txnId.toString());
             List<byte[]> keys = new ArrayList<>();
             List<Long> forUpdateTsList = new ArrayList<>();

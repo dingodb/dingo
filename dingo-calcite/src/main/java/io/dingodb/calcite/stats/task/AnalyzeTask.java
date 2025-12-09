@@ -35,6 +35,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.common.type.TupleMapping;
@@ -56,6 +57,7 @@ import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
 import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -228,9 +230,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
     ) {
         long scanTs = TsoService.getDefault().cacheTso();
 
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         return rangeDistributions.stream().map(_i -> {
             Callable<TableStats> collectStatsTask = new CollectStatsTask(
-                _i, tableId, td, columnHistograms, cmSketchList, statsNormals, scanTs, timeout
+                _i, tableId, td, columnHistograms, cmSketchList, statsNormals, scanTs, timeout, processor
             );
             return Executors.submit("collect-task", collectStatsTask);
         }).collect(Collectors.toList());
@@ -324,8 +327,10 @@ public class AnalyzeTask extends StatsOperator implements Runnable {
             return;
         }
         List<CompletableFuture<Iterator<Object[]>>> futures = new ArrayList<>();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         for (RangeDistribution region : rangeDistributions) {
             Supplier<Iterator<Object[]>> supplier = () -> {
+                DingoTimeZoneContext.setProcessor(processor);
                 DingoType outputSchema = DingoTypeFactory.tuple(
                     histogramList.stream().flatMap(histogram ->
                         Arrays.stream(new DingoType[]{histogram.getDingoType(),

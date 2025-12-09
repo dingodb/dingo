@@ -20,11 +20,14 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.sdk.service.LockService;
 import io.dingodb.store.proxy.Configuration;
 import io.dingodb.transaction.api.GcService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.TimeZone;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,12 +47,13 @@ public final class SafePointUpdateTask {
     public static void runScheduleSafePointUpdate() {
         isLeader = true;
         LogUtils.info(log, "Start safe point update task.");
+        TimeZone timeZone = DingoTimeZoneContext.getTimeZone();
         future = Executors.scheduleWithFixedDelay(
-            lockKeyStr, SafePointUpdateTask::safePointUpdate, 1,
+            lockKeyStr, () -> safePointUpdate(timeZone), 1,
             DingoConfiguration.gcSafePointPeriod(), TimeUnit.SECONDS
         );
         regionDelFuture = Executors.scheduleWithFixedDelay(
-            lockKeyStr, SafePointUpdateTask::gcDeleteRegion, 60,
+            lockKeyStr, () -> gcDeleteRegion(timeZone), 60,
             DingoConfiguration.gcDeleteRegionPeriod(), TimeUnit.SECONDS
         );
     }
@@ -72,13 +76,13 @@ public final class SafePointUpdateTask {
         isLeader = false;
     }
 
-    private static void safePointUpdate() {
-        GcService.getDefault().safePointUpdate();
+    private static void safePointUpdate(TimeZone timeZone) {
+        GcService.getDefault().safePointUpdate(timeZone);
     }
 
-    private static void gcDeleteRegion() {
+    private static void gcDeleteRegion(TimeZone timeZone) {
         synchronized (safePointUpdateTask) {
-            GcService.getDefault().gcDeleteRegion();
+            GcService.getDefault().gcDeleteRegion(timeZone);
         }
     }
 

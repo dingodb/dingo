@@ -26,6 +26,7 @@ import io.dingodb.common.mysql.client.SessionVariableChange;
 import io.dingodb.common.mysql.client.SessionVariableWatched;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.CommitProfile;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.time.InternalTimeZone;
 import io.dingodb.common.time.TimeZoneUtils;
 import io.dingodb.common.util.Optional;
@@ -162,8 +163,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             this.setClientInfo(globalProp);
             if (sessionVariables.containsKey("time_zone")) {
                 String timeZoneId = (String) sessionVariables.get("time_zone");
-                InternalTimeZone timeZone = TimeZoneUtils.convertFromTZ(timeZoneId);
-                this.internalTimeZone = timeZone;
+                this.internalTimeZone = TimeZoneUtils.convertFromTZ(timeZoneId);
             }
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
@@ -535,6 +535,7 @@ public class DingoConnection extends AvaticaConnection implements CalcitePrepare
             }
             this.internalTimeZone = timeZone;
             this.getContext().setTimeZone(timeZone.getTimeZone());
+            DingoTimeZoneContext.setTimeZone(timeZone.getTimeZone());
         }
         sessionVariables.setProperty(name, value);
         if (name.equalsIgnoreCase("autocommit")) {

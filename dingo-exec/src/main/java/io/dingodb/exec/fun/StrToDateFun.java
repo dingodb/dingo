@@ -16,6 +16,7 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
@@ -27,14 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.Serial;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -129,6 +128,7 @@ public class StrToDateFun extends BinaryOp {
         Matcher matcher = pattern.matcher(dateStr);
 
         boolean matched = formatIsContinuous ? matcher.matches() : matcher.find();
+        TimeZone timeZone = DingoTimeZoneContext.getTimeZone();
 
         if (!matched) {
             if (formatHasTime) {
@@ -211,7 +211,7 @@ public class StrToDateFun extends BinaryOp {
                         }
                     }
 
-                    Calendar cal = Calendar.getInstance();
+                    Calendar cal = Calendar.getInstance(timeZone);
                     cal.set(Calendar.YEAR, 1970);
                     cal.set(Calendar.MONTH, 0);
                     cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -282,7 +282,7 @@ public class StrToDateFun extends BinaryOp {
             }
         }
 
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(timeZone);
         cal.set(Calendar.YEAR, 1970);
         cal.set(Calendar.MONTH, 0);
         cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -418,9 +418,7 @@ public class StrToDateFun extends BinaryOp {
         } else if (hasDate) {
             return new java.sql.Date(cal.getTimeInMillis());
         } else if (hasTime || formatHasTime) {
-            LocalDateTime t = new Timestamp(cal.getTimeInMillis()).toLocalDateTime();
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(t, ZoneOffset.UTC);
-            return new Time(zonedDateTime.toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli());
+            return new Time(cal.getTimeInMillis());
         } else {
             return null;
         }

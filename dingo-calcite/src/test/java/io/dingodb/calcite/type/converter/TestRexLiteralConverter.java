@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.type.converter;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.DingoTypeFactory;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -29,6 +30,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.sql.Time;
+import java.time.LocalTime;
+import java.util.Calendar;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,16 +40,25 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class TestRexLiteralConverter {
     public static @NonNull Stream<Arguments> getParameters() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.YEAR, 1970);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_YEAR, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
         return Stream.of(
-            arguments("00:00:00", new Time(0)),
-            arguments("01:00:00", new Time(60 * 60 * 1000)),
-            arguments("23:59:59.999", new Time(24 * 60 * 60 * 1000 - 1))
+            arguments("00:00:00", Time.valueOf(LocalTime.of(0, 0, 0))),
+            arguments("01:00:00", Time.valueOf(LocalTime.of(1, 0, 0))),
+            arguments("23:59:59.999", new Time(cal.getTimeInMillis()))
         );
     }
 
     @ParameterizedTest
     @MethodSource("getParameters")
     public void test(String jdbcString, Object value) {
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
         RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         RelDataType relDataType = typeFactory.createSqlType(SqlTypeName.TIME);
         RexLiteral literal = RexLiteral.fromJdbcString(relDataType, SqlTypeName.TIME, jdbcString);

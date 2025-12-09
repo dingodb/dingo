@@ -23,4 +23,5 @@ dependencies {
     api project(':dingo-common')
     api project(':dingo-net-api')
     implementation group: 'io.dingodb.expr', name: 'dingo-expr-runtime', version: 'dingo-expr'.v()
+    implementation group: 'io.dingodb.expr', name: 'dingo-expr-common', version: 'dingo-expr'.v()
 }

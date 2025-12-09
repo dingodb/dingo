@@ -19,9 +19,10 @@ package io.dingodb.calcite;
 import io.dingodb.calcite.mock.MockMetaServiceProvider;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.exception.DingoSqlException;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
 import io.dingodb.expr.runtime.ExprCompiler;
 import io.dingodb.expr.runtime.expr.Expr;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.RexCasesJUnit5;
 import lombok.extern.slf4j.Slf4j;
@@ -44,12 +45,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @Slf4j
@@ -65,6 +67,7 @@ public class TestRex {
         Properties properties = new Properties();
         Properties sessionVariables = new Properties();
         context = new DingoParserContext(MockMetaServiceProvider.SCHEMA_NAME, properties, sessionVariables);
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
     }
 
     @Nonnull
@@ -137,7 +140,7 @@ public class TestRex {
         RexNode rexNode = getRexNode(str);
         Expr expr = RexConverter.convert(rexNode);
         assertThat((Timestamp) ExprCompiler.ADVANCED.visit(expr).eval())
-            .isCloseTo(DateTimeUtils.currentTimestamp(), 3L * 1000L);
+            .isCloseTo(DateTimeUtils.currentTimestampSecond(DingoTimeZoneContext.getTimeZone()), 3L * 1000L);
     }
 
 }

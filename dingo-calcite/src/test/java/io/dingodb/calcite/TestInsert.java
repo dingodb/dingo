@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Properties;
 
@@ -160,8 +161,8 @@ public class TestInsert {
             .soleInput().isA(DingoValues.class)
             .getInstance();
         assertThat(values.getTuples()).hasSize(2).containsExactlyInAnyOrder(
-            new Object[]{1, "Peso", new Date(0L)},
-            new Object[]{2, "Alice", new Date(24L * 60L * 60L * 1000L)}
+            new Object[]{1, "Peso", Date.valueOf(LocalDate.of(1970, 1, 1))},
+            new Object[]{2, "Alice", Date.valueOf(LocalDate.of(1970, 1, 2))}
         );
     }
 

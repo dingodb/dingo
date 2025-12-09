@@ -18,6 +18,7 @@ package io.dingodb.common.concurrent;
 
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -207,6 +208,29 @@ public final class Executors {
             thread.setName(FREE_THREAD_NAME);
             LogUtils.trace(log, "Call [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
             contexts.remove(thread);
+        }
+    }
+
+    private static void run(String name, Runnable runnable, boolean ignoreError, DingoTimeZoneProcessor processor) {
+        Thread thread = Thread.currentThread();
+        contexts.put(thread, new Context(processor));
+        try {
+            LogUtils.trace(log, "Run [{}] start, thread id [{}], set thread name.", name, thread.getId());
+            StringBuilder builder = new StringBuilder(name);
+            builder.append("-").append(thread.getId());
+            thread.setName(builder.toString());
+            runnable.run();
+        } catch (Throwable e) {
+            if (ignoreError) {
+                error(log, "Execute {} catch error.", name, e);
+            } else {
+                LogUtils.error(log, "Execute {} catch error.", name, e);
+                throw e;
+            }
+        } finally {
+            thread.setName(FREE_THREAD_NAME);
+            LogUtils.trace(log, "Run [{}] finish, thread id [{}], reset thread name.", name, thread.getId());
+            contexts.put(thread, new Context(processor));
         }
     }
 

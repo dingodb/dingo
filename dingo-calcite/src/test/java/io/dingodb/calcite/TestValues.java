@@ -40,6 +40,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -99,7 +100,7 @@ public class TestValues {
             ),
             arguments(
                 "select cast(a as date) from (values('1970-1-1')) as t (a)",
-                ImmutableList.of(new Object[]{new Date(0L)})
+                ImmutableList.of(new Object[]{Date.valueOf(LocalDate.of(1970, 1, 1))})
             ));
     }
 

@@ -25,6 +25,7 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
@@ -49,7 +50,8 @@ import io.dingodb.exec.Services;
 import io.dingodb.exec.transaction.base.CacheToObject;
 import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -101,6 +103,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 return newColumn.getInitVal();
             }
         } else {
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
             String defaultValueExpr = newColumn.defaultValueExpr;
             if (defaultValueExpr.startsWith("'") && defaultValueExpr.endsWith("'")) {
                 defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
@@ -119,7 +122,7 @@ public class AddColumnFiller extends IndexAddFiller {
                 if ("current_date".equalsIgnoreCase(defaultValueExpr)) {
                     return new Date(System.currentTimeMillis());
                 }
-                return DateTimeUtils.parseDate(defaultValueExpr);
+                return processor.processDateTime(defaultValueExpr, DateTimeType.DATE);
             } else if (type instanceof DecimalType) {
                 return new BigDecimal(defaultValueExpr);
             } else if (type instanceof BooleanType) {
@@ -136,9 +139,9 @@ public class AddColumnFiller extends IndexAddFiller {
                 if (defaultValueExpr.equalsIgnoreCase("current_timestamp")) {
                     return new Timestamp(System.currentTimeMillis());
                 }
-                return DateTimeUtils.parseTimestamp(defaultValueExpr);
+                return processor.processDateTime(defaultValueExpr, DateTimeType.TIMESTAMP);
             } else if (type instanceof TimeType) {
-                return DateTimeUtils.parseTime(defaultValueExpr);
+                return processor.processDateTime(defaultValueExpr, DateTimeType.TIME);
             } else if (type instanceof ListType) {
                 if (defaultValueExpr.toUpperCase().startsWith("ARRAY[") && defaultValueExpr.endsWith("]")) {
                     defaultValueExpr = defaultValueExpr.substring(6, defaultValueExpr.length() - 1);
@@ -161,13 +164,13 @@ public class AddColumnFiller extends IndexAddFiller {
                         case "BOOLEAN":
                             return Boolean.parseBoolean(item);
                         case "DATE":
-                            return DateTimeUtils.parseDate(item);
+                            return processor.processDateTime(item, DateTimeType.DATE);
                         case "DECIMAL":
                             return new BigDecimal(item);
                         case "TIMESTAMP":
-                            return DateTimeUtils.parseTimestamp(item);
+                            return processor.processDateTime(item, DateTimeType.TIMESTAMP);
                         case "TIME":
-                            return DateTimeUtils.parseTime(item);
+                            return processor.processDateTime(item, DateTimeType.TIME);
                         default:
                             return item;
                     }

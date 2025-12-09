@@ -16,12 +16,14 @@
 
 package io.dingodb.common.profile;
 
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.common.time.DingoTimeZoneContext;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Time;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Data
@@ -71,9 +73,10 @@ public class PlanProfile extends Profile {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Object[] val = new Object[4];
         val[0] = termStr + "compile";
-        val[1] = DateTimeUtils.timeFormat(new Time(start));
+        val[1] = processor.formatDateTime(new Time(start), DateTimeFormatter.ISO_LOCAL_TIME);
         val[2] = String.valueOf(duration);
         val[3] = this.getCount();
         rowList.add(val);
@@ -88,21 +91,21 @@ public class PlanProfile extends Profile {
         }
         Object[] parseVal = new Object[4];
         parseVal[0] = termStr + "parse";
-        parseVal[1] = DateTimeUtils.timeFormat(new Time(start));
+        parseVal[1] = processor.formatDateTime(new Time(start), DateTimeFormatter.ISO_LOCAL_TIME);
         parseVal[2] = String.valueOf(parse);
         parseVal[3] = this.getCount();
         rowList.add(parseVal);
 
         Object[] validateVal = new Object[4];
         validateVal[0] = termStr + "validate";
-        validateVal[1] = DateTimeUtils.timeFormat(new Time(parseTime));
+        validateVal[1] = processor.formatDateTime(new Time(parseTime), DateTimeFormatter.ISO_LOCAL_TIME);
         validateVal[2] = String.valueOf(validate);
         validateVal[3] = this.getCount();
         rowList.add(validateVal);
 
         Object[] optimizeVal = new Object[4];
         optimizeVal[0] = termStr + "optimize";
-        optimizeVal[1] = DateTimeUtils.timeFormat(new Time(validateTime));
+        optimizeVal[1] = processor.formatDateTime(new Time(validateTime), DateTimeFormatter.ISO_LOCAL_TIME);
         optimizeVal[2] = String.valueOf(optimize);
         optimizeVal[3] = this.getCount();
         rowList.add(optimizeVal);

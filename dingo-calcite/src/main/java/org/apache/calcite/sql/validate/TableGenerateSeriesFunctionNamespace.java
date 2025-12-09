@@ -76,6 +76,9 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
             if (operandList.size() < 4) {
                 throw new RuntimeException("Incorrect parameter count for generate series function");
             }
+            if (operandList.get(1) == null || operandList.get(2) == null) {
+                throw new IllegalArgumentException("Parameter cannot be null");
+            }
             SqlIdentifier column1 = (SqlIdentifier) operandList.get(1);
             SqlIdentifier column2 = (SqlIdentifier) operandList.get(2);
 
@@ -93,6 +96,12 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
             }
 
             List<Column> columns = new ArrayList<>();
+            Column col = Column.builder()
+                .name("GENERATED_SERIES")
+                .sqlTypeName(col2.getSqlTypeName())
+                .type(col1.getType())
+                .build();
+            columns.add(col);
             if (operandList.size() == 5 && operandList.get(4) != null) {
                 // The column used as the join condition must exist in the table
                 // SqlBasicCall --> SqlIdentifier
@@ -106,11 +115,11 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
                                 throw new RuntimeException("Parameter tableName: " + identifier.getSimple()
                                     + " must be consistent with function tableName: " + table.getName());
                             }
-                            Column col = table.getColumn(identifier.getLastName());
-                            if (col == null) {
+                            Column column = table.getColumn(identifier.getLastName());
+                            if (column == null) {
                                 throw new RuntimeException("Column " + identifier.getLastName() + " does not exist in table " + table.getName());
                             }
-                            columns.add(col);
+                            columns.add(column);
                         }
                     }
                 } else if (operandList.get(4) instanceof SqlIdentifier && ((SqlIdentifier) operandList.get(4)).isStar()) {
@@ -121,22 +130,15 @@ public class TableGenerateSeriesFunctionNamespace extends AbstractNamespace {
                         throw new RuntimeException("Parameter tableName: " + identifier.getSimple()
                             + " must be consistent with function tableName: " + table.getName());
                     }
-                    Column col = table.getColumn(identifier.getLastName());
-                    if (col == null) {
+                    Column column = table.getColumn(identifier.getLastName());
+                    if (column == null) {
                         throw new RuntimeException("Column " + identifier.getLastName() + " does not exist in table " + table.getName());
                     }
-                    columns.add(col);
+                    columns.add(column);
                 } else {
                     throw new IllegalArgumentException("");
                 }
             }
-
-            Column col = Column.builder()
-                .name("GENERATED_SERIES")
-                .sqlTypeName(col1.getSqlTypeName())
-                .type(col1.getType())
-                .build();
-            columns.add(col);
 
             RelDataTypeFactory typeFactory = validator.typeFactory;
             rowType = typeFactory.createStructType(

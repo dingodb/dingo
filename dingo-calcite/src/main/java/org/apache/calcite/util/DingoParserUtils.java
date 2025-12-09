@@ -31,7 +31,7 @@ public final class DingoParserUtils {
                                                             int sign,
                                                             String s,
                                                             SqlIntervalQualifier intervalQualifier) {
-        return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
+        return DingoSqlLiteral.createInterval(sign, sign == -1 ? "-" + s : s, intervalQualifier, pos);
     }
 
     public static long intervalToMonths(SqlIntervalLiteral.IntervalValue interval) {

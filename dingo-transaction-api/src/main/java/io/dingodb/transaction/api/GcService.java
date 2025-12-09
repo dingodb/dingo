@@ -19,6 +19,7 @@ package io.dingodb.transaction.api;
 import io.dingodb.common.util.Pair;
 
 import java.util.List;
+import java.util.TimeZone;
 
 public interface GcService {
 
@@ -26,7 +27,7 @@ public interface GcService {
         return GcServiceProvider.getDefault().get();
     }
 
-    void safePointUpdate();
+    void safePointUpdate(TimeZone timeZone);
 
     Pair<String, Long> startSafePointUpdate();
 
@@ -34,5 +35,5 @@ public interface GcService {
 
     List<GcObj> startTenantsBackUpSafeByPoint(long point, long latestTso);
 
-    void gcDeleteRegion();
+    void gcDeleteRegion(TimeZone timeZone);
 }

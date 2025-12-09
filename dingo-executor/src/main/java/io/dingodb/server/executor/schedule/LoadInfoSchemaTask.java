@@ -62,7 +62,7 @@ public final class LoadInfoSchemaTask {
             .key(io.dingodb.meta.InfoSchemaService.expSchemaVer.getBytes()).build()).build();
         WatchService watchService = new WatchService(Configuration.coordinators());
         try {
-            watchService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd);
+            watchService.watchAllOpEvent(kv, LoadInfoSchemaTask::loadInfoByEtcd); // TODO
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
             watchExpSchemaVer();

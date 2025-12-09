@@ -19,6 +19,7 @@ package io.dingodb.meta.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.table.ColumnDefinition;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.ListType;
 import io.dingodb.common.type.MapType;
@@ -35,7 +36,8 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -122,6 +124,7 @@ public class Column {
         if (defaultValueExpr == null) {
             return null;
         }
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         if (type instanceof StringType) {
             return defaultValueExpr;
         } else if (type instanceof LongType) {
@@ -136,7 +139,7 @@ public class Column {
             if ("current_date".equalsIgnoreCase(defaultValueExpr)) {
                 return new Date(System.currentTimeMillis());
             }
-            return DateTimeUtils.parseDate(defaultValueExpr);
+            return processor.processDateTime(defaultValueExpr, DateTimeType.DATE);
         } else if (type instanceof DecimalType) {
             return new BigDecimal(defaultValueExpr);
         } else if (type instanceof BooleanType) {
@@ -149,9 +152,9 @@ public class Column {
             if (defaultValueExpr.equalsIgnoreCase("current_timestamp")) {
                 return new Timestamp(System.currentTimeMillis());
             }
-            return DateTimeUtils.parseTimestamp(defaultValueExpr);
+            return processor.processDateTime(defaultValueExpr, DateTimeType.TIMESTAMP);
         } else if (type instanceof TimeType) {
-            return DateTimeUtils.parseTime(defaultValueExpr);
+            return processor.processDateTime(defaultValueExpr, DateTimeType.TIME);
         } else if (type instanceof ListType) {
             if ("{}".equalsIgnoreCase(defaultValueExpr)) {
                 return new ArrayList<>();
@@ -170,13 +173,13 @@ public class Column {
                     case "BOOLEAN":
                         return Boolean.parseBoolean(item);
                     case "DATE":
-                        return DateTimeUtils.parseDate(item);
+                        return processor.processDateTime(item, DateTimeType.DATE);
                     case "DECIMAL":
                         return new BigDecimal(item);
                     case "TIMESTAMP":
-                        return DateTimeUtils.parseTimestamp(item);
+                        return processor.processDateTime(item, DateTimeType.TIMESTAMP);
                     case "TIME":
-                        return DateTimeUtils.parseTime(item);
+                        return processor.processDateTime(item, DateTimeType.TIME);
                     default:
                         return item;
                 }
@@ -209,13 +212,13 @@ public class Column {
         } else if (type instanceof DecimalType) {
             return new BigDecimal(0);
         } else if (type instanceof DateType) {
-            return DateTimeUtils.parseDate("0000-00-00");
+            return DingoTimeZoneContext.getProcessor().processDateTime("0000-00-00", DateTimeType.DATE);
         } else if (type instanceof BooleanType) {
             return false;
         } else if (type instanceof TimestampType) {
-            return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+            return DingoTimeZoneContext.getProcessor().processDateTime("0000-00-00 00:00:00", DateTimeType.TIMESTAMP);
         } else if (type instanceof TimeType) {
-            return DateTimeUtils.parseTime("00:00:00");
+            return DingoTimeZoneContext.getProcessor().processDateTime("00:00:00", DateTimeType.TIME);
         } else if (type instanceof ListType) {
             return new ArrayList<>();
         } else if (type instanceof MapType) {

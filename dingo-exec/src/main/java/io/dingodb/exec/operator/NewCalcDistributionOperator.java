@@ -20,6 +20,7 @@ import com.google.common.base.Supplier;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.common.util.Utils;
@@ -27,6 +28,7 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
@@ -161,10 +163,12 @@ public class NewCalcDistributionOperator extends SourceOperator {
         DistributionSourceParam param,
         RangeDistribution distribution
     ) {
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         Supplier<Boolean> supplier = () -> {
             if (log.isTraceEnabled()) {
                 LogUtils.trace(log, "Push distribution: {}", distribution);
             }
+            DingoTimeZoneContext.setProcessor(processor);
             Context copyContext = context.copy();
             copyContext.setDistribution(distribution);
             return vertex.getOutList().stream()

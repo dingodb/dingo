@@ -16,6 +16,9 @@
 
 package io.dingodb.exec.fun;
 
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.core.DingoDateTime;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
@@ -28,8 +31,6 @@ import java.sql.Timestamp;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -39,8 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DateFun extends UnaryOp {
-
-    private static final ZoneId SERVER_ZONE = ZoneId.of("Asia/Shanghai");
     // List of supported date formats (4-digit year)
     private static final List<DateTimeFormatter> FOUR_DIGIT_YEAR_FORMATS = new ArrayList<>();
     // List of Supported Date Formats (2-digit Year)
@@ -89,32 +88,29 @@ public class DateFun extends UnaryOp {
 
     @Override
     public Object evalValue(Object value, ExprConfig config) {
-        LocalDate date = date(value);
-        if (date == null) {
-            return null;
-        }
-        LocalDateTime t = date.atStartOfDay();
-        return new Date(t.toInstant(ZoneOffset.UTC).toEpochMilli());
+        DingoTimeZoneProcessor processor = config.getProcessor();
+
+        return date(value, processor);
     }
 
-    public static LocalDate date(Object value) {
+    public static Date date(Object value, DingoTimeZoneProcessor processor) {
         if (value == null) {
             return null;
         }
 
         try {
-            if (value instanceof Timestamp) {
-                return ((Timestamp) value).toInstant().atZone(SERVER_ZONE).toLocalDate();
-            }
-            if (value instanceof Date) {
-                return new java.util.Date(((Date) value).getTime())
-                    .toInstant()
-                    .atZone(SERVER_ZONE)
-                    .toLocalDate();
+            DingoDateTime dateTime = null;
+            if (value instanceof Timestamp || value instanceof Date) {
+                dateTime = processor.getTierProcessor().convertInput(value, DateTimeType.DATE);
             }
             if (value instanceof String) {
-                return parseDate((String) value);
+                LocalDate localDate = parseDate((String) value);
+                if (localDate == null) {
+                    return null;
+                }
+                dateTime = new DingoDateTime.DingoLocalDate(localDate);
             }
+            return (Date) processor.getTierProcessor().convertOutput(dateTime, DateTimeType.DATE);
         } catch (DateTimeException ignore) {
 
         }
@@ -142,8 +138,7 @@ public class DateFun extends UnaryOp {
 
             try {
                 // Try to resolve to LocalDate (without the time part)
-                LocalDate date = LocalDate.parse(input, formatter);
-                return date;
+                return LocalDate.parse(input, formatter);
             } catch (DateTimeParseException ignored) {}
         }
 
@@ -159,8 +154,7 @@ public class DateFun extends UnaryOp {
                 if (year >= 0 && year <= 69) year += 2000;
                 else if (year >= 70 && year <= 99) year += 1900;
 
-                LocalDate date = LocalDate.of(year, month, day);
-                return date;
+                return LocalDate.of(year, month, day);
             } catch (DateTimeException ignored) {}
         }
 
@@ -192,8 +186,7 @@ public class DateFun extends UnaryOp {
                             month = Integer.parseInt(parts[1]);
                             String[] dayAndTime = parts[2].split(" ");
                             day = Integer.parseInt(dayAndTime[0]);
-                            LocalDate date = LocalDate.of(year, month, day);
-                            return date;
+                            return LocalDate.of(year, month, day);
                         } catch (Exception e) {
                             // ignore
                         }
@@ -210,8 +203,7 @@ public class DateFun extends UnaryOp {
                                 year = Integer.parseInt(dateParts[0]);
                                 month = Integer.parseInt(dateParts[1]);
                                 day = Integer.parseInt(dateParts[2]);
-                                LocalDate date = LocalDate.of(year, month, day);
-                                return date;
+                                return LocalDate.of(year, month, day);
                             } catch (Exception e) {
                                 // ignore
                             }
@@ -223,8 +215,7 @@ public class DateFun extends UnaryOp {
                     year = Integer.parseInt(digits.substring(0, 4));
                     month = Integer.parseInt(digits.substring(4, 6));
                     day = Integer.parseInt(digits.substring(6, 8));
-                    LocalDate date = LocalDate.of(year, month, day);
-                    return date;
+                    return LocalDate.of(year, month, day);
                 }
 
                 if (len >= 6 && Character.isDigit(input.charAt(0))) {
@@ -234,8 +225,7 @@ public class DateFun extends UnaryOp {
                         month = Integer.parseInt(digits.substring(4, 5));
                         day = Integer.parseInt(digits.substring(5, 6));
                         if (len > 6) day = day * 10 + Integer.parseInt(digits.substring(6, 7));
-                        LocalDate date = LocalDate.of(year, month, day);
-                        return date;
+                        return LocalDate.of(year, month, day);
                     } catch (Exception e) {
                         // ignore
                     }
@@ -270,8 +260,7 @@ public class DateFun extends UnaryOp {
                 }
 
                 // verify and create the date
-                LocalDate date = LocalDate.of(year, month, day);
-                return date;
+                return LocalDate.of(year, month, day);
             }
         } catch (DateTimeException | NumberFormatException | StringIndexOutOfBoundsException e) {
             // ignore all resolution exceptions

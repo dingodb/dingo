@@ -18,6 +18,7 @@ package io.dingodb.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoTypeFactory;
 import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
@@ -37,6 +38,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -105,14 +107,14 @@ public class DdlTest {
 
     @ParameterizedTest
     @CsvSource({
-        "timestamp, 1970-01-01 00:00:00.000",
-        "timestamp, 2022-11-01 11:01:01.000",
+        "timestamp, 1970-01-01 00:00:00",
+        "timestamp, 2022-11-01 11:01:01",
     })
     public void testCreateTableTimestampLiteral(@Nonnull String type, String value) throws SQLException {
         context.execSql("create table {table} (id int, data " + type + ", primary key(id))");
         context.execSql("insert into {table} values(1, " + type + "'" + value + "')");
         Object result = context.querySingleValue("select data from {table}");
-        assertThat(DateTimeUtils.toUtcString(((Timestamp) result).getTime())).isEqualTo(value);
+        assertThat(DingoTimeZoneContext.getProcessor().toSafeString(result)).isEqualTo(value);
     }
 
     @ParameterizedTest
@@ -126,7 +128,7 @@ public class DdlTest {
         context.execSql("create table {table} (id int, data " + type + ", primary key(id))");
         context.execSql("insert into {table} values(1, '" + value + "')");
         Object result = context.querySingleValue("select data from {table}");
-        assertThat(result.toString()).isEqualTo(value);
+        assertThat(DingoTimeZoneContext.getProcessor().toSafeString(result)).isEqualTo(value);
     }
 
     @ParameterizedTest
@@ -140,7 +142,7 @@ public class DdlTest {
         context.execSql("create table {table} (id int, data " + type + ", primary key(id))");
         context.execSql("insert into {table} values(1, " + type + "'" + value + "')");
         Object result = context.querySingleValue("select data from {table}");
-        assertThat(result.toString()).isEqualTo(value);
+        assertThat(DingoTimeZoneContext.getProcessor().toSafeString(result)).isEqualTo(value);
     }
 
     @Test
@@ -270,7 +272,7 @@ public class DdlTest {
         assertThat(result).isInstanceOf(Array.class);
         Array array = (Array) result;
         assertThat(array.getBaseType()).isEqualTo(Types.DATE);
-        assertThat(array.getArray()).isEqualTo(new Date[]{new Date(0), new Date(86400000)});
+        assertThat(array.getArray()).isEqualTo(new Date[]{Date.valueOf(LocalDate.of(1970, 1, 1)), Date.valueOf(LocalDate.of(1970, 1, 2))});
     }
 
     @Test

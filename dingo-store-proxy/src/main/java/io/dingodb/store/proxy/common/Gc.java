@@ -25,6 +25,7 @@ import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -74,6 +75,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.LongStream;
@@ -104,17 +106,18 @@ public class Gc {
         LockNotExistRollback, TTLExpirePessimisticRollback, TTLExpireRollback
     );
 
-    public static Pair<String, Long> safePointUpdate() {
+    public static Pair<String, Long> safePointUpdate(TimeZone timeZone) {
         LogUtils.info(log, "safe point update task start.");
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         if (!infoSchemaService.prepare()) {
             Utils.sleep(1000);
-            return safePointUpdate();
+            return safePointUpdate(timeZone);
         }
         if (!GcApi.running.compareAndSet(false, true)) {
             return new Pair<>(GcStatus.RUNNING.toString(), 0L);
         }
         try {
+            DingoTimeZoneContext.setTimeZone(timeZone);
             LogUtils.info(log, "Run safe point update task.");
             Set<Location> coordinators = coordinatorSet();
             long reqTs = tso();
@@ -781,7 +784,7 @@ public class Gc {
         return result;
     }
 
-    public static void gcDeleteRegion() {
+    public static void gcDeleteRegion(TimeZone timeZone) {
         InfoSchemaService infoSchemaService = InfoSchemaService.root();
         if (!infoSchemaService.prepare()) {
             return;

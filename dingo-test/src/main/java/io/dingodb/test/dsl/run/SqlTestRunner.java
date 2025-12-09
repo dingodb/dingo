@@ -16,6 +16,7 @@
 
 package io.dingodb.test.dsl.run;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.test.dsl.builder.SqlBuildingContext;
 import io.dingodb.test.dsl.builder.SqlTableInfo;
 import io.dingodb.test.dsl.builder.SqlTestCase;
@@ -32,6 +33,7 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -79,6 +81,7 @@ public abstract class SqlTestRunner {
         setup();
         connection = getConnection();
         runningContexts = new LinkedList<>();
+        DingoTimeZoneContext.setTimeZone(TimeZone.getDefault());
     }
 
     @AfterAll

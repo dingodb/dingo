@@ -31,6 +31,7 @@ import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -42,6 +43,7 @@ import io.dingodb.exec.transaction.impl.TransactionManager;
 import io.dingodb.exec.transaction.util.Txn;
 import io.dingodb.exec.transaction.util.TxnIgnore;
 import io.dingodb.exec.utils.ByteUtils;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -208,8 +210,10 @@ public class LoadDataExecutor implements DmlExecutor {
             throw DingoResource.DINGO_RESOURCE.fieldSeparatorError().ex();
         }
         start = System.currentTimeMillis();
+        DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
         CompletableFuture<String> future = Executors.submit("loadDataDecoder", () -> {
             try {
+                DingoTimeZoneContext.setProcessor(processor);
                 byte[] preBytes = null;
                 long ver = DdlService.root().getIsLatest().getSchemaMetaVersion();
                 context.getRootSchema().putRelatedTable(table.tableId.seq, ver, txnId);

@@ -33,6 +33,7 @@ import io.dingodb.common.log.SqlLogUtils;
 import io.dingodb.common.profile.ExecProfile;
 import io.dingodb.common.profile.SqlProfile;
 import io.dingodb.common.table.IndexScan;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Optional;
@@ -46,7 +47,6 @@ import io.dingodb.exec.impl.JobIteratorImpl;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnPartData;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.StringUtil;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.sql.Time;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -607,7 +608,7 @@ public class DingoMeta extends MetaImpl {
                 if (!trace) {
                     DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
                     GregorianCalendar calendarCST = new GregorianCalendar();
-                    calendarCST.setTimeZone(((DingoConnection) connection).getInternalTimeZone().getTimeZone());
+                    calendarCST.setTimeZone(DingoTimeZoneContext.getTimeZone());
                     AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
                     for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
                         rows.add(dingoType.convertTo(iterator.next(), converter));
@@ -1448,7 +1449,9 @@ public class DingoMeta extends MetaImpl {
 
     public static void getTraceValues(SqlProfile sqlProfile, List<Object[]> rowList) {
         long duration = System.currentTimeMillis() - sqlProfile.getStart();
-        String startTs = DateTimeUtils.timeFormat(new Time(sqlProfile.getStart()));
+        String startTs = DingoTimeZoneContext.getProcessor().formatDateTime(
+            new Time(sqlProfile.getStart()),
+            DateTimeFormatter.ISO_LOCAL_TIME);
         rowList.add(new Object[] {"trace", startTs, String.valueOf(duration), Long.valueOf(0)});
         sqlProfile.traceTree(rowList);
     }

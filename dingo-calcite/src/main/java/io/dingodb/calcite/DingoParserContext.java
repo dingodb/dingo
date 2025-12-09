@@ -23,6 +23,7 @@ import io.dingodb.calcite.schema.RootSnapshotSchema;
 import io.dingodb.calcite.type.DingoSqlTypeFactory;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.SQLMode;
+import io.dingodb.common.time.DingoTimeZoneContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -112,6 +113,8 @@ public final class DingoParserContext implements Context {
 
         timeZone = timeZone == null ? TimeZone.getDefault() : timeZone;
         this.timeZone = timeZone;
+
+        DingoTimeZoneContext.setTimeZone(timeZone);
 
         String usingRelOpStr = options != null ? options.getProperty("usingRelOp") : null;
         usingRelOp = (usingRelOpStr == null || Boolean.parseBoolean(usingRelOpStr));

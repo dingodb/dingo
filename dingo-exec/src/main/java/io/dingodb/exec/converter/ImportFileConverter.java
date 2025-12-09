@@ -16,9 +16,11 @@
 
 package io.dingodb.exec.converter;
 
+import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
-import io.dingodb.expr.runtime.utils.DateTimeUtils;
+import io.dingodb.expr.common.timezone.core.DateTimeType;
+import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigDecimal;
@@ -135,10 +137,12 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
             try {
-                return DateTimeUtils.parseDate(valStr);
+                return (Date) processor.processDateTime(valStr, DateTimeType.DATE);
             } catch (Exception e) {
-                return DateTimeUtils.parseDate("0000-00-00");
+                return (Date) processor.processDateTime("0000-00-00", DateTimeType.DATE);
             }
         }
     }
@@ -149,10 +153,12 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
             try {
-                return DateTimeUtils.parseTime(valStr);
+                return (Time) processor.processDateTime(valStr, DateTimeType.TIME);
             } catch (Exception e) {
-                return DateTimeUtils.parseTime("00:00:00");
+                return (Time) processor.processDateTime("00:00:00", DateTimeType.TIME);
             }
         }
     }
@@ -163,10 +169,12 @@ public class ImportFileConverter implements DataConverter {
         if (NULL_FLG.equalsIgnoreCase(valStr)) {
             return null;
         } else {
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+
             try {
-                return DateTimeUtils.parseTimestamp(valStr);
+                return (Timestamp) processor.processDateTime(valStr, DateTimeType.TIMESTAMP);
             } catch (Exception e) {
-                return DateTimeUtils.parseTimestamp("0000-00-00 00:00:00");
+                return (Timestamp) processor.processDateTime("0000-00-00 00:00:00", DateTimeType.TIMESTAMP);
             }
         }
     }
