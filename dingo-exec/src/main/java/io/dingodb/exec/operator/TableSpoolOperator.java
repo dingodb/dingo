@@ -28,8 +28,17 @@ public class TableSpoolOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         TableSpoolParam tableSpoolParam = vertex.getParam();
-        tableSpoolParam.tempCollection.add(tuple);
-        vertex.getSoleEdge().transformToNext(tuple);
+        if (tableSpoolParam.getProjects() != null) {
+            Object[] newTuple = new Object[tableSpoolParam.getProjects().size()];
+            for (int i = 0; i < newTuple.length; ++i) {
+                newTuple[i] = tableSpoolParam.getProjects().get(i).eval(tuple);
+            }
+            tableSpoolParam.tempCollection.add(newTuple);
+            vertex.getSoleEdge().transformToNext(newTuple);
+        } else {
+            tableSpoolParam.tempCollection.add(tuple);
+            vertex.getSoleEdge().transformToNext(tuple);
+        }
         return true;
     }
 

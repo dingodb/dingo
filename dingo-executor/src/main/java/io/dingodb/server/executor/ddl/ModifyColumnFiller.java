@@ -21,12 +21,14 @@ import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
+import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.converter.ModifyTypeConverter;
 import io.dingodb.exec.transaction.base.CacheToObject;
@@ -45,7 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
@@ -54,8 +55,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
@@ -244,6 +243,7 @@ public class ModifyColumnFiller extends IndexAddFiller {
     }
 
     public Object[] transformType(Object[] tuples) {
+        validateDataRange(tuples);
         return (Object[]) dingoType.convertFrom(tuples, new ModifyTypeConverter());
     }
 
@@ -299,6 +299,20 @@ public class ModifyColumnFiller extends IndexAddFiller {
             (System.currentTimeMillis() - start), scanCount, task.getRegionId());
         doneRegionIdList.add(task.getRegionId());
         return backFillResult;
+    }
+
+    public void validateDataRange(Object[] tuple) {
+        for (int i = 0; i < indexTable.columns.size(); i ++) {
+            if ("TINYINT".equalsIgnoreCase(indexTable.columns.get(i).getSqlTypeName())) {
+                if (tuple[i] instanceof Integer) {
+                    if (!Utils.tinyintInRange((Integer)tuple[i])) {
+                        throw new DingoTypeRangeException(0,
+                            "Out of range value '" + tuple[i] + "' for column '"
+                                + indexTable.columns.get(i).getName() + "'");
+                    }
+                }
+            }
+        }
     }
 
 }
