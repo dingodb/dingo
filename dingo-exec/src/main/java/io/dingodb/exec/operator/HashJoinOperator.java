@@ -51,8 +51,6 @@ public class HashJoinOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         HashJoinParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("hashJoin");
-        long start = System.currentTimeMillis();
         try {
             TupleMapping leftMapping = param.getLeftMapping();
             TupleMapping rightMapping = param.getRightMapping();
@@ -63,8 +61,9 @@ public class HashJoinOperator extends SoleOutOperator {
             param.setContext(context);
             if (pin == 0) { // left
                 waitRightFinFlag(param, vertex);
+                OperatorProfile profile = param.getProfile("hashJoin");
+                long start = System.currentTimeMillis();
                 TupleKey leftKey = HashJoinParam.rtrimTupleKey(new TupleKey(leftMapping.revMap(tuple)));
-
                 if (HashJoinParam.containsNull(leftKey)) {
                     if ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType())) {
                         return true;
@@ -74,14 +73,16 @@ public class HashJoinOperator extends SoleOutOperator {
                         return pushToNext(param, edge, context, newTuple);
                     }
                 }
-
                 boolean isEmpty = isEmpty(leftKey, param);
-                if (isEmpty && ("inner".equalsIgnoreCase(param.getJoinType()) || "right".equalsIgnoreCase(param.getJoinType()))) {
+                if (isEmpty && ("inner".equalsIgnoreCase(param.getJoinType())
+                    || "right".equalsIgnoreCase(param.getJoinType()))) {
+                    profile.opTime(start);
                     return true;
                 }
                 if (isEmpty && "left".equalsIgnoreCase(param.getJoinType())) {
                     Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                     Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                    profile.opTime(start);
                     return pushToNext(param, edge, context, newTuple);
                 }
                 List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
@@ -90,6 +91,7 @@ public class HashJoinOperator extends SoleOutOperator {
                         Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                         System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
                         t.setJoined(true);
+                        profile.opTime(start);
                         if (!pushToNext(param, edge, context, newTuple)) {
                             return false;
                         }
@@ -97,9 +99,12 @@ public class HashJoinOperator extends SoleOutOperator {
                 } else if (leftRequired) {
                     Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                     Arrays.fill(newTuple, leftLength, leftLength + rightLength, null);
+                    profile.opTime(start);
                     return pushToNext(param, edge, context, newTuple);
                 }
             } else if (pin == 1) { //right
+                OperatorProfile profile = param.getProfile("hashJoin");
+                long start = System.currentTimeMillis();
                 TupleKey rightKey = HashJoinParam.rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
                 if (HashJoinParam.containsNull(rightKey)) {
                     if ("inner".equalsIgnoreCase(param.getJoinType()) || "left".equalsIgnoreCase(param.getJoinType())) {
@@ -111,13 +116,14 @@ public class HashJoinOperator extends SoleOutOperator {
                     }
                 } else {
                     if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
+                        profile.cacheOpTime(start);
                         return true;
                     }
                     List<TupleWithJoinFlag> list = param.getHashMap()
                         .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                     list.add(new TupleWithJoinFlag(tuple));
                 }
-
+                profile.cacheOpTime(start);
             }
             return true;
         } finally {
@@ -125,7 +131,6 @@ public class HashJoinOperator extends SoleOutOperator {
                 LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
                 param.interrupt();
             }
-            profile.time(start);
         }
     }
 

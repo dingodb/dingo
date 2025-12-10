@@ -25,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
-import org.rocksdb.WriteBatch;
-import org.rocksdb.WriteOptions;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -79,9 +77,4 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
         return new io.dingodb.store.local.StoreInstance(regionId);
     }
-
-//    @Override
-//    public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId, TableDefinition tableDefinition) {
-//        return new io.dingodb.store.local.StoreInstance(regionId);
-//    }
 }
