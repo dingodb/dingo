@@ -523,7 +523,7 @@ public class TxnPartReplaceIntoOperator extends PartModifyOperator {
                 context.addKeyState(true);
             }
         }
-        profile.time(start - System.currentTimeMillis());
+        profile.time(start);
         return true;
     }
 

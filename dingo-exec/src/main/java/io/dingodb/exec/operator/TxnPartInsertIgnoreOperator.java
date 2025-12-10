@@ -224,7 +224,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                 byte[] oldKey = value.getKey();
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                    profile.time(start - System.currentTimeMillis());
+                    profile.time(start);
                     return true;
                 } else {
                     // extraKeyValue  [12_jobId_tableId_partId_a_none, oldValue]
@@ -265,7 +265,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                     CommonId.CommonType.TXN_CACHE_RESIDUAL_LOCK, Op.DELETE, dataKey
                 );
                 if (localStore.get(rollBackKey) != null) {
-                    profile.time(start - System.currentTimeMillis());
+                    profile.time(start);
                     return true;
                 } else {
                     if (context.getIndexId() == null) {
@@ -284,7 +284,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                                 rangeDistribution
                             );
                             if (uniqueIndexKeyValue != null && uniqueIndexKeyValue.getValue() != null) {
-                                profile.time(start - System.currentTimeMillis());
+                                profile.time(start);
                                 return true;
                             }
                         }
@@ -340,7 +340,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                 byte[] oldKey = value.getKey();
                 if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                     || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                    profile.time(start - System.currentTimeMillis());
+                    profile.time(start);
                     return true;
                 } else {
                     // delete  ->  insert  convert --> put
@@ -365,7 +365,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                     param.getLockTimeOut()
                 );
                 if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                    profile.time(start - System.currentTimeMillis());
+                    profile.time(start);
                     return true;
                 } else {
                     if (context.getIndexId() == null) {
@@ -384,7 +384,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                                 rangeDistribution
                             );
                             if (uniqueIndexKeyValue != null && uniqueIndexKeyValue.getValue() != null) {
-                                profile.time(start - System.currentTimeMillis());
+                                profile.time(start);
                                 return true;
                             }
                         }
@@ -423,7 +423,7 @@ public class TxnPartInsertIgnoreOperator extends PartModifyOperator {
                 context.addKeyState(true);
             }
         }
-        profile.time(start - System.currentTimeMillis());
+        profile.time(start);
         return true;
     }
 

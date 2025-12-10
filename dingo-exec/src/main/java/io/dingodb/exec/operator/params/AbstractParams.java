@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.profile.InsertProfile;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.profile.SourceProfile;
@@ -180,6 +181,14 @@ public abstract class AbstractParams {
             profile.start();
         }
         return (OperatorProfile) profile;
+    }
+
+    public synchronized InsertProfile getInsertProfile(String type, boolean pessimisticTxn) {
+        if (profile == null) {
+            profile = new InsertProfile(type, pessimisticTxn);
+            profile.start();
+        }
+        return (InsertProfile) profile;
     }
 
     public synchronized SourceProfile getSourceProfile(String type) {
