@@ -22,6 +22,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.profile.InsertProfile;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
@@ -80,7 +81,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
     @Override
     protected boolean pushTuple(Context context, Object[] tuple, Vertex vertex) {
         TxnPartInsertParam param = vertex.getParam();
-        OperatorProfile profile = param.getProfile("partInsertLocal");
+        InsertProfile profile = param.getInsertProfile("partInsertLocal", param.isPessimisticTxn());
         long start = System.currentTimeMillis();
         if (param.isHasAutoInc() && param.getAutoIncColIdx() < tuple.length) {
             Object tmp = tuple[param.getAutoIncColIdx()];
@@ -91,6 +92,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 param.getAutoIncList().add(autoIncVal);
             }
         }
+        profile.autoInc(start);
+        start = System.currentTimeMillis();
         param.setContext(context);
         CommonId tableId = param.getTableId();
         CommonId txnId = vertex.getTask().getTxnId();
@@ -128,7 +131,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 }
             }
         }
-
+        profile.typeCheck(start);
+        start = System.currentTimeMillis();
         IndexTable index = null;
         if (context.getIndexId() != null) {
             boolean duplicate = param.getUpdateMapping() != null && param.getUpdates() != null;
@@ -303,6 +307,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         byte[] partIdByte = partId.encode();
         byte[] jobIdByte = vertex.getTask().getJobId().encode();
         int len = txnIdByte.length + tableIdByte.length + partIdByte.length;
+        profile.encode(start);
+        start = System.currentTimeMillis();
         if (param.isPessimisticTxn()) {
             byte[] keyValueKey = keyValue.getKey();
             // dataKeyValue   [10_txnId_tableId_partId_a_putIf, value]
@@ -520,6 +526,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             bytes.add(deleteKey);
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
+            profile.step1(start);
+            start = System.currentTimeMillis();
             Op op = Op.NONE;
             Pair<KeyValue, Long> pair = null;
             Object[] oldTuple = null;
@@ -534,6 +542,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     oldTuple = newTuple;
                 }
             }
+            profile.step2(start);
+            start = System.currentTimeMillis();
             long num = 1L;
             if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
@@ -586,8 +596,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         param.getLockTimeOut()
                     );
                     if (kvKeyValue != null && kvKeyValue.getValue() != null) {
-                        throw new DuplicateEntryException("Duplicate entry " +
-                            TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
+                        throw new DuplicateEntryException("Duplicate entry "
+                            + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
                     }
                 }
                 if (context.isDuplicateKey()) {
@@ -612,6 +622,8 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     localStore.put(keyValue);
                 }
             }
+            profile.step3(start);
+            start = System.currentTimeMillis();
             KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
             if (insertUpKv != null && insertUpKv.getValue() != null) {
                 if (index != null && index.isUnique()) {
@@ -627,6 +639,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 keyValue.setKey(insertKey);
             }
             localStore.delete(deleteKey);
+            profile.step4(start);
             // for optimistic transaction for update
             byte[] rollbackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.ROLLBACK, deleteKey);
             if (context.getIndexId() == null && localStore.get(rollbackKey) != null ) {
@@ -661,7 +674,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 }
             }
         }
-        profile.time(start - System.currentTimeMillis());
+        profile.step5(start);
         return true;
     }
 

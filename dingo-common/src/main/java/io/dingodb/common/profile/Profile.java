@@ -190,8 +190,10 @@ public class Profile {
             throw new RuntimeException(e);
         }
         if (!"base".equals(profile.type)) {
-            dagText.append(node).append(profile.type)
-                .append(",duration:").append(profile.getDuration());
+            dagText.append(node).append(profile.type);
+            if (profile.type != null && profile.type.contains("scan")) {
+                dagText.append(",scanDuration:").append(profile.getDuration());
+            }
             if (profile instanceof SourceProfile) {
                 SourceProfile sourceProfile = (SourceProfile) profile;
                 dagText.append(", localScanDuration:").append(sourceProfile.localScan);
@@ -200,22 +202,37 @@ public class Profile {
                     dagText.append(", corp:").append(sourceProfile.taskType);
                 }
             }
-            if (profile.opDuration.get() > 0) {
-                dagText.append(",opDuration:").append(profile.opDuration.get());
-            }
-            if (profile.opCount.get() > 0) {
-                dagText.append(",opCount:").append(profile.getOpCount().get());
-            }
-            if (profile.cacheDuration.get() > 0) {
-                dagText.append(",cacheDuration:").append(profile.cacheDuration.get());
-            }
-            if (profile.decodeDuration.get() > 0) {
-                dagText.append(",decodeDuration:").append(profile.decodeDuration.get());
-            }
-            if (profile.decodeRate > 0) {
-                dagText.append(",decodeRate:").append(profile.getDecodeRate());
-            } else if (profile.decodeDuration.get() > 0 && profile.count.get() > 0) {
-                dagText.append(",decodeRate:").append(profile.count.get() / profile.decodeDuration.get());
+            if (profile instanceof InsertProfile) {
+                InsertProfile insertProfile = (InsertProfile) profile;
+                dagText.append(", pessimisticTxn:").append(insertProfile.pessimisticTxn);
+                dagText.append(",auto:").append(insertProfile.getAutoInc().get());
+                dagText.append(",typeCheck:").append(insertProfile.getTypeCheck().get());
+                dagText.append(",encode:").append(insertProfile.getEncode().get());
+                dagText.append(",step1:").append(insertProfile.getStep1().get());
+                dagText.append(",step2:").append(insertProfile.getStep2().get());
+                dagText.append(",step3:").append(insertProfile.getStep3().get());
+                dagText.append(",step4:").append(insertProfile.getStep4().get());
+                dagText.append(",step5:").append(insertProfile.getStep5().get());
+            } else {
+                if (profile.opDuration.get() > 0) {
+                    dagText.append(",opDuration:").append(profile.opDuration.get());
+                } else {
+                    dagText.append(",duration:").append(profile.duration.get());
+                }
+                if (profile.opCount.get() > 0) {
+                    dagText.append(",opCount:").append(profile.getOpCount().get());
+                }
+                if (profile.cacheDuration.get() > 0) {
+                    dagText.append(",cacheDuration:").append(profile.cacheDuration.get());
+                }
+                if (profile.decodeDuration.get() > 0) {
+                    dagText.append(",decodeDuration:").append(profile.decodeDuration.get());
+                }
+                if (profile.decodeRate > 0) {
+                    dagText.append(",decodeRate:").append(profile.getDecodeRate());
+                } else if (profile.decodeDuration.get() > 0 && profile.count.get() > 0) {
+                    dagText.append(",decodeRate:").append(profile.count.get() / profile.decodeDuration.get());
+                }
             }
             dagText.append(",count:").append(profile.count)
                 .append(",start:").append(profile.start)
