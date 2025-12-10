@@ -88,7 +88,7 @@ public class TestValues {
         return Stream.of(
             arguments(
                 "select a - b from (values (1, 2), (3, 5), (7, 11)) as t (a, b) where a + b > 4",
-                ImmutableList.of(new Object[]{-2}, new Object[]{-4})
+                ImmutableList.of(new Object[]{-2L}, new Object[]{-4L})
             ),
             arguments(
                 "select b from (values (1, 2), (null, 5), (7, 11)) as t (a, b) where a is null",

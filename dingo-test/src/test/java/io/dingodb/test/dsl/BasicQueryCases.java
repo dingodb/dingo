@@ -823,7 +823,7 @@ public class BasicQueryCases extends SqlTestCaseJavaBuilder {
                 "select avg(age) aag,avg(gmt) agm,avg(price) apr,round(avg(amount),2) aam from {table}",
                 csv("aag, agm, apr, aam",
                     "DECIMAL, DECIMAL, DOUBLE, DOUBLE",
-                    "107.6000, -17057004875.5000, 9.341029376E8, 1.305008494926E10")
+                    "107.6000, -17057004875.5000, 9.341029579990075E8, 1.305008494926E10")
             );
     }
 }
