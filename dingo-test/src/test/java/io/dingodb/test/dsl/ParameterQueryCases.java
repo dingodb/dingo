@@ -37,14 +37,14 @@ public class ParameterQueryCases extends SqlTestCaseJavaBuilder {
                     check(statement, b, sql).test(is(
                         new String[]{"1 + ?"},
                         ImmutableList.of(
-                            new Object[]{2}
+                            new Object[]{2L}
                         )));
                     statement.setInt(1, 2);
                     b = statement.execute();
                     check(statement, b, sql).test(is(
                         new String[]{"1 + ?"},
                         ImmutableList.of(
-                            new Object[]{3}
+                            new Object[]{3L}
                         )));
                 }
             });

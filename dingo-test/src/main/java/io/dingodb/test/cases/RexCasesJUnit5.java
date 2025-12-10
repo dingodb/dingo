@@ -87,10 +87,10 @@ public final class RexCasesJUnit5 implements ArgumentsProvider {
         return Stream.of(
             // Arithmetics
             arguments("'hello'", "'hello'", "hello"),
-            arguments("1 + 1", "1 + 1", 2),
-            arguments("1 + 2", "1 + 2", 3),
-            arguments("1 + 2*3", "1 + 2*3", 7),
-            arguments("1*(2 + 3)", "1*(2 + 3)", 5),
+            arguments("1 + 1", "1 + 1", 2L),
+            arguments("1 + 2", "1 + 2", 3L),
+            arguments("1 + 2*3", "LONG(1) + 2*3", 7L),
+            arguments("1*(2 + 3)", "LONG(1)*(2 + 3)", 5L),
             arguments("1 + 100.1", "1 + 100.1", BigDecimal.valueOf(101.1)),
             arguments("1 + 100000000.2", "1 + 100000000.2", BigDecimal.valueOf(100000001.2)),
 
