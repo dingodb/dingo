@@ -214,6 +214,8 @@ public class DingoTypeMapper {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if(SqlTypeUtil.isBigint(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isDecimal(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         } else if(SqlTypeUtil.isDouble(left)) {
             if (SqlTypeUtil.isFloat(right)) {
@@ -223,6 +225,8 @@ public class DingoTypeMapper {
             } else if(SqlTypeUtil.isInt(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if(SqlTypeUtil.isBigint(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isDecimal(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
         } else if(SqlTypeUtil.isInt(left)) {
@@ -243,6 +247,12 @@ public class DingoTypeMapper {
             }
         } else if(SqlTypeUtil.isCharacter(left)) {  //char or varchar.
             if(SqlTypeUtil.isCharacter(right)) {    //char or varchar.
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        } else if(SqlTypeUtil.isDecimal(left)) {
+            if(SqlTypeUtil.isFloat(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if(SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
         }
