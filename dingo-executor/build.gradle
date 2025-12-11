@@ -92,6 +92,17 @@ task fatJar(type: Jar) {
     }
 }
 
+test {
+    dependsOn(':dingo-license-api:fatJar')
+    jvmArgs += [
+        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+        "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+        "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
+        "--add-opens", "java.base/java.io=ALL-UNNAMED"
+    ]
+}
+
 tasks.withType(Jar).configureEach {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
