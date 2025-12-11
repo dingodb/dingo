@@ -4906,13 +4906,28 @@ SqlLiteral SpecialLiteral() :
 {
 }
 {
-    <TRUE> { return SqlLiteral.createBoolean(true, getPos()); }
+    <TRUE> {
+              SqlLiteral sqlLiteral = SqlLiteral.createBoolean(true, getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+           }
 |
-    <FALSE> { return SqlLiteral.createBoolean(false, getPos()); }
+    <FALSE> {
+              SqlLiteral sqlLiteral = SqlLiteral.createBoolean(false, getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+            }
 |
     <UNKNOWN> { return SqlLiteral.createUnknown(getPos()); }
 |
-    <NULL> { SqlLiteral sqlLiteral = SqlLiteral.createNull(getPos()); sqlLiteral.putAlias("aliasName", this.token.image); sqlLiteral.putAlias("fullAlias", "true"); return sqlLiteral; }
+    <NULL> {
+              SqlLiteral sqlLiteral = SqlLiteral.createNull(getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+           }
 }
 
 /**

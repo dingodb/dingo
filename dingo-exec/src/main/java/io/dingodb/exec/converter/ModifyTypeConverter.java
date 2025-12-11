@@ -193,6 +193,9 @@ public class ModifyTypeConverter implements DataConverter {
             try {
                 Date date = (Date) DingoTimeZoneContext.getProcessor().processDateTime(valStr, DateTimeType.DATE);
                 if (date == null) {
+                    if (value instanceof Time) {
+                        return new Date(System.currentTimeMillis());
+                    }
                     throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", valStr);
                 }
                 return date;

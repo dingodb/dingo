@@ -163,8 +163,8 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             ConcatFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.STRING_STRING,
+            DingoInferTypes.VARCHAR,
+            OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING
         );
 
