@@ -23,8 +23,10 @@ import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
+import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorBinding;
@@ -154,6 +156,7 @@ public class MySQLStandardTypeInference {
             MySQLIntervalType intervalType;
             SqlCall call;
             SqlLiteral literal;
+            SqlBasicCall basicCall;
             int intervalDecimal = 6;
             if (!(opBinding instanceof SqlCallBinding)
                 && opBinding.getOperandType(1) instanceof IntervalSqlType) {
@@ -165,6 +168,13 @@ public class MySQLStandardTypeInference {
                 && ((SqlLiteral) call.getOperandList().get(1)).getTypeName().getName().startsWith("INTERVAL_")) {
                 literal = (SqlLiteral) call.getOperandList().get(1);
                 String interval = literal.getTypeName().getName();
+                intervalType = MySQLIntervalType.of(interval);
+            } else if (opBinding instanceof SqlCallBinding
+                && (call = ((SqlCallBinding) opBinding).getCall()).getOperandList().get(1) instanceof SqlBasicCall
+                && (basicCall = (SqlBasicCall) call.getOperandList().get(1))
+                    .getOperandList().get(1) instanceof SqlIntervalQualifier) {
+                SqlIntervalQualifier qualifier = (SqlIntervalQualifier) basicCall.getOperandList().get(1);
+                String interval = qualifier.typeName().getName();
                 intervalType = MySQLIntervalType.of(interval);
             } else {
                 intervalType = MySQLIntervalType.INTERVAL_DAY;

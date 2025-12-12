@@ -5385,7 +5385,11 @@ SqlLiteral IntervalLiteral() :
     |
         <PLUS> { sign = 1; alias.append(" ").append(this.token.image); }
     ]
-    p = SimpleStringLiteral() { alias.append(" ").append(this.token.image); }
+    (
+        p = SimpleStringLiteral() { alias.append(" ").append(this.token.image); }
+        |
+        <NULL> { p = null; }
+    )
     intervalQualifier = IntervalQualifier() {
         alias.append(" ").append(intervalQualifier.getAliasName());
         SqlLiteral sqlLiteral = DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
@@ -5426,6 +5430,14 @@ SqlNode IntervalLiteralOrExpression() :
         }
     |
         p = SimpleStringLiteral() { String intervalLiteralAlias = this.token.image; }
+        intervalQualifier = IntervalQualifier() {
+            intervalQualifier.putAlias("intervalAlias", intervalAlias);
+            intervalQualifier.putAlias("intervalLiteralAlias", intervalLiteralAlias);
+            return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
+                sign, p, intervalQualifier);
+        }
+    |
+        <NULL> { p = null; String intervalLiteralAlias = this.token.image; }
         intervalQualifier = IntervalQualifier() {
             intervalQualifier.putAlias("intervalAlias", intervalAlias);
             intervalQualifier.putAlias("intervalLiteralAlias", intervalLiteralAlias);

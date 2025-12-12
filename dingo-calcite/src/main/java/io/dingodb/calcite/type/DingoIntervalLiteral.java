@@ -192,8 +192,7 @@ public class DingoIntervalLiteral extends SqlIntervalLiteral {
                     (SqlIntervalLiteral.IntervalValue) value;
                 qualifier = valMonth.getIntervalQualifier();
                 if (clazz == Long.class) {
-                    return clazz.cast(valMonth.getSign()
-                        * DingoParserUtils.intervalToMonths(valMonth));
+                    return clazz.cast(DingoParserUtils.intervalToMonths(valMonth));
                 } else if (clazz == BigDecimal.class) {
                     return clazz.cast(BigDecimal.valueOf(getValueAs(Long.class)));
                 } else if (clazz == TimeUnitRange.class) {
@@ -218,10 +217,16 @@ public class DingoIntervalLiteral extends SqlIntervalLiteral {
                     (SqlIntervalLiteral.IntervalValue) value;
                 qualifier = valTime.getIntervalQualifier();
                 if (clazz == Long.class) {
-                    return clazz.cast(valTime.getSign()
-                        * DingoParserUtils.intervalToMillis(valTime));
+                    if (valTime.getIntervalLiteral() == null) {
+                        return null;
+                    }
+                    return clazz.cast(DingoParserUtils.intervalToMillis(valTime));
                 } else if (clazz == BigDecimal.class) {
-                    return clazz.cast(BigDecimal.valueOf(getValueAs(Long.class)));
+                    Long valueAs = getValueAs(Long.class);
+                    if (valueAs == null) {
+                        return null;
+                    }
+                    return clazz.cast(BigDecimal.valueOf(valueAs));
                 } else if (clazz == TimeUnitRange.class) {
                     return clazz.cast(qualifier.timeUnitRange);
                 } else if (clazz == TimeUnit.class) {

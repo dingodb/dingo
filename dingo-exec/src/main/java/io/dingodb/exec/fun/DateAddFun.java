@@ -16,7 +16,6 @@
 
 package io.dingodb.exec.fun;
 
-import io.dingodb.expr.common.timezone.core.DateTimeProcessingException;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.timezone.core.DingoDateTime;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
@@ -61,7 +60,10 @@ public class DateAddFun extends BinaryOp {
     public Object evalValue(@NonNull Object value0, @NonNull Object value1, ExprConfig config) {
         DingoTimeZoneProcessor processor = config.getProcessor();
 
-        int delta = 0;
+        if (value1 == null) {
+            return null;
+        }
+        long delta = 0;
         if (value0 instanceof String) {
             String date = value0.toString();
             Object processDateTime = processor.processDateTime(date, DateTimeType.DATE, DateTimeType.DATE);
@@ -77,63 +79,62 @@ public class DateAddFun extends BinaryOp {
             }
         }
         if (value1 instanceof Integer) {
-            delta = (int) value1;
+            delta = ((Integer) value1).longValue();
         } else if (value1 instanceof Long) {
-            Long deltaLong = (Long) value1;
-            delta = deltaLong.intValue();
+            delta = (Long) value1;
         } else if (value1 instanceof Float) {
             Float deltaFloat = (Float) value1;
-            delta = (int) Math.round(deltaFloat);
+            delta = Math.round(deltaFloat);
         } else if (value1 instanceof BigDecimal) {
             BigDecimal decimal = (BigDecimal) value1;
-            delta = (int) Math.round(decimal.doubleValue());
+            delta = Math.round(decimal.doubleValue());
         } else if (value1 instanceof Double) {
             Double deltaDouble = (Double) value1;
-            delta = (int) Math.round(deltaDouble);
+            delta = Math.round(deltaDouble);
         }
 
         if (value1 instanceof IntervalType) {
             if (value1 instanceof IntervalYearType.IntervalYear) {
                 IntervalYearType.IntervalYear intervalYear = (IntervalYearType.IntervalYear) value1;
                 if (intervalYear.elementType instanceof IntervalMonthType) {
-                    return compute(value0, ChronoUnit.MONTHS, intervalYear.value.intValue(), processor);
+                    return compute(value0, ChronoUnit.MONTHS, intervalYear.value.longValue(), processor);
                 }
             } else if (value1 instanceof IntervalMonthType.IntervalMonth) {
                 IntervalMonthType.IntervalMonth intervalMonth = (IntervalMonthType.IntervalMonth) value1;
                 if (intervalMonth.elementType instanceof IntervalQuarterType) {
-                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.intValue() * 3, processor);
+                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.longValue() * 3, processor);
                 } else {
-                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.intValue(), processor);
+                    return compute(value0, ChronoUnit.MONTHS, intervalMonth.value.longValue(), processor);
                 }
             } else if (value1 instanceof IntervalDayType.IntervalDay) {
                 IntervalDayType.IntervalDay intervalDay = (IntervalDayType.IntervalDay) value1;
                 if (intervalDay.elementType instanceof IntervalDayTimeType) {
                     long value = intervalDay.value.longValue() / (24 * 60 * 60 * 1000);
-                    return compute(value0, ChronoUnit.DAYS, Math.toIntExact(value), processor);
+                    return compute(value0, ChronoUnit.DAYS, value, processor);
                 }
             } else if (value1 instanceof IntervalWeekType.IntervalWeek) {
                 IntervalWeekType.IntervalWeek intervalWeek = (IntervalWeekType.IntervalWeek) value1;
                 if (intervalWeek.elementType instanceof IntervalDayTimeType) {
                     long value = intervalWeek.value.longValue() / (60 * 60 * 1000);
-                    return compute(value0, ChronoUnit.WEEKS, Math.toIntExact(value), processor);
+                    return compute(value0, ChronoUnit.WEEKS, value, processor);
                 }
             } else if (value1 instanceof IntervalHourType.IntervalHour) {
                 IntervalHourType.IntervalHour intervalHour = (IntervalHourType.IntervalHour) value1;
                 if (intervalHour.elementType instanceof IntervalDayTimeType) {
                     long value = intervalHour.value.longValue() / (60 * 60 * 1000);
-                    return compute(value0, ChronoUnit.HOURS, Math.toIntExact(value), processor);
+                    return compute(value0, ChronoUnit.HOURS, value, processor);
                 }
             } else if (value1 instanceof IntervalMinuteType.IntervalMinute) {
                 IntervalMinuteType.IntervalMinute intervalMinute = (IntervalMinuteType.IntervalMinute) value1;
                 if (intervalMinute.elementType instanceof IntervalDayTimeType) {
                     long value = intervalMinute.value.longValue() / (60 * 1000);
-                    return compute(value0, ChronoUnit.MINUTES, Math.toIntExact(value), processor);
+                    return compute(value0, ChronoUnit.MINUTES, value, processor);
                 }
             } else if (value1 instanceof IntervalSecondType.IntervalSecond) {
                 IntervalSecondType.IntervalSecond intervalSecond = (IntervalSecondType.IntervalSecond) value1;
                 if (intervalSecond.elementType instanceof IntervalDayTimeType) {
                     long value = intervalSecond.value.longValue() / 1000;
-                    return compute(value0, ChronoUnit.SECONDS, Math.toIntExact(value), processor);
+                    return compute(value0, ChronoUnit.SECONDS, value, processor);
                 }
             } else {
                 return null;
@@ -143,7 +144,7 @@ public class DateAddFun extends BinaryOp {
         return compute(value0, ChronoUnit.DAYS, delta, processor);
     }
 
-    private static Object compute(Object value0, ChronoUnit unit, int amount, DingoTimeZoneProcessor processor) {
+    private static Object compute(Object value0, ChronoUnit unit, long amount, DingoTimeZoneProcessor processor) {
         if (value0 == null) {
             return null;
         }
