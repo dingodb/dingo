@@ -20,12 +20,11 @@ import com.google.common.base.Preconditions;
 import io.dingodb.calcite.type.DingoIntervalLiteral;
 import io.dingodb.calcite.type.DingoRelDataTypeSystemImpl;
 import io.dingodb.calcite.type.DingoSqlLiteral;
+import io.dingodb.expr.common.utils.CastWithString;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
-
-import java.math.BigDecimal;
 
 public final class DingoParserUtils {
 
@@ -33,11 +32,16 @@ public final class DingoParserUtils {
                                                             int sign,
                                                             String s,
                                                             SqlIntervalQualifier intervalQualifier) {
-        if (sign == -1) {
-            s = "-" + s;
-        }
-        if (s.contains(".")) {
-            s = new BigDecimal(Math.round(new BigDecimal(s).doubleValue())).toString();
+        if (s != null) {
+            if (s.contains(".")) {
+                s = String.valueOf(Math.round(CastWithString.doubleCastWithStringCompat(s)));
+            }
+            if (s.isEmpty() || CastWithString.trimDigitString(s).isEmpty()) {
+                s = "0";
+            }
+            if (sign == -1) {
+                s = "-" + s;
+            }
         }
         return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
     }
