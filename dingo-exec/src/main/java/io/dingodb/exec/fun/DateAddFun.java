@@ -39,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import java.io.Serial;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
@@ -91,6 +92,8 @@ public class DateAddFun extends BinaryOp {
         } else if (value1 instanceof Double) {
             Double deltaDouble = (Double) value1;
             delta = Math.round(deltaDouble);
+        } else if (value1 instanceof Date || value1 instanceof Time || value1 instanceof Timestamp) {
+            return null;
         }
 
         if (value1 instanceof IntervalType) {

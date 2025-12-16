@@ -93,7 +93,7 @@ public class DingoRelDataTypeSystemImpl extends RelDataTypeSystemImpl {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return INTERVAL_START_PRECISION - 1;
+                return INTERVAL_START_PRECISION;
             case TINYINT:
                 return 3;
             case SMALLINT:

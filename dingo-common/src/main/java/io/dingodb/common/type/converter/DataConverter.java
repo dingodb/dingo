@@ -18,6 +18,7 @@ package io.dingodb.common.type.converter;
 
 import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import io.dingodb.expr.common.type.Type;
@@ -213,6 +214,8 @@ public interface DataConverter {
     default String convertStringFrom(@NonNull Object value) {
         if (value instanceof String) {
             return (String) value;
+        } else if (value instanceof Timestamp) {
+            return DateTimeUtils.timestampFormat((Timestamp) value);
         } else {
             return value.toString();
         }

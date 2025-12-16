@@ -5425,8 +5425,8 @@ SqlNode IntervalLiteralOrExpression() :
         intervalQualifier = IntervalQualifier() {
             intervalQualifier.putAlias("intervalAlias", intervalAlias);
             intervalQualifier.putAlias("intervalLiteralAlias", intervalLiteralAlias);
-            return DingoParserUtils.parseIntervalLiteral(s.end(intervalQualifier),
-                sign, ((SqlNumericLiteral) e).toValue(), intervalQualifier);
+            return DingoParserUtils.parseIntervalNumericLiteral(s.end(intervalQualifier),
+                sign, ((SqlNumericLiteral) e).bigDecimalValue(), intervalQualifier);
         }
     |
         p = SimpleStringLiteral() { String intervalLiteralAlias = this.token.image; }
