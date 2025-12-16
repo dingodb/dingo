@@ -26,6 +26,8 @@ import org.apache.calcite.sql.SqlIntervalLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
+import java.math.BigDecimal;
+
 public final class DingoParserUtils {
 
     public static DingoIntervalLiteral parseIntervalLiteral(SqlParserPos pos,
@@ -34,15 +36,24 @@ public final class DingoParserUtils {
                                                             SqlIntervalQualifier intervalQualifier) {
         if (s != null) {
             if (s.contains(".")) {
-                s = String.valueOf(Math.round(CastWithString.doubleCastWithStringCompat(s)));
+                s = s.split("\\.")[0];
             }
-            if (s.isEmpty() || CastWithString.trimDigitString(s).isEmpty()) {
+            if (s.isEmpty()) {
                 s = "0";
             }
+            s = String.valueOf(CastWithString.longCastWithStringCompat(s));
             if (sign == -1) {
                 s = "-" + s;
             }
         }
+        return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
+    }
+
+    public static DingoIntervalLiteral parseIntervalNumericLiteral(SqlParserPos pos,
+                                                            int sign,
+                                                            BigDecimal value,
+                                                            SqlIntervalQualifier intervalQualifier) {
+        String s = String.valueOf(sign * Math.round(value.doubleValue()));
         return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
     }
 

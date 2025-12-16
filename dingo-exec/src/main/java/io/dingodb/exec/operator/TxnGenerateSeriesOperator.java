@@ -87,13 +87,13 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
                 List<Integer> list = generateIntegerIntervals(
                     (Integer) startObj,
                     (Integer) endObj,
-                    param.getBigDecimalStep().intValue());
+                    (int) Math.round(param.getBigDecimalStep().doubleValue()));
                 intervals.addAll(merge(keys, Arrays.asList(list.toArray())));
             } else if (startObj instanceof Long && endObj instanceof Long) {
                 List<Long> list = generateLongIntervals(
                     (Long) startObj,
                     (Long) endObj,
-                    param.getBigDecimalStep().longValue());
+                    Math.round(param.getBigDecimalStep().doubleValue()));
                 intervals.addAll(merge(keys, Arrays.asList(list.toArray())));
             } else if (startObj instanceof Double && endObj instanceof Double) {
                 List<Double> list = generateDoubleIntervals(
@@ -108,10 +108,15 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
                     getPeriod(param.getIntervalStep()));
                 intervals.addAll(merge(keys, Arrays.asList(list.toArray())));
             } else if (startObj instanceof Number && endObj instanceof Number) {
+                BigDecimal step = param.getBigDecimalStep();
+                if (!(endColumn.getName().equalsIgnoreCase("DOUBLE"))
+                    && !(endColumn.getName().equalsIgnoreCase("FLOAT"))) {
+                    step = new BigDecimal(Math.round(step.doubleValue()));
+                }
                 List<BigDecimal> list = generateNumericIntervals(
                     new BigDecimal(startObj.toString()),
                     new BigDecimal(endObj.toString()),
-                    param.getBigDecimalStep(),
+                    step,
                     BigDecimal::add,
                     endColumn.getType()
                 );
@@ -252,7 +257,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         List<Date> intervals = new ArrayList<>();
         LocalDate current = start;
 
-        while (period.isNegative() ? current.isAfter(end) : current.isBefore(end)) {
+        while (period.isNegative() ? current.compareTo(end) >= 0 : current.compareTo(end) <= 0) {
             intervals.add(Date.valueOf(current));
             current = current.plus(period);
 
@@ -267,7 +272,7 @@ public class TxnGenerateSeriesOperator extends FilterProjectSourceOperator {
         List<Timestamp> intervals = new ArrayList<>();
         LocalDateTime current = start;
 
-        while (period.isNegative() ? current.isAfter(end) : current.isBefore(end)) {
+        while (period.isNegative() ? current.compareTo(end) >= 0 : current.compareTo(end) <= 0) {
             intervals.add(Timestamp.valueOf(current));
             current = current.plus(period);
         }

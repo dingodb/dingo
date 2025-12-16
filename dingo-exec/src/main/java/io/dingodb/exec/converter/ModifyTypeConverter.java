@@ -21,6 +21,7 @@ import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.util.Utils;
+import io.dingodb.expr.common.timezone.DateTimeUtils;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -291,6 +292,9 @@ public class ModifyTypeConverter implements DataConverter {
     public String strVal(Object str) {
         if (str == null) {
             return null;
+        }
+        if (str instanceof Timestamp) {
+            return DateTimeUtils.timestampFormat((Timestamp) str);
         }
         return str.toString();
     }

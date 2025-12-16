@@ -134,6 +134,14 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                     call.getOperands().get(1).accept(this)
                 );
             case TIMES:
+                RexNode mulNode = call.getOperands().get(1);
+                if (mulNode.getType() instanceof IntervalSqlType) {
+                    return Exprs.op(
+                        Exprs.INTERVAL_MUL,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                }
                 return Exprs.op(
                     Exprs.MUL,
                     call.getOperands().get(0).accept(this),

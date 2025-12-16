@@ -192,8 +192,15 @@ public class DingoIntervalLiteral extends SqlIntervalLiteral {
                     (SqlIntervalLiteral.IntervalValue) value;
                 qualifier = valMonth.getIntervalQualifier();
                 if (clazz == Long.class) {
+                    if (valMonth.getIntervalLiteral() == null) {
+                        return null;
+                    }
                     return clazz.cast(DingoParserUtils.intervalToMonths(valMonth));
                 } else if (clazz == BigDecimal.class) {
+                    Long valueAs = getValueAs(Long.class);
+                    if (valueAs == null) {
+                        return null;
+                    }
                     return clazz.cast(BigDecimal.valueOf(getValueAs(Long.class)));
                 } else if (clazz == TimeUnitRange.class) {
                     return clazz.cast(qualifier.timeUnitRange);

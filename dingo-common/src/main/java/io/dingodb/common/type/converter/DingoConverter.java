@@ -71,6 +71,9 @@ public class DingoConverter implements DataConverter {
 
     @Override
     public BigDecimal convertDecimalFrom(@NonNull Object value) {
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
         return new BigDecimal((String) value);
     }
 
