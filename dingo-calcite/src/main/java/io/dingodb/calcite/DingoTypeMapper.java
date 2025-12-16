@@ -262,10 +262,6 @@ public class DingoTypeMapper {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
             } else if(SqlTypeUtil.isBigint(right)) {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
-            } else if(SqlTypeUtil.isDecimal(right)) {
-                int precision = (left.getPrecision() > right.getPrecision()) ? left.getPrecision() : right.getPrecision();
-                int scale = (left.getScale() > right.getScale()) ? left.getScale() : right.getScale();
-                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, scale);
             }
         }
 
