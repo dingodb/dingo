@@ -87,7 +87,7 @@ public class TypedValueConverter extends ConverterWithCalendar {
      */
     @Override
     public Time convertTimeFrom(@NonNull Object value) {
-        return new Time((Integer) value);
+        return unShiftedTime((Integer) value);
     }
 
     /**

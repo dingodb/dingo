@@ -18,6 +18,7 @@ package io.dingodb.driver.type.converter;
 
 import io.dingodb.common.type.converter.DataConverter;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
@@ -26,6 +27,13 @@ public class ConverterWithCalendar implements DataConverter {
 
     protected ConverterWithCalendar(Calendar localCalendar) {
         this.localCalendar = localCalendar;
+    }
+
+    protected Time unShiftedTime(Integer times) {
+        if (localCalendar != null) {
+            return new Time(times - localCalendar.getTimeZone().getOffset(times));
+        }
+        return new Time(times);
     }
 
     protected Timestamp unShiftedTimestamp(long timesInMillis) {
