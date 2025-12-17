@@ -16,11 +16,9 @@
 
 package io.dingodb.calcite.type;
 
-import io.dingodb.common.log.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlIntervalQualifier;
-import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.NlsString;
 import org.checkerframework.checker.nullness.qual.Nullable;

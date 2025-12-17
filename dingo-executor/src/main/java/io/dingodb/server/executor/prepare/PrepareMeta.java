@@ -334,6 +334,7 @@ public final class PrepareMeta {
         values.add(new Object[]{"create_table_with_data", "on"});
         values.add(new Object[]{"enable_txn_parallel_prewrite", "on"});
         values.add(new Object[]{"enable_txn_parallel_commit", "on"});
+        values.add(new Object[]{"sql_select_limit", "18446744073709551615"});
         return values;
     }
 

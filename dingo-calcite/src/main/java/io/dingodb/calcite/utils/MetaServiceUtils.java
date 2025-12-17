@@ -18,13 +18,20 @@ package io.dingodb.calcite.utils;
 
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.transaction.base.ITransaction;
 import io.dingodb.meta.MetaService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.NavigableMap;
+
 import static io.dingodb.common.util.NameCaseUtils.convertName;
 
+@Slf4j
 public final class MetaServiceUtils {
 
     public static final String SCHEMA_NAME = convertName("dingo");
@@ -56,9 +63,15 @@ public final class MetaServiceUtils {
         }
         DingoTable dingoTable = table.unwrapOrThrow(DingoTable.class);
         CommonId tableId = dingoTable.getTable().tableId;
+        NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> rangeDistributionNavigableMap
+            = metaService.getRangeDistribution(tableId);
+        if (rangeDistributionNavigableMap.isEmpty()) {
+            LogUtils.error(log, "getRangeDistribution empty, tableName:{}, tableId:{}",
+                dingoTable.getTable().getName(), tableId);
+        }
         return new TableInfo(
             tableId,
-            metaService.getRangeDistribution(tableId)
+            rangeDistributionNavigableMap
         );
     }
 

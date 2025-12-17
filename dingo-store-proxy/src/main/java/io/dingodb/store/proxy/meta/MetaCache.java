@@ -314,8 +314,8 @@ public class MetaCache {
                     partition.getRange().getStartKey(), zeroPart, true, 1
                 );
                 if (isEmptyPartStart == 0 || isEmptyPartEnd == 0) {
-                    LogUtils.error(log, "get table range, but part range error,  " +
-                            "tableId:{}, tableName:{}, part:{}",
+                    LogUtils.error(log, "get table range, but part range error,  "
+                            + "tableId:{}, tableName:{}, part:{}",
                         tableWithId.getTableId(), tableDefinition.getName(), partition);
                     throw new RuntimeException("table part is empty");
                 }
@@ -324,9 +324,10 @@ public class MetaCache {
                 regionList
                     .forEach(object -> {
                         ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
-                        if (scanRegionInfo.getRegionId() < 80016 && tableWithId.getTableId().getParentEntityId() > 50001) {
-                            LogUtils.error(log, "get table range, but get meta region:{}, regionRange:{} " +
-                                "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
+                        if (scanRegionInfo.getRegionId() < 80016
+                            && tableWithId.getTableId().getParentEntityId() > 50001) {
+                            LogUtils.error(log, "get table range, but get meta region:{}, regionRange:{} "
+                                + "tableId:{}, tableName:{}, part:{}", scanRegionInfo.getRegionId(),
                                 scanRegionInfo.getRange(),
                                 tableWithId.getTableId(), tableDefinition.getName(), partition);
                         }
