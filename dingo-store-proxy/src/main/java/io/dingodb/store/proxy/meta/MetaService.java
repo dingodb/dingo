@@ -1205,7 +1205,8 @@ public class MetaService implements io.dingodb.meta.MetaService {
     ) {
         Collection<RangeDistribution> rangeDistributions = getRangeDistribution(tableId)
             .values();
-        LogUtils.info(log, "dropRegion size:{}, tableId:{}", rangeDistributions.size(), tableId);
+        LogUtils.info(log, "dropRegion size:{}, tableId:{}, immediately:{}",
+            rangeDistributions.size(), tableId, immediately);
         if (immediately) {
             deleteRegionImmediately(rangeDistributions, tableId, autoInc);
         } else {

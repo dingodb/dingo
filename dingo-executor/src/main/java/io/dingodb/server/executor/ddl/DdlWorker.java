@@ -938,9 +938,17 @@ public class DdlWorker {
                 withId.setTableId(tableWithId.getTableId());
                 withId.getTableDefinition().setName(tableWithId.getTableDefinition().getName());
                 // replace replicaTable to table
+                int cnt = 5;
+                while (cnt-- > 0) {
+                    try {
+                        // to remove replica table
+                        InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
+                        break;
+                    } catch (Exception e) {
+                        LogUtils.error(log, "drop replicaTable error", e);
+                    }
+                }
                 try {
-                    // to remove replica table
-                    InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
                     MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs());
                 } catch (Exception e) {
@@ -1952,6 +1960,7 @@ public class DdlWorker {
     }
 
     private static void cancelledReplicate(DdlJob job, DingoCommonId replicaTableId, CommonId tableId) {
+        LogUtils.error(log, "cancelledReplicate, jobId:{}", job.getId());
         List<Object> indexWithIdList;
         MetaService.root().dropRegionByTable(
             Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false, true

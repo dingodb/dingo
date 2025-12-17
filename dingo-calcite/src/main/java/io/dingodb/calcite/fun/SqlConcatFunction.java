@@ -52,8 +52,8 @@ public class SqlConcatFunction extends SqlFunction {
             "CONCAT",
             SqlKind.OTHER_FUNCTION,
             ReturnTypes.ARG0_NULLABLE_VARYING,
-            InferTypes.VARCHAR_1024,
-            OperandTypes.or(OperandTypes.STRING_STRING_STRING, OperandTypes.STRING_STRING),
+            DingoInferTypes.VARCHAR,
+            OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING);
     }
 

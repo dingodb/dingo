@@ -4664,6 +4664,18 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         (
             val = Literal()
         |
+            <TILDE1>  val = Literal() {
+               if (val instanceof SqlNumericLiteral) {
+                  SqlNumericLiteral sqlNumericLiteral = (SqlNumericLiteral) val;
+                  if (sqlNumericLiteral.getValue() instanceof BigDecimal) {
+                    BigDecimal valDecimal = (BigDecimal) sqlNumericLiteral.getValue();
+                    String unsigned = Long.toUnsignedString(~valDecimal.longValue());
+                    BigDecimal valDecimalNew = new BigDecimal(unsigned);
+                    val = new SqlNumericLiteral(valDecimalNew, 0, 0, false, sqlNumericLiteral.getParserPosition());
+                  }
+               }
+            }
+        |
             val = SimpleIdentifier()
         |
             <ON> {
@@ -4906,13 +4918,28 @@ SqlLiteral SpecialLiteral() :
 {
 }
 {
-    <TRUE> { return SqlLiteral.createBoolean(true, getPos()); }
+    <TRUE> {
+              SqlLiteral sqlLiteral = SqlLiteral.createBoolean(true, getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+           }
 |
-    <FALSE> { return SqlLiteral.createBoolean(false, getPos()); }
+    <FALSE> {
+              SqlLiteral sqlLiteral = SqlLiteral.createBoolean(false, getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+            }
 |
     <UNKNOWN> { return SqlLiteral.createUnknown(getPos()); }
 |
-    <NULL> { SqlLiteral sqlLiteral = SqlLiteral.createNull(getPos()); sqlLiteral.putAlias("aliasName", this.token.image); sqlLiteral.putAlias("fullAlias", "true"); return sqlLiteral; }
+    <NULL> {
+              SqlLiteral sqlLiteral = SqlLiteral.createNull(getPos());
+              sqlLiteral.putAlias("aliasName", this.token.image);
+              sqlLiteral.putAlias("fullAlias", "true");
+              return sqlLiteral;
+           }
 }
 
 /**
@@ -6539,15 +6566,20 @@ SqlTypeNameSpec DateTimeTypeName() :
     SqlTypeName typeName;
     boolean withLocalTimeZone = false;
     final Span s;
+    StringBuilder aliasBuilder;
 }
 {
     <DATE> {
+        aliasBuilder = new StringBuilder(this.token.image);
         typeName = SqlTypeName.DATE;
-        return new SqlBasicTypeNameSpec(typeName, getPos());
+        SqlBasicTypeNameSpec typeNameSpec = new SqlBasicTypeNameSpec(typeName, getPos());
+        typeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        typeNameSpec.putAlias("fullAlias", "true");
+        return typeNameSpec;
     }
 |
     LOOKAHEAD(2)
-    <TIME> { s = span(); }
+    <TIME> { s = span(); aliasBuilder = new StringBuilder(this.token.image); }
     precision = PrecisionOpt()
     withLocalTimeZone = TimeZoneOpt()
     {
@@ -6556,10 +6588,16 @@ SqlTypeNameSpec DateTimeTypeName() :
         } else {
             typeName = SqlTypeName.TIME;
         }
-        return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
+        if (precision > -1) {
+           aliasBuilder.append("(").append(precision).append(")");
+        }
+        SqlBasicTypeNameSpec typeNameSpec = new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
+        typeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        typeNameSpec.putAlias("fullAlias", "true"); 
+        return typeNameSpec;
     }
 |
-    <TIMESTAMP>  { s = span(); }
+    <TIMESTAMP>  { s = span(); aliasBuilder = new StringBuilder(this.token.image); }
     precision = PrecisionOpt()
     withLocalTimeZone = TimeZoneOpt()
     {
@@ -6568,7 +6606,13 @@ SqlTypeNameSpec DateTimeTypeName() :
         } else {
             typeName = SqlTypeName.TIMESTAMP;
         }
-        return new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
+        if (precision > -1) {
+           aliasBuilder.append("(").append(precision).append(")");
+        }
+        SqlBasicTypeNameSpec typeNameSpec = new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
+        typeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        typeNameSpec.putAlias("fullAlias", "true");
+        return typeNameSpec;
     }
 }
 
@@ -9270,6 +9314,7 @@ void NonReservedKeyWord2of3() :
 |   < VERTICAL_BAR: "|" >
 |   < CARET: "^" >
 |   < DOLLAR: "$" >
+|   < TILDE1: "~" >
 <#list (parser.binaryOperatorsTokens!) as operator>
 |   ${operator}
 </#list>
