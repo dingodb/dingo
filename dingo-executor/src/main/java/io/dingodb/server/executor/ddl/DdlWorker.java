@@ -2633,6 +2633,7 @@ public class DdlWorker {
                 return updateSchemaVersion(dc, job);
             case SCHEMA_WRITE_REORG:
                 String sql = (String) tableInfo.getProperties().get("querySql");
+                String envSchema = (String) tableInfo.getProperties().getOrDefault("envSchema", job.getSchemaName());
                 Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
                 String createTableWithData = globalVariables.getOrDefault("create_table_with_data", "on");
                 if ("on".equalsIgnoreCase(createTableWithData)) {
@@ -2640,7 +2641,7 @@ public class DdlWorker {
                         String prefix = String.format("insert into %s.%s ", job.getSchemaName(), job.getTableName());
                         sql = prefix + sql;
                         LogUtils.info(log, "create as table sql:{}", sql);
-                        long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2, job.getSchemaName());
+                        long updateCount = SessionUtil.INSTANCE.exeUpdate(sql, 2, envSchema);
                         job.setRowCount(updateCount);
                     } catch (Exception e) {
                         LogUtils.error(log, e.getMessage(), e);
