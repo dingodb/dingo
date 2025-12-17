@@ -83,7 +83,7 @@ public class DingoDdlVerify {
             accessTypes.add(DingoSqlAccessEnum.CREATE);
             DingoSqlCreateTable sqlCreateTable = (DingoSqlCreateTable) sqlNode;
             if (sqlCreateTable.query != null) {
-                accessTypes.add(DingoSqlAccessEnum.INSERT);
+                accessTypes.add(0, DingoSqlAccessEnum.INSERT);
             }
             if (sqlCreateTable.columnList != null) {
                 long indexCount = sqlCreateTable.columnList.stream()

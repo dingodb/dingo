@@ -589,10 +589,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             .withIdentifierQuoteString("\"");
         SqlDialect sqlDialect = new CalciteSqlDialect(context1);
         String sql = query.toSqlString(sqlDialect).getSql();
-        List<String> schemas = new ArrayList<>();
-        schemas.add(schema.getSchemaName());
+
+        //List<String> schemas = new ArrayList<>();
+        //schemas.add(schema.getSchemaName());
         List<List<String>> schemaPaths = new ArrayList<>();
-        schemaPaths.add(schemas);
+        schemaPaths.add(context.getDefaultSchemaPath());
         schemaPaths.add(new ArrayList<>());
 
         CalciteConnectionConfigImpl config;
@@ -697,6 +698,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
 
         Properties properties = new Properties();
         properties.setProperty("querySql", sql);
+        if (context.getDefaultSchemaPath() != null && context.getDefaultSchemaPath().size() == 1) {
+            properties.setProperty("envSchema", context.getDefaultSchemaPath().get(0));
+        }
         tableDefinition.setProperties(properties);
         DdlService ddlService = DdlService.root();
 

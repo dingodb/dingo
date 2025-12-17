@@ -6181,6 +6181,7 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
     final SqlTypeName sqlTypeName;
     int precision = -1;
     int scale = -1;
+    StringBuilder aliasBuilder = null;
 }
 {
     (
@@ -6192,72 +6193,87 @@ SqlTypeNameSpec SqlTypeName1(Span s) :
             sqlTypeName = SqlTypeName.GEOMETRY;
         }
     |
-        <BOOLEAN> { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN; }
+        <BOOLEAN> { s.add(this); sqlTypeName = SqlTypeName.BOOLEAN;
+          aliasBuilder = new StringBuilder(this.token.image);
+        }
     |
-        <INTEGER> { s.add(this); sqlTypeName = SqlTypeName.INTEGER; } [
-                         <LPAREN>
-                         precision = UnsignedIntLiteral()
+        <INTEGER> {  aliasBuilder = new StringBuilder(this.token.image);} [
+                         <LPAREN> {aliasBuilder.append("(");}
+                         precision = UnsignedIntLiteral() { aliasBuilder.append(this.token.image); }
+                         [
+                             <COMMA> { aliasBuilder.append(", "); }
+                             scale = UnsignedIntLiteral() { aliasBuilder.append(this.token.image); }
+                         ]
+                         <RPAREN> { aliasBuilder.append(")"); }
+                     ] [<UNSIGNED>] {
+                        s.add(this); sqlTypeName = SqlTypeName.INTEGER;
+                     }
+    |
+        <INT> {  aliasBuilder = new StringBuilder(this.token.image);} [
+                   <LPAREN> {aliasBuilder.append("(");}
+                         precision = UnsignedIntLiteral() { aliasBuilder.append(this.token.image); }
                          [
                              <COMMA>
-                             scale = UnsignedIntLiteral()
+                             scale = UnsignedIntLiteral() { aliasBuilder.append(", ").append(this.token.image); }
                          ]
-                         <RPAREN>
-                     ] [<UNSIGNED>]
+                         <RPAREN> { aliasBuilder.append(")"); }
+                     ] [<UNSIGNED>] { s.add(this); sqlTypeName = SqlTypeName.INTEGER;
+                        }
     |
-        <INT>  [
-                   <LPAREN>
-                         precision = UnsignedIntLiteral()
-                         [
-                             <COMMA>
-                             scale = UnsignedIntLiteral()
-                         ]
-                         <RPAREN>
-                     ] [<UNSIGNED>] { s.add(this); sqlTypeName = SqlTypeName.INTEGER; }
+        <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT;
+           aliasBuilder = new StringBuilder(this.token.image);
+           }
     |
-        <TINYINT> { s.add(this); sqlTypeName = SqlTypeName.TINYINT; }
-    |
-        <BIT> [<LPAREN> precision = UnsignedIntLiteral()
+        <BIT> { aliasBuilder = new StringBuilder(this.token.image);}
+          [<LPAREN> precision = UnsignedIntLiteral() { aliasBuilder.append("(").append(this.token.image); }
            [
-                                           <COMMA>
-                                           scale = UnsignedIntLiteral()
+                                           <COMMA> { aliasBuilder.append(", ");}
+                                           scale = UnsignedIntLiteral() { aliasBuilder.append(this.token.image);}
                                 ]
-          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.BIT; }
+          <RPAREN> { aliasBuilder.append(")"); }] { s.add(this); sqlTypeName = SqlTypeName.BIT; }
     |
-        <TEXT> [<LPAREN> precision = UnsignedIntLiteral()
+        <TEXT> { aliasBuilder = new StringBuilder(this.token.image); } [<LPAREN> precision = UnsignedIntLiteral()
+           { aliasBuilder.append("(").append(this.token.image);}
            [
                                            <COMMA>
-                                           scale = UnsignedIntLiteral()
+                                           scale = UnsignedIntLiteral() { aliasBuilder.append(", ").append(this.token.image);}
                                ]
-          <RPAREN>] { s.add(this); sqlTypeName = SqlTypeName.VARCHAR; }
+          <RPAREN> {aliasBuilder.append(")"); }] { s.add(this); sqlTypeName = SqlTypeName.VARCHAR; }
     |
-        <BIGINT>    [
-                         <LPAREN>
-                         precision = UnsignedIntLiteral()
+        <BIGINT>  { aliasBuilder = new StringBuilder(this.token.image);}  [
+                         <LPAREN> { aliasBuilder.append("("); }
+                         precision = UnsignedIntLiteral() { aliasBuilder.append(this.token.image);}
                          [
-                             <COMMA>
-                             scale = UnsignedIntLiteral()
+                             <COMMA> { aliasBuilder.append(", ");}
+                             scale = UnsignedIntLiteral() { aliasBuilder.append(this.token.image);}
                          ]
-                         <RPAREN>
-                     ] { s.add(this); sqlTypeName = SqlTypeName.BIGINT; } [<UNSIGNED>]
+                         <RPAREN> { aliasBuilder.append(")"); }
+                     ] { s.add(this); sqlTypeName = SqlTypeName.BIGINT;} [<UNSIGNED>]
     |
-        <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; }
+        <REAL> { s.add(this); sqlTypeName = SqlTypeName.REAL; aliasBuilder = new StringBuilder(this.token.image); }
     |
-        <DOUBLE> { s.add(this); } [
+        <DOUBLE> { s.add(this); aliasBuilder = new StringBuilder(this.token.image); } [
                                                            <LPAREN>
-                                                           precision = UnsignedIntLiteral()
+                                                           precision = UnsignedIntLiteral() { aliasBuilder.append("(").append(this.token.image);}
                                                            [
                                                                <COMMA>
-                                                               scale = UnsignedIntLiteral()
+                                                               scale = UnsignedIntLiteral() { aliasBuilder.append(", ").append(this.token.image);}
                                                            ]
-                                                           <RPAREN>
+                                                           <RPAREN> {aliasBuilder.append("(");}
                                                        ]
-        [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE; }
+        [ <PRECISION> ] { sqlTypeName = SqlTypeName.DOUBLE;}
     )
     {
         if(sqlTypeName == SqlTypeName.BIT) {
-            return new SqlBasicTypeNameSpec(SqlTypeName.BIT, precision, s.end(this));
+            SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(SqlTypeName.BIT, precision, s.end(this));
+            sqlBasicTypeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+            sqlBasicTypeNameSpec.putAlias("fullAlias", "true");
+            return sqlBasicTypeNameSpec;
         } else {
-            return new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));
+            SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, s.end(this));
+            sqlBasicTypeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+            sqlBasicTypeNameSpec.putAlias("fullAlias", "true");
+            return sqlBasicTypeNameSpec;
         }
     }
 }
@@ -6267,21 +6283,29 @@ SqlTypeNameSpec SqlTypeName2(Span s) :
 {
     final SqlTypeName sqlTypeName;
     int precision = -1;
+    StringBuilder aliasBuilder = new StringBuilder();
 }
 {
     (
-        <BINARY> { s.add(this); }
+        <BINARY> { s.add(this);  aliasBuilder.append(this.token.image); }
         (
-            <VARYING> { sqlTypeName = SqlTypeName.VARBINARY; }
+            <VARYING> { sqlTypeName = SqlTypeName.VARBINARY; aliasBuilder.append(" ").append(this.token.image);}
         |
             { sqlTypeName = SqlTypeName.BINARY; }
         )
     |
-        <VARBINARY> { s.add(this); sqlTypeName = SqlTypeName.VARBINARY; }
+        <VARBINARY> { s.add(this); aliasBuilder.append(this.token.image);
+          sqlTypeName = SqlTypeName.VARBINARY; }
     )
     precision = PrecisionOpt()
     {
-        return new SqlBasicTypeNameSpec(sqlTypeName, precision, s.end(this));
+        if (precision > -1) {
+          aliasBuilder.append("(").append(precision).append(")");
+        }
+        SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, precision, s.end(this));
+        sqlBasicTypeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        sqlBasicTypeNameSpec.putAlias("fullAlias", "true");
+        return sqlBasicTypeNameSpec;
     }
 }
 
@@ -6291,24 +6315,28 @@ SqlTypeNameSpec SqlTypeName3(Span s) :
     final SqlTypeName sqlTypeName;
     int precision = -1;
     int scale = -1;
+    StringBuilder aliasBuilder = new StringBuilder();
 }
 {
     (
-        (<DECIMAL> | <DEC> | <NUMERIC>) { s.add(this); sqlTypeName = SqlTypeName.DECIMAL; }
+        (<DECIMAL> | <DEC> | <NUMERIC>) { s.add(this); sqlTypeName = SqlTypeName.DECIMAL; aliasBuilder.append(this.token.image);}
     |
-        <ANY> { s.add(this); sqlTypeName = SqlTypeName.ANY; }
+        <ANY> { s.add(this); sqlTypeName = SqlTypeName.ANY; aliasBuilder.append(this.token.image);}
     )
     [
         <LPAREN>
-        precision = UnsignedIntLiteral()
+        precision = UnsignedIntLiteral() { aliasBuilder.append("(").append(this.token.image);}
         [
             <COMMA>
-            scale = UnsignedIntLiteral()
+            scale = UnsignedIntLiteral() { aliasBuilder.append(", ").append(this.token.image);}
         ]
-        <RPAREN>
+        <RPAREN> { aliasBuilder.append(")"); }
     ]
     {
-        return new SqlBasicTypeNameSpec(sqlTypeName, precision, scale, s.end(this));
+        SqlBasicTypeNameSpec sqlBasicTypeNameSpec = new SqlBasicTypeNameSpec(sqlTypeName, precision, scale, s.end(this));
+        sqlBasicTypeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        sqlBasicTypeNameSpec.putAlias("fullAlias", "true");
+        return sqlBasicTypeNameSpec;
     }
 }
 
