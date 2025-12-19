@@ -31,6 +31,7 @@ import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.rel.PipeOp;
+import io.dingodb.store.api.transaction.exception.LockWaitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -127,10 +128,7 @@ public class HashJoinOperator extends SoleOutOperator {
             }
             return true;
         } finally {
-            if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
-                LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
-                param.interrupt();
-            }
+            checkStatusAndInterrupt(param, vertex);
         }
     }
 
@@ -138,10 +136,7 @@ public class HashJoinOperator extends SoleOutOperator {
     public void fin(int pin, Fin fin, Vertex vertex) {
         Edge edge = vertex.getSoleEdge();
         HashJoinParam param = vertex.getParam();
-        if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
-            LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
-            param.interrupt();
-        }
+        checkStatusAndInterrupt(param, vertex);
         if (fin instanceof FinWithException) {
             param.interrupt();
             edge.fin(fin);
@@ -186,10 +181,7 @@ public class HashJoinOperator extends SoleOutOperator {
             edge.fin(fin);
             // Reset
             param.clear();
-            if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
-                LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
-                param.interrupt();
-            }
+            checkStatusAndInterrupt(param, vertex);
         } else if (pin == 1) { //right
             if (fin instanceof FinWithProfiles) {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
@@ -201,14 +193,7 @@ public class HashJoinOperator extends SoleOutOperator {
     }
 
     private static void waitRightFinFlag(HashJoinParam param, Vertex vertex) {
-        if (param.isInterrupted()) {
-            throw new RuntimeException("HashJoin operation interrupted before waiting");
-        }
-        if (vertex.getTask().getStatus() == Status.STOPPED || vertex.getTask().getStatus() == Status.CANCEL) {
-            LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
-            param.interrupt();
-            throw new RuntimeException("task is cancel");
-        }
+        checkStatusError(param, vertex);
         try {
             param.getFuture().get();
         } catch (InterruptedException e) {
@@ -218,12 +203,33 @@ public class HashJoinOperator extends SoleOutOperator {
         } catch (ExecutionException e) {
             throw new RuntimeException("Error while waiting for right side completion", e);
         }
-        if (param.isInterrupted()) {
-            throw new RuntimeException("HashJoin operation interrupted after waiting");
-        }
-
+        checkStatusError(param, vertex);
         if (!param.isRightFinFlag()) {
             throw new RuntimeException("Right fin flag not set after future completed");
+        }
+    }
+
+    private static void checkStatusAndInterrupt(HashJoinParam param, Vertex vertex) {
+        int status = vertex.getTask().getStatus();
+        if (status == Status.STOPPED || status == Status.CANCEL) {
+            LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+            param.interrupt();
+        }
+    }
+
+    private static void checkStatusError(HashJoinParam param, Vertex vertex) {
+        if (vertex.getTask().isLockWait()) {
+            LogUtils.warn(log, "Task status is lock wait ...");
+            throw new LockWaitException("Lock wait");
+        } else {
+            int status = vertex.getTask().getStatus();
+            if (param.isInterrupted()) {
+                throw new RuntimeException("HashJoin operation interrupted waiting");
+            } else if (status == Status.STOPPED || status == Status.CANCEL) {
+                LogUtils.warn(log, "Task status is {} ...", vertex.getTask().getStatus());
+                param.interrupt();
+                throw new RuntimeException("task is cancel");
+            }
         }
     }
 
