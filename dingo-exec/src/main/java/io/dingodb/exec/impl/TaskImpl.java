@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.dingodb.common.metrics.DingoMetrics.activeTaskCount;
@@ -130,6 +131,8 @@ public final class TaskImpl implements Task {
     private transient TaskStatus taskInitStatus;
     @Setter
     private transient Context context;
+    @Getter
+    private transient AtomicBoolean isLockWait = new AtomicBoolean(false);
 
     @JsonCreator
     public TaskImpl(
@@ -194,6 +197,7 @@ public final class TaskImpl implements Task {
     @Override
     public void init() {
         status = new AtomicInteger(Status.BORN);
+        isLockWait = new AtomicBoolean(false);
         boolean isStatusOK = true;
         String statusErrMsg = "";
         this.getVertexes().forEach((id, v) -> {
@@ -284,7 +288,6 @@ public final class TaskImpl implements Task {
                 } catch (RuntimeException e) {
                     LogUtils.error(log, "Run Task:" + getId().toString()
                             + ",catch operator:" + vertex.getId() + " run Exception: ", e);
-                    status.compareAndSet(Status.RUNNING, Status.STOPPED);
                     TaskStatus taskStatus = new TaskStatus();
                     taskStatus.setStatus(false);
                     taskStatus.setTaskId(vertex.getTask().getId().toString());
@@ -295,11 +298,13 @@ public final class TaskImpl implements Task {
                         taskStatus.setErrorType(ErrorType.DuplicateEntry);
                     } else if (e instanceof LockWaitException) {
                         taskStatus.setErrorType(ErrorType.LockWait);
+                        this.isLockWait.compareAndSet(false, true);
                     } else if (e instanceof TaskCancelException) {
                         taskStatus.setErrorType(ErrorType.TaskCancel);
                     } else {
                         taskStatus.setErrorType(ErrorType.TaskFin);
                     }
+                    status.compareAndSet(Status.RUNNING, Status.STOPPED);
                     try {
                         operator.fin(0, FinWithException.of(taskStatus), vertex);
                     } catch (RuntimeException exception) {
@@ -350,5 +355,10 @@ public final class TaskImpl implements Task {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean isLockWait() {
+        return isLockWait.get();
     }
 }

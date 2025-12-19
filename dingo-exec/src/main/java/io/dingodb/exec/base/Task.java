@@ -98,4 +98,6 @@ public interface Task {
     void setContext(Context context);
 
     Map<TxnPartData, Boolean> getPartData();
+
+    boolean isLockWait();
 }
