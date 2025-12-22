@@ -16,9 +16,12 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.store.api.transaction.exception.WriteConflictException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -33,6 +36,7 @@ import java.util.Objects;
 
 import static io.dingodb.common.mysql.scope.ScopeVariables.metricReporter;
 
+@Slf4j
 public class SetOptionExecutor implements DdlExecutor {
 
     public static final String CONNECTION_CHARSET = "character_set_connection";
@@ -104,7 +108,11 @@ public class SetOptionExecutor implements DdlExecutor {
                 if ("time_zone".equals(name)) {
                     connection.setClientInfo(name, value);
                 }
-                putGlobalVariable(name, value);
+                try {
+                    putGlobalVariable(name, value);
+                } catch (WriteConflictException e) {
+                    LogUtils.error(log, e.getMessage(), e);
+                }
             } else if ("EXECUTOR".equals(scope)) {
                 ScopeVariables.setExecutorProp(name, value);
             } else {

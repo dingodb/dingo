@@ -30,6 +30,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableSpool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.impl.ListTransientTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -43,6 +44,10 @@ public class DingoTableSpool extends TableSpool implements DingoRel {
     @Getter
     @Setter
     private List<RexNode> rexNodeList;
+
+    @Getter
+    @Setter
+    RelDataType targetRowType;
 
     public DingoTableSpool(
         RelOptCluster cluster, RelTraitSet traitSet, RelNode input, Type readType,

@@ -54,7 +54,7 @@ public class DingoTableSpoolVisitFun {
         if (rel.getRexNodeList() != null) {
             List<SqlExpr> sqlExprList = SqlExprUtils.toSqlExprList(rel.getRexNodeList(), rel.getTable().getRowType());
             tableSpoolParam.setProjects(sqlExprList);
-            tableSpoolParam.setSchema(DefinitionMapper.mapToDingoType(rel.getTable().getRowType()));
+            tableSpoolParam.setSchema(DefinitionMapper.mapToDingoType(rel.getTargetRowType()));
         }
         Vertex vertex = new Vertex(TABLE_SPOOL, tableSpoolParam);
         Vertex input = sole(inputs);

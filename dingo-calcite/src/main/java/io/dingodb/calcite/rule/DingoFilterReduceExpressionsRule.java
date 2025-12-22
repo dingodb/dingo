@@ -114,10 +114,10 @@ public class DingoFilterReduceExpressionsRule extends RelRule implements Substit
         } else if (newConditionExp instanceof RexLiteral
             || RexUtil.isNullLiteral(newConditionExp, true)) {
             call.transformTo(createEmptyRelOrEquivalent(call, filter));
-//        } else if (reduced) {
-//            call.transformTo(call.builder()
-//                .push(filter.getInput())
-//                .filter(newConditionExp).build());
+        //} else if (reduced) {
+        //    call.transformTo(call.builder()
+        //        .push(filter.getInput())
+        //        .filter(newConditionExp).build());
         } else {
             if (newConditionExp instanceof RexCall) {
                 boolean reverse = newConditionExp.getKind() == SqlKind.NOT;

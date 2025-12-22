@@ -23,6 +23,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.ddl.ReorgBackFillTask;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.time.DingoTimeZoneContext;
@@ -52,6 +53,7 @@ import io.dingodb.exec.transaction.base.TxnLocalData;
 import io.dingodb.exec.transaction.util.TransactionCacheToMutation;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
+import io.dingodb.expr.common.type.AnyType;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
@@ -84,12 +86,15 @@ import java.util.stream.Collectors;
 import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
 import static io.dingodb.common.CommonId.CommonType.FILL_BACK;
 import static io.dingodb.common.mysql.MysqlByteUtil.binaryPrefix;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
 import static io.dingodb.common.util.NoBreakFunctions.wrap;
 import static io.dingodb.exec.transaction.util.TransactionUtil.max_pre_write_count;
 
 @Slf4j
 public class AddColumnFiller extends IndexAddFiller {
     private Object defaultVal = null;
+    private boolean nullable;
+    private DingoType dingoType;
 
     boolean withoutPrimary;
 
@@ -229,6 +234,8 @@ public class AddColumnFiller extends IndexAddFiller {
             throw new RuntimeException("new column not found");
         }
         defaultVal = getFillerValue(addColumn);
+        nullable = addColumn.isNullable();
+        dingoType = addColumn.type;
         if (indexTable.getProperties() != null) {
             addPos = Integer.parseInt(indexTable.getProperties().getProperty("addPos"));
         }
@@ -286,6 +293,15 @@ public class AddColumnFiller extends IndexAddFiller {
 
     @NonNull
     public Object[] getNewTuples(int colLen, Object[] tuples) {
+        if (!nullable && defaultVal == null) {
+            if (dingoType instanceof DateType) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", "0000-00-00");
+            } else if (dingoType instanceof TimestampType) {
+                throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", "0000-00-00 00:00:00");
+            } else if (dingoType instanceof ObjectType && dingoType.getType() instanceof AnyType) {
+                throw DingoErrUtil.newStdErr("Map requires at least 2 arguments");
+            }
+        }
         List<Object> valList = new ArrayList<>(tuples.length + 1);
         for (Object valItem : tuples) {
             valList.add(valItem);

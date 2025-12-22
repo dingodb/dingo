@@ -2261,17 +2261,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if ("NULL".equalsIgnoreCase(newColumn.getDefaultValue())) {
             newColumn.setDefaultValue(null);
         }
-        if (newColumn.getDefaultValue() == null) {
-            if (!newColumn.isNullable() && addCol) {
-                if (type instanceof DateType) {
-                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "date", "0000-00-00");
-                } else if (type instanceof TimestampType) {
-                    throw DingoErrUtil.newStdErr(ErrTruncatedWrongValue, "timestamp", "0000-00-00 00:00:00");
-                } else if (type instanceof ObjectType && type.getType() instanceof AnyType) {
-                    throw DingoErrUtil.newStdErr("Map requires at least 2 arguments");
-                }
-            }
-        } else {
+        if (newColumn.getDefaultValue() != null) {
             try {
                 String defaultVal = newColumn.getDefaultValue();
                 if (type instanceof LongType) {

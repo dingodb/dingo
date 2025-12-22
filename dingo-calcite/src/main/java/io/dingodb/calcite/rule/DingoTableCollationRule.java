@@ -60,13 +60,7 @@ public class DingoTableCollationRule extends RelRule<DingoTableCollationRule.Con
         if (RuleUtils.matchTablePrimary(logicalSort)) {
             return;
         }
-        if (logicalScanWithRelOp.getRelOp() instanceof TandemPipePipeOp) {
-            logicalScanTandemSortRemove(call, logicalScanWithRelOp, logicalSort);
-        } else if (logicalScanWithRelOp.getRelOp() instanceof FilterOp) {
-            logicalScanFilterSortRemove(call, logicalSort, logicalScanWithRelOp);
-        } else if (logicalScanWithRelOp.getRelOp() instanceof ProjectOp) {
-            logicalScanProjectSortRemove(call, logicalScanWithRelOp, logicalSort);
-        }
+
     }
 
     private static void logicalScanTandemSortRemove(

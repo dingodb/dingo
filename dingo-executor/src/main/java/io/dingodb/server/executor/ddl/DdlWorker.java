@@ -153,6 +153,7 @@ public class DdlWorker {
         try {
             res = runDdlJob(dc, job);
         } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
             job.setErrorCount(job.getErrorCount() + 1);
             updateDDLJob(job, true);
             return Pair.of(0L, "run ddl job error");
@@ -1147,7 +1148,7 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition oldColDef = modifyingColInfo.getChangingCol();
         io.dingodb.common.table.ColumnDefinition newColDef = modifyingColInfo.getNewCol();
         // If we want to rename the column name, we need to check whether it already exists.
-        if (oldColDef != null && !oldColDef.getName().equalsIgnoreCase(newColDef.getName())) {
+        if (oldColDef != null && newColDef != null && !oldColDef.getName().equalsIgnoreCase(newColDef.getName())) {
             boolean dupColName = tableWithId.getTableDefinition().getColumns()
                 .stream()
                 .anyMatch(columnDefinition -> columnDefinition.getName().equalsIgnoreCase(newColDef.getName()));
@@ -1159,7 +1160,8 @@ public class DdlWorker {
         }
         // if do not need change column data -> doModifyColumn
         Pair<Integer, Integer> changePosPair = isNotWriteData(modifyingColInfo, tableWithId);
-        if ((oldColDef == null || !needModifyColWIthData(oldColDef, newColDef)) && changePosPair == null) {
+        if ((oldColDef == null || newColDef == null || !needModifyColWIthData(oldColDef, newColDef))
+            && changePosPair == null) {
             return doModifyColumn(modifyingColInfo, job, dc);
         }
         // doModifyColumnWithData
@@ -1680,7 +1682,12 @@ public class DdlWorker {
                 break;
             }
         }
-        ColumnDefinition columnDefinition = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
+        ColumnDefinition columnDefinition;
+        if (modifyColumnInfo.getNewCol() != null) {
+            columnDefinition = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getNewCol());
+        } else {
+            columnDefinition = MapperImpl.MAPPER.columnTo(modifyColumnInfo.getChangingCol());
+        }
         columnDefinition.setSchemaState(SCHEMA_PUBLIC);
         definitionWithId.getTableDefinition().getColumns().set(colIndex, columnDefinition);
 
@@ -2066,7 +2073,7 @@ public class DdlWorker {
         io.dingodb.common.table.ColumnDefinition oldColDef,
         io.dingodb.common.table.ColumnDefinition newColDef
     ) {
-        if (newColDef.getTypeName().equals(oldColDef.getTypeName())) {
+        if (newColDef != null && newColDef.getTypeName().equals(oldColDef.getTypeName())) {
             if (oldColDef.getTypeName().equalsIgnoreCase("DECIMAL")) {
                 return oldColDef.getPrecision() != newColDef.getPrecision()
                     || oldColDef.getScale() != newColDef.getScale();
