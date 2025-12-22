@@ -43,6 +43,7 @@ import io.dingodb.calcite.rel.DingoGenerateSeries;
 import io.dingodb.calcite.rel.DingoVector;
 import io.dingodb.calcite.runtime.DingoResource;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
+import io.dingodb.calcite.utils.DingoRelOptUtil;
 import io.dingodb.calcite.utils.HybridNodeUtils;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
@@ -109,6 +110,7 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.Litmus;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -185,6 +187,35 @@ public final class DingoDriverParser extends DingoParser {
                 typeFactory,
                 columns.size(),
                 field.getName(),
+                field.getType(),
+                originList.get(i),
+                hidden
+            ));
+        }
+        return columns;
+    }
+
+    private List<ColumnMetaData> getColumnMetaDataList1(
+        JavaTypeFactory typeFactory,
+        @NonNull RelDataType jdbcType,
+        List<? extends @Nullable List<String>> originList,
+        List<RelDataTypeField> sqlNodefieldList
+    ) {
+        List<RelDataTypeField> fieldList = jdbcType.getFieldList();
+        final List<ColumnMetaData> columns = new ArrayList<>(fieldList.size());
+        for (int i = 0; i < fieldList.size(); ++i) {
+            RelDataTypeField field = fieldList.get(i);
+            RelDataTypeField originField = sqlNodefieldList.get(i);
+            List<String> colList = originList.get(i);
+            boolean hidden = SchemaStateUtils.columnHidden(connection, colList);
+            if (!hidden) {
+                hidden = IMPLICIT_COL_NAME.equals(field.getName());
+            }
+            //continue;
+            columns.add(metaData(
+                typeFactory,
+                columns.size(),
+                originField.getName(),
                 field.getType(),
                 originList.get(i),
                 hidden
@@ -512,6 +543,11 @@ public final class DingoDriverParser extends DingoParser {
         long start = System.currentTimeMillis();
         final RelRoot relRoot = convert(sqlNode, false);
         RelNode relNode = optimize(relRoot.rel);
+        //Check if the types of relNode and sqlNode are consistent
+        List<ColumnMetaData> enableColumnMetas1 = checkConvertedType(relNode, sqlNode, type, statementType);
+        if (enableColumnMetas1 != null) {
+            enableColumnMetas = enableColumnMetas1;
+        }
         long sub = System.currentTimeMillis() - start;
         DingoMetrics.timer("relOptimize").update(sub, TimeUnit.MILLISECONDS);
         planProfile.endOptimize();
@@ -1175,6 +1211,39 @@ public final class DingoDriverParser extends DingoParser {
         } catch (SQLException e) {
             LogUtils.error(log, e.getMessage(), e);
         }
+    }
+
+    // Check if the types of relNode and sqlNode are consistent
+    private List<ColumnMetaData> checkConvertedType(RelNode relNode, SqlNode sqlNode, RelDataType type,
+                                                    Meta.StatementType statementType) {
+        if (statementType != Meta.StatementType.SELECT) {
+            return null;
+        }
+        try {
+            List<RelDataTypeField> validatedFields =
+                getSqlValidator().getValidatedNodeType(sqlNode).getFieldList();
+            List<RelDataTypeField> convertedFields =
+                relNode.getRowType().getFieldList().subList(0, validatedFields.size());
+            final RelDataType convertedRowType =
+                getSqlValidator().getTypeFactory().createStructType(convertedFields);
+            if (!DingoRelOptUtil.equal("validated row type", type,
+                "converted row type", convertedRowType, Litmus.IGNORE)
+                && !validatedFields.isEmpty() && validatedFields.size() == convertedFields.size()) {
+                RelDataType jdbcType = makeStruct(connection.getTypeFactory(), convertedRowType);
+                List<List<String>> originList = getSqlValidator().getFieldOrigins(sqlNode);
+                List<ColumnMetaData> columns = getColumnMetaDataList1(connection.getTypeFactory(),
+                    jdbcType, originList, validatedFields);
+                return columns
+                    .stream()
+                    .filter(columnMetaData -> {
+                        DingoColumnMetaData columnMetaData1 = (DingoColumnMetaData) columnMetaData;
+                        return !columnMetaData1.hidden;
+                    }).collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
+        return null;
     }
 
 }

@@ -52,7 +52,7 @@ public class DingoTableSpoolVisitFun {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(dingoJobVisitor);
         TableSpoolParam tableSpoolParam = new TableSpoolParam(rel.getListTransientTable().getModifiableCollection());
         if (rel.getRexNodeList() != null) {
-            List<SqlExpr> sqlExprList = SqlExprUtils.toSqlExprList(rel.getRexNodeList(), rel.getTable().getRowType());
+            List<SqlExpr> sqlExprList = SqlExprUtils.toSqlExprList(rel.getRexNodeList(), rel.getTargetRowType());
             tableSpoolParam.setProjects(sqlExprList);
             tableSpoolParam.setSchema(DefinitionMapper.mapToDingoType(rel.getTargetRowType()));
         }

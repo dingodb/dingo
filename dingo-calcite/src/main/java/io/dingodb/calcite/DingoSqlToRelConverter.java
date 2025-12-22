@@ -30,7 +30,6 @@ import io.dingodb.calcite.rel.LogicalDingoVector;
 import io.dingodb.calcite.rel.LogicalGenerateSeries;
 import io.dingodb.calcite.rel.logical.LogicalTableModify;
 import io.dingodb.calcite.traits.DingoConvention;
-import io.dingodb.calcite.utils.DingoRelOptUtil;
 import io.dingodb.common.table.DiskAnnTable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -96,8 +95,6 @@ import org.apache.calcite.sql2rel.SqlHybridSearchOperator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.SqlVectorOperator;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.apache.calcite.util.Litmus;
-import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -111,7 +108,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.calcite.sql.validate.SqlValidatorImpl.IMPLICIT_COL_NAME;
 
 public class DingoSqlToRelConverter extends SqlToRelConverter {
 
@@ -324,52 +320,21 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
             && ((SqlSelect) query).isKeywordPresent(SqlSelectKeyword.STREAM);
     }
 
-    private static RelCollation requiredCollation(RelNode r) {
-        if (r instanceof Sort) {
-            return ((Sort) r).collation;
+    private static RelCollation requiredCollation(RelNode relNode) {
+        if (relNode instanceof Sort) {
+            return ((Sort) relNode).collation;
         }
-        if (r instanceof Project) {
-            return requiredCollation(((Project) r).getInput());
+        if (relNode instanceof Project) {
+            return requiredCollation(((Project) relNode).getInput());
         }
-        if (r instanceof Delta) {
-            return requiredCollation(((Delta) r).getInput());
+        if (relNode instanceof Delta) {
+            return requiredCollation(((Delta) relNode).getInput());
         }
         throw new AssertionError();
     }
 
     private void checkConvertedType(SqlNode query, RelNode result) {
-        if (query.isA(SqlKind.DML)) {
-            return;
-        }
-        // Verify that conversion from SQL to relational algebra did
-        // not perturb any type information.  (We can't do this if the
-        // SQL statement is something like an INSERT which has no
-        // validator type information associated with its result,
-        // hence the namespace check above.)
-        final List<RelDataTypeField> validatedFields =
-            validator().getValidatedNodeType(query).getFieldList();
-        final RelDataType validatedRowType =
-            validator().getTypeFactory().createStructType(
-                Pair.right(validatedFields),
-                SqlValidatorUtil.uniquify(Pair.left(validatedFields),
-                    catalogReader.nameMatcher().isCaseSensitive()));
 
-        final List<RelDataTypeField> convertedFields =
-            result.getRowType().getFieldList().subList(0, validatedFields.size());
-        final RelDataType convertedRowType =
-            validator().getTypeFactory().createStructType(convertedFields);
-
-        if (!DingoRelOptUtil.equal("validated row type", validatedRowType,
-            "converted row type", convertedRowType, Litmus.IGNORE)) {
-            throw new AssertionError("Conversion to relational algebra failed to "
-                + "preserve datatypes:\n"
-                + "validated type:\n"
-                + validatedRowType.getFullTypeString()
-                + "\nconverted type:\n"
-                + convertedRowType.getFullTypeString()
-                + "\nrel:\n"
-                + RelOptUtil.toString(result));
-        }
     }
 
     private class JsonFunctionRexRewriter extends RexShuttle {
