@@ -175,6 +175,9 @@ public final class JobImpl implements Job {
 
     @Override
     public boolean isSelect() {
+        if (isSelect == null) {
+            return false;
+        }
         return isSelect;
     }
 

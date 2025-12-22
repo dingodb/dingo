@@ -101,6 +101,7 @@ public final class DingoRepeatUnionVisitFun {
                 if (rexNodeList != null && relNode instanceof DingoTableSpool) {
                     DingoTableSpool dingoTableSpool = (DingoTableSpool) relNode;
                     dingoTableSpool.setRexNodeList(rexNodeList);
+                    dingoTableSpool.setTargetRowType(rel.getIterativeRel().getRowType());
                 }
                 relInput = new DingoRoot(relNode.getCluster(), relNode.getTraitSet(), relNode, null);
             } else {

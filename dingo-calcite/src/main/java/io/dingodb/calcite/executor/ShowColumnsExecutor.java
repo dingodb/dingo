@@ -110,6 +110,8 @@ public class ShowColumnsExecutor extends QueryExecutor {
                 if (column.getPrecision() > 0 && column.getScale() >= 0) {
                     type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
                 }
+            } else if ("bit".equalsIgnoreCase(type) && column.getPrecision() > 0) {
+                type = type.toLowerCase() + "(" + column.getPrecision() + ")";
             }
             columnValues.add(type.toLowerCase());
             columnValues.add(column.isNullable() ? "YES" : "NO");
