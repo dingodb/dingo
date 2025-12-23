@@ -35,7 +35,10 @@ import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.UngroupedAggregateOp;
 import io.dingodb.expr.runtime.ExprPushdownCond;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.NullaryAggExpr;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -157,12 +160,24 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                         return;
                     }
                 }
+                boolean forAggCount = false;
+                if(relOpCompile instanceof UngroupedAggregateOp) {
+                    if(((UngroupedAggregateOp) relOpCompile).getAggList().size() == 1) {
+                        Expr expr = ((UngroupedAggregateOp) relOpCompile).getAggList().get(0);
+                        if(expr instanceof NullaryAggExpr) {
+                            if((((NullaryAggExpr)expr).getOp()).getName().equals("COUNT")) {
+                                forAggCount = true;
+                            }
+                        }
+                    }
+                }
                 TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
                 coprocessor = CoprocessorV2.builder()
                     .originalSchema(SchemaWrapperUtils.buildSchemaWrapper(schema, keyMapping, tableId.seq))
                     .resultSchema(SchemaWrapperUtils.buildSchemaWrapper(outputSchema, outputKeyMapping, tableId.seq))
                     .selection(selection)
                     .relExpr(os.toByteArray())
+                    .forAggCount(forAggCount)
                     .codecVersion(codecVersion)
                     .build();
                 if (limit > 0) {
