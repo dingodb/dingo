@@ -37,6 +37,9 @@ import io.dingodb.expr.coding.CodingFlag;
 import io.dingodb.expr.coding.RelOpCoder;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.UngroupedAggregateOp;
+import io.dingodb.expr.runtime.expr.Expr;
+import io.dingodb.expr.runtime.expr.NullaryAggExpr;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -181,6 +184,17 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                         return;
                     }
                 }
+                boolean forAggCount = false;
+                if(relOpCompile instanceof UngroupedAggregateOp) {
+                    if(((UngroupedAggregateOp) relOpCompile).getAggList().size() == 1) {
+                        Expr expr = ((UngroupedAggregateOp) relOpCompile).getAggList().get(0);
+                        if(expr instanceof NullaryAggExpr) {
+                            if((((NullaryAggExpr)expr).getOp()).getName().equals("COUNT")) {
+                                forAggCount = true;
+                            }
+                        }
+                    }
+                }
                 TupleMapping keyMapping = indexKeyMapping();
                 TupleMapping outputKeyMapping = TupleMapping.of(new int[]{});
                 coprocessor = CoprocessorV2.builder()
@@ -188,6 +202,7 @@ public class TxnIndexRangeScanParam extends ScanWithRelOpParam {
                     .resultSchema(SchemaWrapperUtils.buildSchemaWrapper(indexSchema, outputKeyMapping, indexTableId.seq))
                     .selection(selection)
                     .relExpr(os.toByteArray())
+                    .forAggCount(forAggCount)
                     .codecVersion(this.codecVersion)
                     .build();
 
