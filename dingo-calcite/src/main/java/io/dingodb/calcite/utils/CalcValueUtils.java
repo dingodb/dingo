@@ -75,7 +75,7 @@ public final class CalcValueUtils {
         DingoType tupleType,
         ExprConfig config
     ) {
-        Object object= calcValue(rexNode, tuple, tupleType, config);
+        Object object = calcValue(rexNode, tuple, tupleType, config);
 
         return targetType.convertFrom(
             object,

@@ -69,10 +69,12 @@ SqlTypeNameSpec SqlDateTimeTypeName(Span s): {
 SqlTypeNameSpec SqlFloatTypeName(Span s) :
 {
     final SqlTypeNameSpec sqlTypeNameSpec;
+    StringBuilder aliasBuilder = new StringBuilder();
 }
 {
     <FLOAT>
     {
+        aliasBuilder.append(this.token.image);
         s.add(this);
         SqlTypeName sqlTypeName = SqlTypeName.FLOAT;
         int precision = -1;
@@ -80,15 +82,17 @@ SqlTypeNameSpec SqlFloatTypeName(Span s) :
     }
         [
             <LPAREN>
-                precision = UnsignedIntLiteral()
+                precision = UnsignedIntLiteral() { aliasBuilder.append("(").append(precision); }
                 [
                 <COMMA>
-                    scale = UnsignedIntLiteral()
+                    scale = UnsignedIntLiteral() { aliasBuilder.append(", ").append(scale); }
                     ]
-            <RPAREN>
+            <RPAREN> { aliasBuilder.append(")");}
         ]
     {
         sqlTypeNameSpec = new SqlFloatTypeNameSpec(sqlTypeName, precision, s.end(this));
+        sqlTypeNameSpec.putAlias("aliasName", aliasBuilder.toString());
+        sqlTypeNameSpec.putAlias("fullAlias", "true");
         return sqlTypeNameSpec;
     }
 }

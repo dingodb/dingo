@@ -169,9 +169,9 @@ public class TxnScanWithRelOpParam extends ScanWithRelOpParam {
                     coprocessor.setLimit(limit);
                 }
 
-                if(showCoprocessorExpr()) {
+                if (showCoprocessorExpr()) {
                     StringBuffer sb = new StringBuffer();
-                    for(byte b : coprocessor.getRelExpr()) {
+                    for (byte b : coprocessor.getRelExpr()) {
                         sb.append(String.format("%02X",b));
                     }
                     LogUtils.info(log, "Pushing down expression in Scan {} via coprocessor.", sb.toString());
