@@ -18,7 +18,6 @@ package io.dingodb.exec.utils;
 
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.util.Pair;
-import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;

@@ -45,6 +45,10 @@ public class SqlFloatTypeNameSpec extends SqlTypeNameSpec {
 
     @Override
     public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        if (getAliasName() != null && isFullAlias()) {
+            writer.keyword(getAliasName());
+            return;
+        }
         writer.keyword(getTypeName().getSimple());
         writer.keyword("(");
         writer.keyword(String.valueOf(precision));
