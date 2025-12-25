@@ -485,7 +485,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                     if (intervalStr == null) {
                         break;
                     }
-                    int[] values = intervalQualifier.evaluateIntervalLiteral(
+                    long[] values = intervalQualifier.evaluateIntervalLiteral(
                         intervalStr, literal.getParserPosition(), this.typeFactory.getTypeSystem()
                     );
                     Util.discard(values);
