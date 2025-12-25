@@ -68,7 +68,7 @@ public final class DingoParserUtils {
         SqlIntervalQualifier intervalQualifier) {
         Preconditions.checkArgument(intervalQualifier.isYearMonth(),
             "interval must be year month");
-        int[] ret;
+        long[] ret;
         try {
             ret = intervalQualifier.evaluateIntervalLiteral(literal,
                 intervalQualifier.getParserPosition(), DingoRelDataTypeSystemImpl.DEFAULT);
@@ -98,7 +98,7 @@ public final class DingoParserUtils {
         SqlIntervalQualifier intervalQualifier) {
         Preconditions.checkArgument(!intervalQualifier.isYearMonth(),
             "interval must be day time");
-        int[] ret;
+        long[] ret;
         try {
             ret = intervalQualifier.evaluateIntervalLiteral(literal,
                 intervalQualifier.getParserPosition(), DingoRelDataTypeSystemImpl.DEFAULT);
