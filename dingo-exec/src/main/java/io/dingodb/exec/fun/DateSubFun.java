@@ -160,6 +160,9 @@ public class DateSubFun extends BinaryOp {
                     DingoDateTime dateInput = processor.getTierProcessor().convertInput(value0, DateTimeType.DATE);
                     DingoDateTime dateTime = processor.dateSubtract(dateInput, amount, unit);
                     Date date = (Date) processor.getTierProcessor().convertOutput(dateTime, DateTimeType.DATE);
+                    if (date == null) {
+                        return null;
+                    }
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTime(date);
                     if (calendar.get(Calendar.YEAR) > 9999) {
@@ -174,6 +177,9 @@ public class DateSubFun extends BinaryOp {
                     DingoDateTime timestampDateTime = processor.dateSubtract(timestampInput, amount, unit);
                     Timestamp timestamp = (Timestamp) processor.getTierProcessor()
                         .convertOutput(timestampDateTime, DateTimeType.TIMESTAMP);
+                    if (timestamp == null) {
+                        return null;
+                    }
                     Calendar instance = Calendar.getInstance();
                     instance.setTimeInMillis(timestamp.getTime());
                     if (instance.get(Calendar.YEAR) > 9999) {
@@ -187,6 +193,9 @@ public class DateSubFun extends BinaryOp {
             DingoDateTime dateTime = processor.dateSubtract(input, amount, unit);
             Timestamp timestamp = (Timestamp) processor.getTierProcessor()
                 .convertOutput(dateTime, DateTimeType.TIMESTAMP);
+            if (timestamp == null) {
+                return null;
+            }
             Calendar calendar = Calendar.getInstance();
             calendar.setTimeInMillis(timestamp.getTime());
             if (calendar.get(Calendar.YEAR) > 9999) {
