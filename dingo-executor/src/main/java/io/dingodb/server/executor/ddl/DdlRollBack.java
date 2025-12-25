@@ -30,6 +30,7 @@ import io.dingodb.meta.entity.Table;
 import io.dingodb.sdk.service.entity.common.SchemaState;
 import io.dingodb.sdk.service.entity.meta.TableDefinitionWithId;
 import io.dingodb.store.proxy.mapper.Mapper;
+import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
 import static io.dingodb.common.mysql.error.ErrorCode.ErrCancelledDDLJob;
@@ -118,7 +119,7 @@ public final class DdlRollBack {
             return "add index error";
         }
         MetaService.root().dropIndex(
-            table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs()
+            table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), TsoService.getDefault().tso()
         );
         return null;
     }

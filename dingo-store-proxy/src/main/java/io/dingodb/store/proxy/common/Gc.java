@@ -812,6 +812,7 @@ public class Gc {
                 List<Object[]> res = session.executeQuery(sql);
                 if (res.isEmpty()) {
                     LogUtils.error(log, "drop table meta get job type empty, jobId:{}", jobId);
+                    return true;
                 } else {
                     if (res.get(0).length >= 1) {
                         int type = (int) res.get(0)[0];

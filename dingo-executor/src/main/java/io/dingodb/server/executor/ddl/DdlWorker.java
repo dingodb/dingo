@@ -823,7 +823,7 @@ public class DdlWorker {
                 try {
                     MetaService.root().dropIndex(
                         table.getTableId(), Mapper.MAPPER.idFrom(indexWithId.getTableId()),
-                        job.getId(), job.getRealStartTs()
+                        job.getId(), TsoService.getDefault().tso()
                     );
                 } catch (Exception e) {
                     LogUtils.error(log, "drop index error", e);
@@ -916,7 +916,7 @@ public class DdlWorker {
                 } catch (Exception e) {
                     job.setState(JobState.jobStateCancelled);
                     MetaService.root().dropRegionByTable(
-                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
+                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), TsoService.getDefault().tso()
                     );
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     LogUtils.error(log, e.getMessage(), e);
@@ -932,7 +932,7 @@ public class DdlWorker {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
-                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs());
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), TsoService.getDefault().tso());
                 } catch (Exception e) {
                     LogUtils.error(log, "drop replicaTable error", e);
                 }
@@ -943,7 +943,7 @@ public class DdlWorker {
                     try {
                         markDelIndices.forEach(index -> {
                             MetaService.root().dropRegionByTable(
-                                Mapper.MAPPER.idFrom(index.getTableId()), job.getId(), job.getRealStartTs()
+                                Mapper.MAPPER.idFrom(index.getTableId()), job.getId(), TsoService.getDefault().tso()
                             );
                             InfoSchemaService.root().dropIndex(tableId.seq, index.getTableId().getEntityId());
                         });
@@ -1067,7 +1067,7 @@ public class DdlWorker {
                 } catch (Exception e) {
                     LogUtils.error(log, e.getMessage(), e);
                     MetaService.root().dropRegionByTable(
-                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs()
+                        Mapper.MAPPER.idFrom(replicaTableId), job.getId(), TsoService.getDefault().tso()
                     );
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     job.setState(JobState.jobStateCancelled);
@@ -1091,7 +1091,7 @@ public class DdlWorker {
                     // to remove replica table
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
-                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs());
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), TsoService.getDefault().tso());
                 } catch (Exception e) {
                     LogUtils.error(log, "drop replicaTable error", e);
                 }
@@ -1905,7 +1905,7 @@ public class DdlWorker {
                     // to remove origin replica table definition
                     InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
                     // remove old region
-                    MetaService.root().dropRegionByTable(tableId, job.getId(), job.getRealStartTs(), false);
+                    MetaService.root().dropRegionByTable(tableId, job.getId(), TsoService.getDefault().tso(), false);
                 } catch (Exception e) {
                     LogUtils.error(log, "drop replicaTable error", e);
                 }
@@ -1932,7 +1932,7 @@ public class DdlWorker {
     private static void cancelledReplicate(DdlJob job, DingoCommonId replicaTableId, CommonId tableId) {
         List<Object> indexWithIdList;
         MetaService.root().dropRegionByTable(
-            Mapper.MAPPER.idFrom(replicaTableId), job.getId(), job.getRealStartTs(), false, true
+            Mapper.MAPPER.idFrom(replicaTableId), job.getId(), TsoService.getDefault().tso(), false, true
         );
         InfoSchemaService.root().dropIndex(tableId.seq, replicaTableId.getEntityId());
         // drop index replica definition and region
@@ -1942,7 +1942,8 @@ public class DdlWorker {
             indexWithIdList.forEach(indexObj -> {
                 TableDefinitionWithId indexWithId = (TableDefinitionWithId) indexObj;
                 MetaService.root().dropRegionByTable(
-                    Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(), job.getRealStartTs(), false,true
+                    Mapper.MAPPER.idFrom(indexWithId.getTableId()), job.getId(),
+                    TsoService.getDefault().tso(), false,true
                 );
                 InfoSchemaService.root().dropIndex(tableId.seq, indexWithId.getTableId().getEntityId());
             });
@@ -2077,7 +2078,7 @@ public class DdlWorker {
         try {
             // remove old region
             MetaService.root().dropRegionByTable(
-                MapperImpl.MAPPER.idFrom(originIndexId), job.getId(), job.getRealStartTs(), false
+                MapperImpl.MAPPER.idFrom(originIndexId), job.getId(), TsoService.getDefault().tso(), false
             );
             // to remove origin definition
             InfoSchemaService.root().dropIndex(tableId.seq, originIndexId.getEntityId());
@@ -2429,7 +2430,8 @@ public class DdlWorker {
                 List<RangeDistribution> regionList = ranges.values().stream()
                     .filter(region -> region.getId().domain == matchPart.getId().getEntityId())
                     .collect(Collectors.toList());
-                MetaService.root().deleteRegion(tableId, job.getId(), job.getRealStartTs(), false, regionList);
+                MetaService.root().deleteRegion(tableId, job.getId(),
+                    TsoService.getDefault().tso(), false, regionList);
                 long newPartId = MetaService.root().generatePartId();
                 matchPart.getId().setEntityId(newPartId);
                 byte[] originStartKey = matchPart.getRange().getStartKey();
@@ -2447,7 +2449,7 @@ public class DdlWorker {
                     TableDefinitionWithId indexWithId = (TableDefinitionWithId) obj;
                     MetaService.root().dropIndex(
                         tableId, Mapper.MAPPER.idFrom(indexWithId.getTableId()),
-                        job.getId(), job.getRealStartTs()
+                        job.getId(), TsoService.getDefault().tso()
                     );
                 });
 
