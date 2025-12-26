@@ -79,9 +79,11 @@ public class ToolService implements io.dingodb.tool.api.ToolService {
         MetricType metricType;
         switch (distance.getMetricType().toUpperCase()) {
             case "INNER_PRODUCT":
+            case "METRIC_TYPE_INNER_PRODUCT":
                 metricType = MetricType.METRIC_TYPE_INNER_PRODUCT;
                 break;
             case "COSINE":
+            case "METRIC_TYPE_COSINE":
                 metricType = MetricType.METRIC_TYPE_COSINE;
                 break;
             case "METRIC_TYPE_HAMMING":
