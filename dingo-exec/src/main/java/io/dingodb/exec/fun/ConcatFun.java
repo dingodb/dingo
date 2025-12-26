@@ -17,6 +17,7 @@
 package io.dingodb.exec.fun;
 
 import io.dingodb.expr.common.type.Type;
+import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.OpKey;
 import io.dingodb.expr.runtime.op.OpKeys;
@@ -56,5 +57,10 @@ public class ConcatFun extends VariadicOp {
     @Override
     public OpKey keyOf(@NonNull Type @NonNull ... types) {
         return OpKeys.ALL_STRING.keyOf(types);
+    }
+
+    @Override
+    public Type getType() {
+        return Types.STRING;
     }
 }
