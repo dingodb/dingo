@@ -143,6 +143,7 @@ import io.dingodb.meta.entity.InfoSchema;
 import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.partition.DingoPartitionServiceProvider;
+import io.dingodb.tool.api.QueryManager;
 import io.dingodb.verify.plugin.AlgorithmPlugin;
 import io.dingodb.verify.service.UserService;
 import io.dingodb.verify.service.UserServiceProvider;
@@ -267,7 +268,8 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         if ("dingo".equalsIgnoreCase(schemaName)) {
             throw new RuntimeException("The system built-in schema that cannot be dropped.");
         }
-        if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))) {
+        if (schemaName.equalsIgnoreCase(context.getDefaultSchemaPath().get(0))
+            || QueryManager.getDefault().useSchema(schemaName)) {
             throw new RuntimeException("Schema used.");
         }
         SubSnapshotSchema subSchema = rootSchema.getSubSchema(schemaName);

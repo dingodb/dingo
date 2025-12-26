@@ -34,4 +34,6 @@ public interface QueryManager {
 
     void initSchema(Connection connection, String schema);
 
+    boolean useSchema(String schema);
+
 }

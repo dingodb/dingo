@@ -126,7 +126,8 @@ public final class DingoParserContext implements Context {
             .schema(new RootSnapshotSchema(this))
             .name(RootSnapshotSchema.ROOT_SCHEMA_NAME)
             .build();
-        LogUtils.info(log, "init rootCalcite:{}, this:{}", rootSchema, this);
+        LogUtils.info(log, "init rootCalcite:{}, this:{}, defaultSchemaName:{}", rootSchema,
+            this, defaultSchemaName);
 
         RelProtoDataType mapType = (RelDataTypeFactory factory) -> factory.createSqlType(SqlTypeName.ANY);
         rootSchema.add("map", mapType);
@@ -276,6 +277,8 @@ public final class DingoParserContext implements Context {
 
     public synchronized void setUsedSchema(CalciteSchema schema) {
         this.usedSchema = schema;
+        LogUtils.info(log, "set Used schema:{}, origin default schema:{}",
+            schema.getName(), this.defaultSchemaName);
         this.defaultSchemaName = schema.getName();
         boolean exists = false;
         for (List<String> item : catalogReader.getSchemaPaths()) {

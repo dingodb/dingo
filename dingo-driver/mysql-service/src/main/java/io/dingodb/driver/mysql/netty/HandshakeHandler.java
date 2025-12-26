@@ -211,6 +211,8 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
                             String usedSchema = convertName(authPacket.database);
                             CalciteSchema schema = dingoConnection.getContext().getRootSchema()
                                 .getSubSchema(usedSchema, caseSensitive());
+                            LogUtils.info(log, "connection auth schema:{}, calciteSchema is null:{}",
+                                usedSchema, schema == null);
                             if (schema != null) {
                                 dingoConnection.getContext().setUsedSchema(schema);
                             }
