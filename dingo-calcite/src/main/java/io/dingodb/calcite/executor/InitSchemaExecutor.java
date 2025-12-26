@@ -16,10 +16,14 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.tool.api.QueryManager;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 
+@Slf4j
 public class InitSchemaExecutor implements DdlExecutor {
 
     private final Connection connection;
@@ -33,6 +37,11 @@ public class InitSchemaExecutor implements DdlExecutor {
 
     @Override
     public void execute() {
-        QueryManager.getDefault().initSchema(connection, schema);
+        try {
+            LogUtils.info(log, "init schema:{}, use schema:{}", schema, connection.getSchema());
+            QueryManager.getDefault().initSchema(connection, schema);
+        } catch (Exception e) {
+            LogUtils.error(log, e.getMessage(), e);
+        }
     }
 }

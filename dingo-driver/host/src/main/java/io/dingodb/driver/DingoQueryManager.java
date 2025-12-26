@@ -103,17 +103,27 @@ public class DingoQueryManager implements QueryManager {
             CalciteSchema calciteSchema = dingoConnection.getContext().getRootSchema()
                 .getSubSchema(schema, caseSensitive());
             if (calciteSchema != null) {
+                LogUtils.info(log, "connection:{}, origin schema: {}, init schema: {}",
+                    dingoConnection.id, dingoConnection.getSchema(), schema);
                 dingoConnection.getContext().setUsedSchema(calciteSchema);
-                String usedSchema;
-                if (dingoConnection.getContext().getUsedSchema() != null) {
-                    usedSchema = dingoConnection.getContext().getUsedSchema().getName();
-                } else {
-                    usedSchema = dingoConnection.getContext().getDefaultSchemaName();
-                }
-                LogUtils.info(log, "connection:{}, origin schema: {}, usedSchema:{}, init schema: {}",
-                    dingoConnection.id, dingoConnection.getSchema(), usedSchema, schema);
             }
         }
+    }
+
+    @Override
+    public boolean useSchema(String schema) {
+        return SessionUtil.INSTANCE.connectionMap.values().stream().anyMatch(
+            connection -> {
+                if (connection instanceof DingoConnection) {
+                    DingoConnection dingoConnection = (DingoConnection) connection;
+                    if (schema == null) {
+                        return false;
+                    }
+                    return schema.equals(dingoConnection.getDefaultSchemaPath().get(0));
+                }
+                return false;
+            }
+        );
     }
 
     @AutoService(io.dingodb.tool.api.QueryManagerProvider.class)

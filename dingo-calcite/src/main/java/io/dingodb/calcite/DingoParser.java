@@ -66,6 +66,7 @@ import io.dingodb.calcite.grammar.ddl.SqlSetPassword;
 import io.dingodb.calcite.grammar.ddl.SqlTruncate;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockBlock;
 import io.dingodb.calcite.grammar.ddl.SqlUnLockTable;
+import io.dingodb.calcite.grammar.ddl.SqlUseSchema;
 import io.dingodb.calcite.grammar.dml.SqlExecute;
 import io.dingodb.calcite.grammar.dml.SqlInsert;
 import io.dingodb.calcite.grammar.dml.SqlPrepare;
@@ -512,7 +513,7 @@ public class DingoParser {
                 || sqlNode instanceof SqlBackUpTsoPoint
                 || sqlNode instanceof SqlTsoToTime
                 || sqlNode instanceof SqlTenantsBackUpTimePoint
-                || sqlNode instanceof SqlInitSchema;
+                || sqlNode instanceof SqlInitSchema || sqlNode instanceof SqlUseSchema;
         }
     }
 
