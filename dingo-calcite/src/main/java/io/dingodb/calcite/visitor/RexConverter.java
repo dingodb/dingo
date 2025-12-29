@@ -148,11 +148,20 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                     call.getOperands().get(1).accept(this)
                 );
             case DIVIDE:
-                return Exprs.op(
-                    Exprs.DIV,
-                    call.getOperands().get(0).accept(this),
-                    call.getOperands().get(1).accept(this)
-                );
+                String name = call.getOperator().getName();
+                if (name.equals("/")) {
+                    return Exprs.op(
+                        Exprs.DIV,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                } else {
+                    return Exprs.op(
+                        Exprs.DIV1,
+                        call.getOperands().get(0).accept(this),
+                        call.getOperands().get(1).accept(this)
+                    );
+                }
             case LESS_THAN:
                 return Exprs.op(
                     Exprs.LT,
