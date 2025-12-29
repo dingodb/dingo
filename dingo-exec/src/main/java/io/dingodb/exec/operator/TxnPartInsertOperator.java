@@ -27,6 +27,7 @@ import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.type.converter.DataConverter;
 import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Pair;
 import io.dingodb.common.util.Utils;
@@ -105,6 +106,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         boolean isDocument = false;
         Object[] primaryOldTuple = tuple;
         Table indexTable = null;
+        Object[] indexOldTuple = null;
 
         Utils.checkAndUpdateTuples(schema, tuple);
 
@@ -134,6 +136,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         profile.typeCheck(start);
         start = System.currentTimeMillis();
         IndexTable index = null;
+        boolean unique = false;
         if (context.getIndexId() != null) {
             boolean duplicate = param.getUpdateMapping() != null && param.getUpdates() != null;
             indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
@@ -219,6 +222,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         }
                         return finalGetPrimaryTuple[i];
                     }).toArray();
+                    indexOldTuple = getPrimaryTuple;
                     if (!param.isPessimisticTxn()) {
                     }
                     PartitionService ps = PartitionService.getService(
@@ -258,7 +262,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                         byte[] oldKey = value.getKey();
                         if (oldKey[oldKey.length - 2] == Op.PUTIFABSENT.getCode()
                             || oldKey[oldKey.length - 2] == Op.PUT.getCode()) {
-                            boolean unique = index.isUnique();
+                            unique = index.isUnique();
                             if (unique) {
                                 throw new DuplicateEntryException("Duplicate entry "
                                     + TransactionUtil.duplicateEntryKey(tableId, key, txnId) + " for key 'PRIMARY'");
@@ -324,6 +328,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                 KeyValue oldKv = store.txnGet(txnId.seq, key, param.getLockTimeOut());
                                 long count = param.getTable().getColumnIndices2(indexTable.keyColumns()).stream().filter(i -> param.getUpdateMapping().findIdx(i) >= 0).count();
                                 Object[] tempTuple = param.getCodec().decode(oldKv);
+                                unique = true;
                                 if (duplicate && count == 0) {
                                     // primary table
                                     schema = param.getSchema();
@@ -333,6 +338,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                     indexTable = null;
                                     index = null;
                                     tuple = tempTuple;
+                                    context.setIndexId(null);
                                 }
                                 context.setDuplicateKey(true);
                                 if (count > 0) {
@@ -376,7 +382,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                         isVector,
                                         isDocument,
                                         index,
-                                        true);
+                                        true,
+                                        unique,
+                                        indexOldTuple);
 
                                     // primary table
                                     schema = param.getSchema();
@@ -406,7 +414,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                         isVector,
                                         isDocument,
                                         index,
-                                        false);
+                                        false,
+                                        unique,
+                                        indexOldTuple);
                                     profile.step5(start);
                                     return true;
                                 }
@@ -436,7 +446,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             isVector,
             isDocument,
             index,
-            false);
+            false,
+            unique,
+            indexOldTuple);
         profile.step5(start);
         return true;
     }
@@ -458,7 +470,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                boolean isVector,
                                boolean isDocument,
                                IndexTable index,
-                               boolean uniqueDel) {
+                               boolean uniqueDel,
+                               boolean unique,
+                               Object[] indexOldTuple) {
         if (context.isWithoutPrimary()) {
             schema.setCheckFieldCount(false);
             DingoType dingoType = codec.getDingoType();
@@ -707,7 +721,11 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     oldTuple = codec.decode(oldKv);
                 }
                 if (oldTuple == null) {
-                    oldTuple = newTuple;
+                    if (context.getIndexId() == null) {
+                        oldTuple = newTuple;
+                    } else {
+                        oldTuple = indexOldTuple;
+                    }
                 }
             }
             profile.step2(start);
@@ -834,6 +852,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 (!isVector && !isDocument)
             );
             localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
+            if (pair != null && pair.getValue() == 0) {
+                return start;
+            }
             if (localStore.put(keyValue) && context.getIndexId() == null) {
                 if (!context.isDuplicateKey()) {
                     param.inc(num);
@@ -842,7 +863,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 if (context.isDuplicateKey() && oldTuple != null) {
                     Long updateNum = Optional.mapOrGet(pair, Pair::getValue, () -> 0L);
                     if (updateNum > 0) {
-                        param.inc(2);
+                        param.inc(unique ? 1 : 2);
                     }
                 }
             }
@@ -913,7 +934,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                 }
                 int index = mapping.get(i);
                 if ((newTuple[index] == null && newValue != null)
-                    || (newTuple[index] != null && !newTuple[index].equals(newValue))) {
+                    || (newTuple[index] != null && !newTuple[index].equals(schema.getChild(index).convertFrom(newValue, DataConverter.DEFAULT)))) {
                     newTuple[index] = newValue;
                     updateNum++;
                 }
