@@ -43,6 +43,7 @@ data: {
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint"
       "io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign"
+      "io.dingodb.calcite.grammar.ddl.SqlAlterAddPrimaryKey"
       "io.dingodb.calcite.grammar.ddl.SqlAlterDropIndex"
       "io.dingodb.calcite.grammar.ddl.SqlAlterDropColumn"
       "io.dingodb.calcite.grammar.ddl.SqlAlterDropConstraint"

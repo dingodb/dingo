@@ -233,6 +233,12 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
         return outputStream.toByteArray();
     }
 
+    @SneakyThrows
+    public Object copy(Object object) {
+        byte[] bytes = getBytesFromObj(object);
+        return getObjFromBytes(bytes, object.getClass());
+    }
+
     private Object getObjFromBytes(byte[] val, Class type) {
         try {
             if (type.newInstance() instanceof Message) {

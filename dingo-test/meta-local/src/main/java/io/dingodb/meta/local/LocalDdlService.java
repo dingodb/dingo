@@ -18,7 +18,6 @@ package io.dingodb.meta.local;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.ddl.DdlJob;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.sequence.SequenceDefinition;
@@ -32,6 +31,7 @@ import io.dingodb.meta.entity.SchemaTables;
 import io.dingodb.meta.entity.Table;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -129,6 +129,11 @@ public class LocalDdlService implements DdlService {
 
     @Override
     public void refreshMeta(SchemaInfo schemaInfo, String tableName) {
+
+    }
+
+    @Override
+    public void addPrimaryKey(SchemaInfo schemaInfo, Table table, List<String> primaryKeyList) {
 
     }
 }

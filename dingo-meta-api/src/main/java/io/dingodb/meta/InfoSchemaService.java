@@ -342,4 +342,6 @@ public interface InfoSchemaService {
         return null;
     }
 
+    Object copy(Object object);
+
 }

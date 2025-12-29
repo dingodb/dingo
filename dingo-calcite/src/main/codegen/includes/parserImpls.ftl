@@ -1411,14 +1411,16 @@ SqlRollback SqlRollback(): {
 
 SqlUseSchema SqlUseSchema(): {
    Span s;
+      SqlIdentifier id;
 } {
-  <USE> <IDENTIFIER> { s = span(); return new SqlUseSchema(s.end(this), token.image); }
+  <USE> id = CompoundIdentifier() { s = span(); return new SqlUseSchema(s.end(this), id); }
 }
 
 SqlInitSchema SqlInitSchema(): {
    Span s;
+      SqlIdentifier id;
 } {
-  <INIT> <IDENTIFIER> { s = span(); return new SqlInitSchema(s.end(this), token.image); }
+  <INIT> id = CompoundIdentifier() { s = span(); return new SqlInitSchema(s.end(this), id); }
 }
 
 SqlPrepare SqlPrepare(): {

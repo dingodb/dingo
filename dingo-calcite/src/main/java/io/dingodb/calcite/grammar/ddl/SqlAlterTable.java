@@ -46,7 +46,9 @@ public class SqlAlterTable extends SqlAlter {
 
     @Override
     public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
-
+        writer.keyword("ALTER");
+        writer.keyword("TABLE");
+        writer.keyword(table.toString());
     }
 
     @Override

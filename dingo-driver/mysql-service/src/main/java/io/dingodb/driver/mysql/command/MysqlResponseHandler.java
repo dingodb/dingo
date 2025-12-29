@@ -398,6 +398,12 @@ public final class MysqlResponseHandler {
                 return new SQLException(err, "HY000", ErrRecursiveCteErr);
             }
             return e;
+        } else if (e.getErrorCode() == 1105) {
+            String reason = e.getMessage();
+            if (reason.contains("java.lang.RuntimeException:")) {
+                reason = reason.replace("java.lang.RuntimeException:", "");
+            }
+            return new SQLException(reason, e.getSQLState(), e.getErrorCode());
         } else {
             return e;
         }

@@ -35,6 +35,7 @@ import java.util.NavigableMap;
 public class LocalInfoSchemaService implements InfoSchemaService {
 
     private static final LocalInfoSchemaService ROOT = new LocalInfoSchemaService();
+
     @AutoService(InfoSchemaServiceProvider.class)
     public static class Provider implements InfoSchemaServiceProvider {
         @Override
@@ -310,6 +311,11 @@ public class LocalInfoSchemaService implements InfoSchemaService {
 
     @Override
     public List<Long> genGlobalIDs(int n) {
+        return null;
+    }
+
+    @Override
+    public Object copy(Object object) {
         return null;
     }
 }

@@ -26,6 +26,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddConstraint;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddForeign;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddPrimaryKey;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement;
 import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
@@ -210,8 +211,10 @@ import static io.dingodb.common.mysql.MysqlByteUtil.isBinary;
 import static io.dingodb.common.mysql.MysqlByteUtil.isHex;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDropPartitionNonExistent;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrDupKeyName;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyColumnDoesNotExits;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrMultiplePriKey;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
@@ -857,6 +860,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     }
 
     public void execute(@NonNull SqlAlterAddColumn sqlAlterAddColumn, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute: {}", sqlAlterAddColumn);
         final Pair<SubSnapshotSchema, String> schemaTableName
             = getSchemaAndTableName(sqlAlterAddColumn.table, context);
         final String tableName = Parameters.nonNull(schemaTableName.right, "table name");
@@ -2071,6 +2075,38 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         DdlService.root().refreshMeta(schemaInfo, tableName);
         LogUtils.info(log, "DDL execute:{} done", sqlRefreshMeta);
+    }
+
+    public void execute(SqlAlterAddPrimaryKey sqlAlterAddPrimaryKey, CalcitePrepare.Context context) {
+        LogUtils.info(log, "DDL execute:{}", sqlAlterAddPrimaryKey);
+        final Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(sqlAlterAddPrimaryKey.table, context);
+        final String tableName = schemaTableName.right;
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        if (schemaInfo == null) {
+            throw DINGO_RESOURCE.unknownSchema(schema.getSchemaName()).ex();
+        }
+        Table table = schema.getTableInfo(tableName);
+        if (table == null) {
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
+        } else {
+            boolean hasPrimaryKey = table.getColumns().stream()
+                .anyMatch(col -> col.getState() != 2 && col.getPrimaryKeyIndex() > -1);
+            if (hasPrimaryKey) {
+                throw DingoErrUtil.newStdErr(ErrMultiplePriKey);
+            }
+        }
+
+        List<String> keyList = sqlAlterAddPrimaryKey.getKeyList();
+        for (String key : keyList) {
+            if (table.getColumn(key) == null) {
+                throw DingoErrUtil.newStdErr(ErrKeyColumnDoesNotExits, key);
+            }
+        }
+
+        DdlService.root().addPrimaryKey(schemaInfo, table, keyList);
+        LogUtils.info(log, "DDL execute:{} done", sqlAlterAddPrimaryKey);
     }
 
     public void validateMultiSchemaChange(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {

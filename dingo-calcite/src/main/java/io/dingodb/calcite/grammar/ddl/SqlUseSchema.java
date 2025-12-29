@@ -17,6 +17,7 @@
 package io.dingodb.calcite.grammar.ddl;
 
 import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
@@ -38,9 +39,9 @@ public class SqlUseSchema extends SqlDdl {
      *
      * @param pos pos
      */
-    public SqlUseSchema(SqlParserPos pos, String schema) {
+    public SqlUseSchema(SqlParserPos pos, SqlIdentifier id) {
         super(OPERATOR, pos);
-        this.schema = schema;
+        this.schema = id.getSimple();
     }
 
     @Override

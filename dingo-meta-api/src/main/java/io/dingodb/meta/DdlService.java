@@ -154,4 +154,6 @@ public interface DdlService {
     }
 
     void refreshMeta(SchemaInfo schemaInfo, String tableName);
+
+    void addPrimaryKey(SchemaInfo schemaInfo, Table table, List<String> primaryKeyList);
 }
