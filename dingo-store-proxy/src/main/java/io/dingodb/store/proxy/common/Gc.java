@@ -831,7 +831,6 @@ public class Gc {
             List<Object[]> gcResults = session.executeQuery(sql);
             LogUtils.info(log, "gcDeleteRange result size: {}, safePointTs:{}",
                 gcResults.size(), startTs);
-            int gcResultSize = gcResults.size();
             AtomicInteger delDone = new AtomicInteger(0);
             gcResults.forEach(objects -> {
                 // eleType: schema table table_auto index

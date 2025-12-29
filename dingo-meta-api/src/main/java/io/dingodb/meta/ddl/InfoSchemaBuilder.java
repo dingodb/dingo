@@ -214,6 +214,8 @@ public class InfoSchemaBuilder {
                 return applyRenameTable(schemaDiff);
             case ActionRefreshMeta:
                 return applyRefreshMeta(schemaDiff);
+            case ActionAddPrimaryKey:
+                return applyAddColumn(schemaDiff);
             default:
                 break;
         }

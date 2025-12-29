@@ -114,6 +114,8 @@ SqlAlterTable alterTableOption(Span s, String scope, SqlIdentifier id): {
         |
             alterTable = foreign(s, id)
         |
+            alterTable = alterTableAddPrimaryKey(s, scope, id)
+        |
             <FULLTEXT> alterTable = addIndexByMode(s, scope, id, "fulltext")
         |
            <SPATIAL> alterTable = addIndexByMode(s, scope, id, "spetail")
@@ -725,4 +727,14 @@ SqlAlterTable alterExchange(Span s, String scope, SqlIdentifier id): {
  {
    return new SqlAlterExchangePart(s.end(this), id, pName, withTableId);
  }
+}
+
+SqlAlterTable alterTableAddPrimaryKey(Span s, String scope, SqlIdentifier id): {
+  SqlNodeList columnList = null;
+} {
+  <PRIMARY> <KEY>
+  columnList = ParenthesizedSimpleIdentifierList()
+  {
+     return new SqlAlterAddPrimaryKey(s.end(this), id, columnList);
+  }
 }

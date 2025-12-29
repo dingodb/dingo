@@ -257,4 +257,19 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
+    @Override
+    public void addPrimaryKey(SchemaInfo schemaInfo, Table table, List<String> primaryKeyList) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.getTableId().seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
+            .actionType(ActionType.ActionAddPrimaryKey)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        List<Object> args = new ArrayList<>(primaryKeyList);
+        job.setArgs(args);
+        DdlHandler.doDdlJob(job);
+    }
+
 }

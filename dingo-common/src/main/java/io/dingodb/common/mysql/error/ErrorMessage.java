@@ -64,6 +64,11 @@ public final class ErrorMessage {
         errorMap.put(ErrMixOfGroupFuncAndFields, "In aggregated query without GROUP BY, expression #%d of "
             + "SELECT list contains nonaggregated column '%s'; this is incompatible with sql_mode=only_full_group_by");
         errorMap.put(ErrWarnDataOutOfRange, "Out of range value for column '%s' at row %s");
+        errorMap.put(ErrKeyColumnDoesNotExits, "Key column '%s' do not exist in table");
+        errorMap.put(ErrMultiplePriKey, "Multiple primary key defined");
+        errorMap.put(ErrInvalidUseOfNull, "Invalid use of NULL value");
+        errorMap.put(ErrDupEntry, "Duplicate entry '%s' for key '%s.PRIMARY'");
+
     }
 
     private ErrorMessage() {

@@ -54,6 +54,7 @@ public final class BackFilling {
     public static final int typeModifyColumnWorker = 3;
     public static final int typeModifyIndexColumnWorker = 4;
     public static final int typeDelIndexWorker = 5;
+    public static final int typeAddPrimaryKeyWorker = 6;
 
     private BackFilling() {
     }
@@ -105,6 +106,8 @@ public final class BackFilling {
                     .filter(rangeDistribution -> reorgInfo.getRegionIdList().contains(rangeDistribution.getId().seq))
                     .collect(Collectors.toSet());
             }
+        } else if (bfWorkerType == typeAddPrimaryKeyWorker) {
+            filler = new AddPrimaryKeyFiller();
         } else {
             throw new RuntimeException("do not support bf work type");
         }
@@ -168,6 +171,9 @@ public final class BackFilling {
             LogUtils.error(log, "pre write second error", e);
             if (e.getMessage().contains("RegionSplit") || e.getMessage().contains("InvalidRouteTableException")) {
                 return backFillRegionSplit(bfWorkerType, reorgInfo, ps, job, filler);
+            }
+            if (e.getMessage().contains("java.lang.RuntimeException:")) {
+                return e.getMessage().replace("java.lang.RuntimeException:", "");
             }
             return e.getMessage();
         } finally {

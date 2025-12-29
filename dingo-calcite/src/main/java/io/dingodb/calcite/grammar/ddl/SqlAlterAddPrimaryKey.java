@@ -16,51 +16,36 @@
 
 package io.dingodb.calcite.grammar.ddl;
 
-import lombok.Getter;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
-import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
-public class SqlAlterAddColumn extends SqlAlterTable {
+import java.util.List;
 
-    @Getter
-    private SqlColumnDeclaration columnDeclaration;
+public class SqlAlterAddPrimaryKey extends SqlAlterTable {
 
-    @Getter
-    private SqlIdentifier afterCol;
-
-    @Getter
-    private boolean firstCol;
+    SqlNodeList sqlIdentifierList;
 
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("ALTER TABLE ADD COLUMN", SqlKind.ALTER_TABLE);
+        new SqlSpecialOperator("ALTER TABLE ADD PRIMARY KEY", SqlKind.ALTER_TABLE);
 
-    public SqlAlterAddColumn(SqlParserPos pos,
-        SqlIdentifier sqlIdentifier,
-        SqlColumnDeclaration indexDeclaration,
-        SqlIdentifier afterCol,
-        boolean firstCol
-    ) {
+    public SqlAlterAddPrimaryKey(SqlParserPos pos, SqlIdentifier sqlIdentifier, SqlNodeList sqlIdentifierList) {
         super(pos, sqlIdentifier, OPERATOR);
-        this.columnDeclaration = indexDeclaration;
-        this.afterCol = afterCol;
-        this.firstCol = firstCol;
+        this.sqlIdentifierList = sqlIdentifierList;
     }
 
     @Override
     public void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
-        super.unparseAlterOperation(writer, leftPrec, rightPrec);
-        writer.keyword("ADD COLUMN");
-        columnDeclaration.unparse(writer, leftPrec, rightPrec);
-        if (firstCol) {
-            writer.keyword("FIRST");
-        } else if (afterCol != null) {
-            writer.keyword("AFTER");
-            afterCol.unparse(writer, leftPrec, rightPrec);
-        }
+        writer.keyword("ADD PRIMARY KEY");
+        writer.keyword(sqlIdentifierList.toString());
+    }
+
+    public List<String> getKeyList() {
+        return sqlIdentifierList.stream().map(SqlNode::toString).toList();
     }
 }

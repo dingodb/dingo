@@ -51,7 +51,7 @@ public enum ActionType {
     ActionRecoverSchema(63),
     ActionAlterIndex(64),
     ActionCreateTableAsQuery(65),
-    ActionRefreshMeta(66)
+    ActionRefreshMeta(66),
     ;
 
     private final int code;

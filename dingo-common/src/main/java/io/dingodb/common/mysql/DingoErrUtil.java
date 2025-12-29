@@ -109,6 +109,21 @@ public final class DingoErrUtil {
         );
     }
 
+    public static DingoSqlException newStdErrFromStr(String error) {
+        if (error != null && error.startsWith("DingoSqlException")) {
+            String[] splits = error.split("\\|");
+            if (splits.length == 3) {
+                String state = splits[1];
+                String message = splits[2];
+                int code = Integer.parseInt(splits[0].replace("DingoSqlException:", "").trim());
+                return new DingoSqlException(code, state, message);
+            }
+        }
+        return new DingoSqlException(
+            1105, "HY000", error
+        );
+    }
+
     public static DingoErr normal() {
         return new DingoErr(
             0, null, null

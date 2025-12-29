@@ -25,6 +25,7 @@ import io.dingodb.common.ddl.ReorgInfo;
 import io.dingodb.common.ddl.ReorgType;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaInfo;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.util.Pair;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 import static io.dingodb.server.executor.ddl.BackFilling.typeAddIndexWorker;
+import static io.dingodb.server.executor.ddl.BackFilling.typeAddPrimaryKeyWorker;
 
 @Slf4j
 public final class IndexUtil {
@@ -65,6 +67,16 @@ public final class IndexUtil {
         }
         // not support;
         return null;
+    }
+
+    public Pair<Boolean, Long> doReorgWorkForAddPrimaryKey(
+        DdlContext dc,
+        DdlJob job,
+        DdlWorker worker,
+        CommonId tableId,
+        TableDefinitionWithId index
+    ) {
+        return runReorgJobAndHandleErr(dc, job, worker, tableId, index, typeAddPrimaryKeyWorker, null);
     }
 
     public Pair<Boolean, Long> runReorgJobAndHandleErr(
@@ -105,7 +117,7 @@ public final class IndexUtil {
                 if (res.getValue() != null) {
                     error = res.getValue();
                 }
-                throw new RuntimeException(error);
+                throw DingoErrUtil.newStdErrFromStr(error);
             }
             return Pair.of(true, 0L);
         } finally {
