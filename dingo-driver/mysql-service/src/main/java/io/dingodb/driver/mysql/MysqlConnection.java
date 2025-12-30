@@ -57,7 +57,7 @@ public class MysqlConnection {
     @Setter
     ChannelHandlerContext ctx;
 
-    public DingoDataStream dingoDataStream;
+    public volatile DingoDataStream dingoDataStream;
 
     @Getter
     private Connection connection;
@@ -173,11 +173,25 @@ public class MysqlConnection {
     }
 
     public void writeAndFlush(byte[] bytes) {
-        if (dingoDataStream != null) {
-            LogUtils.info(log, "chunk block size:{}", dingoDataStream.blockingQueue.size());
-            dingoDataStream.addLength(bytes.length);
-            QueueUtils.forcePut(dingoDataStream.blockingQueue, bytes);
+        long startTime = System.currentTimeMillis();
+        long maxWaitTime = 30_000L;
+        long sleepInterval = 100L;
+
+        while (dingoDataStream == null) {
+            if (System.currentTimeMillis() - startTime >= maxWaitTime) {
+                throw new RuntimeException("writeAndFlush timeout waiting for dingoDataStream initialization (30s)");
+            }
+            try {
+                LogUtils.info(log, "dingoDataStream is null, sleep 100L");
+                Thread.sleep(sleepInterval);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("writeAndFlush interrupted while waiting for dingoDataStream", e);
+            }
         }
+        LogUtils.info(log, "chunk block size:{}", dingoDataStream.blockingQueue.size());
+        dingoDataStream.addLength(bytes.length);
+        QueueUtils.forcePut(dingoDataStream.blockingQueue, bytes);
     }
 
 }
