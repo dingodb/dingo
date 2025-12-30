@@ -126,6 +126,10 @@ public class DingoTypeMapper {
             put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
         }});
         put(SqlTypeName.TINYINT, new HashMap<>() {{
+            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+            put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
+            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
             put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
             put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
         }});

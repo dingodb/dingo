@@ -305,7 +305,7 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
         } else if (SqlTypeUtil.isInt(right) && SqlTypeUtil.isBigint(left)) {
             return coerceOperandType(binding.getScope(), binding.getCall(), 1,
                 DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));
-        } else if ((SqlTypeUtil.isInt(left) || SqlTypeUtil.isBigint(left))
+        } else if ((SqlTypeUtil.isInt(left) || SqlTypeUtil.isBigint(left) || SqlTypeUtil.isTinyint(left))
             && (SqlTypeUtil.isFloat(right) || (SqlTypeUtil.isDouble(right)))) {
             RelDataType target  = DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory);
 
