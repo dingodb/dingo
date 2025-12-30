@@ -6593,7 +6593,7 @@ SqlTypeNameSpec DateTimeTypeName() :
         }
         SqlBasicTypeNameSpec typeNameSpec = new SqlBasicTypeNameSpec(typeName, precision, s.end(this));
         typeNameSpec.putAlias("aliasName", aliasBuilder.toString());
-        typeNameSpec.putAlias("fullAlias", "true"); 
+        typeNameSpec.putAlias("fullAlias", "true");
         return typeNameSpec;
     }
 |
@@ -8823,7 +8823,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PRIOR: "PRIOR" >
 |   < PRIVILEGES: "PRIVILEGES" >
 |   < PROCEDURE: "PROCEDURE" >
-|   < PUBLIC: "PUBLIC" >
 |   < PURGE_RESOURCES: "PURGE_RESOURCES" >
 |   < QUARTER: "QUARTER" >
 |   < QUARTERS: "QUARTERS" >
