@@ -227,7 +227,13 @@ public class DingoIntervalLiteral extends SqlIntervalLiteral {
                     if (valTime.getIntervalLiteral() == null) {
                         return null;
                     }
-                    return clazz.cast(DingoParserUtils.intervalToMillis(valTime));
+                    long millis;
+                    try {
+                        millis = DingoParserUtils.intervalToMillis(valTime);
+                    } catch (ArithmeticException e) {
+                        return null;
+                    }
+                    return clazz.cast(millis);
                 } else if (clazz == BigDecimal.class) {
                     Long valueAs = getValueAs(Long.class);
                     if (valueAs == null) {

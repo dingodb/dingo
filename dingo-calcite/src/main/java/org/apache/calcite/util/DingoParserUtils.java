@@ -53,6 +53,15 @@ public final class DingoParserUtils {
                                                             int sign,
                                                             BigDecimal value,
                                                             SqlIntervalQualifier intervalQualifier) {
+        if (sign > 0) {
+            if (value.compareTo(new BigDecimal(Long.MAX_VALUE / 1000)) > 0) {
+                throw new RuntimeException("Interval parameter is larger than the maximum range: 9223372036854775");
+            }
+        } else {
+            if (new BigDecimal("-" + value.toString()).compareTo(new BigDecimal(Long.MIN_VALUE / 1000)) < 0) {
+                throw new RuntimeException("Interval parameter is smaller than the minimum range: -9223372036854775");
+            }
+        }
         String s = String.valueOf(sign * Math.round(value.doubleValue()));
         return DingoSqlLiteral.createInterval(sign, s, intervalQualifier, pos);
     }
@@ -114,7 +123,7 @@ public final class DingoParserUtils {
         conv[1] = conv[2] * 60; // hour
         conv[0] = conv[1] * 24; // day
         for (int i = 1; i < ret.length; i++) {
-            l += conv[i - 1] * ret[i];
+            l += Math.multiplyExact(conv[i - 1] , ret[i]);
         }
         return ret[0] * l;
     }
