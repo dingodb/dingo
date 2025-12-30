@@ -23,7 +23,6 @@ import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.InsertProfile;
-import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -137,6 +136,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
         start = System.currentTimeMillis();
         IndexTable index = null;
         boolean unique = false;
+        byte[] indexOldDeleteKey = null;
         if (context.getIndexId() != null) {
             boolean duplicate = param.getUpdateMapping() != null && param.getUpdates() != null;
             indexTable = (Table) TransactionManager.getIndex(txnId, context.getIndexId());
@@ -274,6 +274,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                     } else {
                         if (context.isDuplicateKey()) {
                             tmpLocalStore.put(new KeyValue(deleteKey, Arrays.copyOf(oldKv.getValue(), oldKv.getValue().length)));
+                            indexOldDeleteKey = deleteKey;
                         }
                     }
                 } else {
@@ -382,7 +383,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                         isVector,
                                         isDocument,
                                         index,
-                                        true,
+                                        indexOldDeleteKey,
                                         unique,
                                         indexOldTuple);
 
@@ -414,7 +415,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                         isVector,
                                         isDocument,
                                         index,
-                                        false,
+                                        indexOldDeleteKey,
                                         unique,
                                         indexOldTuple);
                                     profile.step5(start);
@@ -446,7 +447,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             isVector,
             isDocument,
             index,
-            false,
+            indexOldDeleteKey,
             unique,
             indexOldTuple);
         profile.step5(start);
@@ -470,7 +471,7 @@ public class TxnPartInsertOperator extends PartModifyOperator {
                                boolean isVector,
                                boolean isDocument,
                                IndexTable index,
-                               boolean uniqueDel,
+                               byte[] indexOldDeleteKey,
                                boolean unique,
                                Object[] indexOldTuple) {
         if (context.isWithoutPrimary()) {
@@ -815,21 +816,12 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             start = System.currentTimeMillis();
             KeyValue insertUpKv = Optional.mapOrGet(pair, Pair::getKey, () -> null);
             if (insertUpKv != null && insertUpKv.getValue() != null) {
-                if (index != null && index.isUnique() && !uniqueDel) {
-                    keyValue.setKey(
-                        ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_CHECK_DATA, Op.CheckNotExists, insertUpKv.getKey())
-                    );
-                    localStore.put(keyValue);
-                }
-
                 keyValue.setKey(insertUpKv.getKey());
                 keyValue.setValue(insertUpKv.getValue());
             } else {
                 keyValue.setKey(insertKey);
             }
-            if (!uniqueDel) {
-                localStore.delete(deleteKey);
-            }
+            localStore.delete(deleteKey);
             profile.step4(start);
             // for optimistic transaction for update
             byte[] rollbackKey = ByteUtils.getKeyByOp(CommonId.CommonType.TXN_CACHE_DATA, Op.ROLLBACK, deleteKey);
@@ -853,6 +845,9 @@ public class TxnPartInsertOperator extends PartModifyOperator {
             );
             localStore.put(new KeyValue(extraKey, Arrays.copyOf(keyValue.getValue(), keyValue.getValue().length)));
             if (pair != null && pair.getValue() == 0) {
+                if (indexOldDeleteKey != null) {
+                    localStore.delete(indexOldDeleteKey);
+                }
                 return start;
             }
             if (localStore.put(keyValue) && context.getIndexId() == null) {
