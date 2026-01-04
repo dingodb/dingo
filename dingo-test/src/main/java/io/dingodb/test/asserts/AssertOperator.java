@@ -21,7 +21,6 @@ import io.dingodb.exec.OperatorFactory;
 import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.CalcDistributionOperator;
-import io.dingodb.exec.operator.NewCalcDistributionOperator;
 import io.dingodb.exec.operator.PartRangeScanOperator;
 import io.dingodb.exec.operator.SoleOutOperator;
 import lombok.Getter;
@@ -64,6 +63,6 @@ public final class AssertOperator extends Assert<Operator, AssertOperator> {
     }
 
     public AssertOperator isCalcDistribution() {
-        return isA(NewCalcDistributionOperator.class);
+        return isA(CalcDistributionOperator.class);
     }
 }

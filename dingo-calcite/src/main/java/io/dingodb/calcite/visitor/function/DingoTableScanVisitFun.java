@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.Objects;
 
-import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION_1;
+import static io.dingodb.exec.utils.OperatorCodeUtils.CALC_DISTRIBUTION;
 import static io.dingodb.exec.utils.OperatorCodeUtils.PART_RANGE_SCAN;
 import static io.dingodb.exec.utils.OperatorCodeUtils.TXN_PART_RANGE_SCAN;
 
@@ -103,7 +103,7 @@ public final class DingoTableScanVisitFun {
             null,
             visitor.getExecuteVariables().getConcurrencyLevel()
         );
-        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
+        Vertex calcVertex = new Vertex(CALC_DISTRIBUTION, distributionParam);
         Task task;
         if (transaction != null) {
             task = job.getOrCreate(

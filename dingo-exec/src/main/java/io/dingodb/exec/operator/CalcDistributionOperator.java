@@ -17,15 +17,12 @@
 package io.dingodb.exec.operator;
 
 import io.dingodb.common.CommonId;
-import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
-import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.RangeUtils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.params.DistributionSourceParam;
-import io.dingodb.meta.MetaService;
 import io.dingodb.partition.PartitionService;
 import io.dingodb.store.api.transaction.exception.RegionSplitException;
 import lombok.extern.slf4j.Slf4j;
@@ -82,31 +79,24 @@ public class CalcDistributionOperator extends IteratorSourceOperator {
         DistributionSourceParam param = vertex.getParam();
         PartitionService ps = param.getPs();
         NavigableSet<RangeDistribution> distributions = getRangeDistributions(param);
-        Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
-        while (retry-- > 0) {
-            try {
-                if (param.getKeyTuple() == null || distributions.size() > 1) {
-                    return distributions.stream()
-                        .map(d -> new Object[]{d, param.getKeyTuple()})
-                        .iterator();
-                } else {
-                    Object[] keyTuple = param.getKeyTuple();
-                    CommonId partId = ps.calcPartId(param.getCodec().encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple)), param.getRangeDistribution());
-                    RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
-                    return new ArrayList<>(distributions).stream()
-                        .filter(d -> d.getId().equals(distribution.getId()))
-                        .map(d -> new Object[]{d, param.getKeyTuple()})
-                        .iterator();
-                }
-            } catch (RegionSplitException e) {
-                LogUtils.error(log, e.getMessage());
-                NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
-                    MetaService.root().getRangeDistribution(param.getTd().getTableId());
-                param.setRangeDistribution(distribution);
-                distributions = getRangeDistributions(param);
+        try {
+            if (param.getKeyTuple() == null || distributions.size() > 1) {
+                return distributions.stream()
+                    .map(d -> new Object[]{d, param.getKeyTuple()})
+                    .iterator();
+            } else {
+                Object[] keyTuple = param.getKeyTuple();
+                CommonId partId = ps.calcPartId(param.getCodec().encodeKeyPrefix(keyTuple, calculatePrefixCount(keyTuple)), param.getRangeDistribution());
+                RangeDistribution distribution = RangeDistribution.builder().id(partId).build();
+                return new ArrayList<>(distributions).stream()
+                    .filter(d -> d.getId().equals(distribution.getId()))
+                    .map(d -> new Object[]{d, param.getKeyTuple()})
+                    .iterator();
             }
+        } catch (RegionSplitException e) {
+            LogUtils.error(log, e.getMessage());
+            throw e;
         }
 
-        return new ArrayList<>(distributions).stream().map(d -> new Object[]{d, param.getKeyTuple()}).iterator();
     }
 }

@@ -60,7 +60,6 @@ import static io.dingodb.calcite.rule.DingoGetByIndexRule.filterScalarIndices;
 import static io.dingodb.calcite.rule.DingoGetByIndexRule.getScalaIndices;
 import static io.dingodb.calcite.utils.VectorUtils.parseBinaryStringToByteArray;
 import static io.dingodb.calcite.visitor.function.DingoGetVectorByDistanceVisitFun.getTargetVector;
-import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
 
 @Slf4j
 @Value.Enclosing
