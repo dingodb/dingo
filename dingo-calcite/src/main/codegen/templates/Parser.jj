@@ -5483,11 +5483,12 @@ SqlNode IntervalLiteralOrExpression() :
         |
             e = CompoundIdentifier()
         )
-        intervalQualifier = IntervalQualifierStart() {
+        intervalQualifier = IntervalQualifier() {
             if (sign == -1) {
                 e = SqlStdOperatorTable.UNARY_MINUS.createCall(e.getParserPosition(), e);
             }
             intervalQualifier.putAlias("intervalAlias", intervalAlias);
+            intervalQualifier.putAlias("aliasName", intervalQualifier.getAliasName());
             return SqlStdOperatorTable.INTERVAL.createCall(s.end(this), e,
                 intervalQualifier);
         }
