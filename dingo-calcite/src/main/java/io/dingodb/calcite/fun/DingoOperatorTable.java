@@ -125,7 +125,6 @@ public class DingoOperatorTable implements SqlOperatorTable {
         funMap.put("CURDATE", SqlStdOperatorTable.CURRENT_DATE);
         funMap.put("CURTIME", SqlStdOperatorTable.CURRENT_TIME);
         funMap.put("SUBSTR", SqlStdOperatorTable.SUBSTRING);
-        funMap.put("CONCAT", SqlConcatFunction.CONCAT);
         funMap.put("IF", SqlIfFunction.IF);
 
         // number
@@ -160,7 +159,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
 
         // string
-        registerFunction(
+        registerConcatFunction(
             ConcatFun.NAME,
             ReturnTypes.VARCHAR_2000_NULLABLE,
             DingoInferTypes.VARCHAR,
@@ -536,6 +535,22 @@ public class DingoOperatorTable implements SqlOperatorTable {
         SqlFunctionCategory category
     ) {
         funMap.put(name.toUpperCase(), new DingoSqlFunction(
+            name.toUpperCase(),
+            returnTypeInference,
+            operandTypeInference,
+            operandTypeChecker,
+            category
+        ));
+    }
+
+    public void registerConcatFunction(
+        @NonNull String name,
+        @Nullable SqlReturnTypeInference returnTypeInference,
+        @Nullable SqlOperandTypeInference operandTypeInference,
+        @Nullable SqlOperandTypeChecker operandTypeChecker,
+        SqlFunctionCategory category
+    ) {
+        funMap.put(name.toUpperCase(), new DingoConcatFunction(
             name.toUpperCase(),
             returnTypeInference,
             operandTypeInference,
