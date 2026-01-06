@@ -34,106 +34,129 @@ public class DingoTypeMapper {
      * Type mapper to compatible with mysql in union and some other scenarios.
      */
     public static final Map<SqlTypeName, Map<SqlTypeName, SqlTypeName>> MYSQL_TYPE_MAP = new HashMap<>() {{
-       put(SqlTypeName.DOUBLE, new HashMap<>() {{
-           put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
-           put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-           put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
-           put(SqlTypeName.BIGINT, SqlTypeName.DOUBLE);
-           put(SqlTypeName.BOOLEAN, SqlTypeName.DOUBLE);
-           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-           put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-           put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
-           put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
-       }});
-       put(SqlTypeName.FLOAT, new HashMap<>() {{
-            put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
-            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-            put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
-           put(SqlTypeName.BIGINT, SqlTypeName.FLOAT);
-           put(SqlTypeName.BOOLEAN, SqlTypeName.FLOAT);
-           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-           put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-           put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
-           put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
-        }});
-       put(SqlTypeName.INTEGER, new HashMap<>() {{
-            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
-            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-            put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
-           put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
-           put(SqlTypeName.BOOLEAN, SqlTypeName.INTEGER);
-           put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
-           put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-        }});
-       put(SqlTypeName.BIGINT, new HashMap<>() {{
-            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
-            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-            put(SqlTypeName.INTEGER, SqlTypeName.BIGINT);
-            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
-            put(SqlTypeName.BOOLEAN, SqlTypeName.BIGINT);
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-        }});
-       put(SqlTypeName.BOOLEAN, new HashMap<>() {{
-            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
-            put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
-            put(SqlTypeName.DECIMAL, SqlTypeName.DECIMAL);
-            put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-            put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
-            put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
-            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-           put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-        }});
-       put(SqlTypeName.VARCHAR, new HashMap<>() {{
-            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
-            put(SqlTypeName.BIGINT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DECIMAL, SqlTypeName.VARCHAR);
-            put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
-            put(SqlTypeName.TINYINT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-        }});
-        put(SqlTypeName.TIME, new HashMap<>() {{
-            put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
-            put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
-            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
-            put(SqlTypeName.TIMESTAMP, SqlTypeName.TIMESTAMP);
-        }});
-        put(SqlTypeName.DATE, new HashMap<>() {{
-            put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
-            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
-            put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-            put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
-            put(SqlTypeName.TIMESTAMP, SqlTypeName.TIMESTAMP);
-            put(SqlTypeName.TINYINT, SqlTypeName.VARCHAR);
-        }});
-        put(SqlTypeName.TIMESTAMP, new HashMap<>() {{
-            put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
-            put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
-            put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
-        }});
-        put(SqlTypeName.DECIMAL, new HashMap<>() {{
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-        }});
-        put(SqlTypeName.TINYINT, new HashMap<>() {{
-            put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
-            put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
-            put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
-            put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
-            put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
-            put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
-        }});
-    }};
+                put(SqlTypeName.DOUBLE, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.BIGINT, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.FLOAT, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.INTEGER, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.BIGINT, SqlTypeName.FLOAT);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.FLOAT);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.INTEGER, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
+                        put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.INTEGER);
+                        put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.BIGINT, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.INTEGER, SqlTypeName.BIGINT);
+                        put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.BIGINT);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.BOOLEAN, new HashMap<>() {
+                    {
+                        put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+                        put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
+                        put(SqlTypeName.DECIMAL, SqlTypeName.DECIMAL);
+                        put(SqlTypeName.TIME, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIMESTAMP, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.FLOAT, SqlTypeName.FLOAT);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.VARCHAR, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.BIGINT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DECIMAL, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TINYINT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.TIME, new HashMap<>() {
+                    {
+                        put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
+                        put(SqlTypeName.TIMESTAMP, SqlTypeName.TIMESTAMP);
+                    }
+                });
+                put(SqlTypeName.DATE, new HashMap<>() {
+                    {
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.INTEGER, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
+                        put(SqlTypeName.TIMESTAMP, SqlTypeName.TIMESTAMP);
+                        put(SqlTypeName.TINYINT, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.TIMESTAMP, new HashMap<>() {
+                    {
+                        put(SqlTypeName.BOOLEAN, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.FLOAT, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.TIMESTAMP);
+                        put(SqlTypeName.TIME, SqlTypeName.TIMESTAMP);
+                    }
+                });
+                put(SqlTypeName.DECIMAL, new HashMap<>() {
+                    {
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                    }
+                });
+                put(SqlTypeName.TINYINT, new HashMap<>() {
+                    {
+                        put(SqlTypeName.FLOAT, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.DOUBLE, SqlTypeName.DOUBLE);
+                        put(SqlTypeName.INTEGER, SqlTypeName.INTEGER);
+                        put(SqlTypeName.BIGINT, SqlTypeName.BIGINT);
+                        put(SqlTypeName.VARCHAR, SqlTypeName.VARCHAR);
+                        put(SqlTypeName.DATE, SqlTypeName.VARCHAR);
+                    }
+                });
+        }
+    };
 
     /**
      * Get preferred type name.
@@ -152,18 +175,21 @@ public class DingoTypeMapper {
      * @param right right type.
      * @return  preferred type.
      */
-    public static RelDataType getLeastRestrictPreferredType(RelDataType left, RelDataType right, DingoSqlTypeFactory typeFactory) {
+    public static RelDataType getLeastRestrictPreferredType(
+        RelDataType left,
+        RelDataType right,
+        DingoSqlTypeFactory typeFactory) {
         SqlTypeName leftName = left.getSqlTypeName();
         SqlTypeName rightName = right.getSqlTypeName();
 
         SqlTypeName preferredType = getPreferredType(leftName, rightName);
-        if(preferredType == null) {
+        if (preferredType == null) {
             return left;
         }
 
         if (preferredType == leftName) {
             return left;
-        } else if(preferredType == rightName) {
+        } else if (preferredType == rightName) {
             return right;
         } else {
             return typeFactory.createSqlType(preferredType);
@@ -206,65 +232,70 @@ public class DingoTypeMapper {
                 |          bigint             |        float               |        double         |
                 ------------------------------------------------------------------------------------
      */
-    public static RelDataType getBinaryArithmeticResultType(RelDataType left, RelDataType right, RelDataTypeFactory factory) {
+    public static RelDataType getBinaryArithmeticResultType(
+        RelDataType left,
+        RelDataType right,
+        RelDataTypeFactory factory) {
         RelDataType ret = null;
 
         if (SqlTypeUtil.isFloat(left)) {
             if (SqlTypeUtil.isDouble(right)) {
                 ret = right;
-            } else if(SqlTypeUtil.isFloat(right)) {
+            } else if (SqlTypeUtil.isFloat(right)) {
                 ret = left;
-            } else if(SqlTypeUtil.isInt(right)) {
+            } else if (SqlTypeUtil.isTinyint(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isBigint(right)) {
+            } else if (SqlTypeUtil.isInt(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDecimal(right)) {
+            } else if (SqlTypeUtil.isBigint(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
-        } else if(SqlTypeUtil.isDouble(left)) {
+        } else if (SqlTypeUtil.isDouble(left)) {
             if (SqlTypeUtil.isFloat(right)) {
                 ret = left;
-            } else if(SqlTypeUtil.isDouble(right)) {
+            } else if (SqlTypeUtil.isDouble(right)) {
                 ret = left;
-            } else if(SqlTypeUtil.isInt(right)) {
+            } else if (SqlTypeUtil.isInt(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isBigint(right)) {
+            } else if (SqlTypeUtil.isBigint(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDecimal(right)) {
+            } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
-        } else if(SqlTypeUtil.isInt(left) || SqlTypeUtil.isTinyint(left)) {
+        } else if (SqlTypeUtil.isInt(left) || SqlTypeUtil.isTinyint(left)) {
             if (SqlTypeUtil.isBigint(right)) {
                 ret = right;
-            } else if(SqlTypeUtil.isFloat(right)) {
+            } else if (SqlTypeUtil.isFloat(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDouble(right)) {
+            } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDecimal(right)) {
+            } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, right.getPrecision(), right.getScale());
             }
-        } else if(SqlTypeUtil.isBigint(left)) {
-            if(SqlTypeUtil.isInt(right)) {
+        } else if (SqlTypeUtil.isBigint(left)) {
+            if (SqlTypeUtil.isInt(right)) {
                 ret = left;
-            } else if(SqlTypeUtil.isFloat(right)) {
+            } else if (SqlTypeUtil.isFloat(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDouble(right)) {
+            } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDecimal(right)) {
+            } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, right.getPrecision(), right.getScale());
             }
-        } else if(SqlTypeUtil.isCharacter(left)) {  //char or varchar.
-            if(SqlTypeUtil.isCharacter(right)) {    //char or varchar.
+        } else if (SqlTypeUtil.isCharacter(left)) {  //char or varchar.
+            if (SqlTypeUtil.isCharacter(right)) {    //char or varchar.
                 ret = SqlTypeUtil.getDouble(factory);
             }
-        } else if(SqlTypeUtil.isDecimal(left)) {
-            if(SqlTypeUtil.isFloat(right)) {
+        } else if (SqlTypeUtil.isDecimal(left)) {
+            if (SqlTypeUtil.isFloat(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isDouble(right)) {
+            } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if(SqlTypeUtil.isInt(right) || SqlTypeUtil.isTinyint(right)) {
+            } else if (SqlTypeUtil.isInt(right) || SqlTypeUtil.isTinyint(right)) {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
-            } else if(SqlTypeUtil.isBigint(right)) {
+            } else if (SqlTypeUtil.isBigint(right)) {
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
             }
         }
@@ -298,10 +329,10 @@ public class DingoTypeMapper {
      */
     public static RelDataType getAggregateResultType(SqlAggFunction func, RelDataType sourceType) {
         //common for SUM, AVG
-        if(func instanceof SqlSumAggFunction || func instanceof SqlAvgAggFunction) {
+        if (func instanceof SqlSumAggFunction || func instanceof SqlAvgAggFunction) {
             if (sourceType.getSqlTypeName() == SqlTypeName.VARCHAR) {
                 return DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.DOUBLE);
-            } else if(sourceType.getSqlTypeName() == SqlTypeName.CHAR) {
+            } else if (sourceType.getSqlTypeName() == SqlTypeName.CHAR) {
                 return DingoSqlTypeFactory.INSTANCE.createSqlType(SqlTypeName.DOUBLE);
             }
         }
