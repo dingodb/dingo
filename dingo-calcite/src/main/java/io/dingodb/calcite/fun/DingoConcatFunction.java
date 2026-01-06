@@ -17,22 +17,25 @@
 package io.dingodb.calcite.fun;
 
 import lombok.EqualsAndHashCode;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-public class DingoSqlFunction extends SqlFunction {
-    public DingoSqlFunction(
+public class DingoConcatFunction extends DingoSqlFunction {
+    public DingoConcatFunction(
         String name,
         @Nullable SqlReturnTypeInference returnTypeInference,
         @Nullable SqlOperandTypeInference operandTypeInference,
@@ -41,7 +44,6 @@ public class DingoSqlFunction extends SqlFunction {
     ) {
         super(
             name,
-            SqlKind.OTHER_FUNCTION,
             returnTypeInference,
             operandTypeInference,
             operandTypeChecker,
@@ -59,6 +61,11 @@ public class DingoSqlFunction extends SqlFunction {
         SqlOperator operator = call.getOperator();
         assert getClass().isAssignableFrom(operator.getClass());
         super.validateCall(call, validator, scope, operandScope);
+    }
+
+
+    public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
+        return opBinding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR);
     }
 
 }

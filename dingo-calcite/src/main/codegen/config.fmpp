@@ -150,7 +150,6 @@ data: {
       "io.dingodb.calcite.grammar.dml.SqlExecute"
       "io.dingodb.calcite.grammar.dml.SqlPrepare"
       "io.dingodb.calcite.grammar.SqlUserDefinedOperators"
-      "io.dingodb.calcite.fun.SqlConcatFunction"
       "io.dingodb.calcite.type.DingoSqlLiteral"
       "io.dingodb.calcite.type.DingoSqlCharStringLiteral"
       "io.dingodb.calcite.utils.DingoSqlParserUtil"
