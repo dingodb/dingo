@@ -21,6 +21,8 @@ import it.unimi.dsi.fastutil.Hash;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlSumAggFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -235,7 +237,8 @@ public class DingoTypeMapper {
     public static RelDataType getBinaryArithmeticResultType(
         RelDataType left,
         RelDataType right,
-        RelDataTypeFactory factory) {
+        RelDataTypeFactory factory,
+        SqlOperator operator) {
         RelDataType ret = null;
 
         if (SqlTypeUtil.isFloat(left)) {
@@ -264,7 +267,7 @@ public class DingoTypeMapper {
             } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
-        } else if (SqlTypeUtil.isInt(left) || SqlTypeUtil.isTinyint(left)) {
+        } else if (SqlTypeUtil.isTinyint(left)) {
             if (SqlTypeUtil.isBigint(right)) {
                 ret = right;
             } else if (SqlTypeUtil.isFloat(right)) {
@@ -272,7 +275,27 @@ public class DingoTypeMapper {
             } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if (SqlTypeUtil.isDecimal(right)) {
-                ret = factory.createSqlType(SqlTypeName.DECIMAL, right.getPrecision(), right.getScale());
+                int precision = right.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for tinyint adds scale.
+                    precision = Math.max(3, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
+            }
+        } else if (SqlTypeUtil.isInt(left)) {
+            if (SqlTypeUtil.isBigint(right)) {
+                ret = right;
+            } else if (SqlTypeUtil.isFloat(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if (SqlTypeUtil.isDouble(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if (SqlTypeUtil.isDecimal(right)) {
+                int precision = right.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for int adds scale.
+                    precision = Math.max(10, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
             }
         } else if (SqlTypeUtil.isBigint(left)) {
             if (SqlTypeUtil.isInt(right)) {
@@ -282,7 +305,12 @@ public class DingoTypeMapper {
             } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if (SqlTypeUtil.isDecimal(right)) {
-                ret = factory.createSqlType(SqlTypeName.DECIMAL, right.getPrecision(), right.getScale());
+                int precision = right.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for int adds scale.
+                    precision = Math.max(19, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
             }
         } else if (SqlTypeUtil.isCharacter(left)) {  //char or varchar.
             if (SqlTypeUtil.isCharacter(right)) {    //char or varchar.
@@ -293,10 +321,27 @@ public class DingoTypeMapper {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if (SqlTypeUtil.isDouble(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
-            } else if (SqlTypeUtil.isInt(right) || SqlTypeUtil.isTinyint(right)) {
-                ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
+            } else if (SqlTypeUtil.isTinyint(right)) {
+                int precision = left.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for tinyint adds scale.
+                    precision = Math.max(3, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
+            } else if (SqlTypeUtil.isInt(right)) {
+                int precision = left.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for int adds scale.
+                    precision = Math.max(10, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
             } else if (SqlTypeUtil.isBigint(right)) {
-                ret = factory.createSqlType(SqlTypeName.DECIMAL, left.getPrecision(), left.getScale());
+                int precision = left.getPrecision();
+                if (operator.getKind() == SqlKind.MOD) {
+                    //Max digits for bigint adds scale.
+                    precision = Math.max(19, precision);
+                }
+                ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
             }
         }
 
