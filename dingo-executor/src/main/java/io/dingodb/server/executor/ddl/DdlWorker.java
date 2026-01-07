@@ -2755,6 +2755,7 @@ public class DdlWorker {
                         col -> {
                             if (col.getName().equalsIgnoreCase(key)) {
                                 col.setIndexOfKey(indexOfKey.incrementAndGet());
+                                col.setNullable(false);
                                 keyExist.set(true);
                             }
                         }

@@ -68,6 +68,7 @@ public final class ErrorMessage {
         errorMap.put(ErrMultiplePriKey, "Multiple primary key defined");
         errorMap.put(ErrInvalidUseOfNull, "Invalid use of NULL value");
         errorMap.put(ErrDupEntry, "Duplicate entry '%s' for key '%s.PRIMARY'");
+        errorMap.put(ErrMultiplePartPriKey, "Multi-partition tables without a primary key do not support adding a primary key");
 
     }
 

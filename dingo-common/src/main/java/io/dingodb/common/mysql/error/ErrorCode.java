@@ -977,4 +977,6 @@ public class ErrorCode {
     public static int ErrInvalidDDLState = 8210;
 
     public static int ErrCancelledDDLJob = 8214;
+
+    public static int ErrMultiplePartPriKey = 8215;
 }
