@@ -300,14 +300,16 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
             if (SqlTypeUtil.isDouble(right)) {
                 return coerceOperandType(binding.getScope(), binding.getCall(), 0,
                     DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory));
-            } else if (SqlTypeUtil.isTinyint(right) || SqlTypeUtil.isInt(right) || SqlTypeUtil.isBigint(right)) {
+            } else if (SqlTypeUtil.isTinyint(right) || SqlTypeUtil.isInt(right)
+                || SqlTypeUtil.isBigint(right) || SqlTypeUtil.isDecimal(right)) {
                 RelDataType target  = DingoTypeMapper.getBinaryArithmeticResultType(left, right, factory);
 
                 if (left.getSqlTypeName() != target.getSqlTypeName()) {
                     coerced = coerceOperandType(binding.getScope(), binding.getCall(), 0, target);
                 }
                 if (right.getSqlTypeName() != target.getSqlTypeName()) {
-                    coerced = coerced || coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
+                    boolean isCoerced = coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
+                    coerced = coerced || isCoerced;
                 }
                 return coerced;
             }
@@ -325,7 +327,8 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
                 coerced = coerceOperandType(binding.getScope(), binding.getCall(), 0, target);
             }
             if (right.getSqlTypeName() != target.getSqlTypeName()) {
-                coerced = coerced || coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
+                boolean isCoerced = coerceOperandType(binding.getScope(), binding.getCall(), 1, target);
+                coerced = coerced || isCoerced;
             }
             return coerced;
         } else if ((SqlTypeUtil.isInt(right) || SqlTypeUtil.isBigint(right))
