@@ -51,7 +51,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -150,10 +149,9 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
             }
             return logicalDingoTableScan;
         } else {
-            SqlParser.Config config = SqlParser.config().withParserFactory(DingoSqlParserImpl::new);
-            SqlParser parser = SqlParser.create(dingoTable.getTable().createSql, config);
+            SqlParser parser = SqlParser.create(dingoTable.getTable().createSql, DingoParser.PARSER_CONFIG);
             try {
-                SqlNode sqlNode = parser.parseStmt();
+                SqlNode sqlNode = parser.parseQuery();
                 String viewSchema = dingoTable.getTable().getProperties().getProperty("envSchema");
 
                 DingoParserContext dingoParserContext;
@@ -168,7 +166,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
 
                 if (dingoSqlValidator.isHybridSearch()) {
                     SqlNode originalSqlNode;
-                    parser = SqlParser.create(dingoTable.getTable().createSql, config);
+                    parser = SqlParser.create(dingoTable.getTable().createSql, DingoParser.PARSER_CONFIG);
                     originalSqlNode = parser.parseQuery();
                     //syntacticSugar(originalSqlNode);
                     if (dingoSqlValidator.getHybridSearchMap().size() == 1) {
@@ -186,7 +184,7 @@ public class DingoTable extends AbstractTable implements TranslatableTable {
                             SqlBasicCall key = entry.getKey();
                             String value = entry.getValue();
                             SqlNode hybridSqlNode;
-                            parser = SqlParser.create(value, config);
+                            parser = SqlParser.create(value, DingoParser.PARSER_CONFIG);
                             hybridSqlNode = parser.parseQuery();
                             //syntacticSugar(hybridSqlNode);
                             sqlNodeHashMap.put(key, hybridSqlNode);

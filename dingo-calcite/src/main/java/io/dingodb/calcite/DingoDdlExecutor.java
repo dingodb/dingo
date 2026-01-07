@@ -214,6 +214,7 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrDupKeyName;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyColumnDoesNotExits;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrKeyDoesNotExist;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrModifyColumnNotTran;
+import static io.dingodb.common.mysql.error.ErrorCode.ErrMultiplePartPriKey;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrMultiplePriKey;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
@@ -2095,6 +2096,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 .anyMatch(col -> col.getState() != 2 && col.getPrimaryKeyIndex() > -1);
             if (hasPrimaryKey) {
                 throw DingoErrUtil.newStdErr(ErrMultiplePriKey);
+            }
+            if (table.getPartitions().size() > 1) {
+                throw DingoErrUtil.newStdErr(ErrMultiplePartPriKey);
             }
         }
 

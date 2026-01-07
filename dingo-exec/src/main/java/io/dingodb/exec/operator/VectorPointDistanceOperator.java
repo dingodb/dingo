@@ -58,13 +58,13 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
 
     @Override
     public void fin(int pin, @Nullable Fin fin, Vertex vertex) {
-        synchronized (vertex) {
+        VectorPointDistanceParam param = vertex.getParam();
+        synchronized (param) {
             Edge edge = vertex.getSoleEdge();
             if (fin instanceof FinWithException) {
                 edge.fin(fin);
                 return;
             }
-            VectorPointDistanceParam param = vertex.getParam();
             OperatorProfile profile = param.getProfile("vectorPointDistance");
             long start = System.currentTimeMillis();
             TupleMapping selection = param.getSelection();
