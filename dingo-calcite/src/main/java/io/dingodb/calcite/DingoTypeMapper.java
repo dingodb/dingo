@@ -254,6 +254,8 @@ public class DingoTypeMapper {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if (SqlTypeUtil.isDecimal(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
+            } else if (SqlTypeUtil.isCharacter(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isDouble(left)) {
             if (SqlTypeUtil.isFloat(right)) {
@@ -265,6 +267,8 @@ public class DingoTypeMapper {
             } else if (SqlTypeUtil.isBigint(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             } else if (SqlTypeUtil.isDecimal(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
+            } else if (SqlTypeUtil.isCharacter(right)) {
                 ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isTinyint(left)) {
@@ -281,6 +285,8 @@ public class DingoTypeMapper {
                     precision = Math.max(3, precision);
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
+            } else if (SqlTypeUtil.isCharacter(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isInt(left)) {
             if (SqlTypeUtil.isBigint(right)) {
@@ -296,6 +302,8 @@ public class DingoTypeMapper {
                     precision = Math.max(10, precision);
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
+            } else if (SqlTypeUtil.isCharacter(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isBigint(left)) {
             if (SqlTypeUtil.isInt(right)) {
@@ -311,9 +319,19 @@ public class DingoTypeMapper {
                     precision = Math.max(19, precision);
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
+            } else if (SqlTypeUtil.isCharacter(right)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isCharacter(left)) {  //char or varchar.
-            if (SqlTypeUtil.isCharacter(right)) {    //char or varchar.
+            if (SqlTypeUtil.isCharacter(right) || SqlTypeUtil.isTinyint(right) || SqlTypeUtil.isInt(right)
+                || SqlTypeUtil.isBigint(right) || SqlTypeUtil.isDecimal(right) || SqlTypeUtil.isFloat(right)
+                || SqlTypeUtil.isDouble(right)) {    //char or varchar.
+                ret = SqlTypeUtil.getDouble(factory);
+            }
+        } else if (SqlTypeUtil.isCharacter(right)) {
+            if (SqlTypeUtil.isCharacter(left) || SqlTypeUtil.isTinyint(left) || SqlTypeUtil.isInt(left)
+                || SqlTypeUtil.isBigint(left) || SqlTypeUtil.isDecimal(left) || SqlTypeUtil.isFloat(left)
+                || SqlTypeUtil.isDouble(left)) {    //char or varchar.
                 ret = SqlTypeUtil.getDouble(factory);
             }
         } else if (SqlTypeUtil.isDecimal(left)) {
@@ -342,6 +360,8 @@ public class DingoTypeMapper {
                     precision = Math.max(19, precision);
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
+            } else if (SqlTypeUtil.isCharacter(left)) {
+                ret = SqlTypeUtil.getDouble(factory);
             }
         }
 
