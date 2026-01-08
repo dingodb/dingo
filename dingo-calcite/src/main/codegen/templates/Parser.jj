@@ -6836,6 +6836,17 @@ SqlNode BuiltinFunctionCall() :
             return sqlNode;
         }
     |
+        <RIGHT> { s = span(); alias = this.token.image; }
+        <LPAREN>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <COMMA>
+        AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
+        <RPAREN> {
+            SqlNode sqlNode = SqlLibraryOperators.RIGHT.createCall(s.end(this), args);
+            sqlNode.putAlias("aliasName", alias);
+            return sqlNode;
+        }
+    |
         <TRIM> {
             alias = this.token.image;
             SqlLiteral flag = null;
