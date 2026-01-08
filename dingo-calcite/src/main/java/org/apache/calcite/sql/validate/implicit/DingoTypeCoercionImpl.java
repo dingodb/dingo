@@ -347,7 +347,7 @@ public class DingoTypeCoercionImpl extends TypeCoercionImpl {
                 coerced = coerced || coerced1;
             }
             return coerced;
-        } else if (SqlTypeUtil.isCharacter(left) && SqlTypeUtil.isCharacter(right)) {
+        } else if (SqlTypeUtil.isCharacter(left) || SqlTypeUtil.isCharacter(right)) {
             RelDataType target  = DingoTypeMapper.getBinaryArithmeticResultType(
                 left, right, factory,binding.getOperator());
 
