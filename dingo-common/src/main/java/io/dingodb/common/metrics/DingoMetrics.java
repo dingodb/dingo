@@ -45,7 +45,7 @@ public final class DingoMetrics {
     private static final LoggerReporter slf4jReporter = LoggerReporter.forRegistry(metricRegistry).build();
     public static JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
 
-    public static Map<String, List<Long>> sqlCallLatencyMap = new ConcurrentHashMap<>();
+    public static Map<String, List<Double>> sqlCallLatencyMap = new ConcurrentHashMap<>();
 
     static {
         jmxReporter.start();
@@ -115,11 +115,11 @@ public final class DingoMetrics {
         metricRegistry.register("select-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
             @Override
             protected Double loadValue() {
-                List<Long> durationList = sqlCallLatencyMap.get("select");
+                List<Double> durationList = sqlCallLatencyMap.get("select");
                 if (durationList == null) {
                     return 0D;
                 }
-                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                double avg = durationList.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 sqlCallLatencyMap.remove("select");
                 return avg;
             }
@@ -127,11 +127,11 @@ public final class DingoMetrics {
         metricRegistry.register("delete-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
             @Override
             protected Double loadValue() {
-                List<Long> durationList = sqlCallLatencyMap.get("delete");
+                List<Double> durationList = sqlCallLatencyMap.get("delete");
                 if (durationList == null) {
                     return 0D;
                 }
-                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                double avg = durationList.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 sqlCallLatencyMap.remove("delete");
                 return avg;
             }
@@ -139,11 +139,11 @@ public final class DingoMetrics {
         metricRegistry.register("update-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
             @Override
             protected Double loadValue() {
-                List<Long> durationList = sqlCallLatencyMap.get("update");
+                List<Double> durationList = sqlCallLatencyMap.get("update");
                 if (durationList == null) {
                     return 0D;
                 }
-                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                double avg = durationList.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 sqlCallLatencyMap.remove("update");
                 return avg;
             }
@@ -151,11 +151,11 @@ public final class DingoMetrics {
         metricRegistry.register("insert-latency", new CachedGauge<Double>(5, TimeUnit.MINUTES) {
             @Override
             protected Double loadValue() {
-                List<Long> durationList = sqlCallLatencyMap.get("insert");
+                List<Double> durationList = sqlCallLatencyMap.get("insert");
                 if (durationList == null) {
                     return 0D;
                 }
-                double avg = durationList.stream().mapToInt(Long::intValue).average().orElse(0);
+                double avg = durationList.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 sqlCallLatencyMap.remove("insert");
                 return avg;
             }
@@ -184,12 +184,18 @@ public final class DingoMetrics {
 
     public static void latency(final @NonNull String name, final long durationMs) {
         sqlCallLatencyMap.computeIfAbsent(name, key -> {
-            List<Long> durationList = new ArrayList<>();
-            durationList.add(durationMs);
+            List<Double> durationList = new ArrayList<>();
+            durationList.add(Double.valueOf(durationMs));
             return durationList;
         });
         sqlCallLatencyMap.computeIfPresent(name, (k, v) -> {
-            v.add(durationMs);
+            v.add(Double.valueOf(durationMs));
+            if(v.size() > 10000) {
+                double avg = v.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+                List<Double> newDurationList = new ArrayList<>();
+                newDurationList.add(avg);
+                return newDurationList;
+            }
             return v;
         });
         metricRegistry.timer(name).update(durationMs, TimeUnit.MILLISECONDS);
