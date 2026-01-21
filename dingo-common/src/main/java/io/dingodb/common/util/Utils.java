@@ -324,5 +324,32 @@ public final class Utils {
         return result.toString();
     }
 
+    public static String getTupleSimple(Object[] tuples) {
+        if (tuples == null) {
+            return "";
+        }
+        StringBuilder tuplesStr = new StringBuilder();
+        for (Object object : tuples) {
+            tuplesStr.append(object).append("|");
+        }
+        tuplesStr.deleteCharAt(tuplesStr.length() - 1);
+        return tuplesStr.toString();
+    }
+
+    public static Object getBitVal(Object defaultVal) {
+        if (defaultVal == null) {
+            return null;
+        }
+        String valStr = defaultVal.toString();
+        if ((valStr.startsWith("x'") || valStr.startsWith("X'")) && valStr.endsWith("'")) {
+            try {
+                return Long.parseLong(valStr.substring(2, valStr.length() - 1), 16);
+            } catch (Exception e) {
+                return defaultVal;
+            }
+        }
+        return defaultVal;
+    }
+
     public static final int INTEGER_LEN_IN_BYTES = 4;
 }

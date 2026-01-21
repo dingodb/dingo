@@ -144,6 +144,7 @@ public class DdlJob {
             || actionType == ActionType.ActionRenameIndex
             || actionType == ActionType.ActionDropTablePartition
             || actionType == ActionType.ActionCreateTableAsQuery
+            || actionType == ActionType.ActionAddPrimaryKey
         ) {
             return true;
         }

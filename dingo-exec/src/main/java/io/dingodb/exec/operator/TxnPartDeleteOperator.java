@@ -23,6 +23,8 @@ import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.store.KeyValue;
+import io.dingodb.common.type.scalar.BitType;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.Services;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -87,6 +89,9 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                         .findFirst().orElse(null);
                     if (addColumn != null) {
                         defaultVal = addColumn.getDefaultVal();
+                        if (addColumn.getType() instanceof BitType) {
+                            defaultVal = Utils.getBitVal(defaultVal);
+                        }
                     }
                 }
                 Object[] finalTuple = tuple;
@@ -99,6 +104,9 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                 }).toArray();
             }
             IndexTable index = (IndexTable) TransactionManager.getIndex(txnId, tableId);
+            if (index == null) {
+                return false;
+            }
             if (index.indexType.isVector) {
                 isVector = true;
             }
@@ -138,7 +146,7 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             bytes.add(insertKey);
             bytes.add(updateKey);
             List<KeyValue> keyValues = localStore.get(bytes);
-            if (keyValues != null && keyValues.size() > 0) {
+            if (keyValues != null && !keyValues.isEmpty()) {
                 if (keyValues.size() > 1) {
                     throw new RuntimeException(txnId + " PrimaryKey is not existed than two in local store");
                 }
@@ -234,6 +242,10 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
             }
         } else {
             KeyValue kv = wrap(codec::encode).apply(tuple);
+            if (kv == null) {
+                LogUtils.error(log, "indexId is null:{}, codec type:{}, tuples:{}",
+                    context.getIndexId() != null, codec.getDingoType(), Utils.getTupleSimple(tuple));
+            }
             CodecService.getDefault().setId(keys, partId.domain);
             byte[] resultKeys = ByteUtils.encode(
                 CommonId.CommonType.TXN_CACHE_DATA,

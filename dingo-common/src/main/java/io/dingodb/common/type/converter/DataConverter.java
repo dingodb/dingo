@@ -187,12 +187,12 @@ public interface DataConverter {
     default Long convertBitFrom(@NonNull Object value) {
         String className = value.getClass().getName();
         long val = 0;
-        if(value instanceof org.apache.calcite.avatica.util.ByteString) {
+        if (value instanceof org.apache.calcite.avatica.util.ByteString) {
             byte[] bytes = ((ByteString) value).getBytes();
 
             int i = 0;
             for (; i < bytes.length; i++) {
-                if(bytes[i] != 0x0) {
+                if (bytes[i] != 0x0) {
                     break;
                 }
             }
@@ -201,10 +201,20 @@ public interface DataConverter {
             System.arraycopy(bytes, i, newBytes, 8 - (bytes.length - i), bytes.length - i);
             ByteBuffer buffer = ByteBuffer.wrap(newBytes);
             val = buffer.getLong();
-        } else if( value instanceof Long) {
+        } else if (value instanceof Long) {
             val = (Long) value;
-        } else if( value instanceof BigDecimal) {
+        } else if (value instanceof BigDecimal) {
             val = ((BigDecimal)(value)).longValue();
+        } else if (value instanceof String) {
+            String valStr = value.toString();
+            try {
+                if ((valStr.startsWith("x'") || valStr.startsWith("X'")) && valStr.endsWith("'")) {
+                    return Long.parseLong(valStr.substring(2, valStr.length() - 1), 16);
+                }
+                throw new IllegalArgumentException("Unsupported value type for bit: " + value.getClass().getName());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Unsupported value type for bit: " + value.getClass().getName());
+            }
         } else {
             throw new IllegalArgumentException("Unsupported value type for bit: " + value.getClass().getName());
         }
