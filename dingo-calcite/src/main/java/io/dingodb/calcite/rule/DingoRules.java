@@ -225,8 +225,8 @@ public final class DingoRules {
         CoreRules.FILTER_AGGREGATE_TRANSPOSE,
         CoreRules.PROJECT_WINDOW_TRANSPOSE,
         CoreRules.MATCH,
-        JoinPushThroughJoinRule.RIGHT,
-        JoinPushThroughJoinRule.LEFT,
+        //JoinPushThroughJoinRule.RIGHT,
+        //JoinPushThroughJoinRule.LEFT,
         CoreRules.EXCHANGE_REMOVE_CONSTANT_KEYS,
         CoreRules.SORT_EXCHANGE_REMOVE_CONSTANT_KEYS);
 
