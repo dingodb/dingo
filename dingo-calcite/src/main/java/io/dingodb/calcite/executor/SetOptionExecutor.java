@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.executor;
 
+import io.dingodb.calcite.grammar.ddl.SqlSetCharsetCollation;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.scope.ScopeVariables;
@@ -27,6 +28,7 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlSetOption;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
@@ -42,10 +44,12 @@ public class SetOptionExecutor implements DdlExecutor {
     public static final String CONNECTION_CHARSET = "character_set_connection";
     private static final String CLIENT_CHARSET = "character_set_client";
     public static final String RESULTS_CHARSET = "character_set_results";
+    public static final String COLLATION_CONNECTION = "collation_connection";
 
     public Connection connection;
 
     private String scope;
+    SqlSetOption sqlSetOption;
 
     private String name;
 
@@ -53,6 +57,7 @@ public class SetOptionExecutor implements DdlExecutor {
 
     public SetOptionExecutor(Connection connection, SqlSetOption setOption) {
         this.connection = connection;
+        this.sqlSetOption = setOption;
         this.scope = setOption.getScope() == null ? "GLOBAL" : setOption.getScope().toUpperCase();
         SqlIdentifier sqlIdentifier = setOption.getName();
         if (sqlIdentifier.names.size() == 1) {
@@ -84,9 +89,7 @@ public class SetOptionExecutor implements DdlExecutor {
                 value = val.toString();
             }
         }
-        if (value.startsWith("'") && value.endsWith("'")) {
-            value = value.substring(1, value.length() - 1);
-        }
+        value = SqlParserUtil.trim(value, "'");
     }
 
     @Override
@@ -139,6 +142,15 @@ public class SetOptionExecutor implements DdlExecutor {
                 connection.setClientInfo(RESULTS_CHARSET, value);
             } catch (SQLClientInfoException e) {
                 throw new RuntimeException(e);
+            }
+            if (sqlSetOption instanceof SqlSetCharsetCollation) {
+                SqlSetCharsetCollation sqlSetCharsetCollation = (SqlSetCharsetCollation) sqlSetOption;
+                String collation = sqlSetCharsetCollation.collation;
+                try {
+                    connection.setClientInfo(COLLATION_CONNECTION, collation);
+                } catch (SQLClientInfoException e) {
+                    throw new RuntimeException(e);
+                }
             }
             return true;
         }

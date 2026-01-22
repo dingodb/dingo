@@ -17,6 +17,7 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.calcite.DingoParserContext;
+import io.dingodb.calcite.grammar.ddl.DingoSqlSetOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
@@ -292,6 +293,9 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlUseSchema) {
             SqlUseSchema sqlUseSchema = (SqlUseSchema) sqlNode;
             return Optional.of(new InitSchemaExecutor(connection, sqlUseSchema.schema));
+        } else if (sqlNode instanceof DingoSqlSetOptions) {
+            DingoSqlSetOptions dingoSqlSetOptions = (DingoSqlSetOptions) sqlNode;
+            return Optional.of(new SetOptionsExecutor(connection, dingoSqlSetOptions.sqlSetOptionList));
         } else {
             return Optional.empty();
         }

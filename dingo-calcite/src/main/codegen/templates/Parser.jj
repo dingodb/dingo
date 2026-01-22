@@ -4575,7 +4575,7 @@ SqlCall SequenceExpression() :
  * Parses "SET &lt;NAME&gt; = VALUE" or "RESET &lt;NAME&gt;", without a leading
  * "ALTER &lt;SCOPE&gt;".
  */
-SqlSetOption SqlSetOption(Span s, String scope) :
+SqlAlter SqlSetOption(Span s, String scope) :
 {
     SqlIdentifier name = null;
     SqlIdentifier identifier = null;
@@ -4583,6 +4583,8 @@ SqlSetOption SqlSetOption(Span s, String scope) :
     String user = null;
     String host = "%";
     String password = null;
+    boolean extend = false;
+    List<SqlSetOption> sqlSetOptionList = new ArrayList<>();
 }
 {
     (
@@ -4618,16 +4620,49 @@ SqlSetOption SqlSetOption(Span s, String scope) :
         name = CompoundIdentifier()
         (
          <UTF8> {
+            extend = false;
+            scope = (scope == null) ? "session" : scope;
             val = new SqlIdentifier("utf8", s.end(this));
-            return new SqlSetOption(s.end(this), scope, name, val);
-         }
+         } [<COLLATE> <QUOTED_STRING> {
+              extend = true;
+              String collation = SqlParserUtil.trim(token.image, "'");
+              sqlSetOptionList.add(new SqlSetCharsetCollation(s.end(this), scope, name, val, collation));
+           }]
+           {
+              if (!extend) {
+                  sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val)); 
+              }
+           }
         |
          <IDENTIFIER>  {
+            extend = false;
+            scope = (scope == null) ? "session" : scope;
             val = new SqlIdentifier(token.image, s.end(this));
-            return new SqlSetOption(s.end(this), scope, name, val);
-         }
+         } [<COLLATE> <QUOTED_STRING> {
+              extend = true;
+              String collation = SqlParserUtil.trim(token.image, "'");
+              sqlSetOptionList.add(new SqlSetCharsetCollation(s.end(this), scope, name, val, collation));
+           }]
+           {
+             if (!extend) {
+                sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
+             }
+           }
         |
-          <QUOTED_STRING> <COLLATE> <QUOTED_STRING>
+          <QUOTED_STRING> {
+            extend = false;
+            scope = (scope == null) ? "session" : scope;
+            val = new SqlIdentifier(SqlParserUtil.trim(token.image, "'"), s.end(this));
+          } [<COLLATE> <QUOTED_STRING> {
+              extend = true;
+              String collation = SqlParserUtil.trim(token.image, "'");
+              sqlSetOptionList.add(new SqlSetCharsetCollation(s.end(this), scope, name, val, collation));
+           }]
+           {
+             if (!extend) {
+                 sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
+             }
+           }
         |
          <ISOLATION> <LEVEL>
           (
@@ -4644,8 +4679,9 @@ SqlSetOption SqlSetOption(Span s, String scope) :
             if (val == null) {
                val = new SqlIdentifier(token.image, s.end(this));
             }
+            scope = (scope == null) ? "session" : scope;
             name = new SqlIdentifier("transaction_isolation", name.getParserPosition());
-            return new SqlSetOption(s.end(this), scope, name, val);
+            sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
          }
         |
           <READ> {
@@ -4653,11 +4689,15 @@ SqlSetOption SqlSetOption(Span s, String scope) :
              if (val == null) {
                val = new SqlIdentifier("on", s.end(this));
              }
+             scope = (scope == null) ? "session" : scope;
+             sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
            }
         |
           <WRITE> {
              name = new SqlIdentifier("transaction_read_only", name.getParserPosition());
              val = new SqlIdentifier("off", s.end(this));
+             scope = (scope == null) ? "session" : scope;
+             sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
            }
         |
         <EQ>
@@ -4688,15 +4728,17 @@ SqlSetOption SqlSetOption(Span s, String scope) :
              val = new SqlIdentifier(token.image.toUpperCase(Locale.ROOT), getPos());
            }
         )
+        { scope = (scope == null) ? "session" : scope;  sqlSetOptionList.add(new SqlSetOption(s.end(val), scope, name, val)); }
         [ <COMMA> ]
         )
         )*
         )
         {
-            if (scope == null) {
-               scope = "session";
+            if (sqlSetOptionList.size() == 1) {
+                return sqlSetOptionList.get(0);
+            } else {
+                return new DingoSqlSetOptions(s.end(val), scope, sqlSetOptionList);
             }
-            return new SqlSetOption(s.end(val), scope, name, val);
         }
     |
         <RESET> {

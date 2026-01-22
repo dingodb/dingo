@@ -23,6 +23,7 @@ import com.ibm.icu.impl.locale.XCldrStub;
 import io.dingodb.calcite.executor.Executor;
 import io.dingodb.calcite.executor.SqlToExecutorConverter;
 import io.dingodb.calcite.grammar.ddl.DingoSqlCreateTable;
+import io.dingodb.calcite.grammar.ddl.DingoSqlSetOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
@@ -513,7 +514,9 @@ public class DingoParser {
                 || sqlNode instanceof SqlBackUpTsoPoint
                 || sqlNode instanceof SqlTsoToTime
                 || sqlNode instanceof SqlTenantsBackUpTimePoint
-                || sqlNode instanceof SqlInitSchema || sqlNode instanceof SqlUseSchema;
+                || sqlNode instanceof SqlInitSchema
+                || sqlNode instanceof SqlUseSchema
+                || sqlNode instanceof DingoSqlSetOptions;
         }
     }
 
