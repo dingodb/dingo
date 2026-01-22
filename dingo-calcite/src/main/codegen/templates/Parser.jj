@@ -4611,11 +4611,13 @@ SqlAlter SqlSetOption(Span s, String scope) :
          |
          LOOKAHEAD(2)<SESSION> { scope = "SESSION"; }
          |
+         LOOKAHEAD(2)<DOT>
+         |
          <EXECUTOR> { scope = "EXECUTOR"; }
          |
          <AT_SPLIT> { scope = "USER"; }
          |
-         <AT_SPLIT_2> { scope = "GLOBAL"; }
+         <AT_SPLIT_2> { scope = "SESSION"; }
          |
         name = CompoundIdentifier()
         (
@@ -4630,7 +4632,7 @@ SqlAlter SqlSetOption(Span s, String scope) :
            }]
            {
               if (!extend) {
-                  sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val)); 
+                  sqlSetOptionList.add(new SqlSetOption(s.end(this), scope, name, val));
               }
            }
         |
