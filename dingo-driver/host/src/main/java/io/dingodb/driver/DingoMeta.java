@@ -572,7 +572,7 @@ public class DingoMeta extends MetaImpl {
         final long startTime = System.currentTimeMillis();
         AvaticaStatement statement = ((DingoConnection) connection).getStatement(sh);
         SqlProfile sqlProfile = null;
-        boolean hasNext = false;
+        boolean done = false;
         try {
             DingoResultSet resultSet = (DingoResultSet) statement.getResultSet();
             if (resultSet == null) {
@@ -589,7 +589,6 @@ public class DingoMeta extends MetaImpl {
             Iterator<Object[]> iterator = resultSet.getIterator();
             ITransaction transaction = ((DingoConnection) connection).getTransaction();
             final List rows = new ArrayList(fetchMaxRowCount);
-            boolean done;
             try {
                 if (iterator == null) {
                     iterator = createIterator(statement);
@@ -610,12 +609,12 @@ public class DingoMeta extends MetaImpl {
                     GregorianCalendar calendarCST = new GregorianCalendar();
                     calendarCST.setTimeZone(DingoTimeZoneContext.getTimeZone());
                     AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
-                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                         rows.add(dingoType.convertTo(iterator.next(), converter));
                     }
                     sqlProfile = getProfile(iterator, statement);
                 } else {
-                    for (int i = 0; i < fetchMaxRowCount && (hasNext = iterator.hasNext()); ++i) {
+                    for (int i = 0; i < fetchMaxRowCount && iterator.hasNext(); ++i) {
                         iterator.next();
                     }
                     sqlProfile = getProfile(iterator, statement);
@@ -723,7 +722,7 @@ public class DingoMeta extends MetaImpl {
                 throw ExceptionUtils.toRuntime(e);
             }
             done = fetchMaxRowCount == 0 || !iterator.hasNext();
-            if (transaction != null && !hasNext) {
+            if (transaction != null && done) {
                 if (StringUtil.isEmpty(((DingoConnection) connection).getContext().getOption("sql_log"))) {
                     String tmpSql = signature.sql;
                     if (signature.sql != null && signature.sql.length() > 1200) {
@@ -778,7 +777,7 @@ public class DingoMeta extends MetaImpl {
             throw ExceptionUtils.toRuntime(e);
         } finally {
             DingoConnection connection1 = (DingoConnection) connection;
-            if (!hasNext) {
+            if (done) {
                 connection1.setCommandStartTime(0);
                 addSqlProfile(sqlProfile, connection);
             }
