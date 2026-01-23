@@ -37,7 +37,6 @@ import io.dingodb.tool.api.WindowService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.adapter.enumerable.AggImpState;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
-import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysType;
@@ -126,9 +125,11 @@ public final class DingoWindowVisitFun {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(visitor);
 
         WindowService windowService = generateCode(rel);
+        List<Vertex> coalesceInputs = DingoCoalesce.coalesce(idGenerator, inputs);
+
         WindowFunctionParam windowFunctionParam = new WindowFunctionParam(windowService);
         Vertex vertex = new Vertex(WINDOW_FUNCTION, windowFunctionParam);
-        Vertex input = sole(inputs);
+        Vertex input = sole(coalesceInputs);
         Task task = input.getTask();
         vertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(vertex);
