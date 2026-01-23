@@ -981,11 +981,15 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         DingoCatalogReader catalogReader = new DingoCatalogReader(context.getRootSchema(),
             schemaPaths, DingoSqlTypeFactory.INSTANCE, config);
         DingoSqlValidator sqlValidator = new DingoSqlValidator(catalogReader, DingoSqlTypeFactory.INSTANCE);
-        SqlNode sqlNode = sqlValidator.validate(query);
-        CalciteSchema rootSchema = context.getRootSchema();
-        if (rootSchema instanceof RootCalciteSchema) {
-            RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) rootSchema;
-            rootCalciteSchema.cleanMdl();
+        SqlNode sqlNode;
+        try {
+            sqlNode = sqlValidator.validate(query);
+        } finally {
+            CalciteSchema rootSchema = context.getRootSchema();
+            if (rootSchema instanceof RootCalciteSchema) {
+                RootCalciteSchema rootCalciteSchema = (RootCalciteSchema) rootSchema;
+                rootCalciteSchema.cleanMdl();
+            }
         }
         RelDataType type = sqlValidator.getValidatedNodeType(sqlNode);
 

@@ -28,6 +28,7 @@ import io.dingodb.calcite.grammar.ddl.SqlAdminResetAutoInc;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAddIndex;
+import io.dingodb.calcite.grammar.ddl.SqlAlterAddPrimaryKey;
 import io.dingodb.calcite.grammar.ddl.SqlAlterAutoIncrement;
 import io.dingodb.calcite.grammar.ddl.SqlAlterChangeColumn;
 import io.dingodb.calcite.grammar.ddl.SqlAlterColumn;
@@ -593,7 +594,8 @@ public class DingoParser {
             || sqlNode instanceof SqlAlterIndex
             || sqlNode instanceof SqlCreateSequence
             || sqlNode instanceof SqlDropSequence
-            || sqlNode instanceof SqlAlterTableAddPart;
+            || sqlNode instanceof SqlAlterTableAddPart
+            || sqlNode instanceof SqlAlterAddPrimaryKey;
     }
 
     public long getGcLifeTime() {
