@@ -36,6 +36,7 @@ import io.dingodb.common.type.scalar.LongType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.common.util.Utils;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
 import lombok.Builder;
@@ -194,6 +195,8 @@ public class Column {
                 mapVal.put(list.get(j), list.get(j + 1));
             }
             return mapVal;
+        } else if (type instanceof BitType) {
+            return Utils.getBitVal(defaultValueExpr);
         }
         return defaultValueExpr;
     }

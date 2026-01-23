@@ -89,9 +89,6 @@ public class TxnPartDeleteOperator extends PartModifyOperator {
                         .findFirst().orElse(null);
                     if (addColumn != null) {
                         defaultVal = addColumn.getDefaultVal();
-                        if (addColumn.getType() instanceof BitType) {
-                            defaultVal = Utils.getBitVal(defaultVal);
-                        }
                     }
                 }
                 Object[] finalTuple = tuple;
