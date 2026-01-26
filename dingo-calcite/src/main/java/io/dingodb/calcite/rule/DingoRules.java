@@ -273,7 +273,7 @@ public final class DingoRules {
         CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
         CoreRules.FILTER_INTO_JOIN,
         CoreRules.JOIN_CONDITION_PUSH,
-        CoreRules.JOIN_EXTRACT_FILTER,
+        //CoreRules.JOIN_EXTRACT_FILTER,
         CoreRules.PROJECT_REMOVE,
         CoreRules.JOIN_ASSOCIATE,
         CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
