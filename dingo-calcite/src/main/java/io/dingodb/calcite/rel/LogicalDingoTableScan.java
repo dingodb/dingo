@@ -21,7 +21,11 @@ import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.fun.DingoOperatorTable;
 import io.dingodb.calcite.stats.StatsCache;
 import io.dingodb.calcite.utils.RelDataTypeUtils;
+import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.expr.rel.RelOp;
+import io.dingodb.expr.rel.op.RelOpBuilder;
+import io.dingodb.expr.runtime.expr.Expr;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Table;
@@ -66,6 +70,8 @@ public class LogicalDingoTableScan extends TableScan {
     protected double planCost;
     @Getter
     protected final RexNode filter;
+    @Getter
+    protected RelOp relOp;
     @Getter
     protected TupleMapping selection;
     @Getter
@@ -161,6 +167,10 @@ public class LogicalDingoTableScan extends TableScan {
         // The vector distance function adapts to the corresponding function based on the table vector type
         // such as L2_ Distance, ip_ Distance, cosine_ Distance, etc
         if (filter != null) {
+            Expr expr = RexConverter.convert(filter);
+            relOp = RelOpBuilder.builder()
+                .filter(expr)
+                .build();
             dispatchDistanceCondition(filter, selection, dingoTable);
         }
     }

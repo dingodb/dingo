@@ -41,6 +41,7 @@ import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.GetByIndexParam;
 import io.dingodb.exec.operator.params.TxnGetByIndexParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.MetaService;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
@@ -140,12 +141,14 @@ public final class DingoGetByIndexVisitFun {
                     visitor.isForUpdate());
 
                 Vertex vertex;
+                RelOp relOp = rel.getRelOp();
                 if (transaction != null) {
                     vertex = new Vertex(TXN_GET_BY_INDEX, new TxnGetByIndexParam(
                         idxId,
                         tableInfo.getId(),
                         tupleMapping,
-                        SqlExprUtils.toSqlExpr(rel.getFilter()),
+                        relOp != null ? null : SqlExprUtils.toSqlExpr(rel.getFilter()),
+                        relOp,
                         rel.getSelection(),
                         rel.isUnique(),
                         indexTd,

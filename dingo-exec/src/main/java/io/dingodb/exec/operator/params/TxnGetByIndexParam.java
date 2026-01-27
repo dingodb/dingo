@@ -27,6 +27,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Column;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
@@ -65,6 +66,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         CommonId tableId,
         TupleMapping keyMapping,
         SqlExpr filter,
+        RelOp relOp,
         TupleMapping selection,
         boolean isUnique,
         Table index,
@@ -74,7 +76,7 @@ public class TxnGetByIndexParam extends FilterProjectParam {
         long timeout,
         boolean isAutoCommit
     ) {
-        super(tableId, table.tupleType(), table.version, filter, selection, keyMapping, table.getCodecVersion());
+        super(tableId, table.tupleType(), table.version, filter, selection, keyMapping, table.getCodecVersion(), relOp);
         this.indexTableId = indexTableId;
         this.isLookup = isLookup;
         this.isUnique = isUnique;

@@ -24,7 +24,11 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.expr.DingoCompileContext;
+import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.common.type.TupleType;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
@@ -44,10 +48,13 @@ public abstract class FilterProjectParam extends AbstractParams {
     public final int codecVersion;
     @JsonProperty("filter")
     public SqlExpr filter;
+    @JsonProperty("relOp")
+    public RelOp relOp;
     @JsonProperty("selection")
     public TupleMapping selection;
     @JsonProperty("keyMapping")
     public final TupleMapping keyMapping;
+    public final transient DingoRelConfig config;
 
     public FilterProjectParam(
         CommonId tableId,
@@ -58,6 +65,19 @@ public abstract class FilterProjectParam extends AbstractParams {
         TupleMapping keyMapping,
         int codecVersion
     ) {
+        this(tableId, schema, schemaVersion, filter, selection, keyMapping, codecVersion, null);
+    }
+
+    public FilterProjectParam(
+        CommonId tableId,
+        DingoType schema,
+        int schemaVersion,
+        SqlExpr filter,
+        TupleMapping selection,
+        TupleMapping keyMapping,
+        int codecVersion,
+        RelOp relOp
+    ) {
         super();
         this.tableId = tableId;
         this.schema = schema;
@@ -66,10 +86,22 @@ public abstract class FilterProjectParam extends AbstractParams {
         this.selection = selection;
         this.keyMapping = keyMapping;
         this.codecVersion = codecVersion;
+        this.relOp = relOp;
+        this.config = new DingoRelConfig();
     }
 
     @Override
     public void init(Vertex vertex) {
+        if (relOp != null) {
+            TupleType tupleType = (TupleType) schema.getType();
+            if (selection != null) {
+                tupleType = (TupleType) schema.select(selection).getType();
+            }
+            relOp = relOp.compile(new DingoCompileContext(
+                tupleType,
+                (TupleType) vertex.getParasType().getType()
+            ), config);
+        }
         if (filter != null) {
             if (selection != null) {
                 filter.compileIn(schema.select(selection), vertex.getParasType());
@@ -85,6 +117,7 @@ public abstract class FilterProjectParam extends AbstractParams {
         if (filter != null) {
             filter.setParas(paras);
         }
+        config.getEvalContext().setParas(paras);
     }
 }
 
