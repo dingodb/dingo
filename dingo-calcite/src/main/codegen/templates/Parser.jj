@@ -3088,6 +3088,8 @@ SqlWindow WindowSpecification() :
     final SqlNode lowerBound, upperBound;
     final Span s, s1, s2;
     final SqlLiteral allowPartial;
+    StringBuilder partAliasBuilder = null;
+    StringBuilder orderAliasBuilder = null;
 }
 {
     <LPAREN> { s = span(); }
@@ -3096,13 +3098,27 @@ SqlWindow WindowSpecification() :
     |   { id = null; }
     )
     (
-        <PARTITION> { s1 = span(); }
-        <BY>
+        <PARTITION> { s1 = span(); partAliasBuilder = new StringBuilder(); partAliasBuilder.append(this.token.image); }
+        <BY> { partAliasBuilder.append(" ").append(this.token.image); }
         partitionList = ExpressionCommaList(s1, ExprContext.ACCEPT_NON_QUERY)
     |   { partitionList = SqlNodeList.EMPTY; }
     )
     (
-        orderList = OrderBy(true)
+        <ORDER>
+        {
+           orderAliasBuilder = new StringBuilder();
+           List<SqlNode> list = new ArrayList<SqlNode>();
+           orderAliasBuilder.append(this.token.image);
+        }
+        <BY> { orderAliasBuilder.append(" ").append(this.token.image); }AddOrderItem(list)
+        (
+                // NOTE jvs 6-Feb-2004:  See comments at top of file for why
+                // hint is necessary here.
+                LOOKAHEAD(2) <COMMA> AddOrderItem(list)
+        )*
+        {
+           orderList = new SqlNodeList(list, s.addAll(list).pos());
+        }
     |   { orderList = SqlNodeList.EMPTY; }
     )
     (
@@ -3136,8 +3152,15 @@ SqlWindow WindowSpecification() :
     )
     <RPAREN>
     {
-        return SqlWindow.create(null, id, partitionList, orderList,
+        SqlWindow window = SqlWindow.create(null, id, partitionList, orderList,
             isRows, lowerBound, upperBound, allowPartial, s.end(this));
+        if (orderAliasBuilder != null) {
+          window.putAlias("orderAlias", orderAliasBuilder.toString());
+        }
+        if (partAliasBuilder != null) {
+          window.putAlias("partAlias", partAliasBuilder.toString());
+        }
+        return window;
     }
 }
 
@@ -3218,6 +3241,7 @@ void AddOrderItem(List<SqlNode> list) :
         <ASC>
     |   <DESC> {
             e = SqlStdOperatorTable.DESC.createCall(getPos(), e);
+            e.putAlias("operatorName", this.token.image);
         }
     )?
     (
@@ -7908,7 +7932,7 @@ SqlNode NamedFunctionCall() :
         }
     ]
     [
-        <OVER> { overSpan = span(); }
+        <OVER> { overSpan = span(); String overStr = this.token.image; }
         (
             over = SimpleIdentifier()
         |
@@ -7916,6 +7940,7 @@ SqlNode NamedFunctionCall() :
         )
         {
             call = SqlStdOperatorTable.OVER.createCall(overSpan.end(over), call, over);
+            call.putAlias("operatorName", overStr);
         }
     ]
     {
@@ -7987,14 +8012,16 @@ SqlNode StandardFloorCeilOptions(Span s, boolean floorFlag) :
         function =  op.createCall(s.end(this), args);
     }
     (
-        <OVER> { s1 = span(); }
+        <OVER> { s1 = span(); String overStr = this.token.image; }
         (
             e = SimpleIdentifier()
         |
             e = WindowSpecification()
         )
         {
-            return SqlStdOperatorTable.OVER.createCall(s1.end(this), function, e);
+            SqlNode over = SqlStdOperatorTable.OVER.createCall(s1.end(this), function, e);
+            over.putAlias("operatorName", overStr);
+            return over;
         }
     |
         { return function; }
