@@ -52,6 +52,7 @@ public final class CalcValueUtils {
         etx.setTuple(tuple);
 
         ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
+        exprCompiler.setProcessor(config.getProcessor());
 
         try {
             if ((rexNode instanceof RexCall)

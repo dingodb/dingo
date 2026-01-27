@@ -32,6 +32,7 @@ import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.utils.SchemaWrapperUtils;
+import io.dingodb.expr.rel.RelOp;
 import lombok.Getter;
 
 import java.util.List;
@@ -72,6 +73,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         TupleMapping keyMapping,
         int schemaVersion,
         SqlExpr filter,
+        RelOp relOp,
         TupleMapping selection,
         TupleMapping aggKeys,
         List<Agg> aggList,
@@ -83,7 +85,7 @@ public class TxnPartRangeScanParam extends FilterProjectParam {
         int codecVersion,
         boolean isAutoCommit
     ) {
-        super(tableId, schema, schemaVersion, filter, selection, keyMapping, codecVersion);
+        super(tableId, schema, schemaVersion, filter, selection, keyMapping, codecVersion, relOp);
         this.aggKeys = aggKeys;
         this.aggList = aggList;
         this.outputSchema = outputSchema;

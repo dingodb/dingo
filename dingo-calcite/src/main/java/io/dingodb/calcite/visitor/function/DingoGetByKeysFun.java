@@ -40,6 +40,7 @@ import io.dingodb.exec.operator.params.GetByKeysParam;
 import io.dingodb.exec.operator.params.GetDistributionParam;
 import io.dingodb.exec.operator.params.TxnGetByKeysParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
@@ -100,13 +101,15 @@ public final class DingoGetByKeysFun {
         distributionVertex.setId(idGenerator.getOperatorId(task.getId()));
         task.putVertex(distributionVertex);
         Vertex getVertex;
+        RelOp relOp = rel.getRelOp();
         long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
         if (transaction != null) {
             TxnGetByKeysParam param = new TxnGetByKeysParam(
                 tableInfo.getId(),
                 td.tupleType(),
                 td.keyMapping(),
-                SqlExprUtils.toSqlExpr(rel.getFilter()),
+                relOp != null ? null : SqlExprUtils.toSqlExpr(rel.getFilter()),
+                relOp,
                 rel.getSelection(),
                 td,
                 scanTs,

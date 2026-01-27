@@ -25,6 +25,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,6 +54,7 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         DingoType schema,
         TupleMapping keyMapping,
         SqlExpr filter,
+        RelOp relOp,
         TupleMapping selection,
         Table table,
         long scanTs,
@@ -60,7 +62,7 @@ public class TxnGetByKeysParam extends FilterProjectParam {
         long timeOut,
         boolean isSelect
     ) {
-        super(tableId, schema, table.version, filter, selection, keyMapping, table.getCodecVersion());
+        super(tableId, schema, table.version, filter, selection, keyMapping, table.getCodecVersion(), relOp);
         this.codec = CodecService.getDefault().createKeyValueCodec(
             table.getCodecVersion(), table.version, table.tupleType(), table.keyMapping());
         this.table = table;

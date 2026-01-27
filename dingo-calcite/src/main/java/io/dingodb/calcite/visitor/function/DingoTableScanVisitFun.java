@@ -42,6 +42,7 @@ import io.dingodb.exec.operator.params.DistributionSourceParam;
 import io.dingodb.exec.operator.params.PartRangeScanParam;
 import io.dingodb.exec.operator.params.TxnPartRangeScanParam;
 import io.dingodb.exec.transaction.base.ITransaction;
+import io.dingodb.expr.rel.RelOp;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import lombok.extern.slf4j.Slf4j;
@@ -121,6 +122,7 @@ public final class DingoTableScanVisitFun {
         List<Vertex> outputs = new ArrayList<>();
 
         long scanTs = VisitUtils.getScanTs(transaction, visitor.getKind(), visitor.getPointTs(), visitor.isForUpdate());
+        RelOp relOp = rel.getRelOp();
         for (int i = 0; i < Optional.mapOrGet(td.getPartitions(), List::size, () -> 0); i++) {
             Vertex scanVertex;
             if (transaction != null) {
@@ -135,7 +137,8 @@ public final class DingoTableScanVisitFun {
                     td.tupleType(),
                     td.keyMapping(),
                     td.version,
-                    Optional.mapOrNull(filter, SqlExpr::copy),
+                    relOp != null ? null : Optional.mapOrNull(filter, SqlExpr::copy),
+                    relOp,
                     rel.getSelection(),
                     rel.getGroupSet() == null ? null
                         : AggFactory.getAggKeys(rel.getGroupSet()),

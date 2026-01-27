@@ -638,6 +638,7 @@ public class OperationServiceV2 {
                     td.keyMapping(),
                     null,
                     null,
+                    null,
                     td,
                     scanTs,
                     transaction.getIsolationLevel(),
