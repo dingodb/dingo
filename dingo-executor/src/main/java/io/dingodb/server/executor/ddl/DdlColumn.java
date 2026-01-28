@@ -76,6 +76,19 @@ public final class DdlColumn {
         return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeAddColumnWorker);
     }
 
+    public static Pair<Boolean, Long> doReorgWorkForAddMultiCol(
+        DdlContext dc,
+        DdlJob job,
+        CommonId tableId,
+        TableDefinitionWithId replicaTable,
+        DdlWorker worker
+    ) {
+        MetaElement[] elements = new MetaElement[] {
+            new MetaElement(replicaTable.getTableId().getEntityId(), DdlUtil.addColElementKey)
+        };
+        return doReorgWork(dc, job, tableId, replicaTable, worker, elements, BackFilling.typeAddMultiColumnWorker);
+    }
+
     public static Pair<Boolean, Long> doReorgWorkForDropCol(
         DdlContext dc,
         DdlJob job,

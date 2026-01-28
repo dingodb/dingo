@@ -61,6 +61,8 @@ public interface DdlService {
 
     }
 
+    void addMultiColumn(SchemaInfo schemaInfo, Table table, List<AddingColInfo> addingColInfoList, String connId);
+
     default void dropColumn(
         SchemaInfo schemaInfo,
         Table table, String column,

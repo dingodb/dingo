@@ -131,7 +131,6 @@ import io.dingodb.common.util.Optional;
 import io.dingodb.common.util.Parameters;
 import io.dingodb.common.util.Utils;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
-import io.dingodb.expr.common.type.AnyType;
 import io.dingodb.meta.DdlService;
 import io.dingodb.meta.InfoSchemaService;
 import io.dingodb.meta.MetaService;
@@ -195,6 +194,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -221,7 +221,6 @@ import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropSchema;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotFoundDropTable;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrNotSupportedYet;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrPartitionMgmtOnNonpartitioned;
-import static io.dingodb.common.mysql.error.ErrorCode.ErrTruncatedWrongValue;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedDDLOperation;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrUnsupportedModifyVec;
 import static io.dingodb.common.util.NameCaseUtils.caseSensitive;
@@ -883,25 +882,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw new IllegalArgumentException("Add column, the engine must be transactional.");
             }
         }
-        DingoSqlColumn dingoSqlColumn = (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration();
-        ColumnDefinition newColumn = fromSqlColumnDeclaration(
-            dingoSqlColumn,
-            new ContextSqlValidator(context, true),
-            definition.keyColumns().stream().map(Column::getName).collect(Collectors.toList())
-        );
-        if (newColumn == null) {
-            throw new RuntimeException("newColumn is null.");
-        }
-
-        if (definition.getColumn(newColumn.getName()) != null) {
-            throw DINGO_RESOURCE.duplicateColumn().ex();
-        }
-        if (dingoSqlColumn.isPrimaryKey()) {
-            throw DINGO_RESOURCE.addColumnPrimaryError(newColumn.getName(), tableName).ex();
-        }
-        if (dingoSqlColumn.isAutoIncrement()) {
-            throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
-        }
+        ColumnDefinition newColumn = getAddColumn(context, sqlAlterAddColumn, definition, tableName);
         validateAddOrModifyColumn(newColumn, true);
         SqlIdentifier afterCol = sqlAlterAddColumn.getAfterCol();
         String afterColName;
@@ -2040,10 +2021,25 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
     }
 
+    public void execute(SqlIdentifier table, List<AddingColInfo> addingColInfoList, CalcitePrepare.Context context) {
+        Pair<SubSnapshotSchema, String> schemaTableName
+            = getSchemaAndTableName(table, context);
+        final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+        SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+        String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+        Table definition = schema.getTableInfo(tableName);
+        DdlService.root().addMultiColumn(schemaInfo, definition, addingColInfoList, "");
+    }
+
     public void execute(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute:{}", sqlAlterTableOptions);
-        validateMultiSchemaChange(sqlAlterTableOptions, context);
         List<SqlAlterTable> alterTableList = sqlAlterTableOptions.alterTableList;
+        List<AddingColInfo> addingColInfoList = mergeAddColumnDdl(alterTableList, context);
+        if (addingColInfoList != null) {
+            execute(sqlAlterTableOptions.table, addingColInfoList, context);
+            return;
+        }
+        validateMultiSchemaChange(sqlAlterTableOptions, context);
         for (SqlAlterTable alterTable : alterTableList) {
             int retry = 10;
             while (retry-- > 0) {
@@ -3189,6 +3185,94 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
                 throw DINGO_RESOURCE.tableExists(toTableName).ex();
             }
         }
+    }
+
+    public List<AddingColInfo> mergeAddColumnDdl(List<SqlAlterTable> alterTableList, CalcitePrepare.Context context) {
+        Map<String, String> tableMap = new HashMap<>();
+        List<AddingColInfo> addingColInfoList = new ArrayList<>();
+        for (int i = 0; i < alterTableList.size(); i ++) {
+            SqlAlterTable sqlAlterTable = alterTableList.get(i);
+            if (sqlAlterTable instanceof SqlAlterAddColumn) {
+                SqlAlterAddColumn sqlAlterAddColumn = (SqlAlterAddColumn) sqlAlterTable;
+                Pair<SubSnapshotSchema, String> schemaTableName
+                    = getSchemaAndTableName(sqlAlterTable.table, context);
+                final SubSnapshotSchema schema = Parameters.nonNull(schemaTableName.left, "table schema");
+                SchemaInfo schemaInfo = schema.getSchemaInfo(schema.getSchemaName());
+                String tableName = Parameters.nonNull(schemaTableName.right, "table name");
+                tableName = convertName(tableName);
+                if (schemaInfo == null) {
+                    if (context.getDefaultSchemaPath() != null && !context.getDefaultSchemaPath().isEmpty()) {
+                        throw DINGO_RESOURCE.unknownSchema(context.getDefaultSchemaPath().get(0)).ex();
+                    } else {
+                        throw DINGO_RESOURCE.unknownSchema("DINGO").ex();
+                    }
+                }
+                Table table = schema.getTableInfo(tableName);
+                if (table == null) {
+                    throw DINGO_RESOURCE.unknownTable(schema.getSchemaName() + "." + tableName).ex();
+                }
+                ColumnDefinition newColumn = getAddColumn(context, sqlAlterAddColumn, table, tableName);
+                validateAddOrModifyColumn(newColumn, true);
+                SqlIdentifier afterCol = sqlAlterAddColumn.getAfterCol();
+                String afterColName;
+                if (afterCol != null) {
+                    afterColName = afterCol.getSimple();
+                    Column afterColumn = table.getColumns().stream()
+                        .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
+                            && col.getName().equalsIgnoreCase(afterColName)).findFirst().orElse(null);
+
+                    if (afterColumn == null && findAlterColumn(afterCol, i, alterTableList)) {
+                        throw DINGO_RESOURCE.unknownColumn(afterColName, tableName).ex();
+                    }
+                } else {
+                    afterColName = null;
+                }
+                newColumn.setSchemaState(SchemaState.SCHEMA_PUBLIC);
+
+                AddingColInfo addingColInfo = AddingColInfo.builder()
+                    .column(newColumn)
+                    .afterColName(afterColName)
+                    .firstCol(sqlAlterAddColumn.isFirstCol())
+                    .build();
+                addingColInfoList.add(addingColInfo);
+                tableMap.put(schema.getSchemaName(), tableName);
+            } else {
+                return null;
+            }
+        }
+        return tableMap.size() == 1 ? addingColInfoList : null;
+    }
+
+    private static boolean findAlterColumn(SqlIdentifier afterCol, int index, List<SqlAlterTable> alterTableList) {
+        for (int i = 0; i < index; i++) {
+            SqlAlterAddColumn alterAddColumn = (SqlAlterAddColumn) alterTableList.get(i);
+            if (afterCol.equals(alterAddColumn.getAfterCol())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static @NonNull ColumnDefinition getAddColumn(CalcitePrepare.Context context, SqlAlterAddColumn sqlAlterAddColumn, Table table, String tableName) {
+        DingoSqlColumn dingoSqlColumn = (DingoSqlColumn) sqlAlterAddColumn.getColumnDeclaration();
+        ColumnDefinition newColumn = fromSqlColumnDeclaration(
+            dingoSqlColumn,
+            new ContextSqlValidator(context, true),
+            table.keyColumns().stream().map(Column::getName).collect(Collectors.toList())
+        );
+        if (newColumn == null) {
+            throw new RuntimeException("newColumn is null.");
+        }
+        if (table.getColumn(newColumn.getName()) != null) {
+            throw DINGO_RESOURCE.duplicateColumn().ex();
+        }
+        if (dingoSqlColumn.isPrimaryKey()) {
+            throw DINGO_RESOURCE.addColumnPrimaryError(newColumn.getName(), tableName).ex();
+        }
+        if (dingoSqlColumn.isAutoIncrement()) {
+            throw DINGO_RESOURCE.addColumnAutoIncError(newColumn.getName(), tableName).ex();
+        }
+        return newColumn;
     }
 
 }

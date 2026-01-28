@@ -33,9 +33,11 @@ import io.dingodb.common.type.scalar.DoubleType;
 import io.dingodb.common.type.scalar.FloatType;
 import io.dingodb.common.type.scalar.IntegerType;
 import io.dingodb.common.type.scalar.LongType;
+import io.dingodb.common.type.scalar.ObjectType;
 import io.dingodb.common.type.scalar.StringType;
 import io.dingodb.common.type.scalar.TimeType;
 import io.dingodb.common.type.scalar.TimestampType;
+import io.dingodb.common.util.ByteUtils;
 import io.dingodb.common.util.Utils;
 import io.dingodb.expr.common.timezone.core.DateTimeType;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
@@ -43,8 +45,10 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.calcite.sql.parser.SqlParserUtil;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -52,6 +56,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.dingodb.common.mysql.MysqlByteUtil.binaryPrefix;
 
 @Getter
 @Builder
@@ -119,6 +125,120 @@ public class Column {
             .comment(comment)
             .schemaState(schemaState)
             .build();
+    }
+
+    public Object getFillerValue() {
+        DingoType type = this.getType();
+        if (this.getDefaultValueExpr() == null) {
+            if (!this.isNullable()) {
+                return this.getInitVal();
+            }
+        } else {
+            DingoTimeZoneProcessor processor = DingoTimeZoneContext.getProcessor();
+            String defaultValueExpr = this.defaultValueExpr;
+            if (defaultValueExpr.startsWith("'") && defaultValueExpr.endsWith("'")) {
+                defaultValueExpr = SqlParserUtil.trim(defaultValueExpr, "'");
+            }
+            if (type instanceof StringType) {
+                return Utils.decodePostgresUnicode(defaultValueExpr);
+            } else if (type instanceof LongType) {
+                return Long.parseLong(defaultValueExpr);
+            } else if (type instanceof IntegerType) {
+                return Integer.parseInt(defaultValueExpr);
+            } else if (type instanceof DoubleType) {
+                return Double.parseDouble(defaultValueExpr);
+            } else if (type instanceof FloatType) {
+                return Float.parseFloat(defaultValueExpr);
+            } else if (type instanceof DateType) {
+                if ("current_date".equalsIgnoreCase(defaultValueExpr)) {
+                    return new Date(System.currentTimeMillis());
+                }
+                return processor.processDateTime(defaultValueExpr, DateTimeType.DATE);
+            } else if (type instanceof DecimalType) {
+                return new BigDecimal(defaultValueExpr);
+            } else if (type instanceof BooleanType) {
+                if (defaultValueExpr.equalsIgnoreCase("true")) {
+                    return true;
+                } else if (defaultValueExpr.equalsIgnoreCase("false")) {
+                    return false;
+                } else if (defaultValueExpr.equalsIgnoreCase("1")) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else if (type instanceof TimestampType) {
+                if (defaultValueExpr.equalsIgnoreCase("current_timestamp")) {
+                    return new Timestamp(System.currentTimeMillis());
+                }
+                return processor.processDateTime(defaultValueExpr, DateTimeType.TIMESTAMP);
+            } else if (type instanceof TimeType) {
+                return processor.processDateTime(defaultValueExpr, DateTimeType.TIME);
+            } else if (type instanceof ListType) {
+                if (defaultValueExpr.toUpperCase().startsWith("ARRAY[") && defaultValueExpr.endsWith("]")) {
+                    defaultValueExpr = defaultValueExpr.substring(6, defaultValueExpr.length() - 1);
+                }
+                if ("{}".equalsIgnoreCase(defaultValueExpr)) {
+                    return new ArrayList<>();
+                }
+                String elementTypeName = this.elementTypeName;
+                List<String> list = Arrays.asList(defaultValueExpr.split(","));
+                return list.stream().map(item -> {
+                    switch (elementTypeName) {
+                        case "FLOAT":
+                            return Float.parseFloat(item);
+                        case "DOUBLE":
+                            return Double.parseDouble(item);
+                        case "INTEGER":
+                            return Integer.parseInt(item);
+                        case "LONG":
+                            return Long.parseLong(item);
+                        case "BOOLEAN":
+                            return Boolean.parseBoolean(item);
+                        case "DATE":
+                            return processor.processDateTime(item, DateTimeType.DATE);
+                        case "DECIMAL":
+                            return new BigDecimal(item);
+                        case "TIMESTAMP":
+                            return processor.processDateTime(item, DateTimeType.TIMESTAMP);
+                        case "TIME":
+                            return processor.processDateTime(item, DateTimeType.TIME);
+                        default:
+                            return item;
+                    }
+                }).collect(Collectors.toList());
+            } else if (type instanceof MapType || (type instanceof ObjectType)) {
+                if (defaultValueExpr.toUpperCase().startsWith("MAP[") && defaultValueExpr.endsWith("]")) {
+                    defaultValueExpr = defaultValueExpr.substring(4, defaultValueExpr.length() - 1);
+                }
+                if ("{}".equalsIgnoreCase(defaultValueExpr)) {
+                    return new LinkedHashMap<>();
+                }
+                List<String> list = Arrays.asList(defaultValueExpr.split(","));
+                LinkedHashMap<Object, Object> mapVal = new LinkedHashMap<>();
+                for (int j = 0; j < list.size(); j += 2) {
+                    String key = list.get(j).trim();
+                    String val = list.get(j + 1).trim();
+                    key = SqlParserUtil.trim(key, "'");
+                    val = SqlParserUtil.trim(val, "'");
+                    mapVal.put(key, val);
+                }
+                return mapVal;
+            } else if (type instanceof BitType) {
+                defaultValueExpr = defaultValueExpr.substring(2, defaultValueExpr.length() - 1);
+                BigInteger bigInt = new BigInteger(defaultValueExpr, 16);
+                String binaryString = bigInt.toString(2);
+                return Long.parseLong(binaryString, 2);
+            } else if (type instanceof BinaryType) {
+                if (binaryPrefix(defaultValueExpr)) {
+                    defaultValueExpr = defaultValueExpr.substring(2, defaultValueExpr.length() - 1);
+                    return ByteUtils.hexStringToByteArray(defaultValueExpr);
+                } else {
+                    return defaultValueExpr.getBytes();
+                }
+            }
+            return defaultValueExpr;
+        }
+        return null;
     }
 
     public Object getDefaultVal() {
