@@ -18,6 +18,7 @@ package io.dingodb.meta.local;
 
 import com.google.auto.service.AutoService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ddl.AddingColInfo;
 import io.dingodb.common.meta.SchemaInfo;
 import io.dingodb.common.meta.SchemaState;
 import io.dingodb.common.sequence.SequenceDefinition;
@@ -89,6 +90,11 @@ public class LocalDdlService implements DdlService {
     public void truncateTable(SchemaInfo schemaInfo, Table table, String connId) {
         LocalMetaService ms = (LocalMetaService) localMetaService.getSubMetaService(schemaInfo.getName());
         ms.truncateTable(table.getName(), 1, -1);
+    }
+
+    @Override
+    public void addMultiColumn(SchemaInfo schemaInfo, Table table, List<AddingColInfo> addingColInfoList, String connId) {
+
     }
 
     @Override

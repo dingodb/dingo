@@ -55,6 +55,7 @@ public final class BackFilling {
     public static final int typeModifyIndexColumnWorker = 4;
     public static final int typeDelIndexWorker = 5;
     public static final int typeAddPrimaryKeyWorker = 6;
+    public static final int typeAddMultiColumnWorker = 7;
 
     private BackFilling() {
     }
@@ -91,8 +92,6 @@ public final class BackFilling {
         BackFiller filler;
         if (bfWorkerType == typeAddIndexWorker) {
             filler = new IndexAddFiller();
-        } else if (bfWorkerType == typeAddColumnWorker) {
-            filler = new AddColumnFiller();
         } else if (bfWorkerType == typeDropColumnWorker) {
             filler = new DropColumnFiller();
         } else if (bfWorkerType == typeModifyColumnWorker) {
@@ -108,6 +107,8 @@ public final class BackFilling {
             }
         } else if (bfWorkerType == typeAddPrimaryKeyWorker) {
             filler = new AddPrimaryKeyFiller();
+        } else if (bfWorkerType == typeAddMultiColumnWorker || bfWorkerType == typeAddColumnWorker) {
+            filler = new AddMultiColumnFiller();
         } else {
             throw new RuntimeException("do not support bf work type");
         }

@@ -145,6 +145,7 @@ public class DdlJob {
             || actionType == ActionType.ActionDropTablePartition
             || actionType == ActionType.ActionCreateTableAsQuery
             || actionType == ActionType.ActionAddPrimaryKey
+            || actionType == ActionType.ActionAddMultiColumn
         ) {
             return true;
         }
@@ -262,7 +263,7 @@ public class DdlJob {
                 t = new TypeReference<List<String>>() {};
             } else if (actionType == ActionType.ActionDropColumn) {
                 t = new TypeReference<List<String>>() {};
-            } else if (actionType == ActionType.ActionAddColumn) {
+            } else if (actionType == ActionType.ActionAddColumn || actionType == ActionType.ActionAddMultiColumn) {
                 t = new TypeReference<List<AddingColInfo>>() {};
             } else if (actionType == ActionType.ActionRecoverTable || actionType == ActionType.ActionRecoverSchema) {
                 t = new TypeReference<List<RecoverInfo>>() {};

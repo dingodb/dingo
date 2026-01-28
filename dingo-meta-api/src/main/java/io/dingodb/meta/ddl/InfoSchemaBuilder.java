@@ -188,6 +188,7 @@ public class InfoSchemaBuilder {
             case ActionDropColumn:
                 return applyDropColumn(schemaDiff);
             case ActionAddColumn:
+            case ActionAddMultiColumn:
                 return applyAddColumn(schemaDiff);
             case ActionRecoverTable:
                 return applyRecoverTable(schemaDiff);

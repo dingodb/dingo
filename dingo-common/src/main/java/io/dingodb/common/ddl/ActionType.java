@@ -52,6 +52,7 @@ public enum ActionType {
     ActionAlterIndex(64),
     ActionCreateTableAsQuery(65),
     ActionRefreshMeta(66),
+    ActionAddMultiColumn(67),
     ;
 
     private final int code;

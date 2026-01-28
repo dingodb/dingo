@@ -413,6 +413,21 @@ public class DdlHandler {
         doDdlJob(job);
     }
 
+    public void addMultiColumn(SchemaInfo schemaInfo, Table table, List<AddingColInfo> addingColInfoList, String connId) {
+        DdlJob job = DdlJob.builder()
+            .schemaId(schemaInfo.getSchemaId())
+            .tableId(table.tableId.seq)
+            .schemaName(schemaInfo.getName())
+            .tableName(table.getName())
+            .actionType(ActionType.ActionAddMultiColumn)
+            .schemaState(SchemaState.SCHEMA_NONE)
+            .build();
+        List<Object> args = new ArrayList<>();
+        args.addAll(addingColInfoList);
+        job.setArgs(args);
+        doDdlJob(job);
+    }
+
     public void dropColumn(
         SchemaInfo schemaInfo,
         Table table,
