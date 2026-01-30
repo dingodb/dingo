@@ -65,16 +65,18 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
         }
         List<RexNode> rexNodeList = new ArrayList<>();
         int fieldsCount = rowType.getFieldCount();
-
         int diffCnt = 0;
         for (int i = 0; i < fieldsCount; i++) {
             RelDataTypeField typeField = rowType.getFieldList().get(i);
             RelDataType diffType = null;
             List<RelDataType> relDataTypeList = new ArrayList<>();
             for (RelNode input : union.getInputs()) {
+                if (i >= input.getRowType().getFieldCount()) {
+                    continue;
+                }
                 RelDataTypeField subTypeField = input.getRowType().getFieldList().get(i);
                 relDataTypeList.add(subTypeField.getType());
-                if (typeField.getType() != subTypeField.getType()) {
+                if (typeField.getType().getSqlTypeName() != subTypeField.getType().getSqlTypeName()) {
                     diffType = subTypeField.getType();
                 }
             }

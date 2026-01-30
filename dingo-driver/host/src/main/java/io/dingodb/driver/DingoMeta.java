@@ -606,6 +606,7 @@ public class DingoMeta extends MetaImpl {
 
                 if (!trace) {
                     DingoType dingoType = DefinitionMapper.mapToDingoType(columnMetaDataList);
+                    dingoType.setCheckFieldCount(false);
                     GregorianCalendar calendarCST = new GregorianCalendar();
                     calendarCST.setTimeZone(DingoTimeZoneContext.getTimeZone());
                     AvaticaResultSetConverter converter = new AvaticaResultSetConverter(calendarCST);
