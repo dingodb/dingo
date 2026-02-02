@@ -330,7 +330,9 @@ public class InfoSchemaBuilder {
             );
             if (is.sortedTablesBuckets.containsKey(idx)) {
                 List<TableInfoCache> buckets = is.sortedTablesBuckets.get(idx);
-                buckets.add(tmp);
+                if (!buckets.contains(tmp)) {
+                    buckets.add(tmp);
+                }
             } else {
                 List<TableInfoCache> buckets = new ArrayList<>();
                 buckets.add(tmp);
