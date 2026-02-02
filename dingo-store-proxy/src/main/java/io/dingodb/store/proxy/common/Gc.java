@@ -100,11 +100,14 @@ import static io.dingodb.store.utils.ResolveLockUtil.storeRegionService;
 import static java.lang.Math.min;
 
 @Slf4j
-public class Gc {
+public final class Gc {
 
     private static final List<Action> pessimisticRollbackActions = Arrays.asList(
         LockNotExistRollback, TTLExpirePessimisticRollback, TTLExpireRollback
     );
+
+    private Gc() {
+    }
 
     public static Pair<String, Long> safePointUpdate(TimeZone timeZone) {
         LogUtils.info(log, "safe point update task start.");
@@ -900,11 +903,12 @@ public class Gc {
                 List<Object[]> res = session.executeQuery(sql);
                 if (res.isEmpty()) {
                     LogUtils.error(log, "drop table meta get job type empty, jobId:{}", jobId);
+                    return true;
                 } else {
                     if (res.get(0).length >= 1) {
                         int type = (int) res.get(0)[0];
                         // truncate/drop
-                        if (type != 3 && type != 11) {
+                        if (type != 4 && type != 11) {
                             LogUtils.info(log, "drop table meta skip, type:{},jobId:{}", type, jobId);
                             return true;
                         }
@@ -912,6 +916,7 @@ public class Gc {
                 }
             } catch (SQLException e) {
                 LogUtils.error(log, "drop table meta get job type error:{}, jobId:{}",e.getMessage(), jobId, e);
+                return true;
             }
         }
         if (eleId == null) {
