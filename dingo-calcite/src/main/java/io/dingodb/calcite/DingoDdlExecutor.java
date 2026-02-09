@@ -2034,11 +2034,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute:{}", sqlAlterTableOptions);
         List<SqlAlterTable> alterTableList = sqlAlterTableOptions.alterTableList;
-        List<AddingColInfo> addingColInfoList = mergeAddColumnDdl(alterTableList, context);
-        if (addingColInfoList != null) {
-            execute(sqlAlterTableOptions.table, addingColInfoList, context);
-            return;
-        }
+        //List<AddingColInfo> addingColInfoList = mergeAddColumnDdl(alterTableList, context);
+        //if (addingColInfoList != null) {
+        //    execute(sqlAlterTableOptions.table, addingColInfoList, context);
+        //    return;
+        //}
         validateMultiSchemaChange(sqlAlterTableOptions, context);
         for (SqlAlterTable alterTable : alterTableList) {
             int retry = 10;
