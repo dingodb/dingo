@@ -2913,21 +2913,25 @@ public class DdlWorker {
                     AtomicInteger implicitIndex = new AtomicInteger(-1);
                     indexWithId.getTableDefinition().getColumns()
                         .removeIf(col -> {
-                            implicitIndex.set(col.getIndexOfKey());
-                            return col.getName().equalsIgnoreCase(IMPLICIT_COL_NAME);
+                            boolean implicit = col.getName().equalsIgnoreCase(IMPLICIT_COL_NAME);
+                            if (implicit) {
+                                implicitIndex.set(col.getIndexOfKey());
+                            }
+                            return implicit;
                         });
                     boolean unique = indexTable.unique;
                     for (String key : keyList) {
                         indexWithId.getTableDefinition().getColumns()
                             .add(tableWithId.getTableDefinition().getColumns()
                             .stream().filter(col -> col.getName().equalsIgnoreCase(key))
-                            .peek(col -> {
+                            .map(col -> {
                                 ColumnDefinition newCol = (ColumnDefinition) InfoSchemaService.root().copy(col);
                                 if (unique) {
                                     newCol.setIndexOfKey(-1);
                                 } else {
                                     newCol.setIndexOfKey(implicitIndex.getAndIncrement());
                                 }
+                                return newCol;
                             }).findFirst().get());
                     }
                     MetaService.root().createIndexReplicaTable(
