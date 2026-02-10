@@ -145,7 +145,8 @@ public final class SqlToExecutorConverter {
             if (StringUtils.isEmpty(sqlDesc.schemaName)) {
                 sqlDesc.schemaName = getSchemaName(context);
             }
-            SqlShowColumns sqlShowColumns = new SqlShowColumns(sqlDesc.pos, sqlDesc.schemaName, sqlDesc.tableName, "");
+            String sqlLikePattern = sqlDesc.columnName == null ? "" : sqlDesc.columnName;
+            SqlShowColumns sqlShowColumns = new SqlShowColumns(sqlDesc.pos, sqlDesc.schemaName, sqlDesc.tableName, sqlLikePattern);
             return Optional.of(new ShowColumnsExecutor(sqlShowColumns));
         } else if (sqlNode instanceof SqlShowTableStatus) {
             SqlShowTableStatus showTableStatus = (SqlShowTableStatus) sqlNode;

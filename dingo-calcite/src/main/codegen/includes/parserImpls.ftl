@@ -1352,10 +1352,15 @@ void schemaTableSegment(List<String> names, List<SqlParserPos> positions) :
 SqlDescTable SqlDescTable(): {
     final Span s;
     SqlIdentifier tableName = null;
+    SqlIdentifier column = null;
 } {
     <DESC> { s = span(); }
     tableName = CompoundTableIdentifier()
-    { return new SqlDescTable(s.end(this), tableName); }
+    ( column = SimpleIdentifier() | { column = null; } )
+    {
+        return new SqlDescTable(s.add(tableName).addIf(column).pos(),
+            tableName, column);
+    }
 }
 
 SqlNode ScopeVariable(): {

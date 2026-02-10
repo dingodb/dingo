@@ -33,6 +33,8 @@ public class SqlDescTable extends SqlShow {
 
     public String tableName;
 
+    public String columnName;
+
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("DESC TABLE", SqlKind.SELECT);
 
@@ -41,7 +43,7 @@ public class SqlDescTable extends SqlShow {
      *
      * @param pos pos
      */
-    public SqlDescTable(SqlParserPos pos, SqlIdentifier tableName) {
+    public SqlDescTable(SqlParserPos pos, SqlIdentifier tableName, SqlIdentifier columnName) {
         super(OPERATOR, pos);
         this.pos = pos;
         if (tableName.names.size() == 1) {
@@ -49,6 +51,9 @@ public class SqlDescTable extends SqlShow {
         } else {
             this.schemaName = tableName.names.get(0);
             this.tableName = tableName.names.get(1);
+        }
+        if (columnName != null) {
+            this.columnName = columnName.getLastName();
         }
     }
 
@@ -65,5 +70,8 @@ public class SqlDescTable extends SqlShow {
             writer.keyword(".");
         }
         writer.keyword(tableName);
+        if (columnName != null) {
+            writer.keyword(" " + columnName);
+        }
     }
 }
