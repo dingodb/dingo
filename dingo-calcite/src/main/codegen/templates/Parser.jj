@@ -1729,7 +1729,7 @@ SqlNode SqlDescribe() :
         table = CompoundIdentifier()
         ( column = SimpleIdentifier() | { column = null; } )
         {
-            return new SqlDescribeTable(s.add(table).addIf(column).pos(),
+            return new SqlDescTable(s.add(table).addIf(column).pos(),
                 table, column);
         }
     |
