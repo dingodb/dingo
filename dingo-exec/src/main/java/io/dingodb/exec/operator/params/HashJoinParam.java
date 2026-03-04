@@ -28,6 +28,10 @@ import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.spill.SpillConfig;
+import io.dingodb.exec.spill.SpillException;
+import io.dingodb.exec.spill.SpillFile;
+import io.dingodb.exec.spill.SpillFileManager;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
@@ -35,9 +39,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,6 +96,11 @@ public class HashJoinParam extends AbstractParams {
 
     private volatile boolean interrupted = false;
 
+    /** Spill support for the build (right) side. */
+    private transient SpillFileManager spillFileManager;
+    private transient List<SpillFile> buildSpillFiles;
+    private transient int buildRowCount;
+
 
     public HashJoinParam(
         TupleMapping leftMapping,
@@ -107,6 +119,8 @@ public class HashJoinParam extends AbstractParams {
         this.leftMappingEmpty = this.leftMapping.size() == 0;
         this.rightMappingEmpty = this.rightMapping.size() == 0;
         this.config = new DingoRelConfig();
+        this.buildSpillFiles = new ArrayList<>();
+        this.buildRowCount = 0;
     }
 
     public static TupleKey rtrimTupleKey(TupleKey key) {
@@ -171,6 +185,8 @@ public class HashJoinParam extends AbstractParams {
         rightFinFlag = false;
         hashMap = new ConcurrentHashMap<>();
         future = new CompletableFuture<>();
+        buildSpillFiles = new ArrayList<>();
+        buildRowCount = 0;
         if (relOp != null) {
             relOp = relOp.compile(new DingoCompileContext(
                 (TupleType) schema.getType(),
@@ -183,6 +199,81 @@ public class HashJoinParam extends AbstractParams {
         rightFinFlag = false;
         hashMap.clear();
         future = new CompletableFuture<>();
+        if (spillFileManager != null) {
+            for (SpillFile sf : buildSpillFiles) {
+                spillFileManager.delete(sf);
+            }
+        }
+        buildSpillFiles = new ArrayList<>();
+        buildRowCount = 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // Spill helpers for the build (right) side
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns {@code true} when the build-side hash map should be spilled to disk.
+     */
+    public boolean shouldSpillBuild() {
+        return buildRowCount >= SpillConfig.getJoinSpillThreshold();
+    }
+
+    /**
+     * Spills the current build-side hash map to a spill file, then clears it.
+     */
+    public void spillBuildSide() {
+        List<Object[]> rows = new ArrayList<>();
+        for (Map.Entry<TupleKey, List<TupleWithJoinFlag>> e : hashMap.entrySet()) {
+            for (TupleWithJoinFlag t : e.getValue()) {
+                rows.add(t.getTuple());
+            }
+        }
+        if (rows.isEmpty()) {
+            return;
+        }
+        if (spillFileManager == null) {
+            spillFileManager = new SpillFileManager();
+        }
+        SpillFile sf = spillFileManager.createSpillFile("hashJoin-build");
+        try {
+            spillFileManager.write(sf, rows);
+        } catch (IOException ex) {
+            throw new SpillException("Failed to spill hash-join build side", ex);
+        }
+        buildSpillFiles.add(sf);
+        LogUtils.debug(log, "Spilled {} build-side rows to {}", rows.size(), sf.getPath());
+        hashMap.clear();
+        buildRowCount = 0;
+    }
+
+    /**
+     * Restores all spilled build-side rows back into the hash map so that the probe
+     * (left) side can look them up.  Called once the right (build) side has finished.
+     */
+    public void restoreSpilledBuildSide() {
+        if (buildSpillFiles.isEmpty()) {
+            return;
+        }
+        for (SpillFile sf : buildSpillFiles) {
+            try (SpillFileManager.SpillIterator it = spillFileManager.readIterator(sf)) {
+                while (it.hasNext()) {
+                    Object[] tuple = it.next();
+                    TupleKey key = rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
+                    List<TupleWithJoinFlag> list = hashMap
+                        .computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>()));
+                    list.add(new TupleWithJoinFlag(tuple));
+                }
+            } catch (IOException e) {
+                throw new SpillException("Failed to restore spilled build side from " + sf.getPath(), e);
+            }
+            spillFileManager.delete(sf);
+        }
+        buildSpillFiles.clear();
+    }
+
+    public void incrementBuildRowCount() {
+        buildRowCount++;
     }
 
     public void interrupt() {

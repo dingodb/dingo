@@ -114,6 +114,7 @@ public class HashJoinOperator extends SoleOutOperator {
                         List<TupleWithJoinFlag> list = param.getHashMap()
                             .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                         list.add(new TupleWithJoinFlag(tuple));
+                        param.incrementBuildRowCount();
                     }
                 } else {
                     if (isEmpty(rightKey, param) && "inner".equalsIgnoreCase(param.getJoinType())) {
@@ -123,6 +124,11 @@ public class HashJoinOperator extends SoleOutOperator {
                     List<TupleWithJoinFlag> list = param.getHashMap()
                         .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                     list.add(new TupleWithJoinFlag(tuple));
+                    param.incrementBuildRowCount();
+                    // Spill the build-side hash map when the threshold is reached.
+                    if (param.shouldSpillBuild()) {
+                        param.spillBuildSide();
+                    }
                 }
                 profile.cacheOpTime(start);
             }
@@ -187,6 +193,9 @@ public class HashJoinOperator extends SoleOutOperator {
                 FinWithProfiles finWithProfiles = (FinWithProfiles) fin;
                 param.setProfileRight(finWithProfiles.getProfile());
             }
+            // Restore any spilled build-side rows before marking the right side as finished
+            // so that the probe (left) side can see the complete hash map.
+            param.restoreSpilledBuildSide();
             param.setRightFinFlag(true);
             param.getFuture().complete(null);
         }
