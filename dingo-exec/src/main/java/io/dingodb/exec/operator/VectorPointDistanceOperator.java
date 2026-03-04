@@ -31,6 +31,7 @@ import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +54,14 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         VectorPointDistanceParam param = vertex.getParam();
         param.setContext(context);
         param.getCache().add(tuple);
+        // Spill to disk if the in-memory cache exceeds the configured threshold.
+        if (param.getCache().size() > param.getSpillThreshold()) {
+            try {
+                param.spillCache("vectorPoint-" + vertex.getId());
+            } catch (IOException e) {
+                log.warn("VectorPointDistanceOperator: spill failed, continuing in-memory", e);
+            }
+        }
         return true;
     }
 
@@ -64,6 +73,14 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             if (fin instanceof FinWithException) {
                 edge.fin(fin);
                 return;
+            }
+            // Restore any previously spilled tuples back into the in-memory cache.
+            if (param.hasSpilledData()) {
+                try {
+                    param.restoreSpilledTuples();
+                } catch (IOException e) {
+                    log.warn("VectorPointDistanceOperator: failed to restore spilled tuples, results may be incomplete", e);
+                }
             }
             OperatorProfile profile = param.getProfile("vectorPointDistance");
             long start = System.currentTimeMillis();

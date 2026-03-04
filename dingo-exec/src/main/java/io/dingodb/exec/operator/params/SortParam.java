@@ -23,14 +23,21 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.SortCollation;
+import io.dingodb.exec.spill.SpillFile;
+import io.dingodb.exec.spill.SpillFileManager;
+import io.dingodb.exec.spill.TupleSerializer;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
 @Getter
+@Slf4j
 @JsonTypeName("sort")
 @JsonPropertyOrder({"collations", "limit", "offset", "vectorHybrid"})
 public class SortParam extends AbstractParams {
@@ -45,6 +52,11 @@ public class SortParam extends AbstractParams {
     private final boolean vectorHybrid;
     private final List<Object[]> cache;
     private transient Comparator<Object[]> comparator;
+
+    // Spill support
+    /** Number of in-memory tuples that triggers a spill to disk. Disabled (MAX_VALUE) by default. */
+    private transient long spillThreshold = Long.MAX_VALUE;
+    private transient List<SpillFile> spillFiles;
 
     @JsonCreator
     public SortParam(
@@ -72,6 +84,7 @@ public class SortParam extends AbstractParams {
     @Override
     public void init(Vertex vertex) {
         super.init(vertex);
+        spillFiles = new ArrayList<>();
         if (!collations.isEmpty()) {
             Comparator<Object[]> c = collations.get(0).makeComparator();
             for (int i = 1; i < collations.size(); ++i) {
@@ -83,8 +96,71 @@ public class SortParam extends AbstractParams {
         }
     }
 
+    /**
+     * Sets the in-memory tuple threshold above which the cache will be spilled to disk.
+     * A value of {@link Long#MAX_VALUE} (the default) disables spilling.
+     *
+     * @param threshold maximum number of in-memory tuples before spill
+     */
+    public void setSpillThreshold(long threshold) {
+        this.spillThreshold = threshold;
+    }
+
+    /**
+     * Spills the current in-memory cache to a new spill file and clears the cache.
+     * Does nothing if the cache is empty.
+     *
+     * @param mgr        the {@link SpillFileManager} to use
+     * @param operatorId logical identifier for this operator instance
+     * @param bucketId   partition/bucket index
+     * @throws IOException on spill I/O failure
+     */
+    public void spillCache(SpillFileManager mgr, String operatorId, int bucketId) throws IOException {
+        if (cache.isEmpty()) {
+            return;
+        }
+        SpillFile sf = mgr.createSpill(operatorId, bucketId);
+        mgr.write(sf, TupleSerializer.serialize(cache));
+        mgr.closeAndFlush(sf);
+        spillFiles.add(sf);
+        log.debug("SortParam: spilled {} tuples to {}", cache.size(), sf.getFile());
+        cache.clear();
+    }
+
+    /**
+     * Reads all previously spilled tuples back into a list and releases the spill files.
+     *
+     * @param mgr the {@link SpillFileManager} to use
+     * @return all tuples recovered from spill files
+     * @throws IOException on read failure
+     */
+    public List<Object[]> readSpilledTuples(SpillFileManager mgr) throws IOException {
+        List<Object[]> result = new ArrayList<>();
+        for (SpillFile sf : spillFiles) {
+            byte[] data = mgr.readAllBytes(sf);
+            if (data.length > 0) {
+                result.addAll(TupleSerializer.deserialize(data));
+            }
+            mgr.release(sf);
+        }
+        spillFiles.clear();
+        return result;
+    }
+
+    /** Returns {@code true} if there are any tuples spilled to disk. */
+    public boolean hasSpilledData() {
+        return spillFiles != null && !spillFiles.isEmpty();
+    }
+
     public void clear() {
         cache.clear();
+        if (spillFiles != null && !spillFiles.isEmpty()) {
+            SpillFileManager mgr = SpillFileManager.getInstance();
+            for (SpillFile sf : spillFiles) {
+                mgr.release(sf);
+            }
+            spillFiles.clear();
+        }
     }
 
     public OperatorProfile getProfile() {

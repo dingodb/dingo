@@ -28,6 +28,9 @@ import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.spill.SpillFile;
+import io.dingodb.exec.spill.SpillFileManager;
+import io.dingodb.exec.spill.TupleSerializer;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
@@ -35,6 +38,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -88,6 +92,12 @@ public class HashJoinParam extends AbstractParams {
     public boolean rightMappingEmpty;
 
     private volatile boolean interrupted = false;
+
+    // Spill support for the right-side hash map.
+    /** Number of right-side tuples that triggers a spill. Disabled (MAX_VALUE) by default. */
+    private transient long spillThreshold = Long.MAX_VALUE;
+    private transient List<SpillFile> spillFiles;
+    private transient int spillBucketCounter = 0;
 
 
     public HashJoinParam(
@@ -171,6 +181,8 @@ public class HashJoinParam extends AbstractParams {
         rightFinFlag = false;
         hashMap = new ConcurrentHashMap<>();
         future = new CompletableFuture<>();
+        spillFiles = new ArrayList<>();
+        spillBucketCounter = 0;
         if (relOp != null) {
             relOp = relOp.compile(new DingoCompileContext(
                 (TupleType) schema.getType(),
@@ -179,10 +191,83 @@ public class HashJoinParam extends AbstractParams {
         }
     }
 
+    /**
+     * Sets the right-side hash-map size threshold above which entries are spilled to disk.
+     * A value of {@link Long#MAX_VALUE} (the default) disables spilling.
+     *
+     * @param threshold maximum number of right-side entries before spill
+     */
+    public void setSpillThreshold(long threshold) {
+        this.spillThreshold = threshold;
+    }
+
+    public long getSpillThreshold() {
+        return spillThreshold;
+    }
+
+    /**
+     * Spills the current right-side hash map to disk as a flat list of tuples and clears the map.
+     * Each spilled tuple represents one right-side row.
+     *
+     * @param operatorId logical identifier for this operator instance
+     * @throws IOException on spill I/O failure
+     */
+    public void spillHashMap(String operatorId) throws IOException {
+        if (hashMap == null || hashMap.isEmpty()) {
+            return;
+        }
+        SpillFileManager mgr = SpillFileManager.getInstance();
+        SpillFile sf = mgr.createSpill(operatorId, spillBucketCounter++);
+        List<Object[]> tuples = new ArrayList<>(hashMap.size());
+        for (List<TupleWithJoinFlag> list : hashMap.values()) {
+            for (TupleWithJoinFlag t : list) {
+                tuples.add(t.getTuple());
+            }
+        }
+        mgr.write(sf, TupleSerializer.serialize(tuples));
+        mgr.closeAndFlush(sf);
+        spillFiles.add(sf);
+        LogUtils.debug(log, "HashJoinParam: spilled {} right tuples to {}", tuples.size(), sf.getFile());
+        hashMap.clear();
+    }
+
+    /**
+     * Reads all previously spilled right-side tuples back into a list and releases the spill files.
+     *
+     * @return list of right-side tuples recovered from disk
+     * @throws IOException on read failure
+     */
+    public List<Object[]> readSpilledTuples() throws IOException {
+        List<Object[]> result = new ArrayList<>();
+        SpillFileManager mgr = SpillFileManager.getInstance();
+        for (SpillFile sf : spillFiles) {
+            byte[] data = mgr.readAllBytes(sf);
+            if (data.length > 0) {
+                result.addAll(TupleSerializer.deserialize(data));
+            }
+            mgr.release(sf);
+        }
+        spillFiles.clear();
+        return result;
+    }
+
+    /** Returns {@code true} if there are right-side tuples spilled to disk. */
+    public boolean hasSpilledData() {
+        return spillFiles != null && !spillFiles.isEmpty();
+    }
+
     public void clear() {
         rightFinFlag = false;
         hashMap.clear();
         future = new CompletableFuture<>();
+        if (spillFiles != null) {
+            SpillFileManager mgr = SpillFileManager.getInstance();
+            for (SpillFile sf : spillFiles) {
+                mgr.release(sf);
+            }
+            spillFiles.clear();
+        }
+        spillBucketCounter = 0;
     }
 
     public void interrupt() {

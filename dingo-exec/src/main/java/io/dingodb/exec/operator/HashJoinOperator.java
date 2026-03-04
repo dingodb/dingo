@@ -35,6 +35,7 @@ import io.dingodb.store.api.transaction.exception.LockWaitException;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -125,6 +126,14 @@ public class HashJoinOperator extends SoleOutOperator {
                     list.add(new TupleWithJoinFlag(tuple));
                 }
                 profile.cacheOpTime(start);
+                // Spill right-side hash map to disk when it exceeds the configured threshold.
+                if (param.getHashMap().size() > param.getSpillThreshold()) {
+                    try {
+                        param.spillHashMap("hashJoin-" + vertex.getId());
+                    } catch (IOException e) {
+                        LogUtils.warn(log, "HashJoinOperator: right-side spill failed, continuing in-memory", e);
+                    }
+                }
             }
             return true;
         } finally {

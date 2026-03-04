@@ -25,14 +25,18 @@ import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.params.SortParam;
+import io.dingodb.exec.spill.SpillFileManager;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class SortOperator extends SoleOutOperator {
     public static final SortOperator INSTANCE = new SortOperator();
 
@@ -51,6 +55,15 @@ public class SortOperator extends SoleOutOperator {
                 return false;
             }
             param.getCache().add(tuple);
+            // Spill to disk if the in-memory cache exceeds the configured threshold.
+            if (param.getCache().size() > param.getSpillThreshold()) {
+                try {
+                    String operatorId = "sort-" + vertex.getId();
+                    param.spillCache(SpillFileManager.getInstance(), operatorId, 0);
+                } catch (IOException e) {
+                    log.warn("SortOperator: spill failed, continuing in-memory", e);
+                }
+            }
             return !collations.isEmpty() || limit < 0 || param.getCache().size() < offset + limit;
         }
     }
@@ -68,6 +81,16 @@ public class SortOperator extends SoleOutOperator {
             int limit = param.getLimit();
             int offset = param.getOffset();
             List<Object[]> cache = param.getCache();
+            // Merge any previously spilled tuples back into the in-memory cache.
+            if (param.hasSpilledData()) {
+                try {
+                    List<Object[]> spilled = param.readSpilledTuples(SpillFileManager.getInstance());
+                    // Append spilled tuples to the in-memory cache without shifting elements.
+                    cache.addAll(spilled);
+                } catch (IOException e) {
+                    log.warn("SortOperator: failed to read spilled data, results may be incomplete", e);
+                }
+            }
             int size = cache.size();
             profile.setCount(size);
             Comparator<Object[]> comparator = param.getComparator();
