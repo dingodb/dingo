@@ -36,8 +36,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class AvroTupleCodec implements TupleCodec {
     private static final ThreadLocal<BinaryDecoder> decoderLocal = ThreadLocal.withInitial(() -> null);
@@ -106,5 +108,48 @@ public class AvroTupleCodec implements TupleCodec {
             record = decodeBytes(is, record, reader);
         }
         return tuples;
+    }
+
+    /**
+     * Returns an {@link Iterator} that decodes tuples one at a time from {@code is}.
+     *
+     * <p>The supplied {@code InputStream} is read incrementally; it is the caller's
+     * responsibility to close it after the iterator is exhausted or no longer needed.
+     *
+     * @param is the stream to decode tuples from
+     * @return a lazy iterator over the decoded tuples
+     */
+    public @NonNull Iterator<Object[]> decodeIterator(@NonNull InputStream is) {
+        return new Iterator<Object[]>() {
+            private GenericRecord next = fetchNext(null);
+
+            @Override
+            public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override
+            public Object[] next() {
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
+                int size = schema.getFields().size();
+                Object[] tuple = new Object[size];
+                for (int i = 0; i < size; ++i) {
+                    tuple[i] = next.get(i);
+                }
+                tuple = (Object[]) type.convertFrom(tuple, AvroDataConverter.INSTANCE);
+                next = fetchNext(next);
+                return tuple;
+            }
+
+            private GenericRecord fetchNext(GenericRecord reuse) {
+                try {
+                    return decodeBytes(is, reuse, reader);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to decode tuple from spill stream", e);
+                }
+            }
+        };
     }
 }
