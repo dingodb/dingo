@@ -206,13 +206,18 @@ public final class TaskImpl implements Task {
         });
 
         for (Vertex vertex : this.getVertexes().values()) {
+            Thread thread = Thread.currentThread();
+            String threadName = thread.getName();
             try {
+                thread.setName("vertex-" + jobId + "-" + this.id + "-" + vertex.getId() + "-" +vertex.getOp() + "-" + thread.getId());
                 vertex.init();
             } catch (Exception ex) {
                 LogUtils.error(log, "Init operator:" + vertex.getOp() + "in jobId:" + jobId.toString()
                     + " task:" + this.id.toString() + " failed catch exception:", ex);
                 statusErrMsg = ex.toString();
                 isStatusOK = false;
+            } finally {
+                thread.setName(threadName);
             }
         }
         taskInitStatus = new TaskStatus();
