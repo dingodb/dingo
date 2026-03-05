@@ -66,6 +66,22 @@ SqlShow SqlShow(): {
     |
     show = SqlShowExecutors(s)
     |
+    show = SqlShowServers(s)
+    |
+    show = SqlShowComputeNodes(s)
+    |
+    show = SqlShowStoreNodes(s)
+    |
+    show = SqlShowCoordinatorNodes(s)
+    |
+    show = SqlShowCapacity(s)
+    |
+    show = SqlShowRegionsCount(s)
+    |
+    show = SqlShowStoreJobs(s)
+    |
+    show = SqlShowGcSafePoint(s)
+    |
     show = SqlShowIndexs(s)
     |
     show = SqlShowExecutorVariables(s)
@@ -313,6 +329,58 @@ SqlShow SqlShowExecutorVariables(Span s): {
 } {
   <EXECUTOR> <VARIABLES> [ <LIKE> <QUOTED_STRING> { pattern = SqlParserUtil.trim(token.image, "'"); } ]
   { return new SqlShowExecutorVariables(s.end(this), pattern); }
+}
+
+SqlShow SqlShowServers(Span s): {
+  String pattern = null;
+} {
+  <SERVERS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowServers(s.end(this), pattern); }
+}
+
+SqlShow SqlShowComputeNodes(Span s): {
+  String pattern = null;
+} {
+  <COMPUTE_NODES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowComputeNodes(s.end(this), pattern); }
+}
+
+SqlShow SqlShowStoreNodes(Span s): {
+  String pattern = null;
+} {
+  <STORE_NODES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowStoreNodes(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCoordinatorNodes(Span s): {
+  String pattern = null;
+} {
+  <COORDINATOR_NODES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowCoordinatorNodes(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCapacity(Span s): {
+} {
+  <CAPACITY>
+  { return new SqlShowCapacity(s.end(this)); }
+}
+
+SqlShow SqlShowRegionsCount(Span s): {
+} {
+  <REGIONS_COUNT>
+  { return new SqlShowRegions(s.end(this)); }
+}
+
+SqlShow SqlShowGcSafePoint(Span s): {
+} {
+  <GC_SAFEPOINT>
+  { return new SqlShowGcSafePoint(s.end(this)); }
+}
+
+SqlShow SqlShowStoreJobs(Span s): {
+} {
+  <STORE_JOBS>
+  { return new SqlShowStoreJobs(s.end(this)); }
 }
 
 

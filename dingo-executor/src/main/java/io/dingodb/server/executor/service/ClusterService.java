@@ -36,11 +36,16 @@ import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorResponse;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -179,6 +184,59 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
                 .forceReadOnlyReason(reason)
                 .build()
         );
+    }
+
+    @Override
+    public List<Object[]> getStoreNodes() {
+        GetStoreMapResponse response = coordinatorService.getStoreMap(
+            TsoService.getDefault().cacheTso(), GetStoreMapRequest.builder().build()
+        );
+        if (response.getStoremap() == null || response.getStoremap().getStores() == null) {
+            return new ArrayList<>();
+        }
+        return response.getStoremap().getStores().stream()
+            .map(s -> new Object[] {
+                s.getId(),
+                s.getRaftLocation() != null ? s.getRaftLocation().getHost() : "",
+                s.getRaftLocation() != null ? s.getRaftLocation().getPort() : 0,
+                s.getStoreType() != null ? s.getStoreType().name() : "",
+                s.getState() != null ? s.getState().name() : ""
+            })
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Object[]> getCoordinatorNodes() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public int getRegionCount() {
+        try {
+            return coordinatorService.getRegionMap(
+                TsoService.getDefault().cacheTso(),
+                GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
+            ).getRegionmap().getRegions().size();
+        } catch (Exception e) {
+            LogUtils.error(log, "Get region count failed: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    public long getGcSafePoint() {
+        try {
+            GetGCSafePointRequest request = GetGCSafePointRequest.builder()
+                .getAllTenant(false)
+                .build();
+            GetGCSafePointResponse response = coordinatorService.getGCSafePoint(
+                TsoService.getDefault().cacheTso(), request
+            );
+            return response.getSafePoint();
+        } catch (Exception e) {
+            LogUtils.error(log, "Get GC safe point failed: " + e.getMessage(), e);
+            return 0;
+        }
     }
 
     private String url(io.dingodb.sdk.service.entity.common.Location location) {

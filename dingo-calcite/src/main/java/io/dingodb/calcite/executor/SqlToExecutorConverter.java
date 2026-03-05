@@ -38,9 +38,12 @@ import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
+import io.dingodb.calcite.grammar.dql.SqlShowCapacity;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
 import io.dingodb.calcite.grammar.dql.SqlShowCollation;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
+import io.dingodb.calcite.grammar.dql.SqlShowComputeNodes;
+import io.dingodb.calcite.grammar.dql.SqlShowCoordinatorNodes;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
@@ -48,13 +51,18 @@ import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutorVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutors;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
+import io.dingodb.calcite.grammar.dql.SqlShowGcSafePoint;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowIndexFromTable;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
 import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
+import io.dingodb.calcite.grammar.dql.SqlShowRegions;
+import io.dingodb.calcite.grammar.dql.SqlShowServers;
 import io.dingodb.calcite.grammar.dql.SqlShowStartTs;
 import io.dingodb.calcite.grammar.dql.SqlShowStatus;
+import io.dingodb.calcite.grammar.dql.SqlShowStoreJobs;
+import io.dingodb.calcite.grammar.dql.SqlShowStoreNodes;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndexRegions;
@@ -256,6 +264,22 @@ public final class SqlToExecutorConverter {
             return Optional.of(new ShowTenantExecutor());
         } else if (sqlNode instanceof SqlShowExecutors) {
             return Optional.of(new ShowExecutorsExecutor());
+        } else if (sqlNode instanceof SqlShowServers) {
+            return Optional.of(new ShowServersExecutor());
+        } else if (sqlNode instanceof SqlShowComputeNodes) {
+            return Optional.of(new ShowComputeNodesExecutor());
+        } else if (sqlNode instanceof SqlShowStoreNodes) {
+            return Optional.of(new ShowStoreNodesExecutor());
+        } else if (sqlNode instanceof SqlShowCoordinatorNodes) {
+            return Optional.of(new ShowCoordinatorNodesExecutor());
+        } else if (sqlNode instanceof SqlShowCapacity) {
+            return Optional.of(new ShowCapacityExecutor());
+        } else if (sqlNode instanceof SqlShowRegions) {
+            return Optional.of(new ShowRegionsExecutor());
+        } else if (sqlNode instanceof SqlShowStoreJobs) {
+            return Optional.of(new ShowStoreJobsExecutor());
+        } else if (sqlNode instanceof SqlShowGcSafePoint) {
+            return Optional.of(new ShowGcSafePointExecutor());
         } else if (sqlNode instanceof SqlShowIndexFromTable) {
             SqlShowIndexFromTable showIndexFromTable = (SqlShowIndexFromTable) sqlNode;
             if (StringUtils.isEmpty(showIndexFromTable.schemaName)) {

@@ -142,6 +142,14 @@ data: {
       "io.dingodb.calcite.grammar.dql.SqlShowTriggers"
       "io.dingodb.calcite.grammar.dql.SqlShowStartTs"
       "io.dingodb.calcite.grammar.dql.SqlShowStatus"
+      "io.dingodb.calcite.grammar.dql.SqlShowServers"
+      "io.dingodb.calcite.grammar.dql.SqlShowComputeNodes"
+      "io.dingodb.calcite.grammar.dql.SqlShowStoreNodes"
+      "io.dingodb.calcite.grammar.dql.SqlShowCoordinatorNodes"
+      "io.dingodb.calcite.grammar.dql.SqlShowCapacity"
+      "io.dingodb.calcite.grammar.dql.SqlShowRegions"
+      "io.dingodb.calcite.grammar.dql.SqlShowGcSafePoint"
+      "io.dingodb.calcite.grammar.dql.SqlShowStoreJobs"
       "io.dingodb.calcite.grammar.dql.SqlSelect"
       "io.dingodb.calcite.grammar.dql.SqlStartGc"
       "io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint"
@@ -313,6 +321,14 @@ data: {
       "GENERATE_SERIES"
       "REFRESH"
       "INIT"
+      "SERVERS"
+      "COMPUTE_NODES"
+      "STORE_NODES"
+      "COORDINATOR_NODES"
+      "CAPACITY"
+      "REGIONS_COUNT"
+      "GC_SAFEPOINT"
+      "STORE_JOBS"
     ]
 
     # List of non-reserved keywords to add;
@@ -329,6 +345,14 @@ data: {
       "CARDINALITY"
       "PLUGINS"
       "TENANT"
+      "SERVERS"
+      "COMPUTE_NODES"
+      "STORE_NODES"
+      "COORDINATOR_NODES"
+      "CAPACITY"
+      "REGIONS_COUNT"
+      "GC_SAFEPOINT"
+      "STORE_JOBS"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
