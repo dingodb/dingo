@@ -36,8 +36,12 @@ public final class RexLiteralUtils {
         if (!rexLiteral.isNull()) {
             // `rexLiteral.getType()` is not always the required type.
             if (type instanceof DecimalType) {
-                ((DecimalType) type).setPrecision(rexLiteral.getType().getPrecision());
-                ((DecimalType) type).setScale(rexLiteral.getType().getScale());
+                DecimalType decimalType = new DecimalType(((DecimalType) type).isNullable());
+
+                ((DecimalType) decimalType).setPrecision(rexLiteral.getType().getPrecision());
+                ((DecimalType) decimalType).setScale(rexLiteral.getType().getScale());
+
+                return decimalType.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
             }
             return type.convertFrom(rexLiteral.getValue(), RexLiteralConverter.INSTANCE);
         }
