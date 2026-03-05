@@ -36,10 +36,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AvroTupleCodec implements TupleCodec {
     private static final ThreadLocal<BinaryDecoder> decoderLocal = ThreadLocal.withInitial(() -> null);
@@ -47,12 +47,12 @@ public class AvroTupleCodec implements TupleCodec {
 
     /**
      * Per-stream decoder cache for {@link #decodeOne(InputStream)}.
-     * Uses a WeakHashMap so entries are reclaimed when the InputStream becomes unreachable,
-     * providing a safety-net against leaks if callers do not read streams to completion.
-     * Access is synchronized for thread safety.
+     * Keyed by InputStream identity to preserve decoder state across successive calls on the
+     * same stream instance.  Entries are removed when the stream is exhausted (EOF) or an
+     * IOException occurs in {@link #decodeOne}, and can be explicitly removed via
+     * {@link #releaseStreamDecoder}.
      */
-    private static final Map<InputStream, BinaryDecoder> streamDecoderCache =
-        Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static final Map<InputStream, BinaryDecoder> streamDecoderCache = new ConcurrentHashMap<>();
 
     private final DingoType type;
     private final Schema schema;
