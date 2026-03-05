@@ -207,7 +207,14 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
 
     @Override
     public List<Object[]> getCoordinatorNodes() {
-        return new ArrayList<>();
+        try {
+            return Services.parse(Configuration.coordinators()).stream()
+                .map(l -> new Object[] {l.getHost(), l.getPort(), ""})
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            LogUtils.error(log, "Get coordinator nodes failed: " + e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 
     @Override
