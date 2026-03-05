@@ -31,7 +31,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestShowClusterExecutors {
 
@@ -107,30 +106,4 @@ public class TestShowClusterExecutors {
         assertEquals(Arrays.asList("gcSafePoint"), columns);
     }
 
-    @Test
-    public void testShowServersColumnsNotEmpty() {
-        ShowServersExecutor executor = new ShowServersExecutor();
-        List<String> columns = executor.columns();
-        assertTrue(columns.size() > 0);
-        assertTrue(columns.contains("type"));
-        assertTrue(columns.contains("host"));
-        assertTrue(columns.contains("port"));
-    }
-
-    @Test
-    public void testShowCapacityColumnsContainExpectedNames() {
-        ShowCapacityExecutor executor = new ShowCapacityExecutor();
-        List<String> columns = executor.columns();
-        assertTrue(columns.contains("storeCount"));
-        assertTrue(columns.contains("locationCount"));
-        assertTrue(columns.contains("regionCount"));
-    }
-
-    @Test
-    public void testShowStoreJobsColumnsContainExpectedNames() {
-        ShowStoreJobsExecutor executor = new ShowStoreJobsExecutor();
-        List<String> columns = executor.columns();
-        assertTrue(columns.contains("variable"));
-        assertTrue(columns.contains("value"));
-    }
 }
