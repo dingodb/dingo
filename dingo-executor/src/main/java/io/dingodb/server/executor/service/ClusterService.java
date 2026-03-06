@@ -34,6 +34,8 @@ import io.dingodb.sdk.service.entity.common.ExecutorUser;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorRequest;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorResponse;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetCoordinatorMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetCoordinatorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
@@ -210,8 +212,31 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     @Override
     public List<Object[]> getCoordinatorNodes() {
         try {
-            return Services.parse(Configuration.coordinators()).stream()
-                .map(l -> new Object[] {l.getHost(), l.getPort(), ""})
+            GetCoordinatorMapResponse response = coordinatorService.getCoordinatorMap(
+                TsoService.getDefault().cacheTso(),
+                GetCoordinatorMapRequest.builder().build()
+            );
+            if (response == null || response.getCoordinatorMap() == null
+                || response.getCoordinatorMap().getCoordinators() == null) {
+                return new ArrayList<>();
+            }
+            io.dingodb.sdk.service.entity.common.Location leaderLocation = response.getLeaderLocation();
+            return response.getCoordinatorMap().getCoordinators().stream()
+                .map(c -> {
+                    io.dingodb.sdk.service.entity.common.Location loc =
+                        c.getServerLocation() != null ? c.getServerLocation() : c.getLocation();
+                    boolean isLeader = leaderLocation != null && loc != null
+                        && leaderLocation.getHost() != null
+                        && leaderLocation.getHost().equals(loc.getHost())
+                        && leaderLocation.getPort() == loc.getPort();
+                    return new Object[] {
+                        c.getId() != null ? c.getId() : "",
+                        loc != null ? loc.getHost() : "",
+                        loc != null ? loc.getPort() : 0,
+                        c.getState() != null ? c.getState().name() : "",
+                        isLeader
+                    };
+                })
                 .collect(Collectors.toList());
         } catch (Exception e) {
             LogUtils.error(log, "Get coordinator nodes failed: " + e.getMessage(), e);

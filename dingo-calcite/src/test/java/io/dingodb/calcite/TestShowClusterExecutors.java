@@ -66,8 +66,8 @@ public class TestShowClusterExecutors {
         ShowCoordinatorNodesExecutor executor = new ShowCoordinatorNodesExecutor();
         List<String> columns = executor.columns();
         assertNotNull(columns);
-        assertEquals(3, columns.size());
-        assertEquals(Arrays.asList("host", "port", "state"), columns);
+        assertEquals(5, columns.size());
+        assertEquals(Arrays.asList("id", "host", "port", "state", "isLeader"), columns);
     }
 
     @Test

@@ -38,9 +38,11 @@ public class ShowCoordinatorNodesExecutor extends QueryExecutor {
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
+        columns.add("id");
         columns.add("host");
         columns.add("port");
         columns.add("state");
+        columns.add("isLeader");
         return columns;
     }
 }
