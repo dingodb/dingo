@@ -46,6 +46,8 @@ public class ShowCapacityExecutor extends QueryExecutor {
         "availableProcessors", "totalDiskGB", "freeDiskGB"
     );
 
+    private static final long[] EMPTY_RESOURCE_INFO = new long[] {0L, 0L, 0L, 0L, 0L, 0L};
+
     public ShowCapacityExecutor() {
     }
 
@@ -89,10 +91,12 @@ public class ShowCapacityExecutor extends QueryExecutor {
                     info[3], info[4], info[5]
                 });
             } catch (Exception e) {
-                LogUtils.error(log, "Failed to get resource info from " + location + ": " + e.getMessage(), e);
+                LogUtils.error(log, "Failed to get resource info from host: "
+                    + location.getHost() + ", port: " + location.getPort() + ": " + e.getMessage(), e);
                 results.add(new Object[] {
                     location.getHost(), location.getPort(),
-                    0L, 0L, 0L, 0L, 0L, 0L
+                    EMPTY_RESOURCE_INFO[0], EMPTY_RESOURCE_INFO[1], EMPTY_RESOURCE_INFO[2],
+                    EMPTY_RESOURCE_INFO[3], EMPTY_RESOURCE_INFO[4], EMPTY_RESOURCE_INFO[5]
                 });
             }
         }
