@@ -29,6 +29,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -115,7 +116,7 @@ public class TestShowClusterSqlNodes {
         assertEquals(SqlKind.SELECT, node.getKind());
         assertNull(node.getJobId());
         assertNull(node.getArchiveLimit());
-        assertEquals(false, node.isIncludeArchive());
+        assertFalse(node.isIncludeArchive());
         assertNull(node.getArchiveStartId());
     }
 
