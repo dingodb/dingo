@@ -17,7 +17,10 @@
 package io.dingodb.exec.operator;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Pair;
@@ -27,8 +30,11 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -44,7 +50,7 @@ import java.util.stream.Collectors;
 import static io.dingodb.exec.transaction.util.BinaryVectorUtils.getBinaryVectorList;
 
 @Slf4j
-public class VectorPointDistanceOperator extends SoleOutOperator {
+public class VectorPointDistanceOperator extends SoleOutOperator implements MemoryRevoker {
 
     public static final VectorPointDistanceOperator INSTANCE = new VectorPointDistanceOperator();
 
@@ -56,10 +62,25 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         VectorPointDistanceParam param = vertex.getParam();
         param.setContext(context);
         param.getCache().add(tuple);
-        // Spill to disk when the in-memory buffer reaches the configured threshold
-        if (param.isSpillEnabled() && param.getCache().size() >= param.getEffectiveSpillThreshold()) {
+        // Track memory usage for the revocation scheduler
+        if (param.getMemoryAllocatorCtx() != null) {
+            long tupleSize = ObjectSizeUtils.calculateSize(tuple);
+            param.getMemoryAllocatorCtx().allocateRevocableMemory(tupleSize);
+        }
+        // Spill to disk when the in-memory buffer reaches the configured threshold,
+        // or when the memory-revoking scheduler has requested it
+        boolean shouldSpill = param.isSpillEnabled()
+            && (param.getCache().size() >= param.getEffectiveSpillThreshold()
+                || (param.getMemoryAllocatorCtx() != null
+                    && param.getMemoryAllocatorCtx().isMemoryRevokingRequested()));
+        if (shouldSpill) {
             try {
                 param.spillCurrentBatch();
+                if (param.getMemoryAllocatorCtx() != null) {
+                    param.getMemoryAllocatorCtx().releaseRevocableMemory(
+                        param.getMemoryAllocatorCtx().getRevocableAllocated(), true);
+                    param.getMemoryAllocatorCtx().resetMemoryRevokingRequested();
+                }
             } catch (IOException e) {
                 throw new RuntimeException("Failed to spill VectorPointDistance buffer to disk", e);
             }
@@ -185,6 +206,46 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             profile.time(start);
             edge.fin(fin);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // MemoryRevoker interface implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        VectorPointDistanceParam vpParam = (VectorPointDistanceParam) param;
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            try {
+                vpParam.spillCurrentBatch();
+                LogUtils.info(log, "VectorPointDistanceOperator spilled current batch during memory revocation");
+                future.set(null);
+            } catch (IOException e) {
+                LogUtils.warn(log,
+                    "VectorPointDistanceOperator failed to spill during memory revocation: {}", e.getMessage());
+                future.setException(e);
+            }
+        }, "vectorpoint-spill-thread").start();
+        return future;
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        VectorPointDistanceParam vpParam = (VectorPointDistanceParam) param;
+        if (vpParam.getMemoryAllocatorCtx() != null) {
+            vpParam.getMemoryAllocatorCtx().releaseRevocableMemory(
+                vpParam.getMemoryAllocatorCtx().getRevocableAllocated(), true);
+            vpParam.getMemoryAllocatorCtx().resetMemoryRevokingRequested();
+            LogUtils.info(log,
+                "VectorPointDistanceOperator finished memory revoke, released revocable memory");
+        }
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        VectorPointDistanceParam vpParam = (VectorPointDistanceParam) param;
+        return vpParam.getMemoryAllocatorCtx();
     }
 
 }

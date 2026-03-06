@@ -21,9 +21,15 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.spill.SpillManager;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
 import lombok.Getter;
@@ -32,12 +38,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Getter
 @JsonTypeName("vectorPoint")
 @JsonPropertyOrder({"dimension"})
-public class VectorPointDistanceParam extends AbstractParams {
+public class VectorPointDistanceParam extends AbstractParams implements RevokerParams {
 
     private final RangeDistribution rangeDistribution;
 
@@ -79,6 +86,10 @@ public class VectorPointDistanceParam extends AbstractParams {
     private transient List<TupleSpillFile> spillFiles;
     /** Total number of tuples already written to spill files. */
     private transient long spilledCount;
+    /** Per-operator query-level memory pool (for scheduler integration). */
+    private transient QueryMemoryPool queryMemoryPool;
+    /** Memory allocator context used by the memory-revoking scheduler. */
+    private transient OperatorMemoryAllocatorCtx memoryAllocatorCtx;
 
     public VectorPointDistanceParam(
         RangeDistribution rangeDistribution,
@@ -112,6 +123,14 @@ public class VectorPointDistanceParam extends AbstractParams {
         this.spillThreshold = spillThreshold;
         if (schema != null) {
             this.spillFiles = new ArrayList<>();
+            if (ScopeVariables.enableSpill()) {
+                String poolName = "vectorPoint-" + UUID.randomUUID();
+                queryMemoryPool = (QueryMemoryPool) MemoryManager.getInstance()
+                    .createQueryMemoryPool(false, poolName);
+                MemoryPool opPool = MemoryPoolUtils.createOperatorTmpTablePool(
+                    poolName + "-op", queryMemoryPool);
+                memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(opPool, true);
+            }
         }
     }
 
@@ -197,6 +216,24 @@ public class VectorPointDistanceParam extends AbstractParams {
             }
             spillFiles.clear();
         }
+        if (memoryAllocatorCtx != null) {
+            memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        }
+        if (queryMemoryPool != null) {
+            queryMemoryPool.destroy();
+            queryMemoryPool = null;
+        }
+    }
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        return queryMemoryPool;
+    }
+
+    @Override
+    public OperatorMemoryAllocatorCtx getMemoryAllocatorCtx() {
+        return memoryAllocatorCtx;
     }
 
 }
+

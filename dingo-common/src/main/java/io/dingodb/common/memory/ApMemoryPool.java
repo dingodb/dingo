@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.common.memory;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
-
-import java.util.List;
-
-public interface TaskManager {
-    void addTask(Task task);
-
-    Task getTask(CommonId jobId, CommonId taskId);
-
-    void removeTask(CommonId jobId, CommonId taskId);
-
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
+public class ApMemoryPool extends MemoryPool{
+    public ApMemoryPool(String name, long minLimit, long maxLimit, MemoryPool parent) {
+        super(name, maxLimit, parent, MemoryType.GENERAL_AP);
     }
-
-    void close();
-
-    List<Task> getAllTasks();
 }

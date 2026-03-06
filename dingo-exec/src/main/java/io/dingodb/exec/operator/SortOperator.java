@@ -16,17 +16,23 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.SortParam;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -40,7 +46,7 @@ import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class SortOperator extends SoleOutOperator {
+public class SortOperator extends SoleOutOperator implements MemoryRevoker {
     public static final SortOperator INSTANCE = new SortOperator();
 
     private SortOperator() {
@@ -58,10 +64,25 @@ public class SortOperator extends SoleOutOperator {
                 return false;
             }
             param.getCache().add(tuple);
-            // Spill to disk when the in-memory buffer reaches the configured threshold
-            if (param.isSpillEnabled() && param.getCache().size() >= param.getEffectiveSpillThreshold()) {
+            // Track memory usage for the revocation scheduler
+            if (param.getMemoryAllocatorCtx() != null) {
+                long tupleSize = ObjectSizeUtils.calculateSize(tuple);
+                param.getMemoryAllocatorCtx().allocateRevocableMemory(tupleSize);
+            }
+            // Spill to disk when the in-memory buffer reaches the configured threshold,
+            // or when the memory-revoking scheduler has requested it
+            boolean shouldSpill = param.isSpillEnabled()
+                && (param.getCache().size() >= param.getEffectiveSpillThreshold()
+                    || (param.getMemoryAllocatorCtx() != null
+                        && param.getMemoryAllocatorCtx().isMemoryRevokingRequested()));
+            if (shouldSpill) {
                 try {
                     param.spillCurrentBatch();
+                    if (param.getMemoryAllocatorCtx() != null) {
+                        param.getMemoryAllocatorCtx().releaseRevocableMemory(
+                            param.getMemoryAllocatorCtx().getRevocableAllocated(), true);
+                        param.getMemoryAllocatorCtx().resetMemoryRevokingRequested();
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to spill sort buffer to disk", e);
                 }
@@ -308,5 +329,43 @@ public class SortOperator extends SoleOutOperator {
         boolean hasNext() {
             return current != null;
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // MemoryRevoker interface implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        SortParam sortParam = (SortParam) param;
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            try {
+                sortParam.spillCurrentBatch();
+                LogUtils.info(log, "SortOperator spilled current batch during memory revocation");
+                future.set(null);
+            } catch (IOException e) {
+                LogUtils.warn(log, "SortOperator failed to spill during memory revocation: {}", e.getMessage());
+                future.setException(e);
+            }
+        }, "sort-spill-thread").start();
+        return future;
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        SortParam sortParam = (SortParam) param;
+        if (sortParam.getMemoryAllocatorCtx() != null) {
+            sortParam.getMemoryAllocatorCtx().releaseRevocableMemory(
+                sortParam.getMemoryAllocatorCtx().getRevocableAllocated(), true);
+            sortParam.getMemoryAllocatorCtx().resetMemoryRevokingRequested();
+            LogUtils.info(log, "SortOperator finished memory revoke, released revocable memory");
+        }
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        SortParam sortParam = (SortParam) param;
+        return sortParam.getMemoryAllocatorCtx();
     }
 }

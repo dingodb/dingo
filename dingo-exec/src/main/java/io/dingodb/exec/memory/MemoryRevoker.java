@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.memory;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import com.google.common.util.concurrent.ListenableFuture;
+import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 
-import java.util.List;
+public interface MemoryRevoker {
 
-public interface TaskManager {
-    void addTask(Task task);
+    ListenableFuture<?> startMemoryRevoke(AbstractParams param);
 
-    Task getTask(CommonId jobId, CommonId taskId);
+    void finishMemoryRevoke(AbstractParams param);
 
-    void removeTask(CommonId jobId, CommonId taskId);
+    MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param);
 
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
-    }
-
-    void close();
-
-    List<Task> getAllTasks();
 }

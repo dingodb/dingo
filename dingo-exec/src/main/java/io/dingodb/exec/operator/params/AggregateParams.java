@@ -23,12 +23,18 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.aggregate.AbstractAgg;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.AggCache;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.spill.SpillManager;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
 import lombok.Getter;
@@ -38,11 +44,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @JsonTypeName("aggregate")
 @JsonPropertyOrder({"keys", "aggregates", "schema", "spillThreshold"})
-public class AggregateParams extends AbstractParams {
+public class AggregateParams extends AbstractParams implements RevokerParams {
 
     @JsonProperty("keys")
     private final TupleMapping keyMapping;
@@ -74,6 +81,10 @@ public class AggregateParams extends AbstractParams {
     private transient List<TupleSpillFile> spillFiles;
     /** Total number of input rows already written to spill files. */
     private transient long spilledCount;
+    /** Per-operator query-level memory pool (for scheduler integration). */
+    private transient QueryMemoryPool queryMemoryPool;
+    /** Memory allocator context used by the memory-revoking scheduler. */
+    private transient OperatorMemoryAllocatorCtx memoryAllocatorCtx;
 
     @JsonCreator
     public AggregateParams(
@@ -100,20 +111,35 @@ public class AggregateParams extends AbstractParams {
             inputBuffer = new ArrayList<>();
             spillFiles = new ArrayList<>();
             spilledCount = 0;
+            if (ScopeVariables.enableSpill()) {
+                String poolName = "aggregate-" + UUID.randomUUID();
+                queryMemoryPool = (QueryMemoryPool) MemoryManager.getInstance()
+                    .createQueryMemoryPool(false, poolName);
+                MemoryPool opPool = MemoryPoolUtils.createOperatorTmpTablePool(
+                    poolName + "-op", queryMemoryPool);
+                memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(opPool, true);
+            }
         }
     }
 
     /**
      * Adds an input tuple. When spill is enabled, tuples are buffered and spilled to disk
-     * when the buffer reaches the configured threshold. Otherwise, tuples are aggregated
-     * directly into the in-memory {@link AggCache}.
+     * when the buffer reaches the configured threshold or when the memory-revoking scheduler
+     * requests it. Otherwise, tuples are aggregated directly into the in-memory {@link AggCache}.
      */
     public synchronized void addTuple(Object[] tuple) {
         if (schema != null) {
             inputBuffer.add(tuple);
-            if (inputBuffer.size() >= getEffectiveSpillThreshold()) {
+            boolean shouldSpill = inputBuffer.size() >= getEffectiveSpillThreshold()
+                || (memoryAllocatorCtx != null && memoryAllocatorCtx.isMemoryRevokingRequested());
+            if (shouldSpill) {
                 try {
                     spillCurrentBuffer();
+                    if (memoryAllocatorCtx != null) {
+                        memoryAllocatorCtx.releaseRevocableMemory(
+                            memoryAllocatorCtx.getRevocableAllocated(), true);
+                        memoryAllocatorCtx.resetMemoryRevokingRequested();
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to spill aggregate input buffer to disk", e);
                 }
@@ -174,11 +200,28 @@ public class AggregateParams extends AbstractParams {
             }
             spillFiles.clear();
         }
+        if (memoryAllocatorCtx != null) {
+            memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        }
+        if (queryMemoryPool != null) {
+            queryMemoryPool.destroy();
+            queryMemoryPool = null;
+        }
+    }
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        return queryMemoryPool;
+    }
+
+    @Override
+    public OperatorMemoryAllocatorCtx getMemoryAllocatorCtx() {
+        return memoryAllocatorCtx;
     }
 
     // -------------------------------------------------------------------------
 
-    private void spillCurrentBuffer() throws IOException {
+    void spillCurrentBuffer() throws IOException {
         if (inputBuffer.isEmpty()) {
             return;
         }
@@ -192,3 +235,4 @@ public class AggregateParams extends AbstractParams {
         inputBuffer.clear();
     }
 }
+

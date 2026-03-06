@@ -21,9 +21,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.spill.SpillManager;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
@@ -35,6 +41,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Parameters for the Sort operator.
@@ -51,7 +58,7 @@ import java.util.List;
 @Slf4j
 @JsonTypeName("sort")
 @JsonPropertyOrder({"collations", "limit", "offset", "vectorHybrid", "schema", "spillThreshold"})
-public class SortParam extends AbstractParams {
+public class SortParam extends AbstractParams implements RevokerParams {
 
     @JsonProperty("collations")
     private final List<SortCollation> collations;
@@ -80,6 +87,10 @@ public class SortParam extends AbstractParams {
     private transient List<TupleSpillFile> spillFiles;
     /** Total number of tuples already written to spill files. */
     private transient long spilledCount;
+    /** Per-operator query-level memory pool (for scheduler integration). */
+    private transient QueryMemoryPool queryMemoryPool;
+    /** Memory allocator context used by the memory-revoking scheduler. */
+    private transient OperatorMemoryAllocatorCtx memoryAllocatorCtx;
 
     private transient Comparator<Object[]> comparator;
 
@@ -123,6 +134,15 @@ public class SortParam extends AbstractParams {
         if (schema != null) {
             spillFiles = new ArrayList<>();
             spilledCount = 0;
+            // Create a per-operator memory pool for the revocation scheduler
+            if (ScopeVariables.enableSpill()) {
+                String poolName = "sort-" + UUID.randomUUID();
+                queryMemoryPool = (QueryMemoryPool) MemoryManager.getInstance()
+                    .createQueryMemoryPool(false, poolName);
+                MemoryPool opPool = MemoryPoolUtils.createOperatorTmpTablePool(
+                    poolName + "-op", queryMemoryPool);
+                memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(opPool, true);
+            }
         }
     }
 
@@ -190,6 +210,23 @@ public class SortParam extends AbstractParams {
             }
             spillFiles.clear();
         }
+        if (memoryAllocatorCtx != null) {
+            memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        }
+        if (queryMemoryPool != null) {
+            queryMemoryPool.destroy();
+            queryMemoryPool = null;
+        }
+    }
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        return queryMemoryPool;
+    }
+
+    @Override
+    public OperatorMemoryAllocatorCtx getMemoryAllocatorCtx() {
+        return memoryAllocatorCtx;
     }
 
     public OperatorProfile getProfile() {

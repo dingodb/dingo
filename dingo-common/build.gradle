@@ -28,6 +28,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: 'jackson'.v()
     implementation group: 'com.fasterxml.jackson.module', name: 'jackson-module-afterburner', version: 'jackson'.v()
     implementation group: 'org.apache.commons', name: 'commons-pool2', version: 'commons-pool2'.v()
+    implementation group: 'org.openjdk.jol', name: 'jol-core', version: '0.2'
     api group: 'io.dingodb', name: 'calcite-core', version: 'calcite'.v()
     implementation group: 'commons-lang', name: 'commons-lang', version: 'commons-lang'.v()
     api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: 'jackson'.v()
