@@ -24,7 +24,7 @@ import java.util.List;
 
 public class ShowStoreJobsExecutor extends QueryExecutor {
 
-    private ClusterService clusterService;
+    private final ClusterService clusterService;
 
     public ShowStoreJobsExecutor() {
         clusterService = ClusterService.getDefault();

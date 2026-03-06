@@ -255,14 +255,20 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             List<Job> jobs = JobManagerImpl.INSTANCE.jobList();
             return jobs.stream()
                 .map(job -> {
-                    JobImpl jobImpl = (JobImpl) job;
+                    String txnId = "";
+                    String queryId = "";
+                    if (job instanceof JobImpl) {
+                        JobImpl jobImpl = (JobImpl) job;
+                        txnId = jobImpl.getTxnId() != null ? jobImpl.getTxnId().toString() : "";
+                        queryId = jobImpl.getQueryId() != null ? jobImpl.getQueryId() : "";
+                    }
                     return new Object[] {
                         job.getJobId().toString(),
-                        jobImpl.getTxnId() != null ? jobImpl.getTxnId().toString() : "",
+                        txnId,
                         job.getStartTime(),
                         job.isSelect(),
                         System.currentTimeMillis() - job.getStartTime(),
-                        jobImpl.getQueryId() != null ? jobImpl.getQueryId() : "",
+                        queryId,
                         job.dataCnt()
                     };
                 })
