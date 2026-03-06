@@ -283,6 +283,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for tinyint adds scale.
                     precision = Math.max(3, precision);
+                } else if (operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(3, precision) + right.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
             } else if (SqlTypeUtil.isCharacter(right)) {
@@ -300,6 +302,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for int adds scale.
                     precision = Math.max(10, precision);
+                } else if(operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(10, precision) + right.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
             } else if (SqlTypeUtil.isCharacter(right)) {
@@ -317,6 +321,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for int adds scale.
                     precision = Math.max(19, precision);
+                } else if(operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(19, precision) + right.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, right.getScale());
             } else if (SqlTypeUtil.isCharacter(right)) {
@@ -344,6 +350,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for tinyint adds scale.
                     precision = Math.max(3, precision);
+                } else if(operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(3, precision) + left.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
             } else if (SqlTypeUtil.isInt(right)) {
@@ -351,6 +359,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for int adds scale.
                     precision = Math.max(10, precision);
+                } else if(operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(10, precision) + left.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
             } else if (SqlTypeUtil.isBigint(right)) {
@@ -358,6 +368,8 @@ public class DingoTypeMapper {
                 if (operator.getKind() == SqlKind.MOD) {
                     //Max digits for bigint adds scale.
                     precision = Math.max(19, precision);
+                } else if(operator.getKind() == SqlKind.PLUS || operator.getKind() == SqlKind.MINUS) {
+                    precision = Math.max(19, precision) + left.getScale();
                 }
                 ret = factory.createSqlType(SqlTypeName.DECIMAL, precision, left.getScale());
             } else if (SqlTypeUtil.isCharacter(left)) {
