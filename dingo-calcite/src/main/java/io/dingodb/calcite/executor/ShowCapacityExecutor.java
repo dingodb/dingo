@@ -47,7 +47,7 @@ public class ShowCapacityExecutor extends QueryExecutor {
         long usedMemoryMB = totalMemoryMB - freeMemoryMB;
         int availableProcessors = runtime.availableProcessors();
 
-        File root = new File("/");
+        File root = new File(System.getProperty("user.dir")).toPath().getRoot().toFile();
         long totalDiskGB = root.getTotalSpace() / (1024 * 1024 * 1024);
         long freeDiskGB = root.getUsableSpace() / (1024 * 1024 * 1024);
 

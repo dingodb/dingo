@@ -41,7 +41,7 @@ public class ShowServersExecutor extends QueryExecutor {
         clusterService.getStoreNodes().stream()
             .map(s -> new Object[] {"store", s[0], s[1], s[2], s[4]})
             .forEach(allNodes::add);
-        // Add coordinator nodes
+        // Add coordinator nodes: c[] = {id, host, port, state, isLeader}
         clusterService.getCoordinatorNodes().stream()
             .map(c -> new Object[] {"coordinator", c[0], c[1], c[2], c[3]})
             .forEach(allNodes::add);
