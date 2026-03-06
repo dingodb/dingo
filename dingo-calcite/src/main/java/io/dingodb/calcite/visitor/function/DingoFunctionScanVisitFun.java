@@ -72,7 +72,7 @@ public final class DingoFunctionScanVisitFun {
             false,
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
         Task task = job.getOrCreate(currentLocation, idGenerator);

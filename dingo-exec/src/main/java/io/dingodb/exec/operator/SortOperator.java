@@ -16,15 +16,24 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
+import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.operator.params.SortParam;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -33,7 +42,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SortOperator extends SoleOutOperator {
+@Slf4j
+public class SortOperator extends SoleOutOperator implements MemoryRevoker {
     public static final SortOperator INSTANCE = new SortOperator();
 
     private SortOperator() {
@@ -158,4 +168,35 @@ public class SortOperator extends SoleOutOperator {
             .collect(Collectors.toList());
     }
 
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        SortParam sortParam = (SortParam) param;
+        sortParam.addSpillCnt(1);
+        return spillToDisk(sortParam);
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        // finish -> releaseMemory
+        SortParam sortParam = (SortParam) param;
+        MemoryAllocatorCtx memoryAllocatorCtx = sortParam.getMemoryAllocatorCtx();
+        memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        LogUtils.info(log, "finish memory revoke, release revocable memory");
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        SortParam sortParam = (SortParam) param;
+        return sortParam.getMemoryAllocatorCtx();
+    }
+
+    public ListenableFuture<?> spillToDisk(AbstractParams param) {
+        LogUtils.info(log, "start spill to disk");
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            Utils.sleep(10000);
+            future.set(null);
+        }).start();
+        return future;
+    }
 }

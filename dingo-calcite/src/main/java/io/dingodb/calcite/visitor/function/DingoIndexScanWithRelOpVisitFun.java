@@ -105,7 +105,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
             outputs.add(createVerticesForRange(
                 task,
                 idGenerator,
-                (start, end) -> createCalcRangeDistributionVertex(rel, start, end, false, visitor),
+                (start, end) -> createCalcRangeDistributionVertex(rel, start, end, false, visitor, job),
                 null,
                 null,
                 scanVertexCreator
@@ -116,7 +116,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                 outputs.add(createVerticesForRange(
                     task,
                     idGenerator,
-                    (start, end) -> createCalcDistributionVertex(rel, start, end, false, visitor),
+                    (start, end) -> createCalcDistributionVertex(rel, start, end, false, visitor, job),
                     null,
                     null,
                     scanVertexCreator
@@ -126,7 +126,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcRangeDistributionVertex(rel, start, end, false, visitor),
+                        (start, end) -> createCalcRangeDistributionVertex(rel, start, end, false, visitor, job),
                         null,
                         null,
                         scanVertexCreator
@@ -140,7 +140,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcDistributionVertex(rel, start, end, false, visitor),
+                        (start, end) -> createCalcDistributionVertex(rel, start, end, false, visitor, job),
                         partition.getStart(),
                         i < partitionNum - 1 ? partitions.get(i + 1).getStart() : null,
                         scanVertexCreator
@@ -274,7 +274,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
         byte[] startKey,
         byte[] endKey,
         boolean withEnd,
-        DingoJobVisitor visitor
+        DingoJobVisitor visitor,
+        Job job
     ) {
         MetaService metaService = MetaService.root(visitor.getPointTs());
         final IndexTable td = rel.getIndexTable();
@@ -298,7 +299,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
         distributionParam.setFilterRange(rel.isRangeScan());
@@ -310,7 +311,8 @@ public final class DingoIndexScanWithRelOpVisitFun {
         byte[] startKey,
         byte[] endKey,
         boolean withEnd,
-        DingoJobVisitor visitor
+        DingoJobVisitor visitor,
+        Job job
     ) {
         MetaService metaService = MetaService.root(visitor.getPointTs());
         final IndexTable td = rel.getIndexTable();
@@ -341,7 +343,7 @@ public final class DingoIndexScanWithRelOpVisitFun {
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         boolean filterRange = false;
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());

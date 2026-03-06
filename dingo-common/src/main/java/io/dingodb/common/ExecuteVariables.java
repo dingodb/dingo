@@ -27,17 +27,15 @@ import java.util.Properties;
 @NoArgsConstructor
 public class ExecuteVariables {
     public final static int CONCURRENCY_COUNT = 5;
-    private boolean isJoinConcurrency = false;
-    private boolean isExecutorShuffle = false;
-    private int concurrencyLevel = CONCURRENCY_COUNT;
-    private boolean isInsertCheckInplace = false;
-    private int iterationLimit;
+    protected boolean isJoinConcurrency = false;
+    protected boolean isExecutorShuffle = false;
+    protected int concurrencyLevel = CONCURRENCY_COUNT;
+    protected boolean isInsertCheckInplace = false;
+    protected int iterationLimit;
     @Setter
-    private String queryId;
+    protected String user;
     @Setter
-    private String user;
-    @Setter
-    private String host;
+    protected String host;
 
     protected ExecuteVariables(Properties properties) {
         this.iterationLimit = getIterationLimit(properties);
@@ -45,16 +43,6 @@ public class ExecuteVariables {
         this.concurrencyLevel = getConcurrencyLevel(properties);
         this.isInsertCheckInplace = isInsertCheckInplace(properties);
         this.isExecutorShuffle = isExecutorShuffle(properties);
-        this.queryId = properties.getProperty("queryId", null);
-    }
-
-    protected ExecuteVariables(Properties properties, String queryId) {
-        this.iterationLimit = getIterationLimit(properties);
-        this.isJoinConcurrency = isJoinConcurrency(properties);
-        this.concurrencyLevel = getConcurrencyLevel(properties);
-        this.isInsertCheckInplace = isInsertCheckInplace(properties);
-        this.isExecutorShuffle = isExecutorShuffle(properties);
-        this.queryId = queryId;
     }
 
     public int getConcurrencyLevel(Properties properties) {

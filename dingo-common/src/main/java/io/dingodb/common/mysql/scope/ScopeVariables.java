@@ -16,6 +16,7 @@
 
 package io.dingodb.common.mysql.scope;
 
+import io.dingodb.common.memory.MemoryManager;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.util.Utils;
 
@@ -64,6 +65,7 @@ public final class ScopeVariables {
         executorProp.put("ddl_mdl_log", "on");
         executorProp.put("show_coprocessor_expr", "off");
         executorProp.put("enable_decimal_pushdown", "on");
+        executorProp.put("per_query_memory_limit", "536870912");
     }
 
     private ScopeVariables() {
@@ -295,6 +297,39 @@ public final class ScopeVariables {
         }
     }
 
+    public static boolean enableSpill() {
+        try {
+            String lookupBatchGet = executorProp.getOrDefault("enable_spill", "on").toString();
+            return "on".equalsIgnoreCase(lookupBatchGet);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public static long joinSpillSize() {
+        try {
+            String batchSize = executorProp.getOrDefault("allocate_size", "4194304").toString();
+            return Long.parseLong(batchSize);
+        } catch (Exception e) {
+            return 4194304;
+        }
+    }
+
+    public static long perQueryMemoryLimit() {
+        try {
+            Object batchSize = executorProp.get("direct_query_memory_limit");
+            if (batchSize != null) {
+                return Long.parseLong(batchSize.toString());
+            }
+            batchSize = executorProp.getOrDefault("per_query_memory_limit", "536870912");
+            long limit = Long.parseLong(batchSize.toString());
+            long maxMemory = Runtime.getRuntime().maxMemory();
+            return Math.min(limit, maxMemory / 2);
+        } catch (Exception e) {
+            return 536870912;
+        }
+    }
+
     public static synchronized void setExecutorProp(String key, String val) {
         if ("rpc_batch_size".equalsIgnoreCase(key)) {
             int rpcBatchSize = Integer.parseInt(val);
@@ -310,5 +345,14 @@ public final class ScopeVariables {
             return;
         }
         executorProp.put(key, val);
+        if ("global_memory_size".equalsIgnoreCase(key)) {
+            long size;
+            try {
+                size = Long.parseLong(val);
+            } catch (Exception e) {
+                size = Runtime.getRuntime().maxMemory();
+            }
+            MemoryManager.getInstance().adjustMemoryLimit(size);
+        }
     }
 }

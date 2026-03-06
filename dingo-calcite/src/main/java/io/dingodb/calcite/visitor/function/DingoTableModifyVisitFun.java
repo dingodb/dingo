@@ -158,6 +158,7 @@ public final class DingoTableModifyVisitFun {
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
                             }
+                            lockVertex.setExecutionContext(job.getExecutionContext());
                             lockVertex.setId(idGenerator.getOperatorId(task.getId()));
                             Edge inputEdge = new Edge(input, lockVertex);
                             input.addEdge(inputEdge);
@@ -175,7 +176,7 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
-                                    visitor.getExecuteVariables().isInsertCheckInplace(),
+                                    job.getExecutionContext().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
@@ -206,7 +207,7 @@ public final class DingoTableModifyVisitFun {
                                         transaction.getStartTs(),
                                         0L,
                                         transaction.getLockTimeOut(),
-                                        visitor.getExecuteVariables().isInsertCheckInplace(),
+                                        job.getExecutionContext().isInsertCheckInplace(),
                                         td,
                                         rel.isHasAutoIncrement(),
                                         rel.getAutoIncrementColIndex()
@@ -234,7 +235,7 @@ public final class DingoTableModifyVisitFun {
                                         transaction.getStartTs(),
                                         0L,
                                         transaction.getLockTimeOut(),
-                                        visitor.getExecuteVariables().isInsertCheckInplace(),
+                                        job.getExecutionContext().isInsertCheckInplace(),
                                         td,
                                         rel.isHasAutoIncrement(),
                                         rel.getAutoIncrementColIndex(),

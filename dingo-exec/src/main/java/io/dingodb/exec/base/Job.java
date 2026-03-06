@@ -17,6 +17,7 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.transaction.base.TransactionType;
@@ -80,19 +81,17 @@ public interface Job {
 
     }
 
-    void setQueryId(String queryId);
-
     void start();
 
     long getStartTime();
 
     boolean isSelect();
 
-    void setUser(String user);
-
-    void setHost(String host);
-
     boolean validate(String user, String host);
 
     long dataCnt();
+
+    void setExecutionContext(ExecutionContext executionContext);
+
+    ExecutionContext getExecutionContext();
 }

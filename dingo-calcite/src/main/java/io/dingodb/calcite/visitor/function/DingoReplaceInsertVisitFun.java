@@ -153,7 +153,7 @@ public final class DingoReplaceInsertVisitFun {
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
-                                    visitor.getExecuteVariables().isInsertCheckInplace(),
+                                    job.getExecutionContext().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex()
@@ -180,7 +180,7 @@ public final class DingoReplaceInsertVisitFun {
                                     transaction.getStartTs(),
                                     0L,
                                     transaction.getLockTimeOut(),
-                                    visitor.getExecuteVariables().isInsertCheckInplace(),
+                                    job.getExecutionContext().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex()

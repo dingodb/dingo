@@ -23,6 +23,7 @@ import io.dingodb.exec.base.TaskManager;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -72,5 +73,10 @@ public final class TaskManagerImpl implements TaskManager {
     @Override
     public void close() {
         taskMap.values().forEach(Task::destroy);
+    }
+
+    @Override
+    public List<Task> getAllTasks() {
+        return taskMap.values().stream().toList();
     }
 }

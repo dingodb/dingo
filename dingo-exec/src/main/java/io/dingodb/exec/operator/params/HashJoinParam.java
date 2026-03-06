@@ -19,7 +19,11 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -27,10 +31,12 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,14 +44,16 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
 @Slf4j
 @JsonTypeName("hashJoin")
 @JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
-public class HashJoinParam extends AbstractParams {
+public class HashJoinParam extends AbstractParams implements RevokerParams {
 
     @JsonProperty("leftMapping")
     private final TupleMapping leftMapping;
@@ -89,6 +97,12 @@ public class HashJoinParam extends AbstractParams {
 
     private volatile boolean interrupted = false;
 
+    private ExecutionContext executionContext;
+
+    protected long spillCnt = 0;
+    OperatorMemoryAllocatorCtx memoryAllocatorCtx;
+    AtomicLong size;
+
 
     public HashJoinParam(
         TupleMapping leftMapping,
@@ -96,7 +110,8 @@ public class HashJoinParam extends AbstractParams {
         int leftLength,
         int rightLength,
         boolean leftRequired,
-        boolean rightRequired
+        boolean rightRequired,
+        ExecutionContext executionContext
     ) {
         this.leftMapping = leftMapping;
         this.rightMapping = rightMapping;
@@ -107,6 +122,7 @@ public class HashJoinParam extends AbstractParams {
         this.leftMappingEmpty = this.leftMapping.size() == 0;
         this.rightMappingEmpty = this.rightMapping.size() == 0;
         this.config = new DingoRelConfig();
+        this.executionContext = executionContext;
     }
 
     public static TupleKey rtrimTupleKey(TupleKey key) {
@@ -177,12 +193,22 @@ public class HashJoinParam extends AbstractParams {
                 (TupleType) vertex.getParasType().getType()
             ), config);
         }
+        this.size = new AtomicLong(0);
+        if (!executionContext.isInnerSql()) {
+            String name = "hashJoin" + UUID.randomUUID();
+            MemoryPool memoryPool =
+                MemoryPoolUtils.createOperatorTmpTablePool(name, executionContext.getMemoryPool());
+            this.memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(memoryPool, ScopeVariables.enableSpill());
+        }
     }
 
     public void clear() {
         rightFinFlag = false;
         hashMap.clear();
         future = new CompletableFuture<>();
+        if (this.memoryAllocatorCtx != null) {
+            this.memoryAllocatorCtx.close();
+        }
     }
 
     public void interrupt() {
@@ -191,5 +217,27 @@ public class HashJoinParam extends AbstractParams {
         if (!future.isDone()) {
             future.completeExceptionally(new InterruptedException("HashJoin operation interrupted"));
         }
+    }
+
+    @Override
+    public void addSpillCnt(int spillCnt) {
+        this.spillCnt += spillCnt;
+    }
+
+    @Override
+    public long getCacheSize() {
+        return hashMap.size();
+    }
+
+    public void incMemSize(long size) {
+        this.size.addAndGet(size);
+    }
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        if (this.memoryAllocatorCtx != null) {
+            return this.getExecutionContext().getMemoryPool();
+        }
+        return null;
     }
 }

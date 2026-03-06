@@ -110,6 +110,7 @@ import io.dingodb.calcite.visitor.function.DingoVectorStreamingVisitFun;
 import io.dingodb.calcite.visitor.function.DingoVectorVisitFun;
 import io.dingodb.calcite.visitor.function.DingoWindowVisitFun;
 import io.dingodb.common.ExecuteVariables;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.exec.base.IdGenerator;
@@ -145,9 +146,6 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     private boolean isScan;
 
     @Getter
-    private ExecuteVariables executeVariables;
-
-    @Getter
     private long pointTs;
 
     @Getter
@@ -162,54 +160,43 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
     @Getter
     private long updateLimit;
 
-    @Getter
-    private String user;
-
-    @Getter
-    private String host;
-
     private DingoJobVisitor(Job job, IdGenerator idGenerator, Location currentLocation, ITransaction transaction,
-                            SqlKind kind, ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
-                            boolean replaceInto, boolean isIgnore, long updateLimit, String user, String host) {
+                            SqlKind kind, long pointTs, boolean forUpdate,
+                            boolean replaceInto, boolean isIgnore, long updateLimit) {
         this.job = job;
         this.idGenerator = idGenerator;
         this.currentLocation = currentLocation;
         this.transaction = transaction;
         this.kind = kind;
-        this.executeVariables = executeVariables;
         this.pointTs = pointTs;
         this.forUpdate = forUpdate;
         this.replaceInto = replaceInto;
         this.isIgnore = isIgnore;
         this.updateLimit = updateLimit;
-        this.user = user;
-        this.host = host;
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation) {
         String user = "root";
         String host = "%";
-        renderJob(jobManager, job, input, currentLocation, false, null, null,
-            new ExecuteVariables(), user, host);
+        renderJob(jobManager, job, input, currentLocation, false, null, null);
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
-                                 boolean checkRoot, ITransaction transaction, SqlKind kind,
-                                 ExecuteVariables executeVariables, String user, String host) {
+                                 boolean checkRoot, ITransaction transaction, SqlKind kind) {
         renderJob(jobManager, job, input, currentLocation, checkRoot, transaction, kind,
-            executeVariables, 0, false, false, false, -1, user, host);
+            0, false, false, false, -1);
     }
 
     public static void renderJob(JobManager jobManager, Job job, RelNode input, Location currentLocation,
                                  boolean checkRoot, ITransaction transaction, SqlKind kind,
-                                 ExecuteVariables executeVariables, long pointTs, boolean forUpdate,
-                                 boolean replaceInto, boolean isIgnore, long updateLimit, String user, String host) {
+                                 long pointTs, boolean forUpdate,
+                                 boolean replaceInto, boolean isIgnore, long updateLimit) {
         try {
             IdGenerator idGenerator = new IdGeneratorImpl(job.getJobId().seq);
             DingoJobVisitor visitor = new DingoJobVisitor(
                 job, idGenerator, currentLocation, transaction, kind,
-                executeVariables, pointTs, forUpdate, replaceInto, isIgnore,
-                updateLimit, user, host
+                pointTs, forUpdate, replaceInto, isIgnore,
+                updateLimit
             );
             Collection<Vertex> outputs = dingo(input).accept(visitor);
             if (checkRoot && !outputs.isEmpty()) {
@@ -444,7 +431,7 @@ public class DingoJobVisitor implements DingoRelVisitor<Collection<Vertex>> {
 
     public Collection<Vertex> visit(@NonNull DingoRepeatUnion dingoRepeatUnion) {
         return DingoRepeatUnionVisitFun.visit(
-            job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion, executeVariables
+            job, idGenerator, currentLocation, this, transaction, dingoRepeatUnion
         );
     }
 

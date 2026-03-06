@@ -960,6 +960,7 @@ public class ErrorCode {
     public static int ErrUnknownSequence                      = 4139;
     public static int ErrWrongInsertIntoSequence              = 4140;
     public static int ErrSequenceInvalidTableStructure        = 4141;
+    public static int ErrOutOfMemory        = 4707;
     public static int ErrWarnOptimizerHintUnsupportedHint = 8061;
     public static int ErrWarnOptimizerHintInvalidToken    = 8062;
     public static int ErrWarnMemoryQuotaOverflow          = 8063;

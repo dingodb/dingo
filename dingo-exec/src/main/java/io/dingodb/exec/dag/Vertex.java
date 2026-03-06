@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.OutputHint;
@@ -65,6 +66,8 @@ public class Vertex {
     private OutputHint hint;
     @Setter
     private int pin;
+    @Setter
+    private ExecutionContext executionContext;
     private AtomicLong cnt = new AtomicLong(0);
 
     public Vertex(CommonId op, Object data) {

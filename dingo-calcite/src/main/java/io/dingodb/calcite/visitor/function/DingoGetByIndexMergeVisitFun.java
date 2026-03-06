@@ -114,7 +114,7 @@ public final class DingoGetByIndexMergeVisitFun {
                     false,
                     false,
                     keyTuple,
-                    visitor.getExecuteVariables().getConcurrencyLevel()
+                    job.getExecutionContext().getConcurrencyLevel()
                 ));
 
                 Task task;

@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoSort;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.HybridSearchTable;
 import io.dingodb.exec.base.IdGenerator;
@@ -50,13 +51,14 @@ public class DingoSortVisitFun {
         @NonNull DingoSort rel
     ) {
         Collection<Vertex> inputs = dingo(rel.getInput()).accept(dingoJobVisitor);
-        return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel));
+        return DingoBridge.bridge(idGenerator, inputs, new OperatorSupplier(rel, job.getExecutionContext()));
     }
 
     @AllArgsConstructor
     static class OperatorSupplier implements Supplier<Vertex> {
 
         final DingoSort rel;
+        final ExecutionContext executionContext;
 
         @Override
         public Vertex get() {
@@ -64,7 +66,8 @@ public class DingoSortVisitFun {
                 toSortCollation(rel.getCollation().getFieldCollations()),
                 rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
                 rel.offset == null ? 0 : RexLiteral.intValue(rel.offset),
-                rel.getHints().stream().anyMatch( e -> e.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)));
+                rel.getHints().stream().anyMatch( e -> e.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)),
+                executionContext);
             return new Vertex(SORT, param);
         }
     }

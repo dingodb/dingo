@@ -42,6 +42,7 @@ import io.dingodb.scheduler.SchedulerService;
 import io.dingodb.server.executor.ddl.DdlContext;
 import io.dingodb.server.executor.ddl.DdlServer;
 import io.dingodb.server.executor.prepare.PrepareMeta;
+import io.dingodb.server.executor.schedule.MemoryRevokingScheduler;
 import io.dingodb.server.executor.service.ClusterService;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.store.proxy.service.AutoIncrementService;

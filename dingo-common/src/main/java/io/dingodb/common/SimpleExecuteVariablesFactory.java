@@ -24,15 +24,16 @@ public class SimpleExecuteVariablesFactory {
     private SimpleExecuteVariablesFactory() {
     }
 
-    public ExecuteVariables createExecuteVariables(Properties properties) {
-        return new ExecuteVariables(properties);
+    public ExecutionContext createExecuteVariables(Properties properties) {
+        return new ExecutionContext(properties);
     }
 
-    public ExecuteVariables createExecuteVariables(Properties properties, String queryId, String user, String host) {
-        ExecuteVariables executeVariables = new ExecuteVariables(properties, queryId);
-        executeVariables.setUser(user);
-        executeVariables.setHost(host);
-        return executeVariables;
+    public ExecutionContext createExecuteVariables(Properties properties, String queryId, String user, String host) {
+        ExecutionContext executionContext = new ExecutionContext(properties);
+        executionContext.setTraceId(queryId);
+        executionContext.setUser(user);
+        executionContext.setHost(host);
+        return executionContext;
     }
 
 }

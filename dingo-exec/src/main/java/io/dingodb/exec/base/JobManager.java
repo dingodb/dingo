@@ -17,6 +17,7 @@
 package io.dingodb.exec.base;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.transaction.base.TxnPartData;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -28,16 +29,13 @@ import java.util.Map;
 import java.util.UUID;
 
 public interface JobManager {
-    default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType, String queryId) {
-        return createJob(startTs, jobSeqId, txnId, parasType, 0, null, queryId);
-    }
 
     default Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType) {
         return createJob(startTs, jobSeqId, txnId, parasType, 0, null, null);
     }
 
     Job createJob(long startTs, long jobSeqId, CommonId txnId, DingoType parasType,
-                  long maxTimeout, Boolean isSelect, String queryId);
+                  long maxTimeout, Boolean isSelect, ExecutionContext executionContext);
 
     default Job createJob(long startTs, long jobSeqId) {
         return createJob(startTs, jobSeqId, null,  null, 0, null, null);

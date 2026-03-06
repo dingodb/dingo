@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.Job;
@@ -33,13 +34,8 @@ import io.dingodb.expr.json.runtime.Parser;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
 import io.dingodb.tso.TsoService;
 import lombok.Getter;
-import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.checker.units.qual.A;
-
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,11 +44,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class JobImpl implements Job {
     public static final Parser PARSER = Parser.JSON;
-
-    @JsonProperty("queryId")
-    @Getter
-    @Setter
-    private String queryId;
 
     @JsonProperty("jobId")
     @Getter
@@ -82,11 +73,8 @@ public final class JobImpl implements Job {
 
     private long startTime;
 
-    @Setter
-    private String user;
-
-    @Setter
-    private String host;
+    @Getter
+    private ExecutionContext executionContext;
 
     @JsonCreator
     public JobImpl(@JsonProperty("jobId") CommonId jobId, @JsonProperty("jobId") CommonId txnId) {
@@ -98,6 +86,20 @@ public final class JobImpl implements Job {
                    @Nullable DingoType parasType,
                    @JsonProperty("executeTimeout") long maxExecutionTimeout,
                    @JsonProperty("isSelect") Boolean isSelect) {
+        this.jobId = jobId;
+        this.txnId = txnId;
+        this.tasks = new HashMap<>();
+        this.parasType = parasType;
+        this.maxExecutionTime = maxExecutionTimeout;
+        this.isSelect = isSelect;
+    }
+
+    public JobImpl(@JsonProperty("jobId") CommonId jobId,
+                   @JsonProperty("jobId") CommonId txnId,
+                   @Nullable DingoType parasType,
+                   @JsonProperty("executeTimeout") long maxExecutionTimeout,
+                   @JsonProperty("isSelect") Boolean isSelect,
+                   @JsonProperty("executionContext") ExecutionContext executionContext) {
         this.jobId = jobId;
         this.txnId = txnId;
         this.tasks = new HashMap<>();
@@ -183,10 +185,14 @@ public final class JobImpl implements Job {
 
     @Override
     public boolean validate(String user, String host) {
-        if (this.user == null || this.host == null) {
+        if (this.executionContext == null) {
+            return true;
+        }
+        if (this.executionContext.getUser() == null || this.executionContext.getHost() == null) {
             return false;
         }
-        return this.user.equalsIgnoreCase(user) && this.host.equalsIgnoreCase(host);
+        return this.executionContext.getUser().equalsIgnoreCase(user)
+            && this.executionContext.getHost().equalsIgnoreCase(host);
     }
 
     @Override
@@ -196,6 +202,18 @@ public final class JobImpl implements Job {
             task.getVertexes().values().forEach(vertex -> cnt.addAndGet(vertex.getCnt().get()));
         });
         return cnt.get();
+    }
+
+    @Override
+    public void setExecutionContext(ExecutionContext executionContext) {
+        this.executionContext = executionContext;
+    }
+
+    public String getQueryId() {
+        if (this.executionContext != null) {
+            return this.executionContext.getTraceId();
+        }
+        return null;
     }
 
 }

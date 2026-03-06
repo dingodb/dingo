@@ -112,7 +112,7 @@ public final class DingoGetByIndexVisitFun {
                     false,
                     false,
                     keyTuple,
-                    visitor.getExecuteVariables().getConcurrencyLevel()
+                    job.getExecutionContext().getConcurrencyLevel()
                 ));
 
                 Task task;

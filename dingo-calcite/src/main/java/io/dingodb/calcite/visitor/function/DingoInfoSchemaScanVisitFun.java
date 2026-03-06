@@ -59,8 +59,8 @@ public final class DingoInfoSchemaScanVisitFun {
         } else {
             tableName = td.getName();
         }
-        String user = visitor.getUser();
-        String host = visitor.getHost();
+        String user = job.getExecutionContext().getUser();
+        String host = job.getExecutionContext().getHost();
         InfoSchemaScanParam param = new InfoSchemaScanParam(
             td.tupleType(),
             td.version,

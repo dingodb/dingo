@@ -20,8 +20,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.dingodb.common.ExecutionContext;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.exec.dag.Vertex;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.data.SortCollation;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,11 +34,12 @@ import lombok.NonNull;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @JsonTypeName("sort")
 @JsonPropertyOrder({"collations", "limit", "offset", "vectorHybrid"})
-public class SortParam extends AbstractParams {
+public class SortParam extends AbstractParams implements RevokerParams {
 
     @JsonProperty("collations")
     private final List<SortCollation> collations;
@@ -46,12 +52,18 @@ public class SortParam extends AbstractParams {
     private final List<Object[]> cache;
     private transient Comparator<Object[]> comparator;
 
+    private ExecutionContext executionContext;
+    private OperatorMemoryAllocatorCtx memoryAllocatorCtx;
+
+    protected long spillCnt = 0;
+
     @JsonCreator
     public SortParam(
         @JsonProperty("collations") @NonNull List<SortCollation> collations,
         @JsonProperty("limit") int limit,
         @JsonProperty("offset") int offset,
-        @JsonProperty("vectorHybrid") boolean vectorHybrid
+        @JsonProperty("vectorHybrid") boolean vectorHybrid,
+        @JsonProperty("executionContext") ExecutionContext executionContext
     ) {
         this.collations = collations;
         this.limit = limit;
@@ -67,6 +79,7 @@ public class SortParam extends AbstractParams {
         } else {
             comparator = null;
         }
+        this.executionContext = executionContext;
     }
 
     @Override
@@ -81,6 +94,12 @@ public class SortParam extends AbstractParams {
         } else {
             comparator = null;
         }
+        if (!executionContext.isInnerSql()) {
+            String name = "hashJoin" + UUID.randomUUID();
+            MemoryPool memoryPool =
+                MemoryPoolUtils.createOperatorTmpTablePool(name, executionContext.getMemoryPool());
+            this.memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(memoryPool, ScopeVariables.enableSpill());
+        }
     }
 
     public void clear() {
@@ -89,5 +108,20 @@ public class SortParam extends AbstractParams {
 
     public OperatorProfile getProfile() {
         return new OperatorProfile("sort");
+    }
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        return null;
+    }
+
+    @Override
+    public void addSpillCnt(int spillCnt) {
+        this.spillCnt += spillCnt;
+    }
+
+    @Override
+    public long getCacheSize() {
+        return cache.size();
     }
 }

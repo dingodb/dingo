@@ -116,7 +116,7 @@ public final class DingoStreamingConverterVisitFun {
                     if (partition instanceof DingoRelPartitionByTable) {
                         outputs = partition(idGenerator, outputs, (DingoRelPartitionByTable) partition);
                     } else if (partition instanceof DingoRelPartitionByKeys) {
-                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition, visitor, transaction);
+                        outputs = hash(idGenerator, outputs, (DingoRelPartitionByKeys) partition, job, transaction);
                     } else if (partition instanceof DingoRelPartitionByIndex) {
                         outputs = copy(idGenerator, outputs, (DingoRelPartitionByIndex) partition, transaction);
                     } else {
@@ -253,14 +253,14 @@ public final class DingoStreamingConverterVisitFun {
         IdGenerator idGenerator,
         @NonNull Collection<Vertex> inputs,
         @NonNull DingoRelPartitionByKeys hash,
-        DingoJobVisitor visitor,
+        Job job,
         ITransaction transaction
     ) {
         List<Vertex> outputs = new LinkedList<>();
         List<Location> locations = new ArrayList<>();
         // todo transaction is AutoCommit join cross node
-        if (visitor.getExecuteVariables().isExecutorShuffle() && (
-            transaction == null || transaction.isAutoCommit() || visitor.getExecuteVariables().isJoinConcurrency())) {
+        if (job.getExecutionContext().isExecutorShuffle() && (
+            transaction == null || transaction.isAutoCommit() || job.getExecutionContext().isJoinConcurrency())) {
             locations.addAll(ClusterService.getDefault().getComputingLocations());
         }
         final HashStrategy hs = new SimpleHashStrategy();
@@ -271,7 +271,7 @@ public final class DingoStreamingConverterVisitFun {
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             OutputHint hint = new OutputHint();
             Location location;
-            if (locations.size() == 0) {
+            if (locations.isEmpty()) {
                 location = DingoConfiguration.location();
             } else {
                 location = locations.get(0);

@@ -20,6 +20,7 @@ import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.metrics.DingoMetrics;
@@ -85,9 +86,12 @@ public final class JobManagerImpl implements JobManager {
                                   DingoType parasType,
                                   long maxExecutionTime,
                                   Boolean isSelect,
-                                  String queryId) {
+                                  ExecutionContext executionContext) {
         Job job = new JobImpl(idGenerator.getJobId(startTs, jobSeqId), txnId, parasType, maxExecutionTime, isSelect);
-        job.setQueryId(queryId);
+        if (executionContext == null) {
+            executionContext = new ExecutionContext();
+        }
+        job.setExecutionContext(executionContext);
         CommonId jobId = job.getJobId();
         jobMap.put(jobId, job);
         LogUtils.debug(log, "Created job \"{}\". # of jobs: {}.", jobId, jobMap.size());

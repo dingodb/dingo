@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import io.dingodb.calcite.executor.DmlExecutor;
 import io.dingodb.calcite.executor.Executor;
 import io.dingodb.calcite.executor.QueryExecutor;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
@@ -72,6 +73,9 @@ public class DingoStatement extends AvaticaStatement {
     @Setter
     private JobManager jobManager;
 
+    @Setter
+    private ExecutionContext executionContext;
+
     DingoStatement(
         DingoConnection connection,
         Meta.StatementHandle handle,
@@ -122,6 +126,9 @@ public class DingoStatement extends AvaticaStatement {
     public synchronized void close() throws SQLException {
         try {
             cancel();
+            if (executionContext != null) {
+                executionContext.clearAllMemoryPool();
+            }
         } finally {
             super.close();
         }

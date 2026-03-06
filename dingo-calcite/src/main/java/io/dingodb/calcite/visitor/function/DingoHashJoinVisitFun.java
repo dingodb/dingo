@@ -116,7 +116,8 @@ public class DingoHashJoinVisitFun {
                 TupleMapping.of(rightKeys), rel.getLeft().getRowType().getFieldCount(),
                 rel.getRight().getRowType().getFieldCount(),
                 rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.FULL,
-                rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL
+                rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.FULL,
+                job.getExecutionContext()
             );
             param.setJoinType(rel.getJoinType().lowerName);
             param.setOtherExpr(otherCondition);
