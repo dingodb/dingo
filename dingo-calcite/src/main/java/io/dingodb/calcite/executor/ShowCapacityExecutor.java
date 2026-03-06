@@ -18,6 +18,7 @@ package io.dingodb.calcite.executor;
 
 import io.dingodb.cluster.ClusterService;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,20 +34,47 @@ public class ShowCapacityExecutor extends QueryExecutor {
 
     @Override
     Iterator<Object[]> getIterator() {
+        int executorCount = clusterService.getExecutors().size();
         int storeCount = clusterService.getStoreMap();
+        int coordinatorCount = clusterService.getCoordinatorNodes().size();
         int locationCount = clusterService.getLocations();
         int regionCount = clusterService.getRegionCount();
+
+        Runtime runtime = Runtime.getRuntime();
+        long maxMemoryMB = runtime.maxMemory() / (1024 * 1024);
+        long totalMemoryMB = runtime.totalMemory() / (1024 * 1024);
+        long freeMemoryMB = runtime.freeMemory() / (1024 * 1024);
+        long usedMemoryMB = totalMemoryMB - freeMemoryMB;
+        int availableProcessors = runtime.availableProcessors();
+
+        File root = new File("/");
+        long totalDiskGB = root.getTotalSpace() / (1024 * 1024 * 1024);
+        long freeDiskGB = root.getUsableSpace() / (1024 * 1024 * 1024);
+
         return Collections.singletonList(
-            new Object[] {storeCount, locationCount, regionCount}
+            new Object[] {
+                executorCount, storeCount, coordinatorCount,
+                locationCount, regionCount,
+                maxMemoryMB, usedMemoryMB, freeMemoryMB,
+                availableProcessors, totalDiskGB, freeDiskGB
+            }
         ).iterator();
     }
 
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
+        columns.add("executorCount");
         columns.add("storeCount");
+        columns.add("coordinatorCount");
         columns.add("locationCount");
         columns.add("regionCount");
+        columns.add("jvmMaxMemoryMB");
+        columns.add("jvmUsedMemoryMB");
+        columns.add("jvmFreeMemoryMB");
+        columns.add("availableProcessors");
+        columns.add("totalDiskGB");
+        columns.add("freeDiskGB");
         return columns;
     }
 }
