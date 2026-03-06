@@ -25,26 +25,34 @@ import java.util.List;
 public class ShowStoreJobsExecutor extends QueryExecutor {
 
     private final ClusterService clusterService;
+    private final Long jobId;
+    private final Long archiveLimit;
+    private final boolean includeArchive;
+    private final Long archiveStartId;
 
-    public ShowStoreJobsExecutor() {
-        clusterService = ClusterService.getDefault();
+    public ShowStoreJobsExecutor(Long jobId, Long archiveLimit,
+                                 boolean includeArchive, Long archiveStartId) {
+        this.clusterService = ClusterService.getDefault();
+        this.jobId = jobId;
+        this.archiveLimit = archiveLimit;
+        this.includeArchive = includeArchive;
+        this.archiveStartId = archiveStartId;
     }
 
     @Override
     Iterator<Object[]> getIterator() {
-        return clusterService.getJobList().iterator();
+        return clusterService.getJobList(jobId, archiveLimit, includeArchive, archiveStartId).iterator();
     }
 
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
-        columns.add("jobId");
-        columns.add("txnId");
-        columns.add("startTime");
-        columns.add("isSelect");
-        columns.add("duration");
-        columns.add("queryId");
-        columns.add("dataCnt");
+        columns.add("id");
+        columns.add("name");
+        columns.add("nextStep");
+        columns.add("taskSize");
+        columns.add("createTime");
+        columns.add("finishTime");
         return columns;
     }
 }

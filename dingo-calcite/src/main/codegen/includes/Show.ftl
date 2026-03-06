@@ -378,9 +378,25 @@ SqlShow SqlShowGcSafePoint(Span s): {
 }
 
 SqlShow SqlShowStoreJobs(Span s): {
+  Long jobId = null;
+  Long archiveLimit = null;
+  boolean includeArchive = false;
+  Long archiveStartId = null;
 } {
   <STORE_JOBS>
-  { return new SqlShowStoreJobs(s.end(this)); }
+  [
+    <UNSIGNED_INTEGER_LITERAL> { jobId = Long.parseLong(token.image); }
+  ]
+  [
+    <INCLUDE> <ARCHIVE> { includeArchive = true; }
+  ]
+  [
+    <LIMIT> <UNSIGNED_INTEGER_LITERAL> { archiveLimit = Long.parseLong(token.image); }
+  ]
+  [
+    <FROM> <UNSIGNED_INTEGER_LITERAL> { archiveStartId = Long.parseLong(token.image); }
+  ]
+  { return new SqlShowStoreJobs(s.end(this), jobId, archiveLimit, includeArchive, archiveStartId); }
 }
 
 

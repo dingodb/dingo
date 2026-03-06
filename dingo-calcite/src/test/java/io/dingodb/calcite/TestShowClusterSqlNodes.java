@@ -113,6 +113,10 @@ public class TestShowClusterSqlNodes {
         SqlShowStoreJobs node = new SqlShowStoreJobs(SqlParserPos.ZERO);
         assertNotNull(node);
         assertEquals(SqlKind.SELECT, node.getKind());
+        assertNull(node.getJobId());
+        assertNull(node.getArchiveLimit());
+        assertEquals(false, node.isIncludeArchive());
+        assertNull(node.getArchiveStartId());
     }
 
     @Test
@@ -144,6 +148,17 @@ public class TestShowClusterSqlNodes {
     public void testSqlShowGcSafePointOperandList() {
         SqlShowGcSafePoint node = new SqlShowGcSafePoint(SqlParserPos.ZERO);
         assertNull(node.getOperandList());
+    }
+
+    @Test
+    public void testSqlShowStoreJobsWithParams() {
+        SqlShowStoreJobs node = new SqlShowStoreJobs(SqlParserPos.ZERO, 123L, 10L, true, 5L);
+        assertNotNull(node);
+        assertEquals(SqlKind.SELECT, node.getKind());
+        assertEquals(Long.valueOf(123L), node.getJobId());
+        assertEquals(Long.valueOf(10L), node.getArchiveLimit());
+        assertEquals(true, node.isIncludeArchive());
+        assertEquals(Long.valueOf(5L), node.getArchiveStartId());
     }
 
     @Test

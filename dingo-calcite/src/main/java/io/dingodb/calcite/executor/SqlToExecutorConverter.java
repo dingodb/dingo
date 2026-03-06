@@ -277,7 +277,13 @@ public final class SqlToExecutorConverter {
         } else if (sqlNode instanceof SqlShowRegions) {
             return Optional.of(new ShowRegionsExecutor());
         } else if (sqlNode instanceof SqlShowStoreJobs) {
-            return Optional.of(new ShowStoreJobsExecutor());
+            SqlShowStoreJobs sqlShowStoreJobs = (SqlShowStoreJobs) sqlNode;
+            return Optional.of(new ShowStoreJobsExecutor(
+                sqlShowStoreJobs.getJobId(),
+                sqlShowStoreJobs.getArchiveLimit(),
+                sqlShowStoreJobs.isIncludeArchive(),
+                sqlShowStoreJobs.getArchiveStartId()
+            ));
         } else if (sqlNode instanceof SqlShowGcSafePoint) {
             return Optional.of(new ShowGcSafePointExecutor());
         } else if (sqlNode instanceof SqlShowIndexFromTable) {

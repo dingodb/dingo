@@ -25,9 +25,6 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
-import io.dingodb.exec.base.Job;
-import io.dingodb.exec.impl.JobImpl;
-import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Executor;
@@ -41,6 +38,8 @@ import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetJobListRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetJobListResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
@@ -250,27 +249,34 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
     }
 
     @Override
-    public List<Object[]> getJobList() {
+    public List<Object[]> getJobList(Long jobId, Long archiveLimit,
+                                     boolean includeArchive, Long archiveStartId) {
         try {
-            List<Job> jobs = JobManagerImpl.INSTANCE.jobList();
-            return jobs.stream()
-                .map(job -> {
-                    String txnId = "";
-                    String queryId = "";
-                    if (job instanceof JobImpl) {
-                        JobImpl jobImpl = (JobImpl) job;
-                        txnId = jobImpl.getTxnId() != null ? jobImpl.getTxnId().toString() : "";
-                        queryId = jobImpl.getQueryId() != null ? jobImpl.getQueryId() : "";
-                    }
-                    return new Object[] {
-                        job.getJobId().toString(),
-                        txnId,
-                        job.getStartTime(),
-                        job.isSelect(),
-                        System.currentTimeMillis() - job.getStartTime(),
-                        queryId,
-                        job.dataCnt()
-                    };
+            GetJobListRequest.GetJobListRequestBuilder builder = GetJobListRequest.builder();
+            if (jobId != null) {
+                builder.jobId(jobId);
+            }
+            builder.includeArchive(includeArchive);
+            if (archiveLimit != null) {
+                builder.archiveLimit(archiveLimit);
+            }
+            if (archiveStartId != null) {
+                builder.archiveStartId(archiveStartId);
+            }
+            GetJobListResponse response = coordinatorService.getJobList(
+                TsoService.getDefault().cacheTso(), builder.build()
+            );
+            if (response == null || response.getJobList() == null) {
+                return new ArrayList<>();
+            }
+            return response.getJobList().stream()
+                .map(job -> new Object[] {
+                    job.getId(),
+                    job.getName() != null ? job.getName() : "",
+                    job.getNextStep() != null ? job.getNextStep() : "",
+                    job.getTasksSize(),
+                    job.getCreateTime() != null ? job.getCreateTime() : "",
+                    job.getFinishTime() != null ? job.getFinishTime() : ""
                 })
                 .collect(Collectors.toList());
         } catch (Exception e) {

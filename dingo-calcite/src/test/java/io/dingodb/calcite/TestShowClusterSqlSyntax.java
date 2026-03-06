@@ -29,7 +29,9 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.parser.dingo.DingoSqlParserImpl;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestShowClusterSqlSyntax {
@@ -135,6 +137,11 @@ public class TestShowClusterSqlSyntax {
         SqlNode sqlNode = parse("SHOW STORE_JOBS");
         assertNotNull(sqlNode);
         assertTrue(sqlNode instanceof SqlShowStoreJobs);
+        SqlShowStoreJobs showStoreJobs = (SqlShowStoreJobs) sqlNode;
+        assertNull(showStoreJobs.getJobId());
+        assertNull(showStoreJobs.getArchiveLimit());
+        assertEquals(false, showStoreJobs.isIncludeArchive());
+        assertNull(showStoreJobs.getArchiveStartId());
     }
 
     @Test
@@ -142,6 +149,45 @@ public class TestShowClusterSqlSyntax {
         SqlNode sqlNode = parse("show store_jobs");
         assertNotNull(sqlNode);
         assertTrue(sqlNode instanceof SqlShowStoreJobs);
+    }
+
+    @Test
+    public void testShowStoreJobsWithJobId() {
+        SqlNode sqlNode = parse("SHOW STORE_JOBS 123");
+        assertNotNull(sqlNode);
+        assertTrue(sqlNode instanceof SqlShowStoreJobs);
+        SqlShowStoreJobs showStoreJobs = (SqlShowStoreJobs) sqlNode;
+        assertEquals(Long.valueOf(123L), showStoreJobs.getJobId());
+    }
+
+    @Test
+    public void testShowStoreJobsWithIncludeArchive() {
+        SqlNode sqlNode = parse("SHOW STORE_JOBS INCLUDE ARCHIVE");
+        assertNotNull(sqlNode);
+        assertTrue(sqlNode instanceof SqlShowStoreJobs);
+        SqlShowStoreJobs showStoreJobs = (SqlShowStoreJobs) sqlNode;
+        assertTrue(showStoreJobs.isIncludeArchive());
+    }
+
+    @Test
+    public void testShowStoreJobsWithLimit() {
+        SqlNode sqlNode = parse("SHOW STORE_JOBS LIMIT 10");
+        assertNotNull(sqlNode);
+        assertTrue(sqlNode instanceof SqlShowStoreJobs);
+        SqlShowStoreJobs showStoreJobs = (SqlShowStoreJobs) sqlNode;
+        assertEquals(Long.valueOf(10L), showStoreJobs.getArchiveLimit());
+    }
+
+    @Test
+    public void testShowStoreJobsWithAllParams() {
+        SqlNode sqlNode = parse("SHOW STORE_JOBS 42 INCLUDE ARCHIVE LIMIT 20 FROM 5");
+        assertNotNull(sqlNode);
+        assertTrue(sqlNode instanceof SqlShowStoreJobs);
+        SqlShowStoreJobs showStoreJobs = (SqlShowStoreJobs) sqlNode;
+        assertEquals(Long.valueOf(42L), showStoreJobs.getJobId());
+        assertTrue(showStoreJobs.isIncludeArchive());
+        assertEquals(Long.valueOf(20L), showStoreJobs.getArchiveLimit());
+        assertEquals(Long.valueOf(5L), showStoreJobs.getArchiveStartId());
     }
 
     @Test

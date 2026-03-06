@@ -61,6 +61,11 @@ public interface ClusterService {
     }
 
     default List<Object[]> getJobList() {
+        return getJobList(null, null, false, null);
+    }
+
+    default List<Object[]> getJobList(Long jobId, Long archiveLimit,
+                                      boolean includeArchive, Long archiveStartId) {
         return Collections.emptyList();
     }
 }
