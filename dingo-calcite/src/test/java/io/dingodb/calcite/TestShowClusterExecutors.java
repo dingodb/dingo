@@ -93,8 +93,8 @@ public class TestShowClusterExecutors {
         ShowStoreJobsExecutor executor = new ShowStoreJobsExecutor();
         List<String> columns = executor.columns();
         assertNotNull(columns);
-        assertEquals(2, columns.size());
-        assertEquals(Arrays.asList("variable", "value"), columns);
+        assertEquals(7, columns.size());
+        assertEquals(Arrays.asList("jobId", "txnId", "startTime", "isSelect", "duration", "queryId", "dataCnt"), columns);
     }
 
     @Test

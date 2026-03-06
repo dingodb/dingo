@@ -16,41 +16,35 @@
 
 package io.dingodb.calcite.executor;
 
-import io.dingodb.meta.InfoSchemaService;
+import io.dingodb.cluster.ClusterService;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class ShowStoreJobsExecutor extends QueryExecutor {
 
+    private ClusterService clusterService;
+
     public ShowStoreJobsExecutor() {
+        clusterService = ClusterService.getDefault();
     }
 
     @Override
     Iterator<Object[]> getIterator() {
-        List<Object[]> rows = new ArrayList<>();
-        try {
-            InfoSchemaService infoSchemaService = InfoSchemaService.root();
-            Map<String, String> globalVarMap = infoSchemaService.getGlobalVariables();
-            String jobNeedGc = globalVarMap.getOrDefault("job_need_gc", "on");
-            String txnHistoryDuration = globalVarMap.getOrDefault("txn_history_duration", "0");
-            String safepointTs = globalVarMap.getOrDefault("safepoint_ts", "0");
-            rows.add(new Object[] {"job_need_gc", jobNeedGc});
-            rows.add(new Object[] {"txn_history_duration", txnHistoryDuration});
-            rows.add(new Object[] {"safepoint_ts", safepointTs});
-        } catch (Exception e) {
-            rows.add(new Object[] {"error", e.getMessage()});
-        }
-        return rows.iterator();
+        return clusterService.getJobList().iterator();
     }
 
     @Override
     public List<String> columns() {
         List<String> columns = new ArrayList<>();
-        columns.add("variable");
-        columns.add("value");
+        columns.add("jobId");
+        columns.add("txnId");
+        columns.add("startTime");
+        columns.add("isSelect");
+        columns.add("duration");
+        columns.add("queryId");
+        columns.add("dataCnt");
         return columns;
     }
 }

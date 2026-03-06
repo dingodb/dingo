@@ -25,6 +25,9 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.tenant.TenantConstant;
+import io.dingodb.exec.base.Job;
+import io.dingodb.exec.impl.JobImpl;
+import io.dingodb.exec.impl.JobManagerImpl;
 import io.dingodb.sdk.service.CoordinatorService;
 import io.dingodb.sdk.service.Services;
 import io.dingodb.sdk.service.entity.common.Executor;
@@ -243,6 +246,30 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
         } catch (Exception e) {
             LogUtils.error(log, "Get GC safe point failed: " + e.getMessage(), e);
             return 0;
+        }
+    }
+
+    @Override
+    public List<Object[]> getJobList() {
+        try {
+            List<Job> jobs = JobManagerImpl.INSTANCE.jobList();
+            return jobs.stream()
+                .map(job -> {
+                    JobImpl jobImpl = (JobImpl) job;
+                    return new Object[] {
+                        job.getJobId().toString(),
+                        jobImpl.getTxnId() != null ? jobImpl.getTxnId().toString() : "",
+                        job.getStartTime(),
+                        job.isSelect(),
+                        System.currentTimeMillis() - job.getStartTime(),
+                        jobImpl.getQueryId() != null ? jobImpl.getQueryId() : "",
+                        job.dataCnt()
+                    };
+                })
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            LogUtils.error(log, "Get job list failed: " + e.getMessage(), e);
+            return new ArrayList<>();
         }
     }
 

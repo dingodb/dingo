@@ -59,4 +59,8 @@ public interface ClusterService {
     default long getGcSafePoint() {
         return 0;
     }
+
+    default List<Object[]> getJobList() {
+        return Collections.emptyList();
+    }
 }
