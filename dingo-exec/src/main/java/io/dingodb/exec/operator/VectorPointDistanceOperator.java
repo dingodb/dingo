@@ -17,6 +17,7 @@
 package io.dingodb.exec.operator;
 
 import com.google.common.collect.Lists;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.common.util.Pair;
@@ -25,12 +26,14 @@ import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
+import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.VectorPointDistanceParam;
 import io.dingodb.tool.api.ToolService;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +56,14 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
         VectorPointDistanceParam param = vertex.getParam();
         param.setContext(context);
         param.getCache().add(tuple);
+        // Spill to disk when the in-memory buffer reaches the configured threshold
+        if (param.isSpillEnabled() && param.getCache().size() >= param.getEffectiveSpillThreshold()) {
+            try {
+                param.spillCurrentBatch();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to spill VectorPointDistance buffer to disk", e);
+            }
+        }
         return true;
     }
 
@@ -68,7 +79,19 @@ public class VectorPointDistanceOperator extends SoleOutOperator {
             OperatorProfile profile = param.getProfile("vectorPointDistance");
             long start = System.currentTimeMillis();
             TupleMapping selection = param.getSelection();
-            List<Object[]> cache = param.getCache();
+            // Load all tuples: in-memory cache plus any spilled to disk
+            List<Object[]> cache;
+            try {
+                cache = param.getAllTuples();
+            } catch (IOException e) {
+                LogUtils.error(log, "Failed to load spilled VectorPointDistance tuples: {}", e.getMessage(), e);
+                TaskStatus taskStatus = new TaskStatus();
+                taskStatus.setStatus(false);
+                taskStatus.setTaskId(vertex.getTask().getId().toString());
+                taskStatus.setErrorMsg(e.getMessage());
+                edge.fin(FinWithException.of(taskStatus));
+                return;
+            }
             if (!param.isBinaryVector()) {
                 List<List<Float>> rightList = cache.stream().map(e ->
                     (List<Float>) e[param.getVectorIndex()]

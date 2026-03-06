@@ -46,6 +46,7 @@ public final class AggregateOperator extends SoleOutOperator {
         AggregateParams params = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         try {
+            params.prepareResults();
             for (Object[] t : params.getCache()) {
                 if (!edge.transformToNext(t)) {
                     break;

@@ -20,6 +20,7 @@ import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
@@ -52,9 +53,12 @@ public class DingoAggregateVisitFun {
 
         @Override
         public Vertex get() {
+            DingoType inputSchema = DefinitionMapper.mapToDingoType(input.getRowType());
             AggregateParams params = new AggregateParams(
                 AggFactory.getAggKeys(rel.getGroupSet()),
-                AggFactory.getAggList(rel.getAggCallList(), DefinitionMapper.mapToDingoType(input.getRowType()))
+                AggFactory.getAggList(rel.getAggCallList(), inputSchema),
+                inputSchema,
+                0
             );
             return new Vertex(AGGREGATE, params);
         }
