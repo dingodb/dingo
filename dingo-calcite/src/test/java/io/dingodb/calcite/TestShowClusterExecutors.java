@@ -75,10 +75,9 @@ public class TestShowClusterExecutors {
         ShowCapacityExecutor executor = new ShowCapacityExecutor();
         List<String> columns = executor.columns();
         assertNotNull(columns);
-        assertEquals(11, columns.size());
+        assertEquals(8, columns.size());
         assertEquals(Arrays.asList(
-            "executorCount", "storeCount", "coordinatorCount",
-            "locationCount", "regionCount",
+            "host", "port",
             "jvmMaxMemoryMB", "jvmUsedMemoryMB", "jvmFreeMemoryMB",
             "availableProcessors", "totalDiskGB", "freeDiskGB"
         ), columns);

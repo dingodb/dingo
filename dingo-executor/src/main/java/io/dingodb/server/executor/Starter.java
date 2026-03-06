@@ -18,6 +18,7 @@ package io.dingodb.server.executor;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import io.dingodb.calcite.executor.ShowCapacityExecutor;
 import io.dingodb.calcite.executor.ShowLocksExecutor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.auth.DingoRole;
@@ -165,6 +166,7 @@ public class Starter {
 
         ApiRegistry.getDefault().register(ShowLocksExecutor.Api.class, new ShowLocksExecutor.Api() { });
         ApiRegistry.getDefault().register(InfoSchemaScanOperator.Api.class, new InfoSchemaScanOperator.Api() { });
+        ApiRegistry.getDefault().register(ShowCapacityExecutor.Api.class, new ShowCapacityExecutor.Api() { });
 
         //SafePointUpdateTask.run();
 
