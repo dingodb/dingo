@@ -223,10 +223,12 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             io.dingodb.sdk.service.entity.common.Location leaderLocation = response.getLeaderLocation();
             return response.getCoordinatorMap().getCoordinators().stream()
                 .map(c -> {
+                    // Prefer server_location (service port) over location (raft port) for display
                     io.dingodb.sdk.service.entity.common.Location loc =
                         c.getServerLocation() != null ? c.getServerLocation() : c.getLocation();
                     boolean isLeader = leaderLocation != null && loc != null
                         && leaderLocation.getHost() != null
+                        && loc.getHost() != null
                         && leaderLocation.getHost().equals(loc.getHost())
                         && leaderLocation.getPort() == loc.getPort();
                     return new Object[] {
