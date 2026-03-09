@@ -17,6 +17,7 @@
 package io.dingodb.calcite.executor;
 
 import io.dingodb.cluster.ClusterService;
+import io.dingodb.common.Executor;
 import io.dingodb.common.Location;
 import io.dingodb.common.annotation.ApiDeclaration;
 import io.dingodb.common.config.DingoConfiguration;
@@ -41,7 +42,7 @@ public class ShowCapacityExecutor extends QueryExecutor {
     }
 
     public static final List<String> COLUMNS = Arrays.asList(
-        "host", "port",
+        "type", "id", "host", "port",
         "jvmMaxMemoryMB", "jvmUsedMemoryMB", "jvmFreeMemoryMB",
         "availableProcessors", "totalDiskGB", "freeDiskGB"
     );
@@ -72,11 +73,12 @@ public class ShowCapacityExecutor extends QueryExecutor {
     @Override
     Iterator<Object[]> getIterator() {
         List<Object[]> results = new ArrayList<>();
-        List<Location> locations = ClusterService.getDefault().getComputingLocations();
+        List<Executor> executors = ClusterService.getDefault().getExecutors();
 
         Location local = DingoConfiguration.location();
 
-        for (Location location : locations) {
+        for (Executor executor : executors) {
+            Location location = new Location(executor.getHost(), executor.getPort());
             try {
                 long[] info;
                 if (location.equals(local)) {
@@ -86,6 +88,7 @@ public class ShowCapacityExecutor extends QueryExecutor {
                     info = proxy.getResourceInfo();
                 }
                 results.add(new Object[] {
+                    "Executor", executor.getId(),
                     location.getHost(), location.getPort(),
                     info[0], info[1], info[2],
                     info[3], info[4], info[5]
@@ -94,6 +97,7 @@ public class ShowCapacityExecutor extends QueryExecutor {
                 LogUtils.error(log, "Failed to get resource info from host: "
                     + location.getHost() + ", port: " + location.getPort() + ": " + e.getMessage(), e);
                 results.add(new Object[] {
+                    "Executor", executor.getId(),
                     location.getHost(), location.getPort(),
                     EMPTY_RESOURCE_INFO[0], EMPTY_RESOURCE_INFO[1], EMPTY_RESOURCE_INFO[2],
                     EMPTY_RESOURCE_INFO[3], EMPTY_RESOURCE_INFO[4], EMPTY_RESOURCE_INFO[5]
