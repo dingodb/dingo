@@ -20,6 +20,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
@@ -27,6 +32,7 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.operator.spill.SpillManager;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
@@ -45,6 +51,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -71,7 +78,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @JsonTypeName("hashJoin")
 @JsonPropertyOrder({"joinType", "leftMapping", "rightMapping"})
-public class HashJoinParam extends AbstractParams {
+public class HashJoinParam extends AbstractParams implements RevokerParams {
 
     /** Default number of hash partitions used during grace hash join. */
     static final int DEFAULT_NUM_PARTITIONS = 16;
@@ -139,6 +146,11 @@ public class HashJoinParam extends AbstractParams {
      * Populated only when the matching right partition has been spilled.
      */
     private transient Map<Integer, TupleSpillFile> spilledLeftPartitions;
+
+    /** Per-operator query-level memory pool (for scheduler integration). */
+    private transient QueryMemoryPool queryMemoryPool;
+    /** Memory allocator context used by the memory-revoking scheduler. */
+    private transient OperatorMemoryAllocatorCtx memoryAllocatorCtx;
 
     @Setter
     public Profile profileLeft;
@@ -254,6 +266,14 @@ public class HashJoinParam extends AbstractParams {
                 (TupleType) vertex.getParasType().getType()
             ), config);
         }
+        if (isSpillEnabled() && ScopeVariables.enableSpill()) {
+            String poolName = "hashJoin-" + UUID.randomUUID();
+            queryMemoryPool = (QueryMemoryPool) MemoryManager.getInstance()
+                .createQueryMemoryPool(false, poolName);
+            MemoryPool opPool = MemoryPoolUtils.createOperatorTmpTablePool(
+                poolName + "-op", queryMemoryPool);
+            memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(opPool, true);
+        }
     }
 
     public void clear() {
@@ -262,6 +282,13 @@ public class HashJoinParam extends AbstractParams {
         rightInMemoryCount = 0;
         closeSpillFiles();
         future = new CompletableFuture<>();
+        if (memoryAllocatorCtx != null) {
+            memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        }
+        if (queryMemoryPool != null) {
+            queryMemoryPool.destroy();
+            queryMemoryPool = null;
+        }
     }
 
     public void interrupt() {
@@ -278,11 +305,10 @@ public class HashJoinParam extends AbstractParams {
 
     /**
      * Returns whether spill-to-disk is enabled for this hash join.
-     * Spill is enabled when {@code rightSchema} and {@code leftSchema} are set and
-     * {@code maxBuildSize} is positive.
+     * Spill is enabled when {@code rightSchema} and {@code leftSchema} are set.
      */
     public boolean isSpillEnabled() {
-        return rightSchema != null && leftSchema != null && maxBuildSize > 0;
+        return rightSchema != null && leftSchema != null;
     }
 
     /**
@@ -304,7 +330,8 @@ public class HashJoinParam extends AbstractParams {
 
     /**
      * Adds a right-side tuple to the hash map and increments the in-memory counter.
-     * When the counter reaches {@code maxBuildSize}, the largest partition is spilled.
+     * When the threshold-based limit {@code maxBuildSize} is reached, or when the
+     * memory-revoking scheduler has requested it, the largest partition is spilled.
      *
      * @param key   the (trimmed) right join key
      * @param tuple the full right tuple
@@ -315,8 +342,11 @@ public class HashJoinParam extends AbstractParams {
             .computeIfAbsent(key, k -> Collections.synchronizedList(new ArrayList<>()));
         list.add(new TupleWithJoinFlag(tuple));
         rightInMemoryCount++;
-        if (isSpillEnabled() && rightInMemoryCount >= maxBuildSize) {
+        boolean shouldSpill = (maxBuildSize > 0 && rightInMemoryCount >= maxBuildSize)
+            || (memoryAllocatorCtx != null && memoryAllocatorCtx.isMemoryRevokingRequested());
+        if (shouldSpill) {
             spillLargestRightPartition();
+            releaseRevocableMemoryAfterSpill();
         }
     }
 
@@ -371,6 +401,43 @@ public class HashJoinParam extends AbstractParams {
     }
 
     // -------------------------------------------------------------------------
+    // RevokerParams interface implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        return queryMemoryPool;
+    }
+
+    @Override
+    public OperatorMemoryAllocatorCtx getMemoryAllocatorCtx() {
+        return memoryAllocatorCtx;
+    }
+
+    /**
+     * Public entry point for the memory-revoking scheduler: spills the largest in-memory
+     * right-side partition to disk. Memory release is handled by the caller
+     * (either {@code finishMemoryRevoke()} or inline in {@code addRightTuple()}).
+     *
+     * @throws IOException if writing the spill file fails
+     */
+    public void spillLargestPartition() throws IOException {
+        spillLargestRightPartition();
+    }
+
+    // -------------------------------------------------------------------------
+
+    /**
+     * Releases all revocable memory and resets the revoking request flag.
+     * Called after a spill has been completed, either inline during {@code addRightTuple()}
+     * or via the memory-revoking scheduler's {@code finishMemoryRevoke()} callback.
+     */
+    public void releaseRevocableMemoryAfterSpill() {
+        if (memoryAllocatorCtx != null) {
+            memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+            memoryAllocatorCtx.resetMemoryRevokingRequested();
+        }
+    }
 
     /**
      * Identifies the partition with the highest in-memory tuple count and spills it to disk.

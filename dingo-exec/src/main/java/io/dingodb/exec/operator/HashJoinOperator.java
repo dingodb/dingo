@@ -16,7 +16,10 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
@@ -26,13 +29,16 @@ import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.operator.spill.TupleSpillFile;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -49,7 +55,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-public class HashJoinOperator extends SoleOutOperator {
+public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
     public static final HashJoinOperator INSTANCE = new HashJoinOperator();
 
     private HashJoinOperator() {
@@ -124,6 +130,11 @@ public class HashJoinOperator extends SoleOutOperator {
             } else if (pin == 1) { //right
                 OperatorProfile profile = param.getProfile("hashJoin");
                 long start = System.currentTimeMillis();
+                // Track memory usage for the memory-revoking scheduler
+                if (param.getMemoryAllocatorCtx() != null) {
+                    long tupleSize = ObjectSizeUtils.calculateSize(tuple);
+                    param.getMemoryAllocatorCtx().allocateRevocableMemory(tupleSize);
+                }
                 TupleKey rightKey = HashJoinParam.rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
                 if (HashJoinParam.containsNull(rightKey)) {
                     if ("inner".equalsIgnoreCase(param.getJoinType()) || "left".equalsIgnoreCase(param.getJoinType())) {
@@ -413,5 +424,40 @@ public class HashJoinOperator extends SoleOutOperator {
             }
         }
         return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // MemoryRevoker interface implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            try {
+                hashJoinParam.spillLargestPartition();
+                LogUtils.info(log, "HashJoinOperator spilled largest partition during memory revocation");
+                future.set(null);
+            } catch (IOException e) {
+                LogUtils.warn(log, "HashJoinOperator failed to spill during memory revocation: {}",
+                    e.getMessage());
+                future.setException(e);
+            }
+        }, "hashjoin-spill-thread").start();
+        return future;
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        hashJoinParam.releaseRevocableMemoryAfterSpill();
+        LogUtils.info(log, "HashJoinOperator finished memory revoke, released revocable memory");
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        return hashJoinParam.getMemoryAllocatorCtx();
     }
 }
