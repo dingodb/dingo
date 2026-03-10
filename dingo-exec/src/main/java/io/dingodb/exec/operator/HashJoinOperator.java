@@ -138,7 +138,7 @@ public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
                         return true;
                     }
                     long size = ObjectSizeUtils.calculateSize(tuple);
-                    param.incMemSize(size);
+                    param.getSize().addAndGet(size);
                     List<TupleWithJoinFlag> list = param.getHashMap()
                         .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                     list.add(new TupleWithJoinFlag(tuple));

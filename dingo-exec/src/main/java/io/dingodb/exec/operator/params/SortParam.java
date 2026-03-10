@@ -35,6 +35,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
 @JsonTypeName("sort")
@@ -54,6 +55,7 @@ public class SortParam extends AbstractParams implements RevokerParams {
 
     private ExecutionContext executionContext;
     private OperatorMemoryAllocatorCtx memoryAllocatorCtx;
+    AtomicLong size;
 
     protected long spillCnt = 0;
 
@@ -79,6 +81,7 @@ public class SortParam extends AbstractParams implements RevokerParams {
         } else {
             comparator = null;
         }
+        this.size = new AtomicLong(0);
         this.executionContext = executionContext;
     }
 
@@ -95,7 +98,7 @@ public class SortParam extends AbstractParams implements RevokerParams {
             comparator = null;
         }
         if (!executionContext.isInnerSql()) {
-            String name = "hashJoin" + UUID.randomUUID();
+            String name = "sort" + UUID.randomUUID();
             MemoryPool memoryPool =
                 MemoryPoolUtils.createOperatorTmpTablePool(name, executionContext.getMemoryPool());
             this.memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(memoryPool, ScopeVariables.enableSpill());
@@ -104,6 +107,9 @@ public class SortParam extends AbstractParams implements RevokerParams {
 
     public void clear() {
         cache.clear();
+        if (this.memoryAllocatorCtx != null) {
+            this.memoryAllocatorCtx.close();
+        }
     }
 
     public OperatorProfile getProfile() {
@@ -112,6 +118,9 @@ public class SortParam extends AbstractParams implements RevokerParams {
 
     @Override
     public MemoryPool getQueryMemoryPool() {
+        if (this.memoryAllocatorCtx != null && this.getExecutionContext() != null) {
+            return this.getExecutionContext().getMemoryPool();
+        }
         return null;
     }
 

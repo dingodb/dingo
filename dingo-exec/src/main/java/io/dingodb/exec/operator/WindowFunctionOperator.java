@@ -16,13 +16,22 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.operator.params.WindowFunctionParam;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -30,7 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @Slf4j
-public class WindowFunctionOperator extends SoleOutOperator {
+public class WindowFunctionOperator extends SoleOutOperator implements MemoryRevoker {
     public static final WindowFunctionOperator INSTANCE = new WindowFunctionOperator();
 
     private WindowFunctionOperator() {
@@ -41,6 +50,13 @@ public class WindowFunctionOperator extends SoleOutOperator {
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         WindowFunctionParam param = vertex.getParam();
         synchronized (param) {
+            if (param.getSize() != null && param.getSize().get() > ScopeVariables.joinSpillSize()
+                && !param.getExecutionContext().isInnerSql()) {
+                param.getMemoryAllocatorCtx().allocateRevocableMemory(param.getSize().get());
+                param.getSize().set(0);
+            }
+            long size = ObjectSizeUtils.calculateSize(tuple);
+            param.getSize().addAndGet(size);
             param.getList().add(tuple);
         }
         return true;
@@ -68,5 +84,38 @@ public class WindowFunctionOperator extends SoleOutOperator {
         }
         // push fin
         vertex.getSoleEdge().fin(fin);
+        param.clear();
+    }
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        WindowFunctionParam windowFunctionParam = (WindowFunctionParam) param;
+        windowFunctionParam.addSpillCnt(1);
+        return spillToDisk(windowFunctionParam);
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        // finish -> releaseMemory
+        WindowFunctionParam windowFunParam = (WindowFunctionParam) param;
+        MemoryAllocatorCtx memoryAllocatorCtx = windowFunParam.getMemoryAllocatorCtx();
+        memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        LogUtils.info(log, "window function finish memory revoke, release revocable memory");
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        WindowFunctionParam windowFunctionParam = (WindowFunctionParam) param;
+        return windowFunctionParam.getMemoryAllocatorCtx();
+    }
+
+    public ListenableFuture<?> spillToDisk(WindowFunctionParam windowFunctionParam) {
+        LogUtils.info(log, "start spill to disk");
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            Utils.sleep(10000);
+            future.set(null);
+        }).start();
+        return future;
     }
 }

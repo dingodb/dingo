@@ -19,6 +19,8 @@ package io.dingodb.exec.operator;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.util.Utils;
 import io.dingodb.exec.dag.Edge;
@@ -30,7 +32,6 @@ import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.params.AbstractParams;
-import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.operator.params.SortParam;
 import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,13 @@ public class SortOperator extends SoleOutOperator implements MemoryRevoker {
             if (limit == 0) {
                 return false;
             }
+            if (param.getSize() != null && param.getSize().get() > ScopeVariables.joinSpillSize()
+                && !param.getExecutionContext().isInnerSql()) {
+                param.getMemoryAllocatorCtx().allocateRevocableMemory(param.getSize().get());
+                param.getSize().set(0);
+            }
+            long size = ObjectSizeUtils.calculateSize(tuple);
+            param.getSize().addAndGet(size);
             param.getCache().add(tuple);
             return !collations.isEmpty() || limit < 0 || param.getCache().size() < offset + limit;
         }
@@ -181,7 +189,7 @@ public class SortOperator extends SoleOutOperator implements MemoryRevoker {
         SortParam sortParam = (SortParam) param;
         MemoryAllocatorCtx memoryAllocatorCtx = sortParam.getMemoryAllocatorCtx();
         memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
-        LogUtils.info(log, "finish memory revoke, release revocable memory");
+        LogUtils.info(log, "sort finish memory revoke, release revocable memory");
     }
 
     @Override

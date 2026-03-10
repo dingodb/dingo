@@ -127,7 +127,7 @@ public final class DingoWindowVisitFun {
         WindowService windowService = generateCode(rel);
         List<Vertex> coalesceInputs = DingoCoalesce.coalesce(idGenerator, inputs);
 
-        WindowFunctionParam windowFunctionParam = new WindowFunctionParam(windowService);
+        WindowFunctionParam windowFunctionParam = new WindowFunctionParam(windowService, job.getExecutionContext());
         Vertex vertex = new Vertex(WINDOW_FUNCTION, windowFunctionParam);
         Vertex input = sole(coalesceInputs);
         Task task = input.getTask();

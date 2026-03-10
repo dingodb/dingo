@@ -17,6 +17,7 @@
 package io.dingodb.calcite.utils;
 
 import com.google.common.collect.ImmutableList;
+import io.dingodb.calcite.meta.DingoSortedMultiMap;
 import io.dingodb.common.util.Pair;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
@@ -36,6 +37,7 @@ import org.apache.calcite.runtime.SortedMultiMap;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.util.BuiltInMethod;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -45,6 +47,15 @@ import java.util.List;
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 
 public class WindowGenerate {
+    public static Method SORTED_MULTI_MAP_SINGLETON;
+    public static Method SORTED_MULTI_MAP_ARRAYS;
+    public static Method SORTED_MULTI_MAP_PUT_MULTI;
+    static {
+        SORTED_MULTI_MAP_SINGLETON = (Method)Types.lookupMethod(DingoSortedMultiMap.class, "singletonArrayIterator", new Class[]{Comparator.class, List.class});
+        SORTED_MULTI_MAP_ARRAYS = (Method)Types.lookupMethod(DingoSortedMultiMap.class, "arrays", new Class[]{Comparator.class});
+        SORTED_MULTI_MAP_PUT_MULTI = (Method)Types.lookupMethod(DingoSortedMultiMap.class, "putMulti", new Class[]{Object.class, Object.class});
+    }
+
     public static Expression generateComparator(RelCollation collation, RelDataType rowType) {
         BlockBuilder body = new BlockBuilder();
         final ParameterExpression parameterV0 =
@@ -181,7 +192,7 @@ public class WindowGenerate {
                     "iterator",
                     Expressions.call(
                         null,
-                        BuiltInMethod.SORTED_MULTI_MAP_SINGLETON.method,
+                        SORTED_MULTI_MAP_SINGLETON,
                         comparator,
                         tempList_)));
         }
@@ -230,7 +241,7 @@ public class WindowGenerate {
             Expressions.statement(
                 Expressions.call(
                     multiMap_,
-                    BuiltInMethod.SORTED_MULTI_MAP_PUT_MULTI.method,
+                    SORTED_MULTI_MAP_PUT_MULTI,
                     key,
                     rows_)));
 
@@ -245,7 +256,7 @@ public class WindowGenerate {
                 "iterator",
                 Expressions.call(
                     multiMap_,
-                    BuiltInMethod.SORTED_MULTI_MAP_ARRAYS.method,
+                    SORTED_MULTI_MAP_ARRAYS,
                     comparator)));
     }
 
