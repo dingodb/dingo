@@ -37,6 +37,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlCastFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.immutables.value.Value;
@@ -91,7 +92,7 @@ public class UnionAllAddProjectRule extends RelRule<UnionAllAddProjectRule.Confi
                 RexInputRef inputRef = new RexInputRef(i, diffType);
                 List<RexNode> operands = new ArrayList<>();
                 operands.add(inputRef);
-                RexNode cast = new RexCall(targetRelDataType, SqlStdOperatorTable.CAST, operands);
+                RexNode cast = new RexCall(targetRelDataType, new SqlCastFunction(), operands);
                 rexNodeList.add(cast);
                 diffCnt ++;
             } else {

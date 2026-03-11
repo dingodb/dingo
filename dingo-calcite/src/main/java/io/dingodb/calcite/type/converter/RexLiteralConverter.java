@@ -79,12 +79,12 @@ public class RexLiteralConverter implements DataConverter {
 
     @Override
     public Integer convertIntegerFrom(@NonNull Object value) {
-        return (Integer) ExprCompiler.ADVANCED.visit(Exprs.op(Exprs.TO_INT_C, Exprs.val(value))).eval();
+        return (Integer) ExprCompiler.getAdvancedExprCompiler().visit(Exprs.op(Exprs.TO_INT_C, Exprs.val(value))).eval();
     }
 
     @Override
     public Long convertLongFrom(@NonNull Object value) {
-        return (Long) ExprCompiler.ADVANCED.visit(Exprs.op(Exprs.TO_LONG_C, Exprs.val(value))).eval();
+        return (Long) ExprCompiler.getAdvancedExprCompiler().visit(Exprs.op(Exprs.TO_LONG_C, Exprs.val(value))).eval();
     }
 
     @Override

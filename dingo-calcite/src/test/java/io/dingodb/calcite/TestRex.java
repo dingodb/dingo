@@ -127,7 +127,7 @@ public class TestRex {
         RexNode rexNode = getRexNode(rex);
         Expr expr = RexConverter.convert(rexNode);
         assertThat(expr.toString()).isEqualTo(exprStr);
-        Assert.of(ExprCompiler.ADVANCED.visit(expr).eval()).isEqualTo(expected);
+        Assert.of(ExprCompiler.getAdvancedExprCompiler().visit(expr).eval()).isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -139,7 +139,7 @@ public class TestRex {
     public void testNow(String str) throws Exception {
         RexNode rexNode = getRexNode(str);
         Expr expr = RexConverter.convert(rexNode);
-        assertThat((Timestamp) ExprCompiler.ADVANCED.visit(expr).eval())
+        assertThat((Timestamp) ExprCompiler.getAdvancedExprCompiler().visit(expr).eval())
             .isCloseTo(DateTimeUtils.currentTimestampSecond(DingoTimeZoneContext.getTimeZone()), 3L * 1000L);
     }
 

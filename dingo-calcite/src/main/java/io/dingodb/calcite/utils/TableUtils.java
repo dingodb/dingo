@@ -51,7 +51,7 @@ public final class TableUtils {
                 Object[] tuple = new Object[td.getColumns().size()];
                 for (Map.Entry<Integer, RexNode> entry : item.entrySet()) {
                     Expr expr = RexConverter.convert(entry.getValue());
-                    Object val = ExprCompiler.ADVANCED.visit(expr).eval();
+                    Object val = ExprCompiler.getAdvancedExprCompiler().visit(expr).eval();
                     Column column = td.getColumns().get(entry.getKey());
                     if (column.getType() instanceof FloatType && val instanceof Double) {
                         tuple[entry.getKey()] = Float.valueOf(val.toString());

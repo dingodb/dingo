@@ -44,6 +44,7 @@ import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlCastFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -155,7 +156,7 @@ public final class DingoRepeatUnionVisitFun {
                 RexInputRef inputRef = new RexInputRef(i, typeField1.getType());
                 List<RexNode> operands = new ArrayList<>();
                 operands.add(inputRef);
-                RexNode cast = new RexCall(targetType, SqlStdOperatorTable.CAST, operands);
+                RexNode cast = new RexCall(targetType, new SqlCastFunction(), operands);
                 rexNodeList.add(cast);
                 diffCnt ++;
             } else {

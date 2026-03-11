@@ -77,7 +77,7 @@ public class SqlExpr {
     public void compileIn(DingoType tupleType, DingoType parasType) {
         try {
             CompileContext context = new SqlExprCompileContext(tupleType, parasType);
-            expr = ExprCompiler.ADVANCED.visit(parseExpr(), context);
+            expr = ExprCompiler.getAdvancedExprCompiler().visit(parseExpr(), context);
             etx = new SqlExprEvalContext();
         } catch (ExprParseException | ExprCompileException e) {
             throw new IllegalStateException(e);
@@ -87,7 +87,7 @@ public class SqlExpr {
     public void compileInWithContext(DingoType tupleType, DingoType parasType, DingoCompileContext dingoCompileContext ) {
         try {
             //CompileContext context = new SqlExprCompileContext(tupleType, parasType);
-            expr = ExprCompiler.ADVANCED.visit(parseExpr(), dingoCompileContext);
+            expr = ExprCompiler.getAdvancedExprCompiler().visit(parseExpr(), dingoCompileContext);
             etx = new SqlExprEvalContext();
         } catch (ExprParseException | ExprCompileException e) {
             throw new IllegalStateException(e);
