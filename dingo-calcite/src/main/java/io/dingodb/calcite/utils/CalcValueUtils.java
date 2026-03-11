@@ -51,7 +51,7 @@ public final class CalcValueUtils {
         SqlExprEvalContext etx = new SqlExprEvalContext();
         etx.setTuple(tuple);
 
-        ExprCompiler exprCompiler = ExprCompiler.ADVANCED;
+        ExprCompiler exprCompiler = ExprCompiler.getAdvancedExprCompiler();
         exprCompiler.setProcessor(config.getProcessor());
 
         try {
@@ -65,7 +65,7 @@ public final class CalcValueUtils {
             throw new RuntimeException(e);
         }
 
-        return ExprCompiler.ADVANCED.visit(expr, new SqlExprCompileContext(tupleType, null))
+        return exprCompiler.visit(expr, new SqlExprCompileContext(tupleType, null))
                 .eval(etx, config);
     }
 
