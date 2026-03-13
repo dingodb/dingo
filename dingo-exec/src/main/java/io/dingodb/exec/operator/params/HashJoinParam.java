@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.memory.MemoryPool;
@@ -100,8 +101,15 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
     private ExecutionContext executionContext;
 
     protected long spillCnt = 0;
+    @Setter
+    @Getter
+    private volatile boolean spilling;
     OperatorMemoryAllocatorCtx memoryAllocatorCtx;
+
     AtomicLong size;
+    @Setter
+    @Getter
+    SettableFuture spillFuture;
 
 
     public HashJoinParam(
@@ -208,6 +216,10 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
         future = new CompletableFuture<>();
         if (this.memoryAllocatorCtx != null) {
             this.memoryAllocatorCtx.close();
+        }
+        if (spillFuture != null) {
+            spillFuture.cancel(true);
+            spillFuture = null;
         }
     }
 

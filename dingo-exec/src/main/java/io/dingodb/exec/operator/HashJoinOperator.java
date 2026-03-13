@@ -51,6 +51,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.dingodb.exec.dag.Edge.checkException;
+
 @Slf4j
 public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
     public static final HashJoinOperator INSTANCE = new HashJoinOperator();
@@ -307,9 +310,22 @@ public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
 
     @Override
     public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
-        HashJoinParam hashJoinParam = (HashJoinParam) param;
-        hashJoinParam.addSpillCnt(1);
-        return spillToDisk(hashJoinParam);
+        synchronized (param) {
+            HashJoinParam hashJoinParam = (HashJoinParam) param;
+            if (hashJoinParam.isSpilling()) {
+                while (hashJoinParam.getSpillFuture() == null) {
+                    Utils.sleep(50);
+                }
+                return hashJoinParam.getSpillFuture();
+            }
+            long revocable = hashJoinParam.getMemoryAllocatorCtx().getRevocableAllocated();
+            if (revocable > 1024 * 1024 * 4) {
+                hashJoinParam.addSpillCnt(1);
+                return spillToDisk(hashJoinParam);
+            } else {
+                return null;
+            }
+        }
     }
 
     @Override
@@ -328,12 +344,21 @@ public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
     }
 
     public ListenableFuture<?> spillToDisk(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        hashJoinParam.setSpilling(true);
         LogUtils.info(log, "start spill to disk");
+
         SettableFuture<?> future = SettableFuture.create();
         new Thread(() -> {
             Utils.sleep(10000);
+
+            releaseSpill(param);
             future.set(null);
         }).start();
+        future.addListener(() -> {
+            hashJoinParam.setSpillFuture(null);
+        }, directExecutor());
+        hashJoinParam.setSpillFuture(future);
         return future;
     }
 }

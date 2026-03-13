@@ -33,7 +33,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.runtime.SortedMultiMap;
 import org.apache.calcite.runtime.Utilities;
 import org.apache.calcite.util.BuiltInMethod;
 
@@ -198,7 +197,7 @@ public class WindowGenerate {
         }
         Expression multiMap_ =
             builder.append(
-                "multiMap", Expressions.new_(SortedMultiMap.class));
+                "multiMap", Expressions.new_(DingoSortedMultiMap.class));
         final BlockBuilder builder2 = new BlockBuilder();
 
         ParameterExpression key;

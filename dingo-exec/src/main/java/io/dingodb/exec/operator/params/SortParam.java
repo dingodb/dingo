@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.memory.MemoryPool;
 import io.dingodb.common.memory.MemoryPoolUtils;
@@ -30,6 +31,7 @@ import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.exec.operator.data.SortCollation;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -56,8 +58,15 @@ public class SortParam extends AbstractParams implements RevokerParams {
     private ExecutionContext executionContext;
     private OperatorMemoryAllocatorCtx memoryAllocatorCtx;
     AtomicLong size;
-
     protected long spillCnt = 0;
+
+    @Setter
+    @Getter
+    private volatile boolean spilling;
+    @Setter
+    @Getter
+    SettableFuture spillFuture;
+
 
     @JsonCreator
     public SortParam(
@@ -109,6 +118,10 @@ public class SortParam extends AbstractParams implements RevokerParams {
         cache.clear();
         if (this.memoryAllocatorCtx != null) {
             this.memoryAllocatorCtx.close();
+        }
+        if (spillFuture != null) {
+            spillFuture.cancel(true);
+            spillFuture = null;
         }
     }
 

@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.memory.MemoryPool;
 import io.dingodb.common.memory.MemoryPoolUtils;
@@ -55,6 +56,14 @@ public class WindowFunctionParam extends AbstractParams implements RevokerParams
     AtomicLong size;
 
     protected long spillCnt = 0;
+
+    @Setter
+    @Getter
+    private volatile boolean spilling;
+
+    @Setter
+    @Getter
+    SettableFuture spillFuture;
 
 
     public WindowFunctionParam(WindowService windowService, ExecutionContext executionContext) {
@@ -96,6 +105,10 @@ public class WindowFunctionParam extends AbstractParams implements RevokerParams
         list.clear();
         if (this.memoryAllocatorCtx != null) {
             this.memoryAllocatorCtx.close();
+        }
+        if (spillFuture != null) {
+            spillFuture.cancel(true);
+            spillFuture = null;
         }
     }
 }

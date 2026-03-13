@@ -29,4 +29,6 @@ public interface RevokerParams {
     default long getCacheSize() {
         return 0;
     }
+
+    default void setSpilling(boolean spilling) {}
 }

@@ -18,6 +18,8 @@ package io.dingodb.exec.memory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.operator.params.RevokerParams;
+import io.dingodb.exec.operator.params.SortParam;
 import io.dingodb.tool.api.MemoryAllocatorCtx;
 
 public interface MemoryRevoker {
@@ -27,5 +29,16 @@ public interface MemoryRevoker {
     void finishMemoryRevoke(AbstractParams param);
 
     MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param);
+
+    default void releaseSpill(AbstractParams param) {
+        finishMemoryRevoke(param);
+        if (getMemoryAllocatorCtx(param) != null) {
+            getMemoryAllocatorCtx(param).resetMemoryRevokingRequested();
+        }
+        if (param instanceof RevokerParams) {
+            RevokerParams revokerParams = (RevokerParams) param;
+            revokerParams.setSpilling(false);
+        }
+    }
 
 }

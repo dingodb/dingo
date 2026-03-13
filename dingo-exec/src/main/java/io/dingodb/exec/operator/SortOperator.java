@@ -32,6 +32,7 @@ import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.SortCollation;
 import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.operator.params.SortParam;
 import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 
 @Slf4j
 public class SortOperator extends SoleOutOperator implements MemoryRevoker {
@@ -178,9 +181,24 @@ public class SortOperator extends SoleOutOperator implements MemoryRevoker {
 
     @Override
     public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
-        SortParam sortParam = (SortParam) param;
-        sortParam.addSpillCnt(1);
-        return spillToDisk(sortParam);
+        synchronized (param) {
+            SortParam sortParam = (SortParam) param;
+            if (sortParam.isSpilling()) {
+                LogUtils.info(log, "sort is spilling, wait future");
+                while (sortParam.getSpillFuture() == null) {
+                    LogUtils.info(log, "sort is spilling, future is null");
+                    Utils.sleep(50);
+                }
+                return sortParam.getSpillFuture();
+            }
+            long revocable = sortParam.getMemoryAllocatorCtx().getRevocableAllocated();
+            if (revocable > 1024 * 1024 * 4) {
+                sortParam.addSpillCnt(1);
+                return spillToDisk(sortParam);
+            } else {
+                return null;
+            }
+        }
     }
 
     @Override
@@ -199,12 +217,22 @@ public class SortOperator extends SoleOutOperator implements MemoryRevoker {
     }
 
     public ListenableFuture<?> spillToDisk(AbstractParams param) {
-        LogUtils.info(log, "start spill to disk");
+        LogUtils.info(log, "start spill to disk, param:{}", param);
+        SortParam sortParam = (SortParam) param;
+        sortParam.setSpilling(true);
         SettableFuture<?> future = SettableFuture.create();
         new Thread(() -> {
             Utils.sleep(10000);
+
+            releaseSpill(param);
             future.set(null);
         }).start();
+        future.addListener(() -> {
+            LogUtils.info(log, "sortParam set spillFuture null, param:{}", sortParam);
+            sortParam.setSpillFuture(null);
+        }, directExecutor());
+        sortParam.setSpillFuture(future);
         return future;
     }
+
 }

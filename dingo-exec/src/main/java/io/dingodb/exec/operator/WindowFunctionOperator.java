@@ -30,6 +30,7 @@ import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.HashJoinParam;
+import io.dingodb.exec.operator.params.SortParam;
 import io.dingodb.exec.operator.params.WindowFunctionParam;
 import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
@@ -89,9 +90,22 @@ public class WindowFunctionOperator extends SoleOutOperator implements MemoryRev
 
     @Override
     public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
-        WindowFunctionParam windowFunctionParam = (WindowFunctionParam) param;
-        windowFunctionParam.addSpillCnt(1);
-        return spillToDisk(windowFunctionParam);
+        synchronized (param) {
+            WindowFunctionParam windowFunctionParam = (WindowFunctionParam) param;
+            if (windowFunctionParam.isSpilling()) {
+                while (windowFunctionParam.getSpillFuture() == null) {
+                    Utils.sleep(50);
+                }
+                return windowFunctionParam.getSpillFuture();
+            }
+            long revocable = windowFunctionParam.getMemoryAllocatorCtx().getRevocableAllocated();
+            if (revocable > 1024 * 1024 * 4) {
+                windowFunctionParam.addSpillCnt(1);
+                return spillToDisk(windowFunctionParam);
+            } else {
+                return null;
+            }
+        }
     }
 
     @Override
@@ -111,9 +125,13 @@ public class WindowFunctionOperator extends SoleOutOperator implements MemoryRev
 
     public ListenableFuture<?> spillToDisk(WindowFunctionParam windowFunctionParam) {
         LogUtils.info(log, "start spill to disk");
+
+        windowFunctionParam.setSpilling(true);
         SettableFuture<?> future = SettableFuture.create();
         new Thread(() -> {
             Utils.sleep(10000);
+
+            releaseSpill(windowFunctionParam);
             future.set(null);
         }).start();
         return future;

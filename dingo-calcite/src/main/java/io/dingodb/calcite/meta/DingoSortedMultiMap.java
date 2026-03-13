@@ -47,8 +47,17 @@ public class DingoSortedMultiMap<K, V> extends HashMap<K, List<V>> {
     private Map<K, String> keyFileMap;
     private long spillSize;
     private String basePath;
+    Comparator comparator;
 
     public DingoSortedMultiMap() {
+        keySizeMap = new HashMap<>();
+        this.keyFileMap = new HashMap<>();
+        spillSize = 10000000;
+        basePath = "/root/gjn/logs/";
+    }
+
+    public DingoSortedMultiMap(Comparator comparator) {
+        this.comparator = comparator;
         keySizeMap = new HashMap<>();
         this.keyFileMap = new HashMap<>();
         spillSize = 10000000;
@@ -147,6 +156,7 @@ public class DingoSortedMultiMap<K, V> extends HashMap<K, List<V>> {
     }
 
     public void appendListToFile(String filePath, List<V> list) throws IOException {
+        LogUtils.info(log, "append file:{}, list size:{}", filePath, list.size());
         File file = new File(filePath);
         boolean fileExists = file.exists();
 

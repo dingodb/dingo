@@ -45,7 +45,7 @@ import java.util.concurrent.ExecutionException;
 @Getter
 @AllArgsConstructor
 public class Edge {
-    private static final ListenableFuture<?> NOT_BLOCKED = Futures.immediateFuture(null);
+    public static final ListenableFuture<?> NOT_BLOCKED = Futures.immediateFuture(null);
     private Vertex previous;
     private Vertex next;
     private CommonId partId;
@@ -74,7 +74,7 @@ public class Edge {
                 if (blocked != null && !blocked.isDone()) {
                     try {
                         blocked.get();
-                        checkExecutorFinishedRevoking((MemoryRevoker) operator, blocked, next.getData());
+                        //checkExecutorFinishedRevoking((MemoryRevoker) operator, blocked, next.getData());
                         LogUtils.info(log, "memory revoke locked continue..");
                         break;
                     } catch (InterruptedException | ExecutionException e) {
@@ -114,9 +114,11 @@ public class Edge {
         boolean memoryRevokingRequested = memoryAllocatorCtx.isMemoryRevokingRequested();
         if (memoryRevokingRequested) {
             ListenableFuture<?> future = memoryRevoker.startMemoryRevoke(param);
-            RevokerParams revokerParams = (RevokerParams) param;
-            LogUtils.info(log, "async memory revoke, poolName:{}, pre pin:{}, param cnt:{}",
-                memoryAllocatorCtx.getName(), previous.getPin(), revokerParams.getCacheSize());
+            if (future != null) {
+                RevokerParams revokerParams = (RevokerParams) param;
+                LogUtils.info(log, "async memory revoke, poolName:{}, pre pin:{}, param cnt:{}",
+                    memoryAllocatorCtx.getName(), previous.getPin(), revokerParams.getCacheSize());
+            }
             return future;
         }
         return null;

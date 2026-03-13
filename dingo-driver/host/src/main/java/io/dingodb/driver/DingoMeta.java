@@ -396,6 +396,10 @@ public class DingoMeta extends MetaImpl {
         if (!isDisableIncrementBackup() && !isDisableAudit()) {
             return;
         }
+        String innerDdl = dingoConnection.getContext().getOption("for_ddl");
+        if ("on".equalsIgnoreCase(innerDdl)) {
+            return;
+        }
         String user = dingoConnection.getContext().getOption("user");
         String client = dingoConnection.getContext().getOption("client");
         ITransaction transaction = dingoConnection.getTransaction();
