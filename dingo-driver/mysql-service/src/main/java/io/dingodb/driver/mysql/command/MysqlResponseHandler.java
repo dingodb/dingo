@@ -18,6 +18,11 @@ package io.dingodb.driver.mysql.command;
 
 import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.MemoryType;
+import io.dingodb.common.memory.ObjectSizeUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
 import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.State;
@@ -51,6 +56,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
@@ -181,6 +187,8 @@ public final class MysqlResponseHandler {
         String typeName;
         boolean stream = false;
         AtomicLong cnt = new AtomicLong(0);
+        AtomicLong dataSize = new AtomicLong(0);
+        MemoryPool childCachePool = null;
         while (resultSet.next()) {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             long nextId = packetId.getAndIncrement();
@@ -190,6 +198,7 @@ public final class MysqlResponseHandler {
             resultSetRowPacket.setCharacterSet(characterSet);
             for (int i = 1; i <= columnCount; i ++) {
                 Object val = resultSet.getObject(i);
+                dataSize.addAndGet(ObjectSizeUtils.calculateObjectSize(val));
                 typeName = metaData.getColumnTypeName(i);
                 if (typeName.equalsIgnoreCase("BOOLEAN")) {
                     if (val != null) {
@@ -211,6 +220,15 @@ public final class MysqlResponseHandler {
             }
             cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
+            if (dataSize.get() > 4 * 1024 * 1024) {
+                if (childCachePool == null) {
+                    childCachePool = MemoryPoolUtils.createCacheTmpTablePool(
+                        "protocol" + UUID.randomUUID(), MemoryManager.getInstance().getCacheMemoryPool());
+                }
+                LogUtils.info(log, "[memory] protocol cache allocate size:{}", dataSize.get());
+                childCachePool.allocateReserveMemory(dataSize.get());
+                dataSize.set(0);
+            }
             if (cnt.get() % ScopeVariables.getMysqlStreamSize() == 0) {
                 LogUtils.info(log, "write big data. "
                     + " cnt:{}, packetId:{}",
@@ -223,6 +241,9 @@ public final class MysqlResponseHandler {
                 stream = true;
                 break;
             }
+        }
+        if (childCachePool != null) {
+            childCachePool.destroy();
         }
         return stream;
     }

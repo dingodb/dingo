@@ -22,6 +22,7 @@ public enum MemoryType {
 
     GLOBAL("global"),
     CACHE("cache"),
+    PROTOCOL_CACHE("protocol_cache"),
     GENERAL_PLANER("genernal_planer"),
     GENERAL_TP("genernal_tp"),
     GENERAL_AP("genernal_ap"),

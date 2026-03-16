@@ -90,4 +90,8 @@ public class MemoryManager {
         }
         return queryMemoryLimit;
     }
+
+    public MemoryPool getCacheMemoryPool() {
+        return cacheMemoryPool;
+    }
 }

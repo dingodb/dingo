@@ -18,6 +18,10 @@ package io.dingodb.common.memory;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.util.List;
+
 @Slf4j
 public class MemoryPoolUtils {
 
@@ -28,7 +32,6 @@ public class MemoryPoolUtils {
         } else if (memoryType == MemoryType.OPERATOR) {
             mp = new MemoryPool(name, limit, parent, MemoryType.OPERATOR);
         } else if (memoryType == MemoryType.SUBQUERY) {
-            //子查询不要做做SPILL
             mp = new QueryMemoryPool(name, limit, parent);
         } else if (memoryType == MemoryType.GENERAL_TP) {
             mp = new TpMemoryPool(name, limit, limit, parent);
@@ -42,6 +45,10 @@ public class MemoryPoolUtils {
 
     public static MemoryPool createOperatorTmpTablePool(String memoryPoolName, MemoryPool rootPool) {
         return rootPool.getOrCreatePool(memoryPoolName, MemoryType.OPERATOR);
+    }
+
+    public static MemoryPool createCacheTmpTablePool(String memoryPoolName, MemoryPool rootPool) {
+        return rootPool.getOrCreatePool(memoryPoolName, MemoryType.PROTOCOL_CACHE);
     }
 
 }

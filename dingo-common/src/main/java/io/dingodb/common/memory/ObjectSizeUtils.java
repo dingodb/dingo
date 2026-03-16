@@ -46,8 +46,10 @@ public class ObjectSizeUtils {
         return new CurrentLayouter().layout(ClassData.parseInstance(instance));
     }
 
-
     public static long calculateObjectSize(Object object) {
+        if (object == null) {
+            return 0;
+        }
         ClassLayout layout = parseInstance(object);
         return layout.instanceSize();
     }

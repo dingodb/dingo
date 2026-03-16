@@ -105,7 +105,7 @@ public class MysqlConnection {
                 }
             }
             if (dingoDataStream != null) {
-                dingoDataStream.close();
+                dingoDataStream.destroy();
             }
             Map connectionMap = ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap;
             connectionMap.remove("mysql:" + threadId);
