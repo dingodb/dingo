@@ -24,7 +24,9 @@ import io.dingodb.expr.runtime.op.OpKeys;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
@@ -49,6 +51,17 @@ public class DateAddFun extends BinaryOp {
         } else if (value1 instanceof Long) {
             Long deltaLong = (Long) value1;
             delta = deltaLong.intValue();
+        } else if (value1 instanceof Float) {
+            Float deltaFloat = (Float) value1;
+            delta = Math.round(deltaFloat);
+        } else if (value1 instanceof BigDecimal) {
+            BigDecimal decimal = (BigDecimal) value1;
+            delta = ((Long) Math.round(decimal.doubleValue())).intValue();
+        } else if (value1 instanceof Double) {
+            Double deltaDouble = (Double) value1;
+            delta = ((Long) Math.round(deltaDouble)).intValue();
+        } else if (value1 instanceof Date || value1 instanceof Time || value1 instanceof Timestamp) {
+            return null;
         }
         if (value0 instanceof Date) {
             Date date = (Date) value0;
