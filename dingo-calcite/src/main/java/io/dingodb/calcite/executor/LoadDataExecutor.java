@@ -490,7 +490,7 @@ public class LoadDataExecutor implements DmlExecutor {
 
     public void insertWithTxn(Object[] tuples) {
         ExecutionEnvironment env = ExecutionEnvironment.INSTANCE;
-        Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
+        Map<String, KeyValue> caches = env.memCacheFor2PC
             .computeIfAbsent(statementId, e -> new TreeMap<>());
         KeyValue keyValue;
         try {
@@ -575,7 +575,7 @@ public class LoadDataExecutor implements DmlExecutor {
                 throw e;
             } finally {
                 txn.close();
-                env.memCacheFor2PC.memoryCache.remove(statementId);
+                env.memCacheFor2PC.remove(statementId);
             }
             long sub = System.currentTimeMillis() - start;
             long totalCount = count.get();
@@ -627,7 +627,7 @@ public class LoadDataExecutor implements DmlExecutor {
                     txnId, txnRetry, txnRetryCnt, timeOut
                 );
             }
-            Map<String, KeyValue> caches = env.memCacheFor2PC.memoryCache
+            Map<String, KeyValue> caches = env.memCacheFor2PC
                 .computeIfAbsent(statementId, e -> new TreeMap<>());
             List<TxnLocalData> tupleList = getCacheTupleList(caches, txnId);
             if (tupleList.isEmpty()) {
@@ -637,7 +637,7 @@ public class LoadDataExecutor implements DmlExecutor {
             count.addAndGet(result);
             caches.clear();
         } finally {
-            env.memCacheFor2PC.memoryCache.remove(statementId);
+            env.memCacheFor2PC.remove(statementId);
         }
         long end = System.currentTimeMillis();
         LogUtils.debug(log, "insert txn end batch, cost time:" + (end - start) + "ms");

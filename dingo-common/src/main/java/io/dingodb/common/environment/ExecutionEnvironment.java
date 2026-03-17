@@ -21,6 +21,7 @@ import io.dingodb.common.ddl.MdlCheckTableInfo;
 import io.dingodb.common.privilege.PrivilegeGather;
 import io.dingodb.common.session.SessionUtil;
 
+import io.dingodb.common.store.KeyValue;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,8 +41,7 @@ public class ExecutionEnvironment {
     public AtomicBoolean ddlOwner = new AtomicBoolean(false);
     public AtomicBoolean metaOwner = new AtomicBoolean(false);
     public volatile boolean initMetaDone = false;
-
-    public LocalMemCacheFor2PC memCacheFor2PC = new LocalMemCacheFor2PC();
+    public Map<Object, Map<String, KeyValue>> memCacheFor2PC = new ConcurrentHashMap<>();
 
     public MdlCheckTableInfo mdlCheckTableInfo = new MdlCheckTableInfo();
 
