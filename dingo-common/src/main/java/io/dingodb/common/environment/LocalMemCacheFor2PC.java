@@ -18,9 +18,9 @@ package io.dingodb.common.environment;
 
 import io.dingodb.common.store.KeyValue;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LocalMemCacheFor2PC {
-    public Map<Object, Map<String, KeyValue>> memoryCache = new HashMap<>();
+    public Map<Object, Map<String, KeyValue>> memoryCache = new ConcurrentHashMap<>();
 }

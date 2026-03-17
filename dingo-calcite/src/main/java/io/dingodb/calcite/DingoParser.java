@@ -289,7 +289,7 @@ public class DingoParser {
         if (StringUtils.isEmpty(context.getOption("sql_log"))) {
             SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
         }
-        LogUtils.trace(log, "==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
+        //LogUtils.trace(log, "==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
         return sqlNode;
     }
 
