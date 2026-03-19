@@ -171,6 +171,8 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             if (column.getPrecision() > 0 && column.getScale() >= 0) {
                                 type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
                             }
+                        } else if ("varbinary".equalsIgnoreCase(type)) {
+                            type = "blob";
                         }
                         type = type.toLowerCase();
                         colRes.add(new Object[]{
