@@ -16,6 +16,7 @@
 
 package io.dingodb.calcite.rule;
 
+import com.google.common.collect.ImmutableSet;
 import io.dingodb.calcite.rel.DingoAggregate;
 import io.dingodb.calcite.traits.DingoConvention;
 import io.dingodb.calcite.traits.DingoRelStreaming;
@@ -28,7 +29,14 @@ import org.apache.calcite.sql.SqlKind;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Set;
+
 public class DingoAggregateRule extends ConverterRule {
+
+    private static final Set<SqlKind> UNSPLITTABLE_AGGREGATIONS = ImmutableSet.of(
+        SqlKind.LISTAGG
+    );
+
     public static final Config DEFAULT = Config.INSTANCE
         .withConversion(
             LogicalAggregate.class,
@@ -44,20 +52,32 @@ public class DingoAggregateRule extends ConverterRule {
     }
 
     public static boolean match(@NonNull LogicalAggregate rel) {
-        return rel.getAggCallList().stream().noneMatch(agg -> {
-            SqlKind kind = agg.getAggregation().getKind();
-            // AVG must be transformed to SUM/COUNT before.
-            // TODO: GROUPING is not supported, maybe it is useful.
-            if (kind == SqlKind.AVG || kind == SqlKind.GROUPING) {
-                return true;
-            }
-            // After apply `CoreRules.AGGREGATE_EXPAND_DISTINCT_AGGREGATES`, the sql: `select count(distinct a) from t`
-            // will be transformed to two rules:
-            // 1. aggregate with distinct(AggregateCall List is empty)
-            // 2. aggregate with count(AggregateCall List contains COUNT, SUM, AVG...)
-            // So, In this case, the origin aggregate and distinct should be ignored.
-            return agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM);
-        });
+        // Only take over this LogicalAggregate if it contains at least one
+        // aggregation kind that LogicalSplitAggregateRule cannot handle.
+        boolean hasUnsplittable = rel.getAggCallList().stream()
+            .anyMatch(agg -> UNSPLITTABLE_AGGREGATIONS.contains(
+                agg.getAggregation().getKind()));
+
+        if (!hasUnsplittable) {
+            // All calls can be handled by LogicalSplitAggregateRule; don't interfere.
+            return false;
+        }
+
+        // Additionally, exclude kinds that are fundamentally unsupported:
+        // - AVG: must be decomposed to SUM/COUNT first.
+        // - GROUPING: not yet supported.
+        boolean hasUnsupported = rel.getAggCallList().stream()
+            .anyMatch(agg -> {
+                SqlKind kind = agg.getAggregation().getKind();
+                if (kind == SqlKind.AVG || kind == SqlKind.GROUPING) {
+                    return true;
+                }
+                // After AGGREGATE_EXPAND_DISTINCT_AGGREGATES, COUNT(DISTINCT)/SUM(DISTINCT)
+                // go through a special two-stage path; skip them here.
+                return agg.isDistinct() && (kind == SqlKind.COUNT || kind == SqlKind.SUM);
+            });
+
+        return !hasUnsupported;
     }
 
     @Override

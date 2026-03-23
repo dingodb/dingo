@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(MinAgg.class),
     @JsonSubTypes.Type(Sum0Agg.class),
     @JsonSubTypes.Type(SumAgg.class),
+    @JsonSubTypes.Type(GroupConcatAgg.class),
 })
 public abstract class AbstractAgg implements Agg {
 }
