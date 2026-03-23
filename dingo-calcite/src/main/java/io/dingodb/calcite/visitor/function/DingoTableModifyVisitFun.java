@@ -136,7 +136,8 @@ public final class DingoTableModifyVisitFun {
                                     updateMapping,
                                     updates,
                                     updateLimit,
-                                    null
+                                    null,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -154,7 +155,8 @@ public final class DingoTableModifyVisitFun {
                                     td,
                                     isUpdate,
                                     updateMapping,
-                                    updates
+                                    updates,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_INSERT, pessimisticLockParam);
                             }
@@ -181,7 +183,8 @@ public final class DingoTableModifyVisitFun {
                                     rel.isHasAutoIncrement(),
                                     rel.getAutoIncrementColIndex(),
                                     updateMapping,
-                                    updates
+                                    updates,
+                                    job.getExecutionContext()
                                 )
                             );
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -210,7 +213,8 @@ public final class DingoTableModifyVisitFun {
                                         job.getExecutionContext().isInsertCheckInplace(),
                                         td,
                                         rel.isHasAutoIncrement(),
-                                        rel.getAutoIncrementColIndex()
+                                        rel.getAutoIncrementColIndex(),
+                                        job.getExecutionContext()
                                     )
                                 );
                                 vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -240,7 +244,8 @@ public final class DingoTableModifyVisitFun {
                                         rel.isHasAutoIncrement(),
                                         rel.getAutoIncrementColIndex(),
                                         updateMapping,
-                                        updates
+                                        updates,
+                                        job.getExecutionContext()
                                     )
                                 );
                                 vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -259,7 +264,7 @@ public final class DingoTableModifyVisitFun {
                         vertex = new Vertex(
                             PART_INSERT,
                             new PartInsertParam(tableId, td.tupleType(), td.keyMapping(),
-                                td, rel.isHasAutoIncrement(), rel.getAutoIncrementColIndex())
+                                td, rel.isHasAutoIncrement(), rel.getAutoIncrementColIndex(), job.getExecutionContext())
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
                         task.putVertex(vertex);
@@ -358,7 +363,8 @@ public final class DingoTableModifyVisitFun {
                                         .map(SqlExprUtils::toSqlExpr)
                                         .collect(Collectors.toList()),
                                     updateLimit,
-                                    rel.getRelOp()
+                                    rel.getRelOp(),
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -380,7 +386,8 @@ public final class DingoTableModifyVisitFun {
                                     td,
                                     updatePrimaryKey,
                                     updateLimit,
-                                    rel.getRelOp()
+                                    rel.getRelOp(),
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_UPDATE, pessimisticLockParam);
                             }
@@ -414,7 +421,8 @@ public final class DingoTableModifyVisitFun {
                                     joinTableId,
                                     tableInfo,
                                     rel.getTargetTableNames(),
-                                    isLeft
+                                    isLeft,
+                                    job.getExecutionContext()
                                 )
                             );
                             updateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -451,7 +459,8 @@ public final class DingoTableModifyVisitFun {
                                     joinTableId,
                                     tableInfo,
                                     rel.getTargetTableNames(),
-                                    isLeft
+                                    isLeft,
+                                    job.getExecutionContext()
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -478,7 +487,8 @@ public final class DingoTableModifyVisitFun {
                                 td,
                                 rel.isHasAutoIncrement(),
                                 rel.getAutoIncrementColIndex(),
-                                rel.getRelOp()
+                                rel.getRelOp(),
+                                job.getExecutionContext()
                             )
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -521,7 +531,8 @@ public final class DingoTableModifyVisitFun {
                                     null,
                                     null,
                                     updateLimit,
-                                    null
+                                    null,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -536,7 +547,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     isScan,
-                                    td
+                                    td,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_DELETE, pessimisticLockParam);
                             }
@@ -557,7 +569,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     transaction.getForUpdateTs(),
                                     transaction.getLockTimeOut(),
-                                    td
+                                    td,
+                                    job.getExecutionContext()
                                 )
                             );
                             delateVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -581,7 +594,8 @@ public final class DingoTableModifyVisitFun {
                                     transaction.getStartTs(),
                                     0L,
                                     transaction.getLockTimeOut(),
-                                    td
+                                    td,
+                                    job.getExecutionContext()
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -597,7 +611,7 @@ public final class DingoTableModifyVisitFun {
                         }
                     } else {
                         vertex = new Vertex(PART_DELETE,
-                            new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td)
+                            new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td, job.getExecutionContext())
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
                         task.putVertex(vertex);

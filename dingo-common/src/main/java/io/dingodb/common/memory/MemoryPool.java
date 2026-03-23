@@ -394,7 +394,7 @@ public class MemoryPool {
         throw DingoErrUtil.newStdErr(ErrOutOfMemory);
     }
 
-    protected String printDetailInfo(int level) {
+    public String printDetailInfo(int level) {
         StringBuilder builder = new StringBuilder();
         String self = "Name=" + name + ", reservedBytes=" + reservedBytes +
             ", revocableBytes=" + revocableBytes;

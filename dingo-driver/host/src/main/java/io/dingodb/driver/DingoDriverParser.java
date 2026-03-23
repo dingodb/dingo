@@ -55,6 +55,8 @@ import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
@@ -356,7 +358,14 @@ public final class DingoDriverParser extends DingoParser {
             return getDdlSignature(sql, sqlNode);
         }
         ExecutionContext executionContext = getExecutionContext(queryId);
-
+        //if (!executionContext.isInnerSql() && sql.length() > 1000) {
+        //    long memVal = 0;
+        //    memVal += sql.length() * ObjectSizeUtils.SIZE_CHAR + ObjectSizeUtils.SIZE_OBJ_REF;
+        //    if (executionContext.getMemoryPool() instanceof QueryMemoryPool) {
+        //        QueryMemoryPool queryMemoryPool = (QueryMemoryPool) executionContext.getMemoryPool();
+        //        queryMemoryPool.getPlanMemPool().allocateReserveMemory(memVal);
+        //    }
+        //}
         SqlExplain explain = null;
         if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
             assert sqlNode instanceof SqlExplain;

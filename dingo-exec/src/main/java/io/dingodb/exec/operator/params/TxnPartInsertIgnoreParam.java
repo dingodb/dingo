@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -61,10 +62,11 @@ public class TxnPartInsertIgnoreParam extends TxnPartModifyParam {
         @JsonProperty("checkInPlace") boolean checkInPlace,
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
-        @JsonProperty("autoIncColIdx") int autoIncColIdx
+        @JsonProperty("autoIncColIdx") int autoIncColIdx,
+        ExecutionContext executionContext
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
-            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
+            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut, executionContext);
         this.checkInPlace = checkInPlace;
         this.hasAutoInc = hasAutoInc;
         this.autoIncColIdx = autoIncColIdx;

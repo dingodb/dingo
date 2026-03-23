@@ -46,4 +46,20 @@ public class QueryMemoryPool extends BlockingMemoryPool {
         log.warn("Current Query MemoryPool: " + this.printDetailInfo(0));
         throw DingoErrUtil.newStdErr(ErrOutOfMemory);
     }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        if (planMemPool != null) {
+            this.planMemPool.destroy();
+        }
+    }
+
+    @Override
+    public void clear() {
+        super.clear();
+        if (planMemPool != null) {
+            this.planMemPool.clear();
+        }
+    }
 }

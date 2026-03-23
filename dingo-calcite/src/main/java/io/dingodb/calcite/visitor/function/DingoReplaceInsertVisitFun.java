@@ -117,7 +117,8 @@ public final class DingoReplaceInsertVisitFun {
                                     updateMapping,
                                     updates,
                                     updateLimit,
-                                    null
+                                    null,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK, pessimisticLockParam);
                             } else {
@@ -132,7 +133,8 @@ public final class DingoReplaceInsertVisitFun {
                                     transaction.getPrimaryKeyLock(),
                                     transaction.getLockTimeOut(),
                                     isScan,
-                                    td
+                                    td,
+                                    job.getExecutionContext()
                                 );
                                 lockVertex = new Vertex(PESSIMISTIC_LOCK_REPLACE_INTO, pessimisticLockParam);
                             }
@@ -156,7 +158,8 @@ public final class DingoReplaceInsertVisitFun {
                                     job.getExecutionContext().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    job.getExecutionContext()
                                 )
                             );
                             insertVertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -183,7 +186,8 @@ public final class DingoReplaceInsertVisitFun {
                                     job.getExecutionContext().isInsertCheckInplace(),
                                     td,
                                     rel.isHasAutoIncrement(),
-                                    rel.getAutoIncrementColIndex()
+                                    rel.getAutoIncrementColIndex(),
+                                    job.getExecutionContext()
                                 )
                             );
                             vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -201,7 +205,7 @@ public final class DingoReplaceInsertVisitFun {
                         vertex = new Vertex(
                             PART_INSERT,
                             new PartInsertParam(tableId, td.tupleType(), td.keyMapping(),
-                                td, rel.isHasAutoIncrement(), rel.getAutoIncrementColIndex())
+                                td, rel.isHasAutoIncrement(), rel.getAutoIncrementColIndex(), job.getExecutionContext())
                         );
                         vertex.setId(idGenerator.getOperatorId(task.getId()));
                         task.putVertex(vertex);

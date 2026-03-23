@@ -83,6 +83,7 @@ public final class PartInsertOperator extends PartModifyOperator {
             Edge edge = vertex.getSoleEdge();
             if (fin instanceof FinWithException) {
                 edge.fin(fin);
+                param.reset();
                 return;
             }
             edge.transformToNext(new Object[]{param.getCount()});

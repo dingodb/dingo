@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -116,10 +117,11 @@ public class TxnPartUpdateParam extends TxnPartModifyParam {
         CommonId joinTableId,
         TableModify.TableInfo tableInfo,
         List<String> targetTableNames,
-        boolean isLeft
+        boolean isLeft,
+        ExecutionContext executionContext
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
-            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
+            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut, executionContext);
         this.mapping = mapping;
         this.updates = updates;
         this.hasAutoInc = hasAutoInc;

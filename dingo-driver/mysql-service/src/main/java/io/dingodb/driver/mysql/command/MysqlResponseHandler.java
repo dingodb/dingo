@@ -42,6 +42,7 @@ import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.PreparePacket;
 import io.dingodb.driver.mysql.packet.PrepareResultSetRowPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
+import io.dingodb.exec.memory.MemoryController;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
@@ -188,7 +189,7 @@ public final class MysqlResponseHandler {
         boolean stream = false;
         AtomicLong cnt = new AtomicLong(0);
         AtomicLong dataSize = new AtomicLong(0);
-        MemoryPool childCachePool = null;
+        MemoryController memoryController = null;
         while (resultSet.next()) {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             long nextId = packetId.getAndIncrement();
@@ -221,12 +222,13 @@ public final class MysqlResponseHandler {
             cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
             if (dataSize.get() > 4 * 1024 * 1024) {
-                if (childCachePool == null) {
-                    childCachePool = MemoryPoolUtils.createCacheTmpTablePool(
+                if (memoryController == null) {
+                    MemoryPool childCachePool = MemoryPoolUtils.createCacheTmpTablePool(
                         "protocol" + UUID.randomUUID(), MemoryManager.getInstance().getCacheMemoryPool());
+                    memoryController = new MemoryController(childCachePool);
                 }
                 LogUtils.info(log, "[memory] protocol cache allocate size:{}", dataSize.get());
-                childCachePool.allocateReserveMemory(dataSize.get());
+                memoryController.allocate(dataSize.get());
                 dataSize.set(0);
             }
             if (cnt.get() % ScopeVariables.getMysqlStreamSize() == 0) {
@@ -242,8 +244,8 @@ public final class MysqlResponseHandler {
                 break;
             }
         }
-        if (childCachePool != null) {
-            childCachePool.destroy();
+        if (memoryController != null) {
+            memoryController.close();
         }
         return stream;
     }

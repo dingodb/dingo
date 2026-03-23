@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -50,10 +51,11 @@ public class PessimisticLockInsertIgnoreParam extends TxnPartModifyParam {
         @JsonProperty("primaryLockKey") byte[] primaryLockKey,
         @JsonProperty("lockTimeOut") long lockTimeOut,
         @JsonProperty("isScan") boolean isScan,
-        Table table
+        Table table,
+        ExecutionContext executionContext
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
-            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
+            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut, executionContext);
         this.isScan = isScan;
     }
 

@@ -780,11 +780,12 @@ public class OperationServiceV2 {
                         transaction.getStartTs(),
                         pessimistic ? transaction.getForUpdateTs() : 0L,
                         transaction.getLockTimeOut(),
-                        td
+                        td,
+                        null
                     )
                 );
             } else {
-                vertex = new Vertex(PART_DELETE, new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td));
+                vertex = new Vertex(PART_DELETE, new PartDeleteParam(tableId, td.tupleType(), td.keyMapping(), td, null));
             }
             vertex.setId(idGenerator.getOperatorId(task.getId()));
             task.putVertex(vertex);
@@ -830,6 +831,7 @@ public class OperationServiceV2 {
                         false,
                         0,
                         null,
+                        null,
                         null
                     )
                 );
@@ -841,7 +843,8 @@ public class OperationServiceV2 {
                     td.keyMapping(),
                     td,
                     false,
-                    0)
+                    0,
+                    null)
                 );
             }
             vertex.setId(idGenerator.getOperatorId(task.getId()));

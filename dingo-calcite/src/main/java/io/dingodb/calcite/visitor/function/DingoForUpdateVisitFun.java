@@ -88,7 +88,8 @@ public final class DingoForUpdateVisitFun {
                     null,
                     null,
                     -1L,
-                    null
+                    null,
+                    job.getExecutionContext()
                 );
                 lockVertex = new Vertex(PESSIMISTIC_LOCK, param);
             } else {

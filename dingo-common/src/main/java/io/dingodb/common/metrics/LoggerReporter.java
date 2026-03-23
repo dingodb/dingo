@@ -25,6 +25,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.dingodb.common.memory.MemoryManager;
 import io.dingodb.common.tenant.TenantConstant;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -108,6 +109,8 @@ public class LoggerReporter extends ScheduledReporter {
                 entry = (Map.Entry)var6.next();
                 this.logTimer((String)entry.getKey(), (Timer)entry.getValue());
             }
+            this.loggerProxy.log(this.marker, "Tenant id:{}, global memory pool:{}", TenantConstant.TENANT_ID,
+                MemoryManager.getInstance().getGlobalMemoryPool().printDetailInfo(3));
             this.loggerProxy.log(this.marker, "------------------------------>");
         }
     }

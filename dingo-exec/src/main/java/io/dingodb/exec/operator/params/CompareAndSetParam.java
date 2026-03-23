@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -37,7 +38,7 @@ public class CompareAndSetParam extends PartModifyParam {
         @JsonProperty("keyMapping") TupleMapping keyMapping,
         Table table
     ) {
-        super(tableId, schema, keyMapping, table);
+        super(tableId, schema, keyMapping, table, null);
     }
 
     @Override
