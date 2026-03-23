@@ -108,6 +108,8 @@ public class ShowColumnsExecutor extends QueryExecutor {
                 if (column.getPrecision() > 0 && column.getScale() >= 0) {
                     type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
                 }
+            } else if ("varbinary".equalsIgnoreCase(type)) {
+                type = "blob";
             }
             columnValues.add(type.toLowerCase());
             columnValues.add(column.isNullable() ? "YES" : "NO");

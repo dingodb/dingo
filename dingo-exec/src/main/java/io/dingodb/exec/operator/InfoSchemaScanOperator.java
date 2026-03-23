@@ -175,6 +175,15 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             type = "blob";
                         }
                         type = type.toLowerCase();
+                        long precision = column.precision;
+                        Long octetLength = null;
+                        String dataType = column.getSqlTypeName();
+                        if ("varbinary".equalsIgnoreCase(dataType)) {
+                            dataType = "blob";
+                            precision = 65535;
+                            octetLength = 65535L;
+                        }
+
                         colRes.add(new Object[]{
                             "def",
                             schemaTables.getSchemaInfo().getName(),
@@ -187,9 +196,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
-                            column.getSqlTypeName(),
-                            (long) column.precision,
-                            null,
+                            dataType,
+                            precision,
+                            octetLength,
                             null,
                             null,
                             null,
