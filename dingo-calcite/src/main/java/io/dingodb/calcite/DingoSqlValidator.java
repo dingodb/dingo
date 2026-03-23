@@ -40,6 +40,8 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.fun.SqlLibrary;
+import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.fun.SqlMapValueConstructor;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -116,6 +118,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         super(
             SqlOperatorTables.chain(
                 SqlStdOperatorTable.instance(),
+                SqlLibraryOperatorTableFactory.INSTANCE
+                    .getOperatorTable(SqlLibrary.MYSQL),
                 DingoOperatorTable.instance(),
                 catalogReader
             ),

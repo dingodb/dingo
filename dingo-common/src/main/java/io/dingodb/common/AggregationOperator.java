@@ -34,7 +34,8 @@ public class AggregationOperator {
         COUNT_WITH_NULL(3),
         MAX(4),
         MIN(5),
-        SUM0(6);
+        SUM0(6),
+        GROUP_CONCAT(7);
 
         private final int code;
 

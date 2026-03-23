@@ -454,6 +454,7 @@ public class DingoParser {
             builder.add(DINGO_REL_OP_RULE);
             builder.add(DINGO_SCAN_WITH_REL_OP_RULE);
             builder.add(DINGO_REDUCE_AGGREGATE_RULE);
+            builder.add(DINGO_AGGREGATE_RULE);
         } else {
             builder.add(DINGO_FILTER_RULE);
             builder.add(DINGO_PROJECT_RULE);

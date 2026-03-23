@@ -21,15 +21,21 @@ import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.aggregate.Agg;
 import io.dingodb.exec.aggregate.CountAgg;
 import io.dingodb.exec.aggregate.CountAllAgg;
+import io.dingodb.exec.aggregate.GroupConcatAgg;
 import io.dingodb.exec.aggregate.MaxAgg;
 import io.dingodb.exec.aggregate.MinAgg;
 import io.dingodb.exec.aggregate.Sum0Agg;
 import io.dingodb.exec.aggregate.SumAgg;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,6 +67,66 @@ final class AggFactory {
         throw new UnsupportedOperationException("Unsupported aggregation function \"" + kind + "\".");
     }
 
+    static @NonNull Agg getAggFromCall(
+        @NonNull AggregateCall aggCall,
+        DingoType schema,
+        @Nullable List<RexNode> projects) {
+
+        SqlKind kind = aggCall.getAggregation().getKind();
+
+        if (kind == SqlKind.LISTAGG) {
+            return buildGroupConcatAgg(aggCall, projects);
+        }
+        return getAgg(kind, aggCall.getArgList(), schema);
+    }
+
+    private static @NonNull GroupConcatAgg buildGroupConcatAgg(
+        @NonNull AggregateCall aggCall,
+        @Nullable List<RexNode> projects) {
+
+        List<Integer> argList = aggCall.getArgList();
+
+        // argList[0] is the index of the column to be spliced
+        int exprIndex = argList.isEmpty() ? 0 : argList.get(0);
+
+        // Parse SEPARATOR
+        // Calcite places the separator literal in the project expression corresponding to argList[1]
+        String separator = resolveSeparator(argList, projects);
+
+        // Parse ORDER BY multi-column information from AggregateCall.collation
+        List<Integer> orderByIndices = new ArrayList<>();
+        List<Boolean> orderByAscending = new ArrayList<>();
+        for (RelFieldCollation fc : aggCall.getCollation().getFieldCollations()) {
+            orderByIndices.add(fc.getFieldIndex());
+            // DESCENDING → false, other directions are ASC → true
+            orderByAscending.add(fc.getDirection() != RelFieldCollation.Direction.DESCENDING);
+        }
+
+        boolean distinct = aggCall.isDistinct();
+
+        return new GroupConcatAgg(exprIndex, orderByIndices, orderByAscending, separator, distinct);
+    }
+
+    private static String resolveSeparator(
+        @NonNull List<Integer> argList,
+        @Nullable List<RexNode> projects) {
+
+        if (argList.size() < 2) {
+            return ",";
+        }
+        int sepIdx = argList.get(1);
+        if (projects != null && sepIdx < projects.size()) {
+            RexNode sepNode = projects.get(sepIdx);
+            if (sepNode instanceof RexLiteral) {
+                Object val = ((RexLiteral) sepNode).getValue2();
+                if (val != null) {
+                    return val.toString();
+                }
+            }
+        }
+        return ",";
+    }
+
     static @NonNull TupleMapping getAggKeys(@NonNull ImmutableBitSet groupSet) {
         return TupleMapping.of(
             groupSet.asList().stream()
@@ -76,6 +142,15 @@ final class AggFactory {
                 c.getArgList(),
                 schema
             ))
+            .collect(Collectors.toList());
+    }
+
+    static List<Agg> getAggList(
+        @NonNull List<AggregateCall> aggregateCallList,
+        DingoType schema,
+        @Nullable List<RexNode> projects) {
+        return aggregateCallList.stream()
+            .map(c -> AggFactory.getAggFromCall(c, schema, projects))
             .collect(Collectors.toList());
     }
 }
