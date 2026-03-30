@@ -391,6 +391,8 @@ public class ShowCreateTableExecutor extends QueryExecutor {
                     elementTypeName = "INT";
                 }
                 return elementTypeName + " " + typeName;
+            case "VARBINARY":
+                return "blob";
             default:
                 return typeName;
         }
