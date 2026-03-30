@@ -182,8 +182,18 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             if (column.getPrecision() > 0 && column.getScale() >= 0) {
                                 type = type + "(" + column.getPrecision() + "," + column.getScale() + ")";
                             }
+                        } else if ("varbinary".equalsIgnoreCase(type)) {
+                            type = "blob";
                         }
                         type = type.toLowerCase();
+                        long precision = column.precision;
+                        Long octetLength = null;
+                        String dataType = column.getSqlTypeName();
+                        if ("varbinary".equalsIgnoreCase(dataType)) {
+                            dataType = "blob";
+                            precision = 65535;
+                            octetLength = 65535L;
+                        }
                         String defaultValExpr;
                         if ("VARCHAR".equalsIgnoreCase(column.getSqlTypeName())
                             || "CHAR".equalsIgnoreCase(column.getSqlTypeName())) {
@@ -207,9 +217,9 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
                             // is null
                             column.isNullable() ? "YES" : "NO",
                             // type name
-                            column.getSqlTypeName(),
-                            (long) column.precision,
-                            null,
+                            dataType,
+                            precision,
+                            octetLength,
                             null,
                             null,
                             null,

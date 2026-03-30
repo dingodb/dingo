@@ -87,6 +87,9 @@ public class DingoTableModifyRule extends ConverterRule {
                         if (obj instanceof Val) {
                             if (((Val)obj).getType() instanceof io.dingodb.expr.common.type.DecimalType) {
                                 if (((DecimalType) ((Val)obj).getType()).getScale() == 0) {
+                                    if (((Val) obj).getValue() == null) {
+                                        return Exprs.val(null, ((Val) obj).getType());
+                                    }
                                     BigDecimal bigDecimal = ((BigDecimal) (((Val) obj).getValue()))
                                         .setScale(0, RoundingMode.HALF_UP);
                                     return Exprs.val(bigDecimal, ((Val) obj).getType());
