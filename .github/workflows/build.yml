@@ -5,13 +5,13 @@
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: Build
+name: Build and Publish
 
 on:
   push:
-    branches: [ main, develop, quickBI-v3.0.0  ]
+    branches: [ quickBI-v4.0.0  ]
   pull_request:
-    branches: [ main, develop, quickBI-v3.0.0  ]
+    branches: [ quickBI-v4.0.0  ]
 
 jobs:
   build:
@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: 'quickBI-v4.0.0'
 
     - name: Set up JDK17
       uses: actions/setup-java@v4
@@ -43,6 +45,15 @@ jobs:
       uses: gradle/gradle-build-action@937999e9cc2425eddc7fd62d1053baf041147db7
       with:
         arguments: javadoc
+
+    - name: Publish Packages to Maven Central
+      run: ./gradlew publishToMavenCentral --stacktrace
+      env:
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
 
     - name: Archive the dingo directory
       run: |
