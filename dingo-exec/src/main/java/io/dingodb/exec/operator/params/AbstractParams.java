@@ -48,6 +48,8 @@ import io.dingodb.exec.transaction.params.ScanCleanExtraDataCacheParam;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
 
 @Getter
@@ -152,6 +154,8 @@ public abstract class AbstractParams {
 
     protected transient Profile profile;
 
+    protected final AtomicLong cnt = new AtomicLong(0);
+
     public AbstractParams() {
     }
 
@@ -197,5 +201,13 @@ public abstract class AbstractParams {
             profile.start();
         }
         return (SourceProfile) profile;
+    }
+
+    public long incCnt() {
+        return cnt.incrementAndGet();
+    }
+
+    public long getCnt() {
+        return cnt.get();
     }
 }

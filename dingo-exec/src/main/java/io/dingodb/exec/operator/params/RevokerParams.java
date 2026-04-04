@@ -14,25 +14,13 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.exec.operator.params;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 
-import java.util.List;
+public interface RevokerParams {
+    MemoryPool getQueryMemoryPool();
 
-public interface TaskManager {
-    void addTask(Task task);
-
-    Task getTask(CommonId jobId, CommonId taskId);
-
-    void removeTask(CommonId jobId, CommonId taskId);
-
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
-    }
-
-    void close();
-
-    List<Task> getAllTasks();
+    OperatorMemoryAllocatorCtx getMemoryAllocatorCtx();
 }

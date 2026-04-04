@@ -22,6 +22,8 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.environment.ExecutionEnvironment;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemorySetting;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
 import io.dingodb.common.util.Utils;
@@ -59,6 +61,8 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
     }
 
     private final Scheduler scheduler;
+
+    MemoryRevokingScheduler memoryRevokingScheduler;
 
     private SchedulerService() {
         try {
@@ -165,6 +169,12 @@ public class SchedulerService implements io.dingodb.scheduler.SchedulerService {
         Executors.scheduleWithFixedDelayAsync("refreshStat", new RefreshStatsTask(),
             10, 3600, TimeUnit.SECONDS);
         new Thread(new AnalyzeProfileTask()).start();
+        if (MemorySetting.ENABLE_SPILL && memoryRevokingScheduler == null) {
+            memoryRevokingScheduler = new MemoryRevokingScheduler();
+            memoryRevokingScheduler.start();
+            MemoryManager memoryManager = MemoryManager.getInstance();
+            memoryManager.adjustMemoryLimit(Runtime.getRuntime().maxMemory());
+        }
     }
 
 }

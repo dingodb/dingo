@@ -16,19 +16,27 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.ObjectSizeUtils;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.AggregateParams;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.io.IOException;
+
 @Slf4j
-public final class AggregateOperator extends SoleOutOperator {
+public final class AggregateOperator extends SoleOutOperator implements MemoryRevoker {
     public static final AggregateOperator INSTANCE = new AggregateOperator();
 
     private AggregateOperator() {
@@ -37,6 +45,11 @@ public final class AggregateOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         AggregateParams params = vertex.getParam();
+        // Track memory usage for the revocation scheduler
+        if (params.getMemoryAllocatorCtx() != null) {
+            long tupleSize = ObjectSizeUtils.calculateSize(tuple);
+            params.getMemoryAllocatorCtx().allocateRevocableMemory(tupleSize);
+        }
         params.addTuple(tuple);
         return true;
     }
@@ -46,6 +59,7 @@ public final class AggregateOperator extends SoleOutOperator {
         AggregateParams params = vertex.getParam();
         Edge edge = vertex.getSoleEdge();
         try {
+            params.prepareResults();
             for (Object[] t : params.getCache()) {
                 if (!edge.transformToNext(t)) {
                     break;
@@ -63,5 +77,44 @@ public final class AggregateOperator extends SoleOutOperator {
         edge.fin(fin);
         // Reset
         params.clear();
+    }
+
+    // -------------------------------------------------------------------------
+    // MemoryRevoker interface implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        AggregateParams aggParams = (AggregateParams) param;
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            try {
+                aggParams.spillCurrentBuffer();
+                LogUtils.info(log, "AggregateOperator spilled input buffer during memory revocation");
+                future.set(null);
+            } catch (IOException e) {
+                LogUtils.warn(log, "AggregateOperator failed to spill during memory revocation: {}",
+                    e.getMessage());
+                future.setException(e);
+            }
+        }, "aggregate-spill-thread").start();
+        return future;
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        AggregateParams aggParams = (AggregateParams) param;
+        if (aggParams.getMemoryAllocatorCtx() != null) {
+            aggParams.getMemoryAllocatorCtx().releaseRevocableMemory(
+                aggParams.getMemoryAllocatorCtx().getRevocableAllocated(), true);
+            aggParams.getMemoryAllocatorCtx().resetMemoryRevokingRequested();
+            LogUtils.info(log, "AggregateOperator finished memory revoke, released revocable memory");
+        }
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        AggregateParams aggParams = (AggregateParams) param;
+        return aggParams.getMemoryAllocatorCtx();
     }
 }

@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.common.memory;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import com.google.common.util.concurrent.ListenableFuture;
 
-import java.util.List;
+public class MemoryAllocateFuture {
 
-public interface TaskManager {
-    void addTask(Task task);
+    private ListenableFuture<?> allocateFuture = null;
 
-    Task getTask(CommonId jobId, CommonId taskId);
+    public MemoryAllocateFuture() {
 
-    void removeTask(CommonId jobId, CommonId taskId);
-
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
     }
 
-    void close();
+    public void reset() {
+        allocateFuture = null;
+    }
 
-    List<Task> getAllTasks();
+    public void setAllocateFuture(ListenableFuture<?> allocateFuture) {
+        this.allocateFuture = allocateFuture;
+    }
+
+    public ListenableFuture<?> getAllocateFuture() {
+        return allocateFuture;
+    }
+
 }

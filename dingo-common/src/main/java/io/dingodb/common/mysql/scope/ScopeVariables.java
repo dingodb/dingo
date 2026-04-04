@@ -64,6 +64,7 @@ public final class ScopeVariables {
         executorProp.put("ddl_mdl_log", "on");
         executorProp.put("show_coprocessor_expr", "off");
         executorProp.put("enable_decimal_pushdown", "on");
+        executorProp.put("per_query_memory_limit", "536870912");
     }
 
     private ScopeVariables() {
@@ -293,6 +294,56 @@ public final class ScopeVariables {
         } catch (Exception e) {
             return true;
         }
+    }
+
+    public static boolean enableSpill() {
+        try {
+            String lookupBatchGet = executorProp.getOrDefault("enable_spill", "on").toString();
+            return "on".equalsIgnoreCase(lookupBatchGet);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public static long joinSpillSize() {
+        try {
+            String batchSize = executorProp.getOrDefault("allocate_size", "4194304").toString();
+            return Long.parseLong(batchSize);
+        } catch (Exception e) {
+            return 4194304;
+        }
+    }
+
+    public static long perQueryMemoryLimit() {
+        try {
+            String batchSize = executorProp.getOrDefault("per_query_memory_limit", "536870912").toString();
+            long limit = Long.parseLong(batchSize);
+            long maxMemory = Runtime.getRuntime().maxMemory();
+            return Math.min(limit, maxMemory / 2);
+        } catch (Exception e) {
+            return 536870912;
+        }
+    }
+
+    private static final Double DEFAULT_MPP_MEMORY_REVOKING_THRESHOLD = 0.85;
+    private static double memoryRevokingThreshold = DEFAULT_MPP_MEMORY_REVOKING_THRESHOLD;
+
+    public static double getMemoryRevokingThreshold() {
+        return memoryRevokingThreshold;
+    }
+
+    private static final long DEFAULT_MPP_LESS_REVOKE_BYTES = 32 * (1L << 20);
+    private static long lessRevokeBytes = DEFAULT_MPP_LESS_REVOKE_BYTES;
+
+    public static long getLessRevokeBytes() {
+        return lessRevokeBytes;
+    }
+
+    private static final Double DEFAULT_MPP_MEMORY_REVOKING_TARGET = 0.75;
+    private static double memoryRevokingTarget = DEFAULT_MPP_MEMORY_REVOKING_TARGET;
+
+    public static double getMemoryRevokingTarget() {
+        return memoryRevokingTarget;
     }
 
     public static synchronized void setExecutorProp(String key, String val) {

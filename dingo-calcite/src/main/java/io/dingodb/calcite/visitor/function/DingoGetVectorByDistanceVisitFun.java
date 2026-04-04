@@ -19,9 +19,11 @@ package io.dingodb.calcite.visitor.function;
 import io.dingodb.calcite.DingoRelOptTable;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.calcite.rel.DingoGetVectorByDistance;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.Location;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -101,6 +103,7 @@ public final class DingoGetVectorByDistanceVisitFun {
             List<Partition> partitions = rel.getIndexTable().getPartitions();
             int len = partitions.size();
             int resc = topk * len;
+            DingoType schema = DefinitionMapper.mapToDingoType(rel.getInput().getRowType());
             VectorPointDistanceParam param = new VectorPointDistanceParam(
                 distributions.firstEntry().getValue(),
                 rel.getVectorIndex(),
@@ -112,7 +115,9 @@ public final class DingoGetVectorByDistanceVisitFun {
                 algType,
                 indexTable.getProperties().getProperty("metricType"),
                 resc,
-                rel.getSelection()
+                rel.getSelection(),
+                schema,
+                0
             );
 
             return new Vertex(VECTOR_POINT_DISTANCE, param);

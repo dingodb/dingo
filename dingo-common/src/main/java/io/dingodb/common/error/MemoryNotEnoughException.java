@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.common.error;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import java.io.Serial;
 
-import java.util.List;
+public class MemoryNotEnoughException extends RuntimeException {
 
-public interface TaskManager {
-    void addTask(Task task);
-
-    Task getTask(CommonId jobId, CommonId taskId);
-
-    void removeTask(CommonId jobId, CommonId taskId);
-
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
-    }
-
-    void close();
-
-    List<Task> getAllTasks();
+    @Serial
+    private static final long serialVersionUID = 1135046738477559351L;
 }

@@ -38,10 +38,21 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AvroTupleCodec implements TupleCodec {
     private static final ThreadLocal<BinaryDecoder> decoderLocal = ThreadLocal.withInitial(() -> null);
     private static final ThreadLocal<BinaryEncoder> encoderLocal = ThreadLocal.withInitial(() -> null);
+
+    /**
+     * Per-stream decoder cache for {@link #decodeOne(InputStream)}.
+     * Keyed by InputStream identity to preserve decoder state across successive calls on the
+     * same stream instance.  Entries are removed when the stream is exhausted (EOF) or an
+     * IOException occurs in {@link #decodeOne}, and can be explicitly removed via
+     * {@link #releaseStreamDecoder}.
+     */
+    private static final Map<InputStream, BinaryDecoder> streamDecoderCache = new ConcurrentHashMap<>();
 
     private final DingoType type;
     private final Schema schema;
@@ -106,5 +117,56 @@ public class AvroTupleCodec implements TupleCodec {
             record = decodeBytes(is, record, reader);
         }
         return tuples;
+    }
+
+    /**
+     * Decodes exactly one tuple from the given {@link InputStream}, preserving decoder state
+     * across successive calls on the <em>same stream instance</em>.
+     *
+     * <p>This method is designed for lazy / streaming reads (e.g., spill-file merge iterators).
+     * Unlike {@link #decode(InputStream)}, it does NOT use a {@link ThreadLocal} decoder;
+     * instead it caches the decoder per stream in a {@link ConcurrentHashMap} so that the Avro
+     * binary framing is not reset between calls.  Callers should invoke
+     * {@link #releaseStreamDecoder(InputStream)} (or just close the stream) when reading is
+     * complete to avoid a memory leak.
+     *
+     * @param is the input stream to read from
+     * @return the decoded tuple, or {@code null} if the end of stream has been reached
+     * @throws IOException if an I/O error occurs (other than EOF)
+     */
+    public @Nullable Object[] decodeOne(@NonNull InputStream is) throws IOException {
+        BinaryDecoder decoder = streamDecoderCache.get(is);
+        decoder = DecoderFactory.get().directBinaryDecoder(is, decoder);
+        streamDecoderCache.put(is, decoder);
+        GenericRecord record;
+        try {
+            record = reader.read(null, decoder);
+        } catch (EOFException e) {
+            streamDecoderCache.remove(is);
+            return null;
+        } catch (IOException e) {
+            streamDecoderCache.remove(is);
+            throw e;
+        }
+        if (record == null) {
+            streamDecoderCache.remove(is);
+            return null;
+        }
+        int size = schema.getFields().size();
+        Object[] tuple = new Object[size];
+        for (int i = 0; i < size; ++i) {
+            tuple[i] = record.get(i);
+        }
+        return (Object[]) type.convertFrom(tuple, AvroDataConverter.INSTANCE);
+    }
+
+    /**
+     * Removes the per-stream decoder cached by {@link #decodeOne(InputStream)}.
+     * Should be called when the caller is done reading from {@code is}.
+     *
+     * @param is the stream whose cached decoder should be removed
+     */
+    public void releaseStreamDecoder(@NonNull InputStream is) {
+        streamDecoderCache.remove(is);
     }
 }

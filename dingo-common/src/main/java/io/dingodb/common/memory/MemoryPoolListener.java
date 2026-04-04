@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-package io.dingodb.exec.base;
+package io.dingodb.common.memory;
 
-import io.dingodb.common.CommonId;
-import org.checkerframework.checker.nullness.qual.NonNull;
+public interface MemoryPoolListener {
 
-import java.util.List;
-
-public interface TaskManager {
-    void addTask(Task task);
-
-    Task getTask(CommonId jobId, CommonId taskId);
-
-    void removeTask(CommonId jobId, CommonId taskId);
-
-    default void removeTask(@NonNull Task task) {
-        removeTask(task.getJobId(), task.getId());
-    }
-
-    void close();
-
-    List<Task> getAllTasks();
+    void onMemoryReserved(MemoryPool memoryPool, double target);
 }

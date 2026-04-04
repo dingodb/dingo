@@ -18,6 +18,7 @@ package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoHashJoin;
 import io.dingodb.calcite.rule.dingo.DingoHashJoinRule;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.calcite.visitor.RexConverter;
 import io.dingodb.common.CommonId;
@@ -34,6 +35,7 @@ import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.operator.params.HashJoinParam;
+import io.dingodb.exec.operator.spill.SpillManager;
 import io.dingodb.expr.common.type.TupleType;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.rel.op.RelOpBuilder;
@@ -122,6 +124,10 @@ public class DingoHashJoinVisitFun {
             param.setOtherExpr(otherCondition);
             param.setRelOp(relOp);
             param.setSchema(dingoType);
+            // Enable spill-to-disk: set left/right schemas and max build-side threshold
+            param.setRightSchema(DefinitionMapper.mapToDingoType(rel.getRight().getRowType()));
+            param.setLeftSchema(DefinitionMapper.mapToDingoType(rel.getLeft().getRowType()));
+            param.setMaxBuildSize(SpillManager.DEFAULT_SPILL_THRESHOLD);
             Vertex vertex = new Vertex(HASH_JOIN, param);
             vertex.setId(idGenerator.getOperatorId(taskId));
             left.setPin(0);

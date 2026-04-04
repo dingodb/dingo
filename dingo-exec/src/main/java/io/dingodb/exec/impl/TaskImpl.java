@@ -29,6 +29,7 @@ import io.dingodb.common.concurrent.Executors;
 import io.dingodb.common.exception.DingoTypeRangeException;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.log.MdcUtils;
+import io.dingodb.common.memory.MemoryPool;
 import io.dingodb.common.time.DingoTimeZoneContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.OperatorFactory;
@@ -42,6 +43,7 @@ import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.TaskStatus;
 import io.dingodb.exec.operator.SourceOperator;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.RevokerParams;
 import io.dingodb.exec.transaction.base.TransactionType;
 import io.dingodb.exec.transaction.base.TxnPartData;
 import io.dingodb.expr.common.timezone.processor.DingoTimeZoneProcessor;
@@ -60,6 +62,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -365,5 +368,14 @@ public final class TaskImpl implements Task {
     @Override
     public boolean isLockWait() {
         return isLockWait.get();
+    }
+
+    @Override
+    public MemoryPool getMemoryPool() {
+        return this.vertexes.values().stream()
+            .filter(vertex -> vertex.getParam() instanceof RevokerParams)
+            .map(vertex -> ((RevokerParams) vertex.getParam()).getQueryMemoryPool())
+            .filter(Objects::nonNull)
+            .findFirst().orElse(null);
     }
 }
