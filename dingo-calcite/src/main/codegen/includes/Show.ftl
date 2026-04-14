@@ -129,6 +129,9 @@ SqlShow SqlShowCreate(Span s): {
        <TABLE> tableName = CompoundTableIdentifier()
        { return new SqlShowCreateTable(s.end(this), tableName); }
    |
+       <VIEW> tableName = CompoundTableIdentifier()
+       { return new SqlShowCreateTable(s.end(this), tableName); }
+   |
        <USER>
        <QUOTED_STRING> { userName = token.image.replace("'", ""); }
        [<AT_SPLIT> <QUOTED_STRING> { host = token.image.replace("'", "");} ]
