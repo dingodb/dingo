@@ -6764,7 +6764,7 @@ SqlNode BuiltinFunctionCall() :
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
     (
         <CAST> { s = span(); StringBuilder aliasBuilder = new StringBuilder(this.token.image); aliasBuilder.append("("); }
-        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) { aliasBuilder.append(this.token.image); }
+        <LPAREN> AddExpression(args, ExprContext.ACCEPT_SUB_QUERY) { aliasBuilder.append(args.get(args.size() - 1).toString()); }
         <AS> { aliasBuilder.append(" ").append(this.token.image); }
         (
             dt = DataType() { args.add(dt); aliasBuilder.append(" ").append(dt.toString()); }
