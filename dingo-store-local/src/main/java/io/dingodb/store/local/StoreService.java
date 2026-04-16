@@ -23,6 +23,7 @@ import io.dingodb.store.api.StoreInstance;
 import io.dingodb.store.api.StoreServiceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.rocksdb.InfoLogLevel;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 
@@ -50,6 +51,7 @@ public class StoreService implements io.dingodb.store.api.StoreService {
             options.setWriteBufferSize(Configuration.instance().getBufferSize());
             options.setMaxWriteBufferNumber(Configuration.instance().getBufferNumber());
             options.setTargetFileSizeBase(Configuration.instance().getFileSize());
+            options.setInfoLogLevel(InfoLogLevel.WARN_LEVEL);
             rocksdb = RocksDB.open(options, path);
         } catch (Exception e) {
             log.info("No local db.", e);

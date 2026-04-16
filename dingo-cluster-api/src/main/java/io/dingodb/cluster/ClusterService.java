@@ -21,6 +21,7 @@ import io.dingodb.common.CommonId;
 import io.dingodb.common.Executor;
 import io.dingodb.common.Location;
 
+import java.util.Collections;
 import java.util.List;
 
 public interface ClusterService {
@@ -42,4 +43,25 @@ public interface ClusterService {
     int getLocations();
 
     void configCoordinator(boolean isReadOnly, String reason);
+
+    default List<Object[]> getStoreNodes() {
+        return Collections.emptyList();
+    }
+
+    default List<Object[]> getCoordinatorNodes() {
+        return Collections.emptyList();
+    }
+
+    default int getRegionCount() {
+        return 0;
+    }
+
+    default long getGcSafePoint() {
+        return 0;
+    }
+
+    default List<Object[]> getJobList(Long jobId, Integer archiveLimit,
+                                      boolean includeArchive, Long archiveStartId) {
+        return Collections.emptyList();
+    }
 }

@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.dingodb.calcite.runtime.DingoResource.DINGO_RESOURCE;
+
 public class ShowColumnsExecutor extends QueryExecutor {
 
     @Setter
@@ -76,7 +78,7 @@ public class ShowColumnsExecutor extends QueryExecutor {
         InfoSchema is = DdlService.root().getIsLatest();
         Table table = is.getTable(schemaName, tableName);
         if (table == null) {
-            throw new RuntimeException("Table " + tableName + " doesn't exist");
+            throw DINGO_RESOURCE.tableNotExists(tableName).ex();
         }
         List<IndexTable> uniqueIndexList = table.getIndexes().stream()
             .filter(indexTable -> indexTable.isUnique() && indexTable.visible).toList();

@@ -66,6 +66,20 @@ SqlShow SqlShow(): {
     |
     show = SqlShowExecutors(s)
     |
+    show = SqlShowServers(s)
+    |
+    show = SqlShowStoreNodes(s)
+    |
+    show = SqlShowCoordinatorNodes(s)
+    |
+    show = SqlShowCapacity(s)
+    |
+    show = SqlShowRegionsCount(s)
+    |
+    show = SqlShowStoreJobs(s)
+    |
+    show = SqlShowGcSafePoint(s)
+    |
     show = SqlShowIndexs(s)
     |
     show = SqlShowExecutorVariables(s)
@@ -315,4 +329,65 @@ SqlShow SqlShowExecutorVariables(Span s): {
   { return new SqlShowExecutorVariables(s.end(this), pattern); }
 }
 
+SqlShow SqlShowServers(Span s): {
+  String pattern = null;
+} {
+  <SERVERS> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowServers(s.end(this), pattern); }
+}
+
+SqlShow SqlShowStoreNodes(Span s): {
+  String pattern = null;
+} {
+  <STORE_NODES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowStoreNodes(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCoordinatorNodes(Span s): {
+  String pattern = null;
+} {
+  <COORDINATOR_NODES> [ <LIKE> <QUOTED_STRING> { pattern = token.image.toUpperCase().replace("'", ""); } ]
+  { return new SqlShowCoordinatorNodes(s.end(this), pattern); }
+}
+
+SqlShow SqlShowCapacity(Span s): {
+} {
+  <CAPACITY>
+  { return new SqlShowCapacity(s.end(this)); }
+}
+
+SqlShow SqlShowRegionsCount(Span s): {
+} {
+  <REGIONS_COUNT>
+  { return new SqlShowRegions(s.end(this)); }
+}
+
+SqlShow SqlShowGcSafePoint(Span s): {
+} {
+  <GC_SAFEPOINT>
+  { return new SqlShowGcSafePoint(s.end(this)); }
+}
+
+
+SqlShow SqlShowStoreJobs(Span s): {
+  Long jobId = null;
+  Integer archiveLimit = null;
+  boolean includeArchive = false;
+  Long archiveStartId = null;
+} {
+  <STORE_JOBS>
+  [
+    <UNSIGNED_INTEGER_LITERAL> { jobId = Long.parseLong(token.image); }
+  ]
+  [
+    <INCLUDE> <ARCHIVE> { includeArchive = true; }
+  ]
+  [
+    <LIMIT> <UNSIGNED_INTEGER_LITERAL> { archiveLimit = Integer.parseInt(token.image); }
+  ]
+  [
+    <FROM> <UNSIGNED_INTEGER_LITERAL> { archiveStartId = Long.parseLong(token.image); }
+  ]
+  { return new SqlShowStoreJobs(s.end(this), jobId, archiveLimit, includeArchive, archiveStartId); }
+}
 
