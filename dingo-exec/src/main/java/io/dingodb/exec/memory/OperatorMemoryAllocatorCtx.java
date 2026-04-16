@@ -141,7 +141,7 @@ public class OperatorMemoryAllocatorCtx implements MemoryAllocatorCtx {
             return;
         }
         memoryRevokingRequestedFuture = SettableFuture.create();
-        LogUtils.info(log, "resetMemoryRevokingRequested");
+        LogUtils.debug(log, "resetMemoryRevokingRequested");
     }
 
     @Override
@@ -231,7 +231,7 @@ public class OperatorMemoryAllocatorCtx implements MemoryAllocatorCtx {
         checkState(revocable, "requestMemoryRevoking for unRevocable operator");
         boolean alreadyRequested = isMemoryRevokingRequested();
         if (!alreadyRequested && revocableAllocated.get() > 0) {
-            LogUtils.info(log, "request memory revoking,name:{}, revocableAllocated:{}, revokeFlag:{}",
+            LogUtils.debug(log, "request memory revoking,name:{}, revocableAllocated:{}, revokeFlag:{}",
                 this.getName(), revocableAllocated.get(), revokeFlag);
             memoryRevokingRequestedFuture.set(null);
             return revocableAllocated.get();

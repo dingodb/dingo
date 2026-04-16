@@ -54,6 +54,7 @@ public class DingoConfiguration {
     private SecurityConfiguration security = new SecurityConfiguration();
     private VariableConfiguration variable = new VariableConfiguration();
     private CommonConfiguration common = new CommonConfiguration();
+    private SpillConfiguration spill = new SpillConfiguration();
 
     public static synchronized void parse(final String configPath) throws Exception {
         if (configPath != null) {
@@ -63,6 +64,7 @@ public class DingoConfiguration {
         INSTANCE.security = INSTANCE.getConfig("security", SecurityConfiguration.class);
         INSTANCE.variable = INSTANCE.getConfig("variable", VariableConfiguration.class);
         INSTANCE.common = INSTANCE.getConfig("common", CommonConfiguration.class);
+        INSTANCE.spill = INSTANCE.getConfig("spill", SpillConfiguration.class);
     }
 
     private static void copyConfig(Map<String, Object> from, Map<String, Object> to) {
@@ -115,6 +117,15 @@ public class DingoConfiguration {
 
     public static Integer lowerCaseTableNames() {
         return Optional.mapOrGet(INSTANCE.variable, VariableConfiguration::getLowerCaseTableNames, () -> 2);
+    }
+
+    public static String spillDir() {
+        return Optional.mapOrGet(INSTANCE.spill, SpillConfiguration::getDir,
+            () -> System.getProperty("java.io.tmpdir") + java.io.File.separator + "dingo-spill");
+    }
+
+    public static int spillThreshold() {
+        return Optional.mapOrGet(INSTANCE.spill, SpillConfiguration::getThreshold, () -> 100000);
     }
 
     public static CommonId serverId() {

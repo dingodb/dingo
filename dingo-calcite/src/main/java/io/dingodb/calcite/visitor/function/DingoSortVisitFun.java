@@ -17,10 +17,12 @@
 package io.dingodb.calcite.visitor.function;
 
 import io.dingodb.calcite.rel.dingo.DingoSort;
+import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.table.HybridSearchTable;
+import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
 import io.dingodb.exec.dag.Vertex;
@@ -62,12 +64,13 @@ public class DingoSortVisitFun {
 
         @Override
         public Vertex get() {
+            DingoType schema = DefinitionMapper.mapToDingoType(rel.getInput().getRowType());
             SortParam param = new SortParam(
                 toSortCollation(rel.getCollation().getFieldCollations()),
                 rel.fetch == null ? -1 : RexLiteral.intValue(rel.fetch),
                 rel.offset == null ? 0 : RexLiteral.intValue(rel.offset),
                 rel.getHints().stream().anyMatch( e -> e.hintName.equalsIgnoreCase(HybridSearchTable.HINT_NAME)),
-                executionContext);
+                executionContext, schema, 0);
             return new Vertex(SORT, param);
         }
     }

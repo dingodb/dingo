@@ -75,7 +75,6 @@ public class Edge {
                     try {
                         blocked.get();
                         //checkExecutorFinishedRevoking((MemoryRevoker) operator, blocked, next.getData());
-                        LogUtils.info(log, "memory revoke locked continue..");
                         break;
                     } catch (InterruptedException | ExecutionException e) {
                         throw new RuntimeException(e);
@@ -116,7 +115,7 @@ public class Edge {
             ListenableFuture<?> future = memoryRevoker.startMemoryRevoke(param);
             if (future != null) {
                 RevokerParams revokerParams = (RevokerParams) param;
-                LogUtils.info(log, "async memory revoke, poolName:{}, pre pin:{}, param cnt:{}",
+                LogUtils.debug(log, "async memory revoke, poolName:{}, pre pin:{}, param cnt:{}",
                     memoryAllocatorCtx.getName(), previous.getPin(), revokerParams.getCacheSize());
             }
             return future;
