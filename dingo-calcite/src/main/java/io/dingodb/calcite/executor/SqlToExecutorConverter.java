@@ -19,7 +19,6 @@ package io.dingodb.calcite.executor;
 import io.dingodb.calcite.DingoParserContext;
 import io.dingodb.calcite.grammar.ddl.DingoSqlSetOptions;
 import io.dingodb.calcite.grammar.ddl.SqlAdminRollback;
-import io.dingodb.calcite.grammar.ddl.SqlAlterTableDistribution;
 import io.dingodb.calcite.grammar.ddl.SqlAnalyze;
 import io.dingodb.calcite.grammar.ddl.SqlBeginTx;
 import io.dingodb.calcite.grammar.ddl.SqlCall;
@@ -38,9 +37,11 @@ import io.dingodb.calcite.grammar.dql.SqlBackUpTimePoint;
 import io.dingodb.calcite.grammar.dql.SqlBackUpTsoPoint;
 import io.dingodb.calcite.grammar.dql.SqlDescTable;
 import io.dingodb.calcite.grammar.dql.SqlNextAutoIncrement;
+import io.dingodb.calcite.grammar.dql.SqlShowCapacity;
 import io.dingodb.calcite.grammar.dql.SqlShowCharset;
 import io.dingodb.calcite.grammar.dql.SqlShowCollation;
 import io.dingodb.calcite.grammar.dql.SqlShowColumns;
+import io.dingodb.calcite.grammar.dql.SqlShowCoordinatorNodes;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateTable;
 import io.dingodb.calcite.grammar.dql.SqlShowCreateUser;
 import io.dingodb.calcite.grammar.dql.SqlShowDatabases;
@@ -48,13 +49,18 @@ import io.dingodb.calcite.grammar.dql.SqlShowEngines;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutorVariables;
 import io.dingodb.calcite.grammar.dql.SqlShowExecutors;
 import io.dingodb.calcite.grammar.dql.SqlShowFullTables;
+import io.dingodb.calcite.grammar.dql.SqlShowGcSafePoint;
 import io.dingodb.calcite.grammar.dql.SqlShowGrants;
 import io.dingodb.calcite.grammar.dql.SqlShowIndexFromTable;
 import io.dingodb.calcite.grammar.dql.SqlShowLocks;
 import io.dingodb.calcite.grammar.dql.SqlShowPlugins;
 import io.dingodb.calcite.grammar.dql.SqlShowProcessList;
+import io.dingodb.calcite.grammar.dql.SqlShowRegions;
+import io.dingodb.calcite.grammar.dql.SqlShowServers;
 import io.dingodb.calcite.grammar.dql.SqlShowStartTs;
 import io.dingodb.calcite.grammar.dql.SqlShowStatus;
+import io.dingodb.calcite.grammar.dql.SqlShowStoreJobs;
+import io.dingodb.calcite.grammar.dql.SqlShowStoreNodes;
 import io.dingodb.calcite.grammar.dql.SqlShowTableDistribution;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndex;
 import io.dingodb.calcite.grammar.dql.SqlShowTableIndexRegions;
@@ -262,6 +268,26 @@ public final class SqlToExecutorConverter {
                 showIndexFromTable.schemaName = getSchemaName(context);
             }
             return Optional.of(new ShowIndexFromTableExecutor(showIndexFromTable));
+        } else if (sqlNode instanceof SqlShowServers) {
+            return Optional.of(new ShowServersExecutor());
+        } else if (sqlNode instanceof SqlShowStoreNodes) {
+            return Optional.of(new ShowStoreNodesExecutor());
+        } else if (sqlNode instanceof SqlShowCoordinatorNodes) {
+            return Optional.of(new ShowCoordinatorNodesExecutor());
+        } else if (sqlNode instanceof SqlShowCapacity) {
+            return Optional.of(new ShowCapacityExecutor());
+        } else if (sqlNode instanceof SqlShowRegions) {
+            return Optional.of(new ShowRegionsExecutor());
+        } else if (sqlNode instanceof SqlShowStoreJobs) {
+            SqlShowStoreJobs sqlShowStoreJobs = (SqlShowStoreJobs) sqlNode;
+            return Optional.of(new ShowStoreJobsExecutor(
+                sqlShowStoreJobs.getJobId(),
+                sqlShowStoreJobs.getArchiveLimit(),
+                sqlShowStoreJobs.isIncludeArchive(),
+                sqlShowStoreJobs.getArchiveStartId()
+            ));
+        } else if (sqlNode instanceof SqlShowGcSafePoint) {
+            return Optional.of(new ShowGcSafePointExecutor());
         } else if (sqlNode instanceof SqlAdminRollback) {
             SqlAdminRollback sqlAdminRollback = (SqlAdminRollback) sqlNode;
             return Optional.of(new AdminRollbackExecutor(sqlAdminRollback.txnId));

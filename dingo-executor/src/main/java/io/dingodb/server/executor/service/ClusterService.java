@@ -34,13 +34,22 @@ import io.dingodb.sdk.service.entity.common.ExecutorUser;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorRequest;
 import io.dingodb.sdk.service.entity.coordinator.ConfigCoordinatorResponse;
 import io.dingodb.sdk.service.entity.coordinator.ExecutorHeartbeatRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetCoordinatorMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetCoordinatorMapResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetExecutorMapResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetJobListRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetJobListResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetStoreMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
+import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.GetStoreMapResponse;
 import io.dingodb.server.executor.Configuration;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -200,6 +209,128 @@ public final class ClusterService implements io.dingodb.cluster.ClusterService {
             coordinatorService.executorHeartbeat(TsoService.getDefault().cacheTso(), executorHeartbeatRequest());
         } catch (Exception e) {
             LogUtils.error(log, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Object[]> getStoreNodes() {
+        GetStoreMapResponse response = coordinatorService.getStoreMap(
+            TsoService.getDefault().cacheTso(), GetStoreMapRequest.builder().build()
+        );
+        if (response.getStoremap() == null || response.getStoremap().getStores() == null) {
+            return new ArrayList<>();
+        }
+        return response.getStoremap().getStores().stream()
+            .map(s -> new Object[] {
+                s.getId(),
+                s.getRaftLocation() != null ? s.getRaftLocation().getHost() : "",
+                s.getRaftLocation() != null ? s.getRaftLocation().getPort() : 0,
+                s.getStoreType() != null ? s.getStoreType().name() : "NODE_TYPE_STORE",
+                s.getState() != null ? s.getState().name() : ""
+            })
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Object[]> getCoordinatorNodes() {
+        try {
+            GetCoordinatorMapResponse response = coordinatorService.getCoordinatorMap(
+                TsoService.getDefault().cacheTso(),
+                GetCoordinatorMapRequest.builder().build()
+            );
+            if (response == null || response.getCoordinatorMap() == null
+                || response.getCoordinatorMap().getCoordinators() == null) {
+                return new ArrayList<>();
+            }
+            io.dingodb.sdk.service.entity.common.Location leaderLocation = response.getLeaderLocation();
+            return response.getCoordinatorMap().getCoordinators().stream()
+                .map(c -> {
+                    // Prefer server_location (service port) over location (raft port) for display
+                    io.dingodb.sdk.service.entity.common.Location loc =
+                         c.getLocation();
+                    boolean isLeader = leaderLocation != null && loc != null
+                        && leaderLocation.getHost() != null
+                        && loc.getHost() != null
+                        && leaderLocation.getHost().equals(loc.getHost())
+                        && leaderLocation.getPort() == loc.getPort();
+                    return new Object[] {
+                        c.getId(),
+                        loc != null ? loc.getHost() : "",
+                        loc != null ? loc.getPort() : 0,
+                        c.getState() != null ? c.getState().name() : "",
+                        isLeader
+                    };
+                })
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            LogUtils.error(log, "Get coordinator nodes failed: " + e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public int getRegionCount() {
+        try {
+            return coordinatorService.getRegionMap(
+                TsoService.getDefault().cacheTso(),
+                GetRegionMapRequest.builder().tenantId(TenantConstant.TENANT_ID).build()
+            ).getRegionmap().getRegions().size();
+        } catch (Exception e) {
+            LogUtils.error(log, "Get region count failed: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    public long getGcSafePoint() {
+        try {
+            GetGCSafePointRequest request = GetGCSafePointRequest.builder()
+                .getAllTenant(false)
+                .build();
+            GetGCSafePointResponse response = coordinatorService.getGCSafePoint(
+                TsoService.getDefault().cacheTso(), request
+            );
+            return response.getSafePoint();
+        } catch (Exception e) {
+            LogUtils.error(log, "Get GC safe point failed: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    @Override
+    public List<Object[]> getJobList(Long jobId, Integer archiveLimit,
+                                     boolean includeArchive, Long archiveStartId) {
+        try {
+            GetJobListRequest.GetJobListRequestBuilder builder = GetJobListRequest.builder();
+            if (jobId != null) {
+                builder.jobId(jobId);
+            }
+            builder.includeArchive(includeArchive);
+            if (archiveLimit != null) {
+                builder.archiveLimit(archiveLimit);
+            }
+            if (archiveStartId != null) {
+                builder.archiveStartId(archiveStartId);
+            }
+            GetJobListResponse response = coordinatorService.getJobList(
+                TsoService.getDefault().cacheTso(), builder.build()
+            );
+            if (response == null || response.getJobList() == null) {
+                return new ArrayList<>();
+            }
+            return response.getJobList().stream()
+                .map(job -> new Object[] {
+                    job.getId(),
+                    job.getName() != null ? job.getName() : "",
+                    job.getNextStep(),
+                    job.getTasks().size(),
+                    job.getCreateTime() != null ? job.getCreateTime() : "",
+                    job.getFinishTime() != null ? job.getFinishTime() : ""
+                })
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            LogUtils.error(log, "Get job list failed: " + e.getMessage(), e);
+            return new ArrayList<>();
         }
     }
 }
