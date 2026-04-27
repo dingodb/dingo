@@ -169,7 +169,7 @@ void TableElement(List<SqlNode> list) :
     String indexLockOpt = null;
 }
 {
-    LOOKAHEAD(2) id = SimpleIdentifier()
+    LOOKAHEAD(2) ( id = SimpleIdentifier() | <KEY> {id = new SqlIdentifier("key", getPos());})
     (
         type = DataType()
         (
