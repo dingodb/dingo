@@ -16,10 +16,35 @@
 
 package io.dingodb.exec.memory;
 
+import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.operator.params.HashJoinParam;
+import io.dingodb.exec.tuple.TupleKey;
+
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public interface Spiller {
-    void spill(ConcurrentHashMap hashMap);
+    default void spill(ConcurrentHashMap<TupleKey, List<TupleWithJoinFlag>> hashMap, byte[] prefix, AtomicLong inc) {
 
-    void close();
+    }
+
+    default void spillHashMap(HashJoinParam hashJoinParam) {
+
+    }
+
+    void close(byte[] prefix);
+
+    default Iterator<TupleWithJoinFlag> getValues(byte[] prefix, HashJoinParam hashJoinParam) {
+        return null;
+    }
+
+    default void saveSingle(TupleKey tupleKey, TupleWithJoinFlag tupleWithJoinFlag, byte[] prefix) {
+
+    }
+
+    default void saveSingleKv(TupleKey tupleKey, TupleWithJoinFlag tupleWithJoinFlag, byte[] prefix, HashJoinParam hashJoinParam) {
+
+    }
 }

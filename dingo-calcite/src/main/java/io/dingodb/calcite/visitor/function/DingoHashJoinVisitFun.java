@@ -67,6 +67,11 @@ public class DingoHashJoinVisitFun {
         // Only one left input in each task, because of coalescing.
         leftInputs.forEach(i -> leftInputsMap.put(i.getTaskId(), i));
         rightInputs.forEach(i -> rightInputsMap.put(i.getTaskId(), i));
+        List<DingoType> rightTypeList = rel.getRight().getRowType().getFieldList().stream()
+            .map(ty -> DingoTypeFactory.INSTANCE.fromName(
+                ty.getType().getSqlTypeName().getName(), null, ty.getType().isNullable()))
+            .collect(Collectors.toList());
+        DingoType rightSchema = DingoTypeFactory.tuple(rightTypeList.toArray(new DingoType[0]));
         JoinInfo joinInfo = rel.analyzeCondition();
         SqlExpr otherCondition = null;
         RelOp relOp = null;
@@ -123,6 +128,7 @@ public class DingoHashJoinVisitFun {
             param.setOtherExpr(otherCondition);
             param.setRelOp(relOp);
             param.setSchema(dingoType);
+            param.setRightSchema(rightSchema);
             Vertex vertex = new Vertex(HASH_JOIN, param);
             vertex.setId(idGenerator.getOperatorId(taskId));
             left.setPin(0);

@@ -19,7 +19,10 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.SettableFuture;
+import io.dingodb.codec.CodecService;
+import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.memory.MemoryPool;
@@ -33,6 +36,8 @@ import io.dingodb.exec.expr.DingoCompileContext;
 import io.dingodb.exec.expr.DingoRelConfig;
 import io.dingodb.exec.expr.SqlExpr;
 import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
+import io.dingodb.exec.memory.RocksdbSpiller;
+import io.dingodb.exec.memory.Spiller;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.common.type.TupleType;
@@ -42,8 +47,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -107,9 +115,26 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
     OperatorMemoryAllocatorCtx memoryAllocatorCtx;
 
     AtomicLong size;
+
     @Setter
     @Getter
     SettableFuture spillFuture;
+
+    byte[] joinId;
+    AtomicLong inc;
+    Spiller spiller;
+
+    @Getter
+    DingoType rightSchema;
+
+    KeyValueCodec codec;
+
+    ObjectMapper objectMapper;
+
+    public void setRightSchema(DingoType rightSchema) {
+
+        this.rightSchema = rightSchema;
+    }
 
 
     public HashJoinParam(
@@ -207,6 +232,14 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
             MemoryPool memoryPool =
                 MemoryPoolUtils.createOperatorTmpTablePool(name, executionContext.getMemoryPool());
             this.memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(memoryPool, ScopeVariables.enableSpill());
+            this.joinId = UUID.randomUUID().toString().getBytes();
+            this.inc = new AtomicLong(0);
+            spiller = new RocksdbSpiller();
+
+            codec = CodecService.getDefault().createKeyValueCodec(
+                2, 2, getRightSchema(), getRightMapping()
+            );
+            this.objectMapper = new ObjectMapper();
         }
     }
 
@@ -220,6 +253,8 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
         if (spillFuture != null) {
             spillFuture.cancel(true);
             spillFuture = null;
+            Spiller spiller = new RocksdbSpiller();
+            spiller.close(getJoinId());
         }
     }
 
@@ -251,5 +286,49 @@ public class HashJoinParam extends AbstractParams implements RevokerParams {
             return this.getExecutionContext().getMemoryPool();
         }
         return null;
+    }
+
+    public Iterator<TupleWithJoinFlag> getSpilledValues() {
+        Spiller spiller = new RocksdbSpiller();
+        return spiller.getValues(getJoinId(), this);
+    }
+
+    public void flush() {
+        if (!hashMap.isEmpty()) {
+            Spiller spiller = new RocksdbSpiller();
+            spiller.spillHashMap(this);
+        }
+    }
+
+    public List<TupleWithJoinFlag> getKey(TupleKey tupleKey) {
+        if (spillCnt > 0) {
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            try {
+                objectMapper.writeValue(outputStream, tupleKey.getTuple());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            byte[] tupleBytes = outputStream.toByteArray();
+            byte[] keyBytes = new byte[joinId.length + tupleBytes.length];
+            System.arraycopy(joinId, 0, keyBytes, 0, joinId.length);
+            System.arraycopy(tupleBytes, 0, keyBytes, joinId.length, tupleBytes.length);
+            Iterator<TupleWithJoinFlag> iterator = spiller.getValues(keyBytes, this);
+            List<TupleWithJoinFlag> resultList = new ArrayList<>();
+            while (iterator.hasNext()) {
+                resultList.add(iterator.next());
+            }
+            return resultList;
+        } else {
+            return hashMap.get(tupleKey);
+        }
+    }
+
+    public void syncJoined(TupleKey tupleKey, TupleWithJoinFlag tupleWithJoinFlag, HashJoinParam param) {
+        if (spillCnt > 0 && spiller != null) {
+            tupleWithJoinFlag.setJoined(true);
+            spiller.saveSingleKv(tupleKey, tupleWithJoinFlag, joinId, param);
+        }
     }
 }

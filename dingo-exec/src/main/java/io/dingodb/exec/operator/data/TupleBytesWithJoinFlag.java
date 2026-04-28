@@ -19,11 +19,10 @@ package io.dingodb.exec.operator.data;
 import lombok.Getter;
 import lombok.Setter;
 
-public class TupleWithJoinFlag {
-    @Getter
-    @Setter
-    private Object[] tuple;
-
+@Setter
+@Getter
+public class TupleBytesWithJoinFlag {
+    private byte[] tupleKeyBytes;
     private byte[] tupleBytes;
     @Getter
     @Setter
@@ -33,18 +32,18 @@ public class TupleWithJoinFlag {
     @Getter
     private long inc;
 
-    public TupleWithJoinFlag(Object[] tuple) {
-        this.tuple = tuple;
+    public TupleBytesWithJoinFlag(byte[] tupleBytes) {
+        this.tupleBytes = tupleBytes;
         this.joined = false;
     }
 
-    public TupleWithJoinFlag(Object[] tuple, boolean joined, long inc) {
-        this.tuple = tuple;
+    public TupleBytesWithJoinFlag(byte[] tupleBytes, boolean joined, long inc) {
+        this.tupleBytes = tupleBytes;
         this.joined = joined;
         this.inc = inc;
     }
 
-    public TupleWithJoinFlag() {
+    public TupleBytesWithJoinFlag() {
 
     }
 }
