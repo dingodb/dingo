@@ -19,6 +19,7 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
@@ -88,6 +89,9 @@ public class DistributeOperator extends SoleOutOperator {
             KeyValueCodec indexCodec = CodecService.getDefault()
                 .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
                     indexTable.tupleType(), indexTable.keyMapping());
+            if (param.getDistributions().isEmpty() && "replicaTable".equalsIgnoreCase(indexTable.getName())) {
+                return true;
+            }
             partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
                 MetaService.root().getRangeDistribution(param.getTable().tableId);
