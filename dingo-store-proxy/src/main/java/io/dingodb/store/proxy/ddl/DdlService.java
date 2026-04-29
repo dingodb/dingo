@@ -272,4 +272,22 @@ public class DdlService extends DdlHandler implements io.dingodb.meta.DdlService
         DdlHandler.doDdlJob(job);
     }
 
+    public int checkTableSchemaVersion(CommonId tableId, long schemaVersion) {
+        InfoSchema infoSchema = InfoCache.infoCache.getLatest();
+        if (infoSchema == null) {
+            return 0;
+        } else {
+            Table table = infoSchema.getTable(tableId.seq);
+            if (table != null) {
+                if (table.getSchemaVersion() == schemaVersion) {
+                    return 1;
+                } else {
+                    return 2;
+                }
+            } else {
+                return 3;
+            }
+        }
+    }
+
 }
