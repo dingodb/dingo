@@ -1749,6 +1749,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             }
         }
         DingoSqlColumn dingoSqlColumn = sqlAlterChangeColumn.dingoSqlColumn;
+        if (dingoSqlColumn == null) {
+            throw DingoErrUtil.newStdErr(ErrNotSupportedYet);
+        }
         String name = dingoSqlColumn.name.getSimple();
         Column column = table.getColumns().stream()
             .filter(col -> col.getSchemaState() == SchemaState.SCHEMA_PUBLIC
