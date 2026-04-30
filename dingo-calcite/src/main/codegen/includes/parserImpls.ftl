@@ -315,7 +315,8 @@ void TableElement(List<SqlNode> list) :
         [ indexAlg = indexAlg()]
         [ indexLockOpt = indexLockOpt()]
         {
-            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList, replica, engine, partitionDefinition));
+            list.add(new DingoSqlKeyConstraint(s.end(columnList), name, columnList,
+                    replica, engine, partitionDefinition, prop));
         }
     |
         <PRIMARY>  { s.add(this); } <KEY>
