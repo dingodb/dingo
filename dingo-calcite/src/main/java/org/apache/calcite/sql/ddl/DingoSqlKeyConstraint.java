@@ -25,6 +25,7 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DingoSqlKeyConstraint extends SqlKeyConstraint {
@@ -39,6 +40,10 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
     @Getter
     String engine;
 
+    @Setter
+    @Getter
+    String comment;
+
     @Getter
     PartitionDefinition partDefinition;
 
@@ -48,7 +53,8 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
         SqlNodeList columnList,
         int replica,
         String engine,
-        PartitionDefinition partDefinition
+        PartitionDefinition partDefinition,
+        Properties prop
     ) {
         super(pos, name, columnList);
         this.replica = replica;
@@ -68,5 +74,10 @@ public class DingoSqlKeyConstraint extends SqlKeyConstraint {
             }
         }
         this.partDefinition = partDefinition;
+        if (prop != null) {
+            if (prop.containsKey("comment")) {
+                this.comment = prop.getProperty("comment");
+            }
+        }
     }
 }

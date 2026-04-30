@@ -152,6 +152,7 @@ public class ModifyColumnFiller extends IndexAddFiller {
             preRes = true;
             break;
         }
+        this.scanCount.incrementAndGet();
         return preRes;
     }
 

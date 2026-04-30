@@ -2451,6 +2451,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
         }
         indexDefinition.setEngine(engine);
         indexDefinition.setPartDefinition(sqlKeyConstraint1.getPartDefinition());
+        indexDefinition.setComment(sqlKeyConstraint1.getComment());
         validatePartitionBy(
             indexDefinition.getKeyColumns().stream().map(ColumnDefinition::getName).collect(Collectors.toList()),
             indexDefinition, indexDefinition.getPartDefinition());
@@ -2467,6 +2468,9 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             tableDefinition, sqlIndexDeclaration.columnList
         );
         indexDefinition.setEngine(sqlIndexDeclaration.getEngine());
+        if (sqlIndexDeclaration.getIndexOpt() != null && sqlIndexDeclaration.getIndexOpt().containsKey("comment")) {
+            indexDefinition.setComment(sqlIndexDeclaration.getIndexOpt().getProperty("comment"));
+        }
         return indexDefinition;
     }
 
