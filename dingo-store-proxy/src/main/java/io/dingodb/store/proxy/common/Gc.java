@@ -22,6 +22,7 @@ import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.meta.Tenant;
 import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.parser.CharTypes;
 import io.dingodb.common.session.Session;
 import io.dingodb.common.session.SessionUtil;
 import io.dingodb.common.tenant.TenantConstant;
@@ -41,6 +42,7 @@ import io.dingodb.sdk.service.entity.coordinator.DropRegionRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointRequest;
 import io.dingodb.sdk.service.entity.coordinator.GetGCSafePointResponse;
 import io.dingodb.sdk.service.entity.coordinator.GetRegionMapRequest;
+import io.dingodb.sdk.service.entity.coordinator.ScanRegionInfo;
 import io.dingodb.sdk.service.entity.coordinator.UpdateGCSafePointRequest;
 import io.dingodb.sdk.service.entity.meta.DeleteAutoIncrementRequest;
 import io.dingodb.sdk.service.entity.meta.DingoCommonId;
@@ -849,20 +851,37 @@ public final class Gc {
                     LogUtils.info(log, "gc schema meta, schemaId:{}", eleId);
                     return;
                 }
+
                 try {
-                    coordinatorService.dropRegion(
-                        tso(),
-                        DropRegionRequest.builder().regionId(regionId).build()
-                    );
-                    LogUtils.info(log, "gcDeleteRange success, regionId:{}", regionId);
-                    long jobId = (long) objects[3];
-                    long ts = (long) objects[4];
                     String startKey = objects[1].toString();
                     String endKey = objects[2].toString();
+                    List<Object> regionList = InfoSchemaService.root()
+                        .scanRegions(CharTypes.hexToBytes(startKey), CharTypes.hexToBytes(endKey));
+                    if (regionList.size() > 1) {
+                        regionList
+                            .forEach(object -> {
+                                ScanRegionInfo scanRegionInfo = (ScanRegionInfo) object;
+                                coordinatorService.dropRegion(
+                                    tso(),
+                                    DropRegionRequest.builder().regionId(scanRegionInfo.getRegionId()).build()
+                                );
+                                LogUtils.info(log, "multi region drop success, regionId:{}",
+                                    scanRegionInfo.getRegionId());
+                            });
+                    } else {
+                        coordinatorService.dropRegion(
+                            tso(),
+                            DropRegionRequest.builder().regionId(regionId).build()
+                        );
+                        LogUtils.info(log, "single region drop success, regionId:{}", regionId);
+                    }
+                    long jobId = (long) objects[3];
+                    long ts = (long) objects[4];
                     String eleId = (String) objects[5];
                     dropTableMeta(eleId, jobId, session, eleType);
                     if (!gcDeleteDone(jobId, ts, regionId, startKey, endKey, eleId, eleType, true)) {
-                        LogUtils.error(log, "remove gcDeleteTask failed, jobId:{}, eleId:{}, eleType:{}", jobId, eleId, eleType);
+                        LogUtils.error(log, "remove gcDeleteTask failed, jobId:{}, eleId:{}, eleType:{}",
+                            jobId, eleId, eleType);
                     } else {
                         delDone.incrementAndGet();
                     }
