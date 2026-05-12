@@ -16,12 +16,15 @@
 
 package io.dingodb.exec.operator;
 
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.PartModifyParam;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -32,6 +35,20 @@ public abstract class PartModifyOperator extends SoleOutOperator {
     @Override
     public boolean push(Context context, @Nullable Object[] tuple, Vertex vertex) {
         synchronized (vertex) {
+            AbstractParams abstractParams = vertex.getParam();
+            if (abstractParams instanceof PartModifyParam) {
+                PartModifyParam partModifyParam = (PartModifyParam) abstractParams;
+                long size = ObjectSizeUtils.calculateSize(tuple);
+                partModifyParam.getMemorySize().addAndGet(size);
+                if (partModifyParam.getMemorySize().get() > ScopeVariables.joinSpillSize()
+                    && partModifyParam.getMemoryController() != null) {
+                    partModifyParam.getMemoryController().allocate(partModifyParam.getMemorySize().get());
+                    partModifyParam.getMemorySize().set(0);
+                }
+                if (partModifyParam.getMemoryController() != null && partModifyParam.getCount() % 40960 == 0) {
+                    partModifyParam.getMemoryController().clear();
+                }
+            }
             return pushTuple(context, tuple, vertex);
         }
     }
@@ -43,6 +60,7 @@ public abstract class PartModifyOperator extends SoleOutOperator {
             Edge edge = vertex.getSoleEdge();
             if (fin instanceof FinWithException) {
                 edge.fin(fin);
+                param.reset();
                 return;
             }
             edge.transformToNext(new Object[]{param.getCount()});

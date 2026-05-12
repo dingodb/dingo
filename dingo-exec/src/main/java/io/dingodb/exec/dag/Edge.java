@@ -16,26 +16,36 @@
 
 package io.dingodb.exec.dag;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.OperatorFactory;
+import io.dingodb.exec.base.Operator;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.exception.TaskCancelException;
 import io.dingodb.exec.fin.Fin;
+import io.dingodb.exec.memory.MemoryRevoker;
 import io.dingodb.exec.operator.data.Context;
+import io.dingodb.exec.operator.params.AbstractParams;
+import io.dingodb.exec.operator.params.RevokerParams;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @Setter
 @Getter
 @AllArgsConstructor
 public class Edge {
-
+    public static final ListenableFuture<?> NOT_BLOCKED = Futures.immediateFuture(null);
     private Vertex previous;
     private Vertex next;
     private CommonId partId;
@@ -56,11 +66,98 @@ public class Edge {
         } else if (next.getTask().getStatus() == Status.STOPPED) {
             return false;
         }
-        return OperatorFactory.getInstance(next.getOp()).push(context.setPin(previous.getPin()), tuple, next);
+        Operator operator = OperatorFactory.getInstance(next.getOp());
+        boolean revoke = needRevoke(next.getData(), operator);
+        if (revoke) {
+            while (true) {
+                ListenableFuture<?> blocked = handleMemoryRevoke(next.getData(), operator);
+                if (blocked != null && !blocked.isDone()) {
+                    try {
+                        blocked.get();
+                        //checkExecutorFinishedRevoking((MemoryRevoker) operator, blocked, next.getData());
+                        break;
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    blocked = waitingForMemory(next.getData());
+                    if (blocked.isDone()) {
+                        break;
+                    } else {
+                        Utils.sleep(500);
+                    }
+                }
+            }
+        }
+        return operator.push(context.setPin(previous.getPin()), tuple, next);
     }
 
     public void fin(Fin fin) {
         OperatorFactory.getInstance(next.getOp()).fin(previous.getPin(), fin, next);
+    }
+
+    public boolean needRevoke(AbstractParams param, Operator operator) {
+        if (!(operator instanceof MemoryRevoker)) {
+            return false;
+        }
+        if (!ScopeVariables.enableSpill()) {
+            return false;
+        }
+        MemoryRevoker memoryRevoker = (MemoryRevoker) operator;
+        return memoryRevoker.getMemoryAllocatorCtx(param) != null;
+    }
+
+    public ListenableFuture<?> handleMemoryRevoke(AbstractParams param, Operator operator) {
+        MemoryRevoker memoryRevoker = (MemoryRevoker) operator;
+        MemoryAllocatorCtx memoryAllocatorCtx = memoryRevoker.getMemoryAllocatorCtx(param);
+        boolean memoryRevokingRequested = memoryAllocatorCtx.isMemoryRevokingRequested();
+        if (memoryRevokingRequested) {
+            ListenableFuture<?> future = memoryRevoker.startMemoryRevoke(param);
+            if (future != null) {
+                RevokerParams revokerParams = (RevokerParams) param;
+                LogUtils.debug(log, "async memory revoke, poolName:{}, pre pin:{}, param cnt:{}",
+                    memoryAllocatorCtx.getName(), previous.getPin(), revokerParams.getCacheSize());
+            }
+            return future;
+        }
+        return null;
+    }
+
+    public ListenableFuture<?> waitingForMemory(AbstractParams param) {
+        Operator operator = OperatorFactory.getInstance(next.getOp());
+        MemoryRevoker memoryRevoker = (MemoryRevoker) operator;
+        MemoryAllocatorCtx operatorMemoryAllocatorCtx = memoryRevoker.getMemoryAllocatorCtx(param);
+        ListenableFuture<?> blocked = operatorMemoryAllocatorCtx.isWaitingForMemory();
+        if (blocked != null && !blocked.isDone()) {
+            RevokerParams revokerParams = (RevokerParams) param;
+            if (log.isDebugEnabled()) {
+                LogUtils.info(log, "waiting for memory name:{}, allocated bytes:{}, cache size:{}, future:{}",
+                    operatorMemoryAllocatorCtx.getName(), operatorMemoryAllocatorCtx.getAllAllocated(),
+                    revokerParams.getCacheSize(), blocked);
+            }
+            return blocked;
+        } else {
+            return NOT_BLOCKED;
+        }
+    }
+
+    public void checkExecutorFinishedRevoking(MemoryRevoker memoryRevoker, ListenableFuture<?> future,
+                                              AbstractParams param) {
+        if (future.isDone()) {
+            checkException(future);
+            memoryRevoker.finishMemoryRevoke(param);
+            if (memoryRevoker.getMemoryAllocatorCtx(param) != null) {
+                memoryRevoker.getMemoryAllocatorCtx(param).resetMemoryRevokingRequested();
+            }
+        }
+    }
+
+    public static void checkException(ListenableFuture<?> future) {
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

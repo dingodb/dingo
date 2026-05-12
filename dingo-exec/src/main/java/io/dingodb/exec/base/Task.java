@@ -18,6 +18,7 @@ package io.dingodb.exec.base;
 
 import io.dingodb.common.CommonId;
 import io.dingodb.common.Location;
+import io.dingodb.common.memory.MemoryPool;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.operator.data.Context;
@@ -100,4 +101,6 @@ public interface Task {
     Map<TxnPartData, Boolean> getPartData();
 
     boolean isLockWait();
+
+    MemoryPool getMemoryPool();
 }

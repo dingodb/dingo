@@ -17,6 +17,10 @@
 package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.memory.MemoryType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,6 +29,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class DingoDataStream implements ChunkedInput<ByteBuf> {
-
+    private MemoryPool memoryPool;
     public final BlockingQueue<byte[]> blockingQueue = new LinkedBlockingQueue<>(1000);
     @Setter
     @Getter
@@ -49,10 +54,14 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
         this.total = 0;
         this.first = true;
         this.end = false;
+        this.memoryPool = MemoryPoolUtils.createCacheTmpTablePool("netstream" + UUID.randomUUID(),
+            MemoryManager.getInstance().getCacheMemoryPool());
+
     }
 
     public void addLength(long size) {
         this.total += size;
+        this.memoryPool.allocateReserveMemory(size);
     }
 
     @Override
@@ -68,7 +77,17 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
         this.end = false;
         blockingQueue.clear();
         this.firstBytes = null;
+        this.memoryPool.clear();
         LogUtils.info(log, "chunk close");
+    }
+
+    public void destroy() {
+        try {
+            this.close();
+        } catch (Exception e) {
+            LogUtils.error(log, "data stream close exception:{}", e.getMessage());
+        }
+        this.memoryPool.destroy();
     }
 
     @Override
@@ -93,6 +112,7 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
             ByteBuf buf =  allocator.buffer(readableBytes);
             buf.writeBytes(this.firstBytes);
             first = false;
+            this.memoryPool.freeReserveMemory(readableBytes);
             return buf;
         } else {
             byte[] bytes;
@@ -112,6 +132,7 @@ public class DingoDataStream implements ChunkedInput<ByteBuf> {
             offset += bytesLength;
             ByteBuf buf = allocator.buffer(bytesLength);
             buf.writeBytes(bytes);
+            this.memoryPool.freeReserveMemory(bytesLength);
             return buf;
         }
     }

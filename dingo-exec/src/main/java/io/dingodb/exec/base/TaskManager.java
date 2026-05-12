@@ -19,6 +19,8 @@ package io.dingodb.exec.base;
 import io.dingodb.common.CommonId;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.List;
+
 public interface TaskManager {
     void addTask(Task task);
 
@@ -31,4 +33,6 @@ public interface TaskManager {
     }
 
     void close();
+
+    List<Task> getAllTasks();
 }

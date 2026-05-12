@@ -61,6 +61,9 @@ public class StoreService implements io.dingodb.store.api.StoreService {
 
     public static final StoreService INSTANCE = new StoreService();
 
+    public static final io.dingodb.store.local.StoreInstance storeInstance
+        = new io.dingodb.store.local.StoreInstance(null);
+
     @AutoService(StoreServiceProvider.class)
     public static class Provider implements StoreServiceProvider {
 
@@ -78,5 +81,10 @@ public class StoreService implements io.dingodb.store.api.StoreService {
     @Override
     public StoreInstance getInstance(@NonNull CommonId tableId, CommonId regionId) {
         return new io.dingodb.store.local.StoreInstance(regionId);
+    }
+
+    @Override
+    public io.dingodb.store.api.StoreInstance getInstance(boolean spill) {
+        return storeInstance;
     }
 }

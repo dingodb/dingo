@@ -19,6 +19,7 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.meta.entity.Table;
@@ -52,9 +53,10 @@ public abstract class TxnPartModifyParam extends PartModifyParam {
         byte[] primaryLockKey,
         long startTs,
         long forUpdateTs,
-        long lockTimeOut
+        long lockTimeOut,
+        ExecutionContext executionContext
     ) {
-        super(tableId, schema, keyMapping, table);
+        super(tableId, schema, keyMapping, table, executionContext);
         this.isolationLevel = isolationLevel;
         this.pessimisticTxn = pessimisticTxn;
         this.primaryLockKey = primaryLockKey;

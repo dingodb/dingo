@@ -107,4 +107,22 @@ public class AvroTupleCodec implements TupleCodec {
         }
         return tuples;
     }
+
+    public @Nullable Object[] decodeOne(@NonNull BinaryDecoder decoder) throws IOException {
+        GenericRecord record;
+        try {
+            record = reader.read(null, decoder);
+        } catch (EOFException e) {
+            return null;
+        }
+        if (record == null) {
+            return null;
+        }
+        int size = schema.getFields().size();
+        Object[] tuple = new Object[size];
+        for (int i = 0; i < size; ++i) {
+            tuple[i] = record.get(i);
+        }
+        return (Object[]) type.convertFrom(tuple, AvroDataConverter.INSTANCE);
+    }
 }

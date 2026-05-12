@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -80,10 +81,11 @@ public class PessimisticLockUpdateParam extends TxnPartModifyParam {
         Table table,
         @JsonProperty("updatePrimaryKey") boolean updatePrimaryKey,
         @JsonProperty("updateLimit") long updateLimit,
-        RelOp relOp
+        RelOp relOp,
+        ExecutionContext executionContext
     ) {
         super(tableId, schema, keyMapping, table, pessimisticTxn,
-            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut);
+            isolationLevel, primaryLockKey, startTs, forUpdateTs, lockTimeOut, executionContext);
         this.mapping = mapping;
         this.updates = updates;
         this.isScan = isScan;

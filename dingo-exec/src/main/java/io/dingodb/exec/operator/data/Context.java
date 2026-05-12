@@ -17,6 +17,8 @@
 package io.dingodb.exec.operator.data;
 
 import io.dingodb.common.CommonId;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.QueryMemoryPoolHolder;
 import io.dingodb.common.partition.RangeDistribution;
 import lombok.Builder;
 import lombok.Getter;
@@ -55,7 +57,8 @@ public class Context {
     }
 
     public Context copy() {
-        return Context.builder().pin(pin).keyState(new ArrayList<>(keyState)).withoutPrimary(withoutPrimary).build();
+        return Context.builder().pin(pin).keyState(new ArrayList<>(keyState))
+            .withoutPrimary(withoutPrimary).build();
     }
 
     public void addKeyState(boolean state) {
@@ -65,4 +68,5 @@ public class Context {
     public Boolean[] getKeyState() {
         return keyState.toArray(new Boolean[0]);
     }
+
 }

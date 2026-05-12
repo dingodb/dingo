@@ -48,6 +48,8 @@ import io.dingodb.exec.transaction.params.ScanCleanExtraDataCacheParam;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC;
 
 @Getter

@@ -70,7 +70,7 @@ public final class DingoRangeDeleteVisitFun {
             false,
             rel.isNotBetween(),
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionParam);
         Task task;

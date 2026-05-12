@@ -47,7 +47,6 @@ import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.expr.rel.RelOp;
 import io.dingodb.expr.runtime.exception.NeverRunHere;
 import io.dingodb.meta.entity.Column;
-import io.dingodb.meta.entity.IndexTable;
 import io.dingodb.meta.entity.Partition;
 import io.dingodb.meta.entity.Table;
 import io.dingodb.store.api.transaction.data.IsolationLevel;
@@ -108,7 +107,7 @@ public final class DingoScanWithRelOpVisitFun {
             outputs.add(createVerticesForRange(
                 task,
                 idGenerator,
-                (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, visitor),
+                (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, job),
                 null,
                 null,
                 scanVertexCreator
@@ -119,7 +118,7 @@ public final class DingoScanWithRelOpVisitFun {
                 outputs.add(createVerticesForRange(
                     task,
                     idGenerator,
-                    (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
+                    (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, job),
                     null,
                     null,
                     scanVertexCreator
@@ -131,7 +130,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, visitor),
+                        (start, end) -> createCalcRangeDistributionVertex(rel, tableInfo, start, end, false, job),
                         null,
                         null,
                         scanVertexCreator
@@ -144,7 +143,7 @@ public final class DingoScanWithRelOpVisitFun {
                     outputs.add(createVerticesForRange(
                         task,
                         idGenerator,
-                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, visitor),
+                        (start, end) -> createCalcDistributionVertex(rel, tableInfo, start, end, false, job),
                         partition.getStart(),
                         i < partitionNum - 1 ? partitions.get(i + 1).getStart() : null,
                         scanVertexCreator
@@ -298,7 +297,7 @@ public final class DingoScanWithRelOpVisitFun {
         byte[] startKey,
         byte[] endKey,
         boolean withEnd,
-        DingoJobVisitor visitor
+        Job job
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -320,7 +319,7 @@ public final class DingoScanWithRelOpVisitFun {
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         return new Vertex(CALC_DISTRIBUTION_1, distributionParam);
     }
@@ -331,7 +330,7 @@ public final class DingoScanWithRelOpVisitFun {
         byte[] startKey,
         byte[] endKey,
         boolean withEnd,
-        DingoJobVisitor visitor
+        Job job
     ) {
         final Table td = Objects.requireNonNull(rel.getTable().unwrap(DingoTable.class)).getTable();
         NavigableMap<ComparableByteArray, RangeDistribution> ranges = tableInfo.getRangeDistributions();
@@ -360,7 +359,7 @@ public final class DingoScanWithRelOpVisitFun {
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         distributionParam.setKeepOrder(rel.getKeepSerialOrder());
         distributionParam.setFilterRange(rel.isRangeScan());

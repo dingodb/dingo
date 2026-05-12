@@ -16,33 +16,49 @@
 
 package io.dingodb.exec.operator;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.common.profile.OperatorProfile;
 import io.dingodb.common.profile.Profile;
 import io.dingodb.common.type.TupleMapping;
+import io.dingodb.common.util.Utils;
 import io.dingodb.exec.base.Status;
 import io.dingodb.exec.dag.Edge;
 import io.dingodb.exec.dag.Vertex;
 import io.dingodb.exec.fin.Fin;
 import io.dingodb.exec.fin.FinWithException;
 import io.dingodb.exec.fin.FinWithProfiles;
+import io.dingodb.exec.memory.MemoryRevoker;
+import io.dingodb.exec.memory.RocksdbSpiller;
+import io.dingodb.exec.memory.Spiller;
 import io.dingodb.exec.operator.data.Context;
 import io.dingodb.exec.operator.data.TupleWithJoinFlag;
+import io.dingodb.exec.operator.params.AbstractParams;
 import io.dingodb.exec.operator.params.HashJoinParam;
 import io.dingodb.exec.tuple.TupleKey;
 import io.dingodb.expr.rel.PipeOp;
 import io.dingodb.store.api.transaction.exception.LockWaitException;
+import io.dingodb.tool.api.MemoryAllocatorCtx;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.dingodb.exec.dag.Edge.checkException;
+
 @Slf4j
-public class HashJoinOperator extends SoleOutOperator {
+public class HashJoinOperator extends SoleOutOperator implements MemoryRevoker {
     public static final HashJoinOperator INSTANCE = new HashJoinOperator();
 
     private HashJoinOperator() {
@@ -86,12 +102,12 @@ public class HashJoinOperator extends SoleOutOperator {
                     profile.opTime(start);
                     return pushToNext(param, edge, context, newTuple);
                 }
-                List<TupleWithJoinFlag> rightList = param.getHashMap().get(leftKey);
+                List<TupleWithJoinFlag> rightList = param.getKey(leftKey);
                 if (rightList != null) {
                     for (TupleWithJoinFlag t : rightList) {
                         Object[] newTuple = Arrays.copyOf(tuple, leftLength + rightLength);
                         System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
-                        t.setJoined(true);
+                        param.syncJoined(leftKey, t, param);
                         profile.opTime(start);
                         if (!pushToNext(param, edge, context, newTuple)) {
                             return false;
@@ -104,6 +120,11 @@ public class HashJoinOperator extends SoleOutOperator {
                     return pushToNext(param, edge, context, newTuple);
                 }
             } else if (pin == 1) { //right
+                if (param.getSize() != null && param.getSize().get() > ScopeVariables.joinSpillSize()
+                    && !param.getExecutionContext().isInnerSql()) {
+                    param.getMemoryAllocatorCtx().allocateRevocableMemory(param.getSize().get());
+                    param.getSize().set(0);
+                }
                 OperatorProfile profile = param.getProfile("hashJoin");
                 long start = System.currentTimeMillis();
                 TupleKey rightKey = HashJoinParam.rtrimTupleKey(new TupleKey(rightMapping.revMap(tuple)));
@@ -113,6 +134,8 @@ public class HashJoinOperator extends SoleOutOperator {
                     } else if ("right".equalsIgnoreCase(param.getJoinType()) || "full".equalsIgnoreCase(param.getJoinType())) {
                         List<TupleWithJoinFlag> list = param.getHashMap()
                             .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
+                        long size = ObjectSizeUtils.calculateSize(tuple);
+                        param.incMemSize(size);
                         list.add(new TupleWithJoinFlag(tuple));
                     }
                 } else {
@@ -120,6 +143,8 @@ public class HashJoinOperator extends SoleOutOperator {
                         profile.cacheOpTime(start);
                         return true;
                     }
+                    long size = ObjectSizeUtils.calculateSize(tuple);
+                    param.getSize().addAndGet(size);
                     List<TupleWithJoinFlag> list = param.getHashMap()
                         .computeIfAbsent(rightKey, k -> Collections.synchronizedList(new LinkedList<>()));
                     list.add(new TupleWithJoinFlag(tuple));
@@ -142,6 +167,16 @@ public class HashJoinOperator extends SoleOutOperator {
             edge.fin(fin);
             return;
         }
+        if (!param.getHashMap().isEmpty() && !param.getExecutionContext().isInnerSql() && pin == 1) {
+            long allocated = param.getMemoryAllocatorCtx().getAllAllocated();
+            if (allocated > 0) {
+                long size = param.getHashMap().size();
+                long globalUsage = MemoryManager.getInstance().getGlobalMemoryPool().getMemoryUsage();
+                long queryUsage = param.getQueryMemoryPool().getMemoryUsage();
+                LogUtils.info(log, "hashMap size:{}, joinOperatorUsage:{}, queryUsage:{}, globalUsage:{}",
+                    size, allocated, queryUsage, globalUsage);
+            }
+        }
         boolean rightRequired = param.isRightRequired();
         int leftLength = param.getLeftLength();
         int rightLength = param.getRightLength();
@@ -150,12 +185,27 @@ public class HashJoinOperator extends SoleOutOperator {
                 // should wait in case of no data push to left.
                 waitRightFinFlag(param, vertex);
                 outer:
-                for (List<TupleWithJoinFlag> tList : param.getHashMap().values()) {
-                    for (TupleWithJoinFlag t : tList) {
-                        if (!t.isJoined()) {
+                if (param.getSpillCnt() == 0) {
+                    for (List<TupleWithJoinFlag> tList : param.getHashMap().values()) {
+                        for (TupleWithJoinFlag t : tList) {
+                            if (!t.isJoined()) {
+                                Object[] newTuple = new Object[leftLength + rightLength];
+                                Arrays.fill(newTuple, 0, leftLength, null);
+                                System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
+                                if (!pushToNext(param, edge, param.getContext(), newTuple)) {
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Iterator<TupleWithJoinFlag> iterator = param.getSpilledValues();
+                    while (iterator.hasNext()) {
+                        TupleWithJoinFlag tupleWithJoinFlag = iterator.next();
+                        if (!tupleWithJoinFlag.isJoined()) {
                             Object[] newTuple = new Object[leftLength + rightLength];
                             Arrays.fill(newTuple, 0, leftLength, null);
-                            System.arraycopy(t.getTuple(), 0, newTuple, leftLength, rightLength);
+                            System.arraycopy(tupleWithJoinFlag.getTuple(), 0, newTuple, leftLength, rightLength);
                             if (!pushToNext(param, edge, param.getContext(), newTuple)) {
                                 break outer;
                             }
@@ -188,6 +238,9 @@ public class HashJoinOperator extends SoleOutOperator {
                 param.setProfileRight(finWithProfiles.getProfile());
             }
             param.setRightFinFlag(true);
+            if (param.getSpillCnt() > 0) {
+                param.flush();
+            }
             param.getFuture().complete(null);
         }
     }
@@ -274,5 +327,60 @@ public class HashJoinOperator extends SoleOutOperator {
             }
         }
         return true;
+    }
+
+    @Override
+    public ListenableFuture<?> startMemoryRevoke(AbstractParams param) {
+        synchronized (param) {
+            HashJoinParam hashJoinParam = (HashJoinParam) param;
+            if (hashJoinParam.isSpilling()) {
+                while (hashJoinParam.getSpillFuture() == null) {
+                    Utils.sleep(50);
+                }
+                return hashJoinParam.getSpillFuture();
+            }
+            long revocable = hashJoinParam.getMemoryAllocatorCtx().getRevocableAllocated();
+            if (revocable > 1024 * 1024 * 4) {
+                return spillToDisk(hashJoinParam);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    @Override
+    public void finishMemoryRevoke(AbstractParams param) {
+        // finish -> releaseMemory
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        MemoryAllocatorCtx memoryAllocatorCtx = hashJoinParam.getMemoryAllocatorCtx();
+        memoryAllocatorCtx.releaseRevocableMemory(memoryAllocatorCtx.getRevocableAllocated(), true);
+        LogUtils.info(log, "finish memory revoke, release revocable memory");
+    }
+
+    @Override
+    public MemoryAllocatorCtx getMemoryAllocatorCtx(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        return hashJoinParam.getMemoryAllocatorCtx();
+    }
+
+    public ListenableFuture<?> spillToDisk(AbstractParams param) {
+        HashJoinParam hashJoinParam = (HashJoinParam) param;
+        hashJoinParam.setSpilling(true);
+        LogUtils.info(log, "start spill to disk");
+
+        SettableFuture<?> future = SettableFuture.create();
+        new Thread(() -> {
+            Spiller spiller = new RocksdbSpiller();
+            spiller.spillHashMap(hashJoinParam);
+            releaseSpill(param);
+            future.set(null);
+        }).start();
+        future.addListener(() -> {
+            hashJoinParam.getHashMap().clear();
+            hashJoinParam.setSpillFuture(null);
+            hashJoinParam.addSpillCnt(1);
+        }, directExecutor());
+        hashJoinParam.setSpillFuture(future);
+        return future;
     }
 }

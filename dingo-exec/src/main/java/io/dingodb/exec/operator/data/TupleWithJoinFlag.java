@@ -21,13 +21,30 @@ import lombok.Setter;
 
 public class TupleWithJoinFlag {
     @Getter
-    private final Object[] tuple;
+    @Setter
+    private Object[] tuple;
+
+    private byte[] tupleBytes;
     @Getter
     @Setter
     private boolean joined;
 
+    @Setter
+    @Getter
+    private long inc;
+
     public TupleWithJoinFlag(Object[] tuple) {
         this.tuple = tuple;
         this.joined = false;
+    }
+
+    public TupleWithJoinFlag(Object[] tuple, boolean joined, long inc) {
+        this.tuple = tuple;
+        this.joined = joined;
+        this.inc = inc;
+    }
+
+    public TupleWithJoinFlag() {
+
     }
 }

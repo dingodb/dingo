@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.dingodb.codec.CodecService;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.type.DingoType;
 import io.dingodb.common.type.TupleMapping;
 import io.dingodb.exec.dag.Vertex;
@@ -63,9 +64,10 @@ public class PartUpdateParam extends PartModifyParam {
         Table table,
         @JsonProperty("hasAutoInc") boolean hasAutoInc,
         @JsonProperty("autoIncColIdx") int autoIncColIdx,
-        RelOp relOp
+        RelOp relOp,
+        ExecutionContext executionContext
     ) {
-        super(tableId, schema, keyMapping, table);
+        super(tableId, schema, keyMapping, table, executionContext);
         this.mapping = mapping;
         this.updates = updates;
         this.hasAutoInc = hasAutoInc;

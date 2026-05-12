@@ -48,12 +48,15 @@ import io.dingodb.calcite.utils.HybridNodeUtils;
 import io.dingodb.calcite.utils.SqlUtil;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
-import io.dingodb.common.ExecuteVariables;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.common.ProcessInfo;
 import io.dingodb.common.audit.DingoAudit;
 import io.dingodb.common.config.DingoConfiguration;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.memory.MemoryManager;
+import io.dingodb.common.memory.ObjectSizeUtils;
+import io.dingodb.common.memory.QueryMemoryPool;
 import io.dingodb.common.metrics.DingoMetrics;
 import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.mysql.util.DataTimeUtils;
@@ -150,6 +153,8 @@ public final class DingoDriverParser extends DingoParser {
     private CommitProfile commitProfile;
     @Getter
     private final DingoAudit dingoAudit;
+    @Getter
+    private ExecutionContext executionContext;
 
     public DingoDriverParser(@NonNull DingoConnection connection) {
         super(connection.getContext());
@@ -350,57 +355,17 @@ public final class DingoDriverParser extends DingoParser {
             planProfile.end();
             DingoDdlVerify.verify(sqlNode, connection);
             execProfile = new ExecProfile("DDL");
-            Integer retry = Optional.mapOrGet(
-                DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30
-            );
-            long updateCount = 0;
-            while (retry-- > 0) {
-                try {
-                    beforeDdl(connection, sqlNode);
-                    final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
-                    if (ddlResultSet.contains(sqlNode.getClass())) {
-                        DdlResult ddlResult = ddlExecutor.executeDdl1(connection, sqlNode);
-                        if (ddlResult != null) {
-                            connection.getContext().addWarning(ddlResult.getSqlWarning());
-                            updateCount = ddlResult.getAffectedRows();
-                        }
-                    } else {
-                        ddlExecutor.executeDdl(connection, sqlNode);
-                    }
-                    break;
-                } catch (IllegalArgumentException e) {
-                    // Method not found:
-                    // execute([class org.apache.calcite.sql.ddl.SqlCreateTable,
-                    // org.apache.calcite.jdbc.CalcitePrepare$Context])
-                    LogUtils.error(log, e.getMessage(), e);
-                    if (!e.getMessage().startsWith("Method not found: execute") || retry <= 0) {
-                        throw e;
-                    }
-                } catch (RuntimeException e) {
-                    // java.lang.RuntimeException:
-                    // While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute
-                    // (org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
-                    LogUtils.error(log, e.getMessage(), e);
-                    if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0
-                        || !e.getMessage().startsWith("While invoking method")) {
-                        throw e;
-                    }
-                }
-            }
-            execProfile.end();
-            DingoSignature dingoSignature = new DingoSignature(
-                ImmutableList.of(),
-                SqlUtil.checkSql(sqlNode, sql),
-                Meta.CursorFactory.OBJECT,
-                Meta.StatementType.OTHER_DDL,
-                null,
-                null,
-                ImmutableList.of()
-            );
-            dingoSignature.setUpdateCount(updateCount);
-            return dingoSignature;
+            return getDdlSignature(sql, sqlNode);
         }
-
+        ExecutionContext executionContext = getExecutionContext(queryId);
+        //if (!executionContext.isInnerSql() && sql.length() > 1000) {
+        //    long memVal = 0;
+        //    memVal += sql.length() * ObjectSizeUtils.SIZE_CHAR + ObjectSizeUtils.SIZE_OBJ_REF;
+        //    if (executionContext.getMemoryPool() instanceof QueryMemoryPool) {
+        //        QueryMemoryPool queryMemoryPool = (QueryMemoryPool) executionContext.getMemoryPool();
+        //        queryMemoryPool.getPlanMemPool().allocateReserveMemory(memVal);
+        //    }
+        //}
         SqlExplain explain = null;
         if (sqlNode.getKind().equals(SqlKind.EXPLAIN)) {
             assert sqlNode instanceof SqlExplain;
@@ -573,7 +538,7 @@ public final class DingoDriverParser extends DingoParser {
             && (forUpdate || sqlNode.getKind().belongsTo(SqlKind.DML))) {
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                variablesFactory.createExecuteVariables(connection.getClientInfo(), queryId, user, host));
+                executionContext);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -581,10 +546,8 @@ public final class DingoDriverParser extends DingoParser {
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
         Job job = jobManager.createJob(
             startTs, jobSeqId, txnId, DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
-            statementType == Meta.StatementType.SELECT, queryId
+            statementType == Meta.StatementType.SELECT, executionContext
         );
-        job.setUser(user);
-        job.setHost(host);
         DingoJobVisitor.renderJob(
             jobManager,
             job,
@@ -593,14 +556,11 @@ public final class DingoDriverParser extends DingoParser {
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
             sqlNode.getKind(),
-            variablesFactory.createExecuteVariables(connection.getClientInfo()),
             pointTs,
             forUpdate,
             getReplaceInto(sqlNode),
             getIgnore(sqlNode),
-            getUpdateLimit(sqlNode),
-            user,
-            host
+            getUpdateLimit(sqlNode)
         );
         if (explain != null) {
             statementType = Meta.StatementType.CALL;
@@ -653,6 +613,68 @@ public final class DingoDriverParser extends DingoParser {
             columns,
             trace
         );
+    }
+
+    private @NonNull ExecutionContext getExecutionContext(String queryId) {
+        ExecutionContext executionContext = variablesFactory.createExecuteVariables(
+            connection.getClientInfo(), queryId, user, host);
+        executionContext.setMemoryPool(MemoryManager.getInstance().createQueryMemoryPool(
+                true, queryId));
+        this.executionContext = executionContext;
+        this.executionContext.setInnerSql("on".equals(connection.getContext().getOption("for_ddl")));
+        return executionContext;
+    }
+
+    private @NonNull DingoSignature getDdlSignature(String sql, SqlNode sqlNode) {
+        Integer retry = Optional.mapOrGet(
+            DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30
+        );
+        long updateCount = 0;
+        while (retry-- > 0) {
+            try {
+                beforeDdl(connection, sqlNode);
+                final DdlExecutor ddlExecutor = PARSER_CONFIG.parserFactory().getDdlExecutor();
+                if (ddlResultSet.contains(sqlNode.getClass())) {
+                    DdlResult ddlResult = ddlExecutor.executeDdl1(connection, sqlNode);
+                    if (ddlResult != null) {
+                        connection.getContext().addWarning(ddlResult.getSqlWarning());
+                        updateCount = ddlResult.getAffectedRows();
+                    }
+                } else {
+                    ddlExecutor.executeDdl(connection, sqlNode);
+                }
+                break;
+            } catch (IllegalArgumentException e) {
+                // Method not found:
+                // execute([class org.apache.calcite.sql.ddl.SqlCreateTable,
+                // org.apache.calcite.jdbc.CalcitePrepare$Context])
+                LogUtils.error(log, e.getMessage(), e);
+                if (!e.getMessage().startsWith("Method not found: execute") || retry <= 0) {
+                    throw e;
+                }
+            } catch (RuntimeException e) {
+                // java.lang.RuntimeException:
+                // While invoking method 'public void io.dingodb.calcite.DingoDdlExecutor.execute
+                // (org.apache.calcite.sql.ddl.SqlCreateTable,org.apache.calcite.jdbc.CalcitePrepare$Context)'
+                LogUtils.error(log, e.getMessage(), e);
+                if (!(sqlNode instanceof DingoSqlCreateTable) || retry <= 0
+                    || !e.getMessage().startsWith("While invoking method")) {
+                    throw e;
+                }
+            }
+        }
+        execProfile.end();
+        DingoSignature dingoSignature = new DingoSignature(
+            ImmutableList.of(),
+            SqlUtil.checkSql(sqlNode, sql),
+            Meta.CursorFactory.OBJECT,
+            Meta.StatementType.OTHER_DDL,
+            null,
+            null,
+            ImmutableList.of()
+        );
+        dingoSignature.setUpdateCount(updateCount);
+        return dingoSignature;
     }
 
     private void handleFlashBackQuery(SqlNode sqlNode) {
@@ -767,8 +789,7 @@ public final class DingoDriverParser extends DingoParser {
         RelDataType parasType,
         List<ColumnMetaData> columns,
         List<ColumnMetaData> visitColumns,
-        boolean autoCommitAndRetry,
-        String queryId
+        boolean autoCommitAndRetry
     ) {
         final Meta.CursorFactory cursorFactory = Meta.CursorFactory.ARRAY;
         Meta.StatementType statementType;
@@ -801,7 +822,7 @@ public final class DingoDriverParser extends DingoParser {
             LogUtils.info(log, "retryQuery startTs:{}", startTs);
             runPessimisticPrimaryKeyJob(jobSeqId, jobManager, transaction, sqlNode, relNode,
                 currentLocation, DefinitionMapper.mapToDingoType(parasType),
-                variablesFactory.createExecuteVariables(connection.getClientInfo(), queryId, user, host));
+                executionContext);
             jobSeqId = transaction.getForUpdateTs();
         }
         String maxExecutionTimeStr = connection.getClientInfo("max_execution_time");
@@ -809,10 +830,8 @@ public final class DingoDriverParser extends DingoParser {
         long maxTimeOut = Long.parseLong(maxExecutionTimeStr);
         Job job = jobManager.createJob(
             startTs, jobSeqId, transaction.getTxnId(), DefinitionMapper.mapToDingoType(parasType), maxTimeOut,
-            false, queryId
+            false, executionContext
         );
-        job.setUser(user);
-        job.setHost(host);
         DingoJobVisitor.renderJob(
             jobManager,
             job,
@@ -820,9 +839,7 @@ public final class DingoDriverParser extends DingoParser {
             currentLocation,
             true,
             transaction.getType() == NONE ? null : connection.getTransaction(),
-            sqlNode.getKind(),
-            variablesFactory.createExecuteVariables(connection.getClientInfo()),
-            user, host
+            sqlNode.getKind()
         );
         return new DingoSignature(
             visitColumns,
@@ -849,20 +866,17 @@ public final class DingoDriverParser extends DingoParser {
         RelNode relNode,
         Location currentLocation,
         DingoType dingoType,
-        ExecuteVariables executeVariables
+        ExecutionContext executionContext
     ) {
         Integer retry = Optional.mapOrGet(DingoConfiguration.instance().find("retry", int.class), __ -> __, () -> 30);
         boolean forUpdate = forUpdate(sqlNode);
         while (retry-- > 0) {
             Job job = jobManager.createJob(transaction.getStartTs(), jobSeqId,
-                transaction.getTxnId(), dingoType, executeVariables.getQueryId());
-            job.setUser(executeVariables.getUser());
-            job.setHost(executeVariables.getHost());
+                transaction.getTxnId(), dingoType);
             DingoJobVisitor.renderJob(
                 jobManager, job, relNode, currentLocation, true,
-                transaction, sqlNode.getKind(), executeVariables, 0,
-                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode),
-                executeVariables.getUser(), executeVariables.getHost()
+                transaction, sqlNode.getKind(), 0,
+                forUpdate, getReplaceInto(sqlNode), getIgnore(sqlNode), getUpdateLimit(sqlNode)
             );
             try {
                 Iterator<Object[]> iterator = jobManager.createIterator(job, null);

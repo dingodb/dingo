@@ -688,7 +688,9 @@ public class LoadDataExecutor implements DmlExecutor {
         List<String> tupleList = new ArrayList<>();
         for (int i = 0; i < len; i ++) {
             byte b = bytes[i];
-            if (terminatedOnlyByte && b == fieldsTermByte && i >= 1 && bytes[i - 1] != escaped[0]) {
+            if (i == 0 && terminatedOnlyByte && b == fieldsTermByte) {
+                tupleList.add("");
+            } else if (terminatedOnlyByte && b == fieldsTermByte && i >= 1 && bytes[i - 1] != escaped[0]) {
                 byte[] fieldBytes = new byte[i - fieldBreakPos];
                 System.arraycopy(bytes, fieldBreakPos, fieldBytes, 0, fieldBytes.length);
                 String valTmp = new String(fieldBytes, charset);

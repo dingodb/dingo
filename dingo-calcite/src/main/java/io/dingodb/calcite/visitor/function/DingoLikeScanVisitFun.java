@@ -81,7 +81,7 @@ public final class DingoLikeScanVisitFun {
             Optional.mapOrGet(rel.getFilter(), __ -> __.getKind() == SqlKind.NOT, () -> false),
             false,
             null,
-            visitor.getExecuteVariables().getConcurrencyLevel()
+            job.getExecutionContext().getConcurrencyLevel()
         );
         Vertex calcVertex = new Vertex(CALC_DISTRIBUTION_1, distributionSourceParam);
 

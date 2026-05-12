@@ -335,7 +335,7 @@ public class Column {
         } else if (type instanceof DecimalType) {
             return new BigDecimal(0);
         } else if (type instanceof DateType) {
-            return DingoTimeZoneContext.getProcessor().processDateTime("0000-00-00", DateTimeType.DATE);
+            return DingoTimeZoneContext.getProcessor().processDateTime("2026-04-16", DateTimeType.DATE);
         } else if (type instanceof BooleanType) {
             return false;
         } else if (type instanceof TimestampType) {

@@ -32,6 +32,10 @@ public interface StoreService {
         return null;
     }
 
+    default StoreInstance getInstance(boolean spill) {
+        return null;
+    }
+
     default void deleteInstance(CommonId id) {
 
     }

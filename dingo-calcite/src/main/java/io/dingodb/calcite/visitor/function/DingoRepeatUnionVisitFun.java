@@ -23,6 +23,7 @@ import io.dingodb.calcite.type.converter.DefinitionMapper;
 import io.dingodb.calcite.visitor.DingoJobVisitor;
 import io.dingodb.common.CommonId;
 import io.dingodb.common.ExecuteVariables;
+import io.dingodb.common.ExecutionContext;
 import io.dingodb.common.Location;
 import io.dingodb.exec.base.IdGenerator;
 import io.dingodb.exec.base.Job;
@@ -65,15 +66,15 @@ public final class DingoRepeatUnionVisitFun {
         Location currentLocation,
         DingoJobVisitor visitor,
         ITransaction transaction,
-        @NonNull DingoRepeatUnion rel,
-        ExecuteVariables executeVariables
+        @NonNull DingoRepeatUnion rel
     ) {
+        ExecutionContext executionContext = job.getExecutionContext();
         List<RexNode> rexNodeList = checkUnionType(rel.getSeedRel(), rel.getIterativeRel());
-        Job seedJob = getSpoolJob(transaction.getStartTs(), rel, transaction, executeVariables, true, rexNodeList);
+        Job seedJob = getSpoolJob(transaction.getStartTs(), rel, transaction, executionContext, true, rexNodeList);
         Job iterationJob = getSpoolJob(transaction.getStartTs(), rel,
-            transaction, executeVariables, false, rexNodeList);
+            transaction, executionContext, false, rexNodeList);
         RepeatUnionParam repeatUnionParam = new RepeatUnionParam(seedJob, iterationJob,
-            rel.all, executeVariables.getIterationLimit());
+            rel.all, executionContext.getIterationLimit());
         Task task = job.getOrCreate(currentLocation, idGenerator);
         Vertex vertex = new Vertex(REPEAT_UNION, repeatUnionParam);
         vertex.setId(idGenerator.getOperatorId(task.getId()));
@@ -86,7 +87,7 @@ public final class DingoRepeatUnionVisitFun {
 
     public static Job getSpoolJob(
         long startTs, DingoRepeatUnion rel,
-        ITransaction transaction, ExecuteVariables executeVariables,
+        ITransaction transaction, ExecutionContext executionContext,
         boolean seed,
         List<RexNode> rexNodeList
     ) {
@@ -127,15 +128,13 @@ public final class DingoRepeatUnionVisitFun {
             TransactionManager.getServerId().seq, TransactionManager.getStartTs());
         RelDataType parasType = new RelRecordType(new ArrayList<>());
         Job job = jobManager.createJob(startTs, jobSeqId, txnId,
-            DefinitionMapper.mapToDingoType(parasType), executeVariables.getQueryId());
-        job.setUser(executeVariables.getUser());
-        job.setHost(executeVariables.getHost());
+            DefinitionMapper.mapToDingoType(parasType), 0, true, executionContext);
         Location currentLocation = MetaService.root().currentLocation();
 
         DingoJobVisitor.renderJob(
             jobManager, job, relInput, currentLocation, false,
-            transaction, null, executeVariables, 0,
-            false, false, false, 1, "root", "%"
+            transaction, null, 0,
+            false, false, false, 1
         );
         return job;
     }

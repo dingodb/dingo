@@ -19,15 +19,23 @@ package io.dingodb.exec.operator.params;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.util.concurrent.SettableFuture;
+import io.dingodb.common.ExecutionContext;
+import io.dingodb.common.memory.MemoryPool;
+import io.dingodb.common.memory.MemoryPoolUtils;
+import io.dingodb.common.mysql.scope.ScopeVariables;
+import io.dingodb.exec.memory.OperatorMemoryAllocatorCtx;
 import io.dingodb.tool.api.WindowService;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @JsonTypeName("window")
 @JsonPropertyOrder({"funName"})
-public class WindowFunctionParam extends AbstractParams {
+public class WindowFunctionParam extends AbstractParams implements RevokerParams {
 
     @JsonProperty("funName")
     String funName;
@@ -39,9 +47,68 @@ public class WindowFunctionParam extends AbstractParams {
     @Getter
     WindowService windowService;
 
+    @Getter
+    private ExecutionContext executionContext;
 
-    public WindowFunctionParam(WindowService windowService) {
+    private OperatorMemoryAllocatorCtx memoryAllocatorCtx;
+
+    @Getter
+    AtomicLong size;
+
+    protected long spillCnt = 0;
+
+    @Setter
+    @Getter
+    private volatile boolean spilling;
+
+    @Setter
+    @Getter
+    SettableFuture spillFuture;
+
+
+    public WindowFunctionParam(WindowService windowService, ExecutionContext executionContext) {
         this.windowService = windowService;
+        this.executionContext = executionContext;
+        this.size = new AtomicLong(0);
+        if (!executionContext.isInnerSql()) {
+            String name = "windowFun" + UUID.randomUUID();
+            MemoryPool memoryPool =
+                MemoryPoolUtils.createOperatorTmpTablePool(name, executionContext.getMemoryPool());
+            this.memoryAllocatorCtx = new OperatorMemoryAllocatorCtx(memoryPool, ScopeVariables.enableSpill());
+        }
     }
 
+    @Override
+    public MemoryPool getQueryMemoryPool() {
+        if (this.memoryAllocatorCtx != null && this.executionContext != null) {
+            return this.executionContext.getMemoryPool();
+        }
+        return null;
+    }
+
+    @Override
+    public OperatorMemoryAllocatorCtx getMemoryAllocatorCtx() {
+        return memoryAllocatorCtx;
+    }
+
+    @Override
+    public void addSpillCnt(int spillCnt) {
+        this.spillCnt += spillCnt;
+    }
+
+    @Override
+    public long getCacheSize() {
+        return list.size();
+    }
+
+    public void clear() {
+        list.clear();
+        if (this.memoryAllocatorCtx != null) {
+            this.memoryAllocatorCtx.close();
+        }
+        if (spillFuture != null) {
+            spillFuture.cancel(true);
+            spillFuture = null;
+        }
+    }
 }
