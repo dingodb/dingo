@@ -129,4 +129,17 @@ public class LogicalIndexFullScan extends LogicalDingoTableScan {
         pw.itemIf("lookup", lookup, true);
         return pw;
     }
+
+    @Override
+    public boolean deepEquals(@Nullable Object obj) {
+        boolean deepEquals = super.deepEquals(obj);
+        if (!deepEquals) {
+            return deepEquals;
+        } else if (obj instanceof LogicalIndexFullScan) {
+            LogicalIndexFullScan that = (LogicalIndexFullScan) obj;
+            return this.indexId.compareTo((that).indexId) == 0;
+        } else {
+            return false;
+        }
+    }
 }
