@@ -64,6 +64,7 @@ public final class ScopeVariables {
         executorProp.put("ddl_mdl_log", "on");
         executorProp.put("show_coprocessor_expr", "off");
         executorProp.put("enable_decimal_pushdown", "on");
+        executorProp.put("enable_txn_scan_lock_collection", "on");
     }
 
     private ScopeVariables() {
@@ -135,6 +136,11 @@ public final class ScopeVariables {
     public static boolean txnScanByStream() {
         String txnScanByStream = executorProp.getOrDefault("transaction_stream_scan", "on").toString();
         return txnScanByStream.equalsIgnoreCase("on");
+    }
+
+    public static boolean enableTxnScanLockCollection() {
+        String enable = executorProp.getOrDefault("enable_txn_scan_lock_collection", "on").toString();
+        return enable.equalsIgnoreCase("on");
     }
 
     public static boolean showCoprocessorExpr() {

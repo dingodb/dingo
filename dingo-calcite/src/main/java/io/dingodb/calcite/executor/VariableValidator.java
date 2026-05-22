@@ -64,6 +64,7 @@ public final class VariableValidator {
             || name.equalsIgnoreCase("slow_query_enable")
             || name.equalsIgnoreCase("metric_log_enable")
             || name.equalsIgnoreCase("dingo_audit_enable")
+            || name.equalsIgnoreCase("enable_txn_scan_lock_collection")
         ) {
             value = value.toLowerCase();
             if (!SWITCH.contains(value)) {

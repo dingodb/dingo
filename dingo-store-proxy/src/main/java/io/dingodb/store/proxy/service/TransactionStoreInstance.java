@@ -65,6 +65,7 @@ import io.dingodb.sdk.service.entity.store.TxnPrewriteRequest;
 import io.dingodb.sdk.service.entity.store.TxnPrewriteResponse;
 import io.dingodb.sdk.service.entity.store.TxnResolveLockResponse;
 import io.dingodb.sdk.service.entity.store.TxnResultInfo;
+import io.dingodb.sdk.service.entity.store.TxnScanEntry;
 import io.dingodb.sdk.service.entity.store.TxnScanRequest;
 import io.dingodb.sdk.service.entity.store.TxnScanResponse;
 import io.dingodb.sdk.service.entity.store.WriteConflict;
@@ -104,9 +105,11 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -130,6 +133,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class TransactionStoreInstance {
+
+    private static final int LOCK_COLLECTION_REFILL_BATCH_DIVISOR = 4;
 
     private final StoreService storeService;
     private final IndexService indexService;
@@ -803,12 +808,21 @@ public class TransactionStoreInstance {
 
     @NonNull
     public List<io.dingodb.common.store.KeyValue> getKeyValues(long startTs, List<byte[]> keys, long timeOut) {
+        return getKeyValues(startTs, keys, timeOut, new ArrayList<>());
+    }
+
+    @NonNull
+    private List<io.dingodb.common.store.KeyValue> getKeyValues(
+        long startTs,
+        List<byte[]> keys,
+        long timeOut,
+        List<Long> resolvedLocks
+    ) {
         long start = System.currentTimeMillis();
         CommonId txnId = new CommonId(CommonId.CommonType.TRANSACTION, TransactionManager.getServerId().seq, startTs);
         MdcUtils.setTxnId(txnId.toString());
         try {
             int n = 1;
-            List<Long> resolvedLocks = new ArrayList<>();
             while (true) {
                 TxnBatchGetRequest txnBatchGetRequest = MAPPER.batchGetTo(
                     startTs, IsolationLevel.SnapshotIsolation, keys
@@ -903,6 +917,146 @@ public class TransactionStoreInstance {
             long sub = System.currentTimeMillis() - start;
             DingoMetrics.timer("txnBatchGetRpc").update(sub, TimeUnit.MILLISECONDS);
         }
+    }
+
+    private List<KeyValue> collectLockCollectionKeyValues(
+        long startTs,
+        List<TxnScanEntry> entries,
+        long timeOut
+    ) {
+        List<KeyValue> result = new ArrayList<>(entries.size());
+        List<LockInfo> locks = new ArrayList<>();
+        List<byte[]> lockedKeys = new ArrayList<>();
+        List<Integer> lockedPositions = new ArrayList<>();
+        for (TxnScanEntry entry : entries) {
+            TxnScanEntry.EntryNest entryNest = entry.getEntry();
+            if (entryNest == null) {
+                continue;
+            }
+            switch (entryNest.nest()) {
+                case KV:
+                    result.add((KeyValue) entryNest);
+                    break;
+                case LOCKED:
+                    LockInfo lockInfo = (LockInfo) entryNest;
+                    if (lockInfo.getKey() == null) {
+                        LogUtils.warn(log, "txnScan lock collection entry has no locked key, startTs:{}", startTs);
+                        break;
+                    }
+                    locks.add(lockInfo);
+                    lockedKeys.add(lockInfo.getKey());
+                    lockedPositions.add(result.size());
+                    result.add(null);
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (!lockedKeys.isEmpty()) {
+            refillLockedKeys(startTs, locks, lockedKeys, lockedPositions, timeOut, result);
+        }
+        List<KeyValue> orderedResult = new ArrayList<>(result.size());
+        for (KeyValue kv : result) {
+            if (kv != null) {
+                orderedResult.add(kv);
+            }
+        }
+        return orderedResult;
+    }
+
+    private void refillLockedKeys(
+        long startTs,
+        List<LockInfo> locks,
+        List<byte[]> lockedKeys,
+        List<Integer> lockedPositions,
+        long timeOut,
+        List<KeyValue> result
+    ) {
+        long refillStart = System.currentTimeMillis();
+        int refillCount = 0;
+        List<Long> resolvedLocks = new ArrayList<>();
+        HashSet<Long> resolvedLockSet = new HashSet<>();
+        int n = 1;
+        int lockIndex = 0;
+        while (lockIndex < locks.size()) {
+            LockInfo lock = locks.get(lockIndex);
+            if (resolvedLockSet.contains(lock.getLockTs())) {
+                lockIndex++;
+                continue;
+            }
+
+            TxnResultInfo txnResultInfo = new TxnResultInfo();
+            txnResultInfo.setLocked(lock);
+            ResolveLockStatus resolveLockStatus = resolveLockConflictNew(
+                singletonList(txnResultInfo),
+                IsolationLevel.SnapshotIsolation.getCode(),
+                startTs,
+                resolvedLocks,
+                "txnScan",
+                true,
+                false
+            );
+            resolvedLockSet.addAll(resolvedLocks);
+            if (resolveLockStatus == ResolveLockStatus.LOCK_TTL
+                || resolveLockStatus == ResolveLockStatus.TXN_NOT_FOUND) {
+                if (timeOut < 0) {
+                    LogUtils.info(log, "timeOut < 0, startTs:{}", startTs);
+                    throw new RuntimeException("startTs:" + startTs + " resolve lock timeout");
+                }
+                try {
+                    long lockTtl = TxnVariables.WaitFixTime;
+                    if (n < TxnVariables.WaitFixNum) {
+                        lockTtl = TxnVariables.WaitTime * n;
+                    }
+                    Thread.sleep(lockTtl);
+                    n++;
+                    timeOut -= lockTtl;
+                    LogUtils.info(log, "scanTs:{}, txnScan lockInfo wait {} ms end.", startTs, lockTtl);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (resolveLockStatus == ResolveLockStatus.UNKNOWN) {
+                throw new RuntimeException("startTs:" + startTs + " resolve lock status is unknown");
+            } else {
+                lockIndex++;
+            }
+        }
+
+        // lookupBatchSize is tuned for executor-side lookup, where keys are grouped by region before txnGet.
+        // This refill runs inside a region-bound TransactionStoreInstance, so use a smaller chunk to keep
+        // a single-region txnBatchGet conservative in request size and transient memory usage.
+        int batchLimit = Math.max(1, ScopeVariables.lookupBatchSize() / LOCK_COLLECTION_REFILL_BATCH_DIVISOR);
+        Map<ByteBuffer, KeyValue> valuesByKey = new HashMap<>();
+        for (int start = 0; start < lockedKeys.size(); start += batchLimit) {
+            int end = Math.min(start + batchLimit, lockedKeys.size());
+            List<byte[]> chunk = lockedKeys.subList(start, end);
+            List<io.dingodb.common.store.KeyValue> batchValues = getKeyValues(
+                startTs, chunk, timeOut, resolvedLocks
+            );
+            if (batchValues != null) {
+                for (io.dingodb.common.store.KeyValue kv : batchValues) {
+                    if (kv != null && kv.getKey() != null && kv.getValue() != null) {
+                        KeyValue refill = new KeyValue();
+                        refill.setKey(kv.getKey());
+                        refill.setValue(kv.getValue());
+                        valuesByKey.put(ByteBuffer.wrap(kv.getKey()), refill);
+                        refillCount++;
+                    }
+                }
+            }
+        }
+
+        // Update the result list with the refilled values for locked keys
+        for (int i = 0; i < lockedKeys.size(); i++) {
+            KeyValue refill = valuesByKey.get(ByteBuffer.wrap(lockedKeys.get(i)));
+            if (refill != null) {
+                result.set(lockedPositions.get(i), refill);
+            }
+        }
+
+        long refillCost = System.currentTimeMillis() - refillStart;
+        LogUtils.info(log, "refillLockedKeys lockedKeys:{}, refilled:{}, cost:{}ms",
+            lockedKeys.size(), refillCount, refillCost);
     }
 
     public boolean txnBatchRollback(TxnBatchRollBack txnBatchRollBack) {
@@ -1172,10 +1326,25 @@ public class TransactionStoreInstance {
                     // Concurrent reads may occur when other regions have already been MinCommitTSPushed,
                     // causing subsequent actions to be null, In this case, as long as the returned MinCommitTs
                     // is greater than or equal to callerStartTS, it can be considered as MinCommitTSPushed.
+
+                    // Dingo store may return NoAction without lockInfo when a live lock's minCommitTs
+                    // already >= callerStartTS. Reads can ignore that lock.
+                    // (Note: This is a compatibility optimization; improving the RPC protocol would be better.)
+                    boolean noActionReadCanIgnore = forRead
+                        && status.getTtl() > 0
+                        && status.getCommitTs() == 0
+                        && (status.getAction() == Action.NoAction || status.getAction() == null)
+                        && status.getPrimaryLock() == null;
+
                     if (status.getAction() == Action.MinCommitTSPushed ||
                         (status.getPrimaryLock() != null &&
-                            status.getPrimaryLock().getMinCommitTs() >= callerStartTS)) {
+                            status.getPrimaryLock().getMinCommitTs() >= callerStartTS) ||
+                        noActionReadCanIgnore) {
                         canIgnore.add(lock.getLockTs());
+                        if (forRead) {
+                            LogUtils.debug(log, "resolveSingleLock ignore lock status:{}", status);
+                            continue;
+                        }
                         status.setResolveLockStatus(ResolveLockStatus.LOCK_TTL);
                     }
 //                    else if (status.isCommitted() && status.getCommitTs() <= callerStartTS) {
@@ -1531,6 +1700,7 @@ public class TransactionStoreInstance {
         private final StoreInstance.Range range;
         private final long timeOut;
         private final io.dingodb.sdk.service.entity.common.CoprocessorV2 coprocessor;
+        private final boolean enableLockCollection;
 
         private boolean withStart;
         private boolean hasMore = true;
@@ -1561,6 +1731,7 @@ public class TransactionStoreInstance {
             Optional.ofNullable(this.coprocessor)
                 .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getResultSchema)
                 .ifPresent($ -> $.setCommonId(partitionId.seq));
+            this.enableLockCollection = ScopeVariables.enableTxnScanLockCollection() && this.coprocessor == null;
             initRpcProfile = new OperatorProfile("initTxnRpc");
             rpcProfile = new OperatorProfile("continueTxnRpc");
             initRpcProfile.start();
@@ -1596,7 +1767,28 @@ public class TransactionStoreInstance {
                     } else if (documentService != null) {
                         txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
                     } else {
+                        txnScanRequest.setEnableLockCollection(enableLockCollection);
                         txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
+                    }
+                    if (enableLockCollection
+                        && txnScanResponse.getEntries() != null
+                        && !txnScanResponse.getEntries().isEmpty()) {
+                        if (txnScanResponse.getTxnResult() != null) {
+                            throw new RuntimeException(
+                                "txnScan lock collection response has both entries and txnResult, startTs:" + startTs
+                            );
+                        }
+                        keyValues = collectLockCollectionKeyValues(
+                            startTs, txnScanResponse.getEntries(), scanTimeOut
+                        ).iterator();
+                        hasMore = txnScanResponse.isHasMore();
+                        if (hasMore) {
+                            withStart = false;
+                            current = new StoreInstance.Range(
+                                txnScanResponse.getEndKey(), range.end, withStart, range.withEnd
+                            );
+                        }
+                        break;
                     }
                     if (txnScanResponse.getTxnResult() != null) {
                         ResolveLockStatus resolveLockStatus = resolveLockConflictNew(
@@ -1708,6 +1900,7 @@ public class TransactionStoreInstance {
         private StoreInstance.Range range;
         private final long timeOut;
         private final io.dingodb.sdk.service.entity.common.CoprocessorV2 coprocessor;
+        private final boolean enableLockCollection;
 
         private boolean withStart;
         private boolean hasMore = true;
@@ -1740,6 +1933,7 @@ public class TransactionStoreInstance {
             Optional.ofNullable(this.coprocessor)
                 .map(io.dingodb.sdk.service.entity.common.CoprocessorV2::getResultSchema)
                 .ifPresent($ -> $.setCommonId(partitionId.seq));
+            this.enableLockCollection = ScopeVariables.enableTxnScanLockCollection() && this.coprocessor == null;
             initRpcProfile = new OperatorProfile("initTxnRpc");
             rpcProfile = new OperatorProfile("continueTxnRpc");
             initRpcProfile.start();
@@ -1786,7 +1980,35 @@ public class TransactionStoreInstance {
                     } else if (documentService != null) {
                         txnScanResponse = documentService.txnScan(startTs, txnScanRequest);
                     } else {
+                        txnScanRequest.setEnableLockCollection(enableLockCollection);
                         txnScanResponse = storeService.txnScan(startTs, txnScanRequest);
+                    }
+
+                    if (enableLockCollection
+                        && txnScanResponse.getEntries() != null
+                        && !txnScanResponse.getEntries().isEmpty()) {
+                        if (txnScanResponse.getTxnResult() != null) {
+                            throw new RuntimeException(
+                                "txnScan stream lock collection response has both entries and txnResult, startTs:"
+                                    + startTs
+                            );
+                        }
+                        keyValues = collectLockCollectionKeyValues(
+                            startTs, txnScanResponse.getEntries(), scanTimeOut
+                        ).iterator();
+                        if (txnScanResponse.getStreamMeta() != null) {
+                            this.streamId = txnScanResponse.getStreamMeta().getStreamId();
+                            hasMore = txnScanResponse.getStreamMeta().isHasMore();
+                            if (hasMore) {
+                                withStart = false;
+                                range = new StoreInstance.Range(
+                                    txnScanResponse.getEndKey(), range.end, withStart, range.withEnd
+                                );
+                            }
+                        } else {
+                            hasMore = false;
+                        }
+                        break;
                     }
 
                     if (txnScanResponse.getTxnResult() != null) {
