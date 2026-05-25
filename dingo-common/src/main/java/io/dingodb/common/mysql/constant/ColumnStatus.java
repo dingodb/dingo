@@ -31,6 +31,8 @@ public class ColumnStatus {
 
     public static final int COLUMN_ZEROFILL = 0X0040;
 
+    public static final int COLUMN_BINARY = 0X0080;
+
     public static final int COLUMN_ENUM = 0X0100;
 
     public static final int COLUMN_AUTOINCREMENT = 0X0200;

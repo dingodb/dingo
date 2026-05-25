@@ -109,6 +109,11 @@ public class MysqlPacketFactory {
             int columnFlags = 0;
             // 0 not null  1 nullable
             int isNullable =  metaData.isNullable(column);
+            if (isNullable == 0) {
+                isNullable = 1;
+            } else {
+                isNullable = 0;
+            }
             columnFlags |= isNullable;
 
             String columnTypeName = metaData.getColumnTypeName(column);
@@ -123,6 +128,11 @@ public class MysqlPacketFactory {
             int columnFlags = 0;
             // 0 not null  1 nullable
             int isNullable =  resultSet.getInt("NULLABLE");
+            if (isNullable == 0) {
+                isNullable = 1;
+            } else {
+                isNullable = 0;
+            }
             columnFlags |= isNullable;
 
             String columnTypeName = resultSet.getString("TYPE_NAME");
@@ -154,6 +164,7 @@ public class MysqlPacketFactory {
         switch (columnTypeName) {
             case "VARBINARY":
                 columnFlags |= ColumnStatus.COLUMN_BLOB;
+                columnFlags |= ColumnStatus.COLUMN_BINARY;
                 break;
             case "TIMESTAMP":
                 columnFlags |= ColumnStatus.COLUMN_TIMESTAMP;
@@ -239,14 +250,25 @@ public class MysqlPacketFactory {
                 columnName = "user";
                 columnLabel = "user";
             }
+            String columnType = metaData.getColumnTypeName(i);
+            short charsetNumber = MysqlPacket.charsetNumber;
+            int size = metaData.getColumnDisplaySize(i);
+            short flags = getColumnFlags(metaData, i);
+            if ("VARBINARY".equalsIgnoreCase(columnType)) {
+                charsetNumber = 63;
+                size = 65535;
+            }
+            if (size < 0) {
+                size = 65535;
+            }
             ColumnPacket columnPacket = getColumnPacket(catalog, schema,
                 table,
                 table, columnLabel,
                 columnName,
-                MysqlPacket.charsetNumber,
-                metaData.getColumnDisplaySize(i),
+                charsetNumber,
+                size,
                 getColumnType(metaData.getColumnTypeName(i)),
-                getColumnFlags(metaData, i),
+                flags,
                 MysqlPacket.decimals,
                 (byte) packetId.getAndIncrement(), columnNmCharset);
             columns.add(columnPacket);

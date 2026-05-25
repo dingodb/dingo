@@ -280,14 +280,14 @@ public class DingoParser {
     }
 
     public SqlNode parse(String sql) throws SqlParseException {
+        if (StringUtils.isEmpty(context.getOption("sql_log"))) {
+            SqlLogUtils.info("Input Query: {}", sql);
+        }
         sql = processKeyWords(sql);
         SqlParser parser = SqlParser.create(sql, PARSER_CONFIG);
         SqlNode sqlNode = parser.parseQuery();
         if (sqlNode instanceof SqlAlterTableOptions) {
             ((SqlAlterTableOptions) sqlNode).setSql(sql);
-        }
-        if (StringUtils.isEmpty(context.getOption("sql_log"))) {
-            SqlLogUtils.info("Input Query: {}", SqlUtil.checkSql(sqlNode, sql));
         }
         //LogUtils.trace(log, "==DINGO==>:[Parsed Query]: {}", sqlNode.toString());
         return sqlNode;

@@ -330,6 +330,7 @@ public final class DingoDriverParser extends DingoParser {
                 ((DingoSqlCreateView) sqlNode).setOriginalCreateSql(sql);
             }
         } catch (SqlParseException e) {
+            LogUtils.error(log, "error sql:{}", sql);
             throw ExceptionUtils.toRuntime(e);
         }
         syntacticSugar(sqlNode);
