@@ -85,6 +85,7 @@ import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -194,7 +195,17 @@ public class DingoMeta extends MetaImpl {
             .flatMap(s -> s.getTableNames().stream()
                 .filter(filter)
                 .filter(name -> verifyPrivilege((SubSnapshotSchema) s.schema, name, "getTables"))
-                .map(name -> s.getImplicitTable(name, caseSensitive())))
+                .map(name -> {
+                    try {
+                        return s.getImplicitTable(name, caseSensitive());
+                    } catch (DingoSqlException e) {
+                        if (e.getSqlCode() == 1146 && "42S02".equalsIgnoreCase(e.getSqlState())) {
+                            return null;
+                        } else {
+                            throw e;
+                        }
+                    }
+                }).filter(Objects::nonNull))
             .collect(Collectors.toList());
     }
 

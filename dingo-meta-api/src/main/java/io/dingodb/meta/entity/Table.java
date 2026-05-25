@@ -119,6 +119,8 @@ public class Table {
     @JsonProperty
     public boolean visible;
 
+    public long schemaVersion;
+
     public TupleType tupleType() {
         return DingoTypeFactory.tuple(columns.stream()
             .map(col -> {

@@ -142,4 +142,8 @@ public class LocalDdlService implements DdlService {
     public void addPrimaryKey(SchemaInfo schemaInfo, Table table, List<String> primaryKeyList) {
 
     }
+
+    public int checkTableSchemaVersion(CommonId tableId, long schemaVersion) {
+        return 1;
+    }
 }
