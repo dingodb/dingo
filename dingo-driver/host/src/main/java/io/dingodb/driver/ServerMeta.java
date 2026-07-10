@@ -35,6 +35,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.sql.SQLException;
@@ -57,6 +58,12 @@ public class ServerMeta implements Meta {
             @Override
             protected Integer loadValue() {
                 return ExecutionEnvironment.INSTANCE.sessionUtil.connectionMap.size();
+            }
+        });
+        DingoMetrics.metricRegistry.register("key2type_cache-count", new CachedGauge<Integer>(5, TimeUnit.MINUTES) {
+            @Override
+            protected Integer loadValue() {
+                return ((Long) RelDataTypeFactoryImpl.KEY2TYPE_CACHE.size()).intValue();
             }
         });
     }

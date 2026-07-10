@@ -29,10 +29,13 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -127,5 +130,18 @@ public class LogicalIndexRangeScan extends LogicalDingoTableScan {
         pw.itemIf("pushDown", pushDown, pushDown);
         pw.itemIf("lookup", lookup, true);
         return pw;
+    }
+
+    @Override
+    public boolean deepEquals(@Nullable Object obj) {
+        boolean deepEquals = super.deepEquals(obj);
+        if (!deepEquals) {
+            return deepEquals;
+        } else if (obj instanceof LogicalIndexRangeScan) {
+            LogicalIndexRangeScan that = (LogicalIndexRangeScan) obj;
+            return this.indexId.compareTo((that).indexId) == 0;
+        } else {
+            return false;
+        }
     }
 }

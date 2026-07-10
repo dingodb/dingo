@@ -521,6 +521,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
         boolean hasNotGroupExpr = false;
         boolean groupExprsEmpty = aggScope.getGroupExprs() != null && aggScope.getGroupExprs().getKey().isEmpty()
             && aggScope.getGroupExprs().getValue().isEmpty();
+        SqlNode havingExprs = aggScope.getHavingExprs();
         int errIndex = -1;
         String errCol = "";
         for (int i = 0; i < selectItems.size(); i++) {
@@ -544,7 +545,7 @@ public class DingoSqlValidator extends SqlValidatorImpl {
                     sqlNodeAs = new SqlIdentifier(SqlValidatorUtil.getAlias(item, 0), SqlParserPos.ZERO);
                 }
                 if (groupExprsEmpty) {
-                    if (itemAggregateCall) {
+                    if (itemAggregateCall || havingExprs == null) {
                         throw DingoErrUtil.newStdErr(ErrMixOfGroupFuncAndFields, i + 1, item.toString());
                     }
                     final SqlNode newNode = aggScope.replaceNotGroupExpr(sqlNode);
