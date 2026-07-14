@@ -19,7 +19,10 @@ package io.dingodb.exec.operator;
 import io.dingodb.codec.CodecService;
 import io.dingodb.codec.KeyValueCodec;
 import io.dingodb.common.CommonId;
+import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.partition.RangeDistribution;
+import io.dingodb.common.type.DingoType;
+import io.dingodb.common.type.TupleType;
 import io.dingodb.common.util.ByteArrayUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.dag.Vertex;
@@ -85,10 +88,21 @@ public class DistributeOperator extends SoleOutOperator {
                     indexTuple[i] = oldIndexTuple[colIx];
                 }
             }
+            TupleType tupleType = indexTable.tupleType();
             KeyValueCodec indexCodec = CodecService.getDefault()
                 .createKeyValueCodec(indexTable.getCodecVersion(), indexTable.version,
-                    indexTable.tupleType(), indexTable.keyMapping());
-            partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+                    tupleType, indexTable.keyMapping());
+            if (param.getDistributions().isEmpty() && "replicaTable".equalsIgnoreCase(indexTable.getName())) {
+                return true;
+            }
+            try {
+                partId = indexPs.calcPartId(indexTuple, wrap(indexCodec::encodeKey), param.getDistributions());
+            } catch (Exception e) {
+                DingoType[] dingoType = indexTable.tupleType().getFields();
+                LogUtils.error(log, "indexName:{}, indexTuple:{}, type:{}, keyMapping:{}", indexTable.getName(),
+                    Arrays.toString(indexTuple), Arrays.toString(dingoType), indexTable.keyMapping());
+                throw e;
+            }
             NavigableMap<ByteArrayUtils.ComparableByteArray, RangeDistribution> distribution =
                 MetaService.root().getRangeDistribution(param.getTable().tableId);
             tablePartId = ps.calcPartId(newTuple, wrap(param.getCodec()::encodeKey), distribution);
