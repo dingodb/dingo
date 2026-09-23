@@ -79,7 +79,12 @@ public class ScopeVarFun extends BinaryOp {
             }
         }
         if (value == null) {
-            value = "";
+            // Session variables never set on this connection fall back to the
+            // global default, matching MySQL semantics where the session value
+            // is initialized from the global scope at connect time.
+            InfoSchemaService infoSchemaService = InfoSchemaService.root();
+            Map<String, String> globalVariableMap = infoSchemaService.getGlobalVariables();
+            value = globalVariableMap.getOrDefault(variableName, "");
         }
         if (value.equalsIgnoreCase("on")) {
             return "1";

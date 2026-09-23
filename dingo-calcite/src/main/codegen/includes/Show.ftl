@@ -194,15 +194,24 @@ SqlShow SqlShowGrants(Span s): {
 } {
   <GRANTS>
   (<FOR>
-  [
-       <QUOTED_STRING> { user = token.image; }
-       [<AT_SPLIT> <QUOTED_STRING> { host = token.image;} ]
-       {
-       return new SqlShowGrants(s.end(this), user, host);
-       }
-  ]
-  userIdentifier = CompoundIdentifier() { user = userIdentifier.getSimple(); }
-  [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
+    (
+      LOOKAHEAD(2) <CURRENT_USER> [<LPAREN> <RPAREN>]
+      {
+        // SHOW GRANTS FOR CURRENT_USER() returns the grants of the current
+        // session user, same as plain SHOW GRANTS (user == null).
+        return new SqlShowGrants(s.end(this), null, "%");
+      }
+    |
+      [
+           <QUOTED_STRING> { user = token.image; }
+           [<AT_SPLIT> <QUOTED_STRING> { host = token.image;} ]
+           {
+           return new SqlShowGrants(s.end(this), user, host);
+           }
+      ]
+      userIdentifier = CompoundIdentifier() { user = userIdentifier.getSimple(); }
+      [<AT_SPLIT> (<QUOTED_STRING> | <IDENTIFIER>) {host = token.image; } ]
+    )
   )?
   {
     return new SqlShowGrants(s.end(this), user, host);
