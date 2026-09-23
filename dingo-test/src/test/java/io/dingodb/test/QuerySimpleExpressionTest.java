@@ -16,6 +16,7 @@
 
 package io.dingodb.test;
 
+import io.dingodb.driver.DingoResultSetMetaData;
 import io.dingodb.test.asserts.Assert;
 import io.dingodb.test.cases.RexCasesJUnit5;
 import io.dingodb.test.dsl.run.exec.SqlExecContext;
@@ -29,9 +30,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QuerySimpleExpressionTest {
@@ -75,6 +81,60 @@ public class QuerySimpleExpressionTest {
     }
 
     @Test
+    public void mysqlCharCoercesDecimalArguments() throws SQLException {
+        assertThat(context.querySingleValue("select hex(char(77.6))")).isEqualTo("4E");
+        assertThat(context.querySingleValue("select hex(char('77.3'))")).isEqualTo("4D");
+        assertThat(context.querySingleValue("select hex(char(77.6 using binary))")).isEqualTo("4E");
+        assertThat(context.querySingleValue("select char(77.6 using utf8mb4)")).isEqualTo("N");
+    }
+
+    @Test
+    public void convertCharsetRetainsEncodedByteSemantics() throws SQLException {
+        try (Statement statement = context.getConnection().createStatement();
+             ResultSet result = statement.executeQuery("select length(convert('é' using latin1))")) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getInt(1)).isEqualTo(1);
+        }
+        assertThat(context.querySingleValue("select hex(convert('€' using latin1))")).isEqualTo("80");
+        assertThat(context.querySingleValue("select char(128 using latin1)")).isEqualTo("€");
+        assertThat(context.querySingleValue("select length(char(128 using latin1))")).isEqualTo(1);
+        assertThat(context.querySingleValue("select hex(char(128 using latin1))")).isEqualTo("80");
+        assertThat(context.querySingleValue("select hex(convert('é' using latin1))")).isEqualTo("E9");
+        try (Statement statement = context.getConnection().createStatement();
+             ResultSet result = statement.executeQuery("select concat(convert('é' using latin1), 'x')")) {
+            assertThat(((DingoResultSetMetaData) result.getMetaData()).getColumnCharsetName(1))
+                .isEqualTo("windows-1252");
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString(1)).isEqualTo("éx");
+        }
+        assertThat(context.querySingleValue(
+            "select length(concat(convert('é' using latin1), 'x'))"
+        )).isEqualTo(2);
+        assertThat(context.querySingleValue(
+            "select hex(concat(convert('é' using latin1), 'x'))"
+        )).isEqualTo("E978");
+        try (Statement statement = context.getConnection().createStatement();
+             ResultSet result = statement.executeQuery("select convert('é' using latin1)")) {
+            assertThat(result.getMetaData().getColumnType(1)).isEqualTo(Types.VARCHAR);
+            assertThat(result.getMetaData()).isInstanceOf(DingoResultSetMetaData.class);
+            assertThat(((DingoResultSetMetaData) result.getMetaData()).getColumnCharsetName(1))
+                .isEqualTo("windows-1252");
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString(1)).isEqualTo("é");
+        }
+    }
+
+    @Test
+    public void convertCharsetRejectsUnrepresentableText() {
+        assertThatThrownBy(() -> {
+            try (Statement statement = context.getConnection().createStatement();
+                 ResultSet result = statement.executeQuery("select convert('é' using ascii)")) {
+                result.next();
+            }
+        }).hasMessageContaining("Cannot convert value");
+    }
+
+    @Test
     public void convertTzHandlesFractionalSecondsAndInvalidZones() throws SQLException {
         assertThat(context.querySingleValue(
             "select convert_tz('2024-01-01 12:00:00.123', '+00:00', '+01:00')"
@@ -82,6 +142,18 @@ public class QuerySimpleExpressionTest {
         assertThat(context.querySingleValue(
             "select convert_tz('2024-01-01 12:00:00', '', '+01:00')"
         )).isNull();
+    }
+
+    @Test
+    public void convertTzInvalidZoneAdvertisesNullableResult() throws SQLException {
+        try (Statement statement = context.getConnection().createStatement();
+             ResultSet result = statement.executeQuery(
+                 "select convert_tz('2024-01-01 00:00:00', 'invalid-zone', 'UTC')"
+             )) {
+            assertThat(result.getMetaData().isNullable(1)).isEqualTo(ResultSetMetaData.columnNullable);
+            assertThat(result.next()).isTrue();
+            assertThat(result.getObject(1)).isNull();
+        }
     }
 
     @Test

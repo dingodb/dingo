@@ -393,6 +393,14 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                         collation = collation2;
                     }
                 }
+                if (collation0 != null && charset1 != null && charset2 != null
+                    && !charset1.equals(charset2)) {
+                    if (collation0.equals(collation1)) {
+                        charset = charset1;
+                    } else if (collation0.equals(collation2)) {
+                        charset = charset2;
+                    }
+                }
                 if (charset != null) {
                     resultType =
                         createTypeWithCharsetAndCollation(

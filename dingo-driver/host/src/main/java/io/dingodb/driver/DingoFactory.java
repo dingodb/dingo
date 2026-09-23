@@ -22,7 +22,6 @@ import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaDatabaseMetaData;
 import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaResultSet;
-import org.apache.calcite.avatica.AvaticaResultSetMetaData;
 import org.apache.calcite.avatica.AvaticaSpecificDatabaseMetaData;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Meta;
@@ -127,7 +126,7 @@ public class DingoFactory implements AvaticaFactory {
         AvaticaStatement statement,
         Meta.Signature signature
     ) {
-        return new AvaticaResultSetMetaData(statement, null, signature);
+        return new DingoResultSetMetaData(statement, signature);
     }
 
     // Must inherit, the constructor of the base class is protected.

@@ -22,7 +22,11 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 
 /**
  * MySQL CONVERT(expr USING charset) for character sets. The binary charset is
@@ -41,11 +45,24 @@ public class ConvertCharsetFun extends BinaryOp {
             return null;
         }
         Charset charset = CharCharsetFun.charset(value1.toString());
-        if (value0 instanceof byte[]) {
-            return new String((byte[]) value0, charset);
+        try {
+            if (value0 instanceof byte[]) {
+                return charset.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap((byte[]) value0)).toString();
+            }
+            ByteBuffer bytes = charset.newEncoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .encode(CharBuffer.wrap(value0.toString()));
+            return charset.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(bytes).toString();
+        } catch (CharacterCodingException e) {
+            throw new IllegalArgumentException("Cannot convert value using charset " + charset.name(), e);
         }
-        String text = value0.toString();
-        return new String(text.getBytes(charset), charset);
     }
 
     @Override

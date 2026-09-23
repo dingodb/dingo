@@ -20,11 +20,13 @@ import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.OpKey;
-import io.dingodb.expr.runtime.op.OpKeys;
 import io.dingodb.expr.runtime.op.VariadicOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -46,19 +48,27 @@ public class CharCharsetFun extends VariadicOp {
         }
         String charsetName = values[values.length - 1].toString();
         byte[] bytes = CharFun.buildBytes(values, values.length - 1);
-        return new String(bytes, charset(charsetName));
+        try {
+            return charset(charsetName).newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(bytes)).toString();
+        } catch (CharacterCodingException e) {
+            throw new IllegalArgumentException("Cannot decode CHAR using charset " + charsetName, e);
+        }
     }
 
     /** Map MySQL charset names to an available Java codec; reject unknown names. */
-    static Charset charset(@NonNull String name) {
+    public static Charset charset(@NonNull String name) {
         String normalized = name.trim().toLowerCase(java.util.Locale.ROOT);
         switch (normalized) {
             case "utf8":
             case "utf8mb4":
                 return StandardCharsets.UTF_8;
             case "binary":
-            case "latin1":
                 return StandardCharsets.ISO_8859_1;
+            case "latin1":
+                return Charset.forName("windows-1252");
             case "ascii":
                 return StandardCharsets.US_ASCII;
             default:
@@ -68,7 +78,7 @@ public class CharCharsetFun extends VariadicOp {
 
     @Override
     public OpKey keyOf(@NonNull Type @NonNull ... types) {
-        return OpKeys.ALL_STRING.keyOf(types);
+        return Types.ANY;
     }
 
     @Override

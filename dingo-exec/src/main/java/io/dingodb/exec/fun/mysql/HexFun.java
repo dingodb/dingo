@@ -19,14 +19,19 @@ package io.dingodb.exec.fun.mysql;
 import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
+import io.dingodb.expr.runtime.op.BinaryOp;
 import io.dingodb.expr.runtime.op.UnaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serial;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class HexFun extends UnaryOp {
     public static final String NAME = "hex";
+    public static final String CHARSET_NAME = "hex_charset";
+    public static final BinaryOp CHARSET_INSTANCE = new CharsetHexFun();
     @Serial
     private static final long serialVersionUID = -2489040936115125799L;
     private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
@@ -35,6 +40,10 @@ public class HexFun extends UnaryOp {
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value, ExprConfig config) {
+        return hex(value, StandardCharsets.UTF_8);
+    }
+
+    private static Object hex(@NonNull Object value, Charset charset) {
         if (value instanceof byte[]) {
             return toHex((byte[]) value);
         }
@@ -51,7 +60,27 @@ public class HexFun extends UnaryOp {
         } else if (value instanceof Long) {
             return Long.toHexString((Long) value).toUpperCase();
         } else {
-            return toHex(value.toString().getBytes()).toUpperCase();
+            return toHex(value.toString().getBytes(charset));
+        }
+    }
+
+    private static final class CharsetHexFun extends BinaryOp {
+        @Serial
+        private static final long serialVersionUID = 4669681289107118463L;
+
+        @Override
+        public Object evalValue(Object value, Object charsetName, ExprConfig config) {
+            return value == null ? null : hex(value, Charset.forName(charsetName.toString()));
+        }
+
+        @Override
+        public @NonNull String getName() {
+            return CHARSET_NAME;
+        }
+
+        @Override
+        public Type getType() {
+            return Types.STRING;
         }
     }
 

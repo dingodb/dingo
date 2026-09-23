@@ -282,7 +282,9 @@ public final class DingoDriverParser extends DingoParser {
             false,
             false,
             avaticaType.id == SqlType.FLOAT.id ? "java.lang.Float" : avaticaType.columnClassName(),
-            hidden
+            hidden,
+            (type.getSqlTypeName() == SqlTypeName.CHAR || type.getSqlTypeName() == SqlTypeName.VARCHAR)
+                && type.getCharset() != null ? type.getCharset().name() : null
         );
     }
 

@@ -21,6 +21,8 @@ import io.dingodb.calcite.utils.RexLiteralUtils;
 import io.dingodb.common.util.Optional;
 import io.dingodb.exec.expr.SqlExprCompileContext;
 import io.dingodb.exec.fun.DingoFunFactory;
+import io.dingodb.exec.fun.LengthFun;
+import io.dingodb.exec.fun.mysql.HexFun;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.compiler.CastingFactory;
 import io.dingodb.expr.runtime.expr.Expr;
@@ -57,6 +59,8 @@ import org.apache.calcite.sql.type.IntervalSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.nio.charset.Charset;
 
 public final class RexConverter implements RexVisitor<@NonNull Expr> {
     private static final RexConverter INSTANCE = new RexConverter();
@@ -512,6 +516,14 @@ public final class RexConverter implements RexVisitor<@NonNull Expr> {
                 }
                 break;
             case 1:
+                RexNode operand = call.getOperands().get(0);
+                Charset charset = operand.getType().getCharset();
+                if (charset != null && (funName.equalsIgnoreCase(LengthFun.NAME)
+                    || funName.equalsIgnoreCase(HexFun.NAME))) {
+                    BinaryOp charsetOp = funName.equalsIgnoreCase(LengthFun.NAME)
+                        ? LengthFun.CHARSET_INSTANCE : HexFun.CHARSET_INSTANCE;
+                    return Exprs.op(charsetOp, operand.accept(this), Exprs.val(charset.name()));
+                }
                 UnaryOp unaryOp = funFactory.getUnaryFun(funName);
                 if (unaryOp != null) {
                     return Exprs.op(

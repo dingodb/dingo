@@ -20,21 +20,20 @@ import io.dingodb.common.mysql.MysqlMessage;
 import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import lombok.Setter;
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.nio.charset.CharsetEncoder;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResultSetRowPacket extends MysqlPacket {
 
-    @Setter
-    private String characterSet;
-
     public List<byte[]> values = new ArrayList<>();
     private static final byte NULL_MARK = (byte) 251;
+    private static final byte[] ZERO = {'0'};
+    private static final byte[] ONE = {'1'};
 
     public long columnCount;
 
@@ -44,11 +43,7 @@ public class ResultSetRowPacket extends MysqlPacket {
         //packetLength = message.readUB3();
         packetId = message.read();
         for (int i = 0; i < columnCount; i++) {
-            try {
-                values.add(message.readStringWithLength().getBytes(characterSet));
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            values.add(message.readBytesWithLength());
         }
     }
 
@@ -141,7 +136,7 @@ public class ResultSetRowPacket extends MysqlPacket {
                 + "}\n";
     }
 
-    public void addColumnValue(Object val) {
+    public void addColumnValue(Object val, CharsetEncoder encoder) throws SQLException {
         if (val == null) {
             values.add(null);
         } else {
@@ -149,18 +144,13 @@ public class ResultSetRowPacket extends MysqlPacket {
                 values.add((byte[]) val);
                 return;
             }
-            try {
-                if (val instanceof Boolean) {
-                    // MySQL wire protocol never uses "true"/"false" text for
-                    // boolean expressions; it always sends 1/0 like TINYINT.
-                    values.add(((Boolean) val) ? "1".getBytes(characterSet) : "0".getBytes(characterSet));
-                } else if (val instanceof BigDecimal) {
-                    values.add(((BigDecimal) val).toPlainString().getBytes(characterSet));
-                } else {
-                    values.add(val.toString().getBytes(characterSet));
-                }
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
+            if (val instanceof Boolean) {
+                // MySQL wire protocol sends boolean expressions as integer 0/1.
+                values.add((Boolean) val ? ONE : ZERO);
+            } else if (val instanceof BigDecimal) {
+                values.add(MysqlPacketFactory.encodeText(((BigDecimal) val).toPlainString(), encoder));
+            } else {
+                values.add(MysqlPacketFactory.encodeText(val.toString(), encoder));
             }
         }
     }

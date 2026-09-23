@@ -19,15 +19,13 @@ package io.dingodb.calcite.fun;
 import lombok.EqualsAndHashCode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlFunctionCategory;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -44,7 +42,7 @@ public class DingoConcatFunction extends DingoSqlFunction {
     ) {
         super(
             name,
-            returnTypeInference,
+            returnTypeInference == null ? null : binding -> inferCharsetReturnType(binding, returnTypeInference),
             operandTypeInference,
             operandTypeChecker,
             category
@@ -63,9 +61,24 @@ public class DingoConcatFunction extends DingoSqlFunction {
         super.validateCall(call, validator, scope, operandScope);
     }
 
-
-    public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
-        return opBinding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR);
+    private static RelDataType inferCharsetReturnType(
+        SqlOperatorBinding binding, SqlReturnTypeInference returnTypeInference
+    ) {
+        RelDataType result = returnTypeInference.inferReturnType(binding);
+        RelDataType chosen = null;
+        for (RelDataType operand : binding.collectOperandTypes()) {
+            if (operand.getCharset() == null || operand.getCollation() == null) {
+                continue;
+            }
+            if (chosen == null || SqlCollation.getCoercibilityDyadicOperator(
+                chosen.getCollation(), operand.getCollation()
+            ) == operand.getCollation()) {
+                chosen = operand;
+            }
+        }
+        return chosen == null ? result : binding.getTypeFactory().createTypeWithCharsetAndCollation(
+            result, chosen.getCharset(), chosen.getCollation()
+        );
     }
 
 }

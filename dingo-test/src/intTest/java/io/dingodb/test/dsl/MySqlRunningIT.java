@@ -19,12 +19,19 @@ package io.dingodb.test.dsl;
 import io.dingodb.test.dsl.builder.SqlTestCaseYamlBuilder;
 import io.dingodb.test.dsl.run.SqlTestRunner;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.Properties;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Before run this, you must set up your cluster.
 public class MySqlRunningIT extends SqlTestRunner {
@@ -34,6 +41,24 @@ public class MySqlRunningIT extends SqlTestRunner {
         properties.load(MySqlRunningIT.class.getResourceAsStream("/mySqlIntTest.properties"));
         String url = properties.getProperty("url");
         return DriverManager.getConnection(url, properties);
+    }
+
+    @Test
+    public void convertLatin1PreservesTextAndByteSemantics() throws Exception {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet result = statement.executeQuery(
+                 "select convert('é' using latin1), "
+                     + "length(convert('é' using latin1)), hex(convert('é' using latin1)), "
+                     + "convert('€' using latin1)"
+             )) {
+            assertEquals(Types.VARCHAR, result.getMetaData().getColumnType(1));
+            assertTrue(result.next());
+            assertEquals("é", result.getString(1));
+            assertEquals(1, result.getInt(2));
+            assertEquals("E9", result.getString(3));
+            assertEquals("€", result.getString(4));
+        }
     }
 
     @TestFactory

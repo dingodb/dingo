@@ -18,24 +18,27 @@ package io.dingodb.driver.mysql.netty;
 
 import io.dingodb.common.log.LogUtils;
 import io.dingodb.common.mysql.ExtendedClientCapabilities;
+import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.scope.ScopeVariables;
 import io.dingodb.driver.mysql.MysqlConnection;
 import io.dingodb.driver.mysql.packet.EOFPacket;
+import io.dingodb.driver.mysql.packet.ERRPacket;
 import io.dingodb.driver.mysql.packet.MysqlPacketFactory;
 import io.dingodb.driver.mysql.packet.OKPacket;
 import io.dingodb.driver.mysql.packet.ResultSetRowPacket;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.CharsetEncoder;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
-import static io.dingodb.common.util.Utils.getCharacterSet;
 import static io.dingodb.driver.mysql.command.MysqlResponseHandler.getArrayObject;
 
 @Slf4j
@@ -45,25 +48,29 @@ public class AsyncStreamReader implements Runnable {
     MysqlConnection mysqlConnection;
     int initServerStatus;
     Statement statement;
+    private final CharsetEncoder[] columnEncoders;
 
     public AsyncStreamReader(
         ResultSet resultSet,
         AtomicLong packetId,
         MysqlConnection mysqlConnection,
         int initServerStatus,
-        Statement statement
+        Statement statement,
+        CharsetEncoder[] columnEncoders
     ) {
         this.resultSet = resultSet;
         this.packetId = packetId;
         this.mysqlConnection = mysqlConnection;
         this.initServerStatus = initServerStatus;
         this.statement = statement;
+        this.columnEncoders = columnEncoders;
     }
 
     @Override
     public void run() {
         int columnCount;
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        SQLException failure = null;
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
             columnCount = metaData.getColumnCount();
@@ -73,9 +80,6 @@ public class AsyncStreamReader implements Runnable {
                 ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
                 long nextId = packetId.getAndIncrement();
                 resultSetRowPacket.packetId = (byte) nextId;
-                String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-                characterSet = getCharacterSet(characterSet);
-                resultSetRowPacket.setCharacterSet(characterSet);
                 for (int i = 1; i <= columnCount; i++) {
                     Object val = resultSet.getObject(i);
                     typeName = metaData.getColumnTypeName(i);
@@ -94,7 +98,7 @@ public class AsyncStreamReader implements Runnable {
                             val = "0x" + Long.toHexString((long) val);
                         }
                     }
-                    resultSetRowPacket.addColumnValue(val);
+                    resultSetRowPacket.addColumnValue(val, columnEncoders[i - 1]);
                 }
                 cnt.incrementAndGet();
                 resultSetRowPacket.write(outputStream);
@@ -113,17 +117,36 @@ public class AsyncStreamReader implements Runnable {
             }
         } catch (SQLException e) {
             LogUtils.error(log, "stream reader failed, reason:{}", e.getMessage(), e);
+            failure = e;
         } finally {
-            boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
-                & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
-            if (deprecateEof) {
-                OKPacket okEofPacket = MysqlPacketFactory.getInstance().getOkEofPacket(
-                    0, packetId, initServerStatus
-                );
-                okEofPacket.write(outputStream);
+            if (failure != null) {
+                ERRPacket errorPacket = new ERRPacket();
+                errorPacket.packetId = (byte) packetId.getAndIncrement();
+                errorPacket.capabilities = MysqlServer.getServerCapabilities();
+                errorPacket.errorCode = failure.getErrorCode();
+                errorPacket.sqlState = failure.getSQLState();
+                errorPacket.errorMessage = failure.getMessage();
+                ByteBuf errorBuffer = ByteBufAllocator.DEFAULT.buffer();
+                try {
+                    errorPacket.write(errorBuffer);
+                    byte[] bytes = new byte[errorBuffer.readableBytes()];
+                    errorBuffer.readBytes(bytes);
+                    outputStream.writeBytes(bytes);
+                } finally {
+                    errorBuffer.release();
+                }
             } else {
-                EOFPacket eofPacket = MysqlPacketFactory.getEofPacket(packetId, initServerStatus);
-                eofPacket.write(outputStream);
+                boolean deprecateEof = (mysqlConnection.authPacket.extendClientFlags
+                    & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
+                if (deprecateEof) {
+                    OKPacket okEofPacket = MysqlPacketFactory.getInstance().getOkEofPacket(
+                        0, packetId, initServerStatus
+                    );
+                    okEofPacket.write(outputStream);
+                } else {
+                    EOFPacket eofPacket = MysqlPacketFactory.getEofPacket(packetId, initServerStatus);
+                    eofPacket.write(outputStream);
+                }
             }
             mysqlConnection.writeAndFlush(outputStream.toByteArray());
             try {
