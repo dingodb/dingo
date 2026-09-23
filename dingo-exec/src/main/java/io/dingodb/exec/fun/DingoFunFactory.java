@@ -29,6 +29,7 @@ import io.dingodb.exec.fun.mysql.ConnectionIdFun;
 import io.dingodb.exec.fun.mysql.ConvertTzFun;
 import io.dingodb.exec.fun.mysql.QuoteFun;
 import io.dingodb.exec.fun.mysql.CharCharsetFun;
+import io.dingodb.exec.fun.mysql.CharBinaryFun;
 import io.dingodb.exec.fun.mysql.CharFun;
 import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
 import io.dingodb.exec.fun.mysql.ConvertBinaryFun;
@@ -99,6 +100,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerVariadicFun(ConcatWsFun.NAME, ConcatWsFun.INSTANCE);
         registerVariadicFun(CharFun.NAME, CharFun.INSTANCE);
         registerVariadicFun(CharCharsetFun.NAME, CharCharsetFun.INSTANCE);
+        registerVariadicFun(CharBinaryFun.NAME, CharBinaryFun.INSTANCE);
         registerBinaryFun(ConvertCharsetFun.NAME, ConvertCharsetFun.INSTANCE);
         registerBinaryFun(ConvertBinaryFun.NAME, ConvertBinaryFun.INSTANCE);
         registerUnaryFun(QuoteFun.NAME, QuoteFun.INSTANCE);

@@ -41,6 +41,7 @@ import io.dingodb.exec.fun.mysql.ConnectionIdFun;
 import io.dingodb.exec.fun.mysql.ConvertTzFun;
 import io.dingodb.exec.fun.mysql.QuoteFun;
 import io.dingodb.exec.fun.mysql.CharCharsetFun;
+import io.dingodb.exec.fun.mysql.CharBinaryFun;
 import io.dingodb.exec.fun.mysql.CharFun;
 import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
 import io.dingodb.exec.fun.mysql.ConvertBinaryFun;
@@ -544,7 +545,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             CharFun.NAME,
-            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            ReturnTypes.explicit(SqlTypeName.VARBINARY),
             InferTypes.ANY_NULLABLE,
             OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING
@@ -552,6 +553,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
         registerFunction(
             CharCharsetFun.NAME,
             ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.VARIADIC,
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            CharBinaryFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARBINARY),
             InferTypes.ANY_NULLABLE,
             OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING

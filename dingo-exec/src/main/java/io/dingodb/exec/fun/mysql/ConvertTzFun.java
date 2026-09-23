@@ -26,7 +26,9 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 
 /**
  * MySQL CONVERT_TZ() function.
@@ -43,8 +45,12 @@ public class ConvertTzFun extends TertiaryOp {
 
     public static final ConvertTzFun INSTANCE = new ConvertTzFun();
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[.SSSSSS]");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+        .appendPattern("yyyy-MM-dd HH:mm:ss")
+        .optionalStart()
+        .appendFraction(ChronoField.NANO_OF_SECOND, 1, 6, true)
+        .optionalEnd()
+        .toFormatter();
 
     @Override
     protected Object evalNonNullValue(
@@ -67,7 +73,10 @@ public class ConvertTzFun extends TertiaryOp {
 
     private static ZoneId parseTimeZone(@NonNull String timeZone) {
         String tz = timeZone.trim();
-        if (tz.isEmpty() || "SYSTEM".equalsIgnoreCase(tz)) {
+        if (tz.isEmpty()) {
+            return null;
+        }
+        if ("SYSTEM".equalsIgnoreCase(tz)) {
             return ZoneId.systemDefault();
         }
         try {

@@ -224,6 +224,14 @@ public class MysqlPacketFactory {
         return columns;
     }
 
+    static boolean isComputedBoolean(ResultSetMetaData metaData, int column, String typeName) throws SQLException {
+        if (!"BOOLEAN".equals(typeName)) {
+            return false;
+        }
+        String table = metaData.getTableName(column);
+        return table == null || table.isEmpty();
+    }
+
     public void addColumnPacketFromMeta(AtomicLong packetId, ResultSetMetaData metaData,
                                          List<ColumnPacket> columns, String catalog, String columnNmCharset)
         throws SQLException {
@@ -243,17 +251,10 @@ public class MysqlPacketFactory {
             }
             String columnTypeName = metaData.getColumnTypeName(i);
             byte columnType = getColumnType(columnTypeName);
-            if ("BOOLEAN".equals(columnTypeName)) {
-                String columnTable = metaData.getTableName(i);
-                if (columnTable == null || columnTable.isEmpty()) {
-                    // Computed boolean expressions go out as BIGINT like
-                    // MySQL (e.g. `col = 'PRI'` metadata queries from
-                    // Metabase); TINYINT(1) would round-trip as Boolean in
-                    // client drivers (tinyInt1isBit) and break tooling that
-                    // expects 0/1 numbers. Table boolean columns keep
-                    // TINYINT(1), matching real MySQL column semantics.
-                    columnType = MysqlType.FIELD_TYPE_LONGLONG;
-                }
+            if (isComputedBoolean(metaData, i, columnTypeName)) {
+                // MySQL comparison expressions use integer 0/1, while declared
+                // BOOLEAN columns retain TINYINT(1) for client compatibility.
+                columnType = MysqlType.FIELD_TYPE_LONGLONG;
             }
             ColumnPacket columnPacket = getColumnPacket(catalog, schema,
                 table,

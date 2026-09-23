@@ -38,6 +38,7 @@ import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Map;
+import java.util.Locale;
 
 import static io.dingodb.common.mysql.scope.ScopeVariables.metricReporter;
 
@@ -106,20 +107,22 @@ public class SetOptionExecutor implements DdlExecutor {
         String opName = call.getOperator().getName();
         if (opName.equals("@@")) {
             SqlNode variableNode = call.getOperandList().get(0);
-            String variableName = variableNode.toString().replace("'", "");
-            if (variableName.startsWith("session.")) {
+            String variableName = variableNode.toString().replace("'", "").toLowerCase(Locale.ROOT);
+            boolean global = variableName.startsWith("global.");
+            if (global) {
+                variableName = variableName.substring(7);
+            } else if (variableName.startsWith("session.")) {
                 variableName = variableName.substring(8);
             }
             try {
-                String variableValue = connection.getClientInfo(variableName);
+                String variableValue = global ? null : connection.getClientInfo(variableName);
                 if (variableValue == null) {
                     Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
                     variableValue = globalVariables.getOrDefault(variableName, "");
                 }
-                return variableValue == null ? "" : variableValue;
+                return variableValue;
             } catch (SQLException e) {
-                LogUtils.error(log, e.getMessage(), e);
-                return "";
+                throw new IllegalStateException("Cannot resolve SET variable reference: " + variableNode, e);
             }
         } else if (opName.equalsIgnoreCase("CONCAT")) {
             StringBuilder builder = new StringBuilder();
@@ -128,7 +131,7 @@ public class SetOptionExecutor implements DdlExecutor {
             }
             return builder.toString();
         }
-        return "";
+        throw new IllegalArgumentException("Unsupported SET expression: " + call);
     }
 
     private String evalSetOperand(@NonNull SqlNode node) {
@@ -136,10 +139,13 @@ public class SetOptionExecutor implements DdlExecutor {
             return evalSetExpression((SqlCall) node);
         }
         if (node instanceof SqlLiteral) {
-            String v = ((SqlLiteral) node).toValue();
-            return v == null ? "" : v;
+            String value = ((SqlLiteral) node).toValue();
+            if (value != null) {
+                return value;
+            }
+            throw new IllegalArgumentException("NULL is not supported in a SET CONCAT expression");
         }
-        return node.toString();
+        throw new IllegalArgumentException("Unsupported SET operand: " + node);
     }
 
     @Override
