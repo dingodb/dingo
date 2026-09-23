@@ -22,6 +22,11 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.UnaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+
 /**
  * MySQL QUOTE() function.
  *
@@ -49,7 +54,18 @@ public class QuoteFun extends UnaryOp {
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value, ExprConfig config) {
-        String str = value.toString();
+        String str;
+        if (value instanceof byte[]) {
+            try {
+                str = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap((byte[]) value)).toString();
+            } catch (CharacterCodingException e) {
+                throw new IllegalArgumentException("Cannot quote non-UTF-8 binary value", e);
+            }
+        } else {
+            str = value.toString();
+        }
         final int len = str.length();
         StringBuilder sb = new StringBuilder(len + 2);
         sb.append('\'');

@@ -24,15 +24,7 @@ import io.dingodb.expr.runtime.op.OpKeys;
 import io.dingodb.expr.runtime.op.VariadicOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.charset.StandardCharsets;
-
-/**
- * MySQL CHAR() function without charset qualifier.
- *
- * <p>Interprets each integer argument as a byte value and returns the
- * resulting byte sequence decoded as UTF-8, matching MySQL behaviour
- * {@code SELECT CHAR(83)} → {@code S}.</p>
- */
+/** MySQL CHAR() constructs a binary string from integer byte values. */
 public class CharFun extends VariadicOp {
     public static final String NAME = "char";
     @SuppressWarnings("serial")
@@ -42,26 +34,37 @@ public class CharFun extends VariadicOp {
 
     @Override
     public Object evalValue(Object @NonNull [] values, ExprConfig config) {
-        byte[] bytes = buildBytes(values, values.length);
-        return new String(bytes, CharCharsetFun.charset("utf8mb4"));
+        return buildBytes(values, values.length);
     }
 
-    /**
-     * Collect the leading {@code count} values into bytes: numbers use the
-     * low 8 bits like MySQL; strings append their UTF-8 bytes.
-     */
+    /** Each integer contributes its nonzero leading bytes, most significant first. */
     static byte[] buildBytes(Object @NonNull [] values, int count) {
         byte[] bytes = new byte[Math.max(count, 4)];
         int length = 0;
         for (int i = 0; i < count; i++) {
             Object value = values[i];
             byte[] valueBytes;
-            if (value instanceof Number) {
-                valueBytes = new byte[]{(byte) (((Number) value).longValue() & 0xFF)};
+            if (value instanceof Number || value instanceof String) {
+                long number = value instanceof Number
+                    ? ((Number) value).longValue() : Long.parseLong(((String) value).trim());
+                int width = 1;
+                for (long remaining = number >>> 8; remaining != 0; remaining >>>= 8) {
+                    width++;
+                }
+                int required = length + width;
+                if (required > bytes.length) {
+                    byte[] grown = new byte[Math.max(required, bytes.length * 2)];
+                    System.arraycopy(bytes, 0, grown, 0, length);
+                    bytes = grown;
+                }
+                for (int shift = (width - 1) * 8; shift >= 0; shift -= 8) {
+                    bytes[length++] = (byte) (number >>> shift);
+                }
+                continue;
             } else if (value instanceof byte[]) {
                 valueBytes = (byte[]) value;
             } else if (value != null) {
-                valueBytes = value.toString().getBytes(StandardCharsets.UTF_8);
+                throw new IllegalArgumentException("CHAR requires numeric arguments: " + value);
             } else {
                 continue;
             }
@@ -92,8 +95,7 @@ public class CharFun extends VariadicOp {
         return NAME;
     }
 
-    @Override
     public Type getType() {
-        return Types.STRING;
+        return Types.BYTES;
     }
 }

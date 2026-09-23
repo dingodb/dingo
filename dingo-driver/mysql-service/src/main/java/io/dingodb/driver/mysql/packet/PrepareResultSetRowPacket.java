@@ -78,7 +78,7 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                         totalSize += 12 + 1;
                         break;
                     case "BOOLEAN":
-                        totalSize += 1;
+                        totalSize += MysqlPacketFactory.isComputedBoolean(metaData, i, typeName) ? 8 : 1;
                         break;
                     case "VARCHAR":
                     case "CHAR":
@@ -160,11 +160,10 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                             BufferUtil.writeTime(buffer, (Time) val);
                             break;
                         case "BOOLEAN":
-                            Boolean valBool = (Boolean) val;
-                            if (valBool) {
-                                buffer.writeByte(1);
+                            if (MysqlPacketFactory.isComputedBoolean(metaData, i + 1, typeName)) {
+                                BufferUtil.writeLong(buffer, (Boolean) val ? 1L : 0L);
                             } else {
-                                buffer.writeByte(0);
+                                buffer.writeByte((Boolean) val ? 1 : 0);
                             }
                             break;
                         case "VARCHAR":

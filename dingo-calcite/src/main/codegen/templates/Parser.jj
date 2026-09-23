@@ -6768,6 +6768,7 @@ SqlNode BuiltinFunctionCall() :
     String alias = null;
     String intervalStr = null;
     boolean charUsingCharset = false;
+    boolean charUsingBinary = false;
     boolean convertBinary = false;
 }
 {
@@ -6845,7 +6846,7 @@ SqlNode BuiltinFunctionCall() :
             }
         )
     |
-        <CHAR> { s = span(); alias = this.token.image; charUsingCharset = false; args.clear(); }
+        <CHAR> { s = span(); alias = this.token.image; charUsingCharset = false; charUsingBinary = false; args.clear(); }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_NON_QUERY)
         (
@@ -6855,11 +6856,12 @@ SqlNode BuiltinFunctionCall() :
             <USING> name = SimpleIdentifier() {
                 args.add(SqlLiteral.createCharString(name.getSimple(), name.getParserPosition()));
                 charUsingCharset = true;
+                charUsingBinary = name.getSimple().equalsIgnoreCase("binary");
             }
         ]
         <RPAREN> {
             SqlIdentifier charFunName = new SqlIdentifier(
-                charUsingCharset ? "char_charset" : "char", s.end(this));
+                charUsingCharset ? (charUsingBinary ? "char_binary" : "char_charset") : "char", s.end(this));
             SqlNode sqlNode = createCall(charFunName, s.end(this), SqlFunctionCategory.STRING, null, args);
             sqlNode.putAlias("aliasName", alias);
             return sqlNode;

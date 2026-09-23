@@ -24,10 +24,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class QuerySimpleExpressionTest {
@@ -58,5 +62,40 @@ public class QuerySimpleExpressionTest {
     public void test(String sql, String ignored, Object value) throws SQLException {
         Object result = context.querySingleValue("select " + sql);
         Assert.of(result).isEqualTo(value);
+    }
+
+    @Test
+    public void mysqlBinaryAndQuoteKeepLiteralBytes() throws SQLException {
+        assertThat(context.querySingleValue("select hex(char(256 using binary))")).isEqualTo("0100");
+        assertThat(context.querySingleValue("select quote(convert('x' using binary))")).isEqualTo("'x'");
+        assertThat(context.querySingleValue(
+            "select hex(quote(char(0, 26, 39, 92 using binary)))"
+        )).isEqualTo("275C305C5A5C275C5C27");
+        assertThat(context.querySingleValue("select hex(quote(null))")).isEqualTo("4E554C4C");
+    }
+
+    @Test
+    public void convertTzHandlesFractionalSecondsAndInvalidZones() throws SQLException {
+        assertThat(context.querySingleValue(
+            "select convert_tz('2024-01-01 12:00:00.123', '+00:00', '+01:00')"
+        )).isEqualTo(Timestamp.valueOf("2024-01-01 13:00:00.123"));
+        assertThat(context.querySingleValue(
+            "select convert_tz('2024-01-01 12:00:00', '', '+01:00')"
+        )).isNull();
+    }
+
+    @Test
+    public void setExpressionUsesGlobalScopeAndRejectsUnsupportedCalls() throws SQLException {
+        String globalMode = (String) context.querySingleValue("select @@GLOBAL.sql_mode");
+        assertThat(context.execSql("set session sql_mode = 'ANSI'").getException()).isNull();
+        assertThat(context.execSql(
+            "set session sql_mode = concat(@@GLOBAL.sql_mode, ',STRICT_TRANS_TABLES')"
+        ).getException()).isNull();
+        String expected = globalMode + ",STRICT_TRANS_TABLES";
+        Exception failure = context.execSql(
+            "set session sql_mode = dummy_func(@@sql_mode)"
+        ).getException();
+        assertThat(failure).isNotNull().hasMessageContaining("Unsupported SET expression");
+        assertThat(context.getConnection().getClientInfo("sql_mode")).isEqualTo(expected);
     }
 }
