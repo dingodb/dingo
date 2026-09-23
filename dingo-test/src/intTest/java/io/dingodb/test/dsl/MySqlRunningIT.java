@@ -61,6 +61,26 @@ public class MySqlRunningIT extends SqlTestRunner {
         }
     }
 
+    @Test
+    public void resultCharsetNegotiationPreservesLatin1Text() throws Exception {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute("SET NAMES latin1");
+            for (String resultCharset : new String[]{"latin1", "utf8mb4"}) {
+                statement.execute("SET character_set_results=" + resultCharset);
+                try (ResultSet result = statement.executeQuery(
+                    "SELECT CHAR(128 USING latin1), LENGTH(CHAR(128 USING latin1)), HEX(CHAR(128 USING latin1))"
+                )) {
+                    assertTrue(result.next());
+                    assertEquals(Types.VARCHAR, result.getMetaData().getColumnType(1));
+                    assertEquals("€", result.getString(1));
+                    assertEquals(1, result.getInt(2));
+                    assertEquals("80", result.getString(3));
+                }
+            }
+        }
+    }
+
     @TestFactory
     public Stream<DynamicTest> testAggregation() {
         return getTests(SqlTestCaseYamlBuilder.of("cases/aggregation.yml"));
