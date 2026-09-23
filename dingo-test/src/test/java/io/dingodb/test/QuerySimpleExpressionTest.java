@@ -125,6 +125,28 @@ public class QuerySimpleExpressionTest {
     }
 
     @Test
+    public void concatPromotesMixedCharsetsWithoutLosingCharacters() throws SQLException {
+        String latin1 = "convert(char(128 using latin1) using latin1)";
+        String unicode = "convert(char(240,159,153,130 using utf8mb4) using utf8mb4)";
+        assertThat(context.querySingleValue("select hex(concat(" + latin1 + ", " + unicode + "))"))
+            .isEqualTo("E282ACF09F9982");
+        assertThat(context.querySingleValue("select hex(concat(" + unicode + ", " + latin1 + "))"))
+            .isEqualTo("F09F9982E282AC");
+        assertThat(context.querySingleValue("select length(concat(" + latin1 + ", " + unicode + "))"))
+            .isEqualTo(7);
+    }
+
+    @Test
+    public void concatKeepsRepresentableNonUnicodeCharset() throws SQLException {
+        String latin1 = "convert(char(128 using latin1) using latin1)";
+        String ascii = "convert(char(65 using ascii) using ascii)";
+        assertThat(context.querySingleValue("select hex(concat(" + latin1 + ", " + ascii + "))"))
+            .isEqualTo("8041");
+        assertThat(context.querySingleValue("select hex(concat(" + ascii + ", " + latin1 + "))"))
+            .isEqualTo("4180");
+    }
+
+    @Test
     public void convertCharsetRejectsUnrepresentableText() {
         assertThatThrownBy(() -> {
             try (Statement statement = context.getConnection().createStatement();
