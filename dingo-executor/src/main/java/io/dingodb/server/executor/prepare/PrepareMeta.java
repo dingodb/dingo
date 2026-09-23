@@ -219,6 +219,8 @@ public final class PrepareMeta {
         initTableByTemplate(schemaName, convertName("COLUMN_PRIVILEGES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("VIEWS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("COLLATIONS", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
+        initTableByTemplate(schemaName, convertName("COLLATION_CHARACTER_SET_APPLICABILITY", CASE_NAMES),
+            SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_MDL_VIEW", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_TRX", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
         initTableByTemplate(schemaName, convertName("DINGO_ENGINES", CASE_NAMES), SYSTEM_VIEW, TXN_LSM, FIXED);
@@ -566,6 +568,8 @@ public final class PrepareMeta {
         TABLE_MAP.put(convertName("COLUMN_PRIVILEGES"), "/information-columnPrivileges.json");
         TABLE_MAP.put(convertName("VIEWS"), "/information-views.json");
         TABLE_MAP.put(convertName("COLLATIONS"), "/information-collations.json");
+        TABLE_MAP.put(convertName("COLLATION_CHARACTER_SET_APPLICABILITY"),
+            "/information-collationCharacterSetApplicability.json");
         TABLE_MAP.put(convertName("dingo_ddl_job"), "/mysql-dingoDdlJob.json");
         TABLE_MAP.put(convertName("gc_delete_range"), "/mysql-gcDeleteRange.json");
         TABLE_MAP.put(convertName("dingo_ddl_backfill"), "/mysql-dingoDdlBackfill.json");

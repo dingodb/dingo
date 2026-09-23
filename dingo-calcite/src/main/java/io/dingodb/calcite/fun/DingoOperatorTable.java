@@ -37,6 +37,12 @@ import io.dingodb.exec.fun.mysql.ScopeVarFun;
 import io.dingodb.exec.fun.mysql.UnHexFun;
 import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
+import io.dingodb.exec.fun.mysql.ConnectionIdFun;
+import io.dingodb.exec.fun.mysql.ConvertTzFun;
+import io.dingodb.exec.fun.mysql.QuoteFun;
+import io.dingodb.exec.fun.mysql.CharCharsetFun;
+import io.dingodb.exec.fun.mysql.CharFun;
+import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.sequence.CurrValFun;
 import io.dingodb.exec.fun.sequence.LastValFun;
@@ -526,6 +532,52 @@ public class DingoOperatorTable implements SqlOperatorTable {
             InferTypes.VARCHAR_1024,
             OperandTypes.STRING,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+        registerFunction(
+            QuoteFun.NAME,
+            ReturnTypes.VARCHAR_2000_NULLABLE,
+            InferTypes.VARCHAR_1024,
+            OperandTypes.ANY,
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            CharFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.VARIADIC,
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            CharCharsetFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            InferTypes.ANY_NULLABLE,
+            OperandTypes.VARIADIC,
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            ConvertCharsetFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            ConnectionIdFun.NAME,
+            ReturnTypes.BIGINT,
+            DingoInferTypes.VARCHAR,
+            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            SqlFunctionCategory.NUMERIC
+        );
+        registerFunction(
+            ConvertTzFun.NAME,
+            ReturnTypes.TIMESTAMP,
+            null,
+            OperandTypes.or(
+                family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.DATE, SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.STRING)
+            ),
+            SqlFunctionCategory.TIMEDATE
         );
         registerFunction(
             DaySubFun.NAME,

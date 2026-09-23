@@ -82,11 +82,6 @@ public class MysqlConnection {
         connection = dingoConnection;
         this.id = dingoConnection.id;
         setCharsetIndex(authPacket);
-        try {
-            connection.setClientInfo("max_allowed_packet", String.valueOf(authPacket.maxPacketSize));
-        } catch (SQLClientInfoException e) {
-            LogUtils.error(log, e.getMessage(), e);
-        }
     }
 
     public void close() {
@@ -140,11 +135,13 @@ public class MysqlConnection {
     }
 
     public long maxAllowedPacket() {
-        try {
-            return Long.parseLong(this.getConnection().getClientInfo("max_allowed_packet"));
-        } catch (SQLException e) {
-            return 67108864;
-        }
+        // The handshake max packet size field is a client-declared receive
+        // limit, not the server variable; 0 or a negative value means
+        // unspecified, and the server default applies. The SQL-visible
+        // @@max_allowed_packet is served from the global variable.
+        return authPacket != null && authPacket.maxPacketSize > 0
+            ? authPacket.maxPacketSize
+            : 67108864L;
     }
 
     public void writeAndFlushImmediately(ByteBuf byteBuf) {

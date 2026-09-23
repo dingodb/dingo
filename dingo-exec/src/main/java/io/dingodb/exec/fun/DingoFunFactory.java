@@ -25,6 +25,12 @@ import io.dingodb.exec.fun.mysql.UnHexFun;
 import io.dingodb.exec.fun.mysql.UserDefVarFun;
 import io.dingodb.exec.fun.mysql.UserFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
+import io.dingodb.exec.fun.mysql.ConnectionIdFun;
+import io.dingodb.exec.fun.mysql.ConvertTzFun;
+import io.dingodb.exec.fun.mysql.QuoteFun;
+import io.dingodb.exec.fun.mysql.CharCharsetFun;
+import io.dingodb.exec.fun.mysql.CharFun;
+import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
 import io.dingodb.exec.fun.sequence.CurrValFun;
 import io.dingodb.exec.fun.sequence.LastValFun;
 import io.dingodb.exec.fun.sequence.NextValFun;
@@ -89,6 +95,12 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(DaySubFun.NAME, DaySubFun.INSTANCE);
         registerUnaryFun(GetDateFun.NAME, GetDateFun.INSTANCE);
         registerVariadicFun(ConcatWsFun.NAME, ConcatWsFun.INSTANCE);
+        registerVariadicFun(CharFun.NAME, CharFun.INSTANCE);
+        registerVariadicFun(CharCharsetFun.NAME, CharCharsetFun.INSTANCE);
+        registerBinaryFun(ConvertCharsetFun.NAME, ConvertCharsetFun.INSTANCE);
+        registerUnaryFun(QuoteFun.NAME, QuoteFun.INSTANCE);
+        registerBinaryFun(ConnectionIdFun.NAME, ConnectionIdFun.INSTANCE);
+        registerTertiaryFun(ConvertTzFun.NAME, ConvertTzFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {

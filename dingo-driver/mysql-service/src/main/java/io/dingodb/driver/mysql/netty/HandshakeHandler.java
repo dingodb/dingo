@@ -328,8 +328,9 @@ public class HandshakeHandler extends SimpleChannelInboundHandler<ByteBuf> {
         HandshakePacket handshakePacket = new HandshakePacket();
         handshakePacket.protocolVersion = PROTOCOL_VERSION;
         handshakePacket.serverVersion = Versions.SERVER_VERSION;
-        handshakePacket.threadId = threadId.get();
-        threadId.incrementAndGet();
+        // getAndIncrement guarantees distinct connection ids for concurrent
+        // connection setups: CONNECTION_ID(), processlist and KILL rely on it.
+        handshakePacket.threadId = threadId.getAndIncrement();
         handshakePacket.seed = createRandomString(8).getBytes();
         handshakePacket.serverCapabilities = MysqlServer.getServerCapabilities();
         handshakePacket.serverCharsetIndex = 0x08;

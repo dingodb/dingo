@@ -102,6 +102,7 @@ public class InfoSchemaScanOperator extends FilterProjectSourceOperator {
             case "COLUMN_STATISTICS":
             case "COLUMN_PRIVILEGES":
             case "COLLATIONS":
+            case "COLLATION_CHARACTER_SET_APPLICABILITY":
             case "PLUGINS":
             case "REFERENTIAL_CONSTRAINTS":
                 return getEmpty();

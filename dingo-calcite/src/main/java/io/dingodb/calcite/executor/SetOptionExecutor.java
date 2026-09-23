@@ -26,8 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlSetOption;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,6 +37,7 @@ import java.sql.Connection;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.Map;
 
 import static io.dingodb.common.mysql.scope.ScopeVariables.metricReporter;
 
@@ -88,8 +91,55 @@ public class SetOptionExecutor implements DdlExecutor {
             if (val != null) {
                 value = val.toString();
             }
+        } else if (sqlNode instanceof SqlCall) {
+            value = evalSetExpression((SqlCall) sqlNode);
         }
         value = SqlParserUtil.trim(value, "'");
+    }
+
+    /**
+     * Evaluate expression values in SET statements, e.g. MySQL tools send
+     * {@code SET sql_mode = concat(@@sql_mode, ',STRICT_TRANS_TABLES')}.
+     * Supported shapes: @@var references and CONCAT of literals/@@vars.
+     */
+    private String evalSetExpression(@NonNull SqlCall call) {
+        String opName = call.getOperator().getName();
+        if (opName.equals("@@")) {
+            SqlNode variableNode = call.getOperandList().get(0);
+            String variableName = variableNode.toString().replace("'", "");
+            if (variableName.startsWith("session.")) {
+                variableName = variableName.substring(8);
+            }
+            try {
+                String variableValue = connection.getClientInfo(variableName);
+                if (variableValue == null) {
+                    Map<String, String> globalVariables = InfoSchemaService.root().getGlobalVariables();
+                    variableValue = globalVariables.getOrDefault(variableName, "");
+                }
+                return variableValue == null ? "" : variableValue;
+            } catch (SQLException e) {
+                LogUtils.error(log, e.getMessage(), e);
+                return "";
+            }
+        } else if (opName.equalsIgnoreCase("CONCAT")) {
+            StringBuilder builder = new StringBuilder();
+            for (SqlNode operand : call.getOperandList()) {
+                builder.append(evalSetOperand(operand));
+            }
+            return builder.toString();
+        }
+        return "";
+    }
+
+    private String evalSetOperand(@NonNull SqlNode node) {
+        if (node instanceof SqlCall) {
+            return evalSetExpression((SqlCall) node);
+        }
+        if (node instanceof SqlLiteral) {
+            String v = ((SqlLiteral) node).toValue();
+            return v == null ? "" : v;
+        }
+        return node.toString();
     }
 
     @Override

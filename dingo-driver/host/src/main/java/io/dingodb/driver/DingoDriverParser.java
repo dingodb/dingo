@@ -1099,15 +1099,70 @@ public final class DingoDriverParser extends DingoParser {
 
     private void syntacticSugar(SqlNode sqlNode) {
         if (sqlNode instanceof SqlSelect) {
-            SqlNodeList sqlNodes = ((SqlSelect) sqlNode).getSelectList();
-            deepSugar(sqlNodes);
+            SqlSelect sqlSelect = (SqlSelect) sqlNode;
+            deepSugar(sqlSelect.getSelectList());
+            sugarWhere(sqlSelect);
         } else if (sqlNode instanceof SqlOrderBy) {
             SqlOrderBy sqlOrderBy = (SqlOrderBy) sqlNode;
             if (sqlOrderBy.query instanceof SqlSelect) {
                 SqlSelect sqlSelect = (SqlSelect) sqlOrderBy.query;
                 deepSugar(sqlSelect.getSelectList());
+                sugarWhere(sqlSelect);
             }
         }
+    }
+
+    /**
+     * Rewrite session functions (DATABASE()/SCHEMA()/USER()/CONNECTION_ID()/
+     * @@var) inside the WHERE clause into connection-qualified calls, the
+     * same way deepSugar does for the select list. Tool metadata queries use
+     * e.g. {@code WHERE TABLE_SCHEMA = DATABASE()}.
+     */
+    private void sugarWhere(SqlSelect sqlSelect) {
+        SqlNode where = sqlSelect.getWhere();
+        if (where != null) {
+            sqlSelect.setWhere(deepSugarNode(where));
+        }
+    }
+
+    private SqlNode deepSugarNode(SqlNode node) {
+        if (!(node instanceof SqlBasicCall)) {
+            return node;
+        }
+        SqlBasicCall call = (SqlBasicCall) node;
+        String opName = call.getOperator().getName();
+        List<SqlNode> nodes = new ArrayList<>();
+        boolean fullAlias = false;
+        if (opName.equalsIgnoreCase("database")
+            || opName.equalsIgnoreCase("schema")
+            || opName.equalsIgnoreCase("user")) {
+            nodes.add(SqlLiteral.createCharString(convertName("dingo"), call.getParserPosition()));
+            fullAlias = true;
+            call.setAliasName(opName + "()");
+        } else if (opName.equalsIgnoreCase("connection_id")) {
+            nodes.add(SqlLiteral.createCharString(connection.id, call.getParserPosition()));
+            call.setAliasName(opName + "()");
+        } else if (opName.equals("@") || opName.equals("@@")) {
+            nodes.add(call.getOperandList().get(0));
+        }
+        if (!nodes.isEmpty()) {
+            nodes.add(SqlLiteral.createCharString(connection.id, call.getParserPosition()));
+            SqlBasicCall finalCall = new SqlBasicCall(call.getOperator(), nodes, call.getParserPosition());
+            finalCall.setAliasName(call.getAliasName());
+            finalCall.putAlias("fullAlias", String.valueOf(fullAlias));
+            return finalCall;
+        }
+        List<SqlNode> newOperands = new ArrayList<>();
+        boolean changed = false;
+        for (SqlNode operand : call.getOperandList()) {
+            SqlNode newOperand = deepSugarNode(operand);
+            changed |= (newOperand != operand);
+            newOperands.add(newOperand);
+        }
+        if (changed) {
+            return new SqlBasicCall(call.getOperator(), newOperands, call.getParserPosition());
+        }
+        return call;
     }
 
     public void deepSugar(List<SqlNode> sqlNodes) {
@@ -1127,6 +1182,10 @@ public final class DingoDriverParser extends DingoParser {
                     sqlNodes.remove(i);
                     nodes.add(SqlLiteral.createCharString(convertName("dingo"), call.getParserPosition()));
                     fullAlias = true;
+                    call.setAliasName(opName + "()");
+                } else if (opName.equalsIgnoreCase("connection_id")) {
+                    sqlNodes.remove(i);
+                    nodes.add(SqlLiteral.createCharString(connection.id, call.getParserPosition()));
                     call.setAliasName(opName + "()");
                 } else if (opName.equals("@") || opName.equals("@@")) {
                     sqlNodes.remove(i);
