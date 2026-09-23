@@ -150,7 +150,11 @@ public class ResultSetRowPacket extends MysqlPacket {
                 return;
             }
             try {
-                if (val instanceof BigDecimal) {
+                if (val instanceof Boolean) {
+                    // MySQL wire protocol never uses "true"/"false" text for
+                    // boolean expressions; it always sends 1/0 like TINYINT.
+                    values.add(((Boolean) val) ? "1".getBytes(characterSet) : "0".getBytes(characterSet));
+                } else if (val instanceof BigDecimal) {
                     values.add(((BigDecimal) val).toPlainString().getBytes(characterSet));
                 } else {
                     values.add(val.toString().getBytes(characterSet));
