@@ -32,6 +32,18 @@ jobs:
         rm -rf ~/.m2/repository/
         rm -rf ~/.gradle/
 
+    # dingo-expr 5.0.0-SNAPSHOT is not published to the configured Maven repositories.
+    - name: Check out dingo-expr for local snapshot dependencies
+      uses: actions/checkout@v4
+      with:
+        repository: dingodb/dingo-expr
+        ref: 4da4755e9e425dcf629ec2563c99fd82d1cdf326
+        path: dingo-expr
+
+    - name: Publish dingo-expr snapshots to Maven local
+      working-directory: dingo-expr
+      run: ./gradlew publishToMavenLocal --no-daemon
+
     - name: Clone Submodule
       run: git submodule update --init --recursive
 
