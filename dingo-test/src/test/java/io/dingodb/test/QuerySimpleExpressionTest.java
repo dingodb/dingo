@@ -147,6 +147,28 @@ public class QuerySimpleExpressionTest {
     }
 
     @Test
+    public void casePromotesMixedCharsetsIndependentOfBranchOrder() throws SQLException {
+        String latin1 = "convert(char(128 using latin1) using latin1)";
+        String unicode = "convert(char(240,159,153,130 using utf8mb4) using utf8mb4)";
+        String unicodeValue = "case when 1=0 then " + latin1 + " else " + unicode + " end";
+        String latin1Value = "case when 1=0 then " + unicode + " else " + latin1 + " end";
+        assertThat(context.querySingleValue("select hex(" + unicodeValue + ")")).isEqualTo("F09F9982");
+        assertThat(context.querySingleValue("select length(" + unicodeValue + ")")).isEqualTo(4);
+        assertThat(context.querySingleValue("select hex(" + latin1Value + ")")).isEqualTo("E282AC");
+        assertThat(context.querySingleValue("select length(" + latin1Value + ")")).isEqualTo(3);
+        String nullableValue = "case when 1=0 then " + latin1 + " when 1=1 then " + unicode
+            + " else null end";
+        assertThat(context.querySingleValue("select hex(" + nullableValue + ")")).isEqualTo("F09F9982");
+        String nullValue = "case when 1=0 then " + latin1 + " when 1=0 then " + unicode
+            + " else null end";
+        assertThat(context.querySingleValue("select " + nullValue)).isNull();
+        try (Statement statement = context.getConnection().createStatement();
+             ResultSet result = statement.executeQuery("select " + nullableValue)) {
+            assertThat(result.getMetaData().isNullable(1)).isEqualTo(ResultSetMetaData.columnNullable);
+        }
+    }
+
+    @Test
     public void convertCharsetRejectsUnrepresentableText() {
         assertThatThrownBy(() -> {
             try (Statement statement = context.getConnection().createStatement();

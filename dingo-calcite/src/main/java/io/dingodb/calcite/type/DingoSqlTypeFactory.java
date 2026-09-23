@@ -385,6 +385,9 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                     } else if (charset1.equals(charset2)) {
                         charset = charset1;
                         collation = collation1;
+                    } else if (charset1.name().startsWith("UTF-") != charset2.name().startsWith("UTF-")) {
+                        charset = charset1.name().startsWith("UTF-") ? charset1 : charset2;
+                        collation = charset == charset1 ? collation1 : collation2;
                     } else if (charset1.contains(charset2)) {
                         charset = charset1;
                         collation = collation1;
@@ -393,20 +396,24 @@ public class DingoSqlTypeFactory extends JavaTypeFactoryImpl {
                         collation = collation2;
                     }
                 }
-                if (collation0 != null && charset1 != null && charset2 != null
-                    && !charset1.equals(charset2)) {
+                if (collation0 != null && collation1 != null && collation2 != null
+                    && charset1 != null && charset2 != null && !charset1.equals(charset2)
+                    && collation1.getCoercibility() != collation2.getCoercibility()) {
                     if (collation0.equals(collation1)) {
                         charset = charset1;
+                        collation = collation1;
                     } else if (collation0.equals(collation2)) {
                         charset = charset2;
+                        collation = collation2;
                     }
                 }
                 if (charset != null) {
-                    resultType =
-                        createTypeWithCharsetAndCollation(
-                            resultType,
-                            charset,
-                            collation0 != null ? collation0 : requireNonNull(collation, "collation"));
+                    SqlCollation selectedCollation = charset1 != null && charset2 != null
+                        && !charset1.equals(charset2) ? collation : collation0;
+                    resultType = createTypeWithCharsetAndCollation(
+                        resultType, charset,
+                        requireNonNull(selectedCollation != null ? selectedCollation : collation, "collation")
+                    );
                 }
             } else if (SqlTypeUtil.isExactNumeric(type)) {
                 if (SqlTypeUtil.isExactNumeric(resultType)) {

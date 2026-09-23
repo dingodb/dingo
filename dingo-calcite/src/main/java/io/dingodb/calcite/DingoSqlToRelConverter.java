@@ -76,10 +76,12 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserUtil;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -141,6 +143,46 @@ public class DingoSqlToRelConverter extends SqlToRelConverter {
 
     @Override
     protected @Nullable RexNode convertExtendedExpression(@NonNull SqlNode node, Blackboard bb) {
+        if (node.getKind() == SqlKind.CASE) {
+            SqlCase caseCall = (SqlCase) node;
+            RelDataType resultType = bb.getValidator().getValidatedNodeType(caseCall);
+            if (resultType.getCharset() != null) {
+                boolean mixed = false;
+                for (SqlNode branch : caseCall.getThenOperands()) {
+                    if (!SqlUtil.isNullLiteral(branch, false)) {
+                        RelDataType branchType = bb.getValidator().getValidatedNodeType(branch);
+                        mixed |= SqlTypeUtil.isCharacter(branchType)
+                            && !resultType.getCharset().equals(branchType.getCharset());
+                    }
+                }
+                SqlNode otherwise = caseCall.getElseOperand();
+                if (otherwise != null && !SqlUtil.isNullLiteral(otherwise, false)) {
+                    RelDataType branchType = bb.getValidator().getValidatedNodeType(otherwise);
+                    mixed |= SqlTypeUtil.isCharacter(branchType)
+                        && !resultType.getCharset().equals(branchType.getCharset());
+                }
+                if (mixed) {
+                    // Calcite's convertCase repeats the SQL type-name-only fast path and
+                    // casts every Rex branch to the first branch's charset.
+                    RexBuilder rb = bb.getRexBuilder();
+                    List<RexNode> operands = new ArrayList<>(caseCall.getWhenOperands().size() * 2 + 1);
+                    for (int i = 0; i < caseCall.getWhenOperands().size(); i++) {
+                        SqlNode when = caseCall.getWhenOperands().get(i);
+                        operands.add(SqlUtil.isNullLiteral(when, false)
+                            ? rb.makeNullLiteral(rb.getTypeFactory().createSqlType(SqlTypeName.BOOLEAN))
+                            : bb.convertExpression(when));
+                        SqlNode branch = caseCall.getThenOperands().get(i);
+                        operands.add(SqlUtil.isNullLiteral(branch, false)
+                            ? rb.makeNullLiteral(resultType)
+                            : rb.ensureType(resultType, bb.convertExpression(branch), false));
+                    }
+                    operands.add(otherwise == null || SqlUtil.isNullLiteral(otherwise, false)
+                        ? rb.makeNullLiteral(resultType)
+                        : rb.ensureType(resultType, bb.convertExpression(otherwise), false));
+                    return rb.makeCall(resultType, SqlStdOperatorTable.CASE, operands);
+                }
+            }
+        }
         // MySQL dialect
         if (node.getKind() == SqlKind.OTHER_FUNCTION) {
             SqlOperator operator = ((SqlCall) node).getOperator();
