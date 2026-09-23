@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCOMMIT;
 
 public class MysqlPacketFactory {
+    private static final short BINARY_CHARSET = 63;
     private static MysqlPacketFactory instance = null;
 
     public static MysqlPacketFactory getInstance() {
@@ -207,7 +208,7 @@ public class MysqlPacketFactory {
                     tableName,
                     columnName,
                     columnName,
-                    MysqlPacket.charsetNumber,
+                    "VARBINARY".equals(dataType) ? BINARY_CHARSET : MysqlPacket.charsetNumber,
                     resultSet.getInt("COLUMN_SIZE"),
                     getColumnType(dataType),
                     getColumnFlags(resultSet),
@@ -258,7 +259,7 @@ public class MysqlPacketFactory {
                 table,
                 table, columnLabel,
                 columnName,
-                MysqlPacket.charsetNumber,
+                "VARBINARY".equals(columnTypeName) ? BINARY_CHARSET : MysqlPacket.charsetNumber,
                 metaData.getColumnDisplaySize(i),
                 columnType,
                 getColumnFlags(metaData, i),

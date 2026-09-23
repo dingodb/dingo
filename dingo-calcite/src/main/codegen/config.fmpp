@@ -281,6 +281,7 @@ data: {
       "KILL"
       "QUERY"
       "UNSIGNED"
+      "SIGNED"
       "TEXT"
       "LONGTEXT"
       "OUTFILE"
@@ -351,6 +352,7 @@ data: {
       "REGIONS_COUNT"
       "GC_SAFEPOINT"
       "STORE_JOBS"
+      "SIGNED"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

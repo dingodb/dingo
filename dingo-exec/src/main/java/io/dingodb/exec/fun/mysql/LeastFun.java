@@ -22,30 +22,27 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.charset.Charset;
+import java.math.BigDecimal;
 
-/**
- * MySQL CONVERT(expr USING charset) for character sets. The binary charset is
- * handled separately so it retains its byte type instead of becoming text.
- */
-public class ConvertCharsetFun extends BinaryOp {
-    public static final String NAME = "convert_charset";
-    @SuppressWarnings("serial")
-    private static final long serialVersionUID = -3194683446215801525L;
-
-    public static final ConvertCharsetFun INSTANCE = new ConvertCharsetFun();
+/** MySQL LEAST for two numeric operands; SQL NULL propagates through BinaryOp. */
+public class LeastFun extends BinaryOp {
+    public static final String NAME = "least";
+    private static final long serialVersionUID = -8602219486245764404L;
+    public static final LeastFun INSTANCE = new LeastFun();
 
     @Override
-    public Object evalValue(Object value0, Object value1, ExprConfig config) {
-        if (value0 == null) {
-            return null;
+    protected Object evalNonNullValue(@NonNull Object left, @NonNull Object right, ExprConfig config) {
+        Number a = (Number) left;
+        Number b = (Number) right;
+        if (a instanceof BigDecimal || b instanceof BigDecimal) {
+            BigDecimal x = new BigDecimal(a.toString());
+            BigDecimal y = new BigDecimal(b.toString());
+            return x.min(y);
         }
-        Charset charset = CharCharsetFun.charset(value1.toString());
-        if (value0 instanceof byte[]) {
-            return new String((byte[]) value0, charset);
+        if (a instanceof Double || b instanceof Double || a instanceof Float || b instanceof Float) {
+            return Math.min(a.doubleValue(), b.doubleValue());
         }
-        String text = value0.toString();
-        return new String(text.getBytes(charset), charset);
+        return Math.min(a.longValue(), b.longValue());
     }
 
     @Override
@@ -55,6 +52,6 @@ public class ConvertCharsetFun extends BinaryOp {
 
     @Override
     public Type getType() {
-        return Types.STRING;
+        return Types.ANY;
     }
 }

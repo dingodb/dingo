@@ -4743,6 +4743,9 @@ SqlAlter SqlSetOption(Span s, String scope) :
                }
             }
         |
+            LOOKAHEAD(<IDENTIFIER> <LPAREN>)
+            val = Expression(ExprContext.ACCEPT_NON_QUERY)
+        |
             val = SimpleIdentifier()
         |
             <ON> {
@@ -6231,6 +6234,11 @@ SqlTypeNameSpec TypeName() :
         typeNameSpec = ${method}
     |
 </#list>
+        LOOKAHEAD(<SIGNED> | <UNSIGNED>)
+        ( <SIGNED> | <UNSIGNED> ) [ <INTEGER> ] {
+            typeNameSpec = new SqlBasicTypeNameSpec(SqlTypeName.BIGINT, s.end(this));
+        }
+    |
         LOOKAHEAD(2)
         typeNameSpec = SqlTypeName(s)
     |
@@ -6760,6 +6768,7 @@ SqlNode BuiltinFunctionCall() :
     String alias = null;
     String intervalStr = null;
     boolean charUsingCharset = false;
+    boolean convertBinary = false;
 }
 {
     //~ FUNCTIONS WITH SPECIAL SYNTAX ---------------------------------------
@@ -6814,17 +6823,27 @@ SqlNode BuiltinFunctionCall() :
         <CONVERT> { s = span(); alias = this.token.image; }
         <LPAREN>
         AddExpression(args, ExprContext.ACCEPT_SUB_QUERY)
-        <USING> name = SimpleIdentifier() {
-            // Charset name is a literal, not a column reference; route to the
-            // dingo charset-conversion function for MySQL compatibility.
-            args.add(SqlLiteral.createCharString(name.getSimple(), name.getParserPosition()));
-        }
-        <RPAREN> {
-            SqlIdentifier convertFunName = new SqlIdentifier("convert_charset", s.end(this));
-            SqlNode sqlNode = createCall(convertFunName, s.end(this), SqlFunctionCategory.STRING, null, args);
-            sqlNode.putAlias("aliasName", alias);
-            return sqlNode;
-        }
+        (
+            <USING> name = SimpleIdentifier() {
+                // Charset name is a literal, not a column reference.
+                convertBinary = name.getSimple().equalsIgnoreCase("binary");
+                args.add(SqlLiteral.createCharString(name.getSimple(), name.getParserPosition()));
+            }
+            <RPAREN> {
+                SqlIdentifier convertFunName = new SqlIdentifier(
+                    convertBinary ? "convert_binary" : "convert_charset", s.end(this));
+                SqlNode sqlNode = createCall(convertFunName, s.end(this), SqlFunctionCategory.STRING, null, args);
+                sqlNode.putAlias("aliasName", alias);
+                return sqlNode;
+            }
+        |
+            <COMMA> dt = DataType() { args.add(dt); }
+            <RPAREN> {
+                SqlNode sqlNode = SqlStdOperatorTable.CAST.createCall(s.end(this), args);
+                sqlNode.putAlias("aliasName", alias);
+                return sqlNode;
+            }
+        )
     |
         <CHAR> { s = span(); alias = this.token.image; charUsingCharset = false; args.clear(); }
         <LPAREN>

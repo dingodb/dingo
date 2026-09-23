@@ -29,11 +29,15 @@ public class HexFun extends UnaryOp {
     public static final String NAME = "hex";
     @Serial
     private static final long serialVersionUID = -2489040936115125799L;
+    private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
 
     public static final HexFun INSTANCE = new HexFun();
 
     @Override
     protected Object evalNonNullValue(@NonNull Object value, ExprConfig config) {
+        if (value instanceof byte[]) {
+            return toHex((byte[]) value);
+        }
         if (value instanceof Double) {
             return Double.toHexString((Double) value).toUpperCase();
         } else if (value instanceof Float) {
@@ -59,18 +63,14 @@ public class HexFun extends UnaryOp {
     public static String toHex(byte[] bytes) {
         if (bytes == null) {
             return "null";
-        } else {
-            StringBuilder stringBuilder = new StringBuilder();
-            byte[] var2 = bytes;
-            int var3 = bytes.length;
-
-            for (int var4 = 0; var4 < var3; ++var4) {
-                byte b = var2[var4];
-                stringBuilder.append(String.format("%02X", b));
-            }
-
-            return stringBuilder.toString();
         }
+        char[] result = new char[bytes.length * 2];
+        for (int i = 0; i < bytes.length; ++i) {
+            int value = bytes[i] & 0xff;
+            result[2 * i] = HEX_DIGITS[value >>> 4];
+            result[2 * i + 1] = HEX_DIGITS[value & 0xf];
+        }
+        return new String(result);
     }
 
     @Override

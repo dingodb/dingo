@@ -31,6 +31,8 @@ import io.dingodb.exec.fun.mysql.QuoteFun;
 import io.dingodb.exec.fun.mysql.CharCharsetFun;
 import io.dingodb.exec.fun.mysql.CharFun;
 import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
+import io.dingodb.exec.fun.mysql.ConvertBinaryFun;
+import io.dingodb.exec.fun.mysql.LeastFun;
 import io.dingodb.exec.fun.sequence.CurrValFun;
 import io.dingodb.exec.fun.sequence.LastValFun;
 import io.dingodb.exec.fun.sequence.NextValFun;
@@ -98,9 +100,11 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerVariadicFun(CharFun.NAME, CharFun.INSTANCE);
         registerVariadicFun(CharCharsetFun.NAME, CharCharsetFun.INSTANCE);
         registerBinaryFun(ConvertCharsetFun.NAME, ConvertCharsetFun.INSTANCE);
+        registerBinaryFun(ConvertBinaryFun.NAME, ConvertBinaryFun.INSTANCE);
         registerUnaryFun(QuoteFun.NAME, QuoteFun.INSTANCE);
         registerBinaryFun(ConnectionIdFun.NAME, ConnectionIdFun.INSTANCE);
         registerTertiaryFun(ConvertTzFun.NAME, ConvertTzFun.INSTANCE);
+        registerBinaryFun(LeastFun.NAME, LeastFun.INSTANCE);
     }
 
     public static synchronized DingoFunFactory getInstance() {
