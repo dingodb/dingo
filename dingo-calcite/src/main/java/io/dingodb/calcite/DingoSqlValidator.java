@@ -74,7 +74,9 @@ import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.List;
@@ -139,6 +141,87 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     @Override
     public void validateCall(SqlCall call, SqlValidatorScope scope) {
         super.validateCall(call, scope);
+        if (call.getKind() != SqlKind.CASE) {
+            return;
+        }
+        // Calcite's CASE fast path compares only SQL type names, so a mixed-charset
+        // VARCHAR result inherits the first branch's charset without merging them.
+        org.apache.calcite.sql.fun.SqlCase caseCall = (org.apache.calcite.sql.fun.SqlCase) call;
+        List<RelDataType> branches = new ArrayList<>();
+        boolean nullable = false;
+        for (SqlNode branch : caseCall.getThenOperands()) {
+            if (SqlUtil.isNullLiteral(branch, false)) {
+                nullable = true;
+            } else {
+                RelDataType branchType = deriveType(scope, branch);
+                branches.add(branchType);
+                nullable |= branchType.isNullable();
+            }
+        }
+        SqlNode otherwise = caseCall.getElseOperand();
+        nullable |= otherwise == null || SqlUtil.isNullLiteral(otherwise, false);
+        if (otherwise != null && !SqlUtil.isNullLiteral(otherwise, false)) {
+            RelDataType branchType = deriveType(scope, otherwise);
+            branches.add(branchType);
+            nullable |= branchType.isNullable();
+        }
+        if (branches.size() < 2) {
+            return;
+        }
+        Charset charset = branches.get(0).getCharset();
+        if (charset == null) {
+            return;
+        }
+        boolean mixed = false;
+        for (RelDataType branch : branches) {
+            if (!SqlTypeUtil.isCharacter(branch) || branch.getCharset() == null) {
+                return;
+            }
+            mixed |= !charset.equals(branch.getCharset());
+        }
+        if (mixed) {
+            RelDataType merged = typeFactory.leastRestrictive(branches);
+            if (merged != null) {
+                setValidatedNodeType(call, typeFactory.createTypeWithNullability(merged, nullable));
+            }
+        }
+    }
+
+    @Override
+    protected void validateSelect(SqlSelect select, RelDataType targetRowType, boolean skipMeasure) {
+        super.validateSelect(select, targetRowType, skipMeasure);
+        SqlValidatorNamespace namespace = getNamespace(select);
+        RelDataType rowType = namespace.getRowType();
+        SqlNodeList selectList = select.getSelectList();
+        if (selectList.size() != rowType.getFieldCount()) {
+            return;
+        }
+        RelDataTypeFactory.Builder corrected = null;
+        for (int i = 0; i < selectList.size(); i++) {
+            SqlNode expression = selectList.get(i);
+            if (expression.getKind() == SqlKind.AS) {
+                expression = ((SqlCall) expression).operand(0);
+            }
+            RelDataTypeField field = rowType.getFieldList().get(i);
+            RelDataType validated = expression.getKind() == SqlKind.CASE
+                ? getValidatedNodeTypeIfKnown(expression) : null;
+            if (validated != null && !validated.equals(field.getType())) {
+                if (corrected == null) {
+                    corrected = typeFactory.builder();
+                    for (int j = 0; j < i; j++) {
+                        corrected.add(rowType.getFieldList().get(j));
+                    }
+                }
+                corrected.add(field.getName(), validated);
+            } else if (corrected != null) {
+                corrected.add(field);
+            }
+        }
+        if (corrected != null) {
+            RelDataType result = corrected.build();
+            namespace.setType(result);
+            setValidatedNodeType(select, result);
+        }
     }
 
     @Override
