@@ -49,24 +49,20 @@ public class CharCharsetFun extends VariadicOp {
         return new String(bytes, charset(charsetName));
     }
 
-    /**
-     * Map MySQL charset names onto Java charsets. Unknown names fall back to
-     * UTF-8; {@code binary} uses ISO-8859-1 so every byte round-trips.
-     */
+    /** Map MySQL charset names to an available Java codec; reject unknown names. */
     static Charset charset(@NonNull String name) {
-        String normalized = name.trim().toLowerCase();
+        String normalized = name.trim().toLowerCase(java.util.Locale.ROOT);
         switch (normalized) {
             case "utf8":
-            case "utf-8":
             case "utf8mb4":
                 return StandardCharsets.UTF_8;
             case "binary":
             case "latin1":
                 return StandardCharsets.ISO_8859_1;
-            case "gbk":
-                return Charset.forName("GBK");
+            case "ascii":
+                return StandardCharsets.US_ASCII;
             default:
-                return StandardCharsets.UTF_8;
+                return Charset.forName(normalized);
         }
     }
 

@@ -43,6 +43,8 @@ import io.dingodb.exec.fun.mysql.QuoteFun;
 import io.dingodb.exec.fun.mysql.CharCharsetFun;
 import io.dingodb.exec.fun.mysql.CharFun;
 import io.dingodb.exec.fun.mysql.ConvertCharsetFun;
+import io.dingodb.exec.fun.mysql.ConvertBinaryFun;
+import io.dingodb.exec.fun.mysql.LeastFun;
 import io.dingodb.exec.fun.mysql.VersionFun;
 import io.dingodb.exec.fun.sequence.CurrValFun;
 import io.dingodb.exec.fun.sequence.LastValFun;
@@ -562,6 +564,16 @@ public class DingoOperatorTable implements SqlOperatorTable {
             SqlFunctionCategory.STRING
         );
         registerFunction(
+            ConvertBinaryFun.NAME,
+            ReturnTypes.explicit(SqlTypeName.VARBINARY),
+            null,
+            OperandTypes.or(
+                family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.BINARY, SqlTypeFamily.STRING)
+            ),
+            SqlFunctionCategory.STRING
+        );
+        registerFunction(
             ConnectionIdFun.NAME,
             ReturnTypes.BIGINT,
             DingoInferTypes.VARCHAR,
@@ -578,6 +590,13 @@ public class DingoOperatorTable implements SqlOperatorTable {
                 family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.STRING)
             ),
             SqlFunctionCategory.TIMEDATE
+        );
+        registerFunction(
+            LeastFun.NAME,
+            ReturnTypes.LEAST_RESTRICTIVE,
+            null,
+            family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
+            SqlFunctionCategory.NUMERIC
         );
         registerFunction(
             DaySubFun.NAME,

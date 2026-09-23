@@ -22,30 +22,17 @@ import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.BinaryOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
-/**
- * MySQL CONVERT(expr USING charset) for character sets. The binary charset is
- * handled separately so it retains its byte type instead of becoming text.
- */
-public class ConvertCharsetFun extends BinaryOp {
-    public static final String NAME = "convert_charset";
-    @SuppressWarnings("serial")
-    private static final long serialVersionUID = -3194683446215801525L;
-
-    public static final ConvertCharsetFun INSTANCE = new ConvertCharsetFun();
+/** CONVERT(value USING BINARY) returns the UTF-8 bytes of textual values. */
+public class ConvertBinaryFun extends BinaryOp {
+    public static final String NAME = "convert_binary";
+    private static final long serialVersionUID = 7820648382210847369L;
+    public static final ConvertBinaryFun INSTANCE = new ConvertBinaryFun();
 
     @Override
-    public Object evalValue(Object value0, Object value1, ExprConfig config) {
-        if (value0 == null) {
-            return null;
-        }
-        Charset charset = CharCharsetFun.charset(value1.toString());
-        if (value0 instanceof byte[]) {
-            return new String((byte[]) value0, charset);
-        }
-        String text = value0.toString();
-        return new String(text.getBytes(charset), charset);
+    protected Object evalNonNullValue(@NonNull Object value, @NonNull Object charset, ExprConfig config) {
+        return value instanceof byte[] ? value : value.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
@@ -55,6 +42,6 @@ public class ConvertCharsetFun extends BinaryOp {
 
     @Override
     public Type getType() {
-        return Types.STRING;
+        return Types.BYTES;
     }
 }
