@@ -20,15 +20,22 @@ import io.dingodb.common.mysql.MysqlServer;
 import io.dingodb.common.mysql.constant.ColumnStatus;
 import io.dingodb.common.mysql.constant.ColumnType;
 import io.dingodb.driver.mysql.NativeConstants;
+import io.dingodb.driver.mysql.MysqlType;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
-import io.dingodb.driver.mysql.MysqlType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,6 +43,9 @@ import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_STATUS_AUTOCO
 
 public class MysqlPacketFactory {
     private static final short BINARY_CHARSET = 63;
+    private static final Charset LATIN1_CHARSET = Charset.forName("windows-1252");
+    private static final short LATIN1_COLLATION = 8;
+    private static final short ASCII_COLLATION = 11;
     private static MysqlPacketFactory instance = null;
 
     public static MysqlPacketFactory getInstance() {
@@ -108,11 +118,8 @@ public class MysqlPacketFactory {
 
     public short getColumnFlags(ResultSetMetaData metaData, int column) {
         try {
-            int columnFlags = 0;
-            // 0 not null  1 nullable
-            int isNullable =  metaData.isNullable(column);
-            columnFlags |= isNullable;
-
+            int columnFlags = metaData.isNullable(column) == ResultSetMetaData.columnNoNulls
+                ? ColumnStatus.COLUMN_NOT_NULL : 0;
             String columnTypeName = metaData.getColumnTypeName(column);
             return (short) combineColumnFlags(columnFlags, columnTypeName);
         } catch (Exception e) {
@@ -122,10 +129,8 @@ public class MysqlPacketFactory {
 
     public static short getColumnFlags(ResultSet resultSet) {
         try {
-            int columnFlags = 0;
-            // 0 not null  1 nullable
-            int isNullable =  resultSet.getInt("NULLABLE");
-            columnFlags |= isNullable;
+            int columnFlags = resultSet.getInt("NULLABLE") == ResultSetMetaData.columnNoNulls
+                ? ColumnStatus.COLUMN_NOT_NULL : 0;
 
             String columnTypeName = resultSet.getString("TYPE_NAME");
             return (short) combineColumnFlags(columnFlags, columnTypeName);
@@ -197,6 +202,7 @@ public class MysqlPacketFactory {
         List<ColumnPacket> columns = new ArrayList<>();
         String catalog = "def";
         if (showFields) {
+            Charset resultsCharset = textCharset(io.dingodb.common.util.Utils.getCharacterSet(columnNmCharset));
             while (resultSet.next()) {
                 String dataType = resultSet.getString("DATA_TYPE");
                 String tableName = resultSet.getString("TABLE_NAME");
@@ -208,13 +214,13 @@ public class MysqlPacketFactory {
                     tableName,
                     columnName,
                     columnName,
-                    "VARBINARY".equals(dataType) ? BINARY_CHARSET : MysqlPacket.charsetNumber,
+                    getColumnCharsetNumber(dataType, resultsCharset),
                     resultSet.getInt("COLUMN_SIZE"),
                     getColumnType(dataType),
                     getColumnFlags(resultSet),
                     MysqlPacket.decimals,
                     (byte) packetId.getAndIncrement(),
-                    columnNmCharset
+                    resultsCharset.name()
                     );
                 columns.add(columnPacket);
             }
@@ -240,6 +246,7 @@ public class MysqlPacketFactory {
         String schema = metaData.getSchemaName(1);
         table = table != null ? table : "";
         schema = schema != null ? schema : "";
+        Charset resultCharset = textCharset(io.dingodb.common.util.Utils.getCharacterSet(columnNmCharset));
 
         for (int i = 1; i <= columnCount; i++) {
             String columnLabel = metaData.getColumnLabel(i);
@@ -260,13 +267,65 @@ public class MysqlPacketFactory {
                 table,
                 table, columnLabel,
                 columnName,
-                "VARBINARY".equals(columnTypeName) ? BINARY_CHARSET : MysqlPacket.charsetNumber,
+                getColumnCharsetNumber(columnTypeName, resultCharset),
                 metaData.getColumnDisplaySize(i),
                 columnType,
                 getColumnFlags(metaData, i),
                 MysqlPacket.decimals,
-                (byte) packetId.getAndIncrement(), columnNmCharset);
+                (byte) packetId.getAndIncrement(), resultCharset.name());
             columns.add(columnPacket);
+        }
+    }
+
+    private static Charset textCharset(String name) throws SQLException {
+        if ("UTF-8".equalsIgnoreCase(name) || "UTF8".equalsIgnoreCase(name)
+            || "utf8mb4".equalsIgnoreCase(name) || "utf8mb3".equalsIgnoreCase(name)) {
+            return StandardCharsets.UTF_8;
+        }
+        if ("windows-1252".equalsIgnoreCase(name) || "Cp1252".equalsIgnoreCase(name)
+            || "latin1".equalsIgnoreCase(name)) {
+            return LATIN1_CHARSET;
+        }
+        if ("US-ASCII".equalsIgnoreCase(name) || "ASCII".equalsIgnoreCase(name)) {
+            return StandardCharsets.US_ASCII;
+        }
+        throw new SQLException("No MySQL collation for result charset: " + name);
+    }
+
+    private static short getColumnCharsetNumber(String typeName, Charset resultsCharset) {
+        if ("VARBINARY".equals(typeName)) {
+            return BINARY_CHARSET;
+        }
+        if ("VARCHAR".equals(typeName) || "CHAR".equals(typeName)) {
+            if (resultsCharset == LATIN1_CHARSET) {
+                return LATIN1_COLLATION;
+            }
+            return resultsCharset == StandardCharsets.US_ASCII ? ASCII_COLLATION : MysqlPacket.charsetNumber;
+        }
+        return MysqlPacket.charsetNumber;
+    }
+
+    /** Result text uses the connection's character_set_results, regardless of expression charset. */
+    public static CharsetEncoder[] getColumnEncoders(ResultSetMetaData metaData, String connectionCharset)
+        throws SQLException {
+        Charset charset = textCharset(io.dingodb.common.util.Utils.getCharacterSet(connectionCharset));
+        CharsetEncoder[] encoders = new CharsetEncoder[metaData.getColumnCount()];
+        for (int i = 0; i < encoders.length; i++) {
+            encoders[i] = charset.newEncoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
+        }
+        return encoders;
+    }
+
+    public static byte[] encodeText(String text, CharsetEncoder encoder) throws SQLException {
+        try {
+            ByteBuffer encoded = encoder.encode(CharBuffer.wrap(text));
+            byte[] bytes = new byte[encoded.remaining()];
+            encoded.get(bytes);
+            return bytes;
+        } catch (CharacterCodingException e) {
+            throw new SQLException("Text cannot be encoded as " + encoder.charset().name(), e);
         }
     }
 

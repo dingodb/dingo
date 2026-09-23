@@ -20,6 +20,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 
 public class DingoColumnMetaData extends ColumnMetaData {
     public final boolean hidden;
+    public final String charsetName;
 
     public DingoColumnMetaData(
         int ordinal,
@@ -32,11 +33,13 @@ public class DingoColumnMetaData extends ColumnMetaData {
         int displaySize, String label, String columnName, String schemaName, int precision, int scale,
         String tableName, String catalogName, AvaticaType type, boolean readOnly, boolean writable,
         boolean definitelyWritable, String columnClassName,
-        boolean hidden
+        boolean hidden,
+        String charsetName
     ) {
         super(ordinal, autoIncrement, caseSensitive, searchable, currency, nullable, signed,
             displaySize, label, columnName, schemaName, precision, scale, tableName, catalogName, type, readOnly,
             writable, definitelyWritable, columnClassName);
         this.hidden = hidden;
+        this.charsetName = charsetName;
     }
 }

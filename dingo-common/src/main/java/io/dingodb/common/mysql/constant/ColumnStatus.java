@@ -17,7 +17,7 @@
 package io.dingodb.common.mysql.constant;
 
 public class ColumnStatus {
-    public static final int COLUMN_NULLABLE = 0X0001;
+    public static final int COLUMN_NOT_NULL = 0X0001;
 
     public static final int COLUMN_PRIMARY = 0X0002;
 

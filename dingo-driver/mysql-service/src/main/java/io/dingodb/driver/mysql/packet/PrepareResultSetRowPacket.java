@@ -21,7 +21,7 @@ import io.dingodb.driver.mysql.util.BufferUtil;
 import io.netty.buffer.ByteBuf;
 import lombok.Setter;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.CharsetEncoder;
 import java.sql.Array;
 import java.sql.Date;
 import java.sql.ResultSetMetaData;
@@ -37,7 +37,7 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
     List<Object> values = new ArrayList<>();
 
     @Setter
-    private String characterSet;
+    private CharsetEncoder[] columnEncoders;
 
     @Setter
     private ResultSetMetaData metaData;
@@ -84,13 +84,7 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
                     case "CHAR":
                     case "ARRAY":
                     case "MULTISET":
-                        byte[] v;
-                        try {
-                            v = val.toString().getBytes(characterSet);
-                        } catch (UnsupportedEncodingException e) {
-                            throw new RuntimeException(e);
-                        }
-                        values.set(i - 1, v);
+                        byte[] v = (byte[]) val;
                         totalSize += BufferUtil.getLength(v);
                         break;
                     case "VARBINARY":
@@ -188,6 +182,12 @@ public class PrepareResultSetRowPacket extends MysqlPacket {
     public void addColumnValue(Object val, MysqlConnection connection) throws SQLException {
         if (val instanceof Array) {
             val = getArrayObject(connection, val);
+        }
+        int column = values.size() + 1;
+        String typeName = metaData.getColumnTypeName(column);
+        if (val != null && ("VARCHAR".equals(typeName) || "CHAR".equals(typeName)
+            || "ARRAY".equals(typeName) || "MULTISET".equals(typeName))) {
+            val = MysqlPacketFactory.encodeText(val.toString(), columnEncoders[column - 1]);
         }
         values.add(val);
     }

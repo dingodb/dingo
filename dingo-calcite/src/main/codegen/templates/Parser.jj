@@ -6861,7 +6861,7 @@ SqlNode BuiltinFunctionCall() :
         ]
         <RPAREN> {
             SqlIdentifier charFunName = new SqlIdentifier(
-                charUsingCharset ? (charUsingBinary ? "char_binary" : "char_charset") : "char", s.end(this));
+                charUsingCharset ? (charUsingBinary ? "char_binary" : "char_charset") : "char_default", s.end(this));
             SqlNode sqlNode = createCall(charFunName, s.end(this), SqlFunctionCategory.STRING, null, args);
             sqlNode.putAlias("aliasName", alias);
             return sqlNode;

@@ -45,6 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Array;
+import java.nio.charset.CharsetEncoder;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -54,6 +55,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.dingodb.calcite.executor.SetOptionExecutor.CONNECTION_CHARSET;
+import static io.dingodb.calcite.executor.SetOptionExecutor.RESULTS_CHARSET;
 import static io.dingodb.common.mysql.constant.ServerStatus.SERVER_MORE_RESULTS_EXISTS;
 import static io.dingodb.common.mysql.error.ErrorCode.ErrRecursiveCteErr;
 import static io.dingodb.common.util.Utils.getCharacterSet;
@@ -68,6 +70,14 @@ public final class MysqlResponseHandler {
     private MysqlResponseHandler() {
     }
 
+    private static String resultCharset(MysqlConnection mysqlConnection) throws SQLException {
+        String charset = mysqlConnection.getConnection().getClientInfo(RESULTS_CHARSET);
+        if (charset == null || charset.isEmpty()) {
+            charset = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+        }
+        return getCharacterSet(charset == null || charset.isEmpty() ? "utf8mb4" : charset);
+    }
+
     public static void responseShowField(ResultSet resultSet,
                                          AtomicLong packetId,
                                          MysqlConnection mysqlConnection) {
@@ -75,7 +85,7 @@ public final class MysqlResponseHandler {
         // 2. ok packet
         String connCharSet = null;
         try {
-            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            connCharSet = resultCharset(mysqlConnection);
             List<ColumnPacket> columnPackets = factory.getColumnPackets(packetId, resultSet, true, connCharSet);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             for (ColumnPacket columnPacket : columnPackets) {
@@ -110,7 +120,7 @@ public final class MysqlResponseHandler {
         String connCharSet = null;
         boolean stream = false;
         try {
-            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            connCharSet = resultCharset(mysqlConnection);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
             ColumnsNumberPacket columnsNumberPacket = new ColumnsNumberPacket();
@@ -178,6 +188,8 @@ public final class MysqlResponseHandler {
     ) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
         int columnCount = metaData.getColumnCount();
+        CharsetEncoder[] columnEncoders = MysqlPacketFactory.getColumnEncoders(
+            metaData, resultCharset(mysqlConnection));
         String typeName;
         boolean stream = false;
         AtomicLong cnt = new AtomicLong(0);
@@ -185,9 +197,6 @@ public final class MysqlResponseHandler {
             ResultSetRowPacket resultSetRowPacket = new ResultSetRowPacket();
             long nextId = packetId.getAndIncrement();
             resultSetRowPacket.packetId = (byte) nextId;
-            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-            characterSet = getCharacterSet(characterSet);
-            resultSetRowPacket.setCharacterSet(characterSet);
             for (int i = 1; i <= columnCount; i ++) {
                 Object val = resultSet.getObject(i);
                 typeName = metaData.getColumnTypeName(i);
@@ -207,7 +216,7 @@ public final class MysqlResponseHandler {
                     }
                 }
 
-                resultSetRowPacket.addColumnValue(val);
+                resultSetRowPacket.addColumnValue(val, columnEncoders[i - 1]);
             }
             cnt.incrementAndGet();
             resultSetRowPacket.write(buffer);
@@ -216,7 +225,7 @@ public final class MysqlResponseHandler {
                     + " cnt:{}, packetId:{}",
                     cnt.get(), packetId.get());
                 AsyncStreamReader streamReader = new AsyncStreamReader(
-                    resultSet, packetId, mysqlConnection, serverStatus, statement
+                    resultSet, packetId, mysqlConnection, serverStatus, statement, columnEncoders
                 );
                 Executors.submit("streamReader", streamReader);
                 mysqlConnection.writeAndFlushByStream(buffer);
@@ -254,13 +263,14 @@ public final class MysqlResponseHandler {
                                                 MysqlConnection mysqlConnection,
                                                 ByteBuf buffer,
                                                 int columnCount) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        CharsetEncoder[] columnEncoders = MysqlPacketFactory.getColumnEncoders(
+            metaData, resultCharset(mysqlConnection));
         while (resultSet.next()) {
             PrepareResultSetRowPacket resultSetRowPacket = new PrepareResultSetRowPacket();
-            String characterSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
-            characterSet = getCharacterSet(characterSet);
-            resultSetRowPacket.setCharacterSet(characterSet);
             resultSetRowPacket.packetId = (byte) packetId.getAndIncrement();
-            resultSetRowPacket.setMetaData(resultSet.getMetaData());
+            resultSetRowPacket.setMetaData(metaData);
+            resultSetRowPacket.setColumnEncoders(columnEncoders);
             for (int i = 1; i <= columnCount; i ++) {
                 resultSetRowPacket.addColumnValue(resultSet.getObject(i), mysqlConnection);
             }
@@ -445,7 +455,7 @@ public final class MysqlResponseHandler {
             & ExtendedClientCapabilities.CLIENT_DEPRECATE_EOF) != 0;
         String connCharSet = null;
         try {
-            connCharSet = mysqlConnection.getConnection().getClientInfo(CONNECTION_CHARSET);
+            connCharSet = resultCharset(mysqlConnection);
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             ResultSetMetaData metaData = resultSet.getMetaData();
             ColumnsNumberPacket columnsNumberPacket = new ColumnsNumberPacket();

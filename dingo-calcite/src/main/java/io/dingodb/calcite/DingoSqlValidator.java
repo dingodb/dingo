@@ -117,6 +117,8 @@ public class DingoSqlValidator extends SqlValidatorImpl {
     ) {
         super(
             SqlOperatorTables.chain(
+                // Override only CONCAT: Calcite's version drops its operand charset.
+                SqlOperatorTables.of(DingoOperatorTable.instance().concatFunction()),
                 SqlStdOperatorTable.instance(),
                 SqlLibraryOperatorTableFactory.INSTANCE
                     .getOperatorTable(SqlLibrary.MYSQL),

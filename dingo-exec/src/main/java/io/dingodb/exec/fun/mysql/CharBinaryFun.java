@@ -20,7 +20,6 @@ import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.OpKey;
-import io.dingodb.expr.runtime.op.OpKeys;
 import io.dingodb.expr.runtime.op.VariadicOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -37,7 +36,7 @@ public class CharBinaryFun extends VariadicOp {
 
     @Override
     public OpKey keyOf(@NonNull Type @NonNull ... types) {
-        return OpKeys.ALL_STRING.keyOf(types);
+        return Types.ANY;
     }
 
     @Override

@@ -88,6 +88,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUnaryFun(LastValFun.NAME, LastValFun.INSTANCE);
         registerBinaryFun(SetValFun.NAME, SetValFun.INSTANCE);
         registerUnaryFun(LengthFun.NAME, LengthFun.INSTANCE);
+        registerBinaryFun(LengthFun.CHARSET_NAME, LengthFun.CHARSET_INSTANCE);
         registerTertiaryFun(IfFun.NAME, IfFun.INSTANCE);
         registerBinaryFun(DateAddFun.NAME, DateAddFun.INSTANCE);
         registerBinaryFun(DateSubFun.NAME, DateSubFun.INSTANCE);
@@ -95,6 +96,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerUnaryFun(ValuesFun.NAME, ValuesFun.INSTANCE);
         registerUnaryFun(UnHexFun.NAME, UnHexFun.INSTANCE);
         registerUnaryFun(HexFun.NAME, HexFun.INSTANCE);
+        registerBinaryFun(HexFun.CHARSET_NAME, HexFun.CHARSET_INSTANCE);
         registerBinaryFun(DaySubFun.NAME, DaySubFun.INSTANCE);
         registerUnaryFun(GetDateFun.NAME, GetDateFun.INSTANCE);
         registerVariadicFun(ConcatWsFun.NAME, ConcatWsFun.INSTANCE);

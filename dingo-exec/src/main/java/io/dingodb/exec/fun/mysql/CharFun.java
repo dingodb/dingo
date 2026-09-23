@@ -20,13 +20,15 @@ import io.dingodb.expr.common.type.Type;
 import io.dingodb.expr.common.type.Types;
 import io.dingodb.expr.runtime.ExprConfig;
 import io.dingodb.expr.runtime.op.OpKey;
-import io.dingodb.expr.runtime.op.OpKeys;
 import io.dingodb.expr.runtime.op.VariadicOp;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-/** MySQL CHAR() constructs a binary string from integer byte values. */
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+/** MySQL CHAR() constructs a binary string from numeric byte values. */
 public class CharFun extends VariadicOp {
-    public static final String NAME = "char";
+    public static final String NAME = "char_default";
     @SuppressWarnings("serial")
     private static final long serialVersionUID = -5487904391104558091L;
 
@@ -37,7 +39,7 @@ public class CharFun extends VariadicOp {
         return buildBytes(values, values.length);
     }
 
-    /** Each integer contributes its nonzero leading bytes, most significant first. */
+    /** Each numeric argument contributes its nonzero leading bytes, most significant first. */
     static byte[] buildBytes(Object @NonNull [] values, int count) {
         byte[] bytes = new byte[Math.max(count, 4)];
         int length = 0;
@@ -46,7 +48,7 @@ public class CharFun extends VariadicOp {
             byte[] valueBytes;
             if (value instanceof Number || value instanceof String) {
                 long number = value instanceof Number
-                    ? ((Number) value).longValue() : Long.parseLong(((String) value).trim());
+                    ? numericValue((Number) value) : numericStringValue((String) value);
                 int width = 1;
                 for (long remaining = number >>> 8; remaining != 0; remaining >>>= 8) {
                     width++;
@@ -85,9 +87,29 @@ public class CharFun extends VariadicOp {
         return exact;
     }
 
+    private static long numericValue(Number value) {
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).setScale(0, RoundingMode.HALF_UP).longValue();
+        }
+        if (value instanceof Double || value instanceof Float) {
+            return new BigDecimal(value.toString()).setScale(0, RoundingMode.HALF_UP).longValue();
+        }
+        return value.longValue();
+    }
+
+    private static long numericStringValue(String value) {
+        String text = value.trim();
+        if (text.indexOf('.') >= 0 || text.indexOf('e') >= 0 || text.indexOf('E') >= 0) {
+            // MySQL truncates fractional numeric strings rather than rounding numeric values.
+            // Reject malformed strings; the expression evaluator has no SQL warning channel.
+            return new BigDecimal(text).setScale(0, RoundingMode.DOWN).longValueExact();
+        }
+        return Long.parseLong(text);
+    }
+
     @Override
     public OpKey keyOf(@NonNull Type @NonNull ... types) {
-        return OpKeys.ALL_STRING.keyOf(types);
+        return Types.ANY;
     }
 
     @Override

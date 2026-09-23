@@ -80,6 +80,7 @@ import io.dingodb.expr.runtime.op.time.TimestampFormat1FunFactory;
 import io.dingodb.expr.runtime.op.time.UnixTimestamp1FunFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -101,9 +102,12 @@ import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import static org.apache.calcite.sql.type.OperandTypes.family;
 import static org.apache.calcite.sql.type.SqlAppointReturnTypeInference.FLOAT;
@@ -505,7 +509,7 @@ public class DingoOperatorTable implements SqlOperatorTable {
             LengthFun.NAME,
             ReturnTypes.INTEGER,
             InferTypes.VARCHAR_1024,
-            OperandTypes.STRING,
+            OperandTypes.or(OperandTypes.STRING, OperandTypes.BINARY),
             SqlFunctionCategory.NUMERIC
         );
         registerFunction(
@@ -552,7 +556,18 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             CharCharsetFun.NAME,
-            ReturnTypes.explicit(SqlTypeName.VARCHAR),
+            binding -> {
+                String name = binding.getOperandLiteralValue(binding.getOperandCount() - 1, String.class);
+                if (name == null) {
+                    throw new IllegalArgumentException("CHAR USING requires a literal character set");
+                }
+                Charset charset = CharCharsetFun.charset(name);
+                return binding.getTypeFactory().createTypeWithCharsetAndCollation(
+                    binding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
+                    charset,
+                    charsetCollation(charset)
+                );
+            },
             InferTypes.ANY_NULLABLE,
             OperandTypes.VARIADIC,
             SqlFunctionCategory.STRING
@@ -566,9 +581,29 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             ConvertCharsetFun.NAME,
-            ReturnTypes.explicit(SqlTypeName.VARCHAR),
-            DingoInferTypes.VARCHAR,
-            family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+            binding -> {
+                String name = binding.getOperandLiteralValue(1, String.class);
+                if (name == null) {
+                    throw new IllegalArgumentException("CONVERT USING requires a literal character set");
+                }
+                Charset charset = CharCharsetFun.charset(name);
+                RelDataType inputType = binding.getOperandType(0);
+                SqlCollation inputCollation = inputType.getCollation();
+                SqlCollation collation =
+                    charset.equals(inputType.getCharset()) && inputCollation != null
+                        && inputCollation.getCoercibility() != SqlCollation.Coercibility.COERCIBLE
+                        ? inputCollation
+                        : charsetCollation(charset);
+                RelDataType result = binding.getTypeFactory().createTypeWithCharsetAndCollation(
+                    binding.getTypeFactory().createSqlType(SqlTypeName.VARCHAR), charset, collation
+                );
+                return binding.getTypeFactory().createTypeWithNullability(result, inputType.isNullable());
+            },
+            null,
+            OperandTypes.or(
+                family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.BINARY, SqlTypeFamily.STRING)
+            ),
             SqlFunctionCategory.STRING
         );
         registerFunction(
@@ -590,7 +625,9 @@ public class DingoOperatorTable implements SqlOperatorTable {
         );
         registerFunction(
             ConvertTzFun.NAME,
-            ReturnTypes.TIMESTAMP,
+            binding -> binding.getTypeFactory().createTypeWithNullability(
+                binding.getTypeFactory().createSqlType(SqlTypeName.TIMESTAMP), true
+            ),
             null,
             OperandTypes.or(
                 family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.STRING, SqlTypeFamily.STRING),
@@ -613,6 +650,15 @@ public class DingoOperatorTable implements SqlOperatorTable {
             family(SqlTypeFamily.DATE, SqlTypeFamily.NUMERIC),
             SqlFunctionCategory.NUMERIC
         );
+    }
+
+    private static SqlCollation charsetCollation(Charset charset) {
+        // Calcite's SqlCollation whitelists SQL charset names. Keep the actual
+        // MySQL codec on RelDataType; use a supported collation for latin1/ASCII.
+        Charset collationCharset = charset.equals(StandardCharsets.US_ASCII)
+            || charset.equals(Charset.forName("windows-1252"))
+            ? StandardCharsets.ISO_8859_1 : charset;
+        return new SqlCollation(SqlCollation.Coercibility.IMPLICIT, Locale.ROOT, collationCharset, "primary");
     }
 
     public void registerFunction(
@@ -645,6 +691,10 @@ public class DingoOperatorTable implements SqlOperatorTable {
             operandTypeChecker,
             category
         ));
+    }
+
+    public SqlFunction concatFunction() {
+        return funMap.get(ConcatFun.NAME.toUpperCase(Locale.ROOT)).iterator().next();
     }
 
     @Override
