@@ -178,13 +178,4 @@ public class RootSnapshotSchema implements Schema {
         return this;
     }
 
-    public void applyDiff(SchemaDiff schemaDiff) {
-        if (is == null) {
-            return;
-        }
-        InfoSchemaInTxnBuilder schemaInTxnBuilder = new InfoSchemaInTxnBuilder(is);
-        schemaInTxnBuilder.applyDiff(InfoSchemaService.root(), schemaDiff);
-        this.is = schemaInTxnBuilder.build();
-    }
-
 }

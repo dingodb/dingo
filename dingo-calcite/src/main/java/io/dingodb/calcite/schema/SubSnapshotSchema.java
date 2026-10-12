@@ -96,46 +96,6 @@ public class SubSnapshotSchema extends RootSnapshotSchema {
         );
     }
 
-    public @Nullable DingoTable getValidateTable(String tableName) {
-        tableName = convertName(tableName);
-        SchemaTables schemaTables;
-        if (is == null) {
-            InfoSchema isTmp = DdlService.root().getIsLatest();
-            if (isTmp == null) {
-                return null;
-            }
-            schemaTables = isTmp.schemaMap.get(schemaName);
-        } else {
-            schemaTables = is.schemaMap.get(schemaName);;
-        }
-        if (schemaTables == null) {
-            return null;
-        }
-        Table table = schemaTables.getTables().get(tableName);
-        if (table == null) {
-            return null;
-        }
-        boolean hasHidden = table.getColumns()
-            .stream().anyMatch(column -> column.getState() != 1
-                ||
-                (column.getSchemaState() != SchemaState.SCHEMA_PUBLIC && column.getSchemaState() != null)
-            );
-        if (hasHidden) {
-            List<Column> columnList = table.getColumns()
-                .stream()
-                .filter(column -> (column.getSchemaState() == null
-                    || column.getSchemaState() == SchemaState.SCHEMA_PUBLIC)
-                    && column.getState() == 1)
-                .collect(Collectors.toList());
-            table = table.copyWithColumns(columnList);
-        }
-        return new DingoTable(
-            context,
-            ImmutableList.<String>builder().addAll(names).add(tableName).build(),
-            table
-        );
-    }
-
     @Override
     public Set<String> getTableNames() {
         SchemaTables schemaTables;

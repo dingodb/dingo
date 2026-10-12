@@ -424,10 +424,9 @@ public class InfoSchemaService implements io.dingodb.meta.InfoSchemaService {
                 ? tableDefinitionWithId.getTableDefinition().getName().equalsIgnoreCase(table)
                 : tableDefinitionWithId.getTableDefinition().getName().equals(table))
             .filter(tableDefinitionWithId -> {
-                    return tableDefinitionWithId.getTableDefinition().getSchemaState()
+                return tableDefinitionWithId.getTableDefinition().getSchemaState()
                         == SchemaState.SCHEMA_PUBLIC;
-                }
-            )
+            })
             .findFirst().orElse(null);
     }
 

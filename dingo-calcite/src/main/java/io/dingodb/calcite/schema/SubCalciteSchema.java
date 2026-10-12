@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import io.dingodb.calcite.DingoTable;
 import io.dingodb.common.log.LogUtils;
+import io.dingodb.common.mysql.DingoErrUtil;
 import io.dingodb.common.util.Optional;
+import io.dingodb.meta.DdlService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -35,6 +37,8 @@ import org.apache.calcite.util.NameSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
+
+import static io.dingodb.common.mysql.error.ErrorCode.ErrNoSuchTable;
 
 @Slf4j
 public class SubCalciteSchema extends CalciteSchema {
@@ -72,7 +76,20 @@ public class SubCalciteSchema extends CalciteSchema {
         boolean inTxn = subSnapshotSchema.inTransaction();
         Table table = schema.getTable(tableName);
         if (table != null && inTxn) {
+            // Add schemaVersion consistency check
             DingoTable dingoTable = (DingoTable) table;
+            long schemaVersion = dingoTable.getTable().getSchemaVersion();
+            int status = DdlService.root().checkTableSchemaVersion(dingoTable.getTableId(), schemaVersion);
+            if (status == 3) {
+                // table not exists
+                throw DingoErrUtil.newStdErr(ErrNoSuchTable, dingoTable.getTable().getName());
+            } else if (status == 2) {
+                // refresh schema
+                io.dingodb.meta.entity.Table table1 = DdlService.root().getIsLatest().getTable(dingoTable.getTableId().seq);
+                table = new DingoTable(dingoTable.getContext(), dingoTable.getNames(), table1);
+            }
+            // check method
+            // throw exception
             rootCalciteSchema.putRelatedTable(dingoTable.getTableId().seq,
                 ((SubSnapshotSchema) schema).getSchemaVer(), subSnapshotSchema.txnId);
         }
