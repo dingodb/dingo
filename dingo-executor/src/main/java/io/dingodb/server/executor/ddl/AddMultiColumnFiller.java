@@ -46,6 +46,7 @@ import io.dingodb.store.api.transaction.data.Op;
 import io.dingodb.store.api.transaction.exception.WriteConflictException;
 import io.dingodb.tso.TsoService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -301,6 +302,8 @@ public class AddMultiColumnFiller extends AbstractFiller {
     public void initFiller() {
         super.initFiller();
         replicaId = indexTable.tableId;
-        LogUtils.info(log, "replicaTableId:{}", replicaId);
+        String colNames = StringUtils.join(indexTable.getColumns()
+            .stream().map(Column::getName).toList(), ",");
+        LogUtils.info(log, "replicaTableId:{}, full col names:{}", replicaId, colNames);
     }
 }

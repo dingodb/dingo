@@ -55,6 +55,10 @@ public interface DdlService {
 
     void dropTable(SchemaInfo schemaInfo, Long tableId, String tableName, String connId);
 
+    default void dropView(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
+
+    }
+
     void truncateTable(SchemaInfo schemaInfo, Table table, String connId);
 
     default void addColumn(SchemaInfo schemaInfo, Table table, AddingColInfo addingColInfo, String connId) {

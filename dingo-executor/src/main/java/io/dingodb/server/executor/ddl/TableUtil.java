@@ -90,9 +90,15 @@ public final class TableUtil {
             MetaService metaService = MetaService.root();
             InfoSchemaService service = InfoSchemaService.root();
             Object tabObj = service.getTable(schemaId, tableInfo.getName());
-            if (tabObj != null && !ddlJob.isReplace()) {
-                ddlJob.setState(JobState.jobStateCancelled);
-                return Pair.of(null, "view has existed");
+            if (tabObj != null) {
+                if (ddlJob.isReplace()) {
+                        TableDefinitionWithId tableDefinitionWithId = (TableDefinitionWithId) tabObj;
+                        tableInfo.setPrepareTableId(tableDefinitionWithId.getTableId().getEntityId());
+                        ddlJob.setTableId(tableInfo.getPrepareTableId());
+                } else {
+                        ddlJob.setState(JobState.jobStateCancelled);
+                        return Pair.of(null, "view has existed");
+                }
             }
             try {
                 metaService.createView(schemaId, tableInfo.getName(), tableInfo);
