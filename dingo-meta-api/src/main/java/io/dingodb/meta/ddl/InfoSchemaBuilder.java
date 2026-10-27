@@ -175,6 +175,7 @@ public class InfoSchemaBuilder {
                 return applyAddIndex(schemaDiff);
             case ActionDropSchema:
                 return applyDropSchema(schemaDiff);
+            case ActionDropView:
             case ActionDropTable:
                 return applyDropTable(schemaDiff);
             case ActionDropIndex:

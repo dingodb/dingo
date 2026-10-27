@@ -201,6 +201,24 @@ public class DdlHandler {
         }
     }
 
+    public void dropView(SchemaInfo schemaInfo, Long tableId, String tableName, String connId) {
+        DdlJob job = DdlJob.builder()
+            .actionType(ActionType.ActionDropView)
+            .tableName(tableName)
+            .tableId(tableId)
+            .schemaId(schemaInfo.getSchemaId())
+            .schemaName(schemaInfo.getName())
+            .schemaState(schemaInfo.getSchemaState())
+            .build();
+        job.setConnId(connId);
+        try {
+            doDdlJob(job);
+        } catch (Exception e) {
+            LogUtils.error(log, "[ddl-error] drop table error,reason:" + e.getMessage() + ", tabDef:" + tableName, e);
+            throw e;
+        }
+    }
+
     public static void createSequence(String schema, String table, SequenceDefinition definition, String connId) {
         SchemaInfo schemaInfo = InfoSchemaService.root().getSchema(schema);
         if (schemaInfo == null) {

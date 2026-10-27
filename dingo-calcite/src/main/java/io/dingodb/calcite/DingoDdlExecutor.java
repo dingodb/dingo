@@ -788,7 +788,7 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
             throw DingoErrUtil.newStdErrWithMsg("View '%s' do not exist", ErrNoSuchTable, tableName);
         }
         DdlService ddlService = DdlService.root();
-        ddlService.dropTable(schemaInfo, table.tableId.seq, tableName, connId);
+        ddlService.dropView(schemaInfo, table.tableId.seq, tableName, connId);
 
         timeCtx.stop();
         long cost = System.currentTimeMillis() - start;
@@ -2034,11 +2034,11 @@ public class DingoDdlExecutor extends DdlExecutorImpl {
     public void execute(SqlAlterTableOptions sqlAlterTableOptions, CalcitePrepare.Context context) {
         LogUtils.info(log, "DDL execute:{}", sqlAlterTableOptions);
         List<SqlAlterTable> alterTableList = sqlAlterTableOptions.alterTableList;
-        //List<AddingColInfo> addingColInfoList = mergeAddColumnDdl(alterTableList, context);
-        //if (addingColInfoList != null) {
-        //    execute(sqlAlterTableOptions.table, addingColInfoList, context);
-        //    return;
-        //}
+        List<AddingColInfo> addingColInfoList = mergeAddColumnDdl(alterTableList, context);
+        if (addingColInfoList != null) {
+            execute(sqlAlterTableOptions.table, addingColInfoList, context);
+            return;
+        }
         validateMultiSchemaChange(sqlAlterTableOptions, context);
         for (SqlAlterTable alterTable : alterTableList) {
             int retry = 10;
