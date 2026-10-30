@@ -18,6 +18,7 @@ package io.dingodb.exec.fun;
 
 import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.HexFun;
+import io.dingodb.exec.fun.mysql.JsonContainsFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
@@ -66,6 +67,7 @@ public class DingoFunFactory extends DefaultFunFactory {
         registerBinaryFun(VectorHammingDistanceFun.NAME, VectorHammingDistanceFun.INSTANCE);
         registerBinaryFun(VectorDistanceFun.NAME, VectorDistanceFun.INSTANCE);
         registerNullaryFun(VersionFun.NAME, VersionFun.INSTANCE);
+        registerVariadicFun(JsonContainsFun.NAME, JsonContainsFun.INSTANCE);
         registerVariadicFun(JsonExtractFun.NAME, JsonExtractFun.INSTANCE);
         registerBinaryFun(DatabaseFun.NAME, DatabaseFun.INSTANCE);
         registerBinaryFun(ScopeVarFun.NAME, ScopeVarFun.INSTANCE);
