@@ -30,6 +30,7 @@ import io.dingodb.exec.fun.StrToDateFun;
 import io.dingodb.exec.fun.ValuesFun;
 import io.dingodb.exec.fun.mysql.DatabaseFun;
 import io.dingodb.exec.fun.mysql.HexFun;
+import io.dingodb.exec.fun.mysql.JsonContainsFun;
 import io.dingodb.exec.fun.mysql.JsonExtractFun;
 import io.dingodb.exec.fun.mysql.SchemaFun;
 import io.dingodb.exec.fun.mysql.ScopeVarFun;
@@ -405,6 +406,16 @@ public class DingoOperatorTable implements SqlOperatorTable {
             null,
             OperandTypes.POSITIVE_INTEGER_LITERAL.or(OperandTypes.NILADIC),
             SqlFunctionCategory.STRING
+        );
+        registerFunction(
+            JsonContainsFun.NAME,
+            ReturnTypes.INTEGER,
+            DingoInferTypes.VARCHAR,
+            OperandTypes.or(
+                family(SqlTypeFamily.STRING, SqlTypeFamily.STRING),
+                family(SqlTypeFamily.STRING, SqlTypeFamily.STRING, SqlTypeFamily.STRING)
+            ),
+            SqlFunctionCategory.NUMERIC
         );
         registerFunction(
             JsonExtractFun.NAME,
